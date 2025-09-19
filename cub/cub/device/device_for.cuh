@@ -46,18 +46,17 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/layout_left.h>
+#include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace for_each
+namespace detail::for_each
 {
 
 /**
@@ -121,8 +120,30 @@ struct op_wrapper_vectorized_t
   }
 };
 
-} // namespace for_each
-} // namespace detail
+template <typename Layout>
+inline constexpr bool is_any_mdspan_layout_left_v = false;
+
+template <>
+inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_left> = true;
+
+template <typename Layout>
+inline constexpr bool is_any_mdspan_layout_right_v = false;
+
+template <>
+inline constexpr bool is_any_mdspan_layout_right_v<::cuda::std::layout_right> = true;
+
+template <typename Layout>
+inline constexpr bool is_any_mdspan_layout_left_or_right_v =
+  is_any_mdspan_layout_left_v<Layout> || is_any_mdspan_layout_right_v<Layout>;
+
+// TODO (fbusato): Add support for layout_right_padded and layout_left_padded
+// template<>
+// inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_right_padded> = true;
+
+// template<>
+// inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_left_padded> = true;
+
+} // namespace detail::for_each
 
 struct DeviceFor
 {
@@ -987,6 +1008,98 @@ public:
     for_each::op_wrapper_extents_t<OpType, extents_type, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
     return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+  }
+
+  /*********************************************************************************************************************
+   * ForEachInLayout
+   ********************************************************************************************************************/
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through a multi-dimensional extents using a specific mdspan layout, producing
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - list of indices containing the coordinates for each extent dimension
+  //!
+  //! The iteration order depends on the layout type:
+  //!
+  //! - ``layout_right``: Iterates in row-major order (rightmost index varies fastest)
+  //! - ``layout_left``: Iterates in column-major order (leftmost index varies fastest)
+  //!
+  //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //! - Supports ``::cuda::std::layout_left`` and ``::cuda::std::layout_right`` layouts
+  //!
+  //! **Note**: ``DeviceFor::ForEachInLayout`` supports integral index type up to 64-bits.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInLayout`` to iterate through a 2D matrix in
+  //! column-major order using ``layout_left``.
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInLayout`` to tabulate a 3D array with its
+  //! coordinates.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-op
+  //!     :end-before: example-end for-each-in-layout-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-example
+  //!     :end-before: example-end for-each-in-layout-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam Layout
+  //!   **[inferred]** The mdspan layout type, must be either ``::cuda::std::layout_left`` or
+  //!   ``::cuda::std::layout_right``
+  //!
+  //! @tparam IndexType
+  //!   **[inferred]** An integral type that represents the extent index space
+  //!
+  //! @tparam Extents
+  //!   **[inferred]** The extent sizes for each rank index
+  //!
+  //! @tparam OpType
+  //!   **[inferred]** A function object with arity equal to the number of extents + 1 for the linear index (iteration).
+  //!   The first parameter is the linear index, followed by one parameter for each dimension coordinate.
+  //!
+  //! @param[in] layout
+  //!   Layout object that determines the iteration order (layout_left for column-major, layout_right for row-major)
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.
+  //!   Called as ``op(linear_index, coord_0, coord_1, ..., coord_n)``
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `nullptr`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  _CCCL_TEMPLATE(typename Layout, typename IndexType, size_t... Extents, typename OpType)
+  _CCCL_REQUIRES(detail::for_each::is_any_mdspan_layout_left_or_right_v<Layout>)
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
+    const Layout&, const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  {
+    if constexpr (detail::for_each::is_any_mdspan_layout_right_v<Layout>)
+    {
+      return ForEachInExtents(extents, op, stream);
+    }
+    else
+    {
+      return ForEachInExtents(cub::detail::reverse(extents), op, stream);
+    }
   }
 };
 
