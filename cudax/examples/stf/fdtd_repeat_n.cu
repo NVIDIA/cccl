@@ -35,7 +35,7 @@ _CCCL_DEVICE double Source(double t, double x, double y, double z)
   return sin(k * x - omega * t);
 }
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
 #if _CCCL_CTK_BELOW(12, 4)
   fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
