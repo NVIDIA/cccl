@@ -22,12 +22,15 @@
 #include "../mappings/operation.h"
 #include "../mappings/type_info.h"
 
+template <cccl_type_info_mapping RetT>
+using cccl_mapping_to_type = decltype(RetT)::Type;
+
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
   // Note: The user provided C f  unction (Operation.operation) must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args) const
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args) const
   {
     using TargetCFuncPtr = void (*)(const decltype(args, void())*..., void*);
 
@@ -54,7 +57,7 @@ template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT
 struct stateful_user_operation
 {
   user_operation_state<Operation.size, Operation.alignment> state;
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args)
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args)
   {
     // Note: The user provided C function (Operation.operation) must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
@@ -282,7 +285,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
   template <typename, typename... Args>
   static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info ret, Args... arguments)
   {
-    auto&& entry = well_known_operation_description(operation.type);
+    auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
       return cuda::std::nullopt;
