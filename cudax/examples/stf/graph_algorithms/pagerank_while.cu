@@ -52,6 +52,10 @@ __device__ void calculating_pagerank(
 
 int main()
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving example: while_graph_scope is only available since CUDA 12.4.\n");
+  return 0;
+#else
   stackable_ctx ctx;
 
   // row offsets in CSR format
@@ -128,4 +132,5 @@ int main()
   }
 
   return 0;
+#endif // !_CCCL_CTK_BELOW(12, 4)
 }
