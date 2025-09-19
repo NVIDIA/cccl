@@ -146,35 +146,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
     key2 = oob_default;
   }
 
-  auto loop_body = [&](int item, auto last_iteration) {
-    // FIXME(bgruber): is the condition correct, given that the two key ranges can be smaller than ITEMS_PER_THREAD?
-    // FIXME(bgruber): if we exhausted both key ranges, we increment keys1_beg beyond keys1_end
-    const bool use_key2 = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-    output[item]        = use_key2 ? key2 : key1;
-    indices[item]       = use_key2 ? keys2_beg++ : keys1_beg++;
-    if constexpr (!last_iteration)
-    {
-      if (use_key2)
-      {
-        // FIXME(bgruber): this assertion fails and we access out of bounds
-        //_CCCL_ASSERT(keys2_beg < keys2_end, "");
-        key2 = keys_shared[keys2_beg];
-      }
-      else
-      {
-        // FIXME(bgruber): this assertion fails and we access out of bounds
-        //_CCCL_ASSERT(keys1_beg < keys1_end, "");
-        key1 = keys_shared[keys1_beg];
-      }
-    }
-  };
-
   _CCCL_SORT_MAYBE_UNROLL()
-  for (int item = 0; item < ITEMS_PER_THREAD - 1; ++item) // last iteration excluded
+  for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    loop_body(item, ::cuda::std::false_type{});
+    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
+    output[item]  = p ? key2 : key1;
+    indices[item] = p ? keys2_beg++ : keys1_beg++;
+    if (p)
+    {
+      _CCCL_ASSERT(keys2_beg < keys2_end + 1, ""); // max one item out of bounds
+      key2 = keys_shared[keys2_beg];
+    }
+    else
+    {
+      _CCCL_ASSERT(keys1_beg < keys1_end + 1, ""); // max one item out of bounds
+      key1 = keys_shared[keys1_beg];
+    }
   }
-  loop_body(ITEMS_PER_THREAD - 1, ::cuda::std::true_type{});
 }
 
 template <bool IS_FULL_TILE, typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
@@ -259,7 +247,8 @@ private:
   /// Shared memory type required by this thread block
   union _TempStorage
   {
-    // FIXME(bgruber): why do we need the +1?
+    // We could change SerialMerge to avoid reading one item out of bounds and drop the + 1 here. But that would
+    // introduce more branches (DeviceMerge was about 10% slower on 2^16 problem sizes on RTX 5090 in a first attempt)
     KeyT keys_shared[ITEMS_PER_TILE + 1];
     ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
@@ -534,9 +523,7 @@ public:
         const int keys1_count_loc = keys1_end - keys1_beg_loc;
         const int keys2_count_loc = keys2_end - keys2_beg_loc;
         SerialMerge<!IS_LAST_TILE>(
-          // TODO(bgruber): use the span with valid_items again
-          ::cuda::std::span<KeyT>(temp_storage.keys_shared, ITEMS_PER_TILE + 1),
-          //::cuda::std::span<KeyT>(temp_storage.keys_shared, valid_items),
+          ::cuda::std::span<KeyT>(temp_storage.keys_shared, ITEMS_PER_TILE + 1), // TODO: drop later again
           //&temp_storage.keys_shared[0],
           keys1_beg_loc,
           keys2_beg_loc,
