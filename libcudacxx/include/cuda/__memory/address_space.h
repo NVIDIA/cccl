@@ -52,6 +52,11 @@ enum class address_space
   return __v >= 0 && __v < ::cuda::std::to_underlying(address_space::__max);
 }
 
+[[nodiscard]] _CCCL_DEVICE_API inline bool __is_smem_valid_ptr(const void* __ptr) noexcept
+{
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (return __ptr != nullptr;), (return true;));
+}
+
 //! @brief Checks if the given pointer is from the specified address state space.
 //! @param __ptr The address to check.
 //! @param __space The address state space to check against.
@@ -83,7 +88,7 @@ enum class address_space
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::shared:
       // smem can start at address 0x0 before sm_90
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (_CCCL_ASSERT(__ptr != nullptr, "invalid pointer");));
+      _CCCL_ASSERT(::cuda::device::__is_smem_valid_ptr(__ptr), "invalid pointer");
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
       {
         unsigned __ret;
