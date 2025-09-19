@@ -842,6 +842,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
+#include <cuda/std/__chrono/calendar.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/file_clock.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
@@ -879,18 +880,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
-struct local_t
-{};
-template <class Duration>
-using local_time    = time_point<local_t, Duration>;
-using local_seconds = local_time<seconds>;
-using local_days    = local_time<days>;
-
-struct last_spec
-{
-  _CCCL_HIDE_FROM_ABI explicit last_spec() = default;
-};
 
 class day
 {
@@ -1447,7 +1436,6 @@ _CCCL_API constexpr weekday_last weekday::operator[](last_spec) const noexcept
   return weekday_last{*this};
 }
 
-inline constexpr last_spec last{};
 inline constexpr weekday Sunday{0};
 inline constexpr weekday Monday{1};
 inline constexpr weekday Tuesday{2};
