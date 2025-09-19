@@ -79,6 +79,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {{
       .reg .b128 _d;
@@ -240,6 +244,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {{
       .reg .b128 _v;

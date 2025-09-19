@@ -45,6 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CUDA_COMPILER()
 
 extern "C" _CCCL_DEVICE void __atomic_cas_128b_unsupported_before_SM_90();
+extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
@@ -697,6 +698,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_acquire, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -709,6 +714,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_acquire, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -721,6 +730,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_acquire, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -733,6 +746,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_acquire, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -745,6 +762,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -757,6 +778,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -769,6 +794,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -781,6 +810,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -793,6 +826,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_enable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -805,6 +842,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -817,6 +858,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -829,6 +874,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -841,6 +890,10 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _d;
@@ -1065,6 +1118,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_release, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1077,6 +1134,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_release, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1089,6 +1150,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_release, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1101,6 +1166,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_release, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1113,6 +1182,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1125,6 +1198,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1137,6 +1214,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1149,6 +1230,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1161,6 +1246,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_relaxed, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_enable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1173,6 +1262,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_block_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1185,6 +1278,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_cluster_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1197,6 +1294,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_device_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
@@ -1209,6 +1310,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, __atomic_cuda_volatile, __atomic_cuda_operand_b128, __thread_scope_system_tag, __atomic_cuda_mmio_disable)
 {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
     {
       .reg .b128 _v;
