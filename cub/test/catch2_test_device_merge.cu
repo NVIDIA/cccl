@@ -102,7 +102,7 @@ struct Dispatcher
   int items_per_tile = 0;
 
   template <typename ActivePolicy>
-  auto Invoke() -> cudaError
+  _CCCL_HOST_DEVICE auto Invoke() -> cudaError
   {
     items_per_tile = ActivePolicy::merge_policy::ITEMS_PER_TILE;
     return cudaSuccess;
