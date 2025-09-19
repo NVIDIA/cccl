@@ -50,7 +50,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__memory/is_aligned.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
@@ -274,7 +274,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::is_aligned(d_in, sizeof(VectorT));
+      return ::cuda::std::is_sufficiently_aligned<sizeof(VectorT)>(d_in);
     }
     else
     {

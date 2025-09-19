@@ -10,6 +10,9 @@
 
 The function determines if a pointer is aligned to a specific alignment.
 
+.. deprecated:: 3.2.0
+   Use `cuda::std::is_sufficiently_aligned <https://en.cppreference.com/w/cpp/memory/is_sufficiently_aligned.html>`__ instead.
+
 **Parameters**
 
 - ``ptr``: The pointer.

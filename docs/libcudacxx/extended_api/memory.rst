@@ -47,8 +47,8 @@ Memory
 
    * - :ref:`is_aligned <libcudacxx-extended-api-memory-is_aligned>`
      - Check if a pointer is aligned
-     - CCCL 3.1.0
-     - CUDA 13.1
+     - CCCL 3.1.0, deprecated in CCCL 3.2.0
+     - CUDA 13.1, deprecated in CUDA 13.2
 
    * - :ref:`align_up <libcudacxx-extended-api-memory-align_up>`
      - Align up a pointer to the specified alignment

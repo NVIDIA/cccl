@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#define CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/memory>
 #include <cuda/std/cassert>

@@ -29,15 +29,18 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::is_sufficiently_aligned instead")
 [[nodiscard]] _CCCL_API inline bool is_aligned(const void* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
   return (reinterpret_cast<::cuda::std::uintptr_t>(__ptr) & (__alignment - 1)) == 0;
 }
 
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::is_sufficiently_aligned instead")
 [[nodiscard]] _CCCL_API inline bool is_aligned(const volatile void* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
-  return ::cuda::is_aligned(const_cast<const void*>(__ptr), __alignment);
+  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
+  return (reinterpret_cast<::cuda::std::uintptr_t>(__ptr) & (__alignment - 1)) == 0;
 }
 
 _CCCL_END_NAMESPACE_CUDA
