@@ -50,7 +50,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 // The compiler does not provide support or proof of support. eg. msvc
 #  else
 #    define _LIBCUDACXX_INT128_WARN(TYPE) \
-      static_assert(sizeof(TYPE) < 16, "atomic_ref<T> where sizeof(T) > 8 is not supported on this sytem.");
+      static_assert(sizeof(TYPE) < 16, "atomic_ref<T> where sizeof(T) > 8 is not supported on this system.");
 #  endif
 
 template <typename _Tp>
