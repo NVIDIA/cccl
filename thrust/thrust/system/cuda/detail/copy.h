@@ -169,18 +169,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   }
 }
 
-template <class System1, class System2, class InputIterator, class OutputIterator>
-OutputIterator _CCCL_HOST
-cross_system_copy(cross_system<System1, System2> systems, InputIterator begin, InputIterator end, OutputIterator result)
-{
-  return cross_system_copy_n(systems, begin, ::cuda::std::distance(begin, end), result);
-}
-} // namespace __copy
-
 #if _CCCL_HAS_CUDA_COMPILER()
-
-namespace __copy
-{
 template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
@@ -209,7 +198,10 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
     return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
   }
 }
+#endif // _CCCL_HAS_CUDA_COMPILER()
 } // namespace __copy
+
+#if _CCCL_HAS_CUDA_COMPILER()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class OutputIterator>
@@ -236,7 +228,7 @@ template <class System1, class System2, class InputIterator, class OutputIterato
 OutputIterator _CCCL_HOST
 copy(cross_system<System1, System2> systems, InputIterator first, InputIterator last, OutputIterator result)
 {
-  return __copy::cross_system_copy(systems, first, last, result);
+  return __copy::cross_system_copy_n(systems, first, ::cuda::std::distance(first, last), result);
 }
 
 template <class System1, class System2, class InputIterator, class Size, class OutputIterator>
