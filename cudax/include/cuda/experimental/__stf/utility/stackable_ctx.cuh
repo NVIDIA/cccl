@@ -658,10 +658,6 @@ public:
         // adding input deps
         if (nested_graph)
         {
-          fprintf(stderr, "TODO nested contexts are WIP\n");
-          // TODO add ctx prereqs as input of the graph
-          //          abort();
-          // TODO
           cudaGraph_t support_graph = parent_ctx.graph();
           size_t graph_stage        = parent_ctx.stage();
 
@@ -671,12 +667,14 @@ public:
             reserved::join_with_graph_nodes(parent_ctx.get_backend(), ctx_prereqs, graph_stage);
           if (!ctx_ready_nodes.empty())
           {
+            // Create a vector of input_node repeated for each dependency
+            ::std::vector<cudaGraphNode_t> to_nodes(ctx_ready_nodes.size(), input_node);
 #if _CCCL_CTK_AT_LEAST(13, 0)
             cuda_safe_call(cudaGraphAddDependencies(
-              support_graph, ctx_ready_nodes.data(), &input_node, nullptr, ctx_ready_nodes.size()));
+              support_graph, ctx_ready_nodes.data(), to_nodes.data(), nullptr, ctx_ready_nodes.size()));
 #else // _CCCL_CTK_AT_LEAST(13, 0)
             cuda_safe_call(
-              cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), &input_node, ctx_ready_nodes.size()));
+              cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), to_nodes.data(), ctx_ready_nodes.size()));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
           }
 
