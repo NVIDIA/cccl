@@ -46,9 +46,22 @@ namespace cuda::experimental::execution
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
 
-template <class _DomainOrTag, class _Sndr, class... _Env>
+// _DomainOrTag: eg, default_domain or then_t
+// _OpTag: either start_t or set_value_t
+template <class _DomainOrTag, class _OpTag, class _Sndr, class... _Env>
 using __transform_sender_result_t =
-  decltype(_DomainOrTag{}.transform_sender(declval<_Sndr>(), declval<const _Env&>()...));
+  decltype(declval<_DomainOrTag>().transform_sender(declval<_OpTag>(), declval<_Sndr>(), declval<const _Env&>()...));
+
+template <class _DomainOrTag, class _OpTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_transform_sender =
+  __is_instantiable_with<__transform_sender_result_t, _DomainOrTag, _OpTag, _Sndr, _Env...>;
+
+template <class _DomainOrTag, class _OpTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __nothrow_transform_sender =
+  _CCCL_REQUIRES_EXPR((_DomainOrTag, _OpTag, _Sndr, variadic _Env), __declfn_t<_Sndr> __sndr, const _Env&... __env) //
+  ( //
+    noexcept(_DomainOrTag{}.transform_sender(_OpTag{}, __sndr(), __env...)) //
+  );
 
 template <class _Domain>
 _CCCL_CONCEPT __domain_like =
@@ -76,68 +89,78 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of applying the sender operation.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
-  _CCCL_NODEBUG_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
-    _Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
+  _CCCL_NODEBUG_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
+    noexcept(_Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) //
+    -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
   {
     return _Tag{}.apply_sender(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }
 
   //! @brief Transforms a sender with an optional environment.
   //!
+  //! @tparam _OpTag Either start_t or set_value_t.
   //! @tparam _Sndr The type of the sender.
   //! @tparam _Env The type of the environment.
   //! @param __sndr The sender to be transformed.
   //! @param __env The environment used for the transformation.
   //! @return The result of transforming the sender with the given environment.
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
-    noexcept(tag_of_t<_Sndr>{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env)))
-    -> __transform_sender_result_t<tag_of_t<_Sndr>, _Sndr, _Env>
+  _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env)
+  _CCCL_REQUIRES(__has_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
+    noexcept(__nothrow_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
+      -> __transform_sender_result_t<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>
   {
-    return tag_of_t<_Sndr>{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env);
+    return tag_of_t<_Sndr>{}.transform_sender(_OpTag{}, static_cast<_Sndr&&>(__sndr), __env);
   }
 
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
   [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
-  transform_sender(_Sndr&& __sndr) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
-  {
-    // FUTURE TODO: add a transform for the split sender once we have a split sender
-    return static_cast<_Sndr&&>(__sndr);
-  }
-
-  //! @overload
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Sndr>
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
-  transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
+  transform_sender(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t = {}) //
+    noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
 };
 
-namespace __detail
+//! @brief A wrapper around an environment that hides a set of queries.
+template <class _Env, class... _Queries>
+struct __hide_query
 {
-template <class _Env>
-struct __hide_scheduler
-{
+  static_assert(__nothrow_movable<_Env>);
+
+  _CCCL_API explicit constexpr __hide_query(_Env&& __env, _Queries...) noexcept
+      : __env_{static_cast<_Env&&>(__env)}
+  {}
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _As)
-  _CCCL_REQUIRES(__not_same_as<_Query, get_scheduler_t> _CCCL_AND __queryable_with<_Env, _Query, _As...>)
+  _CCCL_REQUIRES(__none_of<_Query, _Queries...> _CCCL_AND __queryable_with<_Env, _Query, _As...>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Query __query, const _As&... __as) const
-    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> decltype(auto)
+    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
     return __env_.query(__query, __as...);
   }
 
-  const _Env& __env_;
+private:
+  _Env __env_;
 };
 
 template <class _Env>
-_CCCL_HOST_DEVICE __hide_scheduler(const _Env&) -> __hide_scheduler<_Env>;
+struct __hide_scheduler : __hide_query<_Env, get_scheduler_t>
+{
+  _CCCL_API explicit constexpr __hide_scheduler(_Env&& __env) noexcept
+      : __hide_query<_Env, get_scheduler_t>{static_cast<_Env&&>(__env), {}}
+  {}
+};
 
+template <class _Env>
+_CCCL_HOST_DEVICE __hide_scheduler(_Env&&) -> __hide_scheduler<_Env>;
+
+namespace __detail
+{
 template <class _Sch>
 _CCCL_API auto __get_scheduler_domain() -> __call_result_t<get_completion_domain_t<set_value_t>, _Sch>;
 
@@ -183,7 +206,7 @@ struct get_domain_t
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
   {
     using __sch_t      = __scheduler_of_t<const _Env&>;
-    using __env_t      = __detail::__hide_scheduler<const _Env&>; // to prevent recursion
+    using __env_t      = __hide_scheduler<const _Env&>; // to prevent recursion
     using __cmpl_sch_t = __call_result_or_t<get_completion_scheduler_t<set_value_t>, __sch_t, __sch_t, __env_t>;
     using __domain_t   = __scheduler_domain_t<__cmpl_sch_t, __env_t>;
     static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
@@ -224,15 +247,32 @@ struct get_completion_domain_t
   };
 
 private:
+  template <class _Attrs, class... _Env, class _Domain>
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL auto __check_domain(_Domain) noexcept -> _Domain
+  {
+    // Sanity check: if a completion scheduler can be determined, then its domain must match
+    // the domain returned by the attributes.
+    if constexpr (__callable<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>)
+    {
+      using __sch_t = __call_result_t<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>;
+      if constexpr (!__same_as<__sch_t, _Attrs>) // prevent infinite recursion
+      {
+        static_assert(__same_as<_Domain, __scheduler_domain_t<__sch_t, const _Env&...>>,
+                      "the sender claims to complete on a domain that is not the domain of its completion scheduler");
+      }
+    }
+    return {};
+  }
+
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto __impl(const _Attrs&, const _Env&...) noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_domain() noexcept
   {
     // If __attrs has a completion domain, then return it:
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
     {
       using __domain_t = __call_result_t<__read_query_t, const _Attrs&, const _Env&...>;
       static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
-      return __domain_t{};
+      return __check_domain<_Attrs, _Env...>(__domain_t{});
     }
     // Otherwise, if __attrs has a completion scheduler, we can ask that scheduler for its
     // completion domain.
@@ -266,23 +306,26 @@ private:
     {
       return __call_result_t<get_domain_t, const _Env&...>{};
     }
+    // Otherwise, if we are asking "late" (with an environment), return the default_domain
+    else if constexpr (sizeof...(_Env) != 0)
+    {
+      return default_domain{};
+    }
     // Otherwise, no completion domain can be determined. Return void.
   }
 
   template <class _Attrs, class... _Env>
-  using __result_t = __unless_one_of_t<decltype(__impl(declval<_Attrs>(), declval<_Env>()...)), void>;
+  using __result_t = __unless_one_of_t<decltype(__get_domain<_Attrs, _Env...>()), void>;
 
 public:
-  using __tag_t = _Tag;
-
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, const _Env&...) const noexcept
-    -> __result_t<const _Attrs&, const _Env&...>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Attrs&, const _Env&...) const noexcept
+    -> __result_t<_Attrs, _Env...>
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -298,6 +341,9 @@ template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_error_t> get_completion_domain<set_error_t>{};
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_stopped_t> get_completion_domain<set_stopped_t>{};
+
+template <class _Tag, class _Sndr, class... _Env>
+using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, const _Env&...>;
 
 // Used by the schedule_from and continues_on senders
 struct get_domain_override_t
@@ -327,42 +373,6 @@ struct get_domain_override_t
 };
 
 _CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
-
-namespace __detail
-{
-template <class _Sndr, class _Env = void, class _Default = default_domain>
-_CCCL_NODEBUG_API constexpr auto __get_domain_impl() noexcept
-{
-  if constexpr (::cuda::std::is_void_v<_Env>)
-  {
-    // We are asking for the "early" domain, so ask the sender's attributes for a
-    // completion domain.
-    return __call_result_or_t<get_completion_domain_t<set_value_t>, _Default, env_of_t<_Sndr>, env<>&>{};
-  }
-  else
-  {
-    // We are asking for the "late" domain, so ask the environment for a domain unless
-    // the sender's attributes have a domain override.
-    if constexpr (__callable<get_domain_override_t, env_of_t<_Sndr>, _Env&>)
-    {
-      return __call_result_t<get_domain_override_t, env_of_t<_Sndr>, _Env&>{};
-    }
-    else
-    {
-      return __call_result_or_t<get_domain_t, _Default, _Env&>{};
-    }
-  }
-}
-} // namespace __detail
-
-template <class _Sndr, class... _EnvAndDefault>
-using __domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__get_domain_impl<_Sndr, _EnvAndDefault...>());
-
-template <class _Sndr, class _Default = default_domain>
-using __early_domain_of_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sndr, void, _Default>;
-
-template <class _Sndr, class _Env, class _Default = default_domain>
-using __late_domain_of_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sndr, _Env, _Default>;
 
 } // namespace cuda::experimental::execution
 
