@@ -24,10 +24,11 @@ def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
 def signature_from_annotations(func) -> numba.core.typing.Signature:
     """
     Create a numba signature from the annotations of a function.
+    Annotations can be provided as either numpy dtypes or numba types.
     The function is assumed to have only positional arguments.
 
-    If no annotations are provided, return None.
-    If the number of annotations does not match the number of arguments, raise a ValueError.
+    If no annotations are provided or if any argument (or the return type) has
+    no type annotation, raise a ValueError.
     """
 
     if len(func.__annotations__) == 0:
