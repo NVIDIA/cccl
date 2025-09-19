@@ -505,6 +505,9 @@ projects:
   target:
     name: 'Target'
     stds: [17, 20]
+  bisect:
+    name: 'Bisect'
+    stds: [17, 20]
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:

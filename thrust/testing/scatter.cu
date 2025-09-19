@@ -1,10 +1,9 @@
 #include <thrust/fill.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
-
-#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -250,20 +249,22 @@ void TestScatterCountingIterator()
 
   // source has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
-  thrust::scatter(cuda::make_counting_iterator(0), cuda::make_counting_iterator(10), map.begin(), output.begin());
+  thrust::scatter(thrust::make_counting_iterator(0), thrust::make_counting_iterator(10), map.begin(), output.begin());
 
   ASSERT_EQUAL(output, map);
 
   // map has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
-  thrust::scatter(source.begin(), source.end(), cuda::make_counting_iterator(0), output.begin());
+  thrust::scatter(source.begin(), source.end(), thrust::make_counting_iterator(0), output.begin());
 
   ASSERT_EQUAL(output, map);
 
   // source and map have any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
-  thrust::scatter(
-    cuda::make_counting_iterator(0), cuda::make_counting_iterator(10), cuda::make_counting_iterator(0), output.begin());
+  thrust::scatter(thrust::make_counting_iterator(0),
+                  thrust::make_counting_iterator(10),
+                  thrust::make_counting_iterator(0),
+                  output.begin());
 
   ASSERT_EQUAL(output, map);
 }
@@ -285,22 +286,22 @@ void TestScatterIfCountingIterator()
   // source has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
   thrust::scatter_if(
-    cuda::make_counting_iterator(0), cuda::make_counting_iterator(10), map.begin(), stencil.begin(), output.begin());
+    thrust::make_counting_iterator(0), thrust::make_counting_iterator(10), map.begin(), stencil.begin(), output.begin());
 
   ASSERT_EQUAL(output, map);
 
   // map has any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
-  thrust::scatter_if(source.begin(), source.end(), cuda::make_counting_iterator(0), stencil.begin(), output.begin());
+  thrust::scatter_if(source.begin(), source.end(), thrust::make_counting_iterator(0), stencil.begin(), output.begin());
 
   ASSERT_EQUAL(output, map);
 
   // source and map have any_system_tag
   thrust::fill(output.begin(), output.end(), 0);
   thrust::scatter_if(
-    cuda::make_counting_iterator(0),
-    cuda::make_counting_iterator(10),
-    cuda::make_counting_iterator(0),
+    thrust::make_counting_iterator(0),
+    thrust::make_counting_iterator(10),
+    thrust::make_counting_iterator(0),
     stencil.begin(),
     output.begin());
 

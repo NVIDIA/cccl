@@ -7,8 +7,6 @@
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
-#include <cuda/iterator>
-
 #include <iostream>
 
 #include <unittest/unittest.h>
@@ -143,7 +141,7 @@ struct TestNestedZipFunction
                                 thrust::make_permutation_iterator(PY.begin(), SS.begin())),
       thrust::make_zip_iterator(thrust::make_permutation_iterator(PX.begin(), ST.begin()),
                                 thrust::make_permutation_iterator(PY.begin(), ST.begin())));
-    auto idAndSegIt = thrust::make_zip_iterator(cuda::make_counting_iterator(0u), segIt);
+    auto idAndSegIt = thrust::make_zip_iterator(thrust::make_counting_iterator(0u), segIt);
 
     thrust::device_vector<bool> isMH{false, false, false};
     thrust::device_vector<bool> expected{false, false, true};

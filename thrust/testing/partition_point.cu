@@ -2,8 +2,6 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
-#include <cuda/iterator>
-
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -97,8 +95,8 @@ struct test_less_than
 
 void TestPartitionPointWithBigIndexesHelper(int magnitude)
 {
-  cuda::counting_iterator<long long> begin(0);
-  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
+  thrust::counting_iterator<long long> begin(0);
+  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   test_less_than fn = {(1ll << magnitude) - 17};

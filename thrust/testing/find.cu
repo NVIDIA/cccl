@@ -2,7 +2,6 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
-#include <cuda/iterator>
 #include <cuda/std/cstdint>
 
 #include <unittest/unittest.h>
@@ -283,8 +282,8 @@ VariableUnitTest<TestFindIfNot, SignedIntegralTypes> TestFindIfNotInstance;
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {
-  cuda::counting_iterator<long long> begin(1);
-  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
+  thrust::counting_iterator<long long> begin(1);
+  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));

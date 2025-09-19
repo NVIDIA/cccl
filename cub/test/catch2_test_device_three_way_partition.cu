@@ -30,6 +30,7 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
@@ -38,7 +39,6 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
-#include <cuda/iterator>
 #include <cuda/std/utility>
 
 #include "catch2_large_problem_helper.cuh"
@@ -475,7 +475,7 @@ try
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));
 
-  auto in = cuda::make_counting_iterator(offset_t{0});
+  auto in = thrust::make_counting_iterator(offset_t{0});
 
   auto first_selector  = mod_equal_to<offset_t>{3, 0};
   auto second_selector = mod_equal_to<offset_t>{3, 1};
