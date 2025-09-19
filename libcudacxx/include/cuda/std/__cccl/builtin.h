@@ -585,11 +585,6 @@
 #  define _CCCL_BUILTIN_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivial) && gcc >= 4.5
 
-#if _CCCL_CHECK_BUILTIN(is_trivially_assignable) || _CCCL_COMPILER(GCC, >=, 5, 1) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_trivially_assignable) && gcc >= 5.1
-
 #if _CCCL_CHECK_BUILTIN(is_trivially_constructible) || _CCCL_COMPILER(GCC, >=, 5, 1) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
