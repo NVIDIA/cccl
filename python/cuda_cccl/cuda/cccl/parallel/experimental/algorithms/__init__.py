@@ -17,6 +17,8 @@ from ._sort._merge_sort import make_merge_sort as make_merge_sort
 from ._sort._merge_sort import merge_sort as merge_sort
 from ._sort._radix_sort import make_radix_sort as make_radix_sort
 from ._sort._radix_sort import radix_sort as radix_sort
+from ._sort._segmented_sort import make_segmented_sort as make_segmented_sort
+from ._sort._segmented_sort import segmented_sort as segmented_sort
 from ._sort._sort_common import DoubleBuffer, SortOrder
 from ._transform import binary_transform, unary_transform
 from ._transform import make_binary_transform as make_binary_transform
@@ -45,6 +47,8 @@ __all__ = [
     "make_segmented_reduce",
     "unique_by_key",
     "make_unique_by_key",
+    "segmented_sort",
+    "make_segmented_sort",
     "DoubleBuffer",
     "SortOrder",
 ]
