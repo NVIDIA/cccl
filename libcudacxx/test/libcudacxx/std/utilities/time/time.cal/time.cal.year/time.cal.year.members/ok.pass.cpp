@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,10 +21,11 @@
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using year = cuda::std::chrono::year;
 
@@ -35,9 +37,8 @@ int main(int, char**)
 
   static_assert(noexcept(year::min()));
   static_assert(cuda::std::is_same_v<year, decltype(year::min())>);
-
-  static_assert(static_cast<int>(year::min()) == -32767, "");
-  static_assert(static_cast<int>(year::max()) == 32767, "");
+  assert(static_cast<int>(year::min()) == -32767);
+  assert(static_cast<int>(year::max()) == 32767);
 
   assert(year{-20001}.ok());
   assert(year{-2000}.ok());
@@ -47,7 +48,13 @@ int main(int, char**)
   assert(year{2000}.ok());
   assert(year{20001}.ok());
 
-  static_assert(!year{-32768}.ok(), "");
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }
