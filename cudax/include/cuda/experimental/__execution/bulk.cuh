@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
@@ -40,6 +41,7 @@
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
@@ -73,12 +75,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
     return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
   }
 
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-    -> decltype(auto)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
-    return execution::get_env(__sndr_).query(_Query{});
+    return execution::get_env(__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   _Shape __shape_;
@@ -104,7 +108,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       // different signatures, so we need to type-check them separately.
       if constexpr (_BulkTag::__is_chunked())
       {
-        if constexpr (_CUDA_VSTD::__is_callable_v<_Fn&, _Shape, _Shape, _Ts&...>)
+        if constexpr (__callable<_Fn&, _Shape, _Shape, _Ts&...>)
         {
           return completion_signatures<set_value_t(_Ts...)>{}
                + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Shape, _Ts&...>>();
@@ -117,7 +121,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
                                               _WITH_ARGUMENTS(_Shape, _Shape, _Ts & ...)>();
         }
       }
-      else if constexpr (_CUDA_VSTD::__is_callable_v<_Fn&, _Shape, _Ts&...>)
+      else if constexpr (__callable<_Fn&, _Shape, _Ts&...>)
       {
         return completion_signatures<set_value_t(_Ts...)>{}
              + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Ts&...>>();
@@ -148,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -184,20 +188,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
     {
       static_assert(__is_sender<_Sndr>);
 
-      using __domain_t = __early_domain_of_t<_Sndr>;
-      using __sndr_t   = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
-
       if constexpr (!dependent_sender<_Sndr>)
       {
+        using __sndr_t = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
         __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
       }
 
-      return transform_sender(__domain_t{},
-                              __sndr_t{{{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}});
+      return typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>{
+        {{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}};
     }
 
     _CCCL_NO_UNIQUE_ADDRESS _Policy __policy_;
@@ -225,7 +227,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     // not have `connect` functions, since they should never be called. Hence, we
     // constrain these functions with !same_as<_BulkTag, bulk_t>.
     _CCCL_TEMPLATE(class _Rcvr)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_BulkTag, bulk_t>) )
+    _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>{
@@ -236,7 +238,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     }
 
     _CCCL_TEMPLATE(class _Rcvr)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_BulkTag, bulk_t>) )
+    _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>{
@@ -265,10 +267,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // This function call operator creates a sender adaptor closure object that can appear
   // on the right-hand side of a pipe operator, like: sndr | bulk(par, shape, fn).
   template <class _Policy, class _Shape, class _Fn>
-  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
   {
-    static_assert(_CUDA_VSTD::integral<_Shape>);
-    static_assert(is_execution_policy_v<_Policy>);
+    static_assert(::cuda::std::integral<_Shape>);
+    static_assert(::cuda::std::is_execution_policy_v<_Policy>);
     using __closure_t = typename _BulkTag::template __closure_t<_Policy, _Shape, _Fn>;
     return __closure_t{{__policy, __shape, static_cast<_Fn&&>(__fn)}};
   }
@@ -387,7 +389,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Ts>
-    _CCCL_TRIVIAL_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
+    _CCCL_NODEBUG_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
       __nothrow_callable<_Fn&, _Shape, decltype(__values)&...>)
     {
       for (; __begin != __end; ++__begin)
@@ -403,9 +405,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t)
+  [[nodiscard]] _CCCL_API static auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
-    static_assert(_CUDA_VSTD::is_same_v<tag_of_t<_Sndr>, bulk_t>);
+    static_assert(__same_as<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
     auto& [__policy, __shape, __fn] = __data;
 
@@ -413,10 +415,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
 
     // Lower `bulk` to `bulk_chunked`. If `bulk_chunked` has a late customization, we will
     // see the customization.
-    return bulk_chunked(_CUDA_VSTD::forward_like<_Sndr>(__child),
+    return bulk_chunked(::cuda::std::forward_like<_Sndr>(__child),
                         __policy,
                         __shape,
-                        __chunked_fn_t{_CUDA_VSTD::forward_like<_Sndr>(__fn)});
+                        __chunked_fn_t{::cuda::std::forward_like<_Sndr>(__fn)});
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept

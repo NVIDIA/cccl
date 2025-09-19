@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_SCOPES_H
-#define __LIBCUDACXX___ATOMIC_SCOPES_H
+#ifndef __CUDA_STD___ATOMIC_SCOPES_H
+#define __CUDA_STD___ATOMIC_SCOPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // REMEMBER CHANGES TO THESE ARE ABI BREAKING
 // TODO: Space values out for potential new scopes
@@ -84,22 +84,22 @@ struct __scope_enum_to_tag<(int) thread_scope_system>
 template <int _Scope>
 using __scope_to_tag = typename __scope_enum_to_tag<_Scope>::__tag;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
-using _CUDA_VSTD::thread_scope;
-using _CUDA_VSTD::thread_scope_block;
-using _CUDA_VSTD::thread_scope_device;
-using _CUDA_VSTD::thread_scope_system;
-using _CUDA_VSTD::thread_scope_thread;
+using ::cuda::std::thread_scope;
+using ::cuda::std::thread_scope_block;
+using ::cuda::std::thread_scope_device;
+using ::cuda::std::thread_scope_system;
+using ::cuda::std::thread_scope_thread;
 
-using _CUDA_VSTD::__thread_scope_block_tag;
-using _CUDA_VSTD::__thread_scope_device_tag;
-using _CUDA_VSTD::__thread_scope_system_tag;
+using ::cuda::std::__thread_scope_block_tag;
+using ::cuda::std::__thread_scope_device_tag;
+using ::cuda::std::__thread_scope_system_tag;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_SCOPES_H
+#endif // __CUDA_STD___ATOMIC_SCOPES_H

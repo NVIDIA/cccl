@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_OPTIONAL_H
-#define _LIBCUDACXX___OPTIONAL_OPTIONAL_H
+#ifndef _CUDA_STD___OPTIONAL_OPTIONAL_H
+#define _CUDA_STD___OPTIONAL_OPTIONAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +48,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // suppress bogus unreachable code warning
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Constraints
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
@@ -127,25 +130,25 @@ public:
   _CCCL_TEMPLATE(class _In_place_t, class... _Args)
   _CCCL_REQUIRES(is_same_v<_In_place_t, in_place_t> _CCCL_AND is_constructible_v<value_type, _Args...>)
   _CCCL_API constexpr explicit optional(_In_place_t, _Args&&... __args)
-      : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<value_type, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
-      : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up = value_type)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr optional(_Up&& __v)
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__v))
+      : __base(in_place, ::cuda::std::forward<_Up>(__v))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_U<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr explicit optional(_Up&& __v)
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__v))
+      : __base(in_place, ::cuda::std::forward<_Up>(__v))
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -184,7 +187,7 @@ public:
                    __opt_is_implictly_constructible<_Tp, _Up> _CCCL_AND(!is_reference_v<_Up>))
   _CCCL_API constexpr optional(optional<_Up>&& __v)
   {
-    this->__construct_from(_CUDA_VSTD::move(__v));
+    this->__construct_from(::cuda::std::move(__v));
   }
 
   _CCCL_TEMPLATE(class _Up)
@@ -192,29 +195,30 @@ public:
                    __opt_is_explictly_constructible<_Tp, _Up> _CCCL_AND(!is_reference_v<_Up>))
   _CCCL_API constexpr explicit optional(optional<_Up>&& __v)
   {
-    this->__construct_from(_CUDA_VSTD::move(__v));
+    this->__construct_from(::cuda::std::move(__v));
   }
 #else // ^^^ CCCL_ENABLE_OPTIONAL_REF ^^^ / vvv !CCCL_ENABLE_OPTIONAL_REF vvv
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_implictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr optional(optional<_Up>&& __v)
   {
-    this->__construct_from(_CUDA_VSTD::move(__v));
+    this->__construct_from(::cuda::std::move(__v));
   }
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(__opt_is_constructible_from_opt<_Tp, _Up> _CCCL_AND __opt_is_explictly_constructible<_Tp, _Up>)
   _CCCL_API constexpr explicit optional(optional<_Up>&& __v)
   {
-    this->__construct_from(_CUDA_VSTD::move(__v));
+    this->__construct_from(::cuda::std::move(__v));
   }
 #endif // !CCCL_ENABLE_OPTIONAL_REF
 
 private:
   template <class _Fp, class... _Args>
   _CCCL_API constexpr explicit optional(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-      : __base(
-          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(__optional_construct_from_invoke_tag{},
+               ::cuda::std::forward<_Fp>(__f),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
 public:
@@ -234,11 +238,11 @@ public:
   {
     if (this->has_value())
     {
-      this->__get() = _CUDA_VSTD::forward<_Up>(__v);
+      this->__get() = ::cuda::std::forward<_Up>(__v);
     }
     else
     {
-      this->__construct(_CUDA_VSTD::forward<_Up>(__v));
+      this->__construct(::cuda::std::forward<_Up>(__v));
     }
     return *this;
   }
@@ -275,7 +279,7 @@ public:
   _CCCL_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _CCCL_AND __opt_is_assignable<_Tp, _Up>)
   _CCCL_API constexpr optional& operator=(optional<_Up>&& __v)
   {
-    this->__assign_from(_CUDA_VSTD::move(__v));
+    this->__assign_from(::cuda::std::move(__v));
     return *this;
   }
 
@@ -283,7 +287,7 @@ public:
   _CCCL_API constexpr _Tp& emplace(_Args&&... __args)
   {
     reset();
-    this->__construct(_CUDA_VSTD::forward<_Args>(__args)...);
+    this->__construct(::cuda::std::forward<_Args>(__args)...);
     return this->__get();
   }
 
@@ -293,7 +297,7 @@ public:
   _CCCL_API constexpr _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
     reset();
-    this->__construct(__il, _CUDA_VSTD::forward<_Args>(__args)...);
+    this->__construct(__il, ::cuda::std::forward<_Args>(__args)...);
     return this->__get();
   }
 
@@ -303,7 +307,7 @@ public:
   {
     if (this->has_value() == __opt.has_value())
     {
-      using _CUDA_VSTD::swap;
+      using ::cuda::std::swap;
       if (this->has_value())
       {
         swap(this->__get(), __opt.__get());
@@ -313,12 +317,12 @@ public:
     {
       if (this->has_value())
       {
-        __opt.__construct(_CUDA_VSTD::move(this->__get()));
+        __opt.__construct(::cuda::std::move(this->__get()));
         reset();
       }
       else
       {
-        this->__construct(_CUDA_VSTD::move(__opt.__get()));
+        this->__construct(::cuda::std::move(__opt.__get()));
         __opt.reset();
       }
     }
@@ -327,13 +331,13 @@ public:
   _CCCL_API constexpr add_pointer_t<value_type const> operator->() const
   {
     _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
-    return _CUDA_VSTD::addressof(this->__get());
+    return ::cuda::std::addressof(this->__get());
   }
 
   _CCCL_API constexpr add_pointer_t<value_type> operator->()
   {
     _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
-    return _CUDA_VSTD::addressof(this->__get());
+    return ::cuda::std::addressof(this->__get());
   }
 
   _CCCL_API constexpr const value_type& operator*() const& noexcept
@@ -351,13 +355,13 @@ public:
   _CCCL_API constexpr value_type&& operator*() && noexcept
   {
     _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
-    return _CUDA_VSTD::move(this->__get());
+    return ::cuda::std::move(this->__get());
   }
 
   _CCCL_API constexpr const value_type&& operator*() const&& noexcept
   {
     _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
-    return _CUDA_VSTD::move(this->__get());
+    return ::cuda::std::move(this->__get());
   }
 
   _CCCL_API constexpr explicit operator bool() const noexcept
@@ -392,7 +396,7 @@ public:
     {
       __throw_bad_optional_access();
     }
-    return _CUDA_VSTD::move(this->__get());
+    return ::cuda::std::move(this->__get());
   }
 
   _CCCL_API constexpr value_type const&& value() const&&
@@ -401,7 +405,7 @@ public:
     {
       __throw_bad_optional_access();
     }
-    return _CUDA_VSTD::move(this->__get());
+    return ::cuda::std::move(this->__get());
   }
 
   template <class _Up>
@@ -409,7 +413,7 @@ public:
   {
     static_assert(is_copy_constructible_v<value_type>, "optional<T>::value_or: T must be copy constructible");
     static_assert(is_convertible_v<_Up, value_type>, "optional<T>::value_or: U must be convertible to T");
-    return this->has_value() ? this->__get() : static_cast<value_type>(_CUDA_VSTD::forward<_Up>(__v));
+    return this->has_value() ? this->__get() : static_cast<value_type>(::cuda::std::forward<_Up>(__v));
   }
 
   template <class _Up>
@@ -417,7 +421,8 @@ public:
   {
     static_assert(is_move_constructible_v<value_type>, "optional<T>::value_or: T must be move constructible");
     static_assert(is_convertible_v<_Up, value_type>, "optional<T>::value_or: U must be convertible to T");
-    return this->has_value() ? _CUDA_VSTD::move(this->__get()) : static_cast<value_type>(_CUDA_VSTD::forward<_Up>(__v));
+    return this->has_value() ? ::cuda::std::move(this->__get())
+                             : static_cast<value_type>(::cuda::std::forward<_Up>(__v));
   }
 
   template <class _Func>
@@ -428,7 +433,7 @@ public:
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), this->__get());
+      return ::cuda::std::invoke(::cuda::std::forward<_Func>(__f), this->__get());
     }
     return remove_cvref_t<_Up>();
   }
@@ -441,7 +446,7 @@ public:
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), this->__get());
+      return ::cuda::std::invoke(::cuda::std::forward<_Func>(__f), this->__get());
     }
     return remove_cvref_t<_Up>();
   }
@@ -454,7 +459,7 @@ public:
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), _CUDA_VSTD::move(this->__get()));
+      return ::cuda::std::invoke(::cuda::std::forward<_Func>(__f), ::cuda::std::move(this->__get()));
     }
     return remove_cvref_t<_Up>();
   }
@@ -467,7 +472,7 @@ public:
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), _CUDA_VSTD::move(this->__get()));
+      return ::cuda::std::invoke(::cuda::std::forward<_Func>(__f), ::cuda::std::move(this->__get()));
     }
     return remove_cvref_t<_Up>();
   }
@@ -482,7 +487,7 @@ public:
     static_assert(is_object_v<_Up>, "Result of f(value()) should be an object type");
     if (this->__engaged_)
     {
-      return optional<_Up>(__optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Func>(__f), this->__get());
+      return optional<_Up>(__optional_construct_from_invoke_tag{}, ::cuda::std::forward<_Func>(__f), this->__get());
     }
     return optional<_Up>();
   }
@@ -497,7 +502,7 @@ public:
     static_assert(is_object_v<_Up>, "Result of f(value()) should be an object type");
     if (this->__engaged_)
     {
-      return optional<_Up>(__optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Func>(__f), this->__get());
+      return optional<_Up>(__optional_construct_from_invoke_tag{}, ::cuda::std::forward<_Func>(__f), this->__get());
     }
     return optional<_Up>();
   }
@@ -513,7 +518,7 @@ public:
     if (this->__engaged_)
     {
       return optional<_Up>(
-        __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Func>(__f), _CUDA_VSTD::move(this->__get()));
+        __optional_construct_from_invoke_tag{}, ::cuda::std::forward<_Func>(__f), ::cuda::std::move(this->__get()));
     }
     return optional<_Up>();
   }
@@ -529,7 +534,7 @@ public:
     if (this->__engaged_)
     {
       return optional<_Up>(
-        __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Func>(__f), _CUDA_VSTD::move(this->__get()));
+        __optional_construct_from_invoke_tag{}, ::cuda::std::forward<_Func>(__f), ::cuda::std::move(this->__get()));
     }
     return optional<_Up>();
   }
@@ -544,7 +549,7 @@ public:
     {
       return *this;
     }
-    return _CUDA_VSTD::forward<_Func>(__f)();
+    return ::cuda::std::forward<_Func>(__f)();
   }
 
   _CCCL_TEMPLATE(class _Func, class _Tp2 = _Tp)
@@ -555,9 +560,9 @@ public:
                   "Result of f() should be the same type as this optional");
     if (this->__engaged_)
     {
-      return _CUDA_VSTD::move(*this);
+      return ::cuda::std::move(*this);
     }
-    return _CUDA_VSTD::forward<_Func>(__f)();
+    return ::cuda::std::forward<_Func>(__f)();
   }
 
   using __base::reset;
@@ -845,8 +850,10 @@ swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
   __x.swap(__y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_OPTIONAL_H
+#endif // _CUDA_STD___OPTIONAL_OPTIONAL_H

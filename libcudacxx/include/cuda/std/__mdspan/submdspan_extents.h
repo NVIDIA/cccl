@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_SUBMDSPAN_EXTENTS_H
-#define _LIBCUDACXX___MDSPAN_SUBMDSPAN_EXTENTS_H
+#ifndef _CUDA_STD___MDSPAN_SUBMDSPAN_EXTENTS_H
+#define _CUDA_STD___MDSPAN_SUBMDSPAN_EXTENTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Helper to get an index_sequence of all slices that are not convertible to index_type
 template <class _IndexType, class... _Slices, size_t... _FilteredIndices>
@@ -57,12 +57,12 @@ template <class _IndexType, class... _Slices, size_t... _SliceIndices, size_t _C
   using _SliceType = __get_slice_type<_CurrentIndex, _Slices...>;
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
-    return _CUDA_VSTD::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
+    return ::cuda::std::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
       index_sequence<_SliceIndices...>{}, index_sequence<_Remaining...>{});
   }
   else
   {
-    return _CUDA_VSTD::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
+    return ::cuda::std::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
       index_sequence<_SliceIndices..., _CurrentIndex>{}, index_sequence<_Remaining...>{});
   }
   _CCCL_UNREACHABLE();
@@ -103,8 +103,8 @@ struct __get_subextent
     // [mdspan.sub.extents-4.2.2]
     else if constexpr (__subextents_is_index_pair<_Extents, _SliceType>)
     {
-      return _CUDA_VSTD::__de_ice(tuple_element_t<1, _SliceType>())
-           - _CUDA_VSTD::__de_ice(tuple_element_t<0, _SliceType>());
+      return ::cuda::std::__de_ice(tuple_element_t<1, _SliceType>())
+           - ::cuda::std::__de_ice(tuple_element_t<0, _SliceType>());
     }
     // [mdspan.sub.extents-4.2.3]
     else if constexpr (__subextents_is_strided_slice_zero_extent<_Extents, _SliceType>)
@@ -115,8 +115,8 @@ struct __get_subextent
     else if constexpr (__subextents_is_strided_slice<_SliceType>)
     {
       return 1
-           + (_CUDA_VSTD::__de_ice(typename _SliceType::extent_type()) - 1)
-               / _CUDA_VSTD::__de_ice(typename _SliceType::stride_type());
+           + (::cuda::std::__de_ice(typename _SliceType::extent_type()) - 1)
+               / ::cuda::std::__de_ice(typename _SliceType::stride_type());
     }
     else
     {
@@ -134,16 +134,16 @@ struct __get_subextent
     // [mdspan.sub.extents-5.1]
     if constexpr (__is_strided_slice<remove_cv_t<_SliceType>>)
     {
-      _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_SliceIndex>(__slices...);
+      _SliceType& __slice = ::cuda::std::__get_slice_at<_SliceIndex>(__slices...);
       return __slice.extent == 0
              ? 0
-             : 1 + (_CUDA_VSTD::__de_ice(__slice.extent) - 1) / _CUDA_VSTD::__de_ice(__slice.stride);
+             : 1 + (::cuda::std::__de_ice(__slice.extent) - 1) / ::cuda::std::__de_ice(__slice.stride);
     }
     // [mdspan.sub.extents-5.2]
     else
     {
-      return _CUDA_VSTD::__last_extent_from_slice<_SliceIndex>(__src, __slices...)
-           - _CUDA_VSTD::__first_extent_from_slice<typename _Extents::index_type, _SliceIndex>(__slices...);
+      return ::cuda::std::__last_extent_from_slice<_SliceIndex>(__src, __slices...)
+           - ::cuda::std::__first_extent_from_slice<typename _Extents::index_type, _SliceIndex>(__slices...);
     }
     _CCCL_UNREACHABLE();
   }
@@ -163,7 +163,7 @@ struct __get_subextent
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Extents& __src, _Slices... __slices) noexcept
   {
     const auto __filtered_indices = __filter_slices_convertible_to_index<typename _Extents::index_type, _Slices...>(
-      index_sequence<>{}, _CUDA_VSTD::index_sequence_for<_Slices...>());
+      index_sequence<>{}, ::cuda::std::index_sequence_for<_Slices...>());
     return __impl(__filtered_indices, __src, __slices...);
   }
 };
@@ -184,10 +184,10 @@ _CCCL_REQUIRES((_Extents::rank() == sizeof...(_Slices)))
 
 template <class _Extents, class... _Slices>
 using __get_subextents_t =
-  decltype(_CUDA_VSTD::submdspan_extents(_CUDA_VSTD::declval<_Extents>(), _CUDA_VSTD::declval<_Slices>()...));
+  decltype(::cuda::std::submdspan_extents(::cuda::std::declval<_Extents>(), ::cuda::std::declval<_Slices>()...));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_EXTENTS_H
+#endif // _CUDA_STD___MDSPAN_SUBMDSPAN_EXTENTS_H

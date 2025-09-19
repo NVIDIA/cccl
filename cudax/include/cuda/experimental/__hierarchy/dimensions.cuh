@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_DIMENSIONS
-#define _CUDAX__HIERARCHY_DIMENSIONS
+#ifndef _CUDAX__HIERARCHY_DIMENSIONS_CUH
+#define _CUDAX__HIERARCHY_DIMENSIONS_CUH
 
 #include <cuda/std/functional>
 #include <cuda/std/mdspan>
@@ -160,4 +160,4 @@ template <typename TyTrunc, typename Index, typename Dims>
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_DIMENSIONS
+#endif // _CUDAX__HIERARCHY_DIMENSIONS_CUH

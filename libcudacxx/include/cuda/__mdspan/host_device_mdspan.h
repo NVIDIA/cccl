@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
-#define _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
+#ifndef _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H
+#define _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,38 +26,38 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _ElementType,
           typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using host_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>>;
+          typename _LayoutPolicy   = ::cuda::std::layout_right,
+          typename _AccessorPolicy = ::cuda::std::default_accessor<_ElementType>>
+using host_mdspan = ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>>;
 
 template <typename _ElementType,
           typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using device_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>>;
+          typename _LayoutPolicy   = ::cuda::std::layout_right,
+          typename _AccessorPolicy = ::cuda::std::default_accessor<_ElementType>>
+using device_mdspan = ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>>;
 
 template <typename _ElementType,
           typename _Extents,
-          typename _LayoutPolicy   = _CUDA_VSTD::layout_right,
-          typename _AccessorPolicy = _CUDA_VSTD::default_accessor<_ElementType>>
-using managed_mdspan = _CUDA_VSTD::mdspan<_ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>>;
+          typename _LayoutPolicy   = ::cuda::std::layout_right,
+          typename _AccessorPolicy = ::cuda::std::default_accessor<_ElementType>>
+using managed_mdspan = ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>>;
 
 /***********************************************************************************************************************
  * Accessibility Traits
  **********************************************************************************************************************/
 
 template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
-inline constexpr bool is_host_accessible_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_host_accessible_v<_Ap>;
+inline constexpr bool is_host_accessible_v<::cuda::std::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_host_accessible_v<_Ap>;
 
 template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
-inline constexpr bool is_device_accessible_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_device_accessible_v<_Ap>;
+inline constexpr bool is_device_accessible_v<::cuda::std::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_device_accessible_v<_Ap>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
+#endif // _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H

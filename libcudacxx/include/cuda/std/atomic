@@ -49,7 +49,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 _CCCL_API inline _Tp kill_dependency(_Tp __y) noexcept
@@ -811,7 +811,7 @@ using atomic_unsigned_lock_free = atomic<unsigned>;
 #define LIBCUDACXX_ATOMIC_FLAG_INIT     {false}
 #define LIBCUDACXX_ATOMIC_VAR_INIT(__v) {__v}
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -37,45 +37,63 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#  include <thrust/distance.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
+#  include <cub/device/device_transform.cuh>
+
+#  include <thrust/fill.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-namespace __fill
+template <typename T>
+struct __return_constant
 {
-// fill functor
-template <class Iterator, class T>
-struct functor
-{
-  Iterator it;
   T value;
 
-  template <class Size>
-  THRUST_DEVICE_FUNCTION void operator()(Size idx)
+  THRUST_DEVICE_FUNCTION auto operator()() const -> T
   {
-    it[idx] = value;
+    return value;
   }
-}; // struct functor
-} // namespace __fill
+};
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
-  cuda_cub::parallel_for(policy, __fill::functor<OutputIterator, T>{first, value}, count);
-
-  return first + count;
-} // func fill_n
+  THRUST_CDP_DISPATCH(
+    (using Predicate   = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
+     using TransformOp = __return_constant<T>;
+     cudaError_t status;
+     THRUST_INDEX_TYPE_DISPATCH(
+       status,
+       (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
+         CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
+         decltype(count_fixed),
+         ::cuda::std::tuple<>,
+         OutputIterator,
+         Predicate,
+         TransformOp>::dispatch),
+       count,
+       (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
+     throw_on_error(status, "fill_n: failed inside CUB");
+     throw_on_error(synchronize_optional(policy), "fill_n: failed to synchronize");
+     return first + count;),
+    (return thrust::fill_n(cvt_to_seq(derived_cast(policy)), first, count, value);));
+}
 
 template <class Derived, class ForwardIterator, class T>
 void _CCCL_HOST_DEVICE
 fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator last, const T& value)
 {
   cuda_cub::fill_n(policy, first, ::cuda::std::distance(first, last), value);
-} // func fill
+}
 
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

@@ -33,12 +33,13 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
+
+#include <cuda/std/iterator>
 
 #include <algorithm>
 
@@ -496,7 +497,7 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
 
       auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
       auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<key_t>{});
-      auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
+      auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
       thrust::copy(rev_sorted_it, rev_sorted_it + num_items, keys_in_out.begin());
 
       // Perform sort

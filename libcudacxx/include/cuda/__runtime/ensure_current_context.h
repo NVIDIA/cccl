@@ -30,7 +30,7 @@
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 class stream_ref;
 
 //! @brief RAII helper which on construction sets the current context to the specified one.
@@ -47,7 +47,7 @@ struct [[maybe_unused]] __ensure_current_context
   explicit __ensure_current_context(device_ref __new_device)
   {
     auto __ctx = devices[__new_device.get()].primary_context();
-    _CUDA_DRIVER::__ctxPush(__ctx);
+    ::cuda::__driver::__ctxPush(__ctx);
   }
 
   //! @brief Construct a new `__ensure_current_context` object and switch to the specified
@@ -58,7 +58,7 @@ struct [[maybe_unused]] __ensure_current_context
   //! @throws cuda_error if the context switch fails
   explicit __ensure_current_context(::CUcontext __ctx)
   {
-    _CUDA_DRIVER::__ctxPush(__ctx);
+    ::cuda::__driver::__ctxPush(__ctx);
   }
 
   //! @brief Construct a new `__ensure_current_context` object and switch to the context
@@ -82,11 +82,11 @@ struct [[maybe_unused]] __ensure_current_context
   ~__ensure_current_context() noexcept(false)
   {
     // TODO would it make sense to assert here that we pushed and popped the same thing?
-    _CUDA_DRIVER::__ctxPop();
+    ::cuda::__driver::__ctxPop();
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 

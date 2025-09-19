@@ -29,7 +29,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
@@ -712,7 +712,7 @@ struct compute_capability_t
 static constexpr compute_capability_t compute_capability{};
 } // namespace device_attributes
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -22,7 +22,7 @@
 
 namespace cudax = cuda::experimental;
 
-using managed_resource = cudax::managed_memory_resource;
+using managed_resource = cudax::legacy_managed_memory_resource;
 static_assert(!cuda::std::is_trivial<managed_resource>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<managed_resource>::value, "");
 static_assert(cuda::std::is_trivially_copy_constructible<managed_resource>::value, "");
@@ -77,26 +77,6 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
     res.deallocate_sync(ptr, 42, 4);
   }
 
-  { // allocate / deallocate
-    auto* ptr = res.allocate(stream, 42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-
-    stream.sync();
-    ensure_managed_ptr(ptr);
-
-    res.deallocate(stream, ptr, 42);
-  }
-
-  { // allocate / deallocate with alignment
-    auto* ptr = res.allocate(stream, 42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-
-    stream.sync();
-    ensure_managed_ptr(ptr);
-
-    res.deallocate(stream, ptr, 42, 4);
-  }
-
 #if _CCCL_HAS_EXCEPTIONS()
   { // allocate_sync with too small alignment
     while (true)
@@ -119,35 +99,6 @@ C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
       try
       {
         [[maybe_unused]] auto* ptr = res.allocate_sync(5, 1337);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
-  { // allocate with too small alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate(stream, 5, 42);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
-
-  { // allocate with non matching alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate(stream, 5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -199,9 +150,9 @@ static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cudax::managed_memory_resource
+struct derived_managed_resource : cudax::legacy_managed_memory_resource
 {
-  using cudax::managed_memory_resource::managed_memory_resource;
+  using cudax::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
 static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
 
@@ -220,26 +171,16 @@ C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
     CHECK(!(first == second));
   }
 
-  { // comparison against a managed_memory_resource wrapped inside a resource_ref<device_accessible>
+  { // comparison against a managed_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     managed_resource second{};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::synchronous_resource_ref<cudax::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a managed_memory_resource wrapped inside a async_resource_ref
-    managed_resource second{};
-    cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
-
-    CHECK((first == second_ref));
-    CHECK(!(first != second_ref));
-    CHECK((second_ref == first));
-    CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a different managed_resource through resource_ref
+  { // comparison against a different managed_resource through synchronous_resource_ref
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     CHECK(!(first == host_resource));
@@ -253,7 +194,7 @@ C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
     CHECK((device_resource != first));
   }
 
-  { // comparison against a different managed_resource through resource_ref
+  { // comparison against a different managed_resource through synchronous_resource_ref
     resource<AccessibilityType::Host> host_async_resource{};
     resource<AccessibilityType::Device> device_async_resource{};
     CHECK(!(first == host_async_resource));

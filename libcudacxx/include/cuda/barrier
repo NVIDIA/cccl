@@ -51,7 +51,7 @@ typedef struct CUtensorMap_st CUtensorMap;
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 
 // Experimental exposure of TMA PTX:
 //
@@ -71,63 +71,63 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
 inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
-  void* __dest, const void* __src, _CUDA_VSTD::uint32_t __size, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
+  void* __dest, const void* __src, ::cuda::std::uint32_t __size, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
   _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared),
                "Destination must be shared memory address.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__src, ::cuda::device::address_space::global),
                "Source must be global memory address.");
 
-  _CUDA_VPTX::cp_async_bulk(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __src,
     __size,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-inline _CCCL_DEVICE void cp_async_bulk_shared_to_global(void* __dest, const void* __src, _CUDA_VSTD::uint32_t __size)
+inline _CCCL_DEVICE void cp_async_bulk_shared_to_global(void* __dest, const void* __src, ::cuda::std::uint32_t __size)
 {
   _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::global),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__dest, ::cuda::device::address_space::global),
                "Destination must be global memory address.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::shared),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__src, ::cuda::device::address_space::shared),
                "Source must be shared memory address.");
 
-  _CUDA_VPTX::cp_async_bulk(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __dest, __src, __size);
+  ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __dest, __src, __size);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void cp_async_bulk_tensor_1d_global_to_shared(
   void* __dest, const CUtensorMap* __tensor_map, int __c0, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0};
+  const ::cuda::std::int32_t __coords[]{__c0};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk_tensor(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
     __coords,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void cp_async_bulk_tensor_2d_global_to_shared(
   void* __dest, const CUtensorMap* __tensor_map, int __c0, int __c1, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk_tensor(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
     __coords,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
@@ -139,15 +139,15 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_global_to_shared(
   int __c2,
   ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk_tensor(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
     __coords,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
@@ -160,15 +160,15 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_global_to_shared(
   int __c3,
   ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2, __c3};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk_tensor(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
     __coords,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
@@ -182,72 +182,72 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_global_to_shared(
   int __c4,
   ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(
-    _CUDA_VPTX::space_cluster,
-    _CUDA_VPTX::space_global,
+  ::cuda::ptx::cp_async_bulk_tensor(
+    ::cuda::ptx::space_cluster,
+    ::cuda::ptx::space_global,
     __dest,
     __tensor_map,
     __coords,
-    _CUDA_DEVICE::barrier_native_handle(__bar));
+    ::cuda::device::barrier_native_handle(__bar));
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void
 cp_async_bulk_tensor_1d_shared_to_global(const CUtensorMap* __tensor_map, int __c0, const void* __src)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0};
+  const ::cuda::std::int32_t __coords[]{__c0};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __tensor_map, __coords, __src);
+  ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void
 cp_async_bulk_tensor_2d_shared_to_global(const CUtensorMap* __tensor_map, int __c0, int __c1, const void* __src)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __tensor_map, __coords, __src);
+  ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, const void* __src)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __tensor_map, __coords, __src);
+  ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, int __c3, const void* __src)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2, __c3};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __tensor_map, __coords, __src);
+  ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
 inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, int __c3, int __c4, const void* __src)
 {
-  const _CUDA_VSTD::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
+  const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
 
-  _CUDA_VPTX::cp_async_bulk_tensor(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __tensor_map, __coords, __src);
+  ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar
 inline _CCCL_DEVICE void fence_proxy_async_shared_cta()
 {
-  _CUDA_VPTX::fence_proxy_async(_CUDA_VPTX::space_shared);
+  ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
 inline _CCCL_DEVICE void cp_async_bulk_commit_group()
 {
-  _CUDA_VPTX::cp_async_bulk_commit_group();
+  ::cuda::ptx::cp_async_bulk_commit_group();
 }
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
@@ -255,12 +255,12 @@ template <int __n_prior>
 inline _CCCL_DEVICE void cp_async_bulk_wait_group_read()
 {
   static_assert(__n_prior <= 63, "cp_async_bulk_wait_group_read: waiting for more than 63 groups is not supported.");
-  _CUDA_VPTX::cp_async_bulk_wait_group_read(_CUDA_VPTX::n32_t<__n_prior>{});
+  ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<__n_prior>{});
 }
 
 #endif // __cccl_lib_experimental_ctk12_cp_async_exposure
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
+_CCCL_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 
 #include <cuda/std/__cccl/epilogue.h>
 

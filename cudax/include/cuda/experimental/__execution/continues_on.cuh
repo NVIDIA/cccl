@@ -39,12 +39,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   // When calling connect on a continues_on sender, first transform the sender into a
   // schedule_from sender.
   template <class _Sndr>
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept
+  _CCCL_NODEBUG_API static constexpr auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept
   {
     // _Sndr is a (possibly cvref-qualified) instance of continues_on_t::__sndr_t
     auto&& [__tag, __sch, __child] = static_cast<_Sndr&&>(__sndr);
     // By default, continues_on(sndr, sch) lowers to schedule_from(sch, sndr) in connect:
-    return schedule_from(__sch, _CUDA_VSTD::forward_like<_Sndr>(__child));
+    return schedule_from(__sch, ::cuda::std::forward_like<_Sndr>(__child));
   }
 
   template <class _Sch, class _Sndr>
@@ -55,13 +55,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) const
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const
     {
       return continues_on_t{}(static_cast<_Sndr&&>(__sndr), __sch);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return continues_on_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
     }
@@ -70,17 +70,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   };
 
   template <class _Sndr, class _Sch>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
-    // continues_on always dispatches based on the domain of the predecessor sender
-    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
-    return execution::transform_sender(__dom_t{}, __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}};
   }
 
   template <class _Sch>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
   {
     return __closure_t<_Sch>{__sch};
   }

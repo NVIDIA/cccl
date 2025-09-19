@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::resource_ref properties
+// cuda::mr::synchronous_resource_ref properties
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -28,10 +28,10 @@ template <class PropA, class PropB>
 void test_conversion_from_resource_ref()
 {
   resource<cuda::mr::host_accessible, PropA, PropB> input{42};
-  cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
 
   { // lvalue
-    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
+    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
 
     // Ensure that we properly "punch through" the resource ref
     const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
@@ -49,8 +49,8 @@ void test_conversion_from_resource_ref()
   }
 
   { // prvalue
-    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{
-      cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
+    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{
+      cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
 
     // Ensure that we properly "punch through" the resource ref
     const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
@@ -72,10 +72,10 @@ template <class PropA, class PropB>
 void test_conversion_from_async_resource_ref()
 {
   resource<cuda::mr::host_accessible, PropA, PropB> input{42};
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
 
   { // lvalue
-    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
+    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
 
     // Ensure that we properly "punch through" the resource ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
@@ -93,8 +93,8 @@ void test_conversion_from_async_resource_ref()
   }
 
   { // prvalue
-    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{
-      cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
+    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{
+      cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
 
     // Ensure that we properly "punch through" the resource ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
-#define _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
+#ifndef _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H
+#define _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,7 +47,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // suppress bogus unreachable code warning
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __optional_construct_from_invoke_tag
 {};
@@ -72,12 +75,12 @@ struct __optional_destruct_base<_Tp, false>
     template <class... _Args>
     _CCCL_API constexpr __storage(in_place_t,
                                   _Args&&... __args) noexcept(is_nothrow_constructible_v<value_type, _Args...>)
-        : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+        : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Fp, class... _Args>
     _CCCL_API constexpr __storage(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-        : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+        : __val_(::cuda::std::invoke(::cuda::std::forward<_Fp>(__f), ::cuda::std::forward<_Args>(__args)...))
     {}
     _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__storage() noexcept {}
   };
@@ -101,14 +104,15 @@ struct __optional_destruct_base<_Tp, false>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
   template <class _Fp, class... _Args>
   _CCCL_API constexpr __optional_destruct_base(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-      : __storage_(
-          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
+      : __storage_(__optional_construct_from_invoke_tag{},
+                   ::cuda::std::forward<_Fp>(__f),
+                   ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -140,12 +144,12 @@ struct __optional_destruct_base<_Tp, true>
     template <class... _Args>
     _CCCL_API constexpr __storage(in_place_t,
                                   _Args&&... __args) noexcept(is_nothrow_constructible_v<value_type, _Args...>)
-        : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+        : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Fp, class... _Args>
     _CCCL_API constexpr __storage(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-        : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
+        : __val_(::cuda::std::invoke(::cuda::std::forward<_Fp>(__f), ::cuda::std::forward<_Args>(__args)...))
     {}
   };
   __storage __storage_;
@@ -159,14 +163,15 @@ struct __optional_destruct_base<_Tp, true>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
   template <class _Fp, class... _Args>
   _CCCL_API constexpr __optional_destruct_base(__optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
-      : __storage_(
-          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
+      : __storage_(__optional_construct_from_invoke_tag{},
+                   ::cuda::std::forward<_Fp>(__f),
+                   ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -201,11 +206,11 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   }
   [[nodiscard]] _CCCL_API constexpr value_type&& __get() && noexcept
   {
-    return _CUDA_VSTD::move(this->__storage_.__val_);
+    return ::cuda::std::move(this->__storage_.__val_);
   }
   [[nodiscard]] _CCCL_API constexpr const value_type&& __get() const&& noexcept
   {
-    return _CUDA_VSTD::move(this->__storage_.__val_);
+    return ::cuda::std::move(this->__storage_.__val_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -213,7 +218,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
     _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__storage_.__val_), _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(this->__storage_.__val_), ::cuda::std::forward<_Args>(__args)...);
     this->__engaged_ = true;
   }
 
@@ -222,7 +227,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   {
     if (__opt.has_value())
     {
-      __construct(_CUDA_VSTD::forward<_That>(__opt).__get());
+      __construct(::cuda::std::forward<_That>(__opt).__get());
     }
   }
 
@@ -234,7 +239,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     {
       if (this->__engaged_)
       {
-        this->__storage_.__val_ = _CUDA_VSTD::forward<_That>(__opt).__get();
+        this->__storage_.__val_ = ::cuda::std::forward<_That>(__opt).__get();
       }
     }
     else
@@ -245,7 +250,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
       }
       else
       {
-        __construct(_CUDA_VSTD::forward<_That>(__opt).__get());
+        __construct(::cuda::std::forward<_That>(__opt).__get());
       }
     }
   }
@@ -316,7 +321,7 @@ struct __optional_move_base<_Tp, __smf_availability::__available> : __optional_c
 
   _CCCL_API constexpr __optional_move_base(__optional_move_base&& __opt) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
-    this->__construct_from(_CUDA_VSTD::move(__opt));
+    this->__construct_from(::cuda::std::move(__opt));
   }
 
   _CCCL_HIDE_FROM_ABI __optional_move_base& operator=(const __optional_move_base&) = default;
@@ -402,7 +407,7 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__available> : __opt
   _CCCL_API constexpr __optional_move_assign_base& operator=(__optional_move_assign_base&& __opt) noexcept(
     is_nothrow_move_assignable_v<_Tp> && is_nothrow_move_constructible_v<_Tp>)
   {
-    this->__assign_from(_CUDA_VSTD::move(__opt));
+    this->__assign_from(::cuda::std::move(__opt));
     return *this;
   }
 };
@@ -418,8 +423,10 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__deleted> : __optio
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base& operator=(__optional_move_assign_base&&)      = delete;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
+#endif // _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H

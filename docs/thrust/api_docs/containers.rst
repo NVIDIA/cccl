@@ -7,6 +7,6 @@ Containers
    :glob:
    :maxdepth: 2
 
-   ${repo_docs_api_path}/*host__vector*
-   ${repo_docs_api_path}/*device__vector*
-   ${repo_docs_api_path}/typedef_group__containers*
+   ../api/*host__vector*
+   ../api/*device__vector*
+   ../api/group__containers_*

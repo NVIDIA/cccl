@@ -220,7 +220,7 @@ extern "C++" {
       _CCCL_TEMPLATE(class... _Args)                                                                        \
       _CCCL_REQUIRES(is_constructible_v<__base, _Args...>)                                                  \
       _CCCL_API constexpr __class(_Args&&... __args) noexcept(is_nothrow_constructible_v<__base, _Args...>) \
-          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                   \
+          : __base(::cuda::std::forward<_Args>(__args)...)                                                  \
       {}                                                                                                    \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  else // ^^^ workaround ^^^ / vvv no workaround vvv

@@ -41,11 +41,11 @@ struct async_resource_base
   }
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend void get_property(const async_resource_base&, Property) noexcept {}
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES(cuda::property_with_value<Property>&& ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend typename Property::value_type get_property(const async_resource_base& res, Property) noexcept
   {
     return 42;
@@ -135,8 +135,8 @@ void test_async_resource_ref()
   async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
   async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
@@ -148,7 +148,7 @@ void test_async_resource_ref()
 }
 
 template <class... Properties>
-cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...>
+cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...>
 indirection(async_resource_base<cuda::mr::host_accessible, Properties...>* res)
 {
   return {res};
@@ -161,8 +161,8 @@ void test_async_resource_ref_from_pointer()
   async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
   async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));

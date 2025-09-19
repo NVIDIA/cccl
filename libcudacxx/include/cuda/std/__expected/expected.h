@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___EXPECTED_EXPECTED_H
-#define _LIBCUDACXX___EXPECTED_EXPECTED_H
+#ifndef _CUDA_STD___EXPECTED_EXPECTED_H
+#define _CUDA_STD___EXPECTED_EXPECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -64,7 +64,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _Err>
 class expected;
@@ -161,11 +161,11 @@ public:
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -178,11 +178,11 @@ public:
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -195,13 +195,13 @@ public:
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::move(__other.__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -214,13 +214,13 @@ public:
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::move(__other.__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -229,7 +229,7 @@ public:
                    _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_convertible_v<_Up, _Tp>)
   _CCCL_API constexpr expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__u))
+      : __base(in_place, ::cuda::std::forward<_Up>(__u))
   {}
 
   _CCCL_TEMPLATE(class _Up = _Tp)
@@ -237,7 +237,7 @@ public:
                    _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND(!is_convertible_v<_Up, _Tp>))
   _CCCL_API constexpr explicit expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__u))
+      : __base(in_place, ::cuda::std::forward<_Up>(__u))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
@@ -258,42 +258,42 @@ public:
   _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND is_convertible_v<_OtherErr, _Err>)
   _CCCL_API constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
     is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
   _CCCL_API constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
     is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit expected(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, _Args...>) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit expected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Tp, initializer_list<_Up>&, _Args...>) // strengthened
-      : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Err, _Args...>)
   _CCCL_API constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Err, _Args...>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(unexpect, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit expected(unexpect_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Err, initializer_list<_Up>&, _Args...>) // strengthened
-      : __base(unexpect, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(unexpect, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
 private:
@@ -305,8 +305,8 @@ private:
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                in_place,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class _Fun, class... _Args>
@@ -317,8 +317,8 @@ private:
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                unexpect,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
 public:
@@ -334,11 +334,11 @@ public:
   {
     if (this->__has_val_)
     {
-      this->__union_.__val_ = _CUDA_VSTD::forward<_Up>(__v);
+      this->__union_.__val_ = ::cuda::std::forward<_Up>(__v);
     }
     else
     {
-      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, _CUDA_VSTD::forward<_Up>(__v));
+      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, ::cuda::std::forward<_Up>(__v));
       this->__has_val_ = true;
     }
     return *this;
@@ -379,12 +379,12 @@ public:
   {
     if (this->__has_val_)
     {
-      this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, _CUDA_VSTD::move(__un.error()));
+      this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, ::cuda::std::move(__un.error()));
       this->__has_val_ = false;
     }
     else
     {
-      this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());
+      this->__union_.__unex_ = ::cuda::std::move(__un.error());
     }
     return *this;
   }
@@ -395,15 +395,15 @@ public:
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(
-      _CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::forward<_Args>(__args)...);
+    return *::cuda::std::__construct_at(
+      ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::forward<_Args>(__args)...);
   }
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
@@ -412,15 +412,15 @@ public:
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_CUDA_VSTD::__construct_at(
-      _CUDA_VSTD::addressof(this->__union_.__val_), __il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return *::cuda::std::__construct_at(
+      ::cuda::std::addressof(this->__union_.__val_), __il, ::cuda::std::forward<_Args>(__args)...);
   }
 
 public:
@@ -435,7 +435,7 @@ public:
     {
       if (__rhs.__has_val_)
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__val_, __rhs.__union_.__val_);
       }
       else
@@ -451,7 +451,7 @@ public:
       }
       else
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__unex_, __rhs.__union_.__unex_);
       }
     }
@@ -469,13 +469,13 @@ public:
   _CCCL_API constexpr const _Tp* operator->() const noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
-    return _CUDA_VSTD::addressof(this->__union_.__val_);
+    return ::cuda::std::addressof(this->__union_.__val_);
   }
 
   _CCCL_API constexpr _Tp* operator->() noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
-    return _CUDA_VSTD::addressof(this->__union_.__val_);
+    return ::cuda::std::addressof(this->__union_.__val_);
   }
 
   _CCCL_API constexpr const _Tp& operator*() const& noexcept
@@ -493,13 +493,13 @@ public:
   _CCCL_API constexpr const _Tp&& operator*() const&& noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
   _CCCL_API constexpr _Tp&& operator*() && noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
   _CCCL_API constexpr explicit operator bool() const noexcept
@@ -527,7 +527,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() & requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::as_const(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_));
     }
     return this->__union_.__val_;
   }
@@ -535,25 +535,25 @@ public:
   _CCCL_API constexpr const _Tp&& value() const&&
   {
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const&& requires is_copy_constructible_v<E>");
-    static_assert(is_constructible_v<_Err, decltype(_CUDA_VSTD::move(error()))>,
-                  "expected::value() const&& requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
+    static_assert(is_constructible_v<_Err, decltype(::cuda::std::move(error()))>,
+                  "expected::value() const&& requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
   _CCCL_API constexpr _Tp&& value() &&
   {
     static_assert(is_copy_constructible_v<_Err>, "expected::value() && requires is_copy_constructible_v<E>");
-    static_assert(is_constructible_v<_Err, decltype(_CUDA_VSTD::move(error()))>,
-                  "expected::value() && requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
+    static_assert(is_constructible_v<_Err, decltype(::cuda::std::move(error()))>,
+                  "expected::value() && requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
   _CCCL_API constexpr const _Err& error() const& noexcept
@@ -571,13 +571,13 @@ public:
   _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   _CCCL_API constexpr _Err&& error() && noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   template <class _Up>
@@ -585,7 +585,7 @@ public:
   {
     static_assert(is_copy_constructible_v<_Tp>, "value_type has to be copy constructible");
     static_assert(is_convertible_v<_Up, _Tp>, "argument has to be convertible to value_type");
-    return this->__has_val_ ? this->__union_.__val_ : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
+    return this->__has_val_ ? this->__union_.__val_ : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
   template <class _Up>
@@ -593,7 +593,8 @@ public:
   {
     static_assert(is_move_constructible_v<_Tp>, "value_type has to be move constructible");
     static_assert(is_convertible_v<_Up, _Tp>, "argument has to be convertible to value_type");
-    return this->__has_val_ ? _CUDA_VSTD::move(this->__union_.__val_) : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
+    return this->__has_val_ ? ::cuda::std::move(this->__union_.__val_)
+                            : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
   // [expected.object.monadic]
@@ -609,7 +610,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
     else
     {
@@ -629,7 +630,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
     else
     {
@@ -649,11 +650,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -669,11 +670,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -694,7 +695,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
@@ -715,7 +716,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
@@ -732,11 +733,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
@@ -753,11 +754,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _Res{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
@@ -770,7 +771,7 @@ public:
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<void, _Err>{};
     }
     else
@@ -797,7 +798,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -815,7 +816,7 @@ public:
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<_Res, _Err>{};
     }
     else
@@ -842,7 +843,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -859,12 +860,12 @@ public:
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
@@ -886,12 +887,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
         in_place,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__val_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -905,12 +906,12 @@ public:
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -934,12 +935,12 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
         in_place,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__val_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -964,7 +965,7 @@ public:
     else
     {
       return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
@@ -990,7 +991,7 @@ public:
     else
     {
       return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
@@ -1010,15 +1011,15 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
       return expected<_Tp, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1039,15 +1040,15 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
       return expected<_Tp, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1215,7 +1216,7 @@ public:
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -1228,7 +1229,7 @@ public:
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -1240,8 +1241,8 @@ public:
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -1253,8 +1254,8 @@ public:
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -1276,14 +1277,14 @@ public:
   _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND is_convertible_v<_OtherErr, _Err>)
   _CCCL_API constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
     is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
   _CCCL_API constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
     is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_API constexpr explicit expected(in_place_t) noexcept
@@ -1294,14 +1295,14 @@ public:
   _CCCL_REQUIRES(is_constructible_v<_Err, _Args...>)
   _CCCL_API constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Err, _Args...>) // strengthened
-      : __base(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(unexpect, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
   _CCCL_API constexpr explicit expected(unexpect_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<_Err, initializer_list<_Up>, _Args...>) // strengthened
-      : __base(unexpect, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __base(unexpect, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
 private:
@@ -1313,8 +1314,8 @@ private:
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                unexpect,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
 public:
@@ -1329,7 +1330,7 @@ public:
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __un.error());
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __un.error());
       this->__has_val_ = false;
     }
     else
@@ -1347,12 +1348,12 @@ public:
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__un.error()));
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__un.error()));
       this->__has_val_ = false;
     }
     else
     {
-      this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());
+      this->__union_.__unex_ = ::cuda::std::move(__un.error());
     }
     return *this;
   }
@@ -1387,7 +1388,7 @@ public:
       }
       else
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__unex_, __rhs.__union_.__unex_);
       }
     }
@@ -1432,7 +1433,7 @@ public:
     static_assert(is_move_constructible_v<_Err>, "expected::value() && requires is_move_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
   }
 
@@ -1451,13 +1452,13 @@ public:
   _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   _CCCL_API constexpr _Err&& error() && noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   // [expected.void.monadic]
@@ -1473,7 +1474,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
@@ -1493,7 +1494,7 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
@@ -1513,11 +1514,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1533,11 +1534,11 @@ public:
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1557,7 +1558,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
@@ -1577,7 +1578,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
@@ -1597,7 +1598,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
@@ -1617,7 +1618,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
@@ -1628,7 +1629,7 @@ public:
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
@@ -1653,7 +1654,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1668,7 +1669,7 @@ public:
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
@@ -1693,7 +1694,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1708,12 +1709,12 @@ public:
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
     {
-      return expected<void, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
@@ -1732,11 +1733,11 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1747,12 +1748,12 @@ public:
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
     {
-      return expected<void, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1772,11 +1773,11 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1800,7 +1801,7 @@ public:
     else
     {
       return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
@@ -1825,7 +1826,7 @@ public:
     else
     {
       return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
@@ -1851,8 +1852,8 @@ public:
       return expected<void, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1879,8 +1880,8 @@ public:
       return expected<void, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
@@ -1955,8 +1956,8 @@ public:
 #endif // _CCCL_STD_VER < 2020
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXPECTED_EXPECTED_H
+#endif // _CUDA_STD___EXPECTED_EXPECTED_H

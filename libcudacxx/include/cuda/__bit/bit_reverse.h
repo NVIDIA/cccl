@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #if defined(_CCCL_BUILTIN_BITREVERSE32)
 
@@ -152,8 +152,8 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }
@@ -164,7 +164,7 @@ template <typename _Tp>
 #endif
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

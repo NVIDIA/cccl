@@ -13,6 +13,7 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <format>
+#include <vector>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -23,6 +24,7 @@
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct op_wrapper;
 struct device_merge_sort_policy;
@@ -274,7 +276,7 @@ private:
 };
 } // namespace merge_sort
 
-CUresult cccl_device_merge_sort_build(
+CUresult cccl_device_merge_sort_build_ex(
   cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -286,7 +288,8 @@ CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -408,19 +411,19 @@ struct device_merge_sort_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender list_appender{linkable_list};
 
-    nvrtc_ltoir_list_appender list_appender{ltoir_list};
-
-    list_appender.append({op.ltoir, op.ltoir_size});
+    list_appender.append_operation(op);
     list_appender.add_iterator_definition(input_keys_it);
     list_appender.add_iterator_definition(input_items_it);
     list_appender.add_iterator_definition(output_keys_it);
@@ -432,12 +435,12 @@ struct device_merge_sort_vsmem_helper {{
         ->add_expression({block_sort_kernel_name})
         ->add_expression({partition_kernel_name})
         ->add_expression({merge_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
         ->get_name({partition_kernel_name, partition_kernel_lowered_name})
         ->get_name({merge_kernel_name, merge_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -535,6 +538,36 @@ CUresult cccl_device_merge_sort(
   }
 
   return error;
+}
+
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_merge_sort_build_ex(
+    build,
+    d_in_keys,
+    d_in_items,
+    d_out_keys,
+    d_out_items,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)

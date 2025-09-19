@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
-#define _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_SMALL_H
+#define _CUDA_STD___ATOMIC_TYPES_SMALL_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
@@ -56,7 +56,7 @@ template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -64,7 +64,7 @@ template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -221,8 +221,8 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, 
     __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
+#endif // _CUDA_STD___ATOMIC_TYPES_SMALL_H

@@ -3,7 +3,7 @@
 ``cuda::discard_memory``
 ========================
 
-Defined in header ``<cuda/memory>``, ``<cuda/discard_memory>``.
+Defined in header ``<cuda/memory>``, ``<cuda/discard_memory>`` (deprecated since CCCL 3.2).
 
 .. code:: cuda
 

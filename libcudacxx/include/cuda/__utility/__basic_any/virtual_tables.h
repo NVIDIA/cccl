@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
 using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>::__vtable;
@@ -47,7 +47,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
     , __virtual_fn<_Mbrs>...
 {
   using interface _CCCL_NODEBUG_ALIAS = _Interface;
-  static constexpr size_t __cbases    = _CUDA_VSTD::__type_list_size<__unique_interfaces<interface>>::value;
+  static constexpr size_t __cbases    = ::cuda::std::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, class... _OtherMembers, class... _Interfaces>
   _CCCL_API constexpr __basic_vtable(
@@ -61,7 +61,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   _CCCL_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
       : __basic_vtable{__vptr,
                        __overrides_for_t<interface, _Tp>(),
-                       __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
+                       __unique_interfaces<interface, ::cuda::std::__type_quote<__tag>>()}
   {}
 
   [[nodiscard]] _CCCL_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
@@ -73,7 +73,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
   [[nodiscard]] _CCCL_API auto __query_interface(__iset_<_Others...>) const noexcept -> __vptr_for<__iset_<_Others...>>
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
-      _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset_<_Others...>>>;
+      ::cuda::std::__type_list_size<::cuda::std::__type_find<__unique_interfaces<interface>, __iset_<_Others...>>>;
     constexpr size_t __index = __cbases - __remainder::value;
     if constexpr (__index < __cbases)
     {
@@ -109,7 +109,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
     : __rtti_ex<sizeof...(_Interfaces)>
     , __vtable_for<_Interfaces>...
 {
-  static_assert((_CUDA_VSTD::is_class_v<_Interfaces> && ...), "expected class types");
+  static_assert((::cuda::std::is_class_v<_Interfaces> && ...), "expected class types");
 
   template <class _Tp, class _Super>
   _CCCL_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
@@ -121,11 +121,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
       , __vtable_for<_Interfaces>{__tag<_Tp>(), this}...
 #endif // !MSVC
   {
-    static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
+    static_assert(::cuda::std::is_class_v<_Super>, "expected a class type");
   }
 
   _CCCL_TEMPLATE(class _Interface)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
+  _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Interface, _Interfaces...>)
   [[nodiscard]] _CCCL_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     return static_cast<__vptr_for<_Interface>>(this);
@@ -135,7 +135,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
 // The vtable type for type `_Interface` is a `__vtable_tuple` of `_Interface`
 // and all of its base interfaces.
 template <class _Interface>
-using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, _CUDA_VSTD::__type_quote<__vtable_tuple>>;
+using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, ::cuda::std::__type_quote<__vtable_tuple>>;
 
 // __vtable_for_v<_Interface, _Tp> is an instance of `__vtable<_Interface>` that
 // contains the overrides for `_Tp`.
@@ -145,11 +145,11 @@ _CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>
 template <class _Interface, class _Tp>
 _CCCL_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (::cuda::std::terminate();))
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H

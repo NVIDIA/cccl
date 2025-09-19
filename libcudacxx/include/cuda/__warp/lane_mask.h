@@ -28,12 +28,12 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief A class representing a lane mask in a warp.
 class lane_mask
 {
-  _CUDA_VSTD::uint32_t __value_;
+  ::cuda::std::uint32_t __value_;
 
 public:
   //! @brief Constructs a lane mask object from a 32-bit unsigned integer.
@@ -41,14 +41,14 @@ public:
   //! @param __v The value to initialize the lane mask with. Defaults to 0.
   //!
   //! @post `value() == __v`
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_CUDA_VSTD::uint32_t __v = 0) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(::cuda::std::uint32_t __v = 0) noexcept
       : __value_{__v}
   {}
 
   //! @brief Returns the value of the lane mask as a 32-bit unsigned integer.
   //!
   //! @return The value of the lane mask.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr _CUDA_VSTD::uint32_t value() const noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::uint32_t value() const noexcept
   {
     return __value_;
   }
@@ -58,7 +58,7 @@ public:
   //! This operator allows explicit conversion of the lane mask to a 32-bit unsigned integer.
   //!
   //! @return The value of the lane mask as a 32-bit unsigned integer.
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr operator _CUDA_VSTD::uint32_t() const noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr operator ::cuda::std::uint32_t() const noexcept
   {
     return __value_;
   }
@@ -98,7 +98,7 @@ public:
   //! @return A lane mask with the current lane bit set.
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask this_lane() noexcept
   {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_eq()};
+    return lane_mask{::cuda::ptx::get_sreg_lanemask_eq()};
   }
 
   //! @brief Returns a lane mask object with all lanes less than the current lane set.
@@ -110,7 +110,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits,
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less() noexcept
   {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_lt()};
+    return lane_mask{::cuda::ptx::get_sreg_lanemask_lt()};
   }
 
   //! @brief Returns a lane mask object with all lanes equal to or less than the current lane set.
@@ -122,7 +122,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits,
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less_equal() noexcept
   {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_le()};
+    return lane_mask{::cuda::ptx::get_sreg_lanemask_le()};
   }
 
   //! @brief Returns a lane mask object with all lanes greater than the current lane set.
@@ -134,7 +134,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits,
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater() noexcept
   {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_gt()};
+    return lane_mask{::cuda::ptx::get_sreg_lanemask_gt()};
   }
 
   //! @brief Returns a lane mask object with all lanes greater than or equal to the current lane set.
@@ -146,7 +146,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits,
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater_equal() noexcept
   {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_ge()};
+    return lane_mask{::cuda::ptx::get_sreg_lanemask_ge()};
   }
 
   //! @brief Returns a lane mask object with all lanes not equal to the current lane set.
@@ -159,7 +159,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits.
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_not_equal() noexcept
   {
-    return lane_mask{~_CUDA_VPTX::get_sreg_lanemask_eq()};
+    return lane_mask{~::cuda::ptx::get_sreg_lanemask_eq()};
   }
 
   //! @brief Bitwise AND operator for lane_mask.
@@ -317,7 +317,7 @@ public:
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

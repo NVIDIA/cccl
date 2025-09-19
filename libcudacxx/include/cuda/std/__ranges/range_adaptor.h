@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_RANGE_ADAPTOR_H
-#define _LIBCUDACXX___RANGES_RANGE_ADAPTOR_H
+#ifndef _CUDA_STD___RANGES_RANGE_ADAPTOR_H
+#define _CUDA_STD___RANGES_RANGE_ADAPTOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // CRTP base that one can derive from in order to be considered a range adaptor closure
 // by the library. When deriving from this class, a pipe operator will be provided to
@@ -56,7 +56,7 @@ struct __pipeable
     , __range_adaptor_closure<__pipeable<_Fn>>
 {
   _CCCL_API constexpr explicit __pipeable(_Fn&& __f)
-      : _Fn(_CUDA_VSTD::move(__f))
+      : _Fn(::cuda::std::move(__f))
   {}
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
@@ -65,9 +65,10 @@ template <class _Tp>
 _CCCL_HOST_DEVICE _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
 
 template <class _Tp>
-_CCCL_CONCEPT __is_range_adaptor_closure = _CCCL_REQUIRES_EXPR((_Tp))(
-  requires(!_CUDA_VRANGES::range<remove_cvref_t<_Tp>>),
-  _Same_as(remove_cvref_t<_Tp>) _CUDA_VRANGES::__derived_from_range_adaptor_closure((remove_cvref_t<_Tp>*) nullptr));
+_CCCL_CONCEPT __is_range_adaptor_closure = _CCCL_REQUIRES_EXPR(
+  (_Tp))(requires(!::cuda::std::ranges::range<remove_cvref_t<_Tp>>),
+         _Same_as(remove_cvref_t<_Tp>)::cuda::std::ranges::__derived_from_range_adaptor_closure(
+           (remove_cvref_t<_Tp>*) nullptr));
 
 template <class _Range, class _Closure>
 _CCCL_CONCEPT __range_adaptor_can_pipe_invoke = _CCCL_REQUIRES_EXPR((_Range, _Closure))(
@@ -85,7 +86,7 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_invoke<_Range, _Closure>)
 [[nodiscard]] _CCCL_API constexpr decltype(auto)
 operator|(_Range&& __range, _Closure&& __closure) noexcept(is_nothrow_invocable_v<_Closure, _Range>)
 {
-  return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Closure>(__closure), _CUDA_VSTD::forward<_Range>(__range));
+  return ::cuda::std::invoke(::cuda::std::forward<_Closure>(__closure), ::cuda::std::forward<_Range>(__range));
 }
 
 _CCCL_TEMPLATE(class _Closure, class _OtherClosure)
@@ -94,16 +95,16 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)
 {
-  return __pipeable(_CUDA_VSTD::__compose(
-    _CUDA_VSTD::forward<_OtherClosure>(__other_closure), _CUDA_VSTD::forward<_Closure>(__closure)));
+  return __pipeable(::cuda::std::__compose(
+    ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure)));
 }
 
 template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
 class range_adaptor_closure : public __range_adaptor_closure<_Tp>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_RANGE_ADAPTOR_H
+#endif // _CUDA_STD___RANGES_RANGE_ADAPTOR_H

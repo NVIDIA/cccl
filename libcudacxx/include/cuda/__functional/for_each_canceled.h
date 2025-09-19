@@ -32,7 +32,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #  if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
@@ -111,7 +111,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
 
   do
   {
-    _CUDA_VSTD::invoke(__uf, __block_idx);
+    ::cuda::std::invoke(__uf, __block_idx);
     if (__is_leader)
     {
       asm volatile(
@@ -195,7 +195,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
 {
   // We are compiling for SM100 but PTX 8.7 is not supported, so fall back to just calling the function
-  _CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);
+  ::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);
 }
 #  endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
 
@@ -214,7 +214,7 @@ template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3, "ThreadBlockRank out-of-range [1, 3].");
-  static_assert(_CUDA_VSTD::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
                 "__for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: __for_each_canceled_block([](dim3 block_idx) { ... });");
   dim3 __block_idx = dim3(blockIdx.x, 1, 1);
@@ -228,9 +228,9 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader
   }
 
   NV_DISPATCH_TARGET(NV_PROVIDES_SM_100,
-                     (::cuda::__for_each_canceled_block_sm100(__block_idx, __is_leader, _CUDA_VSTD::move(__uf));),
+                     (::cuda::__for_each_canceled_block_sm100(__block_idx, __is_leader, ::cuda::std::move(__uf));),
                      NV_ANY_TARGET,
-                     (_CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);))
+                     (::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);))
 }
 
 //! This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
@@ -249,25 +249,25 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
                 "for_each_canceled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
-  static_assert(_CUDA_VSTD::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
                 "for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: for_each_canceled_block([](dim3 block_idx) { ... });");
   if constexpr (__ThreadBlockRank == 1)
   {
-    ::cuda::__for_each_canceled_block<1>(threadIdx.x == 0, _CUDA_VSTD::move(__uf));
+    ::cuda::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 2)
   {
-    ::cuda::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, _CUDA_VSTD::move(__uf));
+    ::cuda::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 3)
   {
     ::cuda::__for_each_canceled_block<3>(
-      threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, _CUDA_VSTD::move(__uf));
+      threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

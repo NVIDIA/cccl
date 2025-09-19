@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_TYPEID_H
-#define _LIBCUDACXX___UTILITY_TYPEID_H
+#ifndef _CUDA_STD___UTILITY_TYPEID_H
+#define _CUDA_STD___UTILITY_TYPEID_H
 
 #include <cuda/std/detail/__config>
 
@@ -67,9 +67,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#define _CCCL_STD_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
+#define _CCCL_STD_TYPEID(...) typeid(::cuda::std::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
 
 #if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
@@ -131,7 +131,7 @@ template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
-  return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
+  return ::cuda::std::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
 }
 
 // TODO: class statics cannot be accessed from device code, so we need to use
@@ -139,7 +139,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral
 template <class _Tp, size_t _Np>
 struct __static_nameof
 {
-  static constexpr __sstring<_Np> value = _CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
+  static constexpr __sstring<_Np> value = ::cuda::std::__make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
 };
 
 template <class _Tp, size_t _Np>
@@ -164,7 +164,7 @@ __add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view
 __find_pretty_name(__string_view __sv) noexcept
 {
-  return __sv.substr(_CUDA_VSTD::__add_string_view_position(
+  return __sv.substr(::cuda::std::__add_string_view_position(
                        __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
                      __sv.find_end(">::__pretty_name_end"));
 }
@@ -173,16 +173,16 @@ template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof_helper() noexcept
 {
 #if _CCCL_COMPILER(GCC, <, 9) && !defined(__CUDA_ARCH__)
-  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
+  return ::cuda::std::__find_pretty_name(::cuda::std::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
 #else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
-  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
+  return ::cuda::std::__find_pretty_name(::cuda::std::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
 #endif // not gcc < 9
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof() noexcept
 {
-  return _CUDA_VSTD::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
+  return ::cuda::std::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
 
 // In device code with old versions of gcc, we cannot have nice things.
@@ -192,8 +192,8 @@ template <class _Tp>
 
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the pretty name extraction is working.
-static_assert(_CUDA_VSTD::__pretty_nameof<int>() == __string_view("int"), "");
-static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof<int>(), "");
+static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"), "");
+static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>(), "");
 #endif
 
 // There are many complications with defining a unique constexpr global object
@@ -246,7 +246,7 @@ struct __type_info
   template <class _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE static constexpr __type_info_impl __get_ti_for() noexcept
   {
-    return __type_info_impl{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+    return __type_info_impl{::cuda::std::__pretty_nameof<_Tp>()};
   }
 
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr char const* name() const noexcept
@@ -323,7 +323,7 @@ using __type_info_ref = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
-    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>)
+    ::cuda::std::__type_info_ref(&::cuda::std::__type_info::__get_ti_for<::cuda::std::remove_cv_t<__VA_ARGS__>>)
 
 #elif defined(_CCCL_BROKEN_MSVC_FUNCSIG) // ^^^ defined(__CUDA_ARCH__) ^^^
 
@@ -395,7 +395,7 @@ using __type_info_ref = __type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 template <class _Tp>
-_CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+_CCCL_GLOBAL_CONSTANT __type_info __typeid_v{::cuda::std::__pretty_nameof<_Tp>()};
 
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
@@ -405,7 +405,7 @@ template <class _Tp>
   return __typeid_v<_Tp>;
 }
 
-#  define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
+#  define _CCCL_TYPEID_FALLBACK(...) ::cuda::std::__typeid<::cuda::std::remove_cv_t<__VA_ARGS__>>()
 
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
 
@@ -414,8 +414,8 @@ template <class _Tp>
 #  define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
 #endif
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_TYPEID_H
+#endif // _CUDA_STD___UTILITY_TYPEID_H

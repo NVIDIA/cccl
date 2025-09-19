@@ -71,8 +71,8 @@ class _Histogram:
         num_levels = h_num_output_levels[0]
         row_stride_samples = num_samples
 
-        self.d_samples_cccl = cccl.to_cccl_iter(d_samples)
-        self.d_histogram_cccl = cccl.to_cccl_iter(d_histogram)
+        self.d_samples_cccl = cccl.to_cccl_input_iter(d_samples)
+        self.d_histogram_cccl = cccl.to_cccl_output_iter(d_histogram)
         self.h_num_output_levels_cccl = cccl.to_cccl_value(h_num_output_levels)
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
@@ -146,13 +146,11 @@ def make_histogram_even(
     """Implements a device-wide histogram that places ``d_samples`` into evenly-spaced bins.
 
     Example:
-        Below, ``histogram`` is used to bin a sequence of samples.
+        Below, ``make_histogram_even`` is used to create a histogram object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_histogram_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin histogram-even
-          :end-before: example-end histogram-even
+          :start-after: # example-begin
 
     Args:
         d_samples: Device array or iterator containing the input samples to be histogrammed
@@ -184,6 +182,28 @@ def histogram_even(
     num_samples: int,
     stream=None,
 ):
+    """
+    Performs device-wide histogram computation with evenly-spaced bins.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``histogram_even`` is used to compute a histogram with evenly-spaced bins.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_even_basic.py
+            :language: python
+            :start-after: # example-begin
+            :caption: Basic histogram example.
+
+    Args:
+        d_samples: Device array or iterator containing the input sequence of data samples
+        d_histogram: Device array to store the computed histogram
+        num_output_levels: Number of histogram bin levels (num_bins = num_output_levels - 1)
+        lower_level: Lower sample value bound (inclusive)
+        upper_level: Upper sample value bound (exclusive)
+        num_samples: Number of input samples
+        stream: CUDA stream for the operation (optional)
+    """
     # Histogram can accept multiple channels, with one value per channel for
     # each of these parameters. The API only supports one channel for now but we
     # pass arrays to make_histogram_even to support multiple channels in the

@@ -49,7 +49,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
@@ -116,7 +117,7 @@ public:
   {}
 
   /**
-   * @brief Dispatch initializer. To be called prior prior to kernel launch.
+   * @brief Dispatch initializer. To be called prior to kernel launch.
    *
    * @param num_items_
    *   Total number of input items
@@ -173,7 +174,7 @@ public:
       // This thread block gets a normal share of grains (avg_tiles_per_block)
       block_offset = normal_base_offset + (block_id * normal_share_items);
       // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + _CUDA_VSTD::min(num_items - block_offset, normal_share_items);
+      block_end = block_offset + ::cuda::std::min(num_items - block_offset, normal_share_items);
     }
     // Else default past-the-end
   }

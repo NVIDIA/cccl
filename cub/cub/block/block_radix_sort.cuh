@@ -50,8 +50,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -432,7 +435,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -511,7 +514,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 

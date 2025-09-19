@@ -29,30 +29,30 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _From, typename _To>
 inline constexpr bool __is_integer_representable_v =
-  _CUDA_VSTD::cmp_less(_CUDA_VSTD::numeric_limits<_From>::max(), _CUDA_VSTD::numeric_limits<_To>::max())
-  && _CUDA_VSTD::cmp_greater(_CUDA_VSTD::numeric_limits<_From>::min(), _CUDA_VSTD::numeric_limits<_To>::min());
+  ::cuda::std::cmp_less(::cuda::std::numeric_limits<_From>::max(), ::cuda::std::numeric_limits<_To>::max())
+  && ::cuda::std::cmp_greater(::cuda::std::numeric_limits<_From>::min(), ::cuda::std::numeric_limits<_To>::min());
 
 //! @brief Casts a number \p __from to a number of type \p _To with overflow detection
 //! @param __from The number to cast
 //! @return An overflow_result object containing the casted number and a boolean indicating whether an overflow
 //! occurred
 _CCCL_TEMPLATE(class _To, class _From)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_To> _CCCL_AND _CUDA_VSTD::__cccl_is_cv_integer_v<_From>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_To> _CCCL_AND ::cuda::std::__cccl_is_cv_integer_v<_From>)
 [[nodiscard]] _CCCL_API constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
   bool __overflow = false;
   if constexpr (!__is_integer_representable_v<_From, _To>)
   {
-    __overflow = !_CUDA_VSTD::in_range<_To>(__from);
+    __overflow = !::cuda::std::in_range<_To>(__from);
   }
   return overflow_result<_To>{static_cast<_To>(__from), __overflow};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

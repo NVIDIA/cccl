@@ -30,10 +30,10 @@ __host__ __device__ constexpr bool test()
     *iter = 3;
     assert(buffer[2] == 3 + 1);
     buffer[2] = 2;
-#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
     // The test iterators are not `is_nothrow_move_constructible`
     static_assert(!noexcept(cuda::transform_output_iterator{random_access_iterator{buffer + 2}, func}));
-#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
+#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
     static_assert(
       cuda::std::is_same_v<decltype(iter), cuda::transform_output_iterator<random_access_iterator<int*>, Fn>>);
   }
@@ -54,11 +54,11 @@ __host__ __device__ constexpr bool test()
     *iter = 3;
     assert(buffer[2] == 3 + 1);
     buffer[2] = 2;
-#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
     // The test iterators are not `is_nothrow_move_constructible`
     static_assert(!noexcept(
       cuda::transform_output_iterator<random_access_iterator<int*>, Fn>{random_access_iterator{buffer + 2}, func}));
-#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
+#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
   }
 
   {

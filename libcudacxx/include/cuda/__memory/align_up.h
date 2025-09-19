@@ -29,27 +29,27 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _Tp* align_up(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API inline _Tp* align_up(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
-  if constexpr (!_CUDA_VSTD::is_void_v<_Tp>)
+  if constexpr (!::cuda::std::is_void_v<_Tp>)
   {
     _CCCL_ASSERT(__alignment >= alignof(_Tp), "wrong alignment");
-    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
+    _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
     if (__alignment == alignof(_Tp))
     {
       return __ptr;
     }
   }
-  auto __tmp = static_cast<_CUDA_VSTD::uintptr_t>(__alignment - 1);
-  auto __ret = reinterpret_cast<_Tp*>((reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) + __tmp) & ~__tmp);
-  return _CUDA_VSTD::__runtime_assume_aligned(__ret, __alignment);
+  auto __tmp = static_cast<::cuda::std::uintptr_t>(__alignment - 1);
+  auto __ret = reinterpret_cast<_Tp*>((reinterpret_cast<::cuda::std::uintptr_t>(__ptr) + __tmp) & ~__tmp);
+  return ::cuda::std::__runtime_assume_aligned(__ret, __alignment);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

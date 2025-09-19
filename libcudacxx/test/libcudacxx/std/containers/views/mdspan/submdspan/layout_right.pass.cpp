@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// nvbug5272086
-// UNSUPPORTED: nvcc-12.9 && msvc
-
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;

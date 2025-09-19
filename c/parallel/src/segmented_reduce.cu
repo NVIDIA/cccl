@@ -14,10 +14,11 @@
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
 #include <exception> // std::exception
-#include <format> // std::format
+#include <format>
 #include <string> // std::string
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
+#include <vector> // std::format
 
 #include <stdio.h> // printf
 
@@ -25,15 +26,16 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
-#include "util/context.h"
-#include "util/errors.h"
-#include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
-#include "util/types.h"
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
+#include <util/context.h>
+#include <util/errors.h>
+#include <util/indirect_arg.h>
+#include <util/runtime_policy.h>
+#include <util/types.h>
 
 struct device_segmented_reduce_policy;
 using OffsetT = unsigned long long;
@@ -134,7 +136,7 @@ struct segmented_reduce_start_offset_iterator_tag;
 struct segmented_reduce_end_offset_iterator_tag;
 struct segmented_reduce_operation_tag;
 
-CUresult cccl_device_segmented_reduce_build(
+CUresult cccl_device_segmented_reduce_build_ex(
   cccl_device_segmented_reduce_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -147,7 +149,8 @@ CUresult cccl_device_segmented_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -201,8 +204,9 @@ struct __align__({1}) storage_t {{
 
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
-    constexpr size_t ptx_num_args      = 5;
-    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
 
     static constexpr std::string_view policy_wrapper_expr_tmpl =
       R"XXXX(cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{0}, {1}, {2}>::MaxPolicy::ActivePolicy{{}}))XXXX";
@@ -260,8 +264,7 @@ struct device_segmented_reduce_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 9;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(),
       cub_path,
       thrust_path,
@@ -272,15 +275,17 @@ struct device_segmented_reduce_policy {{
       "-DCUB_DISABLE_CDP",
       "-std=c++20"};
 
+    cccl::detail::extend_args_with_build_config(args, config);
+
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
     // add definition of binary operation op
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     // add iterator definitions
     appender.add_iterator_definition(input_it);
     appender.add_iterator_definition(output_it);
@@ -291,10 +296,10 @@ struct device_segmented_reduce_policy {{
       begin_linking_nvrtc_program(num_lto_args, lopts)
         ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
         ->add_expression({segmented_reduce_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     // populate build struct members
@@ -385,6 +390,38 @@ CUresult cccl_device_segmented_reduce(
   }
 
   return error;
+}
+
+CUresult cccl_device_segmented_reduce_build(
+  cccl_device_segmented_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_iterator_t begin_offset_in,
+  cccl_iterator_t end_offset_in,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_segmented_reduce_build_ex(
+    build,
+    d_in,
+    d_out,
+    begin_offset_in,
+    end_offset_in,
+    op,
+    init,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* build_ptr)

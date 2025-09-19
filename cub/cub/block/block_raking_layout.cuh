@@ -81,7 +81,7 @@ struct BlockRakingLayout
     SHARED_ELEMENTS = BLOCK_THREADS,
 
     /// Maximum number of warp-synchronous raking threads
-    MAX_RAKING_THREADS = _CUDA_VSTD::min(BLOCK_THREADS, detail::warp_threads),
+    MAX_RAKING_THREADS = ::cuda::std::min(BLOCK_THREADS, detail::warp_threads),
 
     /// Number of raking elements per warp-synchronous raking thread (rounded up)
     SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS,

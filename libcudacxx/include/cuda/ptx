@@ -36,7 +36,7 @@
  * - They must convert state spaces correctly.
  * - They adhere to the libcu++ coding standards of using:
  *   - Reserved identifiers for all parameters, variables. E.g. `__meow` or `_Woof`
- *   - _CUDA_VSTD:: namespace for types
+ *   - ::cuda::std:: namespace for types
  *
  * The wrappers should not do the following:
  *
@@ -117,11 +117,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-namespace ptx = _CUDA_VPTX;
+namespace ptx = ::cuda::ptx;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #include <cuda/std/__cccl/epilogue.h>
 

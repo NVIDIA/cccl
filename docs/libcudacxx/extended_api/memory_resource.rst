@@ -32,7 +32,7 @@ At a high level, the header provides:
        :ref:`cuda::mr::{synchronous_}resource_with <libcudacxx-extended-api-memory-resources-resource>`
      - Concepts that provide proper constraints for arbitrary memory resources.
      - stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3
-   * - :ref:`cuda::mr::{async_}resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
+   * - :ref:`cuda::mr::{synchronous_}resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
      - A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
        ``resource_ref`` is still an experimental design, only available if ``LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE`` is defined
      - experimental CCCL 2.2.0 / CUDA 12.3

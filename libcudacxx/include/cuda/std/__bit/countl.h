@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_COUNTL_H
-#define _LIBCUDACXX___BIT_COUNTL_H
+#ifndef _CUDA_STD___BIT_COUNTL_H
+#define _CUDA_STD___BIT_COUNTL_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl_constexpr(_Tp __v) noexcept
@@ -73,8 +73,8 @@ template <typename _Tp>
 #else // ^^^ _CCCL_BUILTIN_CLZLL ^^^ // vvv !_CCCL_BUILTIN_CLZLL vvv
     const auto __hi = static_cast<uint32_t>(__v >> 32);
     const auto __lo = static_cast<uint32_t>(__v);
-    return (__hi != 0) ? _CUDA_VSTD::__cccl_countl_zero_impl_constexpr(__hi)
-                       : (numeric_limits<uint32_t>::digits + _CUDA_VSTD::__cccl_countl_zero_impl_constexpr(__lo));
+    return (__hi != 0) ? ::cuda::std::__cccl_countl_zero_impl_constexpr(__hi)
+                       : (numeric_limits<uint32_t>::digits + ::cuda::std::__cccl_countl_zero_impl_constexpr(__lo));
 #endif // ^^^ !_CCCL_BUILTIN_CLZLL ^^^
   }
 }
@@ -91,7 +91,7 @@ template <typename _Tp>
                      : ::_BitScanReverse64(&__where, static_cast<uint64_t>(__v));
   return (__res) ? (__digits - 1 - static_cast<int>(__where)) : __digits;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ // vvv !_CCCL_COMPILER(MSVC) vvv
-  return _CUDA_VSTD::__cccl_countl_zero_impl_constexpr(__v);
+  return ::cuda::std::__cccl_countl_zero_impl_constexpr(__v);
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -108,17 +108,17 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return _CUDA_VSTD::__cccl_countl_zero_impl_host(__v);),
-                      (return _CUDA_VSTD::__cccl_countl_zero_impl_device(__v);));
+                      (return ::cuda::std::__cccl_countl_zero_impl_host(__v);),
+                      (return ::cuda::std::__cccl_countl_zero_impl_device(__v);));
   }
-  return _CUDA_VSTD::__cccl_countl_zero_impl_constexpr(__v);
+  return ::cuda::std::__cccl_countl_zero_impl_constexpr(__v);
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int countl_zero(_Tp __v) noexcept
 {
   int __count{};
@@ -129,7 +129,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
   {
     using _Sp                    = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
     constexpr auto __digits_diff = numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
-    __count                      = _CUDA_VSTD::__cccl_countl_zero_impl(static_cast<_Sp>(__v)) - __digits_diff;
+    __count                      = ::cuda::std::__cccl_countl_zero_impl(static_cast<_Sp>(__v)) - __digits_diff;
   }
   else
   {
@@ -141,7 +141,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
       const auto __value64 = static_cast<uint64_t>(__v >> (__i * numeric_limits<uint64_t>::digits));
       if (__value64 != 0)
       {
-        __count += _CUDA_VSTD::countl_zero(__value64);
+        __count += ::cuda::std::countl_zero(__value64);
         break;
       }
       __count += numeric_limits<uint64_t>::digits;
@@ -154,14 +154,14 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int countl_one(_Tp __v) noexcept
 {
-  return _CUDA_VSTD::countl_zero(static_cast<_Tp>(~__v));
+  return ::cuda::std::countl_zero(static_cast<_Tp>(~__v));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_COUNTL_H
+#endif // _CUDA_STD___BIT_COUNTL_H

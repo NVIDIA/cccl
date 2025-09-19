@@ -45,6 +45,12 @@ struct properties_list
   //! from this list appended to the type arguments.
   template <template <class...> class _Fn, class... _ExtraArgs>
   using rebind = _Fn<_ExtraArgs..., _Properties...>;
+
+  template <class _QueryProperty>
+  static constexpr bool has_property([[maybe_unused]] _QueryProperty)
+  {
+    return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Properties...>, _QueryProperty>;
+  }
 };
 
 template <class _T>
@@ -55,7 +61,7 @@ inline constexpr bool __is_queries_list<properties_list<_T...>> = true;
 
 template <typename _Tp>
 _CCCL_CONCEPT __has_default_queries =
-  _CCCL_REQUIRES_EXPR((_Tp))(requires(__is_queries_list<typename _CUDA_VSTD::decay_t<_Tp>::default_queries>));
+  _CCCL_REQUIRES_EXPR((_Tp))(requires(__is_queries_list<typename ::cuda::std::decay_t<_Tp>::default_queries>));
 
 template <typename _Resource, bool _HasDefaultQueries = __has_default_queries<_Resource>>
 struct __copy_default_queries;

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CHARCONV_FROM_CHARS_H
-#define _LIBCUDACXX___CHARCONV_FROM_CHARS_H
+#ifndef _CUDA_STD___CHARCONV_FROM_CHARS_H
+#define _CUDA_STD___CHARCONV_FROM_CHARS_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __from_chars_char_to_value_result
 {
@@ -72,7 +72,7 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
   const char* __it = __first;
   for (; __it != __last; ++__it)
   {
-    const auto __digit = _CUDA_VSTD::__from_chars_char_to_value(*__it, __base);
+    const auto __digit = ::cuda::std::__from_chars_char_to_value(*__it, __base);
     if (!__digit.__valid_)
     {
       break;
@@ -104,7 +104,7 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
   if constexpr (is_signed_v<_Tp>)
   {
     bool __neg = (__first < __last && *__first == '-');
-    __ret      = _CUDA_VSTD::__from_chars_int_generic(__first + __neg, __last, __result, __base);
+    __ret      = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
       const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());
@@ -120,7 +120,7 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
   }
   else
   {
-    __ret = _CUDA_VSTD::__from_chars_int_generic(__first, __last, __result, __base);
+    __ret = ::cuda::std::__from_chars_int_generic(__first, __last, __result, __base);
   }
 
   if (__ret.ec == errc{})
@@ -139,7 +139,7 @@ from_chars(const char* __first, const char* __last, char& __value, int __base = 
 {
   using _Tp = conditional_t<is_signed_v<char>, signed char, unsigned char>;
   _Tp __value_tmp{};
-  const auto __ret = _CUDA_VSTD::from_chars(__first, __last, __value_tmp, __base);
+  const auto __ret = ::cuda::std::from_chars(__first, __last, __value_tmp, __base);
   if (__ret.ec == errc{})
   {
     __value = static_cast<char>(__value_tmp);
@@ -147,8 +147,8 @@ from_chars(const char* __first, const char* __last, char& __value, int __base = 
   return __ret;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CHARCONV_FROM_CHARS_H
+#endif // _CUDA_STD___CHARCONV_FROM_CHARS_H

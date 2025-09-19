@@ -38,10 +38,10 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+#  include <cub/block/block_load.cuh>
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/extrema.h>
@@ -220,23 +220,18 @@ struct PtxPolicy
 template <class Arch, class T, class U>
 struct Tuning;
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
@@ -248,21 +243,22 @@ struct Tuning<core::detail::sm60, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm60
+
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
+using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 
 template <class KeysIt1,
           class KeysIt2,
@@ -296,10 +292,10 @@ struct SetOpAgent
     using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt1>;
     using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt2>;
 
-    using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
-    using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
-    using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
-    using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
+    using BlockLoadKeys1   = BlockLoad<PtxPlan, KeysLoadIt1>;
+    using BlockLoadKeys2   = BlockLoad<PtxPlan, KeysLoadIt2>;
+    using BlockLoadValues1 = BlockLoad<PtxPlan, ValuesLoadIt1>;
+    using BlockLoadValues2 = BlockLoad<PtxPlan, ValuesLoadIt2>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 

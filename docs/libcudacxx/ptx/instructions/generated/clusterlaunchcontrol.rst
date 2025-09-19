@@ -3,7 +3,7 @@
 
 clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [addr], [smem_bar]; // PTX ISA 86, SM_100
    template <typename = void>
@@ -13,7 +13,7 @@ clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b
 
 clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 [addr], [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
    template <typename = void>
@@ -23,7 +23,7 @@ clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.m
 
 clusterlaunchcontrol.query_cancel.is_canceled.pred.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 pred_is_canceled, try_cancel_response; // PTX ISA 86, SM_100
    template <typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
@@ -32,7 +32,7 @@ clusterlaunchcontrol.query_cancel.is_canceled.pred.b128
 
 clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 ret_dim, try_cancel_response; // PTX ISA 86, SM_100
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
@@ -41,7 +41,7 @@ clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128
 
 clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 ret_dim, try_cancel_response; // PTX ISA 86, SM_100
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
@@ -50,7 +50,7 @@ clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128
 
 clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 ret_dim, try_cancel_response; // PTX ISA 86, SM_100
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>
@@ -59,7 +59,7 @@ clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128
 
 clusterlaunchcontrol.query_cancel.get_first_ctaid.v4.b32.b128
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // clusterlaunchcontrol.query_cancel.get_first_ctaid.v4.b32.b128 block_dim, try_cancel_response; // PTX ISA 86, SM_100
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, typename B128, enable_if_t<sizeof(B128) == 16, bool> = true>

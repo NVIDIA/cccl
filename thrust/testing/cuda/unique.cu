@@ -1,4 +1,6 @@
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/unique.h>
 
 #include <unittest/unittest.h>
@@ -20,6 +22,25 @@ struct multiply_n
   __host__ __device__ T operator()(T x)
   {
     return x * multiplier;
+  }
+};
+
+struct check_valid_item_op
+{
+  ::cuda::std::uint32_t* error_counter{};
+  int expected_upper_bound{};
+
+  __device__ bool operator()(const int lhs, const int rhs) const
+  {
+    if (lhs > expected_upper_bound || rhs > expected_upper_bound)
+    {
+      if (error_counter)
+      {
+        atomicAdd(error_counter, 1);
+      }
+      return false;
+    }
+    return lhs == rhs;
   }
 };
 
@@ -400,3 +421,52 @@ void TestUniqueWithLargeNumberOfItems()
   }
 }
 DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);
+
+void TestUniqueWithCustomEqualityOp()
+{
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
+
+  auto constexpr num_items = 1000;
+  auto data                = thrust::make_counting_iterator(T{0});
+
+  thrust::device_vector<::cuda::std::uint32_t> error_counter(1, 0);
+  auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
+
+  Vector unique_out(num_items);
+  auto unique_out_end = thrust::unique_copy(
+    data, data + num_items, unique_out.begin(), check_valid_item_op{error_counter_ptr, num_items - 1});
+
+  auto num_selected_out = cuda::std::distance(unique_out.begin(), unique_out_end);
+  ASSERT_EQUAL(num_selected_out, num_items);
+  ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
+  bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
+  ASSERT_EQUAL(all_results_correct, true);
+}
+
+DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
+
+template <typename F>
+struct NonConstAdapter
+{
+  F f;
+  NonConstAdapter(const F& func)
+      : f(func)
+  {}
+
+  template <typename... Args>
+  __device__ auto operator()(Args&&... args) -> decltype(f(cuda::std::forward<Args>(args)...))
+  {
+    return f(cuda::std::forward<Args>(args)...);
+  }
+};
+
+void TestUniqueWithCustomEqualityOpMutable()
+{
+  using Vector = thrust::device_vector<int>;
+
+  thrust::device_vector<int> in = {1, 1, 2, 3, 4, 4, 5};
+  thrust::unique(thrust::cuda::par, in.begin(), in.end(), NonConstAdapter(cuda::std::equal_to<>{}));
+}
+
+DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);

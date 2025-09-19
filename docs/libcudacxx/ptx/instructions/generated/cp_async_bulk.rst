@@ -3,7 +3,7 @@
 
 cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 80, SM_90
    // .dst       = { .shared::cluster }
@@ -19,7 +19,7 @@ cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes
 
 cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // PTX ISA 86, SM_90
    // .dst       = { .shared::cta }
@@ -35,7 +35,7 @@ cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
 
 cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // PTX ISA 80, SM_90
    // .dst       = { .shared::cluster }
@@ -51,7 +51,7 @@ cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes
 
 cp.async.bulk.global.shared::cta.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.dst.src.bulk_group [dstMem], [srcMem], size; // PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -66,7 +66,7 @@ cp.async.bulk.global.shared::cta.bulk_group
 
 cp.async.bulk.global.shared::cta.bulk_group.cp_mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.dst.src.bulk_group.cp_mask [dstMem], [srcMem], size, byteMask; // PTX ISA 86, SM_100
    // .dst       = { .global }

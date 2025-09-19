@@ -4,8 +4,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // BinaryPredicate for the head flag segment representation
 // equivalent to ::cuda::std::not_fn(thrust::project2nd<int,int>()));
 template <typename HeadFlagType>
@@ -20,11 +18,11 @@ struct head_flag_predicate
 template <typename Vector>
 void print(const Vector& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& e : v)
   {
-    std::cout << v[i] << " ";
+    std::cout << e << " ";
   }
-  std::cout << "\n";
+  std::cout << std::endl;
 }
 
 int main()

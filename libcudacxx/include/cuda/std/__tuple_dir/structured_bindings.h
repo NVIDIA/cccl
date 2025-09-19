@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
-#define _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
+#ifndef _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H
+#define _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H
 
 #include <cuda/std/detail/__config>
 
@@ -56,156 +56,158 @@ struct tuple_element;
 #endif // _CCCL_COMPILER(NVRTC)
 
 template <class _Tp, size_t _Size>
-struct tuple_size<_CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_size<::cuda::std::array<_Tp, _Size>> : ::cuda::std::tuple_size<::cuda::std::array<_Tp, _Size>>
 {};
 
 template <class _Tp, size_t _Size>
-struct tuple_size<const _CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_size<const ::cuda::std::array<_Tp, _Size>> : ::cuda::std::tuple_size<::cuda::std::array<_Tp, _Size>>
 {};
 
 template <class _Tp, size_t _Size>
-struct tuple_size<volatile _CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_size<volatile ::cuda::std::array<_Tp, _Size>> : ::cuda::std::tuple_size<::cuda::std::array<_Tp, _Size>>
 {};
 
 template <class _Tp, size_t _Size>
-struct tuple_size<const volatile _CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_size<const volatile ::cuda::std::array<_Tp, _Size>>
+    : ::cuda::std::tuple_size<::cuda::std::array<_Tp, _Size>>
 {};
 
 template <size_t _Ip, class _Tp, size_t _Size>
-struct tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_element<_Ip, ::cuda::std::array<_Tp, _Size>>
+    : ::cuda::std::tuple_element<_Ip, ::cuda::std::array<_Tp, _Size>>
 {};
 
 template <size_t _Ip, class _Tp, size_t _Size>
-struct tuple_element<_Ip, const _CUDA_VSTD::array<_Tp, _Size>>
-    : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_element<_Ip, const ::cuda::std::array<_Tp, _Size>>
+    : ::cuda::std::tuple_element<_Ip, const ::cuda::std::array<_Tp, _Size>>
 {};
 
 template <size_t _Ip, class _Tp, size_t _Size>
-struct tuple_element<_Ip, volatile _CUDA_VSTD::array<_Tp, _Size>>
-    : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_element<_Ip, volatile ::cuda::std::array<_Tp, _Size>>
+    : ::cuda::std::tuple_element<_Ip, volatile ::cuda::std::array<_Tp, _Size>>
 {};
 
 template <size_t _Ip, class _Tp, size_t _Size>
-struct tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
-    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
+struct tuple_element<_Ip, const volatile ::cuda::std::array<_Tp, _Size>>
+    : ::cuda::std::tuple_element<_Ip, const volatile ::cuda::std::array<_Tp, _Size>>
 {};
 
 template <class _Tp>
-struct tuple_size<_CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::complex<_Tp>>
+struct tuple_size<::cuda::std::complex<_Tp>> : ::cuda::std::tuple_size<::cuda::std::complex<_Tp>>
 {};
 
 template <size_t _Ip, class _Tp>
-struct tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>>
+struct tuple_element<_Ip, ::cuda::std::complex<_Tp>> : ::cuda::std::tuple_element<_Ip, ::cuda::std::complex<_Tp>>
 {};
 
 template <class _Tp, class _Up>
-struct tuple_size<_CUDA_VSTD::pair<_Tp, _Up>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_size<::cuda::std::pair<_Tp, _Up>> : ::cuda::std::tuple_size<::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <class _Tp, class _Up>
-struct tuple_size<const _CUDA_VSTD::pair<_Tp, _Up>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_size<const ::cuda::std::pair<_Tp, _Up>> : ::cuda::std::tuple_size<::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <class _Tp, class _Up>
-struct tuple_size<volatile _CUDA_VSTD::pair<_Tp, _Up>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_size<volatile ::cuda::std::pair<_Tp, _Up>> : ::cuda::std::tuple_size<::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <class _Tp, class _Up>
-struct tuple_size<const volatile _CUDA_VSTD::pair<_Tp, _Up>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_size<const volatile ::cuda::std::pair<_Tp, _Up>> : ::cuda::std::tuple_size<::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <size_t _Ip, class _Tp, class _Up>
-struct tuple_element<_Ip, _CUDA_VSTD::pair<_Tp, _Up>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_element<_Ip, ::cuda::std::pair<_Tp, _Up>> : ::cuda::std::tuple_element<_Ip, ::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <size_t _Ip, class _Tp, class _Up>
-struct tuple_element<_Ip, const _CUDA_VSTD::pair<_Tp, _Up>>
-    : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_element<_Ip, const ::cuda::std::pair<_Tp, _Up>>
+    : ::cuda::std::tuple_element<_Ip, const ::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <size_t _Ip, class _Tp, class _Up>
-struct tuple_element<_Ip, volatile _CUDA_VSTD::pair<_Tp, _Up>>
-    : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_element<_Ip, volatile ::cuda::std::pair<_Tp, _Up>>
+    : ::cuda::std::tuple_element<_Ip, volatile ::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <size_t _Ip, class _Tp, class _Up>
-struct tuple_element<_Ip, const volatile _CUDA_VSTD::pair<_Tp, _Up>>
-    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::pair<_Tp, _Up>>
+struct tuple_element<_Ip, const volatile ::cuda::std::pair<_Tp, _Up>>
+    : ::cuda::std::tuple_element<_Ip, const volatile ::cuda::std::pair<_Tp, _Up>>
 {};
 
 template <class... _Tp>
-struct tuple_size<_CUDA_VSTD::tuple<_Tp...>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+struct tuple_size<::cuda::std::tuple<_Tp...>> : ::cuda::std::tuple_size<::cuda::std::tuple<_Tp...>>
 {};
 
 template <class... _Tp>
-struct tuple_size<const _CUDA_VSTD::tuple<_Tp...>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+struct tuple_size<const ::cuda::std::tuple<_Tp...>> : ::cuda::std::tuple_size<::cuda::std::tuple<_Tp...>>
 {};
 
 template <class... _Tp>
-struct tuple_size<volatile _CUDA_VSTD::tuple<_Tp...>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+struct tuple_size<volatile ::cuda::std::tuple<_Tp...>> : ::cuda::std::tuple_size<::cuda::std::tuple<_Tp...>>
 {};
 
 template <class... _Tp>
-struct tuple_size<const volatile _CUDA_VSTD::tuple<_Tp...>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::tuple<_Tp...>>
+struct tuple_size<const volatile ::cuda::std::tuple<_Tp...>> : ::cuda::std::tuple_size<::cuda::std::tuple<_Tp...>>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::tuple<_Tp...>>
+struct tuple_element<_Ip, ::cuda::std::tuple<_Tp...>> : ::cuda::std::tuple_element<_Ip, ::cuda::std::tuple<_Tp...>>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct tuple_element<_Ip, const _CUDA_VSTD::tuple<_Tp...>>
-    : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::tuple<_Tp...>>
+struct tuple_element<_Ip, const ::cuda::std::tuple<_Tp...>>
+    : ::cuda::std::tuple_element<_Ip, const ::cuda::std::tuple<_Tp...>>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
-    : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
+struct tuple_element<_Ip, volatile ::cuda::std::tuple<_Tp...>>
+    : ::cuda::std::tuple_element<_Ip, volatile ::cuda::std::tuple<_Tp...>>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
-    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
+struct tuple_element<_Ip, const volatile ::cuda::std::tuple<_Tp...>>
+    : ::cuda::std::tuple_element<_Ip, const volatile ::cuda::std::tuple<_Tp...>>
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_size<const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_size<volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_size<const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<const volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<_Idx, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_element<_Idx, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <size_t _Idx, class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<_Idx, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_element<_Idx, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<_Idx, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_element<_Idx, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <size_t _Idx, class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<_Idx, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_element<_Idx, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<_Idx, volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_element<_Idx, volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <size_t _Idx, class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<_Idx, volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_element<_Idx, volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 
-template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
-    : _CUDA_VSTD::tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <size_t _Idx, class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<_Idx, const volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
+    : ::cuda::std::tuple_element<_Idx, const volatile ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {};
 } // namespace std
 
@@ -213,4 +215,4 @@ struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>
 
 _CCCL_DIAG_POP
 
-#endif // _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
+#endif // _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H

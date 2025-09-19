@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
-#define _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
+#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
+#define _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -53,12 +53,12 @@ protected:
   //! @returns true if \p __alignment is valid.
   [[nodiscard]] static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
-    return __alignment <= _CUDA_VMR::default_cuda_malloc_alignment
-        && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
+    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
+        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
 
 public:
-  __memory_resource_base(_CUDA_VSTD::nullptr_t) = delete;
+  __memory_resource_base(::cuda::std::nullptr_t) = delete;
 
   //! @brief  Constructs the __memory_resource_base from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
@@ -73,11 +73,11 @@ public:
   //! @throws cuda::cuda_error If an error code was return by the CUDA API call.
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] void* allocate_sync(const size_t __bytes,
-                                    const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+      ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
         "__memory_resource_base::allocate_sync.");
     }
@@ -101,7 +101,7 @@ public:
   //! @note The pointer passed to `deallocate_sync` must not be in use in a stream. It is the caller's responsibility to
   //! properly synchronize all relevant streams before calling `deallocate_sync`.
   void deallocate_sync(
-    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
@@ -121,7 +121,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+      ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
         "__memory_resource_base::allocate.");
     }
@@ -259,4 +259,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
+#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH

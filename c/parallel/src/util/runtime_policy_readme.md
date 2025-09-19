@@ -69,9 +69,9 @@ Next, we define a specialization that matches a CUB-style reduce policy. These a
 ```cpp
 template <typename StaticPolicyT>
 struct ReducePolicyWrapper<StaticPolicyT,
-                           _CUDA_VSTD::void_t<typename StaticPolicyT::ReducePolicy,
-                                              typename StaticPolicyT::SingleTilePolicy,
-                                              typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
+                           ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
+                                               typename StaticPolicyT::SingleTilePolicy,
+                                               typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)

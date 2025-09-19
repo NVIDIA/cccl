@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM
-#define _CUDAX__STREAM_STREAM
+#ifndef _CUDAX__STREAM_STREAM_CUH
+#define _CUDAX__STREAM_STREAM_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -81,7 +81,7 @@ struct stream : stream_ref
   //!
   //! @post `__other` is in moved-from state.
   stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, ::cuda::__detail::__invalid_stream))
+      : stream(::cuda::std::exchange(__other.__stream, ::cuda::__detail::__invalid_stream))
   {}
 
   stream(const stream&) = delete;
@@ -95,7 +95,7 @@ struct stream : stream_ref
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = _CUDA_DRIVER::__streamDestroyNoThrow(__stream);
+      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
     }
   }
 
@@ -106,8 +106,8 @@ struct stream : stream_ref
   //! @post `__other` is in a moved-from state.
   stream& operator=(stream&& __other) noexcept
   {
-    stream __tmp(_CUDA_VSTD::move(__other));
-    _CUDA_VSTD::swap(__stream, __tmp.__stream);
+    stream __tmp(::cuda::std::move(__other));
+    ::cuda::std::swap(__stream, __tmp.__stream);
     return *this;
   }
 
@@ -129,7 +129,7 @@ struct stream : stream_ref
   static stream from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static stream from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static stream from_native_handle(::cuda::std::nullptr_t) = delete;
 
   //! @brief Retrieve the native `cudaStream_t` handle and give up ownership.
   //!
@@ -138,7 +138,7 @@ struct stream : stream_ref
   //! @post The stream object is in a moved-from state.
   [[nodiscard]] ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, ::cuda::__detail::__invalid_stream);
+    return ::cuda::std::exchange(__stream, ::cuda::__detail::__invalid_stream);
   }
 
   //! @brief Returns a \c execution::scheduler that enqueues work on this stream.
@@ -159,4 +159,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM
+#endif // _CUDAX__STREAM_STREAM_CUH

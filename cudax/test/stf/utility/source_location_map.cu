@@ -16,10 +16,10 @@
 using namespace cuda::experimental::stf;
 
 // Create a map indexed by source locations
-::std::unordered_map<_CUDA_VSTD::source_location, int, reserved::source_location_hash, reserved::source_location_equal>
+::std::unordered_map<::cuda::std::source_location, int, reserved::source_location_hash, reserved::source_location_equal>
   stats_map;
 
-void update_counter(_CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+void update_counter(::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   stats_map[loc]++;
 }

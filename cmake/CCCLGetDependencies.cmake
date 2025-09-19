@@ -34,6 +34,13 @@ macro(cccl_get_nvbench)
   CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
 endmacro()
 
+# CCCL-specific NVBench utilities
+macro(cccl_get_nvbench_helper)
+  if (NOT TARGET cccl.nvbench_helper)
+    add_subdirectory("${CCCL_SOURCE_DIR}/nvbench_helper" "${CCCL_BINARY_DIR}/nvbench_helper")
+  endif()
+endmacro()
+
 macro(cccl_get_nvtx)
   include("${_cccl_cpm_file}")
   CPMAddPackage(

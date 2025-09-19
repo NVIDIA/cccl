@@ -21,13 +21,36 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/cmath>
-#include <cuda/memory>
-#include <cuda/ptx>
-#include <cuda/std/bit>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
+#include <cuda/__ptx/instructions/mbarrier_init.h>
+#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
+#include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -99,6 +122,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
     out += offset;
   }
 
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   (..., prefetch_tile<block_threads>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
@@ -126,6 +150,9 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   {
     process_tile(::cuda::std::false_type{}, ins...);
   }
+
+  // benchmarking showed that triggering at the end is 1% better than right after prefetching
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 #if _CCCL_CTK_BELOW(13, 0)
@@ -175,12 +202,6 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
 template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
@@ -216,18 +237,20 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     out += offset;
   }
 
-  constexpr int load_store_size  = VectorizedPolicy::load_store_word_size;
-  using load_store_t             = decltype(load_store_type<load_store_size>());
-  using result_t                 = ::cuda::std::invoke_result_t<F, const InputT&...>;
-  using output_t                 = it_value_t<RandomAccessIteratorOut>;
-  constexpr int input_type_size  = int{first_item(sizeof(InputT)...)};
-  constexpr int load_store_count = (items_per_thread * input_type_size) / load_store_size;
-  static_assert((items_per_thread * input_type_size) % load_store_size == 0);
-  static_assert(load_store_size % input_type_size == 0);
+  constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
+  using load_store_t            = decltype(load_store_type<load_store_size>());
+  using output_t                = it_value_t<RandomAccessIteratorOut>;
+  using result_t                = ::cuda::std::invoke_result_t<F, const InputT&...>;
+  // picks output type size if there are no inputs
+  constexpr int element_size     = int{first_item(sizeof(InputT)..., size_of<output_t>)};
+  constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
+
+  static_assert((items_per_thread * element_size) % load_store_size == 0);
+  static_assert(load_store_size % element_size == 0);
 
   constexpr bool can_vectorize_store =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == input_type_size;
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == element_size;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
@@ -245,7 +268,10 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
       }
     };
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile_vectorized(ins, inputs), ...);
+    // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // process
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -271,7 +297,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   else
   {
     // serial path
-    constexpr int elems = load_store_size / input_type_size;
+    constexpr int elems = load_store_size / element_size;
     out += threadIdx.x * elems;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
@@ -495,6 +521,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
+// note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template <typename LdgstsPolicy,
           typename Offset,
           typename Predicate,
@@ -641,6 +668,9 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 }
 
+// Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
+// https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
+// didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template <typename BulkCopyPolicy,
           typename Offset,
           typename Predicate,
@@ -749,11 +779,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
       };
 
+      // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+      // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
+      // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
+      // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we decided
+      // to omit PREEXIT here. See #5249 for details.
+      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
@@ -790,6 +828,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       smem += tile_padding + int{sizeof(T)} * tile_size;
     };
 
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
@@ -798,6 +837,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
     }
+
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
   }
 
   // all threads wait for bulk copy

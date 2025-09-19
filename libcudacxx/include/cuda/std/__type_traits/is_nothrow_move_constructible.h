@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
@@ -35,8 +35,8 @@ is_nothrow_move_constructible : public is_nothrow_constructible<_Tp, add_rvalue_
 template <class _Tp>
 inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_move_constructible<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_CONSTRUCTIBLE_H

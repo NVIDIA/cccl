@@ -52,7 +52,9 @@
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -337,7 +339,7 @@ struct DispatchUniqueByKey
       }
 
       // Log init_kernel configuration
-      num_tiles          = _CUDA_VSTD::max(1, num_tiles);
+      num_tiles          = ::cuda::std::max(1, num_tiles);
       int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
 #ifdef CUB_DEBUG_LOG
@@ -380,7 +382,7 @@ struct DispatchUniqueByKey
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
       scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = _CUDA_VSTD::min(num_tiles, max_dim_x);
+      scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
       // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG

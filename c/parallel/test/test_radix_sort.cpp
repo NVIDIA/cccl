@@ -19,8 +19,15 @@
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
 
-using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
-using item_t    = float;
+using key_types =
+  c2h::type_list<uint8_t,
+                 int16_t,
+                 uint32_t,
+#if _CCCL_HAS_NVFP16()
+                 __half,
+#endif
+                 double>;
+using item_t = float;
 
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
 struct TestParameters

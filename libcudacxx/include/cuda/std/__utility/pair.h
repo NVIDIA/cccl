@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_PAIR_H
-#define _LIBCUDACXX___UTILITY_PAIR_H
+#ifndef _CUDA_STD___UTILITY_PAIR_H
+#define _CUDA_STD___UTILITY_PAIR_H
 
 #include <cuda/std/detail/__config>
 
@@ -68,7 +68,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __invalid_pair_constraints
 {
@@ -142,8 +142,8 @@ struct __pair_base
   template <class _U1, class _U2>
   _CCCL_API constexpr __pair_base(_U1&& __t1, _U2&& __t2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : first(_CUDA_VSTD::forward<_U1>(__t1))
-      , second(_CUDA_VSTD::forward<_U2>(__t2))
+      : first(::cuda::std::forward<_U1>(__t1))
+      , second(::cuda::std::forward<_U2>(__t2))
   {}
 
 protected:
@@ -202,8 +202,8 @@ struct __pair_base<_T1, _T2, true>
   operator=(conditional_t<is_move_assignable_v<_T1> && is_move_assignable_v<_T2>, __pair_base, __nat>&& __p) noexcept(
     is_nothrow_move_assignable_v<_T1> && is_nothrow_move_assignable_v<_T2>)
   {
-    first  = _CUDA_VSTD::forward<_T1>(__p.first);
-    second = _CUDA_VSTD::forward<_T2>(__p.second);
+    first  = ::cuda::std::forward<_T1>(__p.first);
+    second = ::cuda::std::forward<_T2>(__p.second);
     return *this;
   }
 
@@ -211,8 +211,8 @@ struct __pair_base<_T1, _T2, true>
   template <class _U1, class _U2>
   _CCCL_API constexpr __pair_base(_U1&& __t1, _U2&& __t2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : first(_CUDA_VSTD::forward<_U1>(__t1))
-      , second(_CUDA_VSTD::forward<_U2>(__t2))
+      : first(::cuda::std::forward<_U1>(__t1))
+      , second(::cuda::std::forward<_U2>(__t2))
   {}
 
 protected:
@@ -270,7 +270,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__u1), _CUDA_VSTD::forward<_U2>(__u2))
+      : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
   template <class _U1                                                = _T1,
@@ -279,7 +279,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__u1), _CUDA_VSTD::forward<_U2>(__u2))
+      : __base(::cuda::std::forward<_U1>(__u1), ::cuda::std::forward<_U2>(__u2))
   {}
 
   template <class... _Args1, class... _Args2>
@@ -322,7 +322,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API explicit constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
+      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
   {}
 
   template <class _U1                                                = _T1,
@@ -331,7 +331,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr pair(pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
+      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
   {}
 
   // std compatibility
@@ -360,7 +360,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_HOST _CCCL_API explicit constexpr pair(::std::pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
+      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
   {}
 
   template <class _U1,
@@ -369,7 +369,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_HOST _CCCL_API constexpr pair(::std::pair<_U1, _U2>&& __p) noexcept(
     is_nothrow_constructible_v<_T1, _U1> && is_nothrow_constructible_v<_T2, _U2>)
-      : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
+      : __base(::cuda::std::forward<_U1>(__p.first), ::cuda::std::forward<_U2>(__p.second))
   {}
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -396,8 +396,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API constexpr pair&
   operator=(pair<_U1, _U2>&& __p) noexcept(is_nothrow_assignable_v<_T1, _U1> && is_nothrow_assignable_v<_T2, _U2>)
   {
-    this->first  = _CUDA_VSTD::forward<_U1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_U2>(__p.second);
+    this->first  = ::cuda::std::forward<_U1>(__p.first);
+    this->second = ::cuda::std::forward<_U2>(__p.second);
     return *this;
   }
 
@@ -416,8 +416,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_HOST constexpr pair& operator=(::std::pair<_T1, _T2>&& __p) noexcept(
     is_nothrow_copy_assignable_v<_T1> && is_nothrow_copy_assignable_v<_T2>)
   {
-    this->first  = _CUDA_VSTD::forward<_T1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_T2>(__p.second);
+    this->first  = ::cuda::std::forward<_T1>(__p.first);
+    this->second = ::cuda::std::forward<_T2>(__p.second);
     return *this;
   }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -447,8 +447,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     noexcept(is_nothrow_assignable_v<const _T1&, _T1> && is_nothrow_assignable_v<const _T2&, _T2>)
     requires(is_assignable_v<const _T1&, _T1> && is_assignable_v<const _T2&, _T2>)
   {
-    this->first  = _CUDA_VSTD::forward<_T1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_T2>(__p.second);
+    this->first  = ::cuda::std::forward<_T1>(__p.first);
+    this->second = ::cuda::std::forward<_T2>(__p.second);
     return *this;
   }
 
@@ -457,8 +457,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     noexcept(is_nothrow_assignable_v<const _T1&, _T1> && is_nothrow_assignable_v<const _T2&, _T2>)
     requires(is_assignable_v<const _T1&, _T1> && is_assignable_v<const _T2&, _T2>)
   {
-    this->first  = _CUDA_VSTD::forward<_T1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_T2>(__p.second);
+    this->first  = ::cuda::std::forward<_T1>(__p.first);
+    this->second = ::cuda::std::forward<_T2>(__p.second);
     return *this;
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
@@ -487,8 +487,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API constexpr const pair& operator=(pair<_U1, _U2>&& __p) const
     requires(is_assignable_v<const _T1&, _U1> && is_assignable_v<const _T2&, _U2>)
   {
-    this->first  = _CUDA_VSTD::forward<_U1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_U2>(__p.second);
+    this->first  = ::cuda::std::forward<_U1>(__p.first);
+    this->second = ::cuda::std::forward<_U2>(__p.second);
     return *this;
   }
 
@@ -497,8 +497,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API inline _CCCL_HOST constexpr const pair& operator=(::std::pair<_U1, _U2>&& __p) const
     requires(is_assignable_v<const _T1&, _U1> && is_assignable_v<const _T2&, _U2>)
   {
-    this->first  = _CUDA_VSTD::forward<_U1>(__p.first);
-    this->second = _CUDA_VSTD::forward<_U2>(__p.second);
+    this->first  = ::cuda::std::forward<_U1>(__p.first);
+    this->second = ::cuda::std::forward<_U2>(__p.second);
     return *this;
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
@@ -507,7 +507,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
   swap(pair& __p) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
   {
-    using _CUDA_VSTD::swap;
+    using ::cuda::std::swap;
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
@@ -516,7 +516,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_API constexpr void swap(const pair& __p) const
     noexcept(__is_nothrow_swappable<const _T1>::value && __is_nothrow_swappable<const _T2>::value)
   {
-    using _CUDA_VSTD::swap;
+    using ::cuda::std::swap;
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
@@ -549,11 +549,11 @@ template <class _T1, class _T2>
 _CCCL_API constexpr common_comparison_category_t<__synth_three_way_result<_T1>, __synth_three_way_result<_T2>>
 operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
-  if (auto __c = _CUDA_VSTD::__synth_three_way(__x.first, __y.first); __c != 0)
+  if (auto __c = ::cuda::std::__synth_three_way(__x.first, __y.first); __c != 0)
   {
     return __c;
   }
-  return _CUDA_VSTD::__synth_three_way(__x.second, __y.second);
+  return ::cuda::std::__synth_three_way(__x.second, __y.second);
 }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
@@ -634,7 +634,7 @@ template <class _T1, class _T2>
 _CCCL_API constexpr pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>> make_pair(_T1&& __t1, _T2&& __t2)
 {
   return pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>>(
-    _CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));
+    ::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2));
 }
 
 template <class _T1, class _T2>
@@ -680,13 +680,13 @@ struct __get_pair<0>
   template <class _T1, class _T2>
   static _CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
   {
-    return _CUDA_VSTD::forward<_T1>(__p.first);
+    return ::cuda::std::forward<_T1>(__p.first);
   }
 
   template <class _T1, class _T2>
   static _CCCL_API constexpr const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
   {
-    return _CUDA_VSTD::forward<const _T1>(__p.first);
+    return ::cuda::std::forward<const _T1>(__p.first);
   }
 };
 
@@ -708,13 +708,13 @@ struct __get_pair<1>
   template <class _T1, class _T2>
   static _CCCL_API constexpr _T2&& get(pair<_T1, _T2>&& __p) noexcept
   {
-    return _CUDA_VSTD::forward<_T2>(__p.second);
+    return ::cuda::std::forward<_T2>(__p.second);
   }
 
   template <class _T1, class _T2>
   static _CCCL_API constexpr const _T2&& get(const pair<_T1, _T2>&& __p) noexcept
   {
-    return _CUDA_VSTD::forward<const _T2>(__p.second);
+    return ::cuda::std::forward<const _T2>(__p.second);
   }
 };
 
@@ -733,13 +733,13 @@ _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_
 template <size_t _Ip, class _T1, class _T2>
 _CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
 _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
@@ -757,13 +757,13 @@ _CCCL_API constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
 template <class _T1, class _T2>
 _CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
 {
-  return __get_pair<0>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 _CCCL_API constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
 {
-  return __get_pair<0>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
@@ -781,17 +781,17 @@ _CCCL_API constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
 template <class _T1, class _T2>
 _CCCL_API constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
 {
-  return __get_pair<1>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<1>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
 _CCCL_API constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
 {
-  return __get_pair<1>::get(_CUDA_VSTD::move(__p));
+  return __get_pair<1>::get(::cuda::std::move(__p));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_PAIR_H
+#endif // _CUDA_STD___UTILITY_PAIR_H

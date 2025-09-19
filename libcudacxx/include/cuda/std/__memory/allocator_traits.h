@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ALLOCATOR_TRAITS_H
-#define _LIBCUDACXX___MEMORY_ALLOCATOR_TRAITS_H
+#ifndef _CUDA_STD___MEMORY_ALLOCATOR_TRAITS_H
+#define _CUDA_STD___MEMORY_ALLOCATOR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,7 +43,7 @@
 
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(1215)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
   template <class _Tp, class = void>                         \
@@ -211,8 +211,8 @@ template <class _Alloc, class _SizeType, class _ConstVoidPtr>
 struct __has_allocate_hint<_Alloc,
                            _SizeType,
                            _ConstVoidPtr,
-                           decltype((void) _CUDA_VSTD::declval<_Alloc>().allocate(
-                             _CUDA_VSTD::declval<_SizeType>(), _CUDA_VSTD::declval<_ConstVoidPtr>()))> : true_type
+                           decltype((void) ::cuda::std::declval<_Alloc>().allocate(
+                             ::cuda::std::declval<_SizeType>(), ::cuda::std::declval<_ConstVoidPtr>()))> : true_type
 {};
 
 // __has_construct
@@ -221,7 +221,7 @@ struct __has_construct_impl : false_type
 {};
 
 template <class _Alloc, class... _Args>
-struct __has_construct_impl<decltype((void) _CUDA_VSTD::declval<_Alloc>().construct(_CUDA_VSTD::declval<_Args>()...)),
+struct __has_construct_impl<decltype((void) ::cuda::std::declval<_Alloc>().construct(::cuda::std::declval<_Args>()...)),
                             _Alloc,
                             _Args...> : true_type
 {};
@@ -238,7 +238,7 @@ struct __has_destroy : false_type
 template <class _Alloc, class _Pointer>
 struct __has_destroy<_Alloc,
                      _Pointer,
-                     decltype((void) _CUDA_VSTD::declval<_Alloc>().destroy(_CUDA_VSTD::declval<_Pointer>()))>
+                     decltype((void) ::cuda::std::declval<_Alloc>().destroy(::cuda::std::declval<_Pointer>()))>
     : true_type
 {};
 
@@ -248,7 +248,7 @@ struct __has_max_size : false_type
 {};
 
 template <class _Alloc>
-struct __has_max_size<_Alloc, decltype((void) _CUDA_VSTD::declval<_Alloc&>().max_size())> : true_type
+struct __has_max_size<_Alloc, decltype((void) ::cuda::std::declval<_Alloc&>().max_size())> : true_type
 {};
 
 // __has_select_on_container_copy_construction
@@ -259,7 +259,7 @@ struct __has_select_on_container_copy_construction : false_type
 template <class _Alloc>
 struct __has_select_on_container_copy_construction<
   _Alloc,
-  decltype((void) _CUDA_VSTD::declval<_Alloc>().select_on_container_copy_construction())> : true_type
+  decltype((void) ::cuda::std::declval<_Alloc>().select_on_container_copy_construction())> : true_type
 {};
 
 template <class _Tp>
@@ -272,7 +272,7 @@ _CCCL_API constexpr _Tp* __to_raw_pointer(_Tp* __p) noexcept
 template <class _Pointer>
 _CCCL_API inline typename pointer_traits<_Pointer>::element_type* __to_raw_pointer(_Pointer __p) noexcept
 {
-  return _CUDA_VSTD::__to_raw_pointer(__p.operator->());
+  return ::cuda::std::__to_raw_pointer(__p.operator->());
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
@@ -285,7 +285,7 @@ _CCCL_API inline auto __to_raw_pointer(const _Pointer& __p) noexcept
 template <class _Pointer, class... _None>
 _CCCL_API inline auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 {
-  return _CUDA_VSTD::__to_raw_pointer(__p.operator->());
+  return ::cuda::std::__to_raw_pointer(__p.operator->());
 }
 #endif // _CCCL_STD_VER >= 2020
 
@@ -377,7 +377,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp, class... _Args, enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>::value, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
   {
-    __a.construct(__p, _CUDA_VSTD::forward<_Args>(__args)...);
+    __a.construct(__p, ::cuda::std::forward<_Args>(__args)...);
   }
   template <class _Tp,
             class... _Args,
@@ -386,9 +386,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type&, _Tp* __p, _Args&&... __args)
   {
 #if _CCCL_STD_VER >= 2020
-    _CUDA_VSTD::construct_at(__p, _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::construct_at(__p, ::cuda::std::forward<_Args>(__args)...);
 #else
-    ::new ((void*) __p) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
+    ::new ((void*) __p) _Tp(::cuda::std::forward<_Args>(__args)...);
 #endif
   }
 
@@ -401,7 +401,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p) noexcept
   {
 #if _CCCL_STD_VER >= 2020
-    _CUDA_VSTD::destroy_at(__p);
+    ::cuda::std::destroy_at(__p);
 #else
     __p->~_Tp();
 #endif
@@ -442,11 +442,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     for (; __begin1 != __end1; ++__begin1, (void) ++__begin2)
     {
       construct(__a,
-                _CUDA_VSTD::__to_raw_pointer(__begin2),
+                ::cuda::std::__to_raw_pointer(__begin2),
 #if !_CCCL_HAS_EXCEPTIONS()
-                _CUDA_VSTD::move(*__begin1)
+                ::cuda::std::move(*__begin1)
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-                _CUDA_VSTD::move_if_noexcept(*__begin1)
+                ::cuda::std::move_if_noexcept(*__begin1)
 #endif // _CCCL_HAS_EXCEPTIONS()
       );
     }
@@ -462,7 +462,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     ptrdiff_t _Np = __end1 - __begin1;
     if (_Np > 0)
     {
-      _CUDA_VSTD::memcpy(__begin2, __begin1, _Np * sizeof(_Tp));
+      ::cuda::std::memcpy(__begin2, __begin1, _Np * sizeof(_Tp));
       __begin2 += _Np;
     }
   }
@@ -473,7 +473,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   {
     for (; __begin1 != __end1; ++__begin1, (void) ++__begin2)
     {
-      construct(__a, _CUDA_VSTD::__to_raw_pointer(__begin2), *__begin1);
+      construct(__a, ::cuda::std::__to_raw_pointer(__begin2), *__begin1);
     }
   }
 
@@ -490,7 +490,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     ptrdiff_t _Np = __end1 - __begin1;
     if (_Np > 0)
     {
-      _CUDA_VSTD::memcpy(const_cast<_RawDestTp*>(__begin2), __begin1, _Np * sizeof(_DestTp));
+      ::cuda::std::memcpy(const_cast<_RawDestTp*>(__begin2), __begin1, _Np * sizeof(_DestTp));
       __begin2 += _Np;
     }
   }
@@ -504,11 +504,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     while (__end1 != __begin1)
     {
       construct(__a,
-                _CUDA_VSTD::__to_raw_pointer(__end2 - 1),
+                ::cuda::std::__to_raw_pointer(__end2 - 1),
 #if !_CCCL_HAS_EXCEPTIONS()
-                _CUDA_VSTD::move(*--__end1)
+                ::cuda::std::move(*--__end1)
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-                _CUDA_VSTD::move_if_noexcept(*--__end1)
+                ::cuda::std::move_if_noexcept(*--__end1)
 #endif // _CCCL_HAS_EXCEPTIONS()
       );
       --__end2;
@@ -526,7 +526,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     __end2 -= _Np;
     if (_Np > 0)
     {
-      _CUDA_VSTD::memcpy(__end2, __begin1, _Np * sizeof(_Tp));
+      ::cuda::std::memcpy(__end2, __begin1, _Np * sizeof(_Tp));
     }
   }
 };
@@ -543,10 +543,10 @@ struct __rebind_alloc_helper
 
 #undef _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ALLOCATOR_TRAITS_H
+#endif // _CUDA_STD___MEMORY_ALLOCATOR_TRAITS_H

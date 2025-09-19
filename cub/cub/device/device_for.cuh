@@ -45,9 +45,12 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -221,7 +224,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Bulk(void* d_temp_storage, size_t& temp_storage_bytes, ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    static_assert(_CUDA_VSTD::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
 
     if (d_temp_storage == nullptr)
     {
@@ -572,7 +575,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
-    static_assert(_CUDA_VSTD::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
@@ -699,7 +702,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(_CUDA_VSTD::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -826,7 +829,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(_CUDA_VSTD::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 
@@ -900,7 +903,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    const _CUDA_VSTD::extents<IndexType, Extents...>& extents,
+    const ::cuda::std::extents<IndexType, Extents...>& extents,
     OpType op,
     cudaStream_t stream = {})
   {
@@ -971,14 +974,14 @@ public:
   //!   error status
   template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtents(const _CUDA_VSTD::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
     using namespace cub::detail;
-    using extents_type      = _CUDA_VSTD::extents<IndexType, Extents...>;
+    using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
     using extent_index_type = typename extents_type::index_type;
-    using fast_mod_array_t  = _CUDA_VSTD::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    static constexpr auto seq            = _CUDA_VSTD::make_index_sequence<extents_type::rank()>{};
+    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
     fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
     fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
     for_each::op_wrapper_extents_t<OpType, extents_type, fast_mod_array_t> op_wrapper{

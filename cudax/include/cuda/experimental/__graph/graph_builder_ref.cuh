@@ -111,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \brief Test whether a `graph_builder` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator==(_CUDA_VSTD::nullptr_t, const graph_builder_ref& __rhs) noexcept
+  operator==(::cuda::std::nullptr_t, const graph_builder_ref& __rhs) noexcept
   {
     return !static_cast<bool>(__rhs);
   }
@@ -119,7 +119,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \brief Test whether a `graph_builder` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator==(const graph_builder_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+  operator==(const graph_builder_ref& __lhs, ::cuda::std::nullptr_t) noexcept
   {
     return !static_cast<bool>(__lhs);
   }
@@ -127,7 +127,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \brief Test whether a `graph_builder` object is not null.
   //! \return `true` if `__rhs` is not null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator!=(_CUDA_VSTD::nullptr_t, const graph_builder_ref& __rhs) noexcept
+  operator!=(::cuda::std::nullptr_t, const graph_builder_ref& __rhs) noexcept
   {
     return static_cast<bool>(__rhs);
   }
@@ -135,7 +135,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \brief Test whether a `graph_builder` object is not null.
   //! \return `true` if `__lhs` is not null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator!=(const graph_builder_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+  operator!=(const graph_builder_ref& __lhs, ::cuda::std::nullptr_t) noexcept
   {
     return static_cast<bool>(__lhs);
   }
@@ -164,20 +164,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \throws None
   _CCCL_HOST_API constexpr void swap(graph_builder_ref& __other) noexcept
   {
-    _CUDA_VSTD::swap(__graph_, __other.__graph_);
+    ::cuda::std::swap(__graph_, __other.__graph_);
   }
 
   //! \brief Retrieves the underlying CUDA graph object.
   //! \return The `cudaGraph_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
 
   //! \brief Retrieves the device on which the graph is built.
   //! \return The device on which the graph is built.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_device() const noexcept -> device_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_device() const noexcept -> device_ref
   {
     return __dev_;
   }
@@ -189,9 +189,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! new node.
   //! \throws cuda::std::cuda_error if adding the node fails.
   template <class _Node>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
   {
-    return add(_CCCL_MOVE(__node), _CUDA_VSTD::span<cudaGraphNode_t, 0>{});
+    return add(_CCCL_MOVE(__node), ::cuda::std::span<cudaGraphNode_t, 0>{});
   }
 
   //! \brief Adds a new node to the graph with specified dependencies.
@@ -222,17 +222,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! - If the number of dependencies is small, a stack-allocated buffer is used;
   //!   otherwise, a dynamically allocated array is used to store the dependant nodes.
   template <class _Node, size_t _Np>
-  _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::array<cudaGraphNode_t, _Np> __deps) -> graph_node_ref
+  _CCCL_HOST_API constexpr auto add(_Node __node, ::cuda::std::array<cudaGraphNode_t, _Np> __deps) -> graph_node_ref
   {
-    return add(_CCCL_MOVE(__node), _CUDA_VSTD::span{__deps});
+    return add(_CCCL_MOVE(__node), ::cuda::std::span{__deps});
   }
 
   //! \overload
   template <class _Node, size_t _Extent>
-  _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+  _CCCL_HOST_API constexpr auto add(_Node __node, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
   {
     // assert that the node descriptor returns a graph_node_ref object:
-    static_assert(_CUDA_VSTD::_IsSame<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>::value,
+    static_assert(::cuda::std::_IsSame<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>::value,
                   "node descriptors must return a graph_node_ref");
     return __node.__add_to_graph(__graph_, __deps);
   }
@@ -272,7 +272,7 @@ private:
   //! \throws cuda::std::cuda_error if `cudaGraphAddChildGraphNode` fails.
   template <size_t _Extent>
   [[nodiscard]] _CCCL_HOST_API auto
-  __add_to_graph(cudaGraph_t __parent, _CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+  __add_to_graph(cudaGraph_t __parent, ::cuda::std::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
   {
     graph_node_ref __child;
     __child.__graph_ = __graph_;

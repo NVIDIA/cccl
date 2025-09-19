@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_CONCEPTS_H
-#define _LIBCUDACXX___MDSPAN_CONCEPTS_H
+#ifndef _CUDA_STD___MDSPAN_CONCEPTS_H
+#define _CUDA_STD___MDSPAN_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -51,7 +51,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
@@ -118,6 +118,12 @@ _CCCL_CONCEPT __all_convertible_to_index_type =
   (is_convertible_v<_Indices, _IndexType> && ... && true)
   && (is_nothrow_constructible_v<_IndexType, _Indices> && ... && true);
 
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic());
+
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
+
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>
@@ -131,8 +137,8 @@ _CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
 template <class _Tp>
 _CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_CONCEPTS_H
+#endif // _CUDA_STD___MDSPAN_CONCEPTS_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_ROTATE_H
-#define _LIBCUDACXX___ALGORITHM_ROTATE_H
+#ifndef _CUDA_STD___ALGORITHM_ROTATE_H
+#define _CUDA_STD___ALGORITHM_ROTATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator>
@@ -41,8 +41,8 @@ _CCCL_API constexpr _ForwardIterator __rotate_left(_ForwardIterator __first, _Fo
   using _Ops       = _IterOps<_AlgPolicy>;
 
   value_type __tmp       = _Ops::__iter_move(__first);
-  _ForwardIterator __lm1 = _CUDA_VSTD::__move<_AlgPolicy>(_Ops::next(__first), __last, __first).second;
-  *__lm1                 = _CUDA_VSTD::move(__tmp);
+  _ForwardIterator __lm1 = ::cuda::std::__move<_AlgPolicy>(_Ops::next(__first), __last, __first).second;
+  *__lm1                 = ::cuda::std::move(__tmp);
   return __lm1;
 }
 
@@ -56,8 +56,8 @@ _CCCL_API constexpr _BidirectionalIterator __rotate_right(_BidirectionalIterator
   _BidirectionalIterator __lm1 = _Ops::prev(__last);
   value_type __tmp             = _Ops::__iter_move(__lm1);
   _BidirectionalIterator __fp1 =
-    _CUDA_VSTD::__move_backward<_AlgPolicy>(__first, __lm1, _CUDA_VSTD::move(__last)).second;
-  *__first = _CUDA_VSTD::move(__tmp);
+    ::cuda::std::__move_backward<_AlgPolicy>(__first, __lm1, ::cuda::std::move(__last)).second;
+  *__first = ::cuda::std::move(__tmp);
   return __fp1;
 }
 
@@ -131,10 +131,10 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
   const difference_type __m2 = _Ops::distance(__middle, __last);
   if (__m1 == __m2)
   {
-    _CUDA_VSTD::__swap_ranges<_AlgPolicy>(__first, __middle, __middle, __last);
+    ::cuda::std::__swap_ranges<_AlgPolicy>(__first, __middle, __middle, __last);
     return __middle;
   }
-  const difference_type __g = _CUDA_VSTD::__algo_gcd(__m1, __m2);
+  const difference_type __g = ::cuda::std::__algo_gcd(__m1, __m2);
   for (_RandomAccessIterator __p = __first + __g; __p != __first;)
   {
     value_type __t(_Ops::__iter_move(--__p));
@@ -154,7 +154,7 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
         __p2 = __first + (__m1 - __d);
       }
     } while (__p2 != __p);
-    *__p1 = _CUDA_VSTD::move(__t);
+    *__p1 = ::cuda::std::move(__t);
   }
   return __first + __m2;
 }
@@ -162,17 +162,17 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator>
 _CCCL_API constexpr _ForwardIterator __rotate_impl(
-  _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
+  _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, ::cuda::std::forward_iterator_tag)
 {
   using value_type = typename iterator_traits<_ForwardIterator>::value_type;
   if (is_trivially_move_assignable_v<value_type>)
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
-      return _CUDA_VSTD::__rotate_left<_AlgPolicy>(__first, __last);
+      return ::cuda::std::__rotate_left<_AlgPolicy>(__first, __last);
     }
   }
-  return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+  return ::cuda::std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -188,14 +188,14 @@ _CCCL_API constexpr _BidirectionalIterator __rotate_impl(
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
-      return _CUDA_VSTD::__rotate_left<_AlgPolicy>(__first, __last);
+      return ::cuda::std::__rotate_left<_AlgPolicy>(__first, __last);
     }
     if (_IterOps<_AlgPolicy>::next(__middle) == __last)
     {
-      return _CUDA_VSTD::__rotate_right<_AlgPolicy>(__first, __last);
+      return ::cuda::std::__rotate_right<_AlgPolicy>(__first, __last);
     }
   }
-  return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+  return ::cuda::std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -211,15 +211,15 @@ _CCCL_API constexpr _RandomAccessIterator __rotate_impl(
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
-      return _CUDA_VSTD::__rotate_left<_AlgPolicy>(__first, __last);
+      return ::cuda::std::__rotate_left<_AlgPolicy>(__first, __last);
     }
     if (_IterOps<_AlgPolicy>::next(__middle) == __last)
     {
-      return _CUDA_VSTD::__rotate_right<_AlgPolicy>(__first, __last);
+      return ::cuda::std::__rotate_right<_AlgPolicy>(__first, __last);
     }
-    return _CUDA_VSTD::__rotate_gcd<_AlgPolicy>(__first, __middle, __last);
+    return ::cuda::std::__rotate_gcd<_AlgPolicy>(__first, __middle, __last);
   }
-  return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+  return ::cuda::std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -235,27 +235,27 @@ _CCCL_API constexpr pair<_Iterator, _Iterator> __rotate(_Iterator __first, _Iter
   }
   if (__middle == __last)
   {
-    return _Ret(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last_iter));
+    return _Ret(::cuda::std::move(__first), ::cuda::std::move(__last_iter));
   }
 
   using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_Iterator>;
-  auto __result       = _CUDA_VSTD::__rotate_impl<_AlgPolicy>(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__middle), __last_iter, _IterCategory());
+  auto __result       = ::cuda::std::__rotate_impl<_AlgPolicy>(
+    ::cuda::std::move(__first), ::cuda::std::move(__middle), __last_iter, _IterCategory());
 
-  return _Ret(_CUDA_VSTD::move(__result), _CUDA_VSTD::move(__last_iter));
+  return _Ret(::cuda::std::move(__result), ::cuda::std::move(__last_iter));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _CCCL_API constexpr _ForwardIterator rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::__rotate<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__middle), _CUDA_VSTD::move(__last))
+  return ::cuda::std::__rotate<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first), ::cuda::std::move(__middle), ::cuda::std::move(__last))
     .first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_ROTATE_H
+#endif // _CUDA_STD___ALGORITHM_ROTATE_H

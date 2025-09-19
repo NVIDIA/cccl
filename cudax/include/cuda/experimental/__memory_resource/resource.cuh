@@ -32,15 +32,15 @@ namespace cuda::experimental
 
 template <class _Resource, class _OtherResource>
 _CCCL_CONCEPT __non_polymorphic_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherResource))(
-  requires(_CUDA_VMR::synchronous_resource<_Resource>),
-  requires(_CUDA_VMR::synchronous_resource<_OtherResource>),
+  requires(::cuda::mr::synchronous_resource<_Resource>),
+  requires(::cuda::mr::synchronous_resource<_OtherResource>),
   requires(__non_polymorphic<_Resource>),
   requires(__non_polymorphic<_OtherResource>));
 
 //! @brief Equality comparison between two resources of different types. Always returns false.
 _CCCL_TEMPLATE(class _Resource, class _OtherResource)
 _CCCL_REQUIRES(
-  (!_CUDA_VSTD::is_same_v<_Resource, _OtherResource>) _CCCL_AND __non_polymorphic_resources<_Resource, _OtherResource>)
+  (!::cuda::std::is_same_v<_Resource, _OtherResource>) _CCCL_AND __non_polymorphic_resources<_Resource, _OtherResource>)
 [[nodiscard]] bool operator==(_Resource const&, _OtherResource const&) noexcept
 {
   return false;
@@ -50,7 +50,7 @@ _CCCL_REQUIRES(
 //! @brief Inequality comparison between two resources of different types. Always returns true.
 _CCCL_TEMPLATE(class _Resource, class _OtherResource)
 _CCCL_REQUIRES(
-  (!_CUDA_VSTD::is_same_v<_Resource, _OtherResource>) _CCCL_AND __non_polymorphic_resources<_Resource, _OtherResource>)
+  (!::cuda::std::is_same_v<_Resource, _OtherResource>) _CCCL_AND __non_polymorphic_resources<_Resource, _OtherResource>)
 [[nodiscard]] bool operator!=(_Resource const&, _OtherResource const&) noexcept
 {
   return true;

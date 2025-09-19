@@ -31,9 +31,10 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/cmath>
-#include <cuda/std/functional> // ::cuda::std::identity
-#include <cuda/std/iterator> // _CUDA_VSTD::iter_value_t
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -91,8 +92,8 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>, InitT>,
+          typename InitT = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::iter_value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceNondeterministicKernelSource<

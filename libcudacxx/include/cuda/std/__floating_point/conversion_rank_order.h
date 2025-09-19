@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
-#define _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
+#ifndef _CUDA_STD___FLOATING_POINT_CONVERSION_RANK_ORDER_H
+#define _CUDA_STD___FLOATING_POINT_CONVERSION_RANK_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,10 +29,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_conv_rank_order
 {
+  __invalid = -1,
   __unordered,
   __greater,
   __equal,
@@ -40,64 +41,84 @@ enum class __fp_conv_rank_order
 };
 
 template <class _Lhs, class _Rhs>
-[[nodiscard]] _CCCL_API constexpr __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
 {
-  if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs> && __fp_is_subset_of_v<_Rhs, _Lhs>)
+  if constexpr (__is_fp_v<_Lhs> && __is_fp_v<_Rhs>)
   {
-#if _CCCL_HAS_LONG_DOUBLE()
-    // If double and long double have the same properties, long double has the higher subrank
-    if constexpr (__fp_is_subset_of_v<long double, double>)
+    if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs> && __fp_is_subset_of_v<_Rhs, _Lhs>)
     {
-      if constexpr (is_same_v<_Lhs, long double> && !is_same_v<_Rhs, long double>)
+#if _CCCL_HAS_LONG_DOUBLE()
+      // If double and long double have the same properties, long double has the higher subrank
+      if constexpr (__fp_is_subset_of_v<long double, double>)
       {
-        return __fp_conv_rank_order::__greater;
-      }
-      else if constexpr (!is_same_v<_Lhs, long double> && is_same_v<_Rhs, long double>)
-      {
-        return __fp_conv_rank_order::__less;
+        if constexpr (is_same_v<_Lhs, long double> && !is_same_v<_Rhs, long double>)
+        {
+          return __fp_conv_rank_order::__greater;
+        }
+        else if constexpr (!is_same_v<_Lhs, long double> && is_same_v<_Rhs, long double>)
+        {
+          return __fp_conv_rank_order::__less;
+        }
+        else
+        {
+          return __fp_conv_rank_order::__equal;
+        }
       }
       else
+#endif // _CCCL_HAS_LONG_DOUBLE()
       {
         return __fp_conv_rank_order::__equal;
       }
     }
-    else
-#endif // _CCCL_HAS_LONG_DOUBLE()
+    else if constexpr (__fp_is_subset_of_v<_Rhs, _Lhs>)
     {
-      return __fp_conv_rank_order::__equal;
+      return __fp_conv_rank_order::__greater;
     }
-  }
-  else if constexpr (__fp_is_subset_of_v<_Rhs, _Lhs>)
-  {
-    return __fp_conv_rank_order::__greater;
-  }
-  else if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs>)
-  {
-    return __fp_conv_rank_order::__less;
+    else if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs>)
+    {
+      return __fp_conv_rank_order::__less;
+    }
+    else
+    {
+      return __fp_conv_rank_order::__unordered;
+    }
   }
   else
   {
-    return __fp_conv_rank_order::__unordered;
+    return __fp_conv_rank_order::__invalid;
   }
 }
 
-_CCCL_TEMPLATE(class _Lhs, class _Rhs)
-_CCCL_REQUIRES(__is_fp_v<_Lhs>&& __is_fp_v<_Rhs>)
-inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
+//! @brief Returns the conversion rank order between two types. If any of the types is not a known floating point type,
+//!        returns __fp_conv_rank_order::__invalid.
+template <class _Lhs, class _Rhs>
+inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = ::cuda::std::__fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
+//! @brief Returns the conversion rank order between two types. Integral types are treated as `double`. Other types are
+//!        treated as unknown and return __fp_conv_rank_order::__invalid.
 template <class _Lhs, class _Rhs>
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
   __fp_conv_rank_order_v<conditional_t<is_integral_v<_Lhs>, double, _Lhs>,
                          conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
-_CCCL_TEMPLATE(class _From, class _To)
-_CCCL_REQUIRES(__is_fp_v<_From>&& __is_fp_v<_To>)
+//! @brief True if _From can be implicitly converted to _To according to the floating point conversion rank rules.
+//! @warning User should ensure that the types are known floating point types.
+//! @note If you want to check for explicit conversions, use __fp_is_explicit_conversion_v instead.
+template <class _From, class _To>
 inline constexpr bool __fp_is_implicit_conversion_v =
   __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__less
   || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+//! @brief True if _From can be explicitly converted to _To according to the floating point conversion rank rules.
+//! @warning User should ensure that the types are known floating point types.
+//! @note If you want to check for implicit conversions, use __fp_is_implicit_conversion_v instead.
+template <class _From, class _To>
+inline constexpr bool __fp_is_explicit_conversion_v =
+  __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__greater
+  || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__unordered;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H
+#endif // _CUDA_STD___FLOATING_POINT_CONVERSION_RANK_ORDER_H

@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::async_resource_ref properties
+// cuda::mr::resource_ref properties
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -37,22 +37,19 @@ namespace resource_test
 
 // Ensure we have the right size
 static_assert(
-  sizeof(cuda::mr::async_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
+  sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
     == (4 * sizeof(void*)),
   "");
 static_assert(
-  sizeof(
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
+  sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
     == (3 * sizeof(void*)),
   "");
 static_assert(
-  sizeof(
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
+  sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
     == (3 * sizeof(void*)),
   "");
 static_assert(
-  sizeof(
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_without_value<int>>)
+  sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_without_value<int>>)
     == (2 * sizeof(void*)),
   "");
 
@@ -90,7 +87,7 @@ void test_async_resource_ref()
 {
   constexpr int expected_initially = 42;
   test_resource<cuda::mr::host_accessible, Properties...> input{expected_initially};
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref{input};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref{input};
 
   // Check all the potentially stateful properties
   const int properties_with_value[] = {InvokeIfWithValue<Properties>(ref)...};
@@ -122,7 +119,7 @@ void test_async_resource_ref()
 void test_property_forwarding()
 {
   using res = test_resource<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>;
-  using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible, property_with_value<short>>;
+  using ref = cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>>;
 
   static_assert(cuda::mr::resource_with<res, property_with_value<short>, property_with_value<int>>, "");
   static_assert(!cuda::mr::resource_with<ref, property_with_value<short>, property_with_value<int>>, "");

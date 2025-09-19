@@ -47,10 +47,10 @@ namespace cuda::experimental
 // TODO we should consider defining a type that also wraps a device and a graph and making it a graph_inserter,
 //      and then we could return it here. It would serve as a non-advancing alternative to path_builder.
 template <class... _Nodes>
-_CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
-  -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>
+_CCCL_NODEBUG_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
+  -> ::cuda::std::array<cudaGraphNode_t, sizeof...(_Nodes)>
 {
-  return _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>{{graph_node_ref(__nodes).get()...}};
+  return ::cuda::std::array<cudaGraphNode_t, sizeof...(_Nodes)>{{graph_node_ref(__nodes).get()...}};
 }
 } // namespace cuda::experimental
 

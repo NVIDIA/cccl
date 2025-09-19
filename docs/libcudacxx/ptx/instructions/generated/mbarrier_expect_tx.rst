@@ -3,7 +3,7 @@
 
 mbarrier.expect_tx.relaxed.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.expect_tx.sem.scope.space.b64 [addr], txCount; // 1. PTX ISA 80, SM_90
    // .sem       = { .relaxed }
@@ -19,7 +19,7 @@ mbarrier.expect_tx.relaxed.cta.shared::cta.b64
 
 mbarrier.expect_tx.relaxed.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.expect_tx.sem.scope.space.b64 [addr], txCount; // 1. PTX ISA 80, SM_90
    // .sem       = { .relaxed }
@@ -35,7 +35,7 @@ mbarrier.expect_tx.relaxed.cluster.shared::cta.b64
 
 mbarrier.expect_tx.relaxed.cta.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.expect_tx.sem.scope.space.b64 [addr], txCount; // 2. PTX ISA 80, SM_90
    // .sem       = { .relaxed }
@@ -51,7 +51,7 @@ mbarrier.expect_tx.relaxed.cta.shared::cluster.b64
 
 mbarrier.expect_tx.relaxed.cluster.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.expect_tx.sem.scope.space.b64 [addr], txCount; // 2. PTX ISA 80, SM_90
    // .sem       = { .relaxed }

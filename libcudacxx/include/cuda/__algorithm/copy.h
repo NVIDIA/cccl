@@ -31,23 +31,23 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
 template <typename _SrcTy, typename _DstTy>
 _CCCL_HOST_API void
-__copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUDA_VSTD::span<_DstTy> __dst)
+__copy_bytes_impl(stream_ref __stream, ::cuda::std::span<_SrcTy> __src, ::cuda::std::span<_DstTy> __dst)
 {
-  static_assert(!_CUDA_VSTD::is_const_v<_DstTy>, "Copy destination can't be const");
-  static_assert(_CUDA_VSTD::is_trivially_copyable_v<_SrcTy> && _CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
+  static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
+  static_assert(::cuda::std::is_trivially_copyable_v<_SrcTy> && ::cuda::std::is_trivially_copyable_v<_DstTy>);
 
   if (__src.size_bytes() > __dst.size_bytes())
   {
-    _CUDA_VSTD::__throw_invalid_argument("Copy destination is too small to fit the source data");
+    ::cuda::std::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
 
-  _CUDA_DRIVER::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
+  ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
 }
 
 template <typename _SrcElem,
@@ -59,29 +59,29 @@ template <typename _SrcElem,
           typename _DstLayout,
           typename _DstAccessor>
 _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
-                                      _CUDA_VSTD::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
-                                      _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
+                                      ::cuda::std::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
+                                      ::cuda::std::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
 {
-  static_assert(_CUDA_VSTD::is_constructible_v<_DstExtents, _SrcExtents>,
+  static_assert(::cuda::std::is_constructible_v<_DstExtents, _SrcExtents>,
                 "Multidimensional copy requires both source and destination extents to be compatible");
-  static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
+  static_assert(::cuda::std::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
 
   // Check only destination, because the layout of destination is the same as source
   if (!__dst.is_exhaustive())
   {
-    _CUDA_VSTD::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
+    ::cuda::std::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
 
   if (__src.extents() != __dst.extents())
   {
-    _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
+    ::cuda::std::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    _CUDA_VSTD::span(__src.data_handle(), __src.mapping().required_span_size()),
-    _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()));
+    ::cuda::std::span(__src.data_handle(), __src.mapping().required_span_size()),
+    ::cuda::std::span(__dst.data_handle(), __dst.mapping().required_span_size()));
 }
 } // namespace __detail
 
@@ -104,8 +104,8 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    _CUDA_VSTD::span(_CUDA_VSTD::forward<_SrcTy>(__src)),
-    _CUDA_VSTD::span(_CUDA_VSTD::forward<_DstTy>(__dst)));
+    ::cuda::std::span(::cuda::std::forward<_SrcTy>(__src)),
+    ::cuda::std::span(::cuda::std::forward<_DstTy>(__dst)));
 }
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided
@@ -130,11 +130,11 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_SrcTy>(__src)),
-    ::cuda::__as_mdspan(_CUDA_VSTD::forward<_DstTy>(__dst)));
+    ::cuda::__as_mdspan(::cuda::std::forward<_SrcTy>(__src)),
+    ::cuda::__as_mdspan(::cuda::std::forward<_DstTy>(__dst)));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

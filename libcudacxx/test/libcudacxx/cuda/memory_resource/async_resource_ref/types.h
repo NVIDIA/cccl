@@ -59,11 +59,11 @@ struct test_resource
   int _val = 0;
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::__is_included_in_v<Property, Properties...>)
+  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && ::cuda::std::__is_included_in_v<Property, Properties...>)
   friend void get_property(const test_resource&, Property) noexcept {}
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>)
+  _CCCL_REQUIRES(cuda::property_with_value<Property>&& ::cuda::std::__is_included_in_v<Property, Properties...>)
   friend typename Property::value_type get_property(const test_resource& res, Property) noexcept
   {
     return static_cast<typename Property::value_type>(res._val);

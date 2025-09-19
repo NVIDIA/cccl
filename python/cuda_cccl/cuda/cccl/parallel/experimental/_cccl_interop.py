@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
+import enum
 import functools
 import os
 import subprocess
@@ -30,12 +31,10 @@ from cuda.cccl import get_include_paths  # type: ignore
 
 from ._bindings import (
     CommonData,
-    IntEnumerationMember,
     Iterator,
     IteratorKind,
     IteratorState,
     Op,
-    OpKind,
     Pointer,
     TypeEnum,
     TypeInfo,
@@ -44,6 +43,7 @@ from ._bindings import (
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .op import OpKind
 from .typing import DeviceArrayLike, GpuStruct
 
 _TYPE_TO_ENUM = {
@@ -55,6 +55,7 @@ _TYPE_TO_ENUM = {
     types.uint16: TypeEnum.UINT16,
     types.uint32: TypeEnum.UINT32,
     types.uint64: TypeEnum.UINT64,
+    types.float16: TypeEnum.FLOAT16,
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }
@@ -64,7 +65,7 @@ if TYPE_CHECKING:
     from numba.core.typing import Signature
 
 
-def _type_to_enum(numba_type: types.Type) -> IntEnumerationMember:
+def _type_to_enum(numba_type: types.Type) -> TypeEnum:
     if numba_type in _TYPE_TO_ENUM:
         return _TYPE_TO_ENUM[numba_type]
     return TypeEnum.STORAGE
@@ -109,41 +110,6 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     )
 
 
-def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
-    context = cuda.descriptor.cuda_target.target_context
-    numba_type = it.numba_type
-    state_type = it.state_type
-    size = context.get_value_type(state_type).get_abi_size(context.target_data)
-    iterator_state = memoryview(it.state)
-    if not iterator_state.nbytes == size:
-        raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match size of numba type, {size} bytes"
-        )
-    alignment = context.get_value_type(numba_type).get_abi_alignment(
-        context.target_data
-    )
-    (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=deref_abi_name,
-        ltoir=deref_ltoir,
-    )
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        _numba_type_to_info(it.value_type),
-        state=it.state,
-    )
-
-
 def _none_to_cccl_iter() -> Iterator:
     # Any type could be used here, we just need to pass NULL.
     info = _numpy_type_to_info(np.uint8)
@@ -166,12 +132,71 @@ def type_enum_as_name(enum_value: int) -> str:
     )[enum_value]
 
 
-def to_cccl_iter(array_or_iterator) -> Iterator:
-    if array_or_iterator is None:
+class _IteratorIO(enum.Enum):
+    INPUT = 0
+    OUTPUT = 1
+
+
+def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
+    context = cuda.descriptor.cuda_target.target_context
+    state_ptr_type = it.state_ptr_type
+    state_type = it.state_type
+    size = context.get_value_type(state_type).get_abi_size(context.target_data)
+    iterator_state = memoryview(it.state)
+    if not iterator_state.nbytes == size:
+        raise ValueError(
+            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
+            f"does not match size of numba type, {size} bytes"
+        )
+    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
+        context.target_data
+    )
+
+    advance_abi_name, advance_ltoir = it.get_advance_ltoir()
+    match io_kind:
+        case _IteratorIO.INPUT:
+            deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
+        case _IteratorIO.OUTPUT:
+            deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
+        case _:
+            raise ValueError(f"Invalid io_kind: {io_kind}")
+
+    advance_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=advance_abi_name,
+        ltoir=advance_ltoir,
+    )
+    deref_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=deref_abi_name,
+        ltoir=deref_ltoir,
+    )
+    return Iterator(
+        alignment,
+        IteratorKind.ITERATOR,
+        advance_op,
+        deref_op,
+        _numba_type_to_info(it.value_type),
+        state=it.state,
+    )
+
+
+def _to_cccl_iter(
+    it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
+) -> Iterator:
+    if it is None:
         return _none_to_cccl_iter()
-    if isinstance(array_or_iterator, IteratorBase):
-        return _iterator_to_cccl_iter(array_or_iterator)
-    return _device_array_to_cccl_iter(array_or_iterator)
+    if isinstance(it, IteratorBase):
+        return _iterator_to_cccl_iter(it, io_kind)
+    return _device_array_to_cccl_iter(it)
+
+
+def to_cccl_input_iter(array_or_iterator) -> Iterator:
+    return _to_cccl_iter(array_or_iterator, _IteratorIO.INPUT)
+
+
+def to_cccl_output_iter(array_or_iterator) -> Iterator:
+    return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
@@ -215,7 +240,8 @@ def _create_void_ptr_wrapper(op, sig):
             ret_type = context.get_value_type(sig.return_type)
 
             # Bitcast from void* to the appropriate pointer types
-            input_ptrs = [builder.bitcast(p, t.as_pointer()) for p, t in zip(args[:-1], arg_types)]
+            input_ptrs = [builder.bitcast(p, t.as_pointer())
+                                          for p, t in zip(args[:-1], arg_types)]
             ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
 
             # Load input values from pointers
@@ -251,15 +277,29 @@ def _create_void_ptr_wrapper(op, sig):
     return wrapper_func, void_sig
 
 
-def to_cccl_op(op: Callable, sig: Signature) -> Op:
-    """Return an `Op` object corresponding to the given callable.
+def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
+    """Return an `Op` object corresponding to the given callable or well-known operation.
 
-    Importantly, this wraps the callable in a device function that takes void* arguments
+    For well-known operations (Ops), returns an Op with the appropriate
+    kind and empty ltoir/state.
+
+    For callables, wraps the callable in a device function that takes void* arguments
     and a void* return value. This is the only way to match the corresponding "extern"
     declaration of the device function in the C code, which knows nothing about the types
     of the arguments and return value. The two functions must have the same signature in
     order to link correctly without violating ODR.
     """
+    # Check if op is a well-known operation
+    if isinstance(op, OpKind):
+        return Op(
+            operator_type=op,
+            name="",
+            ltoir=b"",
+            state_alignment=1,
+            state=b"",
+        )
+
+    # op is a callable:
     wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
 
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
@@ -375,7 +415,7 @@ def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
         it = array_or_iterator
         fn_impl = it.host_advance
         if fn_impl is not None:
-            cccl_it.host_advance_fn = _make_host_cfunc(it.numba_type, fn_impl)
+            cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
         else:
             raise ValueError(
                 f"Iterator of type {type(it)} does not provide definition of host_advance function"

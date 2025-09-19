@@ -47,7 +47,9 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -154,9 +156,9 @@ class BlockExchange
   static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
   static constexpr int TIME_SLICED_THREADS =
-    WARP_TIME_SLICING ? _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+    WARP_TIME_SLICING ? ::cuda::std::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
   static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
-  static constexpr int WARP_TIME_SLICED_THREADS = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int WARP_TIME_SLICED_THREADS = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ITEMS_PER_THREAD;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise

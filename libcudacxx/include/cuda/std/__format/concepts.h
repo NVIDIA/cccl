@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_CONCEPTS_H
-#define _LIBCUDACXX___FORMAT_CONCEPTS_H
+#ifndef _CUDA_STD___FORMAT_CONCEPTS_H
+#define _CUDA_STD___FORMAT_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 /// The character type specializations of \ref formatter.
 template <class _CharT>
@@ -62,8 +62,8 @@ _CCCL_CONCEPT __formattable_with_helper = _CCCL_REQUIRES_EXPR(
 template <class _Tp, class _Context, class _Formatter = typename _Context::template formatter_type<remove_const_t<_Tp>>>
 _CCCL_CONCEPT __formattable_with = semiregular<_Formatter> && __formattable_with_helper<_Tp, _Context, _Formatter>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_CONCEPTS_H
+#endif // _CUDA_STD___FORMAT_CONCEPTS_H

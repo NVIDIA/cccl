@@ -10,4 +10,4 @@ Random Number Engine Adaptors
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__random__number__engine__adaptors*
+   ../../api/group__random__number__engine__adaptors*

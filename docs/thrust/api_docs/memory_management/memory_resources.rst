@@ -15,4 +15,4 @@ Memory Resources
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__memory__resources*
+   ../../api/group__memory__resources*

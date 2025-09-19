@@ -30,10 +30,12 @@ from .iterators import (
     CacheModifiedInputIterator,
     ConstantIterator,
     CountingIterator,
-    ReverseInputIterator,
-    ReverseOutputIterator,
+    ReverseIterator,
     TransformIterator,
+    TransformOutputIterator,
+    ZipIterator,
 )
+from .op import OpKind
 from .struct import gpu_struct
 
 __all__ = [
@@ -57,13 +59,15 @@ __all__ = [
     "make_unary_transform",
     "make_unique_by_key",
     "merge_sort",
+    "OpKind",
     "radix_sort",
     "reduce_into",
-    "ReverseInputIterator",
-    "ReverseOutputIterator",
+    "ReverseIterator",
     "segmented_reduce",
     "SortOrder",
     "TransformIterator",
+    "TransformOutputIterator",
     "unary_transform",
     "unique_by_key",
+    "ZipIterator",
 ]

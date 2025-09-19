@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_OPTIONAL_REF_H
-#define _LIBCUDACXX___OPTIONAL_OPTIONAL_REF_H
+#ifndef _CUDA_STD___OPTIONAL_OPTIONAL_REF_H
+#define _CUDA_STD___OPTIONAL_OPTIONAL_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +48,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class _Tp>
@@ -63,7 +63,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr _Ref __make_reference(_Arg&& __arg) noexcept
   {
     static_assert(is_reference_v<_Ref>, "optional<T&>: make-reference requires a reference as argument");
-    return _Ref(_CUDA_VSTD::forward<_Arg>(__arg));
+    return _Ref(::cuda::std::forward<_Arg>(__arg));
   }
 
   // Needed to interface with optional<T>
@@ -98,21 +98,21 @@ public:
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(is_constructible_v<_Tp&, _Arg> _CCCL_AND(!__from_temporary<_Arg>))
   _CCCL_API explicit constexpr optional(in_place_t, _Arg&& __arg) noexcept
-      : __value_(_CUDA_VSTD::addressof(__make_reference<_Tp&>(_CUDA_VSTD::forward<_Arg>(__arg))))
+      : __value_(::cuda::std::addressof(__make_reference<_Tp&>(::cuda::std::forward<_Arg>(__arg))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(
     (!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
-  _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
-      : __value_(_CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
+  _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+      : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND(!is_convertible_v<_Up, _Tp&>)
                    _CCCL_AND is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
-  _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
-      : __value_(_CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
+  _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
+      : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -121,16 +121,16 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(is_convertible_v<_Up&, _Tp&> _CCCL_AND(!__from_temporary<_Up&>))
-  _CCCL_API constexpr optional(optional<_Up>& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up&>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+  _CCCL_API constexpr optional(optional<_Up>& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up&>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(
     (!is_convertible_v<_Up&, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, _Up&> _CCCL_AND(!__from_temporary<_Up&>))
   _CCCL_API explicit constexpr optional(optional<_Up>& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up&>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up&>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -140,16 +140,16 @@ public:
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(is_convertible_v<const _Up&, _Tp&> _CCCL_AND(!__from_temporary<const _Up&>))
   _CCCL_API constexpr optional(const optional<_Up>& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up&>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<const _Up&>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_convertible_v<const _Up&, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, const _Up&> _CCCL_AND(
     !__from_temporary<const _Up&>))
   _CCCL_API explicit constexpr optional(const optional<_Up>& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up&>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<const _Up&>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -158,18 +158,18 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
-  _CCCL_API constexpr optional(optional<_Up>&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
+  _CCCL_API constexpr optional(optional<_Up>&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
-          __u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u.value()))) : nullptr)
+          __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(
     (!is_convertible_v<_Up, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API explicit constexpr optional(optional<_Up>&& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(
-          __u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u.value()))) : nullptr)
+          __u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u.value()))) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -179,16 +179,16 @@ public:
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(is_convertible_v<const _Up, _Tp&> _CCCL_AND(!__from_temporary<const _Up>))
   _CCCL_API constexpr optional(const optional<_Up>&& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<const _Up>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_convertible_v<const _Up, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, const _Up> _CCCL_AND(
     !__from_temporary<const _Up>))
   _CCCL_API explicit constexpr optional(const optional<_Up>&& __u) noexcept(
-    noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up>())))
-      : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
+    noexcept(static_cast<_Tp&>(::cuda::std::declval<const _Up>())))
+      : __value_(__u.has_value() ? ::cuda::std::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
@@ -206,15 +206,15 @@ public:
 
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES(is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
-  _CCCL_API constexpr _Tp& emplace(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
+  _CCCL_API constexpr _Tp& emplace(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {
-    __value_ = _CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u)));
+    __value_ = ::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u)));
     return *__value_;
   }
 
   _CCCL_API constexpr void swap(optional& __rhs) noexcept
   {
-    return _CUDA_VSTD::swap(__value_, __rhs.__value_);
+    return ::cuda::std::swap(__value_, __rhs.__value_);
   }
 
   _CCCL_API constexpr _Tp* operator->() const noexcept
@@ -256,7 +256,7 @@ public:
   {
     static_assert(is_copy_constructible_v<_Tp>, "optional<T&>::value_or: T must be copy constructible");
     static_assert(is_convertible_v<_Up, _Tp>, "optional<T&>::value_or: U must be convertible to T");
-    return __value_ != nullptr ? *__value_ : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
+    return __value_ != nullptr ? *__value_ : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
   template <class _Func>
@@ -267,7 +267,7 @@ public:
                   "optional<T&>::and_then: Result of f(value()) must be a specialization of std::optional");
     if (__value_ != nullptr)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), *__value_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Func>(__f), *__value_);
     }
     return remove_cvref_t<_Up>();
   }
@@ -285,11 +285,11 @@ public:
     {
       if constexpr (is_lvalue_reference_v<_Up>)
       {
-        return optional<_Up>(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), *__value_));
+        return optional<_Up>(::cuda::std::invoke(::cuda::std::forward<_Func>(__f), *__value_));
       }
       else
       {
-        return optional<_Up>(__optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Func>(__f), *__value_);
+        return optional<_Up>(__optional_construct_from_invoke_tag{}, ::cuda::std::forward<_Func>(__f), *__value_);
       }
     }
     return optional<_Up>();
@@ -306,7 +306,7 @@ public:
     {
       return *this;
     }
-    return _CUDA_VSTD::forward<_Func>(__f)();
+    return ::cuda::std::forward<_Func>(__f)();
   }
 
   _CCCL_API constexpr void reset() noexcept
@@ -317,8 +317,8 @@ public:
 
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_OPTIONAL_REF_H
+#endif // _CUDA_STD___OPTIONAL_OPTIONAL_REF_H

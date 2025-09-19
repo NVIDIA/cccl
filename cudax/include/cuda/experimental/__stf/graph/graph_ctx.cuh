@@ -294,11 +294,8 @@ public:
   template <typename... Deps>
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto result =
-      graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return graph_task<Deps...>(
+      *this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
   }
 
   // submit a new stage : this will submit a graph in a stream that we return
@@ -320,10 +317,15 @@ public:
       submit();
     }
     assert(state.submitted_stream);
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
+
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
@@ -356,12 +358,6 @@ public:
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
-    // Note that we comment this out for now, so that it is possible to use
-    // the print_to_dot method; but we may perhaps discard this graph to
-    // some dedicated member variable.
-    // Ensure nobody tries to use that graph again ...
-    // state.set_graph(nullptr);
-
     state.submitted = true;
     set_phase(backend_ctx_untyped::phase::submitted);
   }
@@ -381,11 +377,6 @@ public:
 
     state.graph_stage++;
 
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
     // fprintf(stderr, "Starting stage %ld : previous graph %p new graph %p\n", state.graph_stage, prev_graph,
     //         new_graph);
   }
@@ -441,7 +432,11 @@ public:
     size_t nnodes;
 
     cuda_safe_call(cudaGraphGetNodes(*g, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     auto& state = this->state();
 
@@ -499,7 +494,11 @@ public:
     cuda_safe_call(cudaGraphGetNodes(g, nullptr, &numNodes));
 
     size_t numEdges;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cuuint64_t mem_attr;
     cuda_safe_call(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
@@ -617,7 +616,11 @@ private:
     size_t nnodes;
 
     cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cudaGraphExec_t local_exec_graph = nullptr;
 

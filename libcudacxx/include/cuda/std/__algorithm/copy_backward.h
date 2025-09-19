@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COPY_BACKWARD_H
-#define _LIBCUDACXX___ALGORITHM_COPY_BACKWARD_H
+#ifndef _CUDA_STD___ALGORITHM_COPY_BACKWARD_H
+#define _CUDA_STD___ALGORITHM_COPY_BACKWARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator, class _OutputIterator>
@@ -69,12 +69,12 @@ template <class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _BidirectionalIterator2
 copy_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
-  return _CUDA_VSTD::__copy_backward(
-    _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result));
+  return ::cuda::std::__copy_backward(
+    ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_COPY_BACKWARD_H
+#endif // _CUDA_STD___ALGORITHM_COPY_BACKWARD_H

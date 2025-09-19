@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_MEMORY_RESOURCE_H
-#define _LIBCUDACXX___FWD_MEMORY_RESOURCE_H
+#ifndef _CUDA_STD___FWD_MEMORY_RESOURCE_H
+#define _CUDA_STD___FWD_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace pmr
 {
@@ -30,8 +30,8 @@ template <class _ValueType>
 class _CCCL_TYPE_VISIBILITY_DEFAULT polymorphic_allocator;
 } // namespace pmr
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_MEMORY_RESOURCE_H
+#endif // _CUDA_STD___FWD_MEMORY_RESOURCE_H

@@ -38,7 +38,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************
  * memcpy_async code:
@@ -98,7 +98,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
 
-template <typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
+template <typename _Group, class _Tp, ::cuda::std::size_t _Alignment, thread_scope _Sco, typename _CompF>
 _CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
@@ -124,7 +124,7 @@ _CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
   _Tp const* __source,
-  _CUDA_VSTD::size_t __size,
+  ::cuda::std::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
   _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
@@ -136,7 +136,7 @@ _CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
-  _CUDA_VSTD::size_t __size,
+  ::cuda::std::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
   _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
@@ -144,7 +144,7 @@ _CCCL_API inline async_contract_fulfillment memcpy_async(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
 
-template <typename _Group, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
+template <typename _Group, ::cuda::std::size_t _Alignment, thread_scope _Sco, typename _CompF>
 _CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
@@ -170,7 +170,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_S
     __barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

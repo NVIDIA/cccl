@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class... _Iterators>
 class zip_iterator;
@@ -42,7 +42,7 @@ inline constexpr bool __is_zip_function = false;
 template <class _Fn>
 inline constexpr bool __is_zip_function<zip_function<_Fn>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

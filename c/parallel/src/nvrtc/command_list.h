@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <variant>
 
 #include <nvrtc.h>
 
@@ -66,8 +67,8 @@ struct nvrtc_get_name
 };
 struct nvrtc_compile
 {
-  const char** args;
-  size_t num_args;
+  const char** args = nullptr;
+  size_t num_args   = 0;
 };
 struct nvrtc_get_ptx
 {
@@ -75,10 +76,16 @@ struct nvrtc_get_ptx
 };
 struct nvrtc_ltoir
 {
-  const char* ltoir;
-  size_t ltsz;
+  const char* ltoir = nullptr;
+  size_t size       = 0;
 };
-using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
+struct nvrtc_code
+{
+  const char* code = nullptr;
+  size_t size      = 0;
+};
+using nvrtc_linkable      = std::variant<nvrtc_ltoir, nvrtc_code>;
+using nvrtc_linkable_list = std::vector<nvrtc_linkable>;
 struct nvrtc_jitlink_cleanup
 {
   nvrtc_link_result& link_result_ref;
@@ -86,6 +93,8 @@ struct nvrtc_jitlink_cleanup
 struct nvrtc_jitlink
 {
   nvJitLinkHandle handle{};
+  uint32_t numOpts{};
+  const char** opts{};
 
   nvrtc_jitlink()                     = delete;
   nvrtc_jitlink(const nvrtc_jitlink&) = delete;
@@ -97,6 +106,8 @@ struct nvrtc_jitlink
 
   nvrtc_jitlink(uint32_t numOpts, const char** opts)
       : handle(nullptr)
+      , numOpts(numOpts)
+      , opts(opts)
   {
     if (opts)
     {
@@ -122,6 +133,7 @@ struct nvrtc2_lto_context
 {
   nvrtc_jitlink jit;
   nvrtcProgram program{};
+  nvrtc_compile compile_args{};
   std::string_view program_name = "test";
 };
 
@@ -129,6 +141,13 @@ using nvrtc2_top_level_nl   = node_list<nvrtc2_lto_context, nvrtc2_top_level>;
 using nvrtc2_pre_build_nl   = node_list<nvrtc2_lto_context, nvrtc2_pre_build>;
 using nvrtc2_link_result_nl = node_list<nvrtc2_lto_context, nvrtc2_link_result>;
 using nvrtc2_post_build_nl  = node_list<nvrtc2_lto_context, nvrtc2_post_build>;
+
+inline nvrtc2_top_level_nl begin_linking_nvrtc_program(uint32_t numLtoOpts, const char** ltoOpts)
+{
+  nvrtc2_lto_context context{nvrtc_jitlink(numLtoOpts, ltoOpts)};
+
+  return {std::move(context)};
+}
 
 struct nvrtc2_post_build
 {
@@ -156,19 +175,32 @@ struct nvrtc2_post_build
     return ret;
   }
 
+  inline std::pair<std::size_t, std::unique_ptr<char[]>> get_program_ltoir()
+  {
+    auto ltoir = get_ltoir();
+    cleanup_program();
+    return ltoir;
+  }
+
   inline nvrtc2_top_level_nl link_program()
+  {
+    auto [ltoir_size, ltoir] = get_ltoir();
+    check(nvJitLinkAddData(
+      context.jit.handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, context.program_name.data()));
+    return cleanup_program();
+  }
+
+private:
+  inline std::pair<std::size_t, std::unique_ptr<char[]>> get_ltoir()
   {
     std::size_t ltoir_size{};
     check(nvrtcGetLTOIRSize(context.program, &ltoir_size));
     std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
     check(nvrtcGetLTOIR(context.program, ltoir.get()));
-    check(nvJitLinkAddData(
-      context.jit.handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, context.program_name.data()));
 
-    return cleanup_program();
+    return {ltoir_size, std::move(ltoir)};
   }
 
-private:
   inline nvrtc2_top_level_nl cleanup_program()
   {
     nvrtcDestroyProgram(&context.program);
@@ -209,6 +241,8 @@ struct nvrtc2_pre_build
     }
     check(result);
 
+    context.compile_args = {compile_args.args, n_actual_args};
+
     return {std::move(context)};
   }
 };
@@ -231,18 +265,60 @@ struct nvrtc2_top_level
   inline nvrtc2_top_level_nl add_link(nvrtc_ltoir arg)
   {
     check(nvJitLinkAddData(
-      context.jit.handle, NVJITLINK_INPUT_LTOIR, (const void*) arg.ltoir, arg.ltsz, context.program_name.data()));
+      context.jit.handle, NVJITLINK_INPUT_LTOIR, (const void*) arg.ltoir, arg.size, context.program_name.data()));
     return {std::move(context)};
   }
 
   // Add linkable units to whole program
-  inline nvrtc2_top_level_nl add_link_list(nvrtc_ltoir_list list)
+  inline nvrtc2_top_level_nl add_link_list(nvrtc_linkable_list list)
   {
-    for (const auto& lto : list)
+    // Partition: move all LTO-IR items to the front
+    auto ltoir_end = std::partition(list.begin(), list.end(), [](const auto& linkable) {
+      return std::holds_alternative<nvrtc_ltoir>(linkable);
+    });
+
+    // Collect all code items
+    std::string user_program;
+    for (auto it = ltoir_end; it != list.end(); ++it)
     {
-      check(nvJitLinkAddData(
-        context.jit.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, lto.ltsz, context.program_name.data()));
+      const auto& code = std::get<nvrtc_code>(*it);
+      user_program.append(code.code, code.size);
     }
+
+    // Compile accumulated code if any
+    std::pair<std::size_t, std::unique_ptr<char[]>> user_program_ltoir;
+
+    if (!user_program.empty())
+    {
+      user_program_ltoir =
+        begin_linking_nvrtc_program(context.jit.numOpts, context.jit.opts)
+          ->add_program(nvrtc_translation_unit{user_program.c_str(), "user_tu"})
+          ->compile_program({context.compile_args.args, context.compile_args.num_args})
+          ->get_program_ltoir();
+
+      if (user_program_ltoir.first)
+      {
+        // Replace the first code item with the compiled LTO-IR
+        *ltoir_end = nvrtc_ltoir{user_program_ltoir.second.get(), user_program_ltoir.first};
+        ++ltoir_end;
+      }
+    }
+
+    // Add all LTO-IR items to the linker
+    for (auto it = list.begin(); it != ltoir_end; ++it)
+    {
+      const auto& ltoir = std::get<nvrtc_ltoir>(*it);
+      if (ltoir.size)
+      {
+        check(nvJitLinkAddData(
+          context.jit.handle,
+          NVJITLINK_INPUT_LTOIR,
+          (const void*) ltoir.ltoir,
+          ltoir.size,
+          context.program_name.data()));
+      }
+    }
+
     return {std::move(context)};
   }
 
@@ -285,10 +361,3 @@ struct nvrtc2_top_level
     return link_result;
   }
 };
-
-inline nvrtc2_top_level_nl begin_linking_nvrtc_program(uint32_t numLtoOpts, const char** ltoOpts)
-{
-  nvrtc2_lto_context context{nvrtc_jitlink(numLtoOpts, ltoOpts)};
-
-  return {std::move(context)};
-}
