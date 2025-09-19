@@ -78,9 +78,10 @@
 #  ifndef CUB_RUNTIME_FUNCTION
 #    if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
 #      define CUB_RDC_ENABLED
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
+#      define CUB_RUNTIME_FUNCTION _CCCL_API
 #    else // RDC disabled:
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST
+// #      define CUB_RUNTIME_FUNCTION _CCCL_HOST_API // let's try uniform macros
+#      define CUB_RUNTIME_FUNCTION _CCCL_API
 #    endif // RDC enabled
 #  endif // CUB_RUNTIME_FUNCTION predefined
 
