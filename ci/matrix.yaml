@@ -21,9 +21,6 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    # Build and test CUB on current CTK:
-    - {jobs: ['build'],                                              project: 'cub', std: 'max', cxx: ['gcc']}
-    - {jobs: ['test_nolid', 'test_lid0', 'test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'], gpu: 'rtxa6000'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
