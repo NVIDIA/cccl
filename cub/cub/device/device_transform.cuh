@@ -29,7 +29,7 @@ struct __return_constant
   T value;
 
   template <typename... Args>
-  THRUST_DEVICE_FUNCTION auto operator()(Args&&...) const -> T
+  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
   {
     return value;
   }
