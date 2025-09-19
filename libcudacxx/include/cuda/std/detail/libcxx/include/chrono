@@ -843,6 +843,10 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/file_clock.h>
+#include <cuda/std/__chrono/high_resolution_clock.h>
+#include <cuda/std/__chrono/steady_clock.h>
+#include <cuda/std/__chrono/system_clock.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -869,78 +873,12 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // chrono user-defined literals; this seems like the lesser of two evils, so...
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
-_CCCL_BEGIN_NAMESPACE_FILESYSTEM
-struct _FilesystemClock;
-_CCCL_END_NAMESPACE_FILESYSTEM
-
 #define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
-//////////////////////////////////////////////////////////
-/////////////////////// clocks ///////////////////////////
-//////////////////////////////////////////////////////////
-class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
-{
-public:
-  using duration                        = _LIBCUDACXX_SYS_CLOCK_DURATION;
-  using rep                             = duration::rep;
-  using period                          = duration::period;
-  using time_point                      = chrono::time_point<system_clock>;
-  static constexpr const bool is_steady = false;
-
-  [[nodiscard]] _CCCL_API inline static time_point now() noexcept
-  {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (return time_point(duration_cast<duration>(nanoseconds(
-        ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
-          .count())));),
-      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
-  }
-
-  [[nodiscard]] _CCCL_API inline static time_t to_time_t(const time_point& __t) noexcept
-  {
-    return time_t(duration_cast<seconds>(__t.time_since_epoch()).count());
-  }
-
-  [[nodiscard]] _CCCL_API inline static time_point from_time_t(time_t __t) noexcept
-  {
-    return time_point(seconds(__t));
-  }
-};
-
-#if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
-class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
-{
-public:
-  using duration                        = nanoseconds;
-  using rep                             = duration::rep;
-  using period                          = duration::period;
-  using time_point                      = chrono::time_point<steady_clock, duration>;
-  static constexpr const bool is_steady = true;
-
-  static time_point now() noexcept;
-};
-
-using high_resolution_clock = steady_clock;
-#else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
-using high_resolution_clock = system_clock;
-#endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
-
-// [time.clock.file], type file_clock
-using file_clock = ::cuda::std::__fs::filesystem::_FilesystemClock;
-
-template <class _Duration>
-using file_time = time_point<file_clock, _Duration>;
-
-template <class _Duration>
-using sys_time    = time_point<system_clock, _Duration>;
-using sys_seconds = sys_time<seconds>;
-using sys_days    = sys_time<days>;
 
 struct local_t
 {};
