@@ -1970,8 +1970,6 @@ cdef extern from "cccl/c/segmented_sort.h":
         cccl_sort_order_t sort_order,
         cccl_iterator_t d_keys_in,
         cccl_iterator_t d_keys_out,
-        cccl_iterator_t d_values_in,
-        cccl_iterator_t d_values_out,
         cccl_iterator_t begin_offset_in,
         cccl_iterator_t end_offset_in,
         int,
@@ -1994,7 +1992,7 @@ cdef extern from "cccl/c/segmented_sort.h":
         int64_t num_segments,
         cccl_iterator_t start_offset_in,
         cccl_iterator_t end_offset_in,
-        bool is_overwrite_okay,
+        bint is_overwrite_okay,
         int* selector,
         CUstream stream
     ) nogil
