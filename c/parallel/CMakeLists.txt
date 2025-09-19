@@ -45,6 +45,12 @@ target_link_libraries(cccl.c.parallel PRIVATE
   Thrust::Thrust
   nlohmann_json::nlohmann_json
 )
+
+if(WIN32)
+  # Needed for UnDecorateSymbolName on Windows (used by nvrtc).
+  target_link_libraries(cccl.c.parallel PRIVATE Dbghelp)
+endif()
+
 target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1)
 target_compile_definitions(cccl.c.parallel PRIVATE
   NVRTC_GET_TYPE_NAME=1
