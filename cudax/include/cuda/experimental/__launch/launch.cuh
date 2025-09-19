@@ -36,7 +36,9 @@
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/path_builder.cuh>
+#include <cuda/experimental/__kernel/concepts.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
+#include <cuda/experimental/__kernel/traits.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__stream/device_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
@@ -119,8 +121,12 @@ _CCCL_HOST_API void inline __do_launch(
 template <typename... _ExpTypes, typename _Dst, typename _Config>
 _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
 {
+  static_assert((true && ... && (kernel_argument<_ExpTypes> || proclaim_kernel_argument_v<_ExpTypes>) ),
+                "All launch argument types must be valid kernel arguments.");
+
   static_assert(!::cuda::std::is_same_v<decltype(__conf.dims), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
+
   ::CUlaunchConfig __config{};
   constexpr bool __has_cluster_level        = has_level<cluster_level, decltype(__conf.dims)>;
   constexpr unsigned int __num_attrs_needed = __detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
