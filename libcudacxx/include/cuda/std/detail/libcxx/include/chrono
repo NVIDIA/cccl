@@ -843,6 +843,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__chrono/calendar.h>
+#include <cuda/std/__chrono/day.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/file_clock.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
@@ -880,112 +881,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
-class day
-{
-private:
-  unsigned char __d;
-
-public:
-  _CCCL_HIDE_FROM_ABI day() = default;
-  _CCCL_API explicit constexpr day(unsigned __val) noexcept
-      : __d(static_cast<unsigned char>(__val))
-  {}
-  _CCCL_API constexpr day& operator++() noexcept
-  {
-    ++__d;
-    return *this;
-  }
-  _CCCL_API constexpr day operator++(int) noexcept
-  {
-    day __tmp = *this;
-    ++(*this);
-    return __tmp;
-  }
-  _CCCL_API constexpr day& operator--() noexcept
-  {
-    --__d;
-    return *this;
-  }
-  _CCCL_API constexpr day operator--(int) noexcept
-  {
-    day __tmp = *this;
-    --(*this);
-    return __tmp;
-  }
-  _CCCL_API constexpr day& operator+=(const days& __dd) noexcept;
-  _CCCL_API constexpr day& operator-=(const days& __dd) noexcept;
-  _CCCL_API explicit constexpr operator unsigned() const noexcept
-  {
-    return __d;
-  }
-  _CCCL_API constexpr bool ok() const noexcept
-  {
-    return __d >= 1 && __d <= 31;
-  }
-};
-
-_CCCL_API constexpr bool operator==(const day& __lhs, const day& __rhs) noexcept
-{
-  return static_cast<unsigned>(__lhs) == static_cast<unsigned>(__rhs);
-}
-
-_CCCL_API constexpr bool operator!=(const day& __lhs, const day& __rhs) noexcept
-{
-  return !(__lhs == __rhs);
-}
-
-_CCCL_API constexpr bool operator<(const day& __lhs, const day& __rhs) noexcept
-{
-  return static_cast<unsigned>(__lhs) < static_cast<unsigned>(__rhs);
-}
-
-_CCCL_API constexpr bool operator>(const day& __lhs, const day& __rhs) noexcept
-{
-  return __rhs < __lhs;
-}
-
-_CCCL_API constexpr bool operator<=(const day& __lhs, const day& __rhs) noexcept
-{
-  return !(__rhs < __lhs);
-}
-
-_CCCL_API constexpr bool operator>=(const day& __lhs, const day& __rhs) noexcept
-{
-  return !(__lhs < __rhs);
-}
-
-_CCCL_API constexpr day operator+(const day& __lhs, const days& __rhs) noexcept
-{
-  return day(static_cast<unsigned>(__lhs) + static_cast<unsigned>(__rhs.count()));
-}
-
-_CCCL_API constexpr day operator+(const days& __lhs, const day& __rhs) noexcept
-{
-  return __rhs + __lhs;
-}
-
-_CCCL_API constexpr day operator-(const day& __lhs, const days& __rhs) noexcept
-{
-  return __lhs + -__rhs;
-}
-
-_CCCL_API constexpr days operator-(const day& __lhs, const day& __rhs) noexcept
-{
-  return days(static_cast<int>(static_cast<unsigned>(__lhs)) - static_cast<int>(static_cast<unsigned>(__rhs)));
-}
-
-_CCCL_API constexpr day& day::operator+=(const days& __dd) noexcept
-{
-  *this = *this + __dd;
-  return *this;
-}
-
-_CCCL_API constexpr day& day::operator-=(const days& __dd) noexcept
-{
-  *this = *this - __dd;
-  return *this;
-}
 
 class month
 {
