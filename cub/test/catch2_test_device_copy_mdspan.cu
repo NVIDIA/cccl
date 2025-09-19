@@ -39,8 +39,8 @@ C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D contiguous mdspan", "[copy][mdspan]")
   thrust::sequence(d_input.begin(), d_input.end(), 0);
   thrust::fill(d_output.begin(), d_output.end(), 42);
 
-  auto mdspan_in1  = cuda::std::mdspan{thrust::raw_pointer_cast(d_input.data()), num_items};
-  auto mdspan_out1 = cuda::std::mdspan{thrust::raw_pointer_cast(d_output.data()), num_items};
+  auto mdspan_in1  = cuda::std::mdspan{thrust::raw_pointer_cast(d_input.data()), dims_1d_t{num_items}};
+  auto mdspan_out1 = cuda::std::mdspan{thrust::raw_pointer_cast(d_output.data()), dims_1d_t{num_items}};
   device_copy_mdspan(mdspan_in1, mdspan_out1);
   REQUIRE(d_input == d_output);
   thrust::fill(d_output.begin(), d_output.end(), 42);
