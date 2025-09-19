@@ -15,16 +15,16 @@
 
 __host__ __device__ void test()
 {
-  using IterTraits = cuda::std::iterator_traits<cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>>;
+  using IterTraits = cuda::std::iterator_traits<cuda::transform_input_output_iterator<PlusOne, TimesTwo, int*>>;
 
   static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::output_iterator_tag>);
   static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::same_as<IterTraits::value_type, int>);
   static_assert(cuda::std::same_as<IterTraits::pointer, void>);
   static_assert(
-    cuda::std::same_as<IterTraits::reference, cuda::__transform_input_output_proxy<int*, PlusOne, TimesTwo>>);
-  static_assert(cuda::std::input_or_output_iterator<cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>>);
-  static_assert(cuda::std::output_iterator<cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>, int>);
+    cuda::std::same_as<IterTraits::reference, cuda::__transform_input_output_proxy<PlusOne, TimesTwo, int*>>);
+  static_assert(cuda::std::input_or_output_iterator<cuda::transform_input_output_iterator<PlusOne, TimesTwo, int*>>);
+  static_assert(cuda::std::output_iterator<cuda::transform_input_output_iterator<PlusOne, TimesTwo, int*>, int>);
 }
 
 int main(int, char**)

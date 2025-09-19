@@ -48,7 +48,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <class _Iter, class _InputFn, class _OutputFn>
+template <class _InputFn, class _OutputFn, class _Iter>
 class __transform_input_output_proxy
 {
 private:
@@ -150,7 +150,7 @@ public:
 //!
 //!  }
 //! @endcode
-template <class _Iter, class _InputFn, class _OutputFn>
+template <class _InputFn, class _OutputFn, class _Iter>
 class transform_input_output_iterator
 {
 public:
@@ -170,7 +170,7 @@ public:
   using difference_type   = ::cuda::std::iter_difference_t<_Iter>;
   using value_type        = ::cuda::std::invoke_result_t<_InputFn&, ::cuda::std::iter_reference_t<_Iter>>;
   using pointer           = void;
-  using reference         = __transform_input_output_proxy<_Iter, _InputFn, _OutputFn>;
+  using reference         = __transform_input_output_proxy<_InputFn, _OutputFn, _Iter>;
 
   static_assert(::cuda::std::is_object_v<_InputFn>,
                 "cuda::transform_input_output_iterator requires that _InputFn is a function object");
@@ -481,11 +481,11 @@ public:
 //! @param __input_fun The input functor used to transform the range when read
 //! @param __output_fun The output functor used to transform the range when written
 //! @relates transform_output_iterator
-template <class _Iter, class _InputFn, class _OutputFn>
+template <class _InputFn, class _OutputFn, class _Iter>
 [[nodiscard]] _CCCL_API constexpr auto
 make_transform_input_output_iterator(_Iter __iter, _InputFn __input_fun, _OutputFn __output_fun)
 {
-  return transform_input_output_iterator<_Iter, _InputFn, _OutputFn>{__iter, __input_fun, __output_fun};
+  return transform_input_output_iterator<_InputFn, _OutputFn, _Iter>{__iter, __input_fun, __output_fun};
 }
 
 //! @}

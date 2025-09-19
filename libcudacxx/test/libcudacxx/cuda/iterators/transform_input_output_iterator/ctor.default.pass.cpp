@@ -20,22 +20,22 @@
 __host__ __device__ constexpr bool test()
 {
   {
-    cuda::transform_input_output_iterator<random_access_iterator<int*>, PlusOne, PlusOne> iter;
+    cuda::transform_input_output_iterator<PlusOne, PlusOne, random_access_iterator<int*>> iter;
     assert(iter.base() == random_access_iterator<int*>{});
   }
 
   {
-    const cuda::transform_input_output_iterator<random_access_iterator<int*>, PlusOne, PlusOne> iter;
+    const cuda::transform_input_output_iterator<PlusOne, PlusOne, random_access_iterator<int*>> iter;
     assert(iter.base() == random_access_iterator<int*>{});
   }
 
   {
     static_assert(
       !cuda::std::is_default_constructible_v<
-        cuda::transform_input_output_iterator<random_access_iterator<int*>, NotDefaultConstructiblePlusOne, PlusOne>>);
+        cuda::transform_input_output_iterator<NotDefaultConstructiblePlusOne, PlusOne, random_access_iterator<int*>>>);
     static_assert(
       !cuda::std::is_default_constructible_v<
-        cuda::transform_input_output_iterator<random_access_iterator<int*>, PlusOne, NotDefaultConstructiblePlusOne>>);
+        cuda::transform_input_output_iterator<PlusOne, NotDefaultConstructiblePlusOne, random_access_iterator<int*>>>);
   }
 
   return true;

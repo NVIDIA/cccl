@@ -21,7 +21,7 @@
 __host__ __device__ void test()
 {
   {
-    using Iter = cuda::transform_output_iterator<int*, PlusOne>;
+    using Iter = cuda::transform_output_iterator<PlusOne, int*>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
@@ -32,7 +32,7 @@ __host__ __device__ void test()
   }
 
   {
-    using Iter = cuda::transform_output_iterator<random_access_iterator<int*>, PlusOne>;
+    using Iter = cuda::transform_output_iterator<PlusOne, random_access_iterator<int*>>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
