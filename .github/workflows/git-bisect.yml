@@ -23,9 +23,9 @@ on:
         default: "cub-cpp20"
         type: string
       cmake_options:
-        description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
+        description: "Additional options passed to CMake preset configure (e.g. -DCMAKE_CUDA_ARCHITECTURES=80;90)"
         required: false
-        default: "-DCMAKE_CUDA_ARCHITECTURES=80;90;100;120"
+        default: ""
         type: string
       build_targets:
         description: "Space separated ninja build targets to build."

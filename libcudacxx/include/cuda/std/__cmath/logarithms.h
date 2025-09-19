@@ -478,8 +478,28 @@ template <class _Tp>
     case FP_INFINITE:
       return ::cuda::std::__fp_inf<_Tp>();
     default:
-      return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+      break;
   }
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+  return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+#else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
+  // We need to go through the slow emulation for old GCC
+  if constexpr (__fp_is_native_type_v<_Tp>)
+  {
+    __x                      = ::cuda::std::fabs(__x);
+    unsigned long long __exp = 0;
+    while (__x >= _Tp(numeric_limits<_Tp>::radix))
+    {
+      __x /= numeric_limits<_Tp>::radix;
+      __exp += 1;
+    }
+    return static_cast<_Tp>(__exp);
+  }
+  else
+  {
+    return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+  }
+#endif // !_CCCL_HAS_CONSTEXPR_BIT_CAST()
 }
 
 [[nodiscard]] _CCCL_API inline constexpr float logbf(float __x) noexcept
