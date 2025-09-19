@@ -39,7 +39,7 @@ int main()
   auto liter1 = ctx.logical_data(shape_of<scalar_view<int>>());
   auto liter2 = ctx.logical_data(shape_of<scalar_view<int>>());
 
-  int max_iter1 = 3;
+  int max_iter1 = 2;
   int max_iter2 = 3;
 
   // First scope with first context push and first data push
@@ -65,14 +65,14 @@ int main()
       };
 
       while_guard_2.update_cond(liter2.rw())->*[max_iter2] __device__(auto iter2) {
-        bool max_reached = ((*iter2)++ >= max_iter2);
-        return !max_reached; // Continue if not converged and under limit
+        (*iter2)++;
+        return (*iter2 < max_iter2); // Continue if not converged and under limit
       };
     }
 
     while_guard_1.update_cond(liter1.rw())->*[max_iter1] __device__(auto iter1) {
-      bool max_reached = ((*iter1)++ >= max_iter1);
-      return !max_reached; // Continue if not converged and under limit
+      (*iter1)++;
+      return (*iter1 < max_iter1); // Continue if not converged and under limit
     };
   }
 
