@@ -105,18 +105,18 @@ struct TransformKernelSource<Offset,
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
-   template <size_t Alignment, typename T>
-   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it)
+  template <size_t Alignment, typename T>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it)
   {
-     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
-     {
-       return ::cuda::std::is_sufficiently_aligned<Alignment>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it));
-     }
-     else
-     {
-       return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
-     }
-   }
+    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
+    {
+      return ::cuda::std::is_sufficiently_aligned<Alignment>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it));
+    }
+    else
+    {
+      return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
+    }
+  }
 };
 
 enum class requires_stable_address
