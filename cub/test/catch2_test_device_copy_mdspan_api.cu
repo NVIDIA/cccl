@@ -10,7 +10,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
+C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
 {
   // clang-format off
 // example-begin copy-mdspan-example-op
