@@ -44,6 +44,10 @@
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 
+// On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702)
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -199,10 +203,9 @@ struct dispatch_t<StableAddress,
     auto wrapped_policy     = transform::MakeTransformPolicyWrapper(active_policy);
     const int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
 
-    const int items_per_thread_evenly_spread = static_cast<int>(
-      (::cuda::std::min) (Offset{items_per_thread},
-                          ::cuda::ceil_div(num_items, sm_count * block_threads * max_occupancy)));
-    const int items_per_thread_clamped = ::cuda::std::clamp(
+    const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
+      Offset{items_per_thread}, ::cuda::ceil_div(num_items, sm_count * block_threads * max_occupancy)));
+    const int items_per_thread_clamped       = ::cuda::std::clamp(
       items_per_thread_evenly_spread,
       +wrapped_policy.AlgorithmPolicy().MinItemsPerThread(),
       +wrapped_policy.AlgorithmPolicy().MaxItemsPerThread());
@@ -434,11 +437,6 @@ struct dispatch_t<StableAddress,
       return config.error();
     }
 
-    // On Windows, the second line in each of these `if CUB_DETAIL_CONSTEXPR_ISH`
-    // blocks results in `warning C4702: unreachable code`.
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4702)
-
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
@@ -458,15 +456,6 @@ struct dispatch_t<StableAddress,
         ipt_found = true;
       }
     }
-
-    // The dummy semi-colon trailing the _CCCL_DIAG_POP is, annoyingly, required
-    // to prevent the code autoformatter from indenting the next `if (!ipt_found)`
-    // line.  (Note that if the semi-colon is placed immediately after the
-    // `_CCCL_DIAG_POP`--where any sane person would place it--the pragma fails
-    // to suppress the warning, so it needs to be in this precise position to
-    // appease all these fickle actors.)
-    _CCCL_DIAG_POP // 4702
-      ;
 
     if (!ipt_found)
     {
@@ -565,5 +554,8 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+
 } // namespace detail::transform
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP
