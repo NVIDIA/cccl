@@ -121,7 +121,7 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
   }
 }
 
-merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
+merge_sort_runtime_tuning_policy get_policy(int cc, uint64_t key_size)
 {
   merge_sort_tuning_t chain[] = {
     {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
@@ -297,7 +297,7 @@ CUresult cccl_device_merge_sort_build_ex(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
+    const auto policy = merge_sort::get_policy(cc, static_cast<int>(output_keys_it.value_type.size));
 
     const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);

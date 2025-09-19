@@ -218,7 +218,7 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
   return {items_per_thread, block_threads};
 }
 
-radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
+radix_sort_runtime_tuning_policy get_policy(int /*cc*/, uint64_t key_size)
 {
   // TODO: we hardcode some of these values in order to make sure that the radix_sort tests do not fail due to the
   // memory op assertions. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
@@ -227,7 +227,7 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
   const int single_tile_radix_bits  = (key_size > 1) ? 6 : 5;
 
   const agent_radix_sort_histogram_policy histogram_policy{
-    256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits};
+    256, 8, std::max(1, 1 * 4 / std::max(static_cast<int>(key_size), 4)), onesweep_radix_bits};
   constexpr agent_radix_sort_exclusive_sum_policy exclusive_sum_policy{256, onesweep_radix_bits};
 
   const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
@@ -445,7 +445,7 @@ CUresult cccl_device_radix_sort_build_ex(
     const char* name = "test";
 
     const int cc       = cc_major * 10 + cc_minor;
-    const auto policy  = radix_sort::get_policy(cc, input_keys_it.value_type.size);
+    const auto policy  = radix_sort::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
     const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto value_cpp =
       input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
