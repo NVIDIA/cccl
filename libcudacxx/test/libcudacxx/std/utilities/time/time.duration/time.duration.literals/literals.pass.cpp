@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
@@ -19,12 +20,12 @@ int main(int, char**)
   using namespace cuda::std::literals::chrono_literals;
 
   //    Make sure the types are right
-  static_assert(cuda::std::is_same<decltype(3h), cuda::std::chrono::hours>::value, "");
-  static_assert(cuda::std::is_same<decltype(3min), cuda::std::chrono::minutes>::value, "");
-  static_assert(cuda::std::is_same<decltype(3s), cuda::std::chrono::seconds>::value, "");
-  static_assert(cuda::std::is_same<decltype(3ms), cuda::std::chrono::milliseconds>::value, "");
-  static_assert(cuda::std::is_same<decltype(3us), cuda::std::chrono::microseconds>::value, "");
-  static_assert(cuda::std::is_same<decltype(3ns), cuda::std::chrono::nanoseconds>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(3h), cuda::std::chrono::hours>);
+  static_assert(cuda::std::is_same_v<decltype(3min), cuda::std::chrono::minutes>);
+  static_assert(cuda::std::is_same_v<decltype(3s), cuda::std::chrono::seconds>);
+  static_assert(cuda::std::is_same_v<decltype(3ms), cuda::std::chrono::milliseconds>);
+  static_assert(cuda::std::is_same_v<decltype(3us), cuda::std::chrono::microseconds>);
+  static_assert(cuda::std::is_same_v<decltype(3ns), cuda::std::chrono::nanoseconds>);
 
   cuda::std::chrono::hours h = 4h;
   assert(h == cuda::std::chrono::hours(4));

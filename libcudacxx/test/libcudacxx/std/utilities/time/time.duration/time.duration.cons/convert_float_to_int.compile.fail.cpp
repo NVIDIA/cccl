@@ -3,23 +3,25 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
-// Period::num shall be positive, diagnostic required.
+// template <class Rep2, class Period2>
+//   duration(const duration<Rep2, Period2>& d);
 
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+//  conversions from floating point to integral durations disallowed
 
 #include <cuda/std/chrono>
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::duration<int, cuda::std::ratio<5, -1>> D;
-  D d;
+  cuda::std::chrono::duration<double> d;
+  cuda::std::chrono::duration<int> i = d;
 
   return 0;
 }

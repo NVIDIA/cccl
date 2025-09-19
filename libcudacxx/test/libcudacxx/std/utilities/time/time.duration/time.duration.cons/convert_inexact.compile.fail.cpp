@@ -3,26 +3,25 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
-// ceil
+// duration
 
-// template <class ToDuration, class Rep, class Period>
-//   ToDuration
-//   ceil(const duration<Rep, Period>& d);
+// template <class Rep2, class Period2>
+//   duration(const duration<Rep2, Period2>& d);
 
-// ToDuration shall be an instantiation of duration.
-
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+// inexact conversions disallowed for integral reps
 
 #include <cuda/std/chrono>
 
 int main(int, char**)
 {
-  cuda::std::chrono::ceil<int>(cuda::std::chrono::milliseconds(3));
+  cuda::std::chrono::microseconds us(1);
+  cuda::std::chrono::milliseconds ms = us;
 
   return 0;
 }

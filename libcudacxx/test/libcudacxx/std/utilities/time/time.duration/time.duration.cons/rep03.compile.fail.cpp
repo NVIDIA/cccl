@@ -3,26 +3,24 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
-// floor
+// duration
 
-// template <class ToDuration, class Rep, class Period>
-//   ToDuration
-//   floor(const duration<Rep, Period>& d);
+// template <class Rep2>
+//   explicit duration(const Rep2& r);
 
-// ToDuration shall be an instantiation of duration.
-
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+// treat_as_floating_point<Rep2>::value shall be false
 
 #include <cuda/std/chrono>
 
 int main(int, char**)
 {
-  cuda::std::chrono::floor<int>(cuda::std::chrono::milliseconds(3));
+  cuda::std::chrono::duration<int> d(1.);
 
   return 0;
 }

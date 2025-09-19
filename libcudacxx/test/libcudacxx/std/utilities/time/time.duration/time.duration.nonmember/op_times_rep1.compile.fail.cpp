@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -17,8 +18,6 @@
 // template <class Rep1, class Period, class Rep2>
 //   duration<typename common_type<Rep1, Rep2>::type, Period>
 //   operator*(const Rep1& s, const duration<Rep2, Period>& d);
-
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
 #include <cuda/std/chrono>
 
