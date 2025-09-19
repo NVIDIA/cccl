@@ -63,8 +63,8 @@ workflows:
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test_py_headers', 'test_py_coop'], ctk: ['12.5', '13.X'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_par', 'test_py_examples'], ctk: ['12.8', '13.X'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0',                 '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -154,9 +154,7 @@ workflows:
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_par', 'test_py_examples'], project: 'python', ctk: [                '12.8', '12.9', '13.0'], py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -235,8 +233,7 @@ workflows:
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_par', 'test_py_examples'], project: 'python', ctk: [                '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -255,8 +252,7 @@ workflows:
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   python-wheels:
-    - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_par', 'test_py_examples'], project: 'python', ctk: [                '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
 
   # This is just used to ensure that we generate devcontainers for all images we build.
@@ -269,8 +265,9 @@ workflows:
     # Clang20+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang20.
     - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
     - {jobs: ['dc_ext'], ctk: [        '12.9', '13.0'], cxx: ['gcc14', 'clang20']}
-    # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
-    - {jobs: ['dc'], ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], cxx: 'gcc13'}
+    # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
+    # that doesn't matter for running python tests.
+    - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
     # NVHPC
     - {jobs: ['dc'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev'}
     - {jobs: ['dc'], cxx: 'nvhpc',      ctk: 'nvhpc'}

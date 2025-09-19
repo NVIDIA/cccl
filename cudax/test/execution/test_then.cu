@@ -260,9 +260,9 @@ C2H_TEST("sync_wait can handle when then() returns a throws-on-copy type by refe
 // Return a different sender when we invoke this custom defined then implementation
 struct then_test_domain
 {
-  _CCCL_TEMPLATE(class Sender, class... Env)
+  _CCCL_TEMPLATE(class Sender, class Env)
   _CCCL_REQUIRES(cuda::std::same_as<ex::tag_of_t<Sender>, ex::then_t>)
-  static auto transform_sender(Sender&&, Env&&...)
+  _CCCL_HOST_DEVICE static auto transform_sender(ex::set_value_t, Sender&&, Env&&)
   {
     return ex::just(string{"ciao"});
   }
