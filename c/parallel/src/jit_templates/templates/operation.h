@@ -223,6 +223,13 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     std::format_string<const char*> name;
     argument_matcher check;
     std::optional<const char*> symbol = std::nullopt;
+
+    constexpr well_known_description(
+      std::format_string<const char*> name, argument_matcher check, std::optional<const char*> symbol = std::nullopt)
+        : name(name)
+        , check(check)
+        , symbol(symbol)
+    {}
   };
 
   static cuda::std::optional<well_known_description> well_known_operation_description(cccl_op_kind_t kind)
