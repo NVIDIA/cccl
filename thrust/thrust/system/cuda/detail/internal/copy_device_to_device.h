@@ -82,7 +82,8 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
   }
   else
   {
-    return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
+    return cuda_cub::transform(
+      policy, first, last, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
 }
 } // namespace __copy
