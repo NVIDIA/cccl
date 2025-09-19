@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/chrono>
+#include <cuda/std/__chrono/high_resolution_clock.h>
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
