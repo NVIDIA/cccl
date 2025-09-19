@@ -42,8 +42,8 @@ public:
 template <class Rep, class Period = ratio<1>>
 class duration
 {
-    static_assert(!__is_duration<Rep>::value, "A duration representation can not be a duration");
-    static_assert(__is_ratio<Period>::value, "Second template parameter of duration must be a std::ratio");
+    static_assert(!__is_duration_v<Rep>, "A duration representation can not be a duration");
+    static_assert(__is_ratio_v<Period>, "Second template parameter of duration must be a std::ratio");
     static_assert(Period::num > 0, "duration period must be positive");
 public:
     typedef Rep rep;
@@ -842,6 +842,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
+#include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -878,496 +879,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 namespace chrono
 {
 
-template <class _Rep, class _Period = ratio<1>>
-class _CCCL_TYPE_VISIBILITY_DEFAULT duration;
-
-template <class _Tp>
-struct __is_duration : false_type
-{};
-
-template <class _Rep, class _Period>
-struct __is_duration<duration<_Rep, _Period>> : true_type
-{};
-
-template <class _Rep, class _Period>
-struct __is_duration<const duration<_Rep, _Period>> : true_type
-{};
-
-template <class _Rep, class _Period>
-struct __is_duration<volatile duration<_Rep, _Period>> : true_type
-{};
-
-template <class _Rep, class _Period>
-struct __is_duration<const volatile duration<_Rep, _Period>> : true_type
-{};
-
-} // namespace chrono
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<chrono::duration<_Rep1, _Period1>, chrono::duration<_Rep2, _Period2>>
-{
-  using type =
-    chrono::duration<typename common_type<_Rep1, _Rep2>::type, typename __ratio_gcd<_Period1, _Period2>::type>;
-};
-
-namespace chrono
-{
-
-// duration_cast
-
-template <class _FromDuration,
-          class _ToDuration,
-          class _Period = typename ratio_divide<typename _FromDuration::period, typename _ToDuration::period>::type,
-          bool          = _Period::num == 1,
-          bool          = _Period::den == 1>
-struct __duration_cast;
-
-template <class _FromDuration, class _ToDuration, class _Period>
-struct __duration_cast<_FromDuration, _ToDuration, _Period, true, true>
-{
-  _CCCL_API constexpr _ToDuration operator()(const _FromDuration& __fd) const
-  {
-    return _ToDuration(static_cast<typename _ToDuration::rep>(__fd.count()));
-  }
-};
-
-template <class _FromDuration, class _ToDuration, class _Period>
-struct __duration_cast<_FromDuration, _ToDuration, _Period, true, false>
-{
-  _CCCL_API constexpr _ToDuration operator()(const _FromDuration& __fd) const
-  {
-    using _Ct = typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type;
-    return _ToDuration(
-      static_cast<typename _ToDuration::rep>(static_cast<_Ct>(__fd.count()) / static_cast<_Ct>(_Period::den)));
-  }
-};
-
-template <class _FromDuration, class _ToDuration, class _Period>
-struct __duration_cast<_FromDuration, _ToDuration, _Period, false, true>
-{
-  _CCCL_API constexpr _ToDuration operator()(const _FromDuration& __fd) const
-  {
-    using _Ct = typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type;
-    return _ToDuration(
-      static_cast<typename _ToDuration::rep>(static_cast<_Ct>(__fd.count()) * static_cast<_Ct>(_Period::num)));
-  }
-};
-
-template <class _FromDuration, class _ToDuration, class _Period>
-struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
-{
-  _CCCL_API constexpr _ToDuration operator()(const _FromDuration& __fd) const
-  {
-    using _Ct = typename common_type<typename _ToDuration::rep, typename _FromDuration::rep, intmax_t>::type;
-    return _ToDuration(static_cast<typename _ToDuration::rep>(
-      static_cast<_Ct>(__fd.count()) * static_cast<_Ct>(_Period::num) / static_cast<_Ct>(_Period::den)));
-  }
-};
-
-template <class _ToDuration, class _Rep, class _Period>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
-duration_cast(const duration<_Rep, _Period>& __fd)
-{
-  return __duration_cast<duration<_Rep, _Period>, _ToDuration>()(__fd);
-}
-
-template <class _Rep>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT treat_as_floating_point : is_floating_point<_Rep>
-{};
-
-template <class _Rep>
-inline constexpr bool treat_as_floating_point_v = treat_as_floating_point<_Rep>::value;
-
-template <class _Rep>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
-{
-public:
-  _CCCL_API static constexpr _Rep zero() noexcept
-  {
-    return _Rep(0);
-  }
-  _CCCL_API static constexpr _Rep max() noexcept
-  {
-    return numeric_limits<_Rep>::max();
-  }
-  _CCCL_API static constexpr _Rep min() noexcept
-  {
-    return numeric_limits<_Rep>::lowest();
-  }
-};
-
-template <class _ToDuration, class _Rep, class _Period>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration> floor(const duration<_Rep, _Period>& __d)
-{
-  _ToDuration __t = duration_cast<_ToDuration>(__d);
-  if (__t > __d)
-  {
-    __t = __t - _ToDuration{1};
-  }
-  return __t;
-}
-
-template <class _ToDuration, class _Rep, class _Period>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration> ceil(const duration<_Rep, _Period>& __d)
-{
-  _ToDuration __t = duration_cast<_ToDuration>(__d);
-  if (__t < __d)
-  {
-    __t = __t + _ToDuration{1};
-  }
-  return __t;
-}
-
-template <class _ToDuration, class _Rep, class _Period>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration> round(const duration<_Rep, _Period>& __d)
-{
-  _ToDuration __lower = floor<_ToDuration>(__d);
-  _ToDuration __upper = __lower + _ToDuration{1};
-  auto __lowerDiff    = __d - __lower;
-  auto __upperDiff    = __upper - __d;
-  if (__lowerDiff < __upperDiff)
-  {
-    return __lower;
-  }
-  if (__lowerDiff > __upperDiff)
-  {
-    return __upper;
-  }
-  return __lower.count() & 1 ? __upper : __lower;
-}
-
-// duration
-
-template <class _Rep, class _Period>
-class _CCCL_TYPE_VISIBILITY_DEFAULT duration
-{
-  static_assert(!__is_duration<_Rep>::value, "A duration representation can not be a duration");
-  static_assert(__is_ratio<_Period>::value, "Second template parameter of duration must be a std::ratio");
-  static_assert(_Period::num > 0, "duration period must be positive");
-
-  template <class _R1, class _R2>
-  struct __no_overflow
-  {
-  private:
-    static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-    static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-    static const intmax_t __n1        = _R1::num / __gcd_n1_n2;
-    static const intmax_t __d1        = _R1::den / __gcd_d1_d2;
-    static const intmax_t __n2        = _R2::num / __gcd_n1_n2;
-    static const intmax_t __d2        = _R2::den / __gcd_d1_d2;
-    static const intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
-
-    template <intmax_t _Xp, intmax_t _Yp, bool __overflow>
-    struct __mul // __overflow == false
-    {
-      static const intmax_t value = _Xp * _Yp;
-    };
-
-    template <intmax_t _Xp, intmax_t _Yp>
-    struct __mul<_Xp, _Yp, true>
-    {
-      static const intmax_t value = 1;
-    };
-
-  public:
-    static const bool value = (__n1 <= max / __d2) && (__n2 <= max / __d1);
-    using type              = ratio<__mul<__n1, __d2, !value>::value, __mul<__n2, __d1, !value>::value>;
-  };
-
-public:
-  using rep    = _Rep;
-  using period = typename _Period::type;
-
-private:
-  rep __rep_;
-
-public:
-  _CCCL_HIDE_FROM_ABI constexpr duration() = default;
-
-  template <class _Rep2>
-  _CCCL_API constexpr explicit duration(
-    const _Rep2& __r,
-    enable_if_t<is_convertible<_Rep2, rep>::value
-                && (treat_as_floating_point<rep>::value || !treat_as_floating_point<_Rep2>::value)>* = 0)
-      : __rep_(static_cast<rep>(__r))
-  {}
-
-  // conversions
-  template <class _Rep2, class _Period2>
-  _CCCL_API constexpr duration(
-    const duration<_Rep2, _Period2>& __d,
-    enable_if_t<__no_overflow<_Period2, period>::value
-                && (treat_as_floating_point<rep>::value
-                    || (__no_overflow<_Period2, period>::type::den == 1 && !treat_as_floating_point<_Rep2>::value))>* =
-      0)
-      : __rep_(::cuda::std::chrono::duration_cast<duration>(__d).count())
-  {}
-
-  // observer
-
-  _CCCL_API constexpr rep count() const
-  {
-    return __rep_;
-  }
-
-  // arithmetic
-
-  _CCCL_API constexpr typename common_type<duration>::type operator+() const
-  {
-    return typename common_type<duration>::type(*this);
-  }
-  _CCCL_API constexpr typename common_type<duration>::type operator-() const
-  {
-    return typename common_type<duration>::type(-__rep_);
-  }
-  _CCCL_API constexpr duration& operator++()
-  {
-    ++__rep_;
-    return *this;
-  }
-  _CCCL_API constexpr duration operator++(int)
-  {
-    return duration(__rep_++);
-  }
-  _CCCL_API constexpr duration& operator--()
-  {
-    --__rep_;
-    return *this;
-  }
-  _CCCL_API constexpr duration operator--(int)
-  {
-    return duration(__rep_--);
-  }
-
-  _CCCL_API constexpr duration& operator+=(const duration& __d)
-  {
-    __rep_ += __d.count();
-    return *this;
-  }
-  _CCCL_API constexpr duration& operator-=(const duration& __d)
-  {
-    __rep_ -= __d.count();
-    return *this;
-  }
-
-  _CCCL_API constexpr duration& operator*=(const rep& rhs)
-  {
-    __rep_ *= rhs;
-    return *this;
-  }
-  _CCCL_API constexpr duration& operator/=(const rep& rhs)
-  {
-    __rep_ /= rhs;
-    return *this;
-  }
-  _CCCL_API constexpr duration& operator%=(const rep& rhs)
-  {
-    __rep_ %= rhs;
-    return *this;
-  }
-  _CCCL_API constexpr duration& operator%=(const duration& rhs)
-  {
-    __rep_ %= rhs.count();
-    return *this;
-  }
-
-  // special values
-
-  _CCCL_API static constexpr duration zero() noexcept
-  {
-    return duration(duration_values<rep>::zero());
-  }
-  _CCCL_API static constexpr duration min() noexcept
-  {
-    return duration(duration_values<rep>::min());
-  }
-  _CCCL_API static constexpr duration max() noexcept
-  {
-    return duration(duration_values<rep>::max());
-  }
-};
-
-using nanoseconds  = duration<long long, nano>;
-using microseconds = duration<long long, micro>;
-using milliseconds = duration<long long, milli>;
-using seconds      = duration<long long>;
-using minutes      = duration<long, ratio<60>>;
-using hours        = duration<long, ratio<3600>>;
-
-using days   = duration<int, ratio_multiply<ratio<24>, hours::period>>;
-using weeks  = duration<int, ratio_multiply<ratio<7>, days::period>>;
-using years  = duration<int, ratio_multiply<ratio<146097, 400>, days::period>>;
-using months = duration<int, ratio_divide<years::period, ratio<12>>>;
-
-// Duration ==
-
-template <class _LhsDuration, class _RhsDuration>
-struct __duration_eq
-{
-  _CCCL_API constexpr bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
-  {
-    using _Ct = typename common_type<_LhsDuration, _RhsDuration>::type;
-    return _Ct(__lhs).count() == _Ct(__rhs).count();
-  }
-};
-
-template <class _LhsDuration>
-struct __duration_eq<_LhsDuration, _LhsDuration>
-{
-  _CCCL_API constexpr bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
-  {
-    return __lhs.count() == __rhs.count();
-  }
-};
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator==(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return __duration_eq<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>()(__lhs, __rhs);
-}
-
-// Duration !=
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator!=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return !(__lhs == __rhs);
-}
-
-// Duration <
-
-template <class _LhsDuration, class _RhsDuration>
-struct __duration_lt
-{
-  _CCCL_API constexpr bool operator()(const _LhsDuration& __lhs, const _RhsDuration& __rhs) const
-  {
-    using _Ct = typename common_type<_LhsDuration, _RhsDuration>::type;
-    return _Ct(__lhs).count() < _Ct(__rhs).count();
-  }
-};
-
-template <class _LhsDuration>
-struct __duration_lt<_LhsDuration, _LhsDuration>
-{
-  _CCCL_API constexpr bool operator()(const _LhsDuration& __lhs, const _LhsDuration& __rhs) const
-  {
-    return __lhs.count() < __rhs.count();
-  }
-};
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator<(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return __duration_lt<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>()(__lhs, __rhs);
-}
-
-// Duration >
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator>(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return __rhs < __lhs;
-}
-
-// Duration <=
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator<=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return !(__rhs < __lhs);
-}
-
-// Duration >=
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr bool operator>=(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  return !(__lhs < __rhs);
-}
-
-// Duration +
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type
-operator+(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  using _Cd = typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type;
-  return _Cd(_Cd(__lhs).count() + _Cd(__rhs).count());
-}
-
-// Duration -
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type
-operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  using _Cd = typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type;
-  return _Cd(_Cd(__lhs).count() - _Cd(__rhs).count());
-}
-
-// Duration *
-
-template <class _Rep1, class _Period, class _Rep2>
-_CCCL_API constexpr enable_if_t<is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
-                                duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
-operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
-{
-  using _Cr = typename common_type<_Rep1, _Rep2>::type;
-  using _Cd = duration<_Cr, _Period>;
-  return _Cd(_Cd(__d).count() * static_cast<_Cr>(__s));
-}
-
-template <class _Rep1, class _Period, class _Rep2>
-_CCCL_API constexpr enable_if_t<is_convertible<_Rep1, typename common_type<_Rep1, _Rep2>::type>::value,
-                                duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
-operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
-{
-  return __d * __s;
-}
-
-// Duration /
-
-template <class _Rep1, class _Period, class _Rep2>
-_CCCL_API constexpr enable_if_t<
-  !__is_duration<_Rep2>::value && is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
-  duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
-operator/(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
-{
-  using _Cr = typename common_type<_Rep1, _Rep2>::type;
-  using _Cd = duration<_Cr, _Period>;
-  return _Cd(_Cd(__d).count() / static_cast<_Cr>(__s));
-}
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr typename common_type<_Rep1, _Rep2>::type
-operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  using _Ct = typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type;
-  return _Ct(__lhs).count() / _Ct(__rhs).count();
-}
-
-// Duration %
-
-template <class _Rep1, class _Period, class _Rep2>
-_CCCL_API constexpr enable_if_t<
-  !__is_duration<_Rep2>::value && is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
-  duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
-operator%(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
-{
-  using _Cr = typename common_type<_Rep1, _Rep2>::type;
-  using _Cd = duration<_Cr, _Period>;
-  return _Cd(_Cd(__d).count() % static_cast<_Cr>(__s));
-}
-
-template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-_CCCL_API constexpr typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type
-operator%(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
-{
-  using _Cr = typename common_type<_Rep1, _Rep2>::type;
-  using _Cd = typename common_type<duration<_Rep1, _Period1>, duration<_Rep2, _Period2>>::type;
-  return _Cd(static_cast<_Cr>(_Cd(__lhs).count()) % static_cast<_Cr>(_Cd(__rhs).count()));
-}
-
 //////////////////////////////////////////////////////////
 ///////////////////// time_point /////////////////////////
 //////////////////////////////////////////////////////////
@@ -1375,8 +886,7 @@ operator%(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 template <class _Clock, class _Duration = typename _Clock::duration>
 class _CCCL_TYPE_VISIBILITY_DEFAULT time_point
 {
-  static_assert(__is_duration<_Duration>::value,
-                "Second template parameter of time_point must be a std::chrono::duration");
+  static_assert(__is_duration_v<_Duration>, "Second template parameter of time_point must be a std::chrono::duration");
 
 public:
   using clock    = _Clock;
@@ -1453,31 +963,24 @@ _CCCL_API constexpr time_point<_Clock, _ToDuration> time_point_cast(const time_p
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_CCCL_API constexpr enable_if_t<__is_duration_v<_ToDuration>, time_point<_Clock, _ToDuration>>
 floor(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{floor<_ToDuration>(__t.time_since_epoch())};
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_CCCL_API constexpr enable_if_t<__is_duration_v<_ToDuration>, time_point<_Clock, _ToDuration>>
 ceil(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{ceil<_ToDuration>(__t.time_since_epoch())};
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-_CCCL_API constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_CCCL_API constexpr enable_if_t<__is_duration_v<_ToDuration>, time_point<_Clock, _ToDuration>>
 round(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{round<_ToDuration>(__t.time_since_epoch())};
-}
-
-template <class _Rep, class _Period>
-_CCCL_API constexpr enable_if_t<numeric_limits<_Rep>::is_signed, duration<_Rep, _Period>>
-abs(duration<_Rep, _Period> __d)
-{
-  return __d >= __d.zero() ? +__d : -__d;
 }
 
 // time_point ==
@@ -3374,7 +2877,7 @@ template <class _Duration>
 class hh_mm_ss
 {
 private:
-  static_assert(__is_duration<_Duration>::value, "template parameter of hh_mm_ss must be a std::chrono::duration");
+  static_assert(__is_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
   using __CommonType = typename common_type<_Duration, chrono::seconds>::type;
 
   _CCCL_API static constexpr uint64_t __pow10(unsigned __exp)

@@ -22,7 +22,7 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
 
-#  include <cuda/std/chrono>
+#  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/climits>
 
 #  include <cuda/std/__cccl/prologue.h>

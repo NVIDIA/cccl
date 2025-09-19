@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__chrono/duration.h>
 #include <cuda/std/chrono>
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)

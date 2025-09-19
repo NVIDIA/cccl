@@ -1,0 +1,53 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+// <chrono>
+
+#include <cuda/std/cassert>
+#include <cuda/std/chrono>
+#include <cuda/std/type_traits>
+
+#include "test_macros.h"
+
+int main(int, char**)
+{
+  using namespace cuda::std::literals;
+
+  cuda::std::chrono::hours h = 4h;
+  assert(h == cuda::std::chrono::hours(4));
+  auto h2 = 4.0h;
+  assert(h == h2);
+
+  cuda::std::chrono::minutes min = 36min;
+  assert(min == cuda::std::chrono::minutes(36));
+  auto min2 = 36.0min;
+  assert(min == min2);
+
+  cuda::std::chrono::seconds s = 24s;
+  assert(s == cuda::std::chrono::seconds(24));
+  auto s2 = 24.0s;
+  assert(s == s2);
+
+  cuda::std::chrono::milliseconds ms = 247ms;
+  assert(ms == cuda::std::chrono::milliseconds(247));
+  auto ms2 = 247.0ms;
+  assert(ms == ms2);
+
+  cuda::std::chrono::microseconds us = 867us;
+  assert(us == cuda::std::chrono::microseconds(867));
+  auto us2 = 867.0us;
+  assert(us == us2);
+
+  cuda::std::chrono::nanoseconds ns = 645ns;
+  assert(ns == cuda::std::chrono::nanoseconds(645));
+  auto ns2 = 645.ns;
+  assert(ns == ns2);
+
+  return 0;
+}
