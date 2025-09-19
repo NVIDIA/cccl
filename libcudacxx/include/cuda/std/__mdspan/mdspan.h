@@ -439,7 +439,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const
     noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_exhaustive()))
   {
-    auto __tmp = mapping(); // workaround for clang with nodiscard 
+    auto __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.is_exhaustive();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_strided() const
