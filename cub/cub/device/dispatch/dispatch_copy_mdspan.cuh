@@ -32,6 +32,11 @@ struct CopyMdspan
   MdspanIn mdspan_in;
   MdspanOut mdspan_out;
 
+  _CCCL_API CopyMdspan(MdspanIn mdspan_in, MdspanOut mdspan_out)
+      : mdspan_in{mdspan_in}
+      , mdspan_out{mdspan_out}
+  {}
+
   template <typename Idx, typename... Indices>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Idx, Indices... indices)
   {
