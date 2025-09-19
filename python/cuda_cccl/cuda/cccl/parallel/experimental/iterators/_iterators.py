@@ -20,6 +20,7 @@ from .._utils.protocols import (
     get_dtype,
     get_shape,
 )
+from ..numba_utils import get_inferred_return_type, signature_from_annotations
 from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
@@ -148,12 +149,21 @@ class IteratorBase:
         )
         return (abi_name, ltoir)
 
-    def get_input_dereference_ltoir(self) -> Tuple:
-        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
-        signature = (
+    def get_input_dereference_signature(self):
+        return (
             self.state_ptr_type,
             types.CPointer(self.value_type),
         )
+
+    def get_output_dereference_signature(self):
+        return (
+            self.state_ptr_type,
+            self.value_type,
+        )
+
+    def get_input_dereference_ltoir(self) -> Tuple:
+        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
+        signature = self.get_input_dereference_signature()
         ltoir, _ = cached_compile(
             self.input_dereference,
             signature,
@@ -164,10 +174,7 @@ class IteratorBase:
 
     def get_output_dereference_ltoir(self) -> Tuple:
         abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
-        signature = (
-            self.state_ptr_type,
-            self.value_type,
-        )
+        signature = self.get_output_dereference_signature()
         ltoir, _ = cached_compile(
             self.output_dereference,
             signature,
@@ -494,7 +501,7 @@ class TransformIteratorKind(IteratorKind):
     pass
 
 
-def make_transform_iterator(it, op: Callable):
+def make_transform_iterator(it, op: Callable, io_kind: str):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
@@ -512,43 +519,41 @@ def make_transform_iterator(it, op: Callable):
         else None
     )
 
+    if io_kind == "input":
+        underlying_it_type = it.value_type
+
     op = cuda.jit(op, device=True)
-    underlying_value_type = it.value_type
 
     # Create a specialized intrinsic for allocating temp storage of the underlying type
     @intrinsic
     def alloca_temp_for_underlying_type(context):
         def codegen(context, builder, sig, args):
-            temp_value_type = context.get_value_type(underlying_value_type)
+            temp_value_type = context.get_value_type(underlying_it_type)
             temp_ptr = builder.alloca(temp_value_type)
             return temp_ptr
 
-        return types.CPointer(underlying_value_type)(), codegen
+        return types.CPointer(underlying_it_type)(), codegen
 
     class TransformIterator(IteratorBase):
         iterator_kind_type = TransformIteratorKind
 
-        def __init__(self, it: IteratorBase, op: CUDADispatcher):
+        def __init__(self, it: IteratorBase, op: CUDADispatcher, io_kind: str):
             self._it = it
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
-            # TODO: it would be nice to not need to compile `op` to get
-            # its return type, but there's nothing in the numba API
-            # to do that (yet),
-            _, op_retty = cached_compile(
-                op,
-                (self._it.value_type,),
-                abi_name=f"{op.__name__}_{_get_abi_suffix(self._it.kind)}",
-                output="ltoir",
-            )
-            value_type = op_retty
+
+            if io_kind == "input":
+                value_type = get_inferred_return_type(op.py_func, (underlying_it_type,))
+            else:
+                value_type = signature_from_annotations(op.py_func).args[0]
+
             super().__init__(
                 cvalue=it.cvalue,
                 state_type=state_type,
                 value_type=value_type,
             )
             self._kind = self.__class__.iterator_kind_type(
-                (value_type, self._it.kind, self._op), self.state_type
+                (self._it.value_type, self._it.kind, self._op), self.state_type
             )
 
         @property
@@ -577,7 +582,7 @@ def make_transform_iterator(it, op: Callable):
 
         @staticmethod
         def _input_dereference(state, result):
-            # Allocate temporary storage for the underlying type
+            # Allocate temporary storage for the deref input type
             temp_ptr = alloca_temp_for_underlying_type()
             # Call underlying iterator's dereference with temp storage
             it_input_dereference(state, temp_ptr)
@@ -588,7 +593,7 @@ def make_transform_iterator(it, op: Callable):
         def _output_dereference(state, x):
             it_output_dereference(state, op(x))
 
-    return TransformIterator(it, op)
+    return TransformIterator(it, op, io_kind)
 
 
 def _get_last_element_ptr(device_array) -> int:
