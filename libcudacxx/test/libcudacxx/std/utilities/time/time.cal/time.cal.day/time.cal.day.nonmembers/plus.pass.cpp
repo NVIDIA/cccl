@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,37 +19,20 @@
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-template <typename D, typename Ds>
-__host__ __device__ constexpr bool testConstexpr()
-{
-  D d{1};
-  Ds offset{23};
-  if (d + offset != D{24})
-  {
-    return false;
-  }
-  if (offset + d != D{24})
-  {
-    return false;
-  }
-  return true;
-}
+using day  = cuda::std::chrono::day;
+using days = cuda::std::chrono::days;
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
-  using day  = cuda::std::chrono::day;
-  using days = cuda::std::chrono::days;
-
   static_assert(noexcept(cuda::std::declval<day>() + cuda::std::declval<days>()));
   static_assert(noexcept(cuda::std::declval<days>() + cuda::std::declval<day>()));
 
   static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<day>() + cuda::std::declval<days>())>);
   static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<days>() + cuda::std::declval<day>())>);
-
-  static_assert(testConstexpr<day, days>(), "");
 
   day dy{12};
   for (unsigned i = 0; i <= 10; ++i)
@@ -59,6 +43,14 @@ int main(int, char**)
     assert(static_cast<unsigned>(d1) == i + 12);
     assert(static_cast<unsigned>(d2) == i + 12);
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }
