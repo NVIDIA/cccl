@@ -566,38 +566,6 @@ C2H_TEST("SegmentedSort works with custom types as values", "[segmented_sort][cu
 }
 #endif
 
-struct variable_segment_offset_iterator_state_t
-{
-  SizeT linear_id;
-  const SizeT* offsets;
-};
-
-static std::tuple<std::string, std::string, std::string> make_variable_segment_iterator_sources()
-{
-  static constexpr std::string_view it_state_src = R"XXX(
-struct variable_segment_offset_iterator_state_t {
-  unsigned long long linear_id;
-  const unsigned long long* offsets;
-};
-)XXX";
-
-  static constexpr std::string_view it_advance_src = R"XXX(
-extern "C" __device__ void advance_variable_offset_it(variable_segment_offset_iterator_state_t* state, unsigned long long offset)
-{
-  state->linear_id += offset;
-}
-)XXX";
-
-  static constexpr std::string_view it_deref_src = R"XXX(
-extern "C" __device__ unsigned long long dereference_variable_offset_it(variable_segment_offset_iterator_state_t* state)
-{
-  return state->offsets[state->linear_id];
-}
-)XXX";
-
-  return std::make_tuple(std::string(it_state_src), std::string(it_advance_src), std::string(it_deref_src));
-}
-
 struct SegmentedSort_VariableSegments_Fixture_Tag;
 C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][variable_segments]", test_params_tuple)
 {
