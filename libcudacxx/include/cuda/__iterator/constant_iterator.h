@@ -73,6 +73,11 @@ public:
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = _Tp;
+  using pointer   = void;
+
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constant_iterator()
     requires ::cuda::std::default_initializable<_Tp>

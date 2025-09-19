@@ -42,11 +42,11 @@ _CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
   _Difference __n   = static_cast<_Difference>(::cuda::std::__convert_to_integral(__orig_n));
-  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>) // To support pointers to incomplete types
   {
     __i += __n;
   }
-  else if constexpr (__is_cpp17_bidirectional_iterator<_InputIter>::value)
+  else if constexpr (__is_cpp17_bidirectional_iterator<_InputIter>)
   {
     if (__n >= 0)
     {

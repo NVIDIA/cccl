@@ -8,10 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/iterator>
+// Test iterator category and iterator concepts.
 
-#include "test_iterators.h"
+#include <cuda/iterator>
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
+
 #include "test_macros.h"
+#include "types.h"
 
 #if !TEST_COMPILER(NVRTC)
 #  include <iterator>
@@ -20,16 +24,13 @@
 template <template <class...> class Traits>
 __host__ __device__ void test()
 {
-  using Iter       = cuda::discard_iterator;
+  using Iter       = cuda::constant_iterator<int>;
   using IterTraits = Traits<Iter>;
-
   static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
-  static_assert(cuda::std::same_as<typename IterTraits::value_type, void>);
+  static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+  static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
   static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
-  static_assert(cuda::std::same_as<typename IterTraits::pointer, void>);
-  static_assert(cuda::std::same_as<typename IterTraits::reference, void>);
-  static_assert(cuda::std::input_or_output_iterator<cuda::discard_iterator>);
-  static_assert(cuda::std::output_iterator<cuda::discard_iterator, float>);
+  static_assert(cuda::std::random_access_iterator<Iter>);
   static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
 }
 

@@ -178,6 +178,11 @@ public:
   using value_type      = _Start;
   using difference_type = _IotaDiffT<_Start>;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = _Start;
+  using pointer   = void;
+
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
     requires ::cuda::std::default_initializable<_Start>
