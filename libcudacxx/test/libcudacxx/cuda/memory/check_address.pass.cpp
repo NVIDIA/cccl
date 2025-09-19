@@ -18,9 +18,12 @@ __device__ void device_test()
   __shared__ int smem[4];
   assert(cuda::__is_valid_address_range(smem, sizeof(int) * 4));
   assert(!cuda::__is_valid_address_range(smem, 0));
+  assert(!cuda::__is_valid_address_range(smem, 64'000'000)); // larger than total smem size
   int var = 0;
   assert(cuda::device::__is_smem_valid_address_range(smem, sizeof(smem)));
+  assert(!cuda::device::__is_smem_valid_address_range(smem, 64'000'000));
   assert(!cuda::device::__is_smem_valid_address_range(&var, sizeof(var)));
+  assert(!cuda::device::__is_smem_valid_address_range(&var, 64'000'000)); // larger than total smem size
   assert(!cuda::device::__is_smem_valid_address_range(&var, cuda::std::numeric_limits<size_t>::max()));
 }
 

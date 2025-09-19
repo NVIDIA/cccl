@@ -43,14 +43,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 [[nodiscard]] _CCCL_DEVICE_API inline bool
 __is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
 {
-  // __is_smem_valid_ptr is used to skip the nullptr assertion in is_address_from()
-  if (!::cuda::device::__is_smem_valid_ptr(__ptr)
-      || !::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
+  if (!::cuda::device::__is_smem_valid_ptr(__ptr))
+  {
+    return false;
+  }
+  if (!::cuda::device::__internal_is_address_from(__ptr, ::cuda::device::address_space::shared))
   {
     return false;
   }
   // if __ptr is a shared memory pointer, __ptr + __n must also be a valid shared memory pointer
-  if (!::cuda::device::is_address_from(
+  if (!::cuda::device::__internal_is_address_from(
         reinterpret_cast<const char*>(__ptr) + __n, ::cuda::device::address_space::shared))
   {
     return false;
@@ -77,9 +79,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   }
   // clang-format off
   NV_IF_TARGET(NV_IS_DEVICE, (
-    if (::cuda::device::__is_smem_valid_address_range(__ptr, __n))
+    if (::cuda::device::__internal_is_address_from(__ptr, ::cuda::device::address_space::shared) &&
+        !::cuda::device::__is_smem_valid_address_range(__ptr, __n))
     {
-      return true;
+      return false;
     }
   ));
   // clang-format on
