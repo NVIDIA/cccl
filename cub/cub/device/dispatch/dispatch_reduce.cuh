@@ -523,8 +523,13 @@ struct DispatchReduce
         kernel_source,
         launcher_factory);
 
+      // Ignore Wmaybe-uninitialized to work around a GCC 13 issue:
+      // https://github.com/NVIDIA/cccl/issues/4053
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wmaybe-uninitialized")
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+      _CCCL_DIAG_POP
       if (cudaSuccess != error)
       {
         break;
