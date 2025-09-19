@@ -2018,7 +2018,14 @@ public:
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    return get_ctx(get_head_offset()).fence();
+    int offset = get_head_offset();
+    if (offset != get_root_offset())
+    {
+      fprintf(stderr, "Error: fence() not supported in nested contexts.\n");
+      abort();
+    }
+
+    return get_ctx(offset).fence();
   }
 
   template <typename T>
@@ -2027,6 +2034,12 @@ public:
     auto lock = pimpl->acquire_shared_lock();
 
     int offset = get_head_offset();
+    if (offset != get_root_offset())
+    {
+      fprintf(stderr, "Error: wait() not supported in nested contexts.\n");
+      abort();
+    }
+
     return get_ctx(offset).wait(ldata.get_ld(offset));
   }
 
@@ -3118,26 +3131,6 @@ static __global__ void kernel_check_value(T* addr, T val)
 }
 
 } // namespace reserved
-
-// TODO fence + nested contexts are not supported yet
-#    if 0
-UNITTEST("stackable fence")
-{
-  stackable_ctx ctx;
-  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
-  ctx.push();
-  lA.push(access_mode::write, data_place::current_device());
-  ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
-    reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
-  };
-  ctx.fence();
-  ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
-    reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 42);
-  };
-  ctx.pop();
-  ctx.finalize();
-};
-#    endif
 
 UNITTEST("stackable host_launch")
 {
