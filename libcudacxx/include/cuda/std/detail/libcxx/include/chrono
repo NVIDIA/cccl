@@ -851,6 +851,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <cuda/std/__chrono/steady_clock.h>
 #include <cuda/std/__chrono/system_clock.h>
 #include <cuda/std/__chrono/time_point.h>
+#include <cuda/std/__chrono/year.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -882,136 +883,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
-class year
-{
-private:
-  short __y;
-
-public:
-  _CCCL_HIDE_FROM_ABI year() = default;
-  _CCCL_API explicit constexpr year(int __val) noexcept
-      : __y(static_cast<short>(__val))
-  {}
-
-  _CCCL_API constexpr year& operator++() noexcept
-  {
-    ++__y;
-    return *this;
-  }
-  _CCCL_API constexpr year operator++(int) noexcept
-  {
-    year __tmp = *this;
-    ++(*this);
-    return __tmp;
-  }
-  _CCCL_API constexpr year& operator--() noexcept
-  {
-    --__y;
-    return *this;
-  }
-  _CCCL_API constexpr year operator--(int) noexcept
-  {
-    year __tmp = *this;
-    --(*this);
-    return __tmp;
-  }
-  _CCCL_API constexpr year& operator+=(const years& __dy) noexcept;
-  _CCCL_API constexpr year& operator-=(const years& __dy) noexcept;
-  _CCCL_API constexpr year operator+() const noexcept
-  {
-    return *this;
-  }
-  _CCCL_API constexpr year operator-() const noexcept
-  {
-    return year{-__y};
-  }
-
-  _CCCL_API constexpr bool is_leap() const noexcept
-  {
-    return __y % 4 == 0 && (__y % 100 != 0 || __y % 400 == 0);
-  }
-  _CCCL_API explicit constexpr operator int() const noexcept
-  {
-    return __y;
-  }
-  _CCCL_API constexpr bool ok() const noexcept;
-  _CCCL_API static constexpr year min() noexcept
-  {
-    return year{-32767};
-  }
-  _CCCL_API static constexpr year max() noexcept
-  {
-    return year{32767};
-  }
-};
-
-_CCCL_API constexpr bool operator==(const year& __lhs, const year& __rhs) noexcept
-{
-  return static_cast<int>(__lhs) == static_cast<int>(__rhs);
-}
-
-_CCCL_API constexpr bool operator!=(const year& __lhs, const year& __rhs) noexcept
-{
-  return !(__lhs == __rhs);
-}
-
-_CCCL_API constexpr bool operator<(const year& __lhs, const year& __rhs) noexcept
-{
-  return static_cast<int>(__lhs) < static_cast<int>(__rhs);
-}
-
-_CCCL_API constexpr bool operator>(const year& __lhs, const year& __rhs) noexcept
-{
-  return __rhs < __lhs;
-}
-
-_CCCL_API constexpr bool operator<=(const year& __lhs, const year& __rhs) noexcept
-{
-  return !(__rhs < __lhs);
-}
-
-_CCCL_API constexpr bool operator>=(const year& __lhs, const year& __rhs) noexcept
-{
-  return !(__lhs < __rhs);
-}
-
-_CCCL_API constexpr year operator+(const year& __lhs, const years& __rhs) noexcept
-{
-  return year(static_cast<int>(__lhs) + __rhs.count());
-}
-
-_CCCL_API constexpr year operator+(const years& __lhs, const year& __rhs) noexcept
-{
-  return __rhs + __lhs;
-}
-
-_CCCL_API constexpr year operator-(const year& __lhs, const years& __rhs) noexcept
-{
-  return __lhs + -__rhs;
-}
-
-_CCCL_API constexpr years operator-(const year& __lhs, const year& __rhs) noexcept
-{
-  return years{static_cast<int>(__lhs) - static_cast<int>(__rhs)};
-}
-
-_CCCL_API constexpr year& year::operator+=(const years& __dy) noexcept
-{
-  *this = *this + __dy;
-  return *this;
-}
-
-_CCCL_API constexpr year& year::operator-=(const years& __dy) noexcept
-{
-  *this = *this - __dy;
-  return *this;
-}
-
-_CCCL_API constexpr bool year::ok() const noexcept
-{
-  return static_cast<int>(min()) <= __y && __y <= static_cast<int>(max());
-}
 
 class weekday_indexed;
 class weekday_last;
