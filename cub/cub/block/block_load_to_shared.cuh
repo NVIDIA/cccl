@@ -285,11 +285,12 @@ public:
     const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
     const auto dst_ptr  = data(smem_dst);
     const auto src_ptr  = ::cuda::ptr_rebind<char>(data(gmem_src));
-    _CCCL_ASSERT(::cuda::device::is_address_from(dst_ptr, ::cuda::device::address_space::shared),
+    _CCCL_ASSERT(dst_ptr == nullptr || ::cuda::device::is_address_from(dst_ptr, ::cuda::device::address_space::shared),
                  "Destination address needs to point to shared memory");
     _CCCL_ASSERT(src_ptr == nullptr || ::cuda::device::is_address_from(src_ptr, ::cuda::device::address_space::global),
                  "Source address needs to point to global memory");
-    _CCCL_ASSERT(src_ptr != nullptr || num_bytes == 0, "Only an empty source range can be nullptr");
+    _CCCL_ASSERT((src_ptr != nullptr && dst_ptr != nullptr) || num_bytes == 0,
+                 "Only when the source range is empty are nullptrs allowed");
     _CCCL_ASSERT(::cuda::is_aligned(src_ptr, GmemAlign),
                  "Begin of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(src_ptr + num_bytes, GmemAlign),
@@ -384,8 +385,8 @@ public:
     _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                  "num_items must fit into an int");
     constexpr bool bulk_aligned = GmemAlign >= minimum_align;
-    const int extra_space       = bulk_aligned ? 0 : minimum_align;
     const int num_bytes         = static_cast<int>(num_items) * int{sizeof(T)};
+    const int extra_space       = (bulk_aligned || num_bytes == 0) ? 0 : minimum_align;
     return bulk_aligned ? num_bytes : (::cuda::round_up(num_bytes, minimum_align) + extra_space);
   }
 };
