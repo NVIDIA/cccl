@@ -3263,12 +3263,12 @@ inline void test_graph_scope_with_tmp()
     // Create temporary data in nested context
     auto temp = ctx.logical_data(shape_of<slice<int>>(1024));
 
-    ctx.parallel_for(lA.shape(), temp.write(), lA.read())->*[](size_t i, auto temp, auto a) {
+    ctx.parallel_for(lA.shape(), temp.write(), lA.read())->*[] __device__(size_t i, auto temp, auto a) {
       // Copy data and modify
       temp(i) = a(i) * 2;
     };
 
-    ctx.parallel_for(lA.shape(), lA.write(), temp.read())->*[](size_t i, auto a, auto temp) {
+    ctx.parallel_for(lA.shape(), lA.write(), temp.read())->*[] __device__(size_t i, auto a, auto temp) {
       // Copy back
       a(i) = temp(i) + 1;
     };
@@ -3279,9 +3279,9 @@ inline void test_graph_scope_with_tmp()
   ctx.finalize();
 }
 
-// XXX FIME !
-UNITTEST("graph_scope with temporary data"){
-  // test_graph_scope_with_tmp();
+UNITTEST("graph_scope with temporary data")
+{
+  test_graph_scope_with_tmp();
 };
 
 inline void test_graph_scope()
