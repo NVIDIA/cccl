@@ -168,6 +168,24 @@ UNITTEST("Composite data place equality")
   /* Different partitioning operator, same execution place */
   EXPECT(data_place::composite(P(), all) != data_place::composite(P2(), all));
 };
+
+UNITTEST("tiled partition with large 1D data")
+{
+  const size_t large_1d_size = (1ULL << 36);
+
+  // Test coordinate that makes tiling calculation obvious
+  const size_t test_coord = (1ULL << 34);
+  pos4 large_coords(test_coord); // 1D coordinate
+  dim4 data_dims(large_1d_size); // 1D data space
+  dim4 grid_dims(32); // 32 places in grid
+
+  constexpr size_t tile_size = 1000;
+
+  pos4 tile_pos = tiled_partition<tile_size>::get_executor(large_coords, data_dims, grid_dims);
+
+  EXPECT(tile_pos.x == (test_coord / tile_size) % grid_dims.x);
+};
+
 #endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf

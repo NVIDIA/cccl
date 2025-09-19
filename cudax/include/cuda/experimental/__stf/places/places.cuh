@@ -974,7 +974,7 @@ public:
       return dims;
     }
 
-    int get_dim(int axis_id) const
+    size_t get_dim(int axis_id) const
     {
       return dims.get(axis_id);
     }
@@ -1039,7 +1039,7 @@ public:
     return get_impl()->get_dims();
   }
 
-  int get_dim(int axis_id) const
+  size_t get_dim(int axis_id) const
   {
     return get_dims().get(axis_id);
   }
@@ -1230,13 +1230,13 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = tile_id.t; t < g_dims.t; t += strides.t)
+  for (size_t t = static_cast<size_t>(tile_id.t); t < g_dims.t; t += strides.t)
   {
-    for (int z = tile_id.z; z < g_dims.z; z += strides.z)
+    for (size_t z = static_cast<size_t>(tile_id.z); z < g_dims.z; z += strides.z)
     {
-      for (int y = tile_id.y; y < g_dims.y; y += strides.y)
+      for (size_t y = static_cast<size_t>(tile_id.y); y < g_dims.y; y += strides.y)
       {
-        for (int x = tile_id.x; x < g_dims.x; x += strides.x)
+        for (size_t x = static_cast<size_t>(tile_id.x); x < g_dims.x; x += strides.x)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
@@ -1289,13 +1289,13 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = begin_coords.t; t < end_coords.t; t++)
+  for (size_t t = static_cast<size_t>(begin_coords.t); t < end_coords.t; t++)
   {
-    for (int z = begin_coords.z; z < end_coords.z; z++)
+    for (size_t z = static_cast<size_t>(begin_coords.z); z < end_coords.z; z++)
     {
-      for (int y = begin_coords.y; y < end_coords.y; y++)
+      for (size_t y = static_cast<size_t>(begin_coords.y); y < end_coords.y; y++)
       {
-        for (int x = begin_coords.x; x < end_coords.x; x++)
+        for (size_t x = static_cast<size_t>(begin_coords.x); x < end_coords.x; x++)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
@@ -1495,6 +1495,51 @@ UNITTEST("grid exec place equality")
 
   EXPECT(all != repeated_dev0);
 };
+
+UNITTEST("pos4 dim4 handle large values beyond 32bit")
+{
+  // Test that pos4 and dim4 can handle values > 2^32 (4,294,967,296)
+  const size_t large_unsigned  = 6000000000ULL; // 6 billion
+  const ssize_t large_signed   = 5000000000LL; // 5 billion
+  const ssize_t negative_large = -3000000000LL; // -3 billion
+
+  // Test dim4 with large unsigned values (all same type for template deduction)
+  dim4 large_dim(large_unsigned, large_unsigned + size_t(1000));
+  EXPECT(large_dim.x == large_unsigned);
+  EXPECT(large_dim.y == large_unsigned + 1000);
+  EXPECT(large_dim.z == 1); // default
+  EXPECT(large_dim.t == 1); // default
+
+  // Test pos4 with large signed values (positive and negative, all same type)
+  pos4 large_pos(large_signed, negative_large);
+  EXPECT(large_pos.x == large_signed);
+  EXPECT(large_pos.y == negative_large);
+  EXPECT(large_pos.z == 0); // default
+  EXPECT(large_pos.t == 0); // default
+
+  // Test get_index calculation with large coordinates
+  dim4 dims(size_t(100000), size_t(100000)); // 100k x 100k = 10 billion elements
+  pos4 pos(ssize_t(50000), ssize_t(50000)); // Middle position
+
+  size_t index = dims.get_index(pos);
+  // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
+  const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
+  EXPECT(index == expected_index);
+  EXPECT(expected_index > (1ULL << 32)); // Verify it exceeds 2^32
+};
+
+UNITTEST("dim4 very large total size calculation")
+{
+  // Test that dim4.size() can handle products > 2^40 (1TB)
+  // 2000 x 2000 x 2000 x 64 = 1,024,000,000,000 elements = ~1TB of data
+  dim4 huge_dims(size_t(2000), size_t(2000), size_t(2000), size_t(64));
+
+  const size_t total_size    = huge_dims.size();
+  const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
+
+  EXPECT(total_size == expected_size);
+};
+
 #endif // UNITTESTED_FILE
 
 template <auto... spec>
