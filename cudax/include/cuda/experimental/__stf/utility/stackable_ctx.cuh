@@ -3120,7 +3120,7 @@ static __global__ void kernel_check_value(T* addr, T val)
 } // namespace reserved
 
 // TODO fence + nested contexts are not supported yet
-#if 0
+#    if 0
 UNITTEST("stackable fence")
 {
   stackable_ctx ctx;
@@ -3137,7 +3137,7 @@ UNITTEST("stackable fence")
   ctx.pop();
   ctx.finalize();
 };
-#endif
+#    endif
 
 UNITTEST("stackable host_launch")
 {
@@ -3287,8 +3287,7 @@ inline void test_graph_scope_with_tmp()
 }
 
 // XXX FIME !
-UNITTEST("graph_scope with temporary data")
-{
+UNITTEST("graph_scope with temporary data"){
   // test_graph_scope_with_tmp();
 };
 
