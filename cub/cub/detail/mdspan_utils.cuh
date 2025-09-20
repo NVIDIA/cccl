@@ -113,6 +113,27 @@ template <int Rank, typename Extents>
   return true;
 }
 
+template <typename IndexType, size_t... E, size_t... Ranks>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto
+reverse(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+{
+  if constexpr (sizeof...(E) <= 1)
+  {
+    return ext;
+  }
+  else if constexpr (sizeof...(Ranks) == 0)
+  {
+    return cub::detail::reverse(ext, ::cuda::std::make_index_sequence<sizeof...(E)>{});
+  }
+  else
+  {
+    static_assert(sizeof...(Ranks) == sizeof...(E), "Ranks and E must have the same number of elements");
+    using Ext = decltype(ext);
+    return ::cuda::std::extents<IndexType, Ext::static_extent(Ext::rank() - 1 - Ranks)...>(
+      ext.extent(Ext::rank() - 1 - Ranks)...);
+  }
+}
+
 } // namespace detail
 
 CUB_NAMESPACE_END
