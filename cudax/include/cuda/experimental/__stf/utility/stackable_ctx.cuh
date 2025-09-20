@@ -469,6 +469,14 @@ public:
     protected:
       // If we want to keep the state of some logical data implementations until this node is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
+
+    public:
+      // Nested contexts do not clear their allocator because the memory they
+      // use needs to be valid until we have launched the graph.
+      ::std::vector<::std::shared_ptr<stream_adapter>> retained_adapters;
+
+      // Indicate if we need to clear the adapters or pass them to the parent
+      bool clear_adapters = true;
     };
 
     /*
@@ -518,7 +526,8 @@ public:
 
         if (parent_graph)
         {
-          nested_graph = true;
+          nested_graph   = true;
+          clear_adapters = false;
 #if _CCCL_CTK_AT_LEAST(12, 4)
           if (config.conditional_handle != nullptr)
           {
@@ -1111,9 +1120,30 @@ public:
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
-      if (current_node->alloc_adapters)
+      fprintf(stderr, "pop : clear_adapters ? %d\n", current_node->clear_adapters);
+      if (current_node->clear_adapters)
       {
-        current_node->alloc_adapters->clear();
+        if (current_node->alloc_adapters)
+        {
+          current_node->alloc_adapters->clear();
+        }
+
+        for (auto& a : current_node->retained_adapters)
+        {
+          a->clear();
+        }
+      }
+      else
+      {
+        // Transmit adapters to the parent node
+        if (current_node->alloc_adapters)
+        {
+          parent_node->retained_adapters.push_back(current_node->alloc_adapters);
+        }
+        for (auto& a : current_node->retained_adapters)
+        {
+          parent_node->retained_adapters.push_back(a);
+        }
       }
 
       // Destroy the current node

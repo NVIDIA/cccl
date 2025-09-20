@@ -50,6 +50,13 @@ int main()
       sctx.parallel_for(ldata.shape(), ldata.rw())->*[] __device__(size_t i, auto d) {
         d(i) *= 2;
       };
+
+      sctx.host_launch(ldata.rw())->*[](auto d) {
+        for (size_t i = 0; i < d.size(); i++)
+        {
+          d(i)++;
+        }
+      };
     }
   }
 
@@ -58,7 +65,7 @@ int main()
   // Verify results - each element should be doubled
   for (size_t i = 0; i < sz; i++)
   {
-    int expected = static_cast<int>(i * 2);
+    int expected = static_cast<int>(i * 2 + 1);
     _CCCL_ASSERT(data[i] == expected, "invalid result at index");
   }
 
