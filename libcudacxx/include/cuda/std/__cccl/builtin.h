@@ -595,12 +595,6 @@
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_constructible) && gcc >= 5.1
 
-#if _CCCL_CHECK_BUILTIN(is_trivially_copyable) || _CCCL_COMPILER(GCC, >=, 5, 1) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-
-#  define _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_trivially_copyable) && gcc >= 5.1
-
 #if _CCCL_CHECK_BUILTIN(is_trivially_destructible) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_destructible)
