@@ -10,40 +10,30 @@
 
 #include <c2h/catch2_test_helper.h>
 
-template <int ItemsPerThread, int ThreadsInBlock, bool SufficientResources, typename InputPointerT, typename OutputIteratorT>
+template <int ItemsPerThread, int ThreadsInBlock, typename InputPointerT, typename OutputIteratorT>
 __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_items)
 {
-  if constexpr (SufficientResources)
+  using input_t         = cub::detail::it_value_t<InputPointerT>;
+  using block_load2sh_t = cub::detail::BlockLoadToShared<ThreadsInBlock>;
+  using storage_t       = typename block_load2sh_t::TempStorage;
+
+  __shared__ storage_t storage;
+  block_load2sh_t block_load2sh(storage);
+
+  constexpr int tile_size    = ItemsPerThread * ThreadsInBlock;
+  constexpr int buffer_align = block_load2sh_t::template SharedBufferAlignBytes<input_t>();
+  constexpr int buffer_size  = block_load2sh_t::template SharedBufferSizeBytes<input_t>(tile_size);
+  alignas(buffer_align) __shared__ char buffer[buffer_size];
+  cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  cuda::std::span<char> dst_buff{buffer};
+
+  cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src);
+  block_load2sh.Commit();
+  block_load2sh.Wait();
+
+  for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
   {
-    using input_t         = cub::detail::it_value_t<InputPointerT>;
-    using block_load2sh_t = cub::detail::BlockLoadToShared<ThreadsInBlock>;
-    using storage_t       = typename block_load2sh_t::TempStorage;
-
-    __shared__ storage_t storage;
-    block_load2sh_t block_load2sh(storage);
-
-    constexpr int tile_size    = ItemsPerThread * ThreadsInBlock;
-    constexpr int buffer_align = block_load2sh_t::template SharedBufferAlignBytes<input_t>();
-    constexpr int buffer_size  = block_load2sh_t::template SharedBufferSizeBytes<input_t>(tile_size);
-    alignas(buffer_align) __shared__ char buffer[buffer_size];
-    cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
-    cuda::std::span<char> dst_buff{buffer};
-
-    cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src);
-    block_load2sh.Commit();
-    block_load2sh.Wait();
-
-    for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
-    {
-      output[idx] = dst[idx];
-    }
-  }
-  else
-  {
-    for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
-    {
-      output[idx] = input[idx];
-    }
+    output[idx] = dst[idx];
   }
 }
 
@@ -57,14 +47,17 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   constexpr int buffer_size           = block_load2sh_t::template SharedBufferSizeBytes<T>(tile_size);
   constexpr int total_smem            = ::cuda::round_up(int{sizeof(storage_t)}, buffer_align) + buffer_size;
   constexpr bool sufficient_resources = total_smem <= cub::detail::max_smem_per_block;
-  CAPTURE(ThreadsInBlock, ItemsPerThread, sufficient_resources, c2h::type_name<T>());
+  if constexpr (sufficient_resources)
+  {
+    CAPTURE(ThreadsInBlock, ItemsPerThread, sufficient_resources, c2h::type_name<T>());
 
-  c2h::device_vector<T> d_output(d_input.size());
-  kernel<ItemsPerThread, ThreadsInBlock, sufficient_resources>
-    <<<1, ThreadsInBlock>>>(input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-  REQUIRE(d_input == d_output);
+    c2h::device_vector<T> d_output(d_input.size());
+    kernel<ItemsPerThread, ThreadsInBlock>
+      <<<1, ThreadsInBlock>>>(input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(d_input == d_output);
+  }
 }
 
 // %PARAM% IPT it 1:11
