@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// cuda::std::pod is deprecated in C++20
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 // type_traits
 
 // is_pod
