@@ -24,7 +24,6 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -41,6 +40,7 @@
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -730,7 +730,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   uint64_t& bar = *reinterpret_cast<uint64_t*>(smem_with_barrier);
   static_assert(tile_padding >= sizeof(uint64_t));
   char* smem_base = smem_with_barrier + tile_padding;
-  _CCCL_ASSERT(::cuda::is_aligned(smem_base, tile_padding), "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<tile_padding>(smem_base), "");
 
   namespace ptx = ::cuda::ptx;
 

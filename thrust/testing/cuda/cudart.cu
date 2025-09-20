@@ -1,4 +1,4 @@
-#include <thrust/detail/util/align.h>
+#include <cuda/std/memory>
 
 #include <cuda_runtime_api.h>
 
@@ -11,6 +11,6 @@ void TestCudaMallocResultAligned(const std::size_t n)
   cudaMalloc(&ptr, n * sizeof(T));
   cudaFree(ptr);
 
-  ASSERT_EQUAL(true, thrust::detail::util::is_aligned(ptr));
+  ASSERT_EQUAL(true, ::cuda::std::is_sufficiently_aligned<alignof(T)>(ptr));
 }
 DECLARE_VARIABLE_UNITTEST(TestCudaMallocResultAligned);
