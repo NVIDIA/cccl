@@ -1,14 +1,14 @@
 #include <thrust/detail/seq.h>
-#include <thrust/system/cpp/detail/par.h>
-#include <thrust/system/omp/detail/par.h>
-#include <thrust/system/tbb/detail/par.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/omp/detail/execution_policy.h>
+#include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/__cccl_config>
 
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <thrust/system/cuda/detail/par.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #endif
 
 template <typename T>
@@ -99,9 +99,9 @@ struct TestAllocatorAttachment
 };
 
 using sequential_info = policy_info<thrust::detail::seq_t, thrust::system::detail::sequential::execution_policy>;
-using cpp_par_info    = policy_info<thrust::system::cpp::detail::par_t, thrust::system::cpp::detail::execution_policy>;
-using omp_par_info    = policy_info<thrust::system::omp::detail::par_t, thrust::system::omp::detail::execution_policy>;
-using tbb_par_info    = policy_info<thrust::system::tbb::detail::par_t, thrust::system::tbb::detail::execution_policy>;
+using cpp_par_info    = policy_info<thrust::system::cpp::detail::par_t, thrust::system::cpp::execution_policy>;
+using omp_par_info    = policy_info<thrust::system::omp::detail::par_t, thrust::system::omp::execution_policy>;
+using tbb_par_info    = policy_info<thrust::system::tbb::detail::par_t, thrust::system::tbb::execution_policy>;
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 using cuda_par_info = policy_info<thrust::system::cuda::detail::par_t, thrust::cuda_cub::execute_on_stream_base>;

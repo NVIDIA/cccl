@@ -1,19 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -30,12 +16,10 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct execution_policy_marker
 {};
 
-// execution_policy_base serves as a guard against
-// infinite recursion in thrust entry points:
+// execution_policy_base serves as a guard against infinite recursion in thrust entry points:
 //
 // template<typename DerivedPolicy>
 // void foo(const thrust::detail::execution_policy_base<DerivedPolicy> &s)
@@ -70,11 +54,67 @@ constexpr _CCCL_HOST_DEVICE const DerivedPolicy& derived_cast(const execution_po
 {
   return static_cast<const DerivedPolicy&>(x);
 }
-
 } // namespace detail
 
+//! \addtogroup execution_policies
+//! \{
+
+//! \p execution_policy is the base class for all Thrust parallel execution policies like \p thrust::host, \p
+//! thrust::device, and each backend system's tag type.
+//!
+//! Custom user-defined backends should derive a policy from this type in order to interoperate with Thrust algorithm
+//! dispatch.
+//!
+//! The following code snippet demonstrates how to derive a standalone custom execution policy from \p
+//! thrust::execution_policy to implement a backend which only implements \p for_each:
+//!
+//! \code
+//! #include <thrust/execution_policy.h>
+//! #include <iostream>
+//!
+//! // define a type derived from thrust::execution_policy to distinguish our custom execution policy:
+//! struct my_policy : thrust::execution_policy<my_policy> {};
+//!
+//! // overload for_each on my_policy
+//! template<typename Iterator, typename Function>
+//! Iterator for_each(my_policy, Iterator first, Iterator last, Function f)
+//! {
+//!   std::cout << "Hello, world from for_each(my_policy)!" << std::endl;
+//!
+//!   for(; first < last; ++first)
+//!   {
+//!     f(*first);
+//!   }
+//!
+//!   return first;
+//! }
+//!
+//! struct ignore_argument
+//! {
+//!   void operator()(int) {}
+//! };
+//!
+//! int main()
+//! {
+//!   int data[4];
+//!
+//!   // dispatch thrust::for_each using our custom policy:
+//!   my_policy exec;
+//!   thrust::for_each(exec, data, data + 4, ignore_argument());
+//!
+//!   // can't dispatch thrust::transform because no overload exists for my_policy:
+//!   //thrust::transform(exec, data, data, + 4, data, ::cuda::std::identity{}); // error!
+//!
+//!   return 0;
+//! }
+//! \endcode
+//!
+//! \see host_execution_policy
+//! \see device_execution_policy
 template <typename DerivedPolicy>
-struct execution_policy : thrust::detail::execution_policy_base<DerivedPolicy>
+struct execution_policy : detail::execution_policy_base<DerivedPolicy>
 {};
+
+//! \}
 
 THRUST_NAMESPACE_END
