@@ -17,10 +17,10 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
-
 namespace detail
 {
 template <typename T>
@@ -28,13 +28,22 @@ struct __return_constant
 {
   T value;
 
-  THRUST_DEVICE_FUNCTION auto operator()() const -> T
+  template <typename... Args>
+  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
   {
     return value;
   }
 };
 } // namespace detail
+CUB_NAMESPACE_END
 
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+{};
+_CCCL_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
