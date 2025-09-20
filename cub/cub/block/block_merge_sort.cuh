@@ -48,16 +48,25 @@
 
 CUB_NAMESPACE_BEGIN
 
-// This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
-// * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
-//   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
-//   Symposium (IPDPS), 2012
-// * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
-//   https://arxiv.org/abs/1406.2628
+//! Computes the intersection of the diagonal \c diag with the merge path in the merge matrix of two input sequences.
+//! This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
+//! * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
+//!   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
+//!   Symposium (IPDPS), 2012
+//! * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
+//!   https://arxiv.org/abs/1406.2628
+//! \returns The number of elements merged from the first sequence at the intersection of the diagonal with the merge
+//! path. The number of elements merged from the second sequence is \c diag minus the returned value.
 template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
+  if constexpr (::cuda::std::is_signed_v<OffsetT>)
+  {
+    _CCCL_ASSERT(keys1_count >= 0, "");
+    _CCCL_ASSERT(keys2_count >= 0, "");
+  }
+
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (::cuda::std::min) (diag, keys1_count);
 
@@ -79,7 +88,18 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+//! Merges elements from two sorted sequences
+//! \tparam ITEMS_PER_THREAD The number of elements to merge and write to \c output
+//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
+//! \param keys1_beg The index into \c keys_shared where the first sequence starts
+//! \param keys2_beg The index into \c keys_shared where the second sequence starts
+//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param output The output array
+//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
+template <bool IS_FULL_TILE, typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -91,30 +111,73 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
+  _CCCL_ASSERT(keys1_count >= 0, "");
+  _CCCL_ASSERT(keys2_count >= 0, "");
+  if constexpr (IS_FULL_TILE)
+  {
+    _CCCL_ASSERT(keys1_count + keys2_count >= ITEMS_PER_THREAD, "");
+  }
+
+  // TODO(bgruber): this assertion fails. Is this a problem?
+  // _CCCL_ASSERT(keys1_count + keys2_count > 0, "");
+
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
-  KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
-  KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
+  // note: a conditional assignment like `KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;` will
+  // trigger compute-sanitizer's initcheck
+  KeyT key1;
+  if (keys1_count > 0)
+  {
+    key1 = keys_shared[keys1_beg];
+  }
+  else
+  {
+    key1 = oob_default;
+  }
+
+  KeyT key2;
+  if (keys2_count > 0)
+  {
+    key2 = keys_shared[keys2_beg];
+  }
+  else
+  {
+    key2 = oob_default;
+  }
+
+  auto loop_body = [&](int item, auto last_iteration) {
+    // FIXME(bgruber): is the condition correct, given that the two key ranges can be smaller than ITEMS_PER_THREAD?
+    // FIXME(bgruber): if we exhausted both key ranges, we increment keys1_beg beyond keys1_end
+    const bool use_key2 = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
+    output[item]        = use_key2 ? key2 : key1;
+    indices[item]       = use_key2 ? keys2_beg++ : keys1_beg++;
+    if constexpr (!last_iteration)
+    {
+      if (use_key2)
+      {
+        // FIXME(bgruber): this assertion fails and we access out of bounds
+        //_CCCL_ASSERT(keys2_beg < keys2_end, "");
+        key2 = keys_shared[keys2_beg];
+      }
+      else
+      {
+        // FIXME(bgruber): this assertion fails and we access out of bounds
+        //_CCCL_ASSERT(keys1_beg < keys1_end, "");
+        key1 = keys_shared[keys1_beg];
+      }
+    }
+  };
 
   _CCCL_SORT_MAYBE_UNROLL()
-  for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+  for (int item = 0; item < ITEMS_PER_THREAD - 1; ++item) // last iteration excluded
   {
-    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-    output[item]  = p ? key2 : key1;
-    indices[item] = p ? keys2_beg++ : keys1_beg++;
-    if (p)
-    {
-      key2 = keys_shared[keys2_beg];
-    }
-    else
-    {
-      key1 = keys_shared[keys1_beg];
-    }
+    loop_body(item, ::cuda::std::false_type{});
   }
+  loop_body(ITEMS_PER_THREAD - 1, ::cuda::std::true_type{});
 }
 
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <bool IS_FULL_TILE, typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -125,7 +188,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ITEMS_PER_THREAD],
   CompareOp compare_op)
 {
-  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+  SerialMerge<IS_FULL_TILE>(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 
 /**
@@ -195,6 +259,7 @@ private:
   /// Shared memory type required by this thread block
   union _TempStorage
   {
+    // FIXME(bgruber): why do we need the +1?
     KeyT keys_shared[ITEMS_PER_TILE + 1];
     ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
@@ -371,7 +436,7 @@ public:
    *   Number of valid items to sort
    *
    * @param[in] oob_default
-   *   Default value to assign out-of-bound items
+   *   Default value to assign to out-of-bound items
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
@@ -383,6 +448,10 @@ public:
        int valid_items,
        KeyT oob_default)
   {
+    _CCCL_ASSERT(IS_LAST_TILE || valid_items == ITEMS_PER_TILE, "");
+
+    // any thread containing at least one valid item is valid
+    const bool valid_thread = !IS_LAST_TILE || ITEMS_PER_THREAD * linear_tid < valid_items;
     if constexpr (IS_LAST_TILE)
     {
       // if last tile, find valid max_key
@@ -404,9 +473,7 @@ public:
       }
     }
 
-    // if first element of thread is in input range, stable sort items
-    //
-    if (!IS_LAST_TILE || ITEMS_PER_THREAD * linear_tid < valid_items)
+    if (valid_thread)
     {
       StableOddEvenSort(keys, items, compare_op);
     }
@@ -434,47 +501,52 @@ public:
       Sync();
 
       int indices[ITEMS_PER_THREAD];
+      if (valid_thread)
+      {
+        const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
+        const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
+        const int size  = ITEMS_PER_THREAD * merged_threads_number;
+        _CCCL_ASSERT(start < valid_items, "");
 
-      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
-      const int size  = ITEMS_PER_THREAD * merged_threads_number;
+        const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
+        // TODO(bgruber): optimization: checking against valid_items should only be needed when IS_LAST_TILE is true
+        const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+        const int keys1_beg = start; // (::cuda::std::min) (valid_items, start);
+        const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
+        const int keys2_beg = keys1_end;
+        const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
 
-      const int keys1_beg = (::cuda::std::min) (valid_items, start);
-      const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
-      const int keys2_beg = keys1_end;
-      const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
+        const int keys1_count    = keys1_end - keys1_beg;
+        const int keys2_count    = keys2_end - keys2_beg;
+        const int partition_diag = MergePath(
+          &temp_storage.keys_shared[keys1_beg],
+          &temp_storage.keys_shared[keys2_beg],
+          keys1_count,
+          keys2_count,
+          diag,
+          compare_op);
+        _CCCL_ASSERT(partition_diag >= 0 && partition_diag < valid_items, "");
 
-      const int keys1_count = keys1_end - keys1_beg;
-      const int keys2_count = keys2_end - keys2_beg;
-
-      const int partition_diag = MergePath(
-        &temp_storage.keys_shared[keys1_beg],
-        &temp_storage.keys_shared[keys2_beg],
-        keys1_count,
-        keys2_count,
-        diag,
-        compare_op);
-
-      const int keys1_beg_loc   = keys1_beg + partition_diag;
-      const int keys1_end_loc   = keys1_end;
-      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
-      const int keys2_end_loc   = keys2_end;
-      const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
-      const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(
-        &temp_storage.keys_shared[0],
-        keys1_beg_loc,
-        keys2_beg_loc,
-        keys1_count_loc,
-        keys2_count_loc,
-        keys,
-        indices,
-        compare_op,
-        oob_default);
+        const int keys1_beg_loc   = keys1_beg + partition_diag;
+        const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
+        const int keys1_count_loc = keys1_end - keys1_beg_loc;
+        const int keys2_count_loc = keys2_end - keys2_beg_loc;
+        SerialMerge<!IS_LAST_TILE>(
+          // TODO(bgruber): use the span with valid_items again
+          ::cuda::std::span<KeyT>(temp_storage.keys_shared, ITEMS_PER_TILE + 1),
+          //::cuda::std::span<KeyT>(temp_storage.keys_shared, valid_items),
+          //&temp_storage.keys_shared[0],
+          keys1_beg_loc,
+          keys2_beg_loc,
+          keys1_count_loc,
+          keys2_count_loc,
+          keys,
+          indices,
+          compare_op,
+          oob_default);
+      }
 
       if constexpr (!KEYS_ONLY)
       {
@@ -491,12 +563,15 @@ public:
 
         Sync();
 
-        // gather items from shmem
-        //
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+        if (valid_thread)
         {
-          items[item] = temp_storage.items_shared[indices[item]];
+          // gather items from shmem
+          //
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+          {
+            items[item] = temp_storage.items_shared[indices[item]];
+          }
         }
       }
     }
