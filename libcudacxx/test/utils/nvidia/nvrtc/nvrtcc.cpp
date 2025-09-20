@@ -157,6 +157,12 @@ ArgPair argHandlers[] = {
      nvrtcArguments.emplace_back("-std=" + match[1].str());
      return NORMAL;
    }},
+  {// Matches --device-int128 for enabling large integer types
+   std::regex("^-*device-int128$"),
+   [](const std::smatch& match) {
+     nvrtcArguments.emplace_back("--device-int128");
+     return NORMAL;
+   }},
   {// Matches -G/--device-debug
    std::regex("^(?:-G|--device-debug)$"),
    [](const std::smatch&) {

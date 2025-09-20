@@ -79,11 +79,17 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
-    .reg .b128 _d;
-    ld{8}{4}{6}.b128 [%2],_d;
-    mov.b128 _d, {{%0, %1}};
-)YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr) : "memory");
+    {{
+      .reg .b128 _d;
+      ld{8}{4}{6}.b128 _d,[%2];
+      mov.b128 _d, {{%0, %1}};
+    }}
+  )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr) : "memory");
 }})XXX";
   const std::string asm_intrinsic_format     = R"XXX(
 template <class _Type>
@@ -238,11 +244,17 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (),
+    NV_ANY_TARGET, (__atomic_ldst_128b_unsupported_before_SM_70();)
+  )
   asm volatile(R"YYY(
-    .reg .b128 _v;
-    mov.b128 {{%1, %2}}, _v;
-    st{8}{4}{6}.b128 [%0],_v;
-)YYY" :: "l"(__ptr), "l"(__val.__x),"l"(__val.__y) : "memory");
+    {{
+      .reg .b128 _v;
+      mov.b128 {{%1, %2}}, _v;
+      st{8}{4}{6}.b128 [%0],_v;
+    }}
+  )YYY" :: "l"(__ptr), "l"(__val.__x),"l"(__val.__y) : "memory");
 }})XXX";
   const std::string asm_intrinsic_format     = R"XXX(
 template <class _Type>
