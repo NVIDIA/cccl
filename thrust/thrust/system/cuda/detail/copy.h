@@ -49,7 +49,6 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/std/__memory/uninitialized_algorithms.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
