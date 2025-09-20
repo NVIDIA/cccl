@@ -190,6 +190,11 @@ protected:
       return nullptr;
     }
 
+    virtual bool is_graph_ctx() const
+    {
+      return false;
+    }
+
     void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);
@@ -776,6 +781,11 @@ public:
     return pimpl->graph();
   }
 
+  bool is_graph_ctx() const
+  {
+    return pimpl->is_graph_ctx();
+  }
+
   void set_graph_cache_policy(::std::function<bool()> policy)
   {
     pimpl->set_graph_cache_policy(mv(policy));
@@ -940,6 +950,21 @@ public:
   }
 
   ~backend_ctx() = default;
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    return static_cast<backend_ctx_untyped&>(*this);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    return static_cast<const backend_ctx_untyped&>(*this);
+  }
 
   /**
    * @brief Returns a `logical_data` object with the given shape, tied to this graph. Initial data place is invalid.
