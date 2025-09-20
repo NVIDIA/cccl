@@ -22,8 +22,8 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 
+#  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/chrono>
 #  include <cuda/std/climits>
 #  include <cuda/std/ctime>
 

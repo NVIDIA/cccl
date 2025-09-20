@@ -23,9 +23,9 @@
 
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
+#include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
