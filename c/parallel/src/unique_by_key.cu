@@ -60,7 +60,7 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int /*key_size*/)
+unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, uint64_t /*key_size*/)
 {
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement

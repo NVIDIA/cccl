@@ -38,7 +38,11 @@
 struct op_wrapper;
 struct device_transform_policy;
 
+#ifdef _WINDOWS
+using OffsetT = long long;
+#else
 using OffsetT = long;
+#endif
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>,
               "OffsetT must be signed int32 or int64");
 
@@ -295,8 +299,12 @@ struct __align__({3}) output_storage_t {{
           [[fallthrough]];
         case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+        default:
+          _CCCL_UNREACHABLE();
+          // Appease NVCC's #940-D on Windows
+          ::std::abort();
+          return {};
       }
-      _CCCL_UNREACHABLE();
     }();
 
     std::string final_src = std::format(
@@ -367,7 +375,7 @@ struct device_transform_policy {{
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
-    build_ptr->loaded_bytes_per_iteration = input_it.value_type.size;
+    build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
@@ -537,8 +545,12 @@ struct __align__({5}) output_storage_t {{
           [[fallthrough]];
         case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+        default:
+          _CCCL_UNREACHABLE();
+          // Appease NVCC's #940-D on Windows
+          ::std::abort();
+          return {};
       }
-      _CCCL_UNREACHABLE();
     }();
 
     std::string final_src = std::format(
@@ -607,7 +619,7 @@ struct device_transform_policy {{
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
-    build_ptr->loaded_bytes_per_iteration = (input1_it.value_type.size + input2_it.value_type.size);
+    build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;

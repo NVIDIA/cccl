@@ -34,6 +34,11 @@ find_package(CUB REQUIRED)
 find_package(Thrust REQUIRED)
 find_package(libcudacxx REQUIRED)
 
+if (MSVC)
+    # Needed for UnDecorateSymbolName.
+    target_link_libraries(cccl.c.parallel PRIVATE Dbghelp)
+endif()
+
 # Install headers
 set(_dest_incl_dir cuda/cccl/headers/include)
 
