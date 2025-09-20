@@ -108,9 +108,7 @@ enum class select
   max
 };
 
-/**
- * Get the bin ID from the value of element
- */
+// Get the bin ID from the value of element
 template <typename T, select SelectDirection, int BitsPerPass>
 struct ExtractBinOp
 {
@@ -138,9 +136,7 @@ struct ExtractBinOp
   }
 };
 
-/**
- * Check if the input element is still a candidate for the target pass.
- */
+// Check if the input element is still a candidate for the target pass.
 template <typename T, select SelectDirection, int BitsPerPass>
 struct IdentifyCandidatesOp
 {
@@ -176,86 +172,84 @@ struct IdentifyCandidatesOp
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-/**
- * TopK kernel entry point (multi-block) for histogram collection, prefix sum and filering operations except for the
- * last round
- *
- * Find the largest (or smallest) K items from a sequence of unordered data
- * @tparam KeyInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input keys @iterator
- *
- * @tparam KeyOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output keys @iterator
- *
- * @tparam ValueInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input values @iterator
- *
- * @tparam ValueOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output values @iterator
- *
- * @tparam OffsetT
- *  Data Type for variables: num_items
- *
- * @tparam OutOffsetT
- *  Data Type for variables: k
- *
- * @tparam KeyInT
- *  Data Type for input keys
- *
- * @tparam ExtractBinOpT
- *   Operations to extract the bin from the input key value
- *
- * @tparam IdentifyCandidatesOpT
- *   Operations to filter the input key value
- *
- * @param[in] d_keys_in
- *   Pointer to the input data of key data
- *
- * @param[out] d_keys_out
- *   Pointer to the K output sequence of key data
- *
- * @param[in] d_values_in
- *   Pointer to the input sequence of associated value items
- *
- * @param[out] d_values_out
- *   Pointer to the output sequence of associated value items
- *
- * @param[in] in_buf
- *   Pointer to buffer of input key data
- *
- * @param[out] out_buf
- *   Pointer to buffer of output key data
- *
- * @param[in] in_idx_buf
- *   Pointer to buffer of index of input buffer
- *
- * @param[out] out_idx_buf
- *   Pointer to buffer of index of output
- *
- * @param[in] counter
- *   Pointer to buffer of counter array
- *
- * @param[in] histogram
- *   Pointer to buffer of histogram array
- *
- * @param[in] num_items
- *   Number of items to be processed
- *
- * @param[in] k
- *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
- *
- * @param[in] buffer_length
- *   The size of the buffer for storing intermediate candidates
- *
- * @param[in] extract_bin_op
- *   Extract the bin operator
- *
- * @param[in] identify_candidates_op
- *   Extract element filter operator
- *
- * @param[in] pass
- *   The index of the passes
- */
+//! TopK kernel entry point (multi-block) for histogram collection, prefix sum and filering operations except for the
+//!  last round
+//!
+//! Find the largest (or smallest) K items from a sequence of unordered data
+//! @tparam KeyInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+//!
+//! @tparam KeyOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+//!
+//! @tparam ValueInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input values @iterator
+//!
+//! @tparam ValueOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output values @iterator
+//!
+//! @tparam OffsetT
+//!  Data Type for variables: num_items
+//!
+//! @tparam OutOffsetT
+//!  Data Type for variables: k
+//!
+//! @tparam KeyInT
+//!  Data Type for input keys
+//!
+//! @tparam ExtractBinOpT
+//!   Operations to extract the bin from the input key value
+//!
+//! @tparam IdentifyCandidatesOpT
+//!   Operations to filter the input key value
+//!
+//! @param[in] d_keys_in
+//!   Pointer to the input data of key data
+//!
+//! @param[out] d_keys_out
+//!   Pointer to the K output sequence of key data
+//!
+//! @param[in] d_values_in
+//!   Pointer to the input sequence of associated value items
+//!
+//! @param[out] d_values_out
+//!   Pointer to the output sequence of associated value items
+//!
+//! @param[in] in_buf
+//!   Pointer to buffer of input key data
+//!
+//! @param[out] out_buf
+//!   Pointer to buffer of output key data
+//!
+//! @param[in] in_idx_buf
+//!   Pointer to buffer of index of input buffer
+//!
+//! @param[out] out_idx_buf
+//!   Pointer to buffer of index of output
+//!
+//! @param[in] counter
+//!   Pointer to buffer of counter array
+//!
+//! @param[in] histogram
+//!   Pointer to buffer of histogram array
+//!
+//! @param[in] num_items
+//!   Number of items to be processed
+//!
+//! @param[in] k
+//!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+//!
+//! @param[in] buffer_length
+//!   The size of the buffer for storing intermediate candidates
+//!
+//! @param[in] extract_bin_op
+//!   Extract the bin operator
+//!
+//! @param[in] identify_candidates_op
+//!   Extract element filter operator
+//!
+//! @param[in] pass
+//!   The index of the passes
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -315,73 +309,70 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
       in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
 }
 
-/**
- * TopK kernel entry point for the last filtering step (multi-block)
- *
- * Find the largest (or smallest) K items from a sequence of unordered data
- * @tparam KeyInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input keys @iterator
- *
- * @tparam KeyOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output keys @iterator
- *
- * @tparam ValueInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input values @iterator
- *
- * @tparam ValueOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output values @iterator
- *
- * @tparam OffsetT
- *  Data Type for variables: num_items
- *
- * @tparam OutOffsetT
- *  Data Type for variables: k
- *
- * @tparam KeyInT
- *  Data Type for input keys
- *
- * @tparam IdentifyCandidatesOpT
- *   Operations to filter the input key value
- *
- * @param[in] d_keys_in
- *   Pointer to the input data of key data
- *
- * @param[out] d_keys_out
- *   Pointer to the K output sequence of key data
- *
- * @param[in] d_values_in
- *   Pointer to the input sequence of associated value items
- *
- * @param[out] d_values_out
- *   Pointer to the output sequence of associated value items
- *
- * @param[in] in_buf
- *   Pointer to buffer of input key data
- *
- * @param[in] in_idx_buf
- *   Pointer to buffer of index of input buffer
- *
- * @param[in] counter
- *   Pointer to buffer of counter array
- *
- * @param[in] histogram
- *   Pointer to buffer of histogram array
- *
- * @param[in] num_items
- *   Number of items to be processed
- *
- * @param[in] k
- *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
- *
- * @param[in] buffer_length
- *   The size of the buffer for storing intermediate candidates
- *
- * @param[in] identify_candidates_op
- *   Extract element filter operator
- *
- * @param[in] pass
- *   The index of the passes
- */
+//! TopK kernel entry point for the last filtering step (multi-block)
+//! Find the largest (or smallest) K items from a sequence of unordered data
+//! @tparam KeyInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+//!
+//! @tparam KeyOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+//!
+//! @tparam ValueInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input values @iterator
+//!
+//! @tparam ValueOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output values @iterator
+//!
+//! @tparam OffsetT
+//!  Data Type for variables: num_items
+//!
+//! @tparam OutOffsetT
+//!  Data Type for variables: k
+//!
+//! @tparam KeyInT
+//!  Data Type for input keys
+//!
+//! @tparam IdentifyCandidatesOpT
+//!   Operations to filter the input key value
+//!
+//! @param[in] d_keys_in
+//!   Pointer to the input data of key data
+//!
+//! @param[out] d_keys_out
+//!   Pointer to the K output sequence of key data
+//!
+//! @param[in] d_values_in
+//!   Pointer to the input sequence of associated value items
+//!
+//! @param[out] d_values_out
+//!   Pointer to the output sequence of associated value items
+//!
+//! @param[in] in_buf
+//!   Pointer to buffer of input key data
+//!
+//! @param[in] in_idx_buf
+//!   Pointer to buffer of index of input buffer
+//!
+//! @param[in] counter
+//!   Pointer to buffer of counter array
+//!
+//! @param[in] histogram
+//!   Pointer to buffer of histogram array
+//!
+//! @param[in] num_items
+//!   Number of items to be processed
+//!
+//! @param[in] k
+//!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+//!
+//! @param[in] buffer_length
+//!   The size of the buffer for storing intermediate candidates
+//!
+//! @param[in] identify_candidates_op
+//!   Extract element filter operator
+//!
+//! @param[in] pass
+//!   The index of the passes
 template <typename ChainedPolicyT,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -436,28 +427,26 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k, pass);
 }
 
-/*
- * @tparam KeyInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input keys @iterator
- *
- * @tparam KeyOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output keys @iterator
- *
- * @tparam ValueInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input values @iterator
- *
- * @tparam ValueOutputIteratorT
- *   **[inferred]** Random-access input iterator type for writing output values @iterator
- *
- * @tparam OffsetT
- *  Data Type for variables: num_items
- *
- * @tparam OutOffsetT
- *  Data Type for variables: k
- *
- * @tparam SelectDirection
- *   Determines whether to select the smallest or largest K elements.
- */
+//! @tparam KeyInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+//!
+//! @tparam KeyOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+//!
+//! @tparam ValueInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input values @iterator
+//!
+//! @tparam ValueOutputIteratorT
+//!   **[inferred]** Random-access input iterator type for writing output values @iterator
+//!
+//! @tparam OffsetT
+//!  Data Type for variables: num_items
+//!
+//! @tparam OutOffsetT
+//!  Data Type for variables: k
+//!
+//! @tparam SelectDirection
+//!   Determines whether to select the smallest or largest K elements.
 template <typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
           typename ValueInputIteratorT,
@@ -515,39 +504,36 @@ struct DispatchTopK : SelectedPolicy
   using key_in_t                  = detail::it_value_t<KeyInputIteratorT>;
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
 
-  /*
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_keys_in
-   *   Pointer to the input data of key data
-   *
-   * @param[out] d_keys_out
-   *   Pointer to the K output sequence of key data
-   *
-   * @param[in] d_values_in
-   *   Pointer to the input sequence of associated value items
-   *
-   * @param[out] d_values_out
-   *   Pointer to the output sequence of associated value items
-   *
-   * @param[in] num_items
-   *   Number of items to be processed
-   *
-   * @param[in] k
-   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
-   * `num_items`.
-   *
-   * @param[in] stream
-   *   @rst
-   *   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-   *   @endrst
-   */
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the K output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the output sequence of associated value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be processed
+  //!
+  //! @param[in] k
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //! `num_items`.
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchTopK(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -842,39 +828,36 @@ struct DispatchTopK : SelectedPolicy
         identify_candidates_op_t>);
   }
 
-  /*
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_keys_in
-   *   Pointer to the input data of key data to find top K
-   *
-   * @param[out] d_keys_out
-   *   Pointer to the K output sequence of key data
-   *
-   * @param[in] d_values_in
-   *   Pointer to the input sequence of associated value items
-   *
-   * @param[out] d_values_out
-   *   Pointer to the output sequence of associated value items
-   *
-   * @param[in] num_items
-   *   Number of items to be processed
-   *
-   * @param[in] k
-   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
-   * `num_items`.
-   *
-   * @param[in] stream
-   *   @rst
-   *   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-   *   @endrst
-   */
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to find top K
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the K output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the output sequence of associated value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be processed
+  //!
+  //! @param[in] k
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //! `num_items`.
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

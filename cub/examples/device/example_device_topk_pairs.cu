@@ -1,15 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/******************************************************************************
- * Simple example of cub::DeviceTopK::MinPairs().
- *
- * Find the top-k smallest float keys paired with a corresponding array of int values.
- *
- * To compile using the command line:
- *   nvcc -arch=sm_XX example_device_topk_pairs.cu -I../.. -lcudart -O3
- *
- ******************************************************************************/
+//! Simple example of cub::DeviceTopK::MinPairs().
+//! Find the top-k smallest float keys paired with a corresponding array of int values.
+//! To compile using the command line:
+//!   nvcc -arch=sm_XX example_device_topk_pairs.cu -I../.. -lcudart -O3
 
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
@@ -37,10 +32,8 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 // Test generation
 //---------------------------------------------------------------------
 
-/**
- * Simple key-value pairing for floating point types.
- * Treats positive and negative zero as equivalent.
- */
+// Simple key-value pairing for floating point types.
+// Treats positive and negative zero as equivalent.
 struct Pair
 {
   float key;
@@ -57,10 +50,7 @@ struct Pair
   }
 };
 
-/**
- * Initialize key-value sorting problem.
- */
-
+// Initialize key-value sorting problem.
 void Initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_reference_values, int num_items, int k)
 {
   Pair* h_pairs           = new Pair[num_items];
@@ -97,9 +87,7 @@ void Initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
   delete[] h_reference_pairs;
 }
 
-/**
- *  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
- */
+//  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
 void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int* h_res_values, int* d_values_out, int k)
 {
   CubDebugExit(cudaMemcpy(h_res_keys, d_keys_out, sizeof(float) * k, cudaMemcpyDeviceToHost));
@@ -121,10 +109,6 @@ void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int* h_res_values, i
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
-
-/**
- * Main
- */
 int main(int argc, char** argv)
 {
   int num_items = 10240;

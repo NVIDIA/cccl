@@ -27,28 +27,27 @@ CUB_NAMESPACE_BEGIN
 namespace detail::topk
 {
 
-/**
- * Parameterizable tuning policy type for AgentTopK
- *
- * @tparam BlockThreads
- *   Threads per thread block
- *
- * @tparam ItemsPerThread
- *   Items per thread (per tile of input)
- *
- * @tparam BitsPerPass
- *   Number of bits processed per pass
- *
- * @tparam CoefficientForBuffer
- *   The coefficient parameter for reducing the size of buffer.
- *   The size of buffer is `1 / CoefficientForBuffer` of original input
- *
- * @tparam LoadAlgorithm
- *   The BlockLoad algorithm to use
- *
- * @tparam ScanAlgorithm
- *   The BlockScan algorithm to use
- */
+//! @brief Parameterizable tuning policy type for AgentTopK
+//!
+//! @tparam BlockThreads
+//!   Threads per thread block
+//!
+//! @tparam ItemsPerThread
+//!   Items per thread (per tile of input)
+//!
+//! @tparam BitsPerPass
+//!   Number of bits processed per pass
+//!
+//! @tparam CoefficientForBuffer
+//!   The coefficient parameter for reducing the size of buffer.
+//!   The size of buffer is `1 / CoefficientForBuffer` of original input
+//!
+//! @tparam LoadAlgorithm
+//!   The BlockLoad algorithm to use
+//!
+//! @tparam ScanAlgorithm
+//!   The BlockScan algorithm to use
+//!
 
 template <int BlockThreads,
           int ItemsPerThread,
@@ -123,19 +122,15 @@ enum class candidate_class
   rejected
 };
 
-/**
- * Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
- */
+// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
 {
   return ::cuda::ceil_div<int>(sizeof(T) * 8, BitsPerPass);
 }
 
-/**
- * Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
- * We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
- */
+// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
+// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
@@ -147,9 +142,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
   return start_bit;
 }
 
-/**
- * Used in the bin ID calculation to exclude bits unrelated to the current pass
- */
+// Used in the bin ID calculation to exclude bits unrelated to the current pass
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
@@ -157,37 +150,36 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
   return (1 << num_bits) - 1;
 }
 
-/**
- * @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
- * device-wide topK
- *
- * @tparam AgentTopKPolicyT
- *   Parameterized AgentTopKPolicy tuning policy type
- *
- * @tparam KeyInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input keys @iterator
- *
- * @tparam KeyOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output keys @iterator
- *
- * @tparam ValueInputIteratorT
- *   **[inferred]** Random-access input iterator type for reading input values @iterator
- *
- * @tparam ValueOutputIteratorT
- *   **[inferred]** Random-access output iterator type for writing output values @iterator
- *
- * @tparam ExtractBinOpT
- *   Operations to extract the bin from the input key values
- *
- * @tparam IdentifyCandidatesOpT
- *   Operations to filter the input key values
- *
- * @tparam OffsetT
- *   Type of variable num_items
- *
- * @tparam OutOffsetT
- *   Type of variable k
- */
+//! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
+//! device-wide topK
+//!
+//! @tparam AgentTopKPolicyT
+//!   Parameterized AgentTopKPolicy tuning policy type
+//!
+//! @tparam KeyInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+//!
+//! @tparam KeyOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+//!
+//! @tparam ValueInputIteratorT
+//!   **[inferred]** Random-access input iterator type for reading input values @iterator
+//!
+//! @tparam ValueOutputIteratorT
+//!   **[inferred]** Random-access output iterator type for writing output values @iterator
+//!
+//! @tparam ExtractBinOpT
+//!   Operations to extract the bin from the input key values
+//!
+//! @tparam IdentifyCandidatesOpT
+//!    Operations to filter the input key values
+//!
+//! @tparam OffsetT
+//!   Type of variable num_items
+//!
+//! @tparam OutOffsetT
+//!   Type of variable k
+//!
 template <typename AgentTopKPolicyT,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -258,38 +250,36 @@ struct AgentTopK
   //---------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------
-  /**
-   * @param temp_storage
-   *   Reference to temp_storage
-   *
-   * @param d_keys_in
-   *   Input data, keys
-   *
-   * @param d_keys_out
-   *   Output data, keys
-   *
-   * @param d_values_in
-   *   Input data, values
-   *
-   * @param d_values_out
-   *   Output data, values
-   *
-   * @param num_items
-   *   Total number of input items
-   *
-   * @param k
-   *   The K value. Will find K elements from num_items elements
-   *
-   * @param buffer_length
-   *   The size of the buffer for storing intermediate candidates
-   *
-   * @param extract_bin_op
-   *   Extract bin operator
-   *
-   * @param identify_candidates_op
-   *   Filter operator
-   *
-   */
+  //! @param temp_storage
+  //!   Reference to temp_storage
+  //!
+  //! @param d_keys_in
+  //!   Input data, keys
+  //!
+  //! @param d_keys_out
+  //!   Output data, keys
+  //!
+  //! @param d_values_in
+  //!   Input data, values
+  //!
+  //! @param d_values_out
+  //!   Output data, values
+  //!
+  //! @param num_items
+  //!   Total number of input items
+  //!
+  //! @param k
+  //!   The K value. Will find K elements from num_items elements
+  //!
+  //! @param buffer_length
+  //!   The size of the buffer for storing intermediate candidates
+  //!
+  //! @param extract_bin_op
+  //!   Extract bin operator
+  //!
+  //! @param identify_candidates_op
+  //!   Filter operator
+  //!
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentTopK(
     TempStorage& temp_storage,
     const KeyInputIteratorT d_keys_in,
@@ -316,9 +306,8 @@ struct AgentTopK
   //---------------------------------------------------------------------
   // Utility methods for device topK
   //---------------------------------------------------------------------
-  /**
-   * Process a range of input data in tiles, calling f(key, index) for each element
-   */
+
+  // Process a range of input data in tiles, calling f(key, index) for each element
   template <typename InputItT, typename FuncT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
   {
@@ -409,9 +398,7 @@ struct AgentTopK
     }
   }
 
-  /**
-   * Fused filtering of the current pass and building histogram for the next pass
-   */
+  // Fused filtering of the current pass and building histogram for the next pass
   template <bool IsFirstPass>
   _CCCL_DEVICE _CCCL_FORCEINLINE void filter_and_histogram(
     key_in_t* in_buf,
@@ -556,9 +543,7 @@ struct AgentTopK
     merge_histograms(temp_storage.histogram, histogram);
   }
 
-  /**
-   * Replace histogram with its own prefix sum
-   */
+  // Replace histogram with its own prefix sum
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
     OffsetT thread_data[bins_per_thread];
@@ -573,9 +558,7 @@ struct AgentTopK
     block_store_trans_t(temp_storage.store_trans).Store(temp_storage.histogram, thread_data, num_buckets);
   }
 
-  /**
-   * Identify the bucket that the k-th value falls into
-   */
+  // Identify the bucket that the k-th value falls into
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
   {

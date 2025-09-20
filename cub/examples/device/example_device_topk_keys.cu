@@ -1,15 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/******************************************************************************
- * Simple example of cub::DeviceTopK::MinKeys().
- *
- * Find the top-k smallest float keys paired with a corresponding array of int values.
- *
- * To compile using the command line:
- *   nvcc -arch=sm_XX example_device_topk_keys.cu -I../.. -lcudart -O3
- *
- ******************************************************************************/
+//! Simple example of cub::DeviceTopK::MinKeys().
+//! Find the top-k smallest float keys paired with a corresponding array of int values.
+//! To compile using the command line:
+//!   nvcc -arch=sm_XX example_device_topk_keys.cu -I../.. -lcudart -O3
 
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
@@ -37,9 +32,7 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 // Test generation
 //---------------------------------------------------------------------
 
-/**
- * Initialize key-value sorting problem.
- */
+// Initialize key-value sorting problem.
 void Initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
 {
   for (int i = 0; i < num_items; ++i)
@@ -57,9 +50,7 @@ void Initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
   std::partial_sort_copy(h_keys, h_keys + num_items, h_reference_keys, h_reference_keys + k);
 }
 
-/**
- *  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
- */
+//  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
 void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int k)
 {
   CubDebugExit(cudaMemcpy(h_res_keys, d_keys_out, sizeof(float) * k, cudaMemcpyDeviceToHost));
@@ -68,11 +59,7 @@ void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int k)
 
 //---------------------------------------------------------------------
 // Main
-//---------------------------------------------------------------------
-
-/**
- * Main
- */
+//--------------------------------------------------------------------
 int main(int argc, char** argv)
 {
   int num_items = 10240;
