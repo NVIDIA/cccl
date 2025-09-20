@@ -43,6 +43,7 @@ temp_storage_size = sorter(
     d_input_vals,
     d_output_vals,
     len(h_input_keys),
+    len(start_offsets),
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
 )

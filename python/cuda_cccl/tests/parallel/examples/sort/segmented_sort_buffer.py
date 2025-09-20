@@ -36,6 +36,7 @@ parallel.segmented_sort(
     vals_db,
     None,
     d_in_keys.size,
+    start_offsets.size,
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
     parallel.SortOrder.DESCENDING,

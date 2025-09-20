@@ -63,7 +63,7 @@ def host_segmented_sort(
     h_vals: np.ndarray | None,
     start_offsets: np.ndarray,
     end_offsets: np.ndarray,
-    order: "parallel.SortOrder",
+    order: parallel.SortOrder,
 ) -> Tuple[np.ndarray, np.ndarray | None]:
     assert start_offsets.shape == end_offsets.shape
     keys = h_keys.copy()
@@ -115,6 +115,7 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size):
         None,
         None,
         num_items,
+        num_segments,
         cp.asarray(start_offsets),
         cp.asarray(end_offsets),
         order,
@@ -151,6 +152,7 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
         d_in_vals,
         d_out_vals,
         num_items,
+        num_segments,
         cp.asarray(start_offsets),
         cp.asarray(end_offsets),
         order,
@@ -185,6 +187,7 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
         None,
         None,
         num_items,
+        num_segments,
         cp.asarray(start_offsets),
         cp.asarray(end_offsets),
         order,
@@ -223,6 +226,7 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
         vals_db,
         None,
         num_items,
+        num_segments,
         cp.asarray(start_offsets),
         cp.asarray(end_offsets),
         order,
@@ -292,6 +296,7 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
         d_in_vals,
         d_out_vals,
         num_items,
+        num_segments,
         cp.asarray(start_offsets),
         cp.asarray(end_offsets),
         order,

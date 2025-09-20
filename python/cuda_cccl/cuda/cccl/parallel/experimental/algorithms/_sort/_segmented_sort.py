@@ -39,10 +39,14 @@ class _SegmentedSort:
         end_offsets_in: DeviceArrayLike,
         order: SortOrder,
     ):
-        self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
-        self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
-        self.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values)
-        self.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values)
+        d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
+            _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
+        )
+
+        self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
+        self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
+        self.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
+        self.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
@@ -53,13 +57,13 @@ class _SegmentedSort:
 
         self.build_result = call_build(
             _bindings.DeviceSegmentedSortBuildResult,
+            _bindings.SortOrder.ASCENDING
+            if order is SortOrder.ASCENDING
+            else _bindings.SortOrder.DESCENDING,
             self.d_in_keys_cccl,
-            self.d_out_keys_cccl,
             self.d_in_values_cccl,
-            self.d_out_values_cccl,
             self.start_offsets_in_cccl,
             self.end_offsets_in_cccl,
-            order,
         )
 
     def __call__(
@@ -70,14 +74,21 @@ class _SegmentedSort:
         d_in_values,
         d_out_values,
         num_items,
+        num_segments,
         start_offsets_in,
         end_offsets_in,
         stream=None,
     ):
-        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
-        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
-        set_cccl_iterator_state(self.d_in_values_cccl, d_in_values)
-        set_cccl_iterator_state(self.d_out_values_cccl, d_out_values)
+        d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
+            _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
+        )
+
+        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys_array)
+        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys_array)
+        if d_in_values_array is not None:
+            set_cccl_iterator_state(self.d_in_values_cccl, d_in_values_array)
+        if d_out_values_array is not None:
+            set_cccl_iterator_state(self.d_out_values_cccl, d_out_values_array)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
@@ -101,6 +112,7 @@ class _SegmentedSort:
             self.d_in_values_cccl,
             self.d_out_values_cccl,
             num_items,
+            num_segments,
             self.start_offsets_in_cccl,
             self.end_offsets_in_cccl,
             is_overwrite_okay,
@@ -203,6 +215,7 @@ def segmented_sort(
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
     d_out_values: DeviceArrayLike | None,
     num_items: int,
+    num_segments: int,
     start_offsets_in: DeviceArrayLike,
     end_offsets_in: DeviceArrayLike,
     order: SortOrder,
@@ -232,7 +245,8 @@ def segmented_sort(
         d_out_keys: Device array to store the sorted keys (optional)
         d_in_values: Device array or DoubleBuffer containing the input values to be sorted (optional)
         d_out_values: Device array to store the sorted values (optional)
-        num_items: Number of items to sort
+        num_items: Total number of items to sort
+        num_segments: Number of segments to sort
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
         order: Sort order (ascending or descending)
@@ -254,6 +268,7 @@ def segmented_sort(
         d_in_values,
         d_out_values,
         num_items,
+        num_segments,
         start_offsets_in,
         end_offsets_in,
         stream,
@@ -266,6 +281,7 @@ def segmented_sort(
         d_in_values,
         d_out_values,
         num_items,
+        num_segments,
         start_offsets_in,
         end_offsets_in,
         stream,

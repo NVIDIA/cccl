@@ -32,6 +32,7 @@ parallel.segmented_sort(
     d_in_vals,
     d_out_vals,
     d_in_keys.size,
+    start_offsets.size,
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
     parallel.SortOrder.ASCENDING,
