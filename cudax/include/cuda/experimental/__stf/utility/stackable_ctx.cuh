@@ -3361,6 +3361,16 @@ UNITTEST("graph_scope iterative pattern")
   test_graph_scope();
 };
 
+UNITTEST("stackable task on exec_place::host()")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+  ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
+    cuda_safe_call(cudaStreamSynchronize(stream));
+  };
+  ctx.finalize();
+};
+
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
