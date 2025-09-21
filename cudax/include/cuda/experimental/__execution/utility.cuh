@@ -54,6 +54,7 @@ _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 struct __empty
 {};
 
+template <class...>
 struct [[deprecated]] __deprecated
 {};
 
@@ -324,6 +325,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 
 template <class _Ty>
 _CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
+
+// @brief A type that turns a nullary callable into an object that is
+// implicitly convertible to the result type of the callable.
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __emplace_from
+{
+  using __result_t = __call_result_t<_Fn>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr operator __result_t() && noexcept(__nothrow_callable<_Fn>)
+  {
+    return static_cast<_Fn&&>(__fn_)();
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Fn __fn_;
+};
+
+template <class _Fn>
+_CCCL_HOST_DEVICE __emplace_from(_Fn) -> __emplace_from<_Fn>;
 
 template <class _Ty, class... _Us>
 using __unless_one_of_t = ::cuda::std::enable_if_t<__none_of<_Ty, _Us...>, _Ty>;

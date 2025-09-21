@@ -44,16 +44,6 @@ namespace cuda::experimental
 {
 namespace execution
 {
-namespace __detail
-{
-template <class _Env, class _Query>
-using __statically_queryable_with_t = decltype(::cuda::std::remove_cvref_t<_Env>::query(std::declval<_Query>()));
-} // namespace __detail
-
-template <class _Env, class _Query>
-_CCCL_CONCEPT __statically_queryable_with =
-  __is_instantiable_with<__detail::__statically_queryable_with_t, _Env, _Query>;
-
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
 

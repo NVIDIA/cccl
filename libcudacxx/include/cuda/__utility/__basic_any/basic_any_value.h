@@ -240,6 +240,7 @@ public:
   auto operator=(__basic_any const& __other) -> __basic_any& = default;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9) || !_CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
   //! @brief Converting move assignment operator from a compatible `__basic_any`
   //! object.
   //!
@@ -273,6 +274,25 @@ public:
   {
     return __assign_from(__other);
   }
+#else
+  // nvcc 12.0 has a bug with its concepts implementation where substitution occurs too
+  // early here causing a hard error. So we use SFINAE to work around it.
+  template <class _OtherInterface,
+            ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>              = 0,
+            ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface>, __basic_any>, int> = 0>
+  _CCCL_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
+  {
+    return __assign_from(::cuda::std::move(__other));
+  }
+
+  template <class _OtherInterface,
+            ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>                     = 0,
+            ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>, int> = 0>
+  _CCCL_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
+  {
+    return __assign_from(__other);
+  }
+#endif
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
   // Older versions of clang and gcc need help disambiguating between
