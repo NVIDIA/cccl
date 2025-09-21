@@ -229,11 +229,12 @@ template <class _SrcInterface, class _DstInterface>
   }
 }
 
-template <class _SrcInterface, class _DstInterface>
-[[nodiscard]] _CCCL_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
+template <class _SrcInterface, class _DstInterface, class _VPtr>
+[[nodiscard]] _CCCL_API auto __vptr_cast(/*__vptr_for<_SrcInterface>*/ _VPtr __src_vptr) //
   noexcept(::cuda::std::is_same_v<_SrcInterface, _DstInterface>) //
-  -> __vptr_for<_DstInterface>
+//-> __vptr_for<_DstInterface>
 {
+  static_assert(::cuda::std::is_same_v<_VPtr, __vptr_for<_SrcInterface>>, "expected a vptr_for the source interface");
   if constexpr (::cuda::std::is_same_v<_SrcInterface, _DstInterface>)
   {
     return __src_vptr;

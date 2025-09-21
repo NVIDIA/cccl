@@ -55,6 +55,7 @@ cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/test_sequence.cu
     execution/test_starts_on.cu
     execution/test_stream_context.cu
+    execution/test_task_scheduler.cu
     execution/test_then.cu
     execution/test_trampoline_scheduler.cu
     execution/test_visit.cu
