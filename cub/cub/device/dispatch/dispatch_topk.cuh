@@ -60,7 +60,7 @@ struct sm90_tuning
     ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT))));
   // Try to load 16 Bytes per thread. (int64(items=2);int32(items=4);int16(items=8)).
 
-  static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
+  static constexpr int bits_per_pass = detail::topk::calc_bits_per_pass<KeyInT>();
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_VECTORIZE;
 };
@@ -70,15 +70,15 @@ struct device_topk_policy_hub
 {
   struct DefaultTuning
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 4;
-    static constexpr int ITEMS_PER_THREAD =
-      ::cuda::std::min(NOMINAL_4B_ITEMS_PER_THREAD,
-                       ::cuda::std::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / static_cast<int>(sizeof(KeyInT)))));
+    static constexpr int nominal_4b_items_per_thread = 4;
+    static constexpr int items_per_thread =
+      ::cuda::std::min(nominal_4b_items_per_thread,
+                       ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT)))));
 
-    static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
+    static constexpr int bits_per_pass = detail::topk::calc_bits_per_pass<KeyInT>();
 
     using topk_policy_t =
-      detail::topk::AgentTopKPolicy<512, ITEMS_PER_THREAD, BITS_PER_PASS, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
+      detail::topk::AgentTopKPolicy<512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct Policy350
@@ -92,7 +92,7 @@ struct device_topk_policy_hub
     using topk_policy_t =
       detail::topk::AgentTopKPolicy<tuning::threads,
                                     tuning::items,
-                                    tuning::BITS_PER_PASS,
+                                    tuning::bits_per_pass,
                                     tuning::load_algorithm,
                                     BLOCK_SCAN_WARP_SCANS>;
   };
@@ -261,7 +261,7 @@ template <typename ChainedPolicyT,
           typename ExtractBinOpT,
           typename IdentifyCandidatesOpT,
           bool IsFirstPass>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS))
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
     const KeyInputIteratorT d_keys_in,
     KeyOutputIteratorT d_keys_out,
@@ -382,7 +382,7 @@ template <typename ChainedPolicyT,
           typename OutOffsetT,
           typename KeyInT,
           typename IdentifyCandidatesOpT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS))
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     const KeyInputIteratorT d_keys_in,
     KeyOutputIteratorT d_keys_out,
@@ -586,16 +586,16 @@ struct DispatchTopK : SelectedPolicy
 
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads    = policy_t::BLOCK_THREADS; // Threads per block
-    constexpr int items_per_thread = policy_t::ITEMS_PER_THREAD; // Items per thread
+    constexpr int block_threads    = policy_t::block_threads; // Threads per block
+    constexpr int items_per_thread = policy_t::items_per_thread; // Items per thread
     constexpr int tile_size        = block_threads * items_per_thread; // Items per block
     const auto num_tiles           = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)); // Num of blocks
-    constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::BITS_PER_PASS>();
-    constexpr int num_buckets      = 1 << policy_t::BITS_PER_PASS;
+    constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::bits_per_pass>();
+    constexpr int num_buckets      = 1 << policy_t::bits_per_pass;
 
     // Define operators
-    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS>;
-    using extract_bin_op_t         = ExtractBinOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS>;
+    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::bits_per_pass>;
+    using extract_bin_op_t         = ExtractBinOp<key_in_t, SelectDirection, policy_t::bits_per_pass>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
@@ -786,8 +786,8 @@ struct DispatchTopK : SelectedPolicy
     using max_policy_t = typename SelectedPolicy::max_policy;
 
     using identify_candidates_op_t =
-      IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
-    using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
+      IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
+    using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
 
     return InvokePasses<ActivePolicyT>(
       detail::topk::DeviceTopKKernel<
