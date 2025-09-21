@@ -394,6 +394,21 @@ public:
       return ::std::move(*this);
     }
 
+    // Set exec_place for the task
+    template <typename ExecPlace>
+    auto& set_exec_place(ExecPlace&& ep) &
+    {
+      exec_place_ = ::std::forward<ExecPlace>(ep);
+      return *this;
+    }
+
+    template <typename ExecPlace>
+    auto&& set_exec_place(ExecPlace&& ep) &&
+    {
+      exec_place_ = ::std::forward<ExecPlace>(ep);
+      return ::std::move(*this);
+    }
+
     // Add get method for compatibility with test code
     template <typename T>
     auto get(size_t index) const
@@ -2011,10 +2026,15 @@ public:
     return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
   }
 
+  // Note we here duplicate the code above to avoid locking issues (and not create a 3 line common impl)
   template <typename... Deps>
   auto task(Deps&&... deps)
   {
-    return task(current_exec_place(), ::std::forward<Deps>(deps)...);
+    auto lock  = pimpl->acquire_shared_lock();
+    int offset = get_head_offset();
+    auto e_place = get_ctx(offset).default_exec_place();
+    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -3385,6 +3405,16 @@ UNITTEST("stackable task on exec_place::host()")
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
+    cuda_safe_call(cudaStreamSynchronize(stream));
+  };
+  ctx.finalize();
+};
+
+UNITTEST("stackable task with set_symbol and set_exec_place")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+  ctx.task(lA.write()).set_symbol("task").set_exec_place(exec_place::host())->*[](cudaStream_t stream, auto) {
     cuda_safe_call(cudaStreamSynchronize(stream));
   };
   ctx.finalize();
