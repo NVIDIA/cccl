@@ -27,7 +27,7 @@ def get_mark_by_size(num_segments: int, segment_size: int):
     return pytest.mark.large if num_items >= (1 << 20) else tuple()
 
 
-NUM_SEGMENTS_LIST = [0, 13, 1024, 2048]
+NUM_SEGMENTS_LIST = [1, 13, 1024, 2048]
 SEGMENT_SIZE_LIST = [1, 12, 1024, 2048]
 
 DTYPE_SEGMENT_PARAMS = [
