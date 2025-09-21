@@ -197,16 +197,15 @@ public:
     ::std::function<void()> add_dependency_to_task;
   };
 
-  // Deferred task builder using stored lambda approach
-  template <typename... InitialPack>
+  template <typename... Deps>
   class deferred_task_builder
   {
   public:
     stackable_ctx& sctx_;
     int offset_;
 
-    // Store the original parameter pack for task recreation
-    ::std::tuple<InitialPack...> initial_pack_;
+    exec_place exec_place_;
+    ::std::tuple<Deps...> task_deps_tuple_;
 
     // Store additional dependencies with captured operations
     struct additional_dep_info
@@ -225,15 +224,21 @@ public:
     // Optional symbol to be applied to the underlying task when concretized
     ::std::optional<::std::string> symbol_;
 
-    deferred_task_builder(stackable_ctx& sctx, int offset, InitialPack&&... pack)
+    template <typename ExecPlace>
+    deferred_task_builder(stackable_ctx& sctx, int offset, ExecPlace&& exec_place, Deps&&... deps)
         : sctx_(sctx)
         , offset_(offset)
-        , initial_pack_(::std::forward<InitialPack>(pack)...)
-    {}
+        , exec_place_(::std::move(exec_place))
+        , task_deps_tuple_(::std::forward<Deps>(deps)...)
+    {
+      static_assert((reserved::is_stackable_task_dep_v<::std::decay_t<Deps>> && ...),
+                    "All dependency arguments must be stackable task dependencies");
+    }
 
+  public:
     // Add more dependencies via add_deps
-    template <typename... Deps>
-    auto& add_deps(Deps&&... deps)
+    template <typename... MoreDeps>
+    auto& add_deps(MoreDeps&&... deps)
     {
       auto store_dep = [this](const auto& dep) {
         static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(dep)>>,
@@ -276,7 +281,7 @@ public:
           {
             auto process_initial = [&](const auto& arg) {
               static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>,
-                            "Initial task arguments in stackable context must be stackable task dependencies");
+                            "All arguments must be stackable task dependencies");
               int id             = arg.get_d().get_unique_id();
               combined_modes[id] = combined_modes[id] | arg.get_access_mode();
             };
@@ -295,6 +300,8 @@ public:
           if constexpr (sizeof...(initial_args) > 0)
           {
             auto validate_initial = [&](const auto& arg) {
+              static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>,
+                            "All arguments must be stackable task dependencies");
               int id             = arg.get_d().get_unique_id();
               auto combined_mode = combined_modes[id];
               // Validate initial argument with combined mode
@@ -311,16 +318,23 @@ public:
             info.validate_access_op(sctx_, offset_, combined_mode);
           }
 
-          // Create task with original arguments
+          // Create task with task dependencies and execution place
           auto task = [&]() {
-            if constexpr (sizeof...(initial_args) > 0)
-            {
-              return sctx_.get_ctx(offset_).task(initial_args.to_task_dep_with_offset(offset_)...);
-            }
-            else
-            {
-              return sctx_.get_ctx(offset_).task();
-            }
+            auto& ctx = sctx_.get_ctx(offset_);
+
+            // Convert stored task dependencies using apply
+            auto task_deps = ::std::apply(
+              [this](auto&&... deps) {
+                return ::std::make_tuple(deps.to_task_dep_with_offset(offset_)...);
+              },
+              task_deps_tuple_);
+
+            // Call ctx.task with execution place and collected dependencies
+            return ::std::apply(
+              [&ctx, exec_place = exec_place_](auto&&... deps) {
+                return ctx.task(exec_place, deps...);
+              },
+              task_deps);
           }();
 
           // Add the additional dependencies from add_deps calls to the underlying task
@@ -344,7 +358,7 @@ public:
           // Execute the provided action with the fully constructed task
           return action(task);
         },
-        initial_pack_);
+        task_deps_tuple_);
     }
 
   public:
@@ -1987,15 +2001,20 @@ public:
     mutable bool deferred_processed_ = false; // Flag to ensure deferred deps are processed only once
   };
 
-  template <typename... Pack>
-  auto task(Pack&&... pack)
+  template <typename ExecPlace,
+            typename... Deps,
+            ::std::enable_if_t<::std::is_base_of_v<exec_place, ::std::decay_t<ExecPlace>>, int> = 0>
+  auto task(ExecPlace&& e_place, Deps&&... deps)
   {
-    auto lock = pimpl->acquire_shared_lock();
-
+    auto lock  = pimpl->acquire_shared_lock();
     int offset = get_head_offset();
+    return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
+  }
 
-    // Do not build the task now, we defer this when all dependencies are know when we start the task
-    return deferred_task_builder{*this, offset, ::std::forward<Pack>(pack)...};
+  template <typename... Deps>
+  auto task(Deps&&... deps)
+  {
+    return task(current_exec_place(), ::std::forward<Deps>(deps)...);
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
