@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::size_t;
 
-// The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace 
+// The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace
 // qualification. Functions with template arguments have lower precedence than non-template functions for
 // overload resolution.
 template <int = 0>
