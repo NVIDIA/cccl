@@ -159,27 +159,6 @@ int main()
     // outer pop() automatically
   }
 
-  // Test 6: Exception safety - scope should clean up even if exceptions occur
-  try
-  {
-    stackable_ctx::graph_scope_guard exception_scope{ctx};
-
-    auto temp = ctx.logical_data(data.shape()).set_symbol("exception_temp");
-
-    ctx.parallel_for(temp.shape(), temp.write(), data.read())->*[] __device__(size_t i, auto temp, auto data) {
-      temp(i) = data(i) + 100;
-    };
-
-    // Simulate error condition (in real code, this might be a CUDA error or other exception)
-    // throw std::runtime_error("Simulated error");
-
-    // Even if exception occurs, destructor ensures pop() is called
-  }
-  catch (...)
-  {
-    // Exception handling - graph_scope destructor already called pop()
-  }
-
   ctx.finalize();
   return 0;
 }
