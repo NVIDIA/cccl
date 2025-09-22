@@ -27,18 +27,13 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
 {
-template <int ThreadsPerBlock,
-          int ItemsPerThread,
-          BlockLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadCacheModifier,
-          BlockStoreAlgorithm StoreAlgorithm>
+template <int ThreadsPerBlock, int ItemsPerThread, CacheLoadModifier LoadCacheModifier, BlockStoreAlgorithm StoreAlgorithm>
 struct agent_policy_t
 {
   // do not change data member names, policy_wrapper_t depends on it
   static constexpr int BLOCK_THREADS                   = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE                  = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadCacheModifier;
   static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
@@ -66,11 +61,6 @@ struct agent_t
   using items_load_it1 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt1>;
   using items_load_it2 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt2>;
 
-  using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
-  using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;
-  using block_load_items1 = typename BlockLoadType<Policy, items_load_it1>::type;
-  using block_load_items2 = typename BlockLoadType<Policy, items_load_it2>::type;
-
   using block_store_keys  = typename BlockStoreType<Policy, KeysOutputIt, key_type>::type;
   using block_store_items = typename BlockStoreType<Policy, ItemsOutputIt, item_type>::type;
 
@@ -80,10 +70,6 @@ struct agent_t
 
   union temp_storages
   {
-    typename block_load_keys1::TempStorage load_keys1;
-    typename block_load_keys2::TempStorage load_keys2;
-    typename block_load_items1::TempStorage load_items1;
-    typename block_load_items2::TempStorage load_items2;
     typename block_store_keys::TempStorage store_keys;
     typename block_store_items::TempStorage store_items;
 
