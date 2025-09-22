@@ -20,6 +20,7 @@ __host__ __device__ void test(T obj)
   unsigned char buf[sizeof(T)]{};
   assert(cuda::std::memcpy(buf, &obj, sizeof(T)) == buf);
   assert(cuda::std::memcmp(buf, &obj, sizeof(T)) == 0);
+  assert(memcmp(buf, &obj, sizeof(T)) == 0); // verify possible name ambiguity
 }
 
 struct SmallObj
