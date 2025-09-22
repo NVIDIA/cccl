@@ -1549,7 +1549,18 @@
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub9MergePathE7OffsetT6KeyIt16KeyIt27OffsetT7OffsetT7OffsetT10BinaryPred" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
+<dd><p>Computes the intersection of the diagonal <code class="docutils literal notranslate"><span class="pre">diag</span></code> with the merge path in the merge matrix of two input sequences. </p>
+<p>This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:<ul class="simple">
+<li><p>S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, “Merge Path - Parallel Merging Made Simple”, Multithreaded Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel &amp; Distributed Processing Symposium (IPDPS), 2012</p></li>
+<li><p>S. Odeh, O. Green, Y. Birk, “Merge Path - A Visually Intuitive Approach to Parallel Merging”, 2014, URL: <a class="reference external" href="https://arxiv.org/abs/1406.2628">https://arxiv.org/abs/1406.2628</a> </p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of elements merged from the first sequence at the intersection of the diagonal with the merge path. The number of elements merged from the second sequence is <code class="docutils literal notranslate"><span class="pre">diag</span></code> minus the returned value. </p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 

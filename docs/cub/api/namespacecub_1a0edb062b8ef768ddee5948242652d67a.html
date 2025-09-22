@@ -1556,7 +1556,24 @@
 </dl>
 
 <span class="sig-paren">)</span><br /></dt>
-<dd></dd></dl>
+<dd><p>Merges elements from two sorted sequences. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ITEMS_PER_THREAD</strong> – The number of elements to merge and write to <code class="docutils literal notranslate"><span class="pre">output</span></code></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>keys_shared</strong> – An iterator to shared memory containing from which both sequences are reachable </p></li>
+<li><p><strong>keys1_beg</strong> – The index into <code class="docutils literal notranslate"><span class="pre">keys_shared</span></code> where the first sequence starts </p></li>
+<li><p><strong>keys2_beg</strong> – The index into <code class="docutils literal notranslate"><span class="pre">keys_shared</span></code> where the second sequence starts </p></li>
+<li><p><strong>keys1_count</strong> – The maximum number of keys to merge from the first sequence. One more item may be read but is not used. </p></li>
+<li><p><strong>keys2_count</strong> – The maximum number of keys to merge from the first sequence. One more item may be read but is not used. </p></li>
+<li><p><strong>output</strong> – The output array </p></li>
+<li><p><strong>indices</strong> – The shared memory indices relative to <code class="docutils literal notranslate"><span class="pre">keys_shared</span></code> of the elements written to <code class="docutils literal notranslate"><span class="pre">output</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 <section id="serialmerge-keys-shared-keys1-beg-keys2-beg-keys1-count-keys2-count-keyt-output-items-per-thread-int-indices-items-per-thread-compare-op">
