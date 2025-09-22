@@ -71,54 +71,53 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmax(_Tp __x, _Tp __y) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
-  {
 #if _CCCL_HAS_NVFP16()
-    if constexpr (is_same_v<_Tp, ::__half>)
-    {
+  if constexpr (is_same_v<_Tp, ::__half>)
+  {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-      return ::__hmax(__x, __y);
+    return ::__hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                        (return ::__hmax(__x, __y);),
-                        (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmax(__x, __y);),
+                      (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
-    }
-    else
+  }
+  else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
-    {
+    if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+  {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-      return ::__hmax(__x, __y);
+    return ::__hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-      NV_IF_ELSE_TARGET(
-        NV_IS_DEVICE,
-        (return ::__hmax(__x, __y);),
-        (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmax(__x, __y);),
+                      (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
-    }
-    else
+  }
+  else
 #endif // _CCCL_HAS_NVBF16()
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
 #if _CCCL_HAS_FLOAT128()
       if constexpr (is_same_v<_Tp, __float128>)
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
-    }
-    else
-#endif // _CCCL_HAS_FLOAT128()
-      if constexpr (is_floating_point_v<_Tp>)
       {
+        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
+      }
+      else
+#endif // _CCCL_HAS_FLOAT128()
+        if constexpr (is_floating_point_v<_Tp>)
+        {
 #if _CCCL_USE_BUILTIN_FMAX()
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
-        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmax(__x, __y);))
+          NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmax(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
-        return ::cuda::std::__with_builtin_fmax(__x, __y);
+          return ::cuda::std::__with_builtin_fmax(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
 #endif // _CCCL_USE_BUILTIN_FMAX
-      }
-  }
+        }
+    }
   if constexpr (is_integral_v<_Tp>)
   {
     return static_cast<double>(__x < __y ? __y : __x);
@@ -196,53 +195,52 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmin(_Tp __x, _Tp __y) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
-  {
 #if _CCCL_HAS_NVFP16()
-    if constexpr (is_same_v<_Tp, ::__half>)
-    {
+  if constexpr (is_same_v<_Tp, ::__half>)
+  {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-      return ::__hmin(__x, __y);
+    return ::__hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                        (return ::__hmin(__x, __y);),
-                        (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmin(__x, __y);),
+                      (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
-    }
-    else
+  }
+  else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-      if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
-    {
+    if constexpr (is_same_v<_Tp, ::__nv_bfloat16>)
+  {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
-      return ::__hmin(__x, __y);
+    return ::__hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-      NV_IF_ELSE_TARGET(
-        NV_IS_DEVICE,
-        (return ::__hmin(__x, __y);),
-        (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmin(__x, __y);),
+                      (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
-    }
-    else
+  }
+  else
 #endif // _CCCL_HAS_NVBF16()
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
 #if _CCCL_HAS_FLOAT128()
       if constexpr (is_same_v<_Tp, __float128>)
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
-    }
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
+      }
 #endif // _CCCL_HAS_FLOAT128()
-    if constexpr (is_floating_point_v<_Tp>)
-    {
+      if constexpr (is_floating_point_v<_Tp>)
+      {
 #if _CCCL_USE_BUILTIN_FMAX()
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
-      return ::cuda::std::__with_builtin_fmin(__x, __y);
+        return ::cuda::std::__with_builtin_fmin(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
 #endif // _CCCL_USE_BUILTIN_FMAX
+      }
     }
-  }
   if constexpr (is_integral_v<_Tp>)
   {
     return static_cast<double>(__y < __x ? __y : __x);
