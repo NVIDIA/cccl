@@ -11,7 +11,7 @@
 /**
  * @file
  *
- * @brief Jacobi method with parallel_for and graphs using RAII while scope guard
+ * @brief Jacobi method with a while scope guard and explicit management of the conditional handle
  *
  */
 
@@ -86,11 +86,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     };
   }
 
-  fprintf(stderr, "ITER %zu: converged residual %e\n", iter++, ctx.wait(lresidual));
+  // Store final residual for verification
+  double final_residual = ctx.wait(lresidual);
+
+  fprintf(stderr, "ITER %zu: converged residual %e\n", iter++, final_residual);
 
   cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
+
+  EXPECT(final_residual <= tol); // Algorithm should have converged within tolerance
 
   float elapsedTime;
   cudaEventElapsedTime(&elapsedTime, start, stop);

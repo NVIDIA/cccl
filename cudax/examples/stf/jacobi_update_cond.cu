@@ -66,11 +66,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     *iter = 0;
   };
 
-  cudaEvent_t start, stop;
-  cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
-
   {
     auto while_guard = ctx.while_graph_scope();
 
@@ -92,15 +87,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     };
   }
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
+  int final_iterations  = ctx.wait(liter);
+  double final_residual = ctx.wait(lresidual);
 
-  printf("Converged after %d iterations, residual = %lf\n", ctx.wait(liter), ctx.wait(lresidual));
+  printf("Converged after %d iterations, residual = %lf\n", final_iterations, final_residual);
 
   ctx.finalize();
 
-  float elapsedTime;
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  printf("Elapsed time: %f ms\n", elapsedTime);
+  EXPECT(final_residual <= tol);
+  EXPECT(final_iterations < max_iter);
 
   return 0;
 #endif
