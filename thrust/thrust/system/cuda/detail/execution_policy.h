@@ -50,9 +50,9 @@ struct tag
 template <class Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
-  //! Deprecated [Since 3.2]
-  using tag_type [[deprecated]] = tag;
+  using tag_type = tag;
 
+  // allow conversion to tag when it is not a successor
   _CCCL_HOST_DEVICE operator tag() const
   {
     return {};

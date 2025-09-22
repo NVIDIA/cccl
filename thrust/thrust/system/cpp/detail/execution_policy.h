@@ -34,18 +34,19 @@ struct execution_policy;
 
 template <>
 struct execution_policy<tag> : system::detail::sequential::execution_policy<tag>
-{};
+{
+  using tag_type = tag;
+};
 
 struct tag : execution_policy<tag>
 {};
 
-// allow conversion to tag when it is not a successor
 template <typename Derived>
 struct execution_policy : system::detail::sequential::execution_policy<Derived>
 {
-  //! Deprecated [Since 3.2]
-  using tag_type [[deprecated]] = tag;
+  using tag_type = tag;
 
+  // allow conversion to tag when it is not a successor
   _CCCL_HOST_DEVICE operator tag() const
   {
     return {};

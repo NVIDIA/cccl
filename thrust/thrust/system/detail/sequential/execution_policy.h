@@ -23,16 +23,19 @@ struct execution_policy;
 
 template <>
 struct execution_policy<tag> : thrust::execution_policy<tag>
-{};
+{
+  using tag_type = tag;
+};
 
 struct tag : execution_policy<tag>
 {};
 
-// allow conversion to tag when it is not a successor
 template <typename Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
-  // allow conversion to tag
+  using tag_type = tag;
+
+  // allow conversion to tag when it is not a successor
   _CCCL_HOST_DEVICE operator tag() const
   {
     return {};

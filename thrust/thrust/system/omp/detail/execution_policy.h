@@ -25,30 +25,31 @@ namespace system::omp
 //! \addtogroup execution_policies
 //! \{
 
-//! \p thrust::omp::tag is a type representing Thrust's OpenMP backend system in C++'s type system.
-//! Iterators "tagged" with a type which is convertible to \p omp::tag assert that they may be
-//! "dispatched" to algorithm implementations in the \p omp system.
+//! \p thrust::omp::tag is a type representing Thrust's OpenMP backend system in C++'s type system. Iterators "tagged"
+//! with a type which is convertible to \p omp::tag assert that they may be "dispatched" to algorithm implementations in
+//! the \p omp system.
 struct tag;
 
-//! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution
-//! policies which are derived from Thrust's OpenMP backend system.
-template <typename>
+//! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution policies which are derived from
+//! Thrust's OpenMP backend system.
+template <typename Derived>
 struct execution_policy;
 
 template <>
 struct execution_policy<tag> : cpp::execution_policy<tag>
-{};
+{
+  using tag_type = tag;
+};
 
 struct tag : execution_policy<tag>
 {};
 
-// allow conversion to tag when it is not a successor
 template <typename Derived>
 struct execution_policy : cpp::execution_policy<Derived>
 {
-  //! Deprecated [Since 3.2]
-  using tag_type [[deprecated]] = tag;
+  using tag_type = tag;
 
+  // allow conversion to tag when it is not a successor
   operator tag() const
   {
     return tag();
