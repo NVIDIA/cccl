@@ -13,7 +13,6 @@
 //! \brief Freeze a logical data in a graph to use it in the body of a "while" graph node, the resulting looping graph
 //! will be executed within a stream context.
 
-#include <cuda/experimental/__stf/utility/graph_utilities.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <vector>
@@ -21,6 +20,59 @@
 using namespace cuda::experimental::stf;
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
+
+/**
+ * @brief Insert an existing CUDA graph node into a graph context with appropriate dependencies
+ *
+ * This function is designed for graph contexts and adds the provided graph node
+ * to the context's graph with dependencies from the input prerequisites.
+ *
+ * @tparam ctx_t Context type (must be a graph_ctx or context using graph_ctx under the hood)
+ * @param ctx The execution context (must be a graph context)
+ * @param node The existing CUDA graph node to insert
+ * @param input_prereqs Input dependencies that must be satisfied (must be graph events)
+ * @return event_list Events representing the completion of the graph node insertion
+ */
+template <typename ctx_t>
+event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input_prereqs)
+{
+  // This function is specifically designed for graph contexts
+  _CCCL_ASSERT(ctx.is_graph_ctx(), "insert_graph_node can only be used with graph contexts");
+
+  cudaGraph_t support_graph = ctx.graph();
+  size_t graph_stage        = ctx.stage();
+
+  // Insert assertions that the input_prereqs events are graph events
+  // that can be used in the support_graph
+#  ifndef NDEBUG
+  for (const auto& e : input_prereqs)
+  {
+    const auto ge = graph_event(e, use_dynamic_cast);
+    _CCCL_ASSERT(ge, "Expected graph event for graph context");
+    _CCCL_ASSERT(ge->g == support_graph, "Graph event must belong to the same graph");
+  }
+#  endif
+
+  ::std::vector<cudaGraphNode_t> ready_nodes = join_with_graph_nodes(ctx, input_prereqs, graph_stage);
+
+  // Add dependencies from the ready_nodes to the existing node
+  if (!ready_nodes.empty())
+  {
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphAddDependencies(support_graph, ready_nodes.data(), &node, nullptr, ready_nodes.size()));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphAddDependencies(support_graph, ready_nodes.data(), &node, ready_nodes.size()));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+  }
+
+  // Create an event that depends on the inserted graph node
+  auto node_event = graph_event(node, graph_stage, support_graph);
+  node_event->set_symbol(ctx, "inserted_graph_node");
+
+  // Return the event list from that single event
+  return event_list(mv(node_event));
+}
+
 int X0(int i)
 {
   return 17 * i + 45;

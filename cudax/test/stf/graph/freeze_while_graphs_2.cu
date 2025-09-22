@@ -13,7 +13,6 @@
 //! \brief Freeze a logical data in a graph to use it in the body of a "while" graph node, the resulting looping graph
 //! will be executed within a stream context.
 
-#include <cuda/experimental/__stf/utility/graph_utilities.cuh> // insert_graph
 #include <cuda/experimental/stf.cuh>
 
 #include <vector>
@@ -67,8 +66,24 @@ int main()
   cudaGraph_t sub_graph;
   cuda_safe_call(cudaGraphCreate(&sub_graph, 0));
 
+  cudaGraphNodeParams cParams = {};
+  cParams.type                = cudaGraphNodeTypeConditional;
+  cParams.conditional.handle  = handle;
+  cParams.conditional.type    = cudaGraphCondTypeWhile;
+  cParams.conditional.size    = 1;
+
+  cudaGraphNode_t conditionalNode;
+  // There is no input dependency because they are implied by graph launch
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams);
+#  else
+  cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams);
+#  endif
+
+  cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
+
   // Create a context based on this child graph which is the body of the
-  graph_ctx sub_ctx(sub_graph);
+  graph_ctx sub_ctx(bodyGraph);
 
   auto fX                        = ctx.freeze(lX, access_mode::rw, data_place::current_device());
   auto [frozen_X, fX_get_events] = fX.get(data_place::current_device());
@@ -86,36 +101,19 @@ int main()
 
   sub_ctx.finalize_as_graph();
 
-  // We now create a conditional graph which depends on the same dependencies
-  // as the inner ctx. We then insert the body of the graph as a child graph of
-  // the conditional node because we cannot decide what graph is the body of
-  // the conditional node ourselves, and we cannot add input dependencies to
-  // the conditional node after it was added.
-
-  // The child graph depends on the events to get the frozen data, so the
+  // The sub graph depends on the events to get the frozen data, so the
   // launch of the graph will depend on them
 
-  cudaGraphNodeParams cParams = {};
-  cParams.type                = cudaGraphNodeTypeConditional;
-  cParams.conditional.handle  = handle;
-  cParams.conditional.type    = cudaGraphCondTypeWhile;
-  cParams.conditional.size    = 1;
+  cudaGraphExec_t graph_exec = NULL;
+  cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, NULL, NULL, 0));
 
-  cudaGraphNode_t conditionalNode;
-  // There is no input dependency because they are implied by graph launch
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-  cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams);
-#  else
-  cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams);
-#  endif
+  auto support_dstream = ctx.pick_dstream();
+  /* auto before_launch = */ reserved::join_with_stream(ctx, support_dstream, fX_get_events, "graph_launch", false);
 
-  cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
+  cuda_safe_call(cudaGraphLaunch(graph_exec, support_dstream.stream));
 
-  // A child graph contains the entire body
-  cudaGraphNode_t child_graph_node;
-  cuda_safe_call(cudaGraphAddChildGraphNode(&child_graph_node, bodyGraph, nullptr, 0, sub_ctx.get_graph()));
-
-  event_list graph_launched = reserved::insert_graph(ctx, graph, fX_get_events);
+  event_list graph_launched;
+  graph_launched.sync_with_stream(ctx, support_dstream.stream);
 
   fX.unfreeze(graph_launched);
 

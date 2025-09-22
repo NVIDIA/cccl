@@ -2030,11 +2030,10 @@ public:
   template <typename... Deps>
   auto task(Deps&&... deps)
   {
-    auto lock  = pimpl->acquire_shared_lock();
-    int offset = get_head_offset();
+    auto lock    = pimpl->acquire_shared_lock();
+    int offset   = get_head_offset();
     auto e_place = get_ctx(offset).default_exec_place();
     return deferred_task_builder{*this, offset, ::std::move(e_place), ::std::forward<Deps>(deps)...};
-
   }
 
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
