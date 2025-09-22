@@ -124,6 +124,7 @@ function(cccl_generate_header_tests target_name project_include_path)
   target_link_libraries(${link_target} PRIVATE
     ${target_name}
     $<TARGET_OBJECTS:${target_name}>
+    cuda
   )
 
 endfunction()
