@@ -561,14 +561,11 @@ public:
           if (config.conditional_handle != nullptr)
           {
             // We will add a conditional node to an existing graph, we do not create a new graph.
-            fprintf(stderr, "PUSHING CTX : graph context parent => create cond graph node\n");
             graph = parent_graph;
           }
           else
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
           {
-            fprintf(stderr, "PUSHING CTX : graph context parent => create child graph node\n");
-
             cudaGraph_t dummy_graph;
             cuda_safe_call(cudaGraphCreate(&dummy_graph, 0));
 
@@ -586,7 +583,6 @@ public:
         }
         else
         {
-          fprintf(stderr, "PUSHING CTX : stream context parent => create new graph\n");
           cuda_safe_call(cudaGraphCreate(&graph, 0));
         }
 
@@ -608,7 +604,6 @@ public:
           cParams.conditional.type    = config.conditional_type;
           cParams.conditional.size    = 1;
 
-          fprintf(stderr, "ADD CONDITIONAL NODE in graph %p (this %p)\n", graph, this);
           // Add conditional node to parent graph
           cudaGraphNode_t conditionalNode;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -716,7 +711,6 @@ public:
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
           }
 
-          fprintf(stderr, "GRAPH EVENT from output_node %p\n", output_node);
           auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
 
           return event_list(mv(output_node_event));
@@ -1112,7 +1106,6 @@ public:
     // launch a graph in a stream, or the child node)
     void _pop_epilogue(event_list& finalize_prereqs)
     {
-      fprintf(stderr, "_pop_epilogue()\n");
       int head_offset = get_head_offset();
 
       auto& current_node = nodes[head_offset].value();
@@ -1149,7 +1142,6 @@ public:
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
-      fprintf(stderr, "pop : clear_adapters ? %d\n", current_node->clear_adapters);
       if (current_node->clear_adapters)
       {
         if (current_node->alloc_adapters)
@@ -2131,13 +2123,10 @@ private:
 
         dnode.unfreeze_prereqs.merge(finalize_prereqs);
 
-        fprintf(stderr, "pop_after_finalize ... dnode.get_cnt %d\n", dnode.get_cnt);
-
         // Only unfreeze if there are no other subcontext still using it
         _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
         if (dnode.get_cnt == 0)
         {
-          fprintf(stderr, "UNFREEZE with parent offset %d\n", parent_offset);
           dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
           dnode.frozen_ld.reset();
         }
@@ -2529,7 +2518,6 @@ private:
       // Freeze the logical data of the parent node if it wasn't yet
       if (!from_data_node.frozen_ld.has_value())
       {
-        fprintf(stderr, "FREEZE in ctx offset %d\n", ctx_offset);
         from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, where, false /* not a user freeze */);
         from_data_node.get_cnt   = 0;
       }
@@ -2559,7 +2547,6 @@ private:
       // Ensure there is a copy of the data in the data place, we keep a
       // reference count of each context using this frozen data so that we only
       // unfreeze once possible.
-      fprintf(stderr, "GET in ctx offset %d\n", ctx_offset);
       ::std::pair<T, event_list> get_res = frozen_ld.get(where);
       auto ld                            = to_ctx.logical_data(get_res.first, where);
       from_data_node.get_cnt++;
@@ -2821,13 +2808,7 @@ public:
       if (parent_offset != -1 && pimpl->is_frozen(parent_offset))
       {
         access_mode parent_frozen_mode = pimpl->get_frozen_mode(parent_offset);
-        fprintf(
-          stderr,
-          "DEBUG: validate_access - parent frozen mode: %s, requesting mode: %s, ctx_offset: %d, parent_offset: %d\n",
-          access_mode_string(parent_frozen_mode),
-          access_mode_string(m),
-          ctx_offset,
-          parent_offset);
+        // Check access mode compatibility with parent's frozen mode
         if (!access_mode_is_compatible(parent_frozen_mode, m))
         {
           fprintf(stderr,
