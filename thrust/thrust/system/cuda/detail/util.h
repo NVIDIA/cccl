@@ -40,9 +40,6 @@
 
 #include <cub/util_device.cuh>
 
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-
 #include <nv/target>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -55,6 +52,9 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+// forward declare to avoid cyclic includes
+template <class>
+struct execution_policy;
 
 inline _CCCL_HOST_DEVICE cudaStream_t default_stream()
 {
