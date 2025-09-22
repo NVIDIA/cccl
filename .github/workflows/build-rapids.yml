@@ -171,7 +171,7 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
-           # TODO: Figure out why 
+           # TODO: Figure out why
            #--env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:false}" \
            # doesn't work
           .devcontainer/launch.sh \
