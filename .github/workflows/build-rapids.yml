@@ -162,6 +162,8 @@ jobs:
 
           EOF
 
+          chmod +x "$RUNNER_TEMP"/ci.sh
+
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
