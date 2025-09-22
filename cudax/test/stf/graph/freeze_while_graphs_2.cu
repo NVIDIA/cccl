@@ -112,10 +112,9 @@ int main()
 
   cuda_safe_call(cudaGraphLaunch(graph_exec, support_dstream.stream));
 
-  event_list graph_launched;
-  graph_launched.sync_with_stream(ctx, support_dstream.stream);
-
-  fX.unfreeze(graph_launched);
+  // We stop using the frozen logical data after then graph has been launched
+  auto graph_launched = reserved::record_event_in_stream(support_dstream);
+  fX.unfreeze(event_list(mv(graph_launched)));
 
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
