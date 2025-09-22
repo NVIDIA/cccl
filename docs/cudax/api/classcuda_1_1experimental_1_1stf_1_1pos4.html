@@ -1539,7 +1539,6 @@
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4pos4E">
 <span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pos4</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos4E" title="Link to this definition">#</a><br /></dt>
 <dd><p><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1pos4"><span class="std std-ref">pos4</span></a> class defining a position within a multidimensional object (default value 0 in each axis) </p>
-<p>Subclassed by <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1dim4.html#classcuda_1_1experimental_1_1stf_1_1dim4"><span class="std std-ref">cuda::experimental::stf::dim4</span></a></p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
@@ -1564,13 +1563,13 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf4pos43getE6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a8efbec8eb4b1c860847f199ce9be81a6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">axis_id</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf4pos43getE6size_t" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a4745acfc8a420b6b3508f5f1ae5314d2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">axis_id</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf4pos43getE6size_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Get the position along a specific axis. </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf4pos4clEi">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1ae52201a4370bd3e4102e1859e4425165"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">axis_id</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf4pos4clEi" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a973ee418da562606853f15e015536d5d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">axis_id</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf4pos4clEi" title="Link to this definition">#</a><br /></dt>
 <dd><p>Get the position along a specific axis. </p>
 </dd></dl>
 
@@ -1597,22 +1596,22 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4pos41xE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a2e5c400ff1016f2eae7b5f819cf2bdb0"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">x</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41xE" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1ac609aa4211193a1b6f1ed65cfca87f91"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">x</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41xE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4pos41yE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a90eb7dad0a247c94f7c02b458bcdd518"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">y</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41yE" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a5f878f03e7debede05781ce0269239e9"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">y</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41yE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4pos41zE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a3dfb9fdd3f0f1d57509a716bbade58c6"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">z</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41zE" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1ae4041aa865b00fcc9603b71abf7f6cf4"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">z</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41zE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4pos41tE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a4fd2a9be43563b3fe77a4ce13c3cef2e"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41tE" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1pos4_1a5b7bdc3bad50b9a883aac350d832539f"></span><span class="n"><span class="pre">ssize_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4pos41tE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 </div>
