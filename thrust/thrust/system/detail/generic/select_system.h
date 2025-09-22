@@ -79,6 +79,7 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
   {
     static_assert(!sizeof(System1), "select_system failed. Please file a bug report!");
   }
+  _CCCL_UNREACHABLE();
 }
 
 template <typename System1,
