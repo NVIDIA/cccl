@@ -49,7 +49,17 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   void* __fn;
   ::cudaDriverEntryPointQueryResult __result;
 #  if _CCCL_CTK_AT_LEAST(12, 5)
-  ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
+  // Check runtime version to ensure cudaGetDriverEntryPointByVersion is available
+  int __runtime_version = ::cudaRuntimeGetVersion();
+  if (__runtime_version >= 12050)
+  {
+    ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
+  }
+  else
+  {
+    // Runtime driver version is less than 12.5, fall back to cudaGetDriverEntryPoint
+    ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
+  }
 #  else
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
   ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
