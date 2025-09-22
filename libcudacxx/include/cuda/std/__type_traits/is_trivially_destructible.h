@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_destructible.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_CHECK_BUILTIN(is_trivially_destructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
 #endif // has __is_trivially_destructible || msvc || nvrtc
@@ -30,8 +32,6 @@
 #if _CCCL_CHECK_BUILTIN(has_trivial_destructor) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // has __has_trivial_destructor || gcc || msvc || nvrtc
-
-#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
