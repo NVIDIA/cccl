@@ -29,7 +29,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/iterator>
@@ -81,7 +80,7 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   // Prepare input iterator
   input_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::make_constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {

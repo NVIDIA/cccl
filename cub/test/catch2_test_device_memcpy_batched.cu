@@ -6,7 +6,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
 
@@ -133,9 +132,9 @@ try
   thrust::copy(input_data_it, input_data_it + num_items, d_in.begin());
 
   const auto num_buffers = 1;
-  auto d_buffer_srcs     = thrust::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_in.data())));
-  auto d_buffer_dsts     = thrust::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_out.data())));
-  auto d_buffer_sizes    = thrust::make_constant_iterator(num_bytes);
+  auto d_buffer_srcs     = cuda::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_in.data())));
+  auto d_buffer_dsts     = cuda::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_out.data())));
+  auto d_buffer_sizes    = cuda::make_constant_iterator(num_bytes);
   memcpy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes, num_buffers);
 
   const bool all_equal = thrust::equal(d_out.cbegin(), d_out.cend(), input_data_it);

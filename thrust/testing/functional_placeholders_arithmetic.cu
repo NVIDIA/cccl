@@ -1,6 +1,7 @@
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -29,13 +30,13 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '
       ASSERT_ALMOST_EQUAL(reference, result);                                                                     \
                                                                                                                   \
       thrust::transform(                                                                                          \
-        lhs.begin(), lhs.end(), thrust::make_constant_iterator<T>(1), reference.begin(), reference_functor<T>()); \
+        lhs.begin(), lhs.end(), ::cuda::make_constant_iterator<T>(1), reference.begin(), reference_functor<T>()); \
       thrust::transform(lhs.begin(), lhs.end(), result.begin(), _1 op T(1));                                      \
       ASSERT_ALMOST_EQUAL(reference, result);                                                                     \
                                                                                                                   \
       thrust::transform(                                                                                          \
-        thrust::make_constant_iterator<T>(1, zero),                                                               \
-        thrust::make_constant_iterator<T>(1, num_samples),                                                        \
+        ::cuda::make_constant_iterator<T>(1, zero),                                                               \
+        ::cuda::make_constant_iterator<T>(1, num_samples),                                                        \
         rhs.begin(),                                                                                              \
         reference.begin(),                                                                                        \
         reference_functor<T>());                                                                                  \

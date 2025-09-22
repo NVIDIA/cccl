@@ -16,10 +16,10 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -194,7 +194,7 @@ struct dispatch_streaming_arg_reduce_t
     cudaStream_t stream)
   {
     // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = THRUST_NS_QUALIFIER::constant_iterator<GlobalOffsetT>;
+    using constant_offset_it_t = ::cuda::constant_iterator<GlobalOffsetT>;
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
