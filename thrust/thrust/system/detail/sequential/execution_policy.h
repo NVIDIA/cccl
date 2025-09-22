@@ -41,9 +41,5 @@ struct execution_policy : thrust::execution_policy<Derived>
     return {};
   }
 };
-
-// TODO(bgruber): do we need this global variable? We already have thrust::seq
-_CCCL_GLOBAL_CONSTANT tag seq;
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
