@@ -80,7 +80,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     A(i, j) = Anew(i, j);
   };
 
-  ctx.parallel_for(box(1), lconverged.read())->*[handle] __device__(size_t, auto& converged) {
+  ctx.parallel_for(box(1), lconverged.read())->*[handle] __device__(size_t, auto converged) {
     cudaGraphSetConditional(handle, !*converged);
   };
 

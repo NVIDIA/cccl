@@ -80,7 +80,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     };
 
     auto handle = while_guard.cond_handle();
-    ctx.parallel_for(box(1), lresidual.read())->*[handle, tol] __device__(size_t, auto& residual) {
+    ctx.parallel_for(box(1), lresidual.read())->*[handle, tol] __device__(size_t, auto residual) {
       bool converged = (*residual < tol);
       cudaGraphSetConditional(handle, !converged);
     };
