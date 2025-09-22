@@ -63,8 +63,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   Offset keys1_count,
   KeyIt2 keys2,
   Offset keys2_count,
-  Offset num_partitions,
-  Offset* merge_partitions,
+  Offset num_diagonals,
+  Offset* key1_beg_offsets,
   CompareOp compare_op)
 {
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
@@ -79,11 +79,12 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        ValueIt3,
                        Offset,
                        CompareOp>::type::policy::ITEMS_PER_TILE;
-  const Offset partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
-  if (partition_idx < num_partitions)
+  const Offset diagonal_idx = blockDim.x * blockIdx.x + threadIdx.x;
+  if (diagonal_idx < num_diagonals)
   {
-    const Offset partition_at       = (::cuda::std::min) (partition_idx * items_per_tile, keys1_count + keys2_count);
-    merge_partitions[partition_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
+    // Compute diagonal at the first item in the tile we merge later, clamped to the total number of items
+    const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
+    key1_beg_offsets[diagonal_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
   }
 }
 
@@ -116,7 +117,7 @@ __launch_bounds__(
     KeyIt3 keys_result,
     ValueIt3 items_result,
     CompareOp compare_op,
-    Offset* merge_partitions,
+    Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)
 {
   // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
@@ -136,23 +137,22 @@ __launch_bounds__(
     ValueIt3,
     Offset,
     CompareOp>::type;
-  using MergePolicy = typename MergeAgent::policy;
 
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
+    keys1,
+    items1,
     num_keys1,
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
+    keys2,
+    items2,
     num_keys2,
     keys_result,
     items_result,
     compare_op,
-    merge_partitions}();
+    key1_beg_offsets}();
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
@@ -192,9 +192,9 @@ struct dispatch_t
     const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
     void* allocations[2] = {nullptr, nullptr};
     {
-      const size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
+      const size_t key1_beg_offsets_size      = (1 + num_tiles) * sizeof(Offset);
       const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
-      const size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
+      const size_t allocation_sizes[2]        = {key1_beg_offsets_size, virtual_shared_memory_size};
       const auto error =
         CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
@@ -209,13 +209,15 @@ struct dispatch_t
       return cudaSuccess;
     }
 
-    auto merge_partitions = static_cast<Offset*>(allocations[0]);
+    // holds the intersections of the diagonals with the merge path for the beginning of each tile, and one at the end
+    auto key1_beg_offsets = static_cast<Offset*>(allocations[0]);
 
-    // partition the merge path
+    // compute the diagonal intersections with the merge path
     {
-      const Offset num_partitions               = num_tiles + 1;
+      // we need to compute the diagonals at the start of each tile, plus one extra to mark the end
+      const Offset num_diagonals                = num_tiles + 1;
       constexpr int threads_per_partition_block = 256; // TODO(bgruber): no policy?
-      const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
+      const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_diagonals, threads_per_partition_block));
 
       auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -234,8 +236,8 @@ struct dispatch_t
                 num_items1,
                 d_keys2,
                 num_items2,
-                num_partitions,
-                merge_partitions,
+                num_diagonals,
+                key1_beg_offsets,
                 compare_op));
       if (cudaSuccess != error)
       {
@@ -248,35 +250,31 @@ struct dispatch_t
       }
     }
 
-    // merge
-    if (num_tiles > 0)
+    // merge tile-wise
+    auto error = CubDebug(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+        static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
+        .doit(
+          device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
+          d_keys1,
+          d_values1,
+          num_items1,
+          d_keys2,
+          d_values2,
+          num_items2,
+          d_keys_out,
+          d_values_out,
+          compare_op,
+          key1_beg_offsets,
+          vsmem_t{allocations[1]}));
+    if (cudaSuccess != error)
     {
-      auto vshmem_ptr = vsmem_t{allocations[1]};
-      auto error      = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
-          .doit(
-            device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
-            d_keys1,
-            d_values1,
-            num_items1,
-            d_keys2,
-            d_values2,
-            num_items2,
-            d_keys_out,
-            d_values_out,
-            compare_op,
-            merge_partitions,
-            vshmem_ptr));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-      error = CubDebug(DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
+      return error;
+    }
+    error = CubDebug(DebugSyncStream(stream));
+    if (cudaSuccess != error)
+    {
+      return error;
     }
 
     return cudaSuccess;

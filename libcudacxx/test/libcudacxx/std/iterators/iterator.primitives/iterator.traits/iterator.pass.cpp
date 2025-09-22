@@ -85,7 +85,7 @@ int main(int, char**)
     static_assert((cuda::std::is_same<It::reference, int&>::value), "");
     static_assert((cuda::std::is_same<It::iterator_category, std::random_access_iterator_tag>::value), "");
 
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<typename std::vector<int>::iterator>::value, "");
+    static_assert(cuda::std::__is_cpp17_random_access_iterator<typename std::vector<int>::iterator>, "");
   }
 
   { // specialization of std::iterator_traits

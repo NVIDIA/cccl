@@ -50,7 +50,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 

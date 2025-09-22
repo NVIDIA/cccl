@@ -90,7 +90,7 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
       {
         using ::cuda::std::swap;
         swap(keys[j], keys[j + 1]);
-        if (!KEYS_ONLY)
+        if constexpr (!KEYS_ONLY)
         {
           swap(items[j], items[j + 1]);
         }
