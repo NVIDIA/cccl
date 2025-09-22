@@ -89,6 +89,9 @@ private:
                 "type.");
   static_assert(!::cuda::std::is_const_v<_Interface>, "__basic_any does not support const-qualified interfaces.");
 
+  static constexpr bool __movable  = __extension_of<_Interface, __imovable<>>;
+  static constexpr bool __copyable = __extension_of<_Interface, __icopyable<>>;
+
   using __basic_any_base<_Interface>::__size_;
   using __basic_any_base<_Interface>::__align_;
   using __basic_any_base<_Interface>::__vptr_;
@@ -107,7 +110,8 @@ public:
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>)
   _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_API __basic_any(_Tp&& __value) noexcept(__is_small<_Up>(__size_, __align_))
+  _CCCL_API __basic_any(_Tp&& __value) noexcept(__is_small<_Up, __movable>(__size_, __align_)
+                                                && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
@@ -119,7 +123,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CCCL_API explicit __basic_any(::cuda::std::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
-    __is_small<_Up>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
+    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
   {
     __emplace<_Up>(static_cast<_Args&&>(__args)...);
   }
@@ -134,7 +138,7 @@ public:
   _CCCL_API explicit __basic_any(
     ::cuda::std::in_place_type_t<_Tp>,
     ::cuda::std::initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(__is_small<_Vp>(__size_, __align_)
+    _Args&&... __args) noexcept(__is_small<_Vp, __movable>(__size_, __align_)
                                 && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   {
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
@@ -146,7 +150,7 @@ public:
   //! \post `__other.has_value() == false` and `has_value()` is `true` if and
   //! only if `__other.has_value()` was `true`.
   _CCCL_API __basic_any(__basic_any&& __other) noexcept
-    requires(__extension_of<_Interface, __imovable<>>)
+    requires(__movable)
   {
     __convert_from(::cuda::std::move(__other));
   }
@@ -156,7 +160,7 @@ public:
   //! \post `has_value() == __other.has_value()`. If `_Interface` extends
   //! `__iequality_comparable<>`, then `*this == __other` is `true`.
   _CCCL_API __basic_any(__basic_any const& __other)
-    requires(__extension_of<_Interface, __icopyable<>>)
+    requires(__copyable)
   {
     __convert_from(__other);
   }
@@ -332,9 +336,8 @@ public:
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...>)
-  _CCCL_API auto
-  emplace(_Args&&... __args) noexcept(__is_small<_Up>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
-    -> _Up&
+  _CCCL_API auto emplace(_Args&&... __args) noexcept(
+    __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>) -> _Up&
   {
     reset();
     return __emplace<_Up>(static_cast<_Args&&>(__args)...);
@@ -347,7 +350,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   _CCCL_API auto emplace(::cuda::std::initializer_list<_Up> __il, _Args&&... __args) noexcept(
-    __is_small<_Vp>(__size_, __align_)
+    __is_small<_Vp, __movable>(__size_, __align_)
     && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>) -> _Vp&
   {
     reset();
@@ -426,10 +429,10 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
   _CCCL_API auto __emplace(_Args&&... __args) noexcept(
-    __is_small<_Tp>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>) -> _Tp&
+    __is_small<_Tp, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
-    if constexpr (__is_small<_Tp>(__size_, __align_))
+    if constexpr (__is_small<_Tp, __movable>(__size_, __align_))
     {
       // in-place construction
       if constexpr (::cuda::std::constructible_from<_Tp, _Args...>)
@@ -459,7 +462,7 @@ private:
     }
 
     __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
-    __vptr_.__set(__vptr, __is_small<_Tp>(__size_, __align_));
+    __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }
 

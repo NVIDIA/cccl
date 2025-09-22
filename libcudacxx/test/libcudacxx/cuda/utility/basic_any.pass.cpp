@@ -608,6 +608,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
                                     return Immovable{};
                                   }}};
     assert(a.has_value());
+    assert(a.__in_situ());
   }
 };
 
