@@ -39,7 +39,7 @@ template <class _InputIter>
 [[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
-  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>) // To support pointers to incomplete types
   {
     return __last - __first;
   }
