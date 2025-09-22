@@ -410,7 +410,7 @@ template <class _Tp>
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw  = ::cuda::std::__constexpr_logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
+  _Tp __logbw  = ::cuda::std::logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
   if (::cuda::std::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);

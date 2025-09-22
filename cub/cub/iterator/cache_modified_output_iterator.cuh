@@ -143,11 +143,9 @@ public:
   using reference = Reference;
 
   /// The iterator category
-  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-    THRUST_NS_QUALIFIER::device_system_tag,
-    THRUST_NS_QUALIFIER::random_access_traversal_tag,
-    value_type,
-    reference>::type;
+  using iterator_category =
+    THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
+                                                            THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 
 private:
   ValueType* ptr;
