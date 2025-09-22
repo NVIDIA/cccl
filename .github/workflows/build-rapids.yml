@@ -105,6 +105,13 @@ jobs:
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.46"}'
         run: |
+          cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
+          #! /usr/bin/env bash
+          # Start the ssh-agent and add the repo deploy keys
+          if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
+          exec "$@"
+          EOF
+
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
@@ -162,7 +169,7 @@ jobs:
 
           EOF
 
-          chmod +x "$RUNNER_TEMP"/ci.sh
+          chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
           .devcontainer/launch.sh \
             --docker \
@@ -184,7 +191,8 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
+            --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
+            -- /ci-entrypoint.sh ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
   notify-failure:
     name: Notify Slack of RAPIDS failure
