@@ -666,6 +666,8 @@ public:
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
 
+        ctx.to_graph_ctx().finalize_as_graph();
+
         // Debug: Print DOT output of the finalized graph
         if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
         {
@@ -683,8 +685,6 @@ public:
         // adding input deps
         if (nested_graph)
         {
-          ctx.to_graph_ctx().finalize_as_graph();
-
           cudaGraph_t support_graph = parent_ctx.graph();
           size_t graph_stage        = parent_ctx.stage();
 
@@ -715,13 +715,16 @@ public:
           return event_list(mv(output_node_event));
         }
 
+        cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
+
         // Make sure we launch after the "get" operations are done
         ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
 
-        // This is not a nested context, so if this is a graph we try to
-        // instantiate it, and launch it, possibly using a cache of executable
-        // graphs.
-        ctx.finalize();
+        // Launch the graph
+        cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
+
+        // Release context resources after graph execution
+        ctx.release_resources(support_stream);
 
         // Create an event that depends on the completion of previous operations in the stream
         event_list finalize_prereqs = parent_ctx.stream_to_event_list(support_stream, "finalized");
