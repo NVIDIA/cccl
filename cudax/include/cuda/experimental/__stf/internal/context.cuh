@@ -744,6 +744,26 @@ public:
     };
   }
 
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current context will have no resources after this operation
+  ctx_resource_set export_resources()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[](auto& self) {
+      return self.export_resources();
+    };
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&other](auto& self) {
+      self.import_resources(mv(other));
+    };
+  }
+
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
