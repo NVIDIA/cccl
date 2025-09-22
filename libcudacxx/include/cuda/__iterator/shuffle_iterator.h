@@ -100,6 +100,11 @@ public:
   using value_type        = _IndexType;
   using difference_type   = ::cuda::std::make_signed_t<value_type>;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = _IndexType;
+  using pointer   = void;
+
   _CCCL_HIDE_FROM_ABI constexpr shuffle_iterator() noexcept = default;
 
   //! @brief Constructs a @c shuffle_iterator from a given bijection and an optional start position

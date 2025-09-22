@@ -283,25 +283,25 @@ struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
   using type = random_access_traversal_tag;
 };
 
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_system<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_system<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_system<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_traversal<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_traversal<Iter>
-{};
-
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_output_iterator<Iter, Fn>> : iterator_system<Iter>
-{};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_output_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_traversal<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_traversal<Iter>
 {};
 
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_output_iterator<Fn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_output_iterator<Fn, Iter>> : iterator_traversal<Iter>
+{};
+
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_iterator<Fn, Iter>> : iterator_system<Iter>
+{};
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_iterator<Fn, Iter>> : iterator_traversal<Iter>
 {};
 
 template <class... Iterators>

@@ -42,8 +42,8 @@ __host__ __device__ constexpr void test()
   }
   else
   {
-    static_assert(!can_plus<cuda::transform_iterator<Iter, PlusOne>>);
-    static_assert(!can_minus<cuda::transform_iterator<Iter, PlusOne>>);
+    static_assert(!can_plus<cuda::transform_iterator<PlusOne, Iter>>);
+    static_assert(!can_minus<cuda::transform_iterator<PlusOne, Iter>>);
   }
 }
 
