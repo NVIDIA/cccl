@@ -171,6 +171,9 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
+           # TODO: Figure out why 
+           #--env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:false}" \
+           # doesn't work
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -182,7 +185,6 @@ jobs:
             --env "AWS_REGION=${AWS_REGION:-}" \
             --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
             --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
-            #--env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:false}" \
             --env "SCCACHE_S3_NO_CREDENTIALS=false" \
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
