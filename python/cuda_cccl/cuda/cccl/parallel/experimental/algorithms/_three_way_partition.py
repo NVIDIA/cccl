@@ -5,6 +5,8 @@
 
 from typing import Callable
 
+import numba
+
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
@@ -89,14 +91,11 @@ class _ThreeWayPartition:
         self.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
 
         value_type = cccl.get_value_type(d_in)
+        sig = numba.types.uint8(value_type)
 
         # There are no well-known operations that can be used with three_way_partition
-        self.select_first_part_op_wrapper = cccl.to_cccl_op(
-            select_first_part_op, value_type(value_type)
-        )
-        self.select_second_part_op_wrapper = cccl.to_cccl_op(
-            select_second_part_op, value_type(value_type)
-        )
+        self.select_first_part_op_wrapper = cccl.to_cccl_op(select_first_part_op, sig)
+        self.select_second_part_op_wrapper = cccl.to_cccl_op(select_second_part_op, sig)
 
         self.build_result = call_build(
             _bindings.DeviceThreeWayPartitionBuildResult,
