@@ -66,7 +66,7 @@ namespace cuda::experimental::stf
 namespace reserved
 {
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 // This kernel is used by the update_cond method to update the conditional handle. The device function passed as an
 // argument returns a boolean value which defines the new value of the conditional handle.
 template <typename CondFunc, typename... Args>
@@ -83,7 +83,7 @@ __global__ void condition_reset(cudaGraphConditionalHandle conditional_handle)
   //  printf("RESET CONDITION to %d\n", !!value);
   cudaGraphSetConditional(conditional_handle, value);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 } // end namespace reserved
 
@@ -96,10 +96,10 @@ class stackable_task_dep;
 //! \brief Configuration class for push_while operations
 //!
 //! This class encapsulates the parameters needed for conditional graph nodes.
-//! When CUDA 12.4+ is not available, it becomes effectively empty.
+//! When CUDA 12.4+ is not available or code generation is disabled, it becomes effectively empty.
 struct push_while_config
 {
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   cudaGraphConditionalHandle* conditional_handle     = nullptr;
   enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile;
   unsigned int defaultLaunchValue                    = 1;
@@ -118,7 +118,7 @@ struct push_while_config
   {}
 
 #else
-  // Empty implementation for pre-CUDA 12.4
+  // Empty implementation for pre-CUDA 12.4 or when code generation is disabled
   push_while_config() = default;
 
   // Constructor that ignores parameters for compatibility
@@ -557,7 +557,7 @@ public:
         {
           nested_graph   = true;
           clear_adapters = false;
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
           if (config.conditional_handle != nullptr)
           {
             // We will add a conditional node to an existing graph, we do not create a new graph.
@@ -565,7 +565,7 @@ public:
             graph = parent_graph;
           }
           else
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
           {
             fprintf(stderr, "PUSHING CTX : graph context parent => create child graph node\n");
 
@@ -594,7 +594,7 @@ public:
         // to use a conditional node later, will will change that value.
         cudaGraph_t sub_graph = graph;
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
         if (config.conditional_handle != nullptr)
         {
           // Create the conditional handle and store it in the provided pointer
@@ -639,7 +639,7 @@ public:
           input_node  = conditionalNode;
           output_node = reset_node;
         }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
         auto& parent_ctx = parent_node->ctx;
 
@@ -1023,7 +1023,7 @@ public:
       // Ensure the node offset was unused
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
       // Additional validation for push_while (when conditional_handle is provided)
       if (config.conditional_handle != nullptr)
       {
@@ -1070,7 +1070,7 @@ public:
       set_head_offset(node_offset);
     }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
     void push_while(cudaGraphConditionalHandle* phandle_out,
                     unsigned int defaultLaunchValue       = 0,
                     unsigned int flags                    = cudaGraphCondAssignDefault,
@@ -1082,7 +1082,7 @@ public:
       push_while_config config(phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
       push(loc, false, config);
     }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
     // This method assumes that the mutex is already acquired in exclusive mode
     void _pop_prologue()
@@ -1481,7 +1481,7 @@ public:
     pimpl->push(loc);
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   void push_while(cudaGraphConditionalHandle* phandle_out,
                   unsigned int defaultLaunchValue       = 0,
                   unsigned int flags                    = cudaGraphCondAssignDefault,
@@ -1489,7 +1489,7 @@ public:
   {
     pimpl->push_while(phandle_out, defaultLaunchValue, flags, loc);
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   void pop()
   {
@@ -1545,7 +1545,7 @@ public:
     stackable_ctx& ctx_;
   };
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   //! \brief RAII guard for while loop contexts with conditional graphs
   //!
   //! This guard automatically creates a while loop context using push_while() on construction
@@ -1650,7 +1650,7 @@ public:
     stackable_ctx& ctx_;
     cudaGraphConditionalHandle conditional_handle_{};
   };
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   //! \brief Create RAII scope that automatically handles push/pop
   //!
@@ -1665,7 +1665,7 @@ public:
     return graph_scope_guard(*this, loc);
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   //! \brief Create RAII scope for while loop contexts with conditional graphs
   //!
   //! Creates a while_graph_scope_guard object that calls push_while() on construction and pop() on destruction.
@@ -1730,7 +1730,7 @@ public:
     unsigned int defaultLaunchValue        = 1,
     unsigned int flags                     = cudaGraphCondAssignDefault,
     const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current());
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename T>
   auto logical_data(shape_of<T> s)
@@ -3263,7 +3263,7 @@ UNITTEST("stackable task with set_symbol and set_exec_place")
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
+#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 //! \brief RAII guard for repeat loops with automatic counter management
 //!
 //! This class provides RAII semantics for repeat loops, automatically managing
@@ -3350,6 +3350,6 @@ inline auto stackable_ctx::repeat_graph_scope(
   (void) loc; // Suppress unused parameter warning
   return repeat_graph_scope_guard(*this, count, defaultLaunchValue, flags);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 } // end namespace cuda::experimental::stf
