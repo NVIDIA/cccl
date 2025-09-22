@@ -22,9 +22,9 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-#define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-
 #include <cuda/std/__cccl/prologue.h>
+
+#define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
