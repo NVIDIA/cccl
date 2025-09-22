@@ -33,10 +33,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::size_t;
 
-// We cannot redefine memcpy before CUDA 13.2 because of CUDA Math API nvbug 5452563.
-// More in detail, some CUDA Math API functions call 'memcpy' without namespace qualification, causing name ambiguity.
-#if _CCCL_CTK_AT_LEAST(13, 2)
-
+// The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace 
+// qualification. Functions with template arguments have lower precedence than non-template functions for
+// overload resolution.
+template <int = 0>
 _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
@@ -45,11 +45,7 @@ _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) n
   return ::memcpy(__dest, __src, __count);
 }
 
-#else // < CUDA 13.2
-
 using ::memcpy;
-
-#endif // _CCCL_CTK_AT_LEAST(13, 2)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
