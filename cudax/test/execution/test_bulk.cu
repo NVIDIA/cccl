@@ -792,13 +792,13 @@ void default_bulk_unchunked_works_with_non_default_constructible_types()
   ex::sync_wait(cuda::std::move(s));
 }
 
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
 // TODO: modify these tests to work on device as well
 struct my_domain
 {
-  _CCCL_TEMPLATE(class Sender, class... Env)
+  _CCCL_TEMPLATE(class Sender, class Env)
   _CCCL_REQUIRES(ex::sender_for<Sender, ex::bulk_chunked_t>)
-  static auto transform_sender(Sender, const Env&...)
+  static auto transform_sender(ex::set_value_t, Sender, const Env&)
   {
     return ex::just(string{"hijacked"});
   }
@@ -820,9 +820,9 @@ void late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk()
 
 struct my_domain2 : ex::default_domain
 {
-  _CCCL_TEMPLATE(class Sender, class... Env)
+  _CCCL_TEMPLATE(class Sender, class Env)
   _CCCL_REQUIRES(ex::sender_for<Sender, ex::bulk_t>)
-  static auto transform_sender(Sender, const Env&...)
+  static auto transform_sender(ex::set_value_t, Sender, const Env&)
   {
     return ex::just(string{"hijacked"});
   }
@@ -852,7 +852,7 @@ void bulk_can_be_customized_independently_of_bulk_chunked()
   wait_for_value(cuda::std::move(snd2), string{"hello"});
   REQUIRE(called);
 }
-#endif // !defined(__CUDA_ARCH__)
+#endif // _CCCL_HOST_COMPILATION()
 
 namespace
 {

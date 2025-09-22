@@ -118,6 +118,9 @@ struct __completions_tester
   }
 };
 
+template <class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_valid_completion_signatures = __completions_tester<_Env...>::template __is_valid<_Sndr>(0);
+
 template <class _Sndr>
 _CCCL_CONCEPT sender = //
   _CCCL_REQUIRES_EXPR((_Sndr)) //
@@ -134,7 +137,7 @@ _CCCL_CONCEPT sender_in = //
     requires(sender<_Sndr>), //
     requires(sizeof...(_Env) <= 1), //
     requires((__queryable<_Env> && ... && true)), //
-    requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
+    requires(__has_valid_completion_signatures<_Sndr, _Env...>) //
   );
 
 template <class _Sndr>
