@@ -27,10 +27,10 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -105,12 +105,12 @@ struct TransformKernelSource<Offset,
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
-  template <size_t Alignment, typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it)
+  template <typename T>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, size_t alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
-      return ::cuda::std::is_sufficiently_aligned<Alignment>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it));
+      return ::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
     }
     else
     {
@@ -437,9 +437,9 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      constexpr int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize           = (kernel_source.template IsPointerAligned<alignment>(::cuda::std::get<Is>(in)) && ...)
-                   && kernel_source.template IsPointerAligned<alignment>(out);
+      int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
+                   && kernel_source.IsPointerAligned(out, alignment);
     }
 
     int ipt        = 0;
