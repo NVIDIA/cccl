@@ -184,7 +184,6 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
   notify-failure:
