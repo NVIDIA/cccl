@@ -67,11 +67,11 @@ struct value<Nested, void>
 {
   __forceinline__ __device__ static void emit()
   {
-    value<Nested>::emit();
+    Nested.emit();
   }
 };
 
-template <int V>
+template <cuda::std::integral auto V>
 struct value<V, void>
 {
   __forceinline__ __device__ static void emit()
