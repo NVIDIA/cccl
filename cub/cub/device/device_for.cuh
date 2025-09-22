@@ -120,29 +120,6 @@ struct op_wrapper_vectorized_t
   }
 };
 
-template <typename Layout>
-inline constexpr bool is_any_mdspan_layout_left_v = false;
-
-template <>
-inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_left> = true;
-
-template <typename Layout>
-inline constexpr bool is_any_mdspan_layout_right_v = false;
-
-template <>
-inline constexpr bool is_any_mdspan_layout_right_v<::cuda::std::layout_right> = true;
-
-template <typename Layout>
-inline constexpr bool is_any_mdspan_layout_left_or_right_v =
-  is_any_mdspan_layout_left_v<Layout> || is_any_mdspan_layout_right_v<Layout>;
-
-// TODO (fbusato): Add support for layout_right_padded and layout_left_padded
-// template<>
-// inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_right_padded> = true;
-
-// template<>
-// inline constexpr bool is_any_mdspan_layout_left_v<::cuda::std::layout_left_padded> = true;
-
 } // namespace detail::for_each
 
 struct DeviceFor
