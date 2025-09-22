@@ -43,7 +43,6 @@
 #include <thrust/system/cuda/detail/cdp_dispatch.h>
 #include <thrust/system/cuda/detail/cross_system.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
-#include <thrust/system/cuda/detail/par_to_seq.h>
 #include <thrust/system/cuda/detail/transform.h>
 #include <thrust/system/cuda/detail/uninitialized_copy.h>
 #include <thrust/system/cuda/detail/util.h>
