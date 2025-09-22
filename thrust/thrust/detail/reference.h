@@ -156,7 +156,7 @@ public:
    */
   _CCCL_HOST_DEVICE void swap(derived_type other)
   {
-    // we cannot construct a system solely from its type, since it may be stateful, so just the system's tag
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
     typename iterator_system_t<pointer>::tag_type tag;
     swap(&tag, other);
   }
@@ -170,7 +170,7 @@ public:
   // about what system the object is on.
   _CCCL_HOST_DEVICE operator value_type() const
   {
-    // we cannot construct a system solely from its type, since it may be stateful, so just the system's tag
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
     typename iterator_system_t<pointer>::tag_type tag;
     return convert_to_value_type(&tag);
   }
@@ -343,7 +343,7 @@ private:
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE void assign_from(OtherPointer src) const
   {
-    // we cannot construct a system solely from its type, since it may be stateful, so just the system's tag
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
     typename iterator_system_t<pointer>::tag_type tag0;
     typename iterator_system_t<OtherPointer>::tag_type tag1;
     assign_from(&tag0, &tag1, src);
