@@ -83,7 +83,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
 private:
 #if _CCCL_STD_VER > 2017
-  static_assert(__is_cpp17_bidirectional_iterator<_Iter>::value || bidirectional_iterator<_Iter>,
+  static_assert(__is_cpp17_bidirectional_iterator<_Iter> || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");
 #endif // _CCCL_STD_VER > 2017
 
@@ -94,7 +94,7 @@ public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__is_cpp17_random_access_iterator<_Iter>::value,
+    _If<__is_cpp17_random_access_iterator<_Iter>,
         random_access_iterator_tag,
         typename iterator_traits<_Iter>::iterator_category>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
