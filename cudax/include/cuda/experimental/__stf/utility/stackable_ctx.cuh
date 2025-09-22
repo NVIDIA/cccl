@@ -723,11 +723,6 @@ public:
         // graphs.
         ctx.finalize();
 
-        // Transfer resources from context to parent context
-        // This works because both contexts share the same support_stream
-        auto exported_resources = ctx.export_resources();
-        parent_ctx.import_resources(mv(exported_resources));
-
         // Create an event that depends on the completion of previous operations in the stream
         event_list finalize_prereqs = parent_ctx.stream_to_event_list(support_stream, "finalized");
         return finalize_prereqs;
