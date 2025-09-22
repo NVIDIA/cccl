@@ -196,7 +196,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
@@ -208,9 +208,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(
         cudaSuccess
@@ -336,9 +334,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 

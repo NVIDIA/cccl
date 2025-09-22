@@ -267,6 +267,7 @@ private:
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
+            typename TransformOpT,
             typename T,
             typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
@@ -276,6 +277,7 @@ private:
     OutputIteratorT d_out,
     NumItemsT num_items,
     ReductionOpT reduction_op,
+    TransformOpT transform_op,
     T init,
     ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
@@ -285,12 +287,11 @@ private:
 
     using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
 
-    using transform_t     = ::cuda::std::identity;
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
     using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
     using dispatch_t = detail::
-      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
+      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage,
@@ -300,7 +301,8 @@ private:
       static_cast<offset_t>(num_items),
       reduction_op,
       init,
-      stream);
+      stream,
+      transform_op);
   }
 
 public:
@@ -438,6 +440,8 @@ public:
   //!   because CUB can employ different tile-sizing for different architectures.
   //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
+  //!   To request "not-guaranteed" determinism, pass
+  //!    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -631,6 +635,8 @@ public:
   //!   because CUB can employ different tile-sizing for different architectures.
   //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
+  //!   To request "not-guaranteed" determinism, pass
+  //!    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -1739,7 +1745,8 @@ public:
 
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-    using InitT = OutputT;
+    using InitT    = OutputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
 
     // Query the required temporary storage size
     cudaError_t error = reduce_impl<tuning_t>(
@@ -1750,7 +1757,7 @@ public:
       num_items,
       ::cuda::maximum<>{},
       ::cuda::std::identity{},
-      InitT{},
+      limits_t::lowest(),
       determinism_t{},
       stream.get());
     if (error != cudaSuccess)
@@ -1774,7 +1781,7 @@ public:
       num_items,
       ::cuda::maximum<>{},
       ::cuda::std::identity{},
-      InitT{},
+      limits_t::lowest(),
       determinism_t{},
       stream.get());
 
