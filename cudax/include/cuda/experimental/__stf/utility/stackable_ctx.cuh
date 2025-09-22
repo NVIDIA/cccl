@@ -438,7 +438,6 @@ public:
 
       // Virtual methods for context-specific behavior
       virtual event_list finalize() = 0;
-      virtual void cleanup()        = 0;
 
       virtual cudaGraph_t get_graph() const
       {
@@ -525,11 +524,6 @@ public:
         // This is blocking so there is no dependency in event_list
         ctx.finalize();
         return event_list{};
-      }
-
-      void cleanup() override
-      {
-        // Stream context cleanup is mostly handled by finalize()
       }
     };
 
@@ -672,8 +666,6 @@ public:
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
 
-        ctx.to_graph_ctx().finalize_as_graph();
-
         // Debug: Print DOT output of the finalized graph
         if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
         {
@@ -691,8 +683,15 @@ public:
         // adding input deps
         if (nested_graph)
         {
+          ctx.to_graph_ctx().finalize_as_graph();
+
           cudaGraph_t support_graph = parent_ctx.graph();
           size_t graph_stage        = parent_ctx.stage();
+
+          // Transfer resources from nested context to parent context
+          // This works because the completion of the parent context depends on the completion of the nested context
+          auto exported_resources = ctx.export_resources();
+          parent_ctx.import_resources(mv(exported_resources));
 
           // Add dependencies from the get operations to the graph node that
           // corresponds to the child graph or conditional node
@@ -716,92 +715,22 @@ public:
           return event_list(mv(output_node_event));
         }
 
-        // Since this is not a nested context, we had to create a new graph for
-        // this, and we have to launch it after instantiating it.
-
-        // Create executable graph with enhanced error reporting
-#if _CCCL_CTK_AT_LEAST(11, 4)
-        cudaGraphInstantiateParams instantiate_params = {};
-        instantiate_params.flags                      = 0; // No special flags for now
-
-        cudaError_t instantiate_error = cudaGraphInstantiateWithParams(&graph_exec, graph, &instantiate_params);
-
-        if (instantiate_error != cudaSuccess)
-        {
-          cudaGraphNode_t error_node        = instantiate_params.errNode_out;
-          cudaGraphInstantiateResult result = instantiate_params.result_out;
-
-          ::std::cerr << "Error: Graph instantiation failed with error: " << cudaGetErrorString(instantiate_error)
-                      << " " << static_cast<int>(result) << ::std::endl;
-
-          if (error_node != nullptr)
-          {
-            cudaGraphNodeType node_type;
-            cudaError_t node_type_error = cudaGraphNodeGetType(error_node, &node_type);
-            if (node_type_error == cudaSuccess)
-            {
-              ::std::cerr << "Error: Failed at node of type: " << node_type << ::std::endl;
-            }
-            else
-            {
-              ::std::cerr << "Error: Failed at node (node type query failed: " << cudaGetErrorString(node_type_error)
-                          << ")" << ::std::endl;
-            }
-          }
-          else
-          {
-            fprintf(stderr, "error_node = nullptr\n");
-          }
-
-          if (result != cudaGraphInstantiateSuccess)
-          {
-            ::std::cerr << "Error: Instantiation result code: " << result << ::std::endl;
-          }
-          cuda_safe_call(instantiate_error); // This will throw/abort
-        }
-#else
-        // Fallback to basic instantiation for older CUDA versions
-        cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
-#endif
-
         // Make sure we launch after the "get" operations are done
         ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
 
-        // Launch the graph
-        cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
+        // This is not a nested context, so if this is a graph we try to
+        // instantiate it, and launch it, possibly using a cache of executable
+        // graphs.
+        ctx.finalize();
+
+        // Transfer resources from context to parent context
+        // This works because both contexts share the same support_stream
+        auto exported_resources = ctx.export_resources();
+        parent_ctx.import_resources(mv(exported_resources));
 
         // Create an event that depends on the completion of previous operations in the stream
         event_list finalize_prereqs = parent_ctx.stream_to_event_list(support_stream, "finalized");
         return finalize_prereqs;
-      }
-
-      void cleanup() override
-      {
-        // TODO if nested: transfer resources to parent context ?
-        if (nested_graph)
-        {
-          // TODO transfer resources if doable (or better)
-
-          // TODO do we need to destroy some graph ?
-
-          fprintf(stderr, "TODO: implement cleanup() for nested graph ctx nodes\n");
-          return;
-        }
-
-        // Release context resources after graph execution
-        ctx.release_resources(support_stream);
-
-        // Cleanup executable graph
-        if (graph_exec != nullptr)
-        {
-          cuda_safe_call(cudaGraphExecDestroy(graph_exec));
-          graph_exec = nullptr;
-        }
-
-        // Cleanup parent graph if it exists (conditional handle is automatically cleaned up)
-        _CCCL_ASSERT(graph != nullptr, "graph should have been created");
-        cuda_safe_call(cudaGraphDestroy(graph));
-        graph = nullptr;
       }
 
       cudaGraph_t get_graph() const override
@@ -1194,7 +1123,6 @@ public:
 
       // Use polymorphic dispatch for context-specific finalization
       event_list finalize_prereqs = current_node.finalize();
-      current_node.cleanup();
 
       // Release all resources acquired for the push now that we have executed the graph
       _pop_epilogue(finalize_prereqs);

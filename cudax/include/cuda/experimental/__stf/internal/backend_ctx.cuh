@@ -624,6 +624,18 @@ protected:
     {
       ctx_resources.add(mv(resource));
     }
+
+    // Export all resources by moving them to a new ctx_resource_set
+    ctx_resource_set export_ctx_resources()
+    {
+      return ctx_resources.export_resources();
+    }
+
+    // Import all resources from another ctx_resource_set
+    void import_ctx_resources(ctx_resource_set&& other)
+    {
+      ctx_resources.import_resources(mv(other));
+    }
   };
 
 public:
@@ -710,6 +722,20 @@ public:
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
     pimpl->add_resource(mv(resource));
+  }
+
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current context will have no resources after this operation
+  ctx_resource_set export_resources()
+  {
+    return pimpl->export_ctx_resources();
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    pimpl->import_ctx_resources(mv(other));
   }
 
   /* Customize the allocator used by all logical data */
