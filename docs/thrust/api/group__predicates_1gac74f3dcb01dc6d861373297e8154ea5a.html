@@ -704,10 +704,6 @@
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1complex.html">thrust::complex</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1device__execution__policy.html">thrust::device_execution_policy</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1mr_1_1disjoint__synchronized__pool__resource.html">thrust::mr::disjoint_synchronized_pool_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1execution__policy.html">thrust::execution_policy</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1cpp_1_1execution__policy.html">thrust::system::cpp::execution_policy</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1omp_1_1execution__policy.html">thrust::system::omp::execution_policy</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1tbb_1_1execution__policy.html">thrust::system::tbb::execution_policy</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1forward__device__iterator__tag.html">thrust::forward_device_iterator_tag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1forward__traversal__tag.html">thrust::forward_traversal_tag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1host__execution__policy.html">thrust::host_execution_policy</a></li>
@@ -764,9 +760,6 @@
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1square.html">thrust::square</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1square_3_01void_01_4.html">thrust::square&lt; void &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1mr_1_1synchronized__pool__resource.html">thrust::mr::synchronized_pool_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1cpp_1_1tag.html">thrust::system::cpp::tag</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1omp_1_1tag.html">thrust::system::omp::tag</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structthrust_1_1system_1_1tbb_1_1tag.html">thrust::system::tbb::tag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1tagged__deleter.html">thrust::tagged_deleter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1mr_1_1validator.html">thrust::mr::validator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structthrust_1_1mr_1_1validator2.html">thrust::mr::validator2</a></li>
@@ -1026,14 +1019,13 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacethrust_1aeb88051fea508b633883e45b9058d587.html">thrust::universal_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacethrust_1a0431fe8ba6dece7df59561b729a3c280.html">thrust::unwrap_contiguous_iterator_t</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html">thrust::device</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0.html">thrust::host</a></li>
+<li class="toctree-l4"><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html">thrust::host</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1ga1da323e7acfe527a28ea6bd940488584.html">thrust::is_contiguous_iterator_v</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556.html">thrust::is_execution_policy_v</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1ga42415f71c7b50c51763edc7a3591a400.html">thrust::is_operator_greater_function_object_v</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1ga38d413b5daee16a97fa7d9da9f3c4b29.html">thrust::is_operator_less_function_object_v</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1gac4884b2dd3b4d114ebc739d254c9d505.html">thrust::is_operator_less_or_greater_function_object_v</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__type__traits_1gad5d7207e2d28604f48cef2daccf1ed22.html">thrust::is_operator_plus_function_object_v</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__execution__policies_1ga88184f5729650369507a73899a1c8d32.html">thrust::seq</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformations.html">Transformations</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__searching.html">Searching</a></li>
@@ -1565,7 +1557,7 @@
 <dd><p>This version of <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> returns the last iterator <code class="docutils literal notranslate"><span class="pre">i</span></code> in <code class="docutils literal notranslate"><span class="pre">[first,last]</span></code> for which the range <code class="docutils literal notranslate"><span class="pre">[first,last)</span></code> is sorted using <code class="docutils literal notranslate"><span class="pre">operator&lt;</span></code>. If <code class="docutils literal notranslate"><span class="pre">distance(first,last)</span> <span class="pre">&lt;</span> <span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> simply returns <code class="docutils literal notranslate"><span class="pre">last</span></code>.</p>
 <p>The algorithm’s execution is parallelized as determined by <code class="docutils literal notranslate"><span class="pre">exec</span></code>.</p>
 <p>
-The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> to find the first position in an array where the data becomes unsorted using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0.html#group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> to find the first position in an array where the data becomes unsorted using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html#group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#include &lt;thrust/sort.h&gt;</span>
 <span class="c1">#include &lt;thrust/execution_policy.h&gt;</span>
 
@@ -1703,7 +1695,7 @@ The following code snippet demonstrates how to use <code class="docutils literal
 <dd><p>This version of <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> returns the last iterator <code class="docutils literal notranslate"><span class="pre">i</span></code> in <code class="docutils literal notranslate"><span class="pre">[first,last]</span></code> for which the range <code class="docutils literal notranslate"><span class="pre">[first,last)</span></code> is sorted using the function object <code class="docutils literal notranslate"><span class="pre">comp</span></code>. If <code class="docutils literal notranslate"><span class="pre">distance(first,last)</span> <span class="pre">&lt;</span> <span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> simply returns <code class="docutils literal notranslate"><span class="pre">last</span></code>.</p>
 <p>The algorithm’s execution is parallelized as determined by <code class="docutils literal notranslate"><span class="pre">exec</span></code>.</p>
 <p>
-The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> to find the first position in an array where the data becomes unsorted in descending order using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0.html#group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">is_sorted_until</span></code> to find the first position in an array where the data becomes unsorted in descending order using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html#group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#include &lt;thrust/sort.h&gt;</span>
 <span class="c1">#include &lt;thrust/functional.h&gt;</span>
 <span class="c1">#include &lt;thrust/execution_policy.h&gt;</span>

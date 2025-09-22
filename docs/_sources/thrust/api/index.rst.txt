@@ -68,7 +68,6 @@ Structs
 * :doc:`thrust::compile_time_value <structthrust_1_1compile__time__value>`
 * :doc:`thrust::complex <structthrust_1_1complex>`
 * :doc:`thrust::device_execution_policy <structthrust_1_1device__execution__policy>`
-* :doc:`thrust::execution_policy <structthrust_1_1execution__policy>`
 * :doc:`thrust::forward_device_iterator_tag <structthrust_1_1forward__device__iterator__tag>`
 * :doc:`thrust::forward_traversal_tag <structthrust_1_1forward__traversal__tag>`
 * :doc:`thrust::host_execution_policy <structthrust_1_1host__execution__policy>`
@@ -125,16 +124,10 @@ Structs
 * :doc:`thrust::single_pass_traversal_tag <structthrust_1_1single__pass__traversal__tag>`
 * :doc:`thrust::square <structthrust_1_1square>`
 * :doc:`structthrust_1_1square_3_01void_01_4`
-* :doc:`thrust::system::cpp::execution_policy <structthrust_1_1system_1_1cpp_1_1execution__policy>`
-* :doc:`thrust::system::cpp::tag <structthrust_1_1system_1_1cpp_1_1tag>`
 * :doc:`thrust::system::is_error_code_enum <structthrust_1_1system_1_1is__error__code__enum>`
 * :doc:`structthrust_1_1system_1_1is__error__code__enum_3_01cuda_1_1errc_1_1errc__t_01_4`
 * :doc:`thrust::system::is_error_condition_enum <structthrust_1_1system_1_1is__error__condition__enum>`
 * :doc:`structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4`
-* :doc:`thrust::system::omp::execution_policy <structthrust_1_1system_1_1omp_1_1execution__policy>`
-* :doc:`thrust::system::omp::tag <structthrust_1_1system_1_1omp_1_1tag>`
-* :doc:`thrust::system::tbb::execution_policy <structthrust_1_1system_1_1tbb_1_1execution__policy>`
-* :doc:`thrust::system::tbb::tag <structthrust_1_1system_1_1tbb_1_1tag>`
 * :doc:`thrust::tagged_deleter <structthrust_1_1tagged__deleter>`
 
 Functions
@@ -457,14 +450,13 @@ Variables
 ~~~~~~~~~
 
 * :doc:`device <group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded>`
-* :doc:`host <group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0>`
+* :doc:`host <group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5>`
 * :doc:`is_contiguous_iterator_v <group__type__traits_1ga1da323e7acfe527a28ea6bd940488584>`
 * :doc:`is_execution_policy_v <group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556>`
 * :doc:`is_operator_greater_function_object_v <group__type__traits_1ga42415f71c7b50c51763edc7a3591a400>`
 * :doc:`is_operator_less_function_object_v <group__type__traits_1ga38d413b5daee16a97fa7d9da9f3c4b29>`
 * :doc:`is_operator_less_or_greater_function_object_v <group__type__traits_1gac4884b2dd3b4d114ebc739d254c9d505>`
 * :doc:`is_operator_plus_function_object_v <group__type__traits_1gad5d7207e2d28604f48cef2daccf1ed22>`
-* :doc:`seq <group__execution__policies_1ga88184f5729650369507a73899a1c8d32>`
 
 .. toctree::
    :hidden:
@@ -526,10 +518,6 @@ Variables
    structthrust_1_1complex
    structthrust_1_1device__execution__policy
    structthrust_1_1mr_1_1disjoint__synchronized__pool__resource
-   structthrust_1_1execution__policy
-   structthrust_1_1system_1_1cpp_1_1execution__policy
-   structthrust_1_1system_1_1omp_1_1execution__policy
-   structthrust_1_1system_1_1tbb_1_1execution__policy
    structthrust_1_1forward__device__iterator__tag
    structthrust_1_1forward__traversal__tag
    structthrust_1_1host__execution__policy
@@ -586,9 +574,6 @@ Variables
    structthrust_1_1square
    structthrust_1_1square_3_01void_01_4
    structthrust_1_1mr_1_1synchronized__pool__resource
-   structthrust_1_1system_1_1cpp_1_1tag
-   structthrust_1_1system_1_1omp_1_1tag
-   structthrust_1_1system_1_1tbb_1_1tag
    structthrust_1_1tagged__deleter
    structthrust_1_1mr_1_1validator
    structthrust_1_1mr_1_1validator2
@@ -848,14 +833,13 @@ Variables
    namespacethrust_1aeb88051fea508b633883e45b9058d587
    namespacethrust_1a0431fe8ba6dece7df59561b729a3c280
    group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded
-   group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0
+   group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5
    group__type__traits_1ga1da323e7acfe527a28ea6bd940488584
    group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556
    group__type__traits_1ga42415f71c7b50c51763edc7a3591a400
    group__type__traits_1ga38d413b5daee16a97fa7d9da9f3c4b29
    group__type__traits_1gac4884b2dd3b4d114ebc739d254c9d505
    group__type__traits_1gad5d7207e2d28604f48cef2daccf1ed22
-   group__execution__policies_1ga88184f5729650369507a73899a1c8d32
    group__transformations
    group__algorithms
    group__searching
