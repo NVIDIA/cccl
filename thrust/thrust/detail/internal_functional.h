@@ -100,13 +100,13 @@ struct new_value_if_f
   NewType new_value;
 
   template <class T>
-  OutputType THRUST_DEVICE_FUNCTION operator()(T const& x)
+  _CCCL_DEVICE_API OutputType operator()(T const& x)
   {
     return pred(x) ? new_value : x;
   }
 
   template <class T, class P>
-  OutputType THRUST_DEVICE_FUNCTION operator()(T const& x, P const& y)
+  _CCCL_DEVICE_API OutputType operator()(T const& x, P const& y)
   {
     return pred(y) ? new_value : x;
   }
