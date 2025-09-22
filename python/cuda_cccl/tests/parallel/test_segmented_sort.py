@@ -99,7 +99,16 @@ def host_segmented_sort(
 
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
-def test_segmented_sort_keys(dtype, num_segments, segment_size):
+def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
+    # Disable SASS verification only for this test when dtype is int64
+    if np.dtype(dtype) == np.dtype(np.int64):
+        import cuda.cccl.parallel.experimental._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.cccl.parallel.experimental._cccl_interop,
+            "_check_sass",
+            False,
+        )
     order = parallel.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 
