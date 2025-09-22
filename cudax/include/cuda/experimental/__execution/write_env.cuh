@@ -143,8 +143,6 @@ public:
   template <class _Sndr, class _Env>
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Env __env) const
   {
-    // The write_env algorithm is not customizable by design; hence, we don't dispatch to
-    // transform_sender like we do for other algorithms.
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
   }
 

@@ -33,8 +33,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
-          enable_if_t<__is_cpp17_input_iterator<_InputIterator>::value, int>          = 0,
-          enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
+          enable_if_t<__is_cpp17_input_iterator<_InputIterator>, int>          = 0,
+          enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>, int> = 0>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
@@ -58,7 +58,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
-          enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
+          enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>, int> = 0>
 _CCCL_API constexpr _OutputIterator copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
