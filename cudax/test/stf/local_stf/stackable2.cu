@@ -33,7 +33,7 @@ int main()
 
   auto lA = ctx.logical_data(array).set_symbol("A");
 
-  // repeat : {tmp = a, a++; tmp*=2; a+=tmp}
+  // repeat : {tmp = a; tmp*=2; a+=tmp}
   for (size_t iter = 0; iter < 10; iter++)
   {
     stackable_ctx::graph_scope_guard graph{ctx}; // RAII: automatic push/pop (lock_guard style)
@@ -42,10 +42,6 @@ int main()
 
     ctx.parallel_for(tmp.shape(), tmp.write(), lA.read())->*[] __device__(size_t i, auto tmp, auto a) {
       tmp(i) = a(i);
-    };
-
-    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
-      a(i) += 1;
     };
 
     ctx.parallel_for(tmp.shape(), tmp.rw())->*[] __device__(size_t i, auto tmp) {
@@ -60,4 +56,16 @@ int main()
   }
 
   ctx.finalize();
+
+  // Verify the array has been updated correctly by the write-back mechanism
+  // Each iteration transforms each element: a_new = a_old + 2 * a_old = 3 * a_old
+  // Starting from array[i] = 1 + i*i, after 10 iterations:
+  // array[i] = 3^10 * (1 + i*i)
+  constexpr int pow3_10 = 59049; // 3^10
+
+  for (size_t i = 0; i < 1024; i++)
+  {
+    int expected = pow3_10 * (1 + static_cast<int>(i * i));
+    EXPECT(array[i] == expected);
+  }
 }
