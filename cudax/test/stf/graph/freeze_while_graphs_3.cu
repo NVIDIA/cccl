@@ -36,24 +36,10 @@ using namespace cuda::experimental::stf;
 template <typename ctx_t>
 event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input_prereqs)
 {
-  // This function is specifically designed for graph contexts
-  _CCCL_ASSERT(ctx.is_graph_ctx(), "insert_graph_node can only be used with graph contexts");
-
   cudaGraph_t support_graph = ctx.graph();
   size_t graph_stage        = ctx.stage();
 
-  // Insert assertions that the input_prereqs events are graph events
-  // that can be used in the support_graph
-#  ifndef NDEBUG
-  for (const auto& e : input_prereqs)
-  {
-    const auto ge = graph_event(e, use_dynamic_cast);
-    _CCCL_ASSERT(ge, "Expected graph event for graph context");
-    _CCCL_ASSERT(ge->g == support_graph, "Graph event must belong to the same graph");
-  }
-#  endif
-
-  ::std::vector<cudaGraphNode_t> ready_nodes = join_with_graph_nodes(ctx, input_prereqs, graph_stage);
+  ::std::vector<cudaGraphNode_t> ready_nodes = reserved::join_with_graph_nodes(ctx, input_prereqs, graph_stage);
 
   // Add dependencies from the ready_nodes to the existing node
   if (!ready_nodes.empty())
@@ -66,7 +52,7 @@ event_list insert_graph_node(ctx_t& ctx, cudaGraphNode_t node, event_list& input
   }
 
   // Create an event that depends on the inserted graph node
-  auto node_event = graph_event(node, graph_stage, support_graph);
+  auto node_event = reserved::graph_event(node, graph_stage, support_graph);
   node_event->set_symbol(ctx, "inserted_graph_node");
 
   // Return the event list from that single event
@@ -144,9 +130,9 @@ int main()
 
   sub_ctx.finalize_as_graph();
 
-  event_list cond_graph_launched = reserved::insert_graph_node(ctx, conditionalNode, fX_get_events);
+  event_list cond_graph_launched = insert_graph_node(ctx, conditionalNode, fX_get_events);
 
-  fX.unfreeze(cond_graph_launched);
+  fX.unfreeze(mv(cond_graph_launched));
 
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
