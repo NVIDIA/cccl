@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test()
 
   {
     auto iter = cuda::make_transform_iterator(Iter{buffer}, PlusOne{});
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_iterator<Iter, PlusOne>>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_iterator<PlusOne, Iter>>);
   }
 }
 

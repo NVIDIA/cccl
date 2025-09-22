@@ -41,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // "unwrapped" result back into the original iterator type. Doing that is the job of __rewrap_iter.
 
 // Default case - we can't unwrap anything
-template <class _Iter, bool = __is_cpp17_contiguous_iterator<_Iter>::value>
+template <class _Iter, bool = __is_cpp17_contiguous_iterator<_Iter>>
 struct __unwrap_iter_impl
 {
   _CCCL_EXEC_CHECK_DISABLE

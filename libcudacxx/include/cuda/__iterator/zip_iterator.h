@@ -69,9 +69,9 @@ using __tuple_or_pair = typename __tuple_or_pair_impl<_Iterators...>::type;
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
-  static constexpr bool __all_forward       = (::cuda::std::forward_iterator<_Iterators> && ...);
-  static constexpr bool __all_bidirectional = (::cuda::std::bidirectional_iterator<_Iterators> && ...);
-  static constexpr bool __all_random_access = (::cuda::std::random_access_iterator<_Iterators> && ...);
+  static constexpr bool __all_forward       = (::cuda::std::__is_cpp17_forward_iterator<_Iterators> && ...);
+  static constexpr bool __all_bidirectional = (::cuda::std::__is_cpp17_bidirectional_iterator<_Iterators> && ...);
+  static constexpr bool __all_random_access = (::cuda::std::__is_cpp17_random_access_iterator<_Iterators> && ...);
 
   static constexpr bool __all_equality_comparable = (::cuda::std::equality_comparable<_Iterators> && ...);
 
@@ -223,6 +223,10 @@ public:
   using value_type       = __tuple_or_pair<::cuda::std::iter_value_t<_Iterators>...>;
   using reference        = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
+
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using pointer = void;
 
   template <class... _OtherIters>
   static constexpr bool __all_convertible =
