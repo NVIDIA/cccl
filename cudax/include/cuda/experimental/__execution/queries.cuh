@@ -163,7 +163,8 @@ struct get_completion_scheduler_t
   struct __read_query_t
   {
     _CCCL_EXEC_CHECK_DISABLE
-    template <class _Attrs, class _GetComplSch = get_completion_scheduler_t>
+    _CCCL_TEMPLATE(class _Attrs, class _GetComplSch = get_completion_scheduler_t)
+    _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
       -> __query_result_t<_Attrs, _GetComplSch>
     {
@@ -174,7 +175,8 @@ struct get_completion_scheduler_t
     }
 
     _CCCL_EXEC_CHECK_DISABLE
-    template <class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t>
+    _CCCL_TEMPLATE(class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t)
+    _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch, const _Env&>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
       -> __query_result_t<_Attrs, _GetComplSch, const _Env&>
     {
@@ -221,8 +223,6 @@ private:
       }
       else if constexpr (__callable<__read_query_t, env_of_t<schedule_result_t<_Sch>>, const _Env&...>)
       {
-        // BUGBUG
-        // _CCCL_ASSERT(__sch == __read_query_t{}(get_env(schedule_t{}(__sch)), __env...),
         _CCCL_ASSERT(__sch == __read_query_t{}(get_env(__sch.schedule()), __env...),
                      "the scheduler's sender must have a completion scheduler attribute equal to the scheduler that "
                      "provided it.");
@@ -231,37 +231,59 @@ private:
     }
   };
 
-  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Attrs, class... _Env, class _Sch>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr static auto __check_domain(_Sch __sch) noexcept -> _Sch
+  {
+    // Sanity check: if a completion domain can be determined, then it must match the
+    // domain of the completion scheduler.
+    if constexpr (__callable<get_completion_domain_t<_Tag>, const _Attrs&, const _Env&...>)
+    {
+      using __domain_t = __call_result_t<get_completion_domain_t<_Tag>, const _Attrs&, const _Env&...>;
+      static_assert(__same_as<__domain_t, __scheduler_domain_t<_Sch, const _Env&...>>,
+                    "the sender claims to complete on a domain that is not the domain of its completion scheduler");
+    }
+    return __sch;
+  }
+
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto __impl(const _Attrs& __attrs, const _Env&... __env) noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     // If __attrs has a completion scheduler, then return it (after checking the scheduler
     // for _its_ completion scheduler):
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
     {
-      return __recurse_query_t{}(__read_query_t{}(__attrs, __env...), __env...);
+      return __declfn<decltype(__recurse_query_t{}(
+        __read_query_t{}(declval<_Attrs>(), declval<_Env>()...), declval<_Env>()...))>;
     }
     // Otherwise, if __attrs indicates that its sender completes inline, then we can ask
     // the environment for the current scheduler and return that (after checking the
     // scheduler for _its_ completion scheduler).
     else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_scheduler_t, const _Env&...>)
     {
-      return __recurse_query_t{}(get_scheduler(__env...), __detail::__hide_scheduler{__env}...);
+      return __declfn<decltype(__recurse_query_t{}(
+        get_scheduler(declval<_Env>()...), __hide_scheduler{declval<_Env>()}...))>;
     }
     // Otherwise, no completion scheduler can be determined. Return void.
   }
 
-  template <class _Attrs, class... _Env>
-  using __result_t = __unless_one_of_t<decltype(__impl(declval<_Attrs>(), declval<_Env>()...)), void>;
-
 public:
-  using __tag_t = _Tag;
-
-  template <class _Attrs, class... _Env>
+  template <class _Attrs, class... _Env, auto _DeclFn = __get_declfn<const _Attrs&, const _Env&...>()>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env&... __env) const noexcept
-    -> __result_t<const _Attrs&, const _Env&...>
+    -> __unless_one_of_t<decltype(_DeclFn()), void>
   {
-    return __impl(__attrs, __env...);
+    // If __attrs has a completion scheduler, then return it (after checking the scheduler
+    // for _its_ completion scheduler):
+    if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
+    {
+      return __check_domain<_Attrs, _Env...>(__recurse_query_t{}(__read_query_t{}(__attrs, __env...), __env...));
+    }
+    // Otherwise, if __attrs indicates that its sender completes inline, then we can ask
+    // the environment for the current scheduler and return that (after checking the
+    // scheduler for _its_ completion scheduler).
+    else
+    {
+      return __check_domain<_Attrs, _Env...>(__recurse_query_t{}(get_scheduler(__env...), __hide_scheduler{__env}...));
+    }
   }
 
   [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool

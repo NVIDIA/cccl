@@ -11,19 +11,95 @@ inputs:
   image:
     description: "The Docker image to use."
     required: true
+  github_token:
+    description: >-
+      Optional GitHub PAT with at least gist, repo (read), and read:org scopes
+      to enable sccache S3 auth on forks. Typically supplied via the
+      'SCCACHE_AUTH_TOKEN' repository secret in forks.
+    required: false
+    default: ""
 
 runs:
   using: "composite"
   steps:
-    - name: Configure env
+    - name: Mint S3 creds for sccache (forks with PAT)
+      id: mint
+      if: ${{ github.repository != 'NVIDIA/cccl' && inputs.github_token != '' }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        echo "minted=false" >> "$GITHUB_OUTPUT"
+        if ! command -v gh >/dev/null 2>&1; then
+          echo "::notice::gh CLI not found; will use local sccache."
+          exit 0
+        fi
+        # Ensure gh is authenticated with the provided token
+        if ! gh auth status >/dev/null 2>&1; then
+          printf '%s' "$GH_TOKEN" | gh auth login --with-token >/dev/null 2>&1 || true
+        fi
+        # Install nv-gha-aws if not already installed
+        if ! gh nv-gha-aws --help >/dev/null 2>&1;
+        then
+          gh extension install nv-gha-runners/gh-nv-gha-aws || :
+        fi
+        if gh nv-gha-aws --help >/dev/null 2>&1; then
+          for org in nvidia rapids nv-legate nv-morpheus; do
+            if gh nv-gha-aws org "$org" \
+                 --output shell \
+                 --role-arn 'arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs' \
+                 > aws.env 2>/dev/null; then
+              break
+            fi
+          done
+        fi
+        if [[ -s aws.env ]]; then
+          source aws.env
+
+          printf '::add-mask::%s\n' "$AWS_ACCESS_KEY_ID"
+          printf '::add-mask::%s\n' "$AWS_SECRET_ACCESS_KEY"
+          printf '::add-mask::%s\n' "$AWS_SESSION_TOKEN"
+
+          {
+            printf 'AWS_ACCESS_KEY_ID=%s\n' "$AWS_ACCESS_KEY_ID"
+            printf 'AWS_SECRET_ACCESS_KEY=%s\n' "$AWS_SECRET_ACCESS_KEY"
+            printf 'AWS_SESSION_TOKEN=%s\n' "$AWS_SESSION_TOKEN"
+            printf 'SCCACHE_S3_NO_CREDENTIALS=false\n'
+          } >> "$GITHUB_ENV"
+
+          echo "Minted AWS credentials for sccache."
+          echo "minted=true" | tee -a "$GITHUB_OUTPUT"
+
+          rm -f aws.env || :
+        else
+          echo "::warning::Failed to mint AWS credentials for sccache; will use local sccache."
+          echo "minted=false" | tee -a "$GITHUB_OUTPUT"
+        fi
+    - name: Configure sccache
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
+
+        if [[ "${{ github.repository }}" == "NVIDIA/cccl" || "${{ steps.mint.outputs.minted }}" == "true" ]]; then
+          # Enable remote cache: set bucket/region and clear NO_CREDENTIALS
+          echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
+          echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
+          echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
+        else
+          # Force local cache: clear bucket/region and set NO_CREDENTIALS
+          echo "SCCACHE_BUCKET=" | tee -a "${GITHUB_ENV}"
+          echo "SCCACHE_REGION=" | tee -a "${GITHUB_ENV}"
+          echo "SCCACHE_S3_NO_CREDENTIALS=true" | tee -a "${GITHUB_ENV}"
+
+          echo "::warning::sccache remote cache is disabled; AWS credentials could not be minted."
+          echo "::warning::To enable sccache on a fork, create a GitHub PAT with gist, repo, and read:org scopes,"
+          echo "::warning::then add it as an Actions secret named 'SCCACHE_AUTH_TOKEN' in your fork"
+          echo "::warning::(Settings > Secrets and variables > Actions). The workflow will use it automatically."
+
+        fi
     - name: Get AWS credentials for sccache bucket
+      if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -43,15 +119,20 @@ runs:
       run: |
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        cat $env:GITHUB_OUTPUT
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ inputs.github_token != '' && inputs.github_token || github.token }}
       run: |
         docker run \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
           --env COMMAND='& ${{inputs.command}}' \
+          --env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+          --env CI=true \
+          --env SCCACHE_DIST_GH_SCOPES=read:org \
+          --env GH_TOKEN=${GH_TOKEN} \
           ${{ inputs.image }} \
           powershell -c "
             [System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}');
@@ -63,7 +144,7 @@ runs:
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
             git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
-            Invoke-Expression \$env:COMMAND"
+            Invoke-Expression \$env:COMMAND; exit \$LASTEXITCODE"
     - name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       id: done

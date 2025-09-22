@@ -6,8 +6,6 @@
 #include <cmath>
 #include <iostream>
 
-#include "include/host_device.h"
-
 // The technique demonstrated in the example monte_carlo.cu
 // assigns an independently seeded random number generator to each
 // of 30K threads, and uses a hashing scheme based on thread index to

@@ -17,14 +17,70 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
+namespace detail
+{
+template <typename T>
+struct __return_constant
+{
+  T value;
 
+  template <typename... Args>
+  _CCCL_HOST_DEVICE auto operator()(Args&&...) const -> T
+  {
+    return value;
+  }
+};
+} // namespace detail
+CUB_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_constant<T>> : ::cuda::std::true_type
+{};
+_CCCL_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
 {
+private:
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream = nullptr)
+  {
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
+    {
+      return error;
+    }
+
+    return detail::transform::dispatch_t<
+      detail::transform::requires_stable_address::no,
+      offset_t,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      detail::transform::always_true_predicate,
+      TransformOp>::dispatch(::cuda::std::move(inputs),
+                             ::cuda::std::move(output),
+                             num_items,
+                             detail::transform::always_true_predicate{},
+                             ::cuda::std::move(transform_op),
+                             stream);
+  }
+
+public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -62,28 +118,8 @@ struct DeviceTransform
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-
-    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
-    using offset_t        = typename choose_offset_t::type;
-
-    // Check if the number of items exceeds the range covered by the selected signed offset type
-    if (const cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items); error != cudaSuccess)
-    {
-      return error;
-    }
-
-    return detail::transform::dispatch_t<
-      detail::transform::requires_stable_address::no,
-      offset_t,
-      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-      RandomAccessIteratorOut,
-      detail::transform::always_true_predicate,
-      TransformOp>::dispatch(::cuda::std::move(inputs),
-                             ::cuda::std::move(output),
-                             num_items,
-                             detail::transform::always_true_predicate{},
-                             ::cuda::std::move(transform_op),
-                             stream);
+    return TransformInternal(
+      ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -182,21 +218,76 @@ struct DeviceTransform
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  Fill(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
+  Generate(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
   {
-    return Transform(
+    static_assert(::cuda::std::is_invocable_v<Generator>, "The passed generator must be a nullary function object");
+    static_assert(
+      ::cuda::std::is_assignable_v<detail::it_reference_t<RandomAccessIteratorOut>,
+                                   ::cuda::std::invoke_result_t<Generator>>,
+      "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
+
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
+    return TransformInternal(
       ::cuda::std::make_tuple(), ::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
+  CUB_RUNTIME_FUNCTION static cudaError_t Generate(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Generator generator,
+    cudaStream_t stream = nullptr)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return Generate(::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
+  }
+#endif // _CCCL_DOXYGEN_INVOKED
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Fills the output sequence by writing the provided value to each element of the output sequence.
+  //! This is effectively calling Generate with a functor returning that value.
+  //! @endrst
+  //!
+  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param num_items The number of elements to write to the output sequence.
+  //! @param value The value to write. Must be assignable to the dereferenced output iterator.
+  //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Value>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Fill(RandomAccessIteratorOut output, NumItemsT num_items, Value value, cudaStream_t stream = nullptr)
+  {
+    static_assert(::cuda::std::is_assignable_v<detail::it_reference_t<RandomAccessIteratorOut>, Value>,
+                  "The passed value must be assignable to the dereferenced output iterator");
+
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
+    return TransformInternal(
+      ::cuda::std::make_tuple(),
+      ::cuda::std::move(output),
+      num_items,
+      detail::__return_constant<Value>{::cuda::std::move(value)},
+      stream);
+  }
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Value>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Fill(void* d_temp_storage,
        size_t& temp_storage_bytes,
        RandomAccessIteratorOut output,
        NumItemsT num_items,
-       Generator generator,
+       Value value,
        cudaStream_t stream = nullptr)
   {
     if (d_temp_storage == nullptr)
@@ -205,7 +296,8 @@ struct DeviceTransform
       return cudaSuccess;
     }
 
-    return Fill(::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
+    return Generate(
+      ::cuda::std::move(output), num_items, detail::__return_constant<Value>{::cuda::std::move(value)}, stream);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 

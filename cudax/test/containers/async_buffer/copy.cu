@@ -23,53 +23,58 @@
 #include "types.h"
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                                  cuda::std::tuple<cuda::mr::device_accessible>,
-                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
+                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
+                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
 #else
-using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif
+
+template <class T1, class T2, class... PropertiesSuperSet, class... PropertiesSubset>
+constexpr bool is_matching_buffer(const cudax::async_buffer<T1, PropertiesSuperSet...>&,
+                                  const cudax::async_buffer<T2, PropertiesSubset...>&) noexcept
+{
+  return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<PropertiesSuperSet...>, PropertiesSubset...>
+      && ::cuda::std::is_same_v<T1, T2>;
+}
 
 C2H_CCCLRT_TEST("cudax::async_buffer make_async_buffer", "[container][async_buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
-  using Env      = typename extract_properties<TestT>::env;
   using Resource = typename extract_properties<TestT>::resource;
   using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
   Resource resource{};
-  Env env{resource, stream};
 
   using MatchingResource = typename extract_properties<TestT>::matching_resource;
-  Env matching_env{MatchingResource{resource}, stream};
 
   SECTION("Same resource and stream")
   {
     { // empty input
-      const Buffer input{env};
+      const Buffer input{stream, resource};
       const Buffer buf = cudax::make_async_buffer(input.stream(), input.memory_resource(), input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cudax::make_async_buffer(input.stream(), input.memory_resource(), input);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
 
     { // empty input
-      const Buffer input{env};
+      const Buffer input{stream, resource};
       const Buffer buf = cudax::make_async_buffer(input.stream(), input.memory_resource(), input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cudax::make_async_buffer(input.stream(), input.memory_resource(), input);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
@@ -80,14 +85,14 @@ C2H_CCCLRT_TEST("cudax::async_buffer make_async_buffer", "[container][async_buff
   {
     cudax::stream other_stream{cuda::device_ref{0}};
     { // empty input
-      const Buffer input{env};
+      const Buffer input{stream, resource};
       const Buffer buf = cudax::make_async_buffer(other_stream, input.memory_resource(), input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const Buffer buf = cudax::make_async_buffer(other_stream, input.memory_resource(), input);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
@@ -98,17 +103,17 @@ C2H_CCCLRT_TEST("cudax::async_buffer make_async_buffer", "[container][async_buff
   {
     cudax::stream other_stream{cuda::device_ref{0}};
     { // empty input
-      const Buffer input{env};
-      const auto buf = cudax::make_async_buffer(other_stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource};
+      auto buf = cudax::make_async_buffer(other_stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::make_async_buffer(other_stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const auto buf = cudax::make_async_buffer(other_stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -117,33 +122,33 @@ C2H_CCCLRT_TEST("cudax::async_buffer make_async_buffer", "[container][async_buff
   SECTION("Different resource, same stream")
   {
     { // empty input
-      const Buffer input{env};
-      const auto buf = cudax::make_async_buffer(stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource};
+      const auto buf = cudax::make_async_buffer(stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::make_async_buffer(stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const auto buf = cudax::make_async_buffer(stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
 
     { // empty input
-      const Buffer input{env};
-      const auto buf = cudax::make_async_buffer(stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource};
+      const auto buf = cudax::make_async_buffer(stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     { // non-empty input
-      const Buffer input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      const auto buf = cudax::make_async_buffer(stream, env.query(cuda::mr::get_memory_resource), input);
-      static_assert(!cuda::std::is_same_v<Buffer, cuda::std::remove_const_t<decltype(buf)>>);
+      const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const auto buf = cudax::make_async_buffer(stream, resource, input);
+      static_assert(is_matching_buffer(buf, input));
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -153,10 +158,8 @@ C2H_CCCLRT_TEST("cudax::async_buffer make_async_buffer", "[container][async_buff
 C2H_CCCLRT_TEST("make_async_buffer variants", "[container][async_buffer]")
 {
   cudax::stream stream{cuda::device_ref{0}};
-  cudax::env_t<cuda::mr::device_accessible, other_property> env{
-    cudax::device_memory_resource{cuda::device_ref{0}}, stream};
   const cudax::async_buffer<int, cuda::mr::device_accessible, other_property> input{
-    env, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+    stream, cudax::device_memory_resource{cuda::device_ref{0}}, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
 
   // straight from a resource
   auto buf =

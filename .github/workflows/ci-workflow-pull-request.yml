@@ -24,6 +24,15 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
+  # Disabling the pull_request trigger to avoid double runs on NVIDIA/cccl.
+  # This was added to support CI on forks, but would launch two runs on
+  # NVIDIA/cccl: one for the push to the copy-pr-bot branch, and one for
+  # the pull_request event.
+  # Since the CI job gates branch protection checks and the pull_request
+  # trigger causes that job to be skipped (which counts as "success" for GHA branch
+  # protections...), PRs could be merged regardless of the real 'on-push' workflow status.
+  #
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -32,6 +41,13 @@ concurrency:
 jobs:
   build-workflow:
     name: Build workflow from matrix
+    # On NVIDIA/cccl, run when pushed to a copy-pr-bot branch.
+    # On forks, run when a pull request is opened:
+    if: >-
+      ${{
+        (github.repository == 'NVIDIA/cccl' && github.event_name == 'push') ||
+        (github.repository != 'NVIDIA/cccl' && github.event_name == 'pull_request')
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,7 +56,25 @@ jobs:
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
+      ci_enabled: ${{ steps.export-flags.outputs.ci_enabled }}
+      matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
+      vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
+      docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
+      rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
+      matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
     steps:
+      - name: Export workflow flags
+        id: export-flags
+        run: |
+          output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
+
+          output ci_enabled     "true" # This job only runs when CI is enabled (see `if:` field)
+          output matrix_enabled "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
+          output vdc_enabled    "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
+          output docs_enabled   "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
+          output rapids_enabled "${{  contains(github.event.head_commit.message, '[test-rapids]') }}"
+          # MatX build OOMs the public github runners used on forks:
+          output matx_enabled   "${{ !contains(github.event.head_commit.message, '[skip-matx]') && github.repository == 'NVIDIA/cccl' }}"
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -54,27 +88,26 @@ jobs:
           echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
       - name: Build workflow
-        if: ${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}
+        # Skip building the matrix when disabled, but still gather PR info for downstream jobs
+        if: steps.export-flags.outputs.matrix_enabled == 'true'
         id: build-workflow
         uses: ./.github/actions/workflow-build
-        env:
-          pr_worflow: ${{ !contains(github.event.head_commit.message, '[workflow:!pull_request]') && 'pull_request' || '' }}
-          nightly_workflow: ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
-          inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
+          inspect_changes_script: 'ci/inspect_changes.sh'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: >-
-            ${{ env.pr_worflow }}
-            ${{ env.nightly_workflow }}
+          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
     if: >-
-      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
-          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        needs.build-workflow.outputs.matrix_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]'
+      }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -86,12 +119,16 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+    secrets: inherit
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
     if: >-
-      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
-          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        needs.build-workflow.outputs.matrix_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]'
+      }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -103,12 +140,16 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+    secrets: inherit
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
     if: >-
-      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
-          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        needs.build-workflow.outputs.matrix_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]'
+      }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -120,12 +161,16 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+    secrets: inherit
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
     if: >-
-      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
-          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        needs.build-workflow.outputs.matrix_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]'
+      }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -137,10 +182,17 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+    secrets: inherit
 
   verify-workflow:
     name: Verify and summarize workflow results
-    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[skip-matrix]') }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        always() &&
+        !cancelled() &&
+        needs.build-workflow.outputs.matrix_enabled == 'true'
+      }}
     needs:
       - build-workflow
       - dispatch-groups-linux-two-stage
@@ -166,8 +218,12 @@ jobs:
 
   verify-devcontainers:
     name: Verify Dev Containers
-    if: ${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}
     needs: build-workflow
+    if: >-
+      ${{
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        needs.build-workflow.outputs.vdc_enabled == 'true'
+      }}
     permissions:
       id-token: write
       contents: read
@@ -177,8 +233,13 @@ jobs:
 
   docs-build:
     name: Build and deploy documentation preview
-    if: ${{ needs.build-workflow.outputs.pr_number && !contains(github.event.head_commit.message, '[skip-docs]') }}
     needs: build-workflow
+    if: >-
+      ${{
+        needs.build-workflow.outputs.pr_number &&
+        needs.build-workflow.outputs.ci_enabled  == 'true' &&
+        needs.build-workflow.outputs.docs_enabled == 'true'
+      }}
     permissions:
       contents: write
       pull-requests: write
@@ -190,7 +251,12 @@ jobs:
 
   build-rapids:
     name: Build RAPIDS (optional)
-    if: ${{ contains(github.event.head_commit.message, '[test-rapids]') }}
+    needs: build-workflow
+    if: >-
+      ${{
+        needs.build-workflow.outputs.ci_enabled   == 'true' &&
+        needs.build-workflow.outputs.rapids_enabled == 'true'
+      }}
     secrets: inherit
     permissions:
       actions: read
@@ -202,7 +268,12 @@ jobs:
 
   build-matx:
     name: Build MatX (optional)
-    if: ${{ !contains(github.event.head_commit.message, '[skip-matx]') }}
+    needs: build-workflow
+    if: >-
+      ${{
+        needs.build-workflow.outputs.ci_enabled  == 'true' &&
+        needs.build-workflow.outputs.matx_enabled == 'true'
+      }}
     secrets: inherit
     permissions:
       id-token: write
@@ -216,8 +287,14 @@ jobs:
     # !! Need to use always() instead of !cancelled() because skipped jobs count as success
     # !! for Github branch protection checks. Yes, really: by default, branch protections
     # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
-    if: ${{ always() }}
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        needs.build-workflow.outputs.ci_enabled == 'true' &&
+        always()
+      }}
     needs:
+      - build-workflow
       - verify-workflow
       - verify-devcontainers
       - docs-build

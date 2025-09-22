@@ -376,12 +376,6 @@ public:
       }
     }
 
-    auto& dot = *ctx.get_dot();
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
     return *this;
   }
 
