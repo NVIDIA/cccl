@@ -32,6 +32,7 @@ from .iterators import (
     CountingIterator,
     ReverseIterator,
     TransformIterator,
+    TransformOutputIterator,
     ZipIterator,
 )
 from .op import OpKind
@@ -65,6 +66,7 @@ __all__ = [
     "segmented_reduce",
     "SortOrder",
     "TransformIterator",
+    "TransformOutputIterator",
     "unary_transform",
     "unique_by_key",
     "ZipIterator",
