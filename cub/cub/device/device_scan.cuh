@@ -59,19 +59,15 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::scan
 {
-
-namespace scan
-{
-
 struct get_tuning_query_t
 {};
 
 template <class Derived>
 struct tuning
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr Derived query(const get_tuning_query_t&) const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
@@ -83,9 +79,7 @@ struct default_tuning : tuning<default_tuning>
   using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
 };
 
-} // namespace scan
-
-} // namespace detail
+} // namespace detail::scan
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a
@@ -376,6 +370,13 @@ struct DeviceScan
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
+  //! Preconditions
+  //! +++++++++++++
+  //!
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - ``d_in`` and ``d_out`` must not be null pointers
   //! The code snippet below illustrates a user-defined exclusive-scan of a
   //! device vector of ``float`` data elements.
   //!
