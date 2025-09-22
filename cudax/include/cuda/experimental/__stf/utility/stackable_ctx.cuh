@@ -102,7 +102,7 @@ struct push_while_config
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   cudaGraphConditionalHandle* conditional_handle     = nullptr;
   enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile;
-  unsigned int defaultLaunchValue                    = 1;
+  unsigned int default_launch_value                  = 1;
   unsigned int flags                                 = cudaGraphCondAssignDefault;
 
   push_while_config() = default;
@@ -113,7 +113,7 @@ struct push_while_config
                     unsigned int condition_flags           = cudaGraphCondAssignDefault)
       : conditional_handle(handle)
       , conditional_type(type)
-      , defaultLaunchValue(launch_value)
+      , default_launch_value(launch_value)
       , flags(condition_flags)
   {}
 
@@ -595,7 +595,7 @@ public:
         {
           // Create the conditional handle and store it in the provided pointer
           cuda_safe_call(cudaGraphConditionalHandleCreate(
-            config.conditional_handle, graph, config.defaultLaunchValue, config.flags));
+            config.conditional_handle, graph, config.default_launch_value, config.flags));
 
           // Create conditional node parameters
           cudaGraphNodeParams cParams = {};
@@ -1066,14 +1066,14 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
     void push_while(cudaGraphConditionalHandle* phandle_out,
-                    unsigned int defaultLaunchValue       = 0,
+                    unsigned int default_launch_value     = 0,
                     unsigned int flags                    = cudaGraphCondAssignDefault,
                     const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
     {
       _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
 
       // Create config object and call push.
-      push_while_config config(phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
+      push_while_config config(phandle_out, cudaGraphCondTypeWhile, default_launch_value, flags);
       push(loc, false, config);
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -1475,11 +1475,11 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   void push_while(cudaGraphConditionalHandle* phandle_out,
-                  unsigned int defaultLaunchValue       = 0,
+                  unsigned int default_launch_value     = 0,
                   unsigned int flags                    = cudaGraphCondAssignDefault,
                   const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    pimpl->push_while(phandle_out, defaultLaunchValue, flags, loc);
+    pimpl->push_while(phandle_out, default_launch_value, flags, loc);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
@@ -1549,12 +1549,12 @@ public:
 
     explicit while_graph_scope_guard(
       stackable_ctx& ctx,
-      unsigned int defaultLaunchValue        = 0,
+      unsigned int default_launch_value      = 0,
       unsigned int flags                     = cudaGraphCondAssignDefault,
       const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
         : ctx_(ctx)
     {
-      ctx_.push_while(&conditional_handle_, defaultLaunchValue, flags, loc);
+      ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
     }
 
     ~while_graph_scope_guard()
@@ -1675,16 +1675,16 @@ public:
   //! } // Automatic pop() when while_guard goes out of scope
   //! ```
   //!
-  //! \param defaultLaunchValue Default launch value for the conditional node (default: 1)
+  //! \param default_launch_value Default launch value for the conditional node (default: 1)
   //! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
   //! \param loc Source location for debugging (defaults to call site)
   //! \return while_graph_scope_guard object that manages the while context lifetime and provides access to the
   //! conditional handle
-  [[nodiscard]] auto while_graph_scope(unsigned int defaultLaunchValue        = 1,
+  [[nodiscard]] auto while_graph_scope(unsigned int default_launch_value      = 1,
                                        unsigned int flags                     = cudaGraphCondAssignDefault,
                                        const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
   {
-    return while_graph_scope_guard(*this, defaultLaunchValue, flags, loc);
+    return while_graph_scope_guard(*this, default_launch_value, flags, loc);
   }
 
   //! \brief Create RAII scope for repeat loops with automatic counter management
@@ -1713,13 +1713,13 @@ public:
   //! ```
   //!
   //! \param count Number of iterations to repeat
-  //! \param defaultLaunchValue Default launch value for the conditional node (default: 1)
+  //! \param default_launch_value Default launch value for the conditional node (default: 1)
   //! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
   //! \param loc Source location for debugging (defaults to call site)
   //! \return repeat_graph_scope_guard object that manages the repeat loop lifetime
   [[nodiscard]] auto repeat_graph_scope(
     size_t count,
-    unsigned int defaultLaunchValue        = 1,
+    unsigned int default_launch_value      = 1,
     unsigned int flags                     = cudaGraphCondAssignDefault,
     const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current());
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
@@ -3293,8 +3293,8 @@ public:
   explicit repeat_graph_scope_guard(
     stackable_ctx& ctx,
     size_t count,
-    unsigned int defaultLaunchValue = 1,
-    unsigned int flags              = cudaGraphCondAssignDefault)
+    unsigned int default_launch_value = 1,
+    unsigned int flags                = cudaGraphCondAssignDefault)
       : ctx_(ctx)
   {
     // Create counter logical data BEFORE starting while loop context
@@ -3305,7 +3305,7 @@ public:
     init_counter_value(ctx_, counter_, count);
 
     // only create the while guard now - this starts the while loop context
-    while_guard_.emplace(ctx_, defaultLaunchValue, flags, _CUDA_VSTD::source_location::current());
+    while_guard_.emplace(ctx_, default_launch_value, flags, _CUDA_VSTD::source_location::current());
 
     // Set up the condition update logic
     setup_condition_update(*while_guard_, counter_);
@@ -3325,11 +3325,11 @@ private:
 
 // Implementation of repeat_graph_scope method - defined here after repeat_graph_scope_guard class is complete
 inline auto stackable_ctx::repeat_graph_scope(
-  size_t count, unsigned int defaultLaunchValue, unsigned int flags, const _CUDA_VSTD::source_location& loc)
+  size_t count, unsigned int default_launch_value, unsigned int flags, const _CUDA_VSTD::source_location& loc)
 {
   // Note: loc parameter is provided for API consistency but not currently used in repeat_graph_scope_guard
   (void) loc; // Suppress unused parameter warning
-  return repeat_graph_scope_guard(*this, count, defaultLaunchValue, flags);
+  return repeat_graph_scope_guard(*this, count, default_launch_value, flags);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
