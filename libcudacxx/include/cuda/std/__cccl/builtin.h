@@ -415,10 +415,6 @@
 #  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
-#if _CCCL_HAS_BUILTIN(__is_compound)
-#  define _CCCL_BUILTIN_IS_COMPOUND(...) __is_compound(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_compound)
-
 #if _CCCL_HAS_BUILTIN(__is_const)
 #  define _CCCL_BUILTIN_IS_CONST(...) __is_const(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_const)
