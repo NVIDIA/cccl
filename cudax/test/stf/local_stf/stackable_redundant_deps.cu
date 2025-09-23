@@ -14,7 +14,7 @@
  *        task even with different access modes (which should be combined)
  */
 
-#include <cuda/experimental/__stf/utility/stackable_ctx.cuh>
+#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
