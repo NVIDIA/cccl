@@ -47,17 +47,24 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 [[nodiscard]] _CCCL_HOST_API inline void*
 __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
+  // TODO switch to dlopen of libcuda.so instead of the below and maybe pair it with cuInit to avoid checking for two initializations
+  static auto __get_driver_entry_point_fn = reinterpret_cast<decltype(cuGetProcAddress)*>([] () {
+    void* __fn;
+    ::cudaDriverEntryPointQueryResult __result;
+    ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
+    if (__result != ::cudaDriverEntryPointSuccess)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
+    }
+    return __fn;
+  }());
+
   void* __fn;
-  ::cudaDriverEntryPointQueryResult __result;
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-  ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
-#  else
-  // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
-  ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
-#  endif
-  if (__result != ::cudaDriverEntryPointSuccess)
+  ::CUdriverProcAddressQueryResult __result;
+  __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
+  if (__result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
-    if (__result == ::cudaDriverEntryPointVersionNotSufficent)
+    if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
       ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API");
     }
@@ -238,13 +245,6 @@ struct __ctx_from_stream
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
-#    if _CCCL_CTK_BELOW(13, 0)
-  // We can't use the by-version in 12.X releases, so we need to check the version manually
-  if (::cuda::__driver::__getVersion() < 12050)
-  {
-    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "StreamGetCtx_v2 is not supported on this driver version");
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
 
   ::CUcontext __ctx   = nullptr;
   ::CUgreenCtx __gctx = nullptr;
