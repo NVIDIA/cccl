@@ -21,12 +21,17 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_fundamental.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#define _CCCL_BUILTIN_IS_COMPOUND(...) __is_compound(__VA_ARGS__)
+#if _CCCL_HAS_BUILTIN(__is_compound)
+#  define _CCCL_BUILTIN_IS_COMPOUND(...) __is_compound(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_compound)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_COMPOUND)
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : bool_constant<_CCCL_BUILTIN_IS_COMPOUND(_Tp)>
@@ -34,6 +39,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : bool_constant<_CCCL_BUILTIN_I
 
 template <class _Tp>
 inline constexpr bool is_compound_v = _CCCL_BUILTIN_IS_COMPOUND(_Tp);
+
+#else // ^^^ _CCCL_BUILTIN_IS_COMPOUND ^^^ / vvv !_CCCL_BUILTIN_IS_COMPOUND vvv
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : bool_constant<!is_fundamental_v<_Tp>>
+{};
+
+template <class _Tp>
+inline constexpr bool is_compound_v = !is_fundamental_v<_Tp>;
+
+#endif // !_CCCL_BUILTIN_IS_COMPOUND
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
