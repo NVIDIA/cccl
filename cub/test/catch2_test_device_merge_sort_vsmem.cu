@@ -54,6 +54,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort]
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 10000)));
+  CAPTURE(num_items);
   c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::gen(C2H_SEED(2), keys_in_out);
 
