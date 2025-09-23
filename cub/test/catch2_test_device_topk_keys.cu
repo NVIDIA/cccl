@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_topk.cuh>
 
@@ -30,7 +29,6 @@ template <cub::detail::topk::select SelectDirection,
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
-  cuda::std::integral_constant<cub::detail::topk::select, SelectDirection>,
   KeyInputIteratorT d_keys_in,
   KeyOutputIteratorT d_keys_out,
   NumItemsT num_items,
@@ -49,7 +47,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys, topk_keys);
+DECLARE_TMPL_LAUNCH_WRAPPER(dispatch_topk_keys, topk_keys, cub::detail::topk::select SelectDirection, SelectDirection);
 
 using directions =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
@@ -71,10 +69,10 @@ using key_types =
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
 {
-  using key_t        = c2h::get<0, TestType>;
-  using direction_t  = c2h::get<1, TestType>;
-  using num_items_t  = cuda::std::uint32_t;
-  using comparator_t = direction_to_comparator_t<direction_t::value>;
+  using key_t              = c2h::get<0, TestType>;
+  constexpr auto direction = c2h::get<1, TestType>::value;
+  using num_items_t        = cuda::std::uint32_t;
+  using comparator_t       = direction_to_comparator_t<direction>;
 
   // Set input size
   constexpr num_items_t min_num_items = 1;
@@ -87,18 +85,18 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
   const num_items_t k         = GENERATE_COPY(take(3, random(min_k, num_items)));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction);
 
   // Prepare input & output
   c2h::device_vector<key_t> keys_in(num_items);
-  c2h::device_vector<key_t> keys_out(k);
+  c2h::device_vector<key_t> keys_out(k, thrust::no_init);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in);
   c2h::host_vector<key_t> expected_keys(keys_in);
 
   // Run the top-k algorithm
-  topk_keys(
-    direction_t{}, thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+  topk_keys<direction>(
+    thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Sort the entire input data as result reference
   thrust::sort(expected_keys.begin(), expected_keys.end(), comparator_t{});
@@ -112,10 +110,10 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types)
 {
-  using key_t        = c2h::get<0, TestType>;
-  using num_items_t  = cuda::std::uint32_t;
-  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
-  using comparator_t = direction_to_comparator_t<direction_t::value>;
+  using key_t              = c2h::get<0, TestType>;
+  using num_items_t        = cuda::std::uint32_t;
+  constexpr auto direction = cub::detail::topk::select::max;
+  using comparator_t       = direction_to_comparator_t<direction>;
 
   // Set input size
   constexpr num_items_t min_num_items = 1;
@@ -128,7 +126,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   const num_items_t k         = GENERATE_COPY(take(3, random(min_k, num_items)));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
@@ -136,11 +134,11 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the top-k algorithm
-  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+  topk_keys<direction>(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
   thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
-  if constexpr (direction_t::value == cub::detail::topk::select::max)
+  if constexpr (direction == cub::detail::topk::select::max)
   {
     auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
     REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
@@ -154,10 +152,10 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
 C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
 try
 {
-  using key_t        = cuda::std::uint32_t;
-  using num_items_t  = c2h::get<0, TestType>;
-  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
-  using comparator_t = direction_to_comparator_t<direction_t::value>;
+  using key_t              = cuda::std::uint32_t;
+  using num_items_t        = c2h::get<0, TestType>;
+  constexpr auto direction = cub::detail::topk::select::max;
+  using comparator_t       = direction_to_comparator_t<direction>;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const num_items_t num_items_max = detail::make_large_offset<num_items_t>();
@@ -172,7 +170,7 @@ try
   const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
@@ -180,7 +178,7 @@ try
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the top-k algorithm
-  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+  topk_keys<direction>(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
   thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
@@ -197,11 +195,11 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_ite
          k_items_types)
 try
 {
-  using key_t        = cuda::std::uint32_t;
-  using num_items_t  = cuda::std::uint64_t;
-  using k_items_t    = c2h::get<0, TestType>;
-  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
-  using comparator_t = direction_to_comparator_t<direction_t::value>;
+  using key_t              = cuda::std::uint32_t;
+  using num_items_t        = cuda::std::uint64_t;
+  using k_items_t          = c2h::get<0, TestType>;
+  constexpr auto direction = cub::detail::topk::select::max;
+  using comparator_t       = direction_to_comparator_t<direction>;
 
   // Set input size
   const num_items_t num_items = detail::make_large_offset<num_items_t>();
@@ -213,12 +211,7 @@ try
   const k_items_t k     = GENERATE_COPY(take(3, random(min_k, limit_k)));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(),
-          c2h::type_name<num_items_t>(),
-          c2h::type_name<k_items_t>(),
-          num_items,
-          k,
-          direction_t::value);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), c2h::type_name<k_items_t>(), num_items, k, direction);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
@@ -226,7 +219,7 @@ try
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the top-k algorithm
-  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+  topk_keys<direction>(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
   thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
