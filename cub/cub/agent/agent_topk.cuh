@@ -48,7 +48,6 @@ namespace detail::topk
 //! @tparam ScanAlgorithm
 //!   The BlockScan algorithm to use
 //!
-
 template <int BlockThreads,
           int ItemsPerThread,
           int BitsPerPass,
@@ -56,14 +55,10 @@ template <int BlockThreads,
           BlockScanAlgorithm ScanAlgorithm>
 struct AgentTopKPolicy
 {
-  static constexpr int block_threads = BlockThreads;
-
-  static constexpr int items_per_thread = ItemsPerThread;
-
-  static constexpr int bits_per_pass = BitsPerPass;
-
+  static constexpr int block_threads                 = BlockThreads;
+  static constexpr int items_per_thread              = ItemsPerThread;
+  static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
-
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
