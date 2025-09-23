@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 
-// #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh> // logical_data_untyped
 
 namespace cuda::experimental::stf

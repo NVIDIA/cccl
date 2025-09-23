@@ -8,12 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Freeze data and store it as a frozen_logical_data_untyped object
- *
- */
+//! \file
+//!
+//! \brief Freeze data and store it as a frozen_logical_data_untyped object
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
