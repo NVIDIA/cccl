@@ -525,11 +525,6 @@
 #  define _CCCL_BUILTIN_IS_SIGNED(...) __is_signed(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_signed)
 
-#if _CCCL_CHECK_BUILTIN(is_standard_layout) || _CCCL_COMPILER(GCC, >=, 4, 7) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_standard_layout) && gcc >= 4.7
-
 #if _CCCL_CHECK_BUILTIN(is_trivial) || _CCCL_COMPILER(GCC, >=, 4, 5) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivial) && gcc >= 4.5
