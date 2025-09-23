@@ -113,6 +113,20 @@ template <int Rank, typename Extents>
   return true;
 }
 
+template <typename MappingTypeLhs, typename MappingTypeRhs>
+[[nodiscard]] _CCCL_API bool have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
+{
+  _CCCL_ASSERT(mapping_lhs.extents().rank() == mapping_rhs.extents().rank(), "extents must have the same rank");
+  for (size_t i = 0; i < mapping_lhs.extents().rank(); i++)
+  {
+    if (mapping_lhs.stride(i) != mapping_rhs.stride(i))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace detail
 
 CUB_NAMESPACE_END
