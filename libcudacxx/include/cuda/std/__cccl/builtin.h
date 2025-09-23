@@ -273,10 +273,6 @@
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
-#if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
-
 #if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_LINE() __builtin_LINE()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
