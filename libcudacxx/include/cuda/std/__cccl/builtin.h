@@ -92,7 +92,7 @@
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVHPC)
+  || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC, >=, 12, 3)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
 
