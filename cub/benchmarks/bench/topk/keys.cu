@@ -27,16 +27,14 @@ struct policy_hub_t
     static constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
     static constexpr int items_per_thread = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
 
-    static constexpr int bits_per_pass          = cub::detail::topk::calc_bits_per_pass<KeyInT>();
-    static constexpr int coefficient_for_buffer = 128;
+    static constexpr int bits_per_pass = cub::detail::topk::calc_bits_per_pass<KeyInT>();
 
-    using topk_policy_t = cub::detail::topk::AgentTopKPolicy<
-      TUNE_THREADS_PER_BLOCK,
-      items_per_thread,
-      bits_per_pass,
-      coefficient_for_buffer,
-      TUNE_LOAD_ALGORITHM,
-      cub::BLOCK_SCAN_WARP_SCANS>;
+    using topk_policy_t =
+      cub::detail::topk::AgentTopKPolicy<TUNE_THREADS_PER_BLOCK,
+                                         items_per_thread,
+                                         bits_per_pass,
+                                         TUNE_LOAD_ALGORITHM,
+                                         cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
   using MaxPolicy = policy_t;
