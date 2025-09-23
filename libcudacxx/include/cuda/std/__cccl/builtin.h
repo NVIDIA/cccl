@@ -431,10 +431,6 @@
 #  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_destructible)
 
-#if _CCCL_CHECK_BUILTIN(is_enum) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_ENUM(...) __is_enum(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_enum) && gcc >= 4.3
-
 #if _CCCL_CHECK_BUILTIN(is_final) || _CCCL_COMPILER(GCC, >=, 4, 7) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 
 #  define _CCCL_BUILTIN_IS_FINAL(...) __is_final(__VA_ARGS__)
