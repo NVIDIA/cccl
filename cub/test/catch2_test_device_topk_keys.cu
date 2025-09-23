@@ -92,7 +92,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
   c2h::device_vector<key_t> keys_out(k, thrust::no_init);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in);
-  c2h::host_vector<key_t> expected_keys(keys_in);
+  c2h::device_vector<key_t> expected_keys(keys_in);
 
   // Run the top-k algorithm
   topk_keys<direction>(
