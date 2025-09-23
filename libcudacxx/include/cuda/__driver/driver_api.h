@@ -62,7 +62,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
+  __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
