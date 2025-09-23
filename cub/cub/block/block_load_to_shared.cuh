@@ -250,6 +250,8 @@ public:
   //! Block-synchronization is needed afterwards to reuse the shared memory from the temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE ~BlockLoadToShared()
   {
+    // Make sure all threads are done interacting with mbarrier.
+    __syncthreads();
     if (elected)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80,
