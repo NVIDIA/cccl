@@ -47,8 +47,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 [[nodiscard]] _CCCL_HOST_API inline void*
 __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
-  // TODO switch to dlopen of libcuda.so instead of the below and maybe pair it with cuInit to avoid checking for two initializations
-  static auto __get_driver_entry_point_fn = reinterpret_cast<decltype(cuGetProcAddress)*>([] () {
+  // TODO switch to dlopen of libcuda.so instead of the below and maybe pair it with cuInit to avoid checking for two
+  // initializations
+  static auto __get_driver_entry_point_fn = reinterpret_cast<decltype(cuGetProcAddress)*>([]() {
     void* __fn;
     ::cudaDriverEntryPointQueryResult __result;
     ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
