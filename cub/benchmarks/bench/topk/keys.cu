@@ -74,12 +74,13 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
   // Skip benchmarks at runtime
   if (selected_elements >= elements)
   {
-    state.skip("We only support the case where the variable K is smaller than the variable N.");
+    state.skip("We only support the case where the variable SelectedElements is smaller than the variable "
+               "Elements{io}.");
     return;
   }
 
   thrust::device_vector<KeyT> in_keys = generate(elements, entropy);
-  thrust::device_vector<KeyT> out_keys(selected_elements);
+  thrust::device_vector<KeyT> out_keys(selected_elements, thrust::no_init);
   key_input_it_t d_keys_in   = thrust::raw_pointer_cast(in_keys.data());
   key_output_it_t d_keys_out = thrust::raw_pointer_cast(out_keys.data());
 
