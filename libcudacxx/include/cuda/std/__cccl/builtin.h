@@ -431,11 +431,6 @@
 #  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_destructible)
 
-#if _CCCL_CHECK_BUILTIN(is_final) || _CCCL_COMPILER(GCC, >=, 4, 7) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-
-#  define _CCCL_BUILTIN_IS_FINAL(...) __is_final(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_final) && gcc >= 4.7
-
 #if _CCCL_CHECK_BUILTIN(is_function)
 #  define _CCCL_BUILTIN_IS_FUNCTION(...) __is_function(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_function)
