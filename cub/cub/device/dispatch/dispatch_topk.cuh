@@ -434,59 +434,6 @@ struct DispatchTopK
   using key_in_t                  = it_value_t<KeyInputIteratorT>;
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
 
-  //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //!
-  //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
-  //!
-  //! @param[in] d_keys_in
-  //!   Pointer to the input data of key data
-  //!
-  //! @param[out] d_keys_out
-  //!   Pointer to the K output sequence of key data
-  //!
-  //! @param[in] d_values_in
-  //!   Pointer to the input sequence of associated value items
-  //!
-  //! @param[out] d_values_out
-  //!   Pointer to the output sequence of associated value items
-  //!
-  //! @param[in] num_items
-  //!   Number of items to be processed
-  //!
-  //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
-  //! `num_items`.
-  //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchTopK(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    const ValueInputIteratorT d_values_in,
-    ValueOutputIteratorT d_values_out,
-    OffsetT num_items,
-    OutOffsetT k,
-    cudaStream_t stream,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys_in(d_keys_in)
-      , d_keys_out(d_keys_out)
-      , d_values_in(d_values_in)
-      , d_values_out(d_values_out)
-      , num_items(num_items)
-      , k(k)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {}
-
   /******************************************************************************
    * Dispatch entrypoints
    ******************************************************************************/
@@ -807,7 +754,7 @@ struct DispatchTopK
       return error;
     }
 
-    DispatchTopK dispatch(
+    DispatchTopK dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -817,7 +764,7 @@ struct DispatchTopK
       num_items,
       k,
       stream,
-      ptx_version);
+      ptx_version};
 
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
