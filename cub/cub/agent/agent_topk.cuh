@@ -352,6 +352,7 @@ struct AgentTopK
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
+    // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
     {
@@ -368,6 +369,7 @@ struct AgentTopK
   {
     int histo_offset = 0;
 
+    // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
     {
