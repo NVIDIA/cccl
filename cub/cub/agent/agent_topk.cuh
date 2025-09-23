@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = static_cast<int>(sizeof(T) * 8) - (pass + 1) * BitsPerPass;
+  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
   {
     start_bit = 0;
@@ -181,7 +181,7 @@ struct AgentTopK
   // Types and constants
   //---------------------------------------------------------------------
   // The key and value type
-  using key_in_t = detail::it_value_t<KeyInputIteratorT>;
+  using key_in_t = it_value_t<KeyInputIteratorT>;
 
   static constexpr int block_threads    = AgentTopKPolicyT::block_threads;
   static constexpr int items_per_thread = AgentTopKPolicyT::items_per_thread;
@@ -189,7 +189,7 @@ struct AgentTopK
   static constexpr int tile_items       = block_threads * items_per_thread;
   static constexpr int num_buckets      = 1 << bits_per_pass;
 
-  static constexpr bool keys_only      = ::cuda::std::is_same<ValueInputIteratorT, NullType*>::value;
+  static constexpr bool keys_only      = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
   static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
 
   // Parameterized BlockLoad type for input data
@@ -408,7 +408,7 @@ struct AgentTopK
       // During the first pass, compute per-thread block histograms over the full input. The per-thread block histograms
       // are being added to the global histogram further down below.
       auto f = [this](key_in_t key, OffsetT index) {
-        int bucket = extract_bin_op(key);
+        const int bucket = extract_bin_op(key);
         atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
       };
       process_range(d_keys_in, previous_len, f);
@@ -423,15 +423,15 @@ struct AgentTopK
       // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
       // We can skip histogram computation because we don't need to further passes to refine the candidates.
       auto f_early_stop = [load_from_original_input, in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
-        candidate_class pre_res = identify_candidates_op(key);
+        const candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
         {
-          OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
-          d_keys_out[pos] = key;
+          const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
+          d_keys_out[pos]      = key;
           if constexpr (!keys_only)
           {
-            OffsetT index     = load_from_original_input ? i : in_idx_buf[i];
-            d_values_out[pos] = d_values_in[index];
+            const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
+            d_values_out[pos]   = d_values_in[index];
           }
         }
       };
@@ -440,28 +440,28 @@ struct AgentTopK
       // pass): Write out selected items to output, write candidates to out_buf, and build histogram for candidates.
       auto f_with_out_buf = [load_from_original_input, in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](
                               key_in_t key, OffsetT i) {
-        candidate_class pre_res = identify_candidates_op(key);
+        const candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
         {
-          OffsetT pos  = atomicAdd(p_filter_cnt, OffsetT{1});
-          out_buf[pos] = key;
+          const OffsetT pos = atomicAdd(p_filter_cnt, OffsetT{1});
+          out_buf[pos]      = key;
           if constexpr (!keys_only)
           {
-            OffsetT index    = load_from_original_input ? i : in_idx_buf[i];
-            out_idx_buf[pos] = index;
+            const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
+            out_idx_buf[pos]    = index;
           }
 
-          int bucket = extract_bin_op(key);
+          const int bucket = extract_bin_op(key);
           atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
         }
         else if (pre_res == candidate_class::selected)
         {
-          OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
-          d_keys_out[pos] = key;
+          const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
+          d_keys_out[pos]      = key;
           if constexpr (!keys_only)
           {
-            OffsetT index     = in_idx_buf ? in_idx_buf[i] : i;
-            d_values_out[pos] = d_values_in[index];
+            const OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
+            d_values_out[pos]   = d_values_in[index];
           }
         }
       };
@@ -473,10 +473,10 @@ struct AgentTopK
       // is small enough to fit into the output buffer (otherwise, we would be writing the same items to d_keys_out
       // multiple times).
       auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
-        candidate_class pre_res = identify_candidates_op(key);
+        const candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
         {
-          int bucket = extract_bin_op(key);
+          const int bucket = extract_bin_op(key);
           atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
         }
       };
@@ -569,7 +569,7 @@ struct AgentTopK
         counter->len                                   = cur - prev;
         typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
+        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
     }
@@ -591,7 +591,7 @@ struct AgentTopK
         counter->len                                   = cur - prev;
         typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
+        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
     }
