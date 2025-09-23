@@ -99,9 +99,6 @@ struct identify_candidates_op_t
   }
 };
 
-/******************************************************************************
- * Kernel entry points
- *****************************************************************************/
 //! TopK kernel entry point (multi-block) for histogram collection, prefix sum and filering operations except for the
 //!  last round
 //!
@@ -432,9 +429,6 @@ struct DispatchTopK
   using key_in_t                  = it_value_t<KeyInputIteratorT>;
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
 
-  /******************************************************************************
-   * Dispatch entrypoints
-   ******************************************************************************/
   template <typename ActivePolicyT,
             typename TopKFirstPassKernelPtrT,
             typename TopKKernelPtrT,
