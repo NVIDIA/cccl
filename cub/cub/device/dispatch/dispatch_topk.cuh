@@ -657,6 +657,7 @@ struct DispatchTopK
     // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
     return error;
   }
+
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
