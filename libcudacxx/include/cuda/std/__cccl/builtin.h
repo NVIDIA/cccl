@@ -415,10 +415,6 @@
 #  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
-#if _CCCL_CHECK_BUILTIN(is_base_of) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_base_of) && gcc >= 4.3
-
 #if _CCCL_CHECK_BUILTIN(is_class) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CLASS(...) __is_class(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_class) && gcc >= 4.3
