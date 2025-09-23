@@ -31,15 +31,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-using ::memcpy;
 using ::size_t;
 
 // old compilers stll trigger the name conflict
-#if !_CCCL_COMPILER(GCC, <=, 9)
+#if _CCCL_COMPILER(GCC, <=, 9)
+
+using ::memcpy;
+
+#else // ^^^ _CCCL_COMPILER(GCC, <=, 9) ^^^ / vvv _CCCL_COMPILER(GCC, >, 9) vvv
 
 // The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace
-// qualification. Functions with template arguments have lower precedence than non-template functions for
-// overload resolution.
+// qualification. Function templates have lower precedence than non-template functions for overload resolution.
 template <int = 0>
 _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
@@ -49,7 +51,7 @@ _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) n
   return ::memcpy(__dest, __src, __count);
 }
 
-#endif // !_CCCL_COMPILER(GCC, <=, 9)
+#endif // _CCCL_COMPILER(GCC, >, 9)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
