@@ -544,10 +544,6 @@
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_destructible)
 
-#if _CCCL_CHECK_BUILTIN(is_union) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_UNION(...) __is_union(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_union) && gcc >= 4.3
-
 #if _CCCL_CHECK_BUILTIN(is_unsigned)
 #  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_unsigned)
