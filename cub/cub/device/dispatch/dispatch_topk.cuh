@@ -442,10 +442,10 @@ struct DispatchTopK
 
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads    = policy_t::block_threads; // Threads per block
-    constexpr int items_per_thread = policy_t::items_per_thread; // Items per thread
-    constexpr int tile_size        = block_threads * items_per_thread; // Items per block
-    const auto num_tiles           = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)); // Num of blocks
+    constexpr int block_threads    = policy_t::block_threads;
+    constexpr int items_per_thread = policy_t::items_per_thread;
+    constexpr int tile_size        = block_threads * items_per_thread;
+    const auto num_tiles           = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
     constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::bits_per_pass>();
     constexpr int num_buckets      = 1 << policy_t::bits_per_pass;
 
