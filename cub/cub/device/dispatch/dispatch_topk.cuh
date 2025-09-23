@@ -384,7 +384,7 @@ template <typename KeyInputIteratorT,
           typename OffsetT,
           typename OutOffsetT,
           select SelectDirection,
-          typename SelectedPolicy = policy_hub<detail::it_value_t<KeyInputIteratorT>, OffsetT>>
+          typename SelectedPolicy = policy_hub<it_value_t<KeyInputIteratorT>, OffsetT>>
 struct DispatchTopK : SelectedPolicy
 {
   // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
