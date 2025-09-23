@@ -31,8 +31,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   size_t n     = 4096;
   size_t m     = 4096;
-  double tol   = 0.1;
-  int max_iter = 1000;
+  double tol   = 0.05;
+  int max_iter = 10000;
 
   if (argc > 2)
   {
@@ -57,9 +57,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   ctx.parallel_for(lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
     [=] __device__(size_t i, size_t j, auto A, auto Anew) {
-      A(i, j)    = (i == j) ? 1.0 : -1.0;
+      A(i, j)    = (i == j) ? 10.0 : -1.0;
       Anew(i, j) = A(i, j);
     };
+
+  cudaEvent_t start, stop;
+
+  cuda_safe_call(cudaEventCreate(&start));
+  cuda_safe_call(cudaEventCreate(&stop));
+
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   // Initialize iteration counter
   ctx.parallel_for(box(1), liter.write())->*[] __device__(size_t, auto iter) {
@@ -69,7 +76,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   {
     auto while_guard = ctx.while_graph_scope();
 
-    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>()))
+    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.rw(), lresidual.reduce(reducer::maxval<double>()))
         ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
               Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
               double error = fabs(A(i, j) - Anew(i, j));
@@ -87,12 +94,18 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     };
   }
 
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
+
   int final_iterations  = ctx.wait(liter);
   double final_residual = ctx.wait(lresidual);
 
   printf("Converged after %d iterations, residual = %lf\n", final_iterations, final_residual);
 
   ctx.finalize();
+
+  float elapsedTime;
+  cudaEventElapsedTime(&elapsedTime, start, stop);
+  printf("Elapsed time: %f ms\n", elapsedTime);
 
   EXPECT(final_residual <= tol);
   EXPECT(final_iterations < max_iter);
