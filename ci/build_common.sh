@@ -168,6 +168,11 @@ source ./pretty_printing.sh
 print_environment_details() {
   begin_group "⚙️ Environment Details"
 
+  echo "free -h:"
+  free -h || :
+
+  echo "nproc=$(nproc || :)"
+
   echo "pwd=$(pwd)"
 
   print_var_values \
