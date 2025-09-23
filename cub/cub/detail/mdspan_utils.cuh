@@ -116,8 +116,10 @@ template <int Rank, typename Extents>
 template <typename MappingTypeLhs, typename MappingTypeRhs>
 [[nodiscard]] _CCCL_API bool have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
 {
-  _CCCL_ASSERT(mapping_lhs.extents().rank() == mapping_rhs.extents().rank(), "extents must have the same rank");
-  for (size_t i = 0; i < mapping_lhs.extents().rank(); i++)
+  auto extents_lhs = mapping_lhs.extents();
+  auto extents_rhs = mapping_rhs.extents();
+  _CCCL_ASSERT(extents_lhs.rank() == extents_rhs.rank(), "extents must have the same rank");
+  for (size_t i = 0; i < extents_lhs.rank(); i++)
   {
     if (mapping_lhs.stride(i) != mapping_rhs.stride(i))
     {
