@@ -47,11 +47,11 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__mdspan/layout_left.h>
-#include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/index_sequence.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
@@ -1065,11 +1065,11 @@ public:
   //! @return cudaError_t
   //!   error status
   _CCCL_TEMPLATE(typename Layout, typename IndexType, size_t... Extents, typename OpType)
-  _CCCL_REQUIRES(detail::for_each::is_any_mdspan_layout_left_or_right_v<Layout>)
+  _CCCL_REQUIRES(::cuda::std::is_any_mdspan_layout_left_or_right_v<Layout>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
     const Layout&, const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    if constexpr (detail::for_each::is_any_mdspan_layout_right_v<Layout>)
+    if constexpr (::cuda::std::__is_any_mdspan_layout_right_v<Layout>)
     {
       return ForEachInExtents(extents, op, stream);
     }

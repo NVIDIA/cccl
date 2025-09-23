@@ -175,6 +175,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, Fas
   }
 }
 
+// mathematically:
+// index_i = index / product(extent[j] for j in [i+1, rank-1]) % extent[i]
 template <int Rank, typename IndexType, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
 coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_size, FastDivModType dynamic_extent)
@@ -185,6 +187,12 @@ coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_siz
   return static_cast<extent_index_type>(
     (index / get_extents_sub_size<Rank>(extents, extent_sub_size)) % extent_at<Rank>(extents, dynamic_extent));
 }
+
+// mathematically:
+// index_i = index / product(extent[j] for j in [0, i]) % extent[i]
+
+
+
 
 template <typename OpT, typename ExtentsT, typename FastDivModArrayT>
 struct op_wrapper_extents_t
