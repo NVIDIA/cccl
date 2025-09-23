@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+// #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh> // logical_data_untyped
 
 namespace cuda::experimental::stf
@@ -97,7 +97,7 @@ private:
     T get(data_place place_, cudaStream_t stream)
     {
       // Get the tuple and synchronize it with the user-provided stream
-      ::std::pair<T, event_list> p = frozen_logical_data_untyped::template get<T>(mv(place_));
+      ::std::pair<T, event_list> p = this->get<T>(mv(place_));
       auto& prereqs                = p.second;
       prereqs.sync_with_stream(bctx, stream);
       return p.first;
@@ -280,8 +280,16 @@ public:
 
   T get(data_place place, cudaStream_t stream)
   {
-    return frozen_logical_data_untyped::template get<T>(mv(place));
+    return frozen_logical_data_untyped::template get<T>(mv(place), stream);
   }
 };
+
+// Inline implementation of methods that need full type definitions
+template <typename Engine>
+inline frozen_logical_data_untyped backend_ctx<Engine>::freeze(
+  cuda::experimental::stf::logical_data_untyped d, access_mode m, data_place where, bool user_freeze)
+{
+  return frozen_logical_data_untyped(*this, mv(d), m, mv(where), user_freeze);
+}
 
 } // namespace cuda::experimental::stf
