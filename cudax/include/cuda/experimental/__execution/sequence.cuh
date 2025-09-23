@@ -34,7 +34,6 @@
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
-#include <cuda/experimental/__execution/lazy.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/rcvr_with_env.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
@@ -47,28 +46,57 @@
 
 namespace cuda::experimental::execution
 {
+namespace __detail
+{
+template <class _Attrs, class... _Env>
+[[nodiscard]] _CCCL_API constexpr auto __mk_seq_env_next(const _Attrs& __attrs, const _Env&... __env) noexcept
+{
+  if constexpr (__callable<get_completion_scheduler_t<set_value_t>, const _Attrs&, const _Env&...>)
+  {
+    return __mk_sch_env(get_completion_scheduler<set_value_t>(__attrs, __env...), __env...);
+  }
+  else if constexpr (__callable<get_completion_domain_t<set_value_t>, const _Attrs&, const _Env&...>)
+  {
+    using __domain_t = __call_result_t<get_completion_domain_t<set_value_t>, const _Attrs&, const _Env&...>;
+    return prop{get_domain, __domain_t{}};
+  }
+  else
+  {
+    return env{};
+  }
+}
+
+template <class _Attrs, class... _Env>
+using __seq_env_next_t = decltype(__detail::__mk_seq_env_next(declval<_Attrs>(), declval<_Env>()...));
+
+//! @brief Given a completion tag type, an environment, and a pack of attributes objects
+//! obtained from a sequence of senders, return the scheduler on which the final sender
+//! would complete assuming each sender was started where the previous sender completed.
+// template <class _Tag, class _Env, class _Attrs>
+// [[nodiscard]] _CCCL_API constexpr auto __seq_compl_sch_for(const _Env& __env, const _Attrs& __attrs) noexcept
+// {
+//   return __call_or(get_completion_scheduler<_Tag>, __nil{}, __attrs, __env);
+// }
+
+// template <class _Tag, class _Env, class _Attrs0, class _Attrs1, class... _Attrs>
+// [[nodiscard]] _CCCL_API constexpr auto __seq_compl_sch_for(
+//   const _Env& __env, const _Attrs0& __attrs0, const _Attrs1& __attrs1, const _Attrs&... __attrs) noexcept
+// {
+//   return __seq_compl_sch_for<_Tag>(__detail::__mk_seq_env_next(__attrs0, __env), __attrs1, __attrs...);
+//   if constexpr (__callable<get_completion_scheduler_t<set_value_t>, const _Attrs0&, const _Env&>)
+//   {
+//     return;
+//   }
+//   auto __env_next = __detail::__mk_seq_env_next(__attrs0, __env);
+//   return;
+// }
+} // namespace __detail
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 {
   _CUDAX_SEMI_PRIVATE :
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Attrs&& __attrs, _Env&&... __env) noexcept
-  {
-    if constexpr (__callable<get_completion_scheduler_t<set_value_t>, _Attrs&, _Env&...>)
-    {
-      return __mk_sch_env(get_completion_scheduler<set_value_t>(__attrs, __env...), __env...);
-    }
-    else if constexpr (__callable<get_completion_domain_t<set_value_t>, _Attrs&>)
-    {
-      return prop{get_domain, get_completion_domain<set_value_t>(__attrs)};
-    }
-    else
-    {
-      return env{};
-    }
-  }
-
-  template <class _Attrs, class... _Env>
-  using __env2_t = decltype(sequence_t::__mk_env2(declval<_Attrs>(), declval<_Env>()...));
+  using __env2_t = __detail::__seq_env_next_t<_Attrs, _Env...>;
 
   template <class _Rcvr, class _Env2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
@@ -140,7 +168,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
     {}
 
     _CCCL_API constexpr __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
-        : __opstate_t(__sndr1, __sndr2, __rcvr, sequence_t::__mk_env2(get_env(__sndr1), get_env(__rcvr)))
+        : __opstate_t(__sndr1, __sndr2, __rcvr, __detail::__mk_seq_env_next(get_env(__sndr1), get_env(__rcvr)))
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
@@ -166,7 +194,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
     if constexpr (__callable<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr2>, __join_env_t<__env2_t, _Env...>>)
     {
       // If the second sender has a completion scheduler for the given tag, use it.
-      auto __env2 = sequence_t::__mk_env2(__attrs1, __env...);
+      auto __env2 = __detail::__mk_seq_env_next(__attrs1, __env...);
       return get_completion_scheduler<_SetTag>(
         get_env(__sndr2), __join_env(static_cast<__env2_t&&>(__env2), static_cast<_Env&&>(__env)...));
     }
@@ -254,7 +282,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // If the second sender does not have any _SetTag completions, we can look at the
     // first sender for a completion scheduler.
     _CCCL_TEMPLATE(class _SetTag, class... _Env, class _Env2 = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>)
-    _CCCL_REQUIRES((execution::get_completion_signatures<_Sndr2, __join_env_t<_Env2, _Env...>>().count(_SetTag{}) == 0))
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr2, __join_env_t<_Env2, _Env...>>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr1>, __fwd_env_t<_Env>...>
     {
@@ -265,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // If the second sender does not have any _SetTag completions, we can look at the
     // first sender for a completion domain.
     _CCCL_TEMPLATE(class _SetTag, class... _Env, class _Env2 = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>)
-    _CCCL_REQUIRES((execution::get_completion_signatures<_Sndr2, __join_env_t<_Env2, _Env...>>().count(_SetTag{}) == 0))
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr2, __join_env_t<_Env2, _Env...>>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
       -> decay_t<__call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr1>, __fwd_env_t<_Env>...>>
     {
@@ -309,9 +337,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 template <class _Sndr1, class _Sndr2>
 _CCCL_NODEBUG_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS  = __early_domain_of_t<_Sndr1>;
   using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
-  return transform_sender(__dom_t{}, __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)});
+  return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
 }
 
 template <class _Sndr1, class _Sndr2>

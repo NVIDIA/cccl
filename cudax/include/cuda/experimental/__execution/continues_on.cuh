@@ -39,7 +39,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   // When calling connect on a continues_on sender, first transform the sender into a
   // schedule_from sender.
   template <class _Sndr>
-  _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept
+  _CCCL_NODEBUG_API static constexpr auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept
   {
     // _Sndr is a (possibly cvref-qualified) instance of continues_on_t::__sndr_t
     auto&& [__tag, __sch, __child] = static_cast<_Sndr&&>(__sndr);
@@ -74,9 +74,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
-    // continues_on always dispatches based on the domain of the predecessor sender
-    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
-    return execution::transform_sender(__dom_t{}, __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}};
   }
 
   template <class _Sch>
