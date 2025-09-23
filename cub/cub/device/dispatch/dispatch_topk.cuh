@@ -71,10 +71,11 @@ struct extract_bin_op_t
 template <typename T, select SelectDirection, int BitsPerPass>
 struct identify_candidates_op_t
 {
-  typename Traits<T>::UnsignedBits* kth_key_bits;
+  using unsigned_bits_t = typename Traits<T>::UnsignedBits;
+  unsigned_bits_t* kth_key_bits;
   int pass;
   int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE identify_candidates_op_t(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE identify_candidates_op_t(unsigned_bits_t* kth_key_bits, int pass)
       : kth_key_bits(kth_key_bits)
       , pass(pass - 1)
   {
@@ -83,7 +84,7 @@ struct identify_candidates_op_t
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
-    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
+    auto bits = reinterpret_cast<unsigned_bits_t&>(key);
     bits      = Traits<T>::TwiddleIn(bits);
 
     if constexpr (SelectDirection != select::min)
