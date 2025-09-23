@@ -205,7 +205,7 @@ coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_siz
   using extent_index_type = typename ExtentType::index_type;
   constexpr auto start    = IsLayoutRight ? Position : 0;
   constexpr auto end      = IsLayoutRight ? ExtentType::rank() : Position;
-  return static_cast<extent_index_type>((index / get_extents_sub_size<start, end>(extents, extent_sub_size))
+  return static_cast<extent_index_type>((index / get_extents_sub_size<start + 1, end>(extents, extent_sub_size))
                                         % extent_at<Position>(extents, dynamic_extent));
 }
 

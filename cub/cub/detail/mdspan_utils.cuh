@@ -77,7 +77,8 @@ template <typename IndexType, size_t... E, size_t... Ranks>
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array{fast_mod_div_t(sub_size(ext, Ranks + 1, ext.rank()))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>;
+  return array_t{fast_mod_div_t(cub::detail::sub_size(ext, Ranks + 1, ext.rank()))...};
 }
 
 // precompute modulo/division for each mdspan extent
@@ -86,7 +87,8 @@ template <typename IndexType, size_t... E, size_t... Ranks>
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array{fast_mod_div_t(ext.extent(Ranks))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>;
+  return array_t{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
