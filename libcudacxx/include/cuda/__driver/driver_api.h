@@ -41,6 +41,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
     reinterpret_cast<decltype(::versioned_fn_name)*>(                                           \
       ::cuda::__driver::__get_driver_entry_point(#function_name, major, minor))
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
 //! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
@@ -81,6 +83,8 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   }
   return __fn;
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename Fn, typename... Args>
 _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args... __args)
