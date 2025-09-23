@@ -66,22 +66,6 @@ struct Immovable
   Immovable(Immovable&&) noexcept = delete;
 };
 
-template <class Fn>
-struct EmplaceFrom
-{
-  using type = cuda::std::invoke_result_t<Fn>;
-
-  _CCCL_HOST_DEVICE operator type() &&
-  {
-    return cuda::std::move(fn)();
-  }
-
-  Fn fn;
-};
-
-template <class Fn>
-_CCCL_HOST_DEVICE EmplaceFrom(Fn) -> EmplaceFrom<Fn>;
-
 template <bool Small>
 struct SmallOrLarge
 {
@@ -604,9 +588,9 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
   _CCCL_HOST_DEVICE void test_basic_any_test_for_emplacing_immovable_object()
   {
     // Can emplace an immovable object into a basic_any:
-    cuda::__basic_any<iempty<>> a{cuda::std::in_place_type<Immovable>, EmplaceFrom{[] {
+    cuda::__basic_any<iempty<>> a{cuda::in_place_from_type<Immovable>, [] {
                                     return Immovable{};
-                                  }}};
+                                  }};
     assert(a.has_value());
     assert(a.__in_situ());
   }
