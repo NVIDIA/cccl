@@ -60,6 +60,8 @@ class logical_data;
 template <typename T>
 class frozen_logical_data;
 
+class frozen_logical_data_untyped;
+
 class graph_ctx;
 
 class null_partition;
@@ -1002,6 +1004,12 @@ public:
   {
     return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
+
+  frozen_logical_data_untyped
+  freeze(cuda::experimental::stf::logical_data_untyped d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true);
 
   /**
    * @brief Creates a typed task on the current CUDA device
