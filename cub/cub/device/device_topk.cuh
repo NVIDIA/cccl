@@ -106,11 +106,11 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 //! sequences of unordered data items residing within device-accessible memory.
 //!
 //! @par Overview
-//! TopK problem tries to find the largest (or smallest) K items in an unordered list. A related problem is called
+//! The TopK algorithm tries to find the largest (or smallest) K items in an unordered list. A related problem is called
 //! [*K selection problem*](https://en.wikipedia.org/wiki/Selection_algorithm), which finds the Kth largest
 //! (or smallest) values in a list.
-//! DeviceTopK will return K items as results (currently, only unordered results are returned). It is
-//! based on an algorithm called [*AIR TopK*](https://dl.acm.org/doi/10.1145/3581784.3607062).
+//! DeviceTopK will return K items in an unspecified order as results. It is based on an algorithm called
+//! [*AIR TopK*](https://dl.acm.org/doi/10.1145/3581784.3607062).
 //!
 //! @par Supported Types
 //! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
@@ -129,7 +129,6 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 //! @linear_performance{top-k}
 //!
 //! @endrst
-
 struct DeviceTopK
 {
   //! @rst
@@ -144,7 +143,7 @@ struct DeviceTopK
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MaxPairs` function to find the largest K
-  //! items
+  //! items:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
   //!     :language: c++
@@ -167,10 +166,10 @@ struct DeviceTopK
   //!   **[inferred]** Random-access input iterator type for writing output values @iterator
   //!
   //! @tparam NumItemsT
-  //! Type of variable num_items
+  //!  The integral type of variable num_items
   //!
   //! @tparam NumOutItemsT
-  //! Type of variable k
+  //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
@@ -180,22 +179,23 @@ struct DeviceTopK
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input data of key data
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output sequence of key data
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] d_values_in
-  //!   Pointer to the corresponding input sequence of associated value items
+  //!   Random-access iterator to the input sequence containing the values associated to each key
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the corresponding output sequence of associated value items
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
   //!
   //! @param[in] num_items
-  //!   Number of items to be processed
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env
@@ -238,7 +238,7 @@ struct DeviceTopK
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinPairs` function to find the lowest K
-  //! items
+  //! items:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
   //!     :language: c++
@@ -261,10 +261,10 @@ struct DeviceTopK
   //!   **[inferred]** Random-access input iterator type for writing output values @iterator
   //!
   //! @tparam NumItemsT
-  //! Type of variable num_items
+  //!  The integral type of variable num_items
   //!
   //! @tparam NumOutItemsT
-  //! Type of variable k
+  //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -274,23 +274,23 @@ struct DeviceTopK
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input data of key data to find top K
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output sequence of key data
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] d_values_in
-  //!   Pointer to the corresponding input sequence of associated value items
+  //!   Random-access iterator to the input sequence containing the values associated to each key
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the corresponding output sequence of associated
-  //!   value items
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
   //!
   //! @param[in] num_items
-  //!   Number of items to be processed
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   The value of K, which is the number of lowest pairs to find from `num_items` pairs. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env
@@ -333,7 +333,7 @@ struct DeviceTopK
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinKeys` function to find the largest K
-  //! items
+  //! items:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
   //!     :language: c++
@@ -350,10 +350,10 @@ struct DeviceTopK
   //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
   //!
   //! @tparam NumItemsT
-  //! Type of variable num_items
+  //!  The integral type of variable num_items
   //!
   //! @tparam NumOutItemsT
-  //! Type of variable k
+  //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -363,16 +363,16 @@ struct DeviceTopK
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input data of key data
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output sequence of key data
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of items to be processed
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env
@@ -419,7 +419,7 @@ struct DeviceTopK
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinKeys` function to find the lowest K
-  //! items
+  //! items:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
   //!     :language: c++
@@ -436,10 +436,10 @@ struct DeviceTopK
   //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
   //!
   //! @tparam NumItemsT
-  //! Type of variable num_items
+  //!  The integral type of variable num_items
   //!
   //! @tparam NumOutItemsT
-  //! Type of variable k
+  //!  The integral type of variable k
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -449,16 +449,16 @@ struct DeviceTopK
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
-  //!   Pointer to the input data of key data to find top K
+  //!   Random-access iterator to the input sequence containing the keys
   //!
   //! @param[out] d_keys_out
-  //!   Pointer to the K output sequence of key data
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
   //!
   //! @param[in] num_items
-  //!   Number of items to be processed
+  //!   Number of items to be read and processed from `d_keys_in`
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
   //!   `num_items`.
   //!
   //! @param[in] env
