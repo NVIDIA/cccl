@@ -30,7 +30,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <detail::topk::select SelectDirection,
+template <topk::select SelectDirection,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
           typename ValueInputIteratorT,
@@ -50,11 +50,9 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
   EnvT env)
 {
   // Offset type selection
-  using offset_t = detail::choose_offset_t<NumItemsT>;
-  using out_offset_t =
-    cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
-                             offset_t,
-                             detail::choose_offset_t<NumOutItemsT>>;
+  using offset_t     = choose_offset_t<NumItemsT>;
+  using out_offset_t = cuda::std::
+    conditional_t<sizeof(offset_t) < sizeof(choose_offset_t<NumOutItemsT>), offset_t, choose_offset_t<NumOutItemsT>>;
 
   // Query environment properties to determine if the user-requested configuration is supported
   static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
@@ -82,7 +80,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
   // Query relevant properties from the environment
   auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
 
-  return detail::topk::DispatchTopK<
+  return topk::DispatchTopK<
     KeyInputIteratorT,
     KeyOutputIteratorT,
     ValueInputIteratorT,

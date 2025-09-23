@@ -17,8 +17,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/clamp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::topk
@@ -59,10 +58,8 @@ struct policy_hub
   struct DefaultTuning
   {
     static constexpr int nominal_4b_items_per_thread = 4;
-    static constexpr int items_per_thread =
-      ::cuda::std::min(nominal_4b_items_per_thread,
-                       ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT)))));
-
+    static constexpr int items_per_thread            = ::cuda::std::clamp(
+      nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT)), 1, nominal_4b_items_per_thread);
     static constexpr int bits_per_pass = calc_bits_per_pass<KeyInT>();
 
     using topk_policy_t =
