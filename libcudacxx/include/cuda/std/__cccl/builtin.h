@@ -631,11 +631,6 @@
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
 #endif // _CCCL_CUDACC_BELOW(12, 2)
 
-#if _CCCL_CHECK_BUILTIN(underlying_type) || _CCCL_COMPILER(GCC, >=, 4, 7) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
-
 #if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
