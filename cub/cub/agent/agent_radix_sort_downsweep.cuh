@@ -333,138 +333,6 @@ struct AgentRadixSortDownsweep
   }
 
   /**
-   * Load a tile of keys (specialized for full tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of keys (specialized for partial tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
-
-    BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of keys (specialized for full tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
-  }
-
-  /**
-   * Load a tile of keys (specialized for partial tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
-    bit_ordered_type (&keys)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    bit_ordered_type oob_item,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
-
-    LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
-  }
-
-  /**
-   * Load a tile of values (specialized for full tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of values (specialized for partial tile, block load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::false_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
-
-    BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
-
-    __syncthreads();
-  }
-
-  /**
-   * Load a tile of items (specialized for full tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
-  }
-
-  /**
-   * Load a tile of items (specialized for partial tile, warp-striped load)
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::true_type warp_striped)
-  {
-    // Register pressure work-around: moving valid_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
-
-    LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
-  }
-
-  /**
    * Truck along associated values
    */
   template <bool FULL_TILE>
@@ -472,29 +340,42 @@ struct AgentRadixSortDownsweep
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT block_offset,
-    OffsetT valid_items,
-    ::cuda::std::false_type /*is_keys_only*/)
+    OffsetT valid_items)
   {
     ValueT values[ITEMS_PER_THREAD];
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
+    if constexpr (FULL_TILE)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
+      }
+      else
+      {
+        BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
+        __syncthreads();
+      }
+    }
 
     ScatterValues<FULL_TILE>(values, relative_bin_offsets, ranks, valid_items);
   }
-
-  /**
-   * Truck along associated values (specialized for key-only sorting)
-   */
-  template <bool FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
-    OffsetT (& /*relative_bin_offsets*/)[ITEMS_PER_THREAD],
-    int (& /*ranks*/)[ITEMS_PER_THREAD],
-    OffsetT /*block_offset*/,
-    OffsetT /*valid_items*/,
-    ::cuda::std::true_type /*is_keys_only*/)
-  {}
 
   /**
    * Process tile
@@ -511,8 +392,33 @@ struct AgentRadixSortDownsweep
       IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(
-      keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
+    if constexpr (FULL_TILE)
+    {
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys);
+        __syncthreads();
+      }
+    }
+    else
+    {
+      // Register pressure work-around: moving valid_items through shfl prevents compiler
+      // from reusing guards/addressing from prior guarded loads
+      valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
+      if constexpr (LOAD_WARP_STRIPED)
+      {
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
+      }
+      else
+      {
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
+        __syncthreads();
+      }
+    }
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
@@ -587,7 +493,10 @@ struct AgentRadixSortDownsweep
     ScatterKeys<FULL_TILE>(keys, relative_bin_offsets, ranks, valid_items);
 
     // Gather/scatter values
-    GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items, bool_constant_v<KEYS_ONLY>);
+    if constexpr (!KEYS_ONLY)
+    {
+      GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items);
+    }
   }
 
   //---------------------------------------------------------------------
