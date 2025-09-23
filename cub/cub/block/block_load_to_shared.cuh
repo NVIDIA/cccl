@@ -340,9 +340,9 @@ public:
         dst_ptr[head_padding_bytes + idx] = src_ptr[idx];
       }
       // Peel tail
-      if (const int idx = num_bytes_bulk + linear_tid; idx < num_bytes)
+      if (const int idx = head_peeling_bytes + num_bytes_bulk + linear_tid; idx < num_bytes)
       {
-        dst_ptr[minimum_align + idx] = src_ptr_aligned[idx];
+        dst_ptr[head_padding_bytes + idx] = src_ptr[idx];
       }
       return {::cuda::ptr_rebind<T>(dst_ptr + head_padding_bytes), size(gmem_src)};
     }
