@@ -221,7 +221,15 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
     return detail::dispatch_topk_hub<detail::topk::select::max>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      k,
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -316,7 +324,15 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
     return detail::dispatch_topk_hub<detail::topk::select::min>(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      k,
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -402,7 +418,7 @@ struct DeviceTopK
       static_cast<NullType*>(nullptr),
       num_items,
       k,
-      env);
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -488,7 +504,7 @@ struct DeviceTopK
       static_cast<NullType*>(nullptr),
       num_items,
       k,
-      env);
+      ::cuda::std::move(env));
   }
 };
 
