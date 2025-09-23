@@ -88,11 +88,11 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
 C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
 {
   // example-begin topk-min-pairs-non-deterministic-unsorted
-  const int k      = 4;
-  auto keys        = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6};
-  auto indexes     = cuda::make_counting_iterator<int>(0);
-  auto keys_out    = thrust::device_vector<int>(k, thrust::no_init);
-  auto indexes_out = thrust::device_vector<int>(k, thrust::no_init);
+  const int k     = 4;
+  auto keys       = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6};
+  auto values     = cuda::make_counting_iterator<int>(0);
+  auto keys_out   = thrust::device_vector<int>(k, thrust::no_init);
+  auto values_out = thrust::device_vector<int>(k, thrust::no_init);
 
   // Specify that we do not require a specific output order and do not require deterministic results
   auto requirements =
@@ -105,8 +105,8 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
     temp_storage_bytes,
     keys.begin(),
     keys_out.begin(),
-    indexes,
-    indexes_out.begin(),
+    values,
+    values_out.begin(),
     keys.size(),
     k,
     requirements);
@@ -119,30 +119,30 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
     temp_storage_bytes,
     keys.begin(),
     keys_out.begin(),
-    indexes,
-    indexes_out.begin(),
+    values,
+    values_out.begin(),
     keys.size(),
     k,
     requirements);
 
   // Get the top-k results into sorted order for easy comparison
-  thrust::sort_by_key(keys_out.begin(), keys_out.end(), indexes_out.begin());
+  thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin());
   thrust::host_vector<int> expected_keys{-3, 1, 2, 4};
-  thrust::host_vector<int> expected_indexes{1, 2, 5, 6};
+  thrust::host_vector<int> expected_values{1, 2, 5, 6};
   // example-end topk-min-pairs-non-deterministic-unsorted
 
   REQUIRE(keys_out == expected_keys);
-  REQUIRE(indexes_out == expected_indexes);
+  REQUIRE(values_out == expected_values);
 }
 
 C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
 {
   // example-begin topk-max-pairs-non-deterministic-unsorted
-  const int k      = 4;
-  auto keys        = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6};
-  auto indexes     = cuda::make_counting_iterator<int>(0);
-  auto keys_out    = thrust::device_vector<int>(k, thrust::no_init);
-  auto indexes_out = thrust::device_vector<int>(k, thrust::no_init);
+  const int k     = 4;
+  auto keys       = thrust::device_vector<int>{5, -3, 1, 7, 8, 2, 4, 6};
+  auto values     = cuda::make_counting_iterator<int>(0);
+  auto keys_out   = thrust::device_vector<int>(k, thrust::no_init);
+  auto values_out = thrust::device_vector<int>(k, thrust::no_init);
 
   // Specify that we do not require a specific output order and do not require deterministic results
   auto requirements =
@@ -155,8 +155,8 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
     temp_storage_bytes,
     keys.begin(),
     keys_out.begin(),
-    indexes,
-    indexes_out.begin(),
+    values,
+    values_out.begin(),
     keys.size(),
     k,
     requirements);
@@ -169,18 +169,18 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
     temp_storage_bytes,
     keys.begin(),
     keys_out.begin(),
-    indexes,
-    indexes_out.begin(),
+    values,
+    values_out.begin(),
     keys.size(),
     k,
     requirements);
 
   // Get the top-k results into sorted order for easy comparison
-  thrust::sort_by_key(keys_out.begin(), keys_out.end(), indexes_out.begin(), cuda::std::greater<>{});
+  thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin(), cuda::std::greater<>{});
   thrust::host_vector<int> expected_keys{8, 7, 6, 5};
-  thrust::host_vector<int> expected_indexes{4, 3, 7, 0};
+  thrust::host_vector<int> expected_values{4, 3, 7, 0};
   // example-end topk-max-pairs-non-deterministic-unsorted
 
   REQUIRE(keys_out == expected_keys);
-  REQUIRE(indexes_out == expected_indexes);
+  REQUIRE(values_out == expected_values);
 }
