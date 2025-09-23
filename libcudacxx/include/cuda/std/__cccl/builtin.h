@@ -402,11 +402,6 @@
 #  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__integer_pack)
 
-#if _CCCL_CHECK_BUILTIN(is_aggregate) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC, >, 19, 14) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_aggregate) && gcc >= 7.0
-
 #if _CCCL_CHECK_BUILTIN(is_array)
 #  define _CCCL_BUILTIN_IS_ARRAY(...) __is_array(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_array)
