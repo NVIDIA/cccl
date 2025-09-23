@@ -365,7 +365,7 @@ struct AgentTopK
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_histograms(OffsetT* local_histogram, OffsetT* global_histogram)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_histograms(OffsetT* global_histogram)
   {
     int histo_offset = 0;
 
@@ -409,7 +409,7 @@ struct AgentTopK
     {
       // During the first pass, compute per-thread block histograms over the full input. The per-thread block histograms
       // are being added to the global histogram further down below.
-      auto f = [this](key_in_t key, OffsetT index) {
+      auto f = [this](key_in_t key, OffsetT /*index*/) {
         const int bucket = extract_bin_op(key);
         atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
       };
@@ -528,13 +528,13 @@ struct AgentTopK
     __syncthreads();
 
     // Merge the locally aggregated histogram into the global histogram
-    merge_histograms(temp_storage.histogram, histogram);
+    merge_histograms(histogram);
   }
 
   // Replace histogram with its own prefix sum
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
-    OffsetT thread_data[bins_per_thread];
+    OffsetT thread_data[bins_per_thread]{};
 
     // Load global histogram (we can skip initializing oob-items to zero because they won't be stored back)
     block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets);
