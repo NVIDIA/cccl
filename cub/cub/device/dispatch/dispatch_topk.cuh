@@ -175,7 +175,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
@@ -207,7 +206,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     buffer_length,
     extract_bin_op_t{},
     identify_candidates_op)
-    .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k, pass);
+    .invoke_last_filter(in_buf, in_idx_buf, counter, k, pass);
 }
 
 //! @tparam KeyInputIteratorT
@@ -320,7 +319,7 @@ struct DispatchTopK
     const size_t size_histogram           = num_buckets * sizeof(OffsetT);
     const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-    constexpr int allocations_array_size                  = keys_only ? 4 : 6;
+    constexpr int allocations_array_size            = keys_only ? 4 : 6;
     size_t allocation_sizes[allocations_array_size] = {
       size_counter,
       size_histogram,
@@ -502,7 +501,6 @@ struct DispatchTopK
             out_buf,
             out_idx_buf,
             counter,
-            histogram,
             num_items,
             k,
             candidate_buffer_length,

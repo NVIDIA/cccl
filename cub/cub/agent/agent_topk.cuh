@@ -534,7 +534,7 @@ struct AgentTopK
   // Replace histogram with its own prefix sum
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
-    OffsetT thread_data[bins_per_thread]{};
+    OffsetT thread_data[bins_per_thread];
 
     // Load global histogram (we can skip initializing oob-items to zero because they won't be stored back)
     block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets);
@@ -587,12 +587,7 @@ struct AgentTopK
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
-    key_in_t* in_buf,
-    OffsetT* in_idx_buf,
-    Counter<key_in_t, OffsetT, OutOffsetT>* counter,
-    OffsetT* histogram,
-    OutOffsetT k,
-    int pass)
+    key_in_t* in_buf, OffsetT* in_idx_buf, Counter<key_in_t, OffsetT, OutOffsetT>* counter, OutOffsetT k, int pass)
   {
     const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
     const OffsetT current_len           = load_from_original_input ? num_items : counter->previous_len;
