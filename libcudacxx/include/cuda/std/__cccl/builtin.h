@@ -498,11 +498,6 @@
 #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF(...) __is_pointer_interconvertible_base_of(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 
-#if _CCCL_CHECK_BUILTIN(is_polymorphic) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_polymorphic) && gcc >= 4.3
-
 #if _CCCL_HAS_BUILTIN(__is_reference)
 #  define _CCCL_BUILTIN_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_reference)
