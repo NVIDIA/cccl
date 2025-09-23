@@ -82,16 +82,10 @@ public:
         "__memory_resource_base::allocate_sync.");
     }
 
-    void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocFromPoolAsync,
-      "__memory_resource_base::allocate_sync failed to allocate with cudaMallocFromPoolAsync",
-      &__ptr,
-      __bytes,
-      __pool_,
-      __cccl_allocation_stream().get());
+    ::CUdeviceptr __ptr{0};
+    ::cuda::__driver::__mallocFromPoolAsync(&__ptr, __bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
-    return __ptr;
+    return reinterpret_cast<void*>(__ptr);
   }
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
@@ -105,8 +99,7 @@ public:
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "__memory_resource_base::deallocate_sync failed", __ptr, __cccl_allocation_stream().get());
+    ::cuda::__driver::__freeFromPoolAsync(reinterpret_cast<::CUdeviceptr>(__ptr), __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
   }
 
@@ -136,15 +129,9 @@ public:
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
-    void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocFromPoolAsync,
-      "__memory_resource_base::allocate failed to allocate with cudaMallocFromPoolAsync",
-      &__ptr,
-      __bytes,
-      __pool_,
-      __stream.get());
-    return __ptr;
+    ::CUdeviceptr __ptr{0};
+    ::cuda::__driver::__mallocFromPoolAsync(&__ptr, __bytes, __pool_, __stream.get());
+    return reinterpret_cast<void*>(__ptr);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -174,7 +161,7 @@ public:
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
   void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t)
   {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __stream.get());
+    ::cuda::__driver::__freeFromPoolAsync(reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied devices
@@ -187,7 +174,7 @@ public:
   void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
-      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
+      __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied device
@@ -198,7 +185,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be enabled
   void enable_access_from(device_ref __device)
   {
-    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
+    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied devices
@@ -211,7 +198,7 @@ public:
   void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
-      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
+      __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied device
@@ -222,7 +209,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be disabled
   void disable_access_from(device_ref __device)
   {
-    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
+    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device

@@ -59,11 +59,11 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   {
     if (__result == ::cudaDriverEntryPointVersionNotSufficent)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API");
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API");
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
     }
   }
   return __fn;
@@ -201,6 +201,77 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
     static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset");
   }
 }
+
+_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
+  return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
+}
+
+_CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAttribute);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
+}
+
+_CCCL_HOST_API inline void __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, __value);
+}
+
+_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolDestroy);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to destroy a memory pool", __pool);
+}
+
+_CCCL_HOST_API inline void
+__mallocFromPoolAsync(::CUdeviceptr* __dptr, ::cuda::std::size_t __bytes, ::CUmemoryPool __pool, ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocFromPoolAsync);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to allocate memory from a memory pool", __dptr, __bytes, __pool, __stream);
+}
+
+_CCCL_HOST_API inline void __mempoolTrimTo(::CUmemoryPool __pool, ::cuda::std::size_t __min_bytes_to_keep)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolTrimTo);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to trim a memory pool", __pool, __min_bytes_to_keep);
+}
+
+_CCCL_HOST_API inline void __freeFromPoolAsync(::CUdeviceptr __dptr, ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFreeAsync);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to free memory from a memory pool", __dptr, __stream);
+}
+
+_CCCL_HOST_API inline void __mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::size_t __count)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAccess);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set access of a memory pool", __pool, __descs, __count);
+}
+
+_CCCL_HOST_API inline ::CUmemAccess_flags __mempoolGetAccess(::CUmemoryPool __pool, ::CUmemLocation* __location)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAccess);
+  ::CUmemAccess_flags __flags;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get access of a memory pool", &__flags, __pool, __location);
+  return __flags;
+}
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_CCCL_HOST_API inline ::CUmemoryPool
+__getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocation_type)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemGetDefaultMemPool, cuMemGetDefaultMemPool, 13, 0);
+  ::CUmemoryPool __result;
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
+  return __result;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // Stream management
 
