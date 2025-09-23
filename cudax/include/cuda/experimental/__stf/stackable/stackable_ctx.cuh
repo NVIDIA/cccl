@@ -33,6 +33,8 @@
 #include "cuda/experimental/__stf/internal/task.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
+#include "cuda/experimental/__stf/stackable/conditional_nodes.cuh"
+#include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
 #include "cuda/experimental/stf.cuh"
 
 //! \brief Stackable Context Design Overview
@@ -62,104 +64,8 @@
 
 namespace cuda::experimental::stf
 {
-
-namespace reserved
-{
-
-#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-// This kernel is used by the update_cond method to update the conditional handle. The device function passed as an
-// argument returns a boolean value which defines the new value of the conditional handle.
-template <typename CondFunc, typename... Args>
-__global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
-{
-  // Direct call to the user's condition function - no lambda nesting
-  bool result = cond_func(args...);
-  cudaGraphSetConditional(conditional_handle, result);
-}
-
-template <bool value>
-__global__ void condition_reset(cudaGraphConditionalHandle conditional_handle)
-{
-  //  printf("RESET CONDITION to %d\n", !!value);
-  cudaGraphSetConditional(conditional_handle, value);
-}
-#endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-
-} // end namespace reserved
-
 template <typename T>
 class stackable_logical_data;
-
-template <typename T, typename reduce_op, bool initialize>
-class stackable_task_dep;
-
-//! \brief Configuration class for push_while operations
-//!
-//! This class encapsulates the parameters needed for conditional graph nodes.
-//! When CUDA 12.4+ is not available or code generation is disabled, it becomes effectively empty.
-struct push_while_config
-{
-#if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-  cudaGraphConditionalHandle* conditional_handle     = nullptr;
-  enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile;
-  unsigned int default_launch_value                  = 1;
-  unsigned int flags                                 = cudaGraphCondAssignDefault;
-
-  push_while_config() = default;
-
-  push_while_config(cudaGraphConditionalHandle* handle,
-                    enum cudaGraphConditionalNodeType type = cudaGraphCondTypeWhile,
-                    unsigned int launch_value              = 1,
-                    unsigned int condition_flags           = cudaGraphCondAssignDefault)
-      : conditional_handle(handle)
-      , conditional_type(type)
-      , default_launch_value(launch_value)
-      , flags(condition_flags)
-  {}
-
-#else
-  // Empty implementation for pre-CUDA 12.4 or when code generation is disabled
-  push_while_config() = default;
-
-  // Constructor that ignores parameters for compatibility
-  template <typename... Args>
-  push_while_config(Args&&...)
-  {}
-#endif
-};
-
-namespace reserved
-{
-
-template <typename T>
-struct is_stackable_task_dep : ::std::false_type
-{};
-
-template <typename T, typename ReduceOp, bool Init>
-struct is_stackable_task_dep<stackable_task_dep<T, ReduceOp, Init>> : ::std::true_type
-{};
-
-template <typename T>
-inline constexpr bool is_stackable_task_dep_v = is_stackable_task_dep<T>::value;
-
-// This helper converts stackable_task_dep to the underlying task_dep. If we
-// have a stackable_logical_data A, A.read() is indeed a stackable_task_dep,
-// which we can pass to stream_ctx/graph_ctx constructs by extracting the
-// underlying task_dep.
-template <typename U>
-decltype(auto) to_task_dep(U&& u)
-{
-  if constexpr (is_stackable_task_dep_v<::std::decay_t<U>>)
-  {
-    return ::std::forward<U>(u).underlying_dep();
-  }
-  else
-  {
-    return ::std::forward<U>(u);
-  }
-}
-
-} // end namespace reserved
 
 //! \brief Base class with a virtual pop method to enable type erasure
 //!
