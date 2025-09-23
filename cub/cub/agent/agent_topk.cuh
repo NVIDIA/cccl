@@ -551,9 +551,7 @@ struct AgentTopK
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
-    {
+    auto body = [&] {
       const int bin_idx  = histo_offset + threadIdx.x;
       const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
       const OffsetT cur  = temp_storage.histogram[bin_idx];
@@ -572,28 +570,17 @@ struct AgentTopK
         const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
+    };
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
+    {
+      body();
     }
     // Finish up with guarded initialization if necessary
     if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
-      const int bin_idx  = histo_offset + threadIdx.x;
-      const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
-      const OffsetT cur  = temp_storage.histogram[bin_idx];
-
-      // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
-      // is written by only one thread
-      if (prev < k && cur >= k)
-      {
-        // The number of items that are yet to be identified
-        counter->k = k - prev;
-
-        // The number of candidates in the next pass
-        counter->len                                   = cur - prev;
-        typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
-        // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
-        counter->kth_key_bits |= bucket << start_bit;
-      }
+      body();
     }
   }
 
