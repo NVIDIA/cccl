@@ -606,8 +606,7 @@ struct AgentTopK
     OutOffsetT* p_out_cnt      = &counter->out_cnt;
     OutOffsetT* p_out_back_cnt = &counter->out_back_cnt;
 
-    auto f = [this, p_out_cnt, counter, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, current_len](
-               key_in_t key, OffsetT i) {
+    auto f = [this, p_out_cnt, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k](key_in_t key, OffsetT i) {
       const candidate_class res = identify_candidates_op(key);
       if (res == candidate_class::selected)
       {
