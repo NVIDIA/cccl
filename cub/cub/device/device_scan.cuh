@@ -195,6 +195,9 @@ struct DeviceScan
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+                  "not_guaranteed determinism is not supported");
+
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
     // Query relevant properties from the environment
@@ -414,7 +417,7 @@ struct DeviceScan
   //!   **[optional]** Execution environment. Default is `_CUDA_STD_EXEC::env{}`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename EnvT = _CUDA_STD_EXEC::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
@@ -706,7 +709,7 @@ struct DeviceScan
             typename InitValueT,
             typename NumItemsT,
             typename EnvT = _CUDA_STD_EXEC::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,

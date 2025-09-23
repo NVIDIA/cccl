@@ -23,11 +23,12 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts determinism requirements", "[sc
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
+  auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-scan-env-determinism
 
+  REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
 
@@ -37,15 +38,17 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream", "[scan][env]")
   auto op     = cuda::std::plus{};
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(4);
-  auto init   = 0.0f;
+  auto init   = 1.0f;
 
   cudaStream_t legacy_stream = 0;
   cuda::stream_ref stream_ref{legacy_stream};
 
-  cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), stream_ref);
+  auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), stream_ref);
 
-  thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
+  thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
   // example-end exclusive-scan-env-stream
+
+  REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
 
@@ -57,11 +60,12 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts determinism requirements", "[sca
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), env);
+  auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), env);
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-sum-env-determinism
 
+  REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
 
@@ -74,10 +78,11 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream", "[scan][env]")
   cudaStream_t legacy_stream = 0;
   cuda::stream_ref stream_ref{legacy_stream};
 
-  cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), stream_ref);
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-sum-env-stream
 
+  REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
