@@ -688,7 +688,7 @@ struct AgentTopK
     // so have to make sure to load input directly from the original input.
     // Also, unless we've had the chance to do at least one filtering pass, our input is definitely the original input
     // (this is to guard against edge cases, e.g., buffer_length=num_items=1).
-    bool load_from_original_input = (pass <= 1) || previous_len > buffer_length;
+    const bool load_from_original_input = (pass <= 1) || previous_len > buffer_length;
 
     if (load_from_original_input)
     {
