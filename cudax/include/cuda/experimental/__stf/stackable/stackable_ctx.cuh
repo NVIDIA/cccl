@@ -918,13 +918,6 @@ public:
     return get_ld().shape();
   }
 
-  // Override set_symbol to return proper derived type
-  stackable_logical_data<T>& set_symbol(::std::string symbol)
-  {
-    stackable_logical_data_untyped::set_symbol(mv(symbol));
-    return *this;
-  }
-
   // Type-safe get_ld() method that returns logical_data<T>& directly
   logical_data<T>& get_ld(int offset)
   {
