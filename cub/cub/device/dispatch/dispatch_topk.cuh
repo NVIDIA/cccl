@@ -439,8 +439,8 @@ struct DispatchTopK
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int calculate_blocks_per_sm(TopKKernelPtrT topk_kernel, int block_threads)
   {
     int topk_blocks_per_sm;
-    cudaError error;
-    error = CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&topk_blocks_per_sm, topk_kernel, block_threads, 0));
+    const auto error =
+      CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&topk_blocks_per_sm, topk_kernel, block_threads, 0));
     if (cudaSuccess != error)
     {
       return error;
