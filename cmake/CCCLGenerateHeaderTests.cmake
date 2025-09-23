@@ -6,6 +6,7 @@
 #                            [GLOBS <glob1> [glob2 ...]]
 #                            [EXCLUDES <glob1> [glob2 ...]]
 #                            [HEADERS <header1> [header2 ...]]
+#                            [LINK_LIBRARIES <lib1> [lib2 ...]]
 # )
 #
 # Options:
@@ -17,6 +18,7 @@
 # GLOBS: All files that match these globbing patterns will be included in the header tests, unless they also match EXCLUDES.
 # EXCLUDES: Files that match these globbing patterns will be excluded from the header tests.
 # HEADERS: An explicit list of headers to include in the header tests.
+# LINK_LIBRARIES: Extra libraries to link against while building the `link_check` tests.
 #
 # Notes:
 # - The header globs are applied relative to <project_include_path>.
@@ -26,7 +28,7 @@
 function(cccl_generate_header_tests target_name project_include_path)
   set(options)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
-  set(multiValueArgs GLOBS EXCLUDES HEADERS)
+  set(multiValueArgs GLOBS EXCLUDES HEADERS LINK_LIBRARIES)
   cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (CGHT_UNPARSED_ARGUMENTS)
@@ -124,7 +126,7 @@ function(cccl_generate_header_tests target_name project_include_path)
   target_link_libraries(${link_target} PRIVATE
     ${target_name}
     $<TARGET_OBJECTS:${target_name}>
-    cuda
+    ${CGHT_LINK_LIBRARIES}
   )
 
 endfunction()

@@ -7,6 +7,8 @@
 # Meta target for all configs' header builds:
 add_custom_target(cudax.all.headers)
 
+find_package(CUDAToolkit REQUIRED)
+
 function(cudax_add_header_test label definitions)
   foreach(cn_target IN LISTS cudax_TARGETS)
     cudax_get_target_property(config_dialect ${cn_target} DIALECT)
@@ -53,6 +55,7 @@ function(cudax_add_header_test label definitions)
         # These should be renamed to avoid conflicts with windows system headers, and
         # the following line removed:
         HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+        LINK_LIBRARIES CUDA::cuda_driver
       )
       target_link_libraries(${headertest_target} PUBLIC ${cn_target})
       target_compile_options(${headertest_target} PRIVATE
