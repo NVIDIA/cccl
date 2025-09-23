@@ -49,7 +49,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 {
   void* __fn;
   ::cudaDriverEntryPointQueryResult __result;
-#  if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
 #  else
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
@@ -238,8 +238,16 @@ struct __ctx_from_stream
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
-  ::CUcontext __ctx       = nullptr;
-  ::CUgreenCtx __gctx     = nullptr;
+#    if _CCCL_CTK_BELOW(13, 0)
+  // We can't use the by-version in 12.X releases, so we need to check the version manually
+  if (::cuda::__driver::__getVersion() < 12050)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "StreamGetCtx_v2 is not supported on this driver version");
+  }
+#    endif // _CCCL_CTK_BELOW(13, 0)
+
+  ::CUcontext __ctx   = nullptr;
+  ::CUgreenCtx __gctx = nullptr;
   __ctx_from_stream __result;
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
   if (__gctx)
