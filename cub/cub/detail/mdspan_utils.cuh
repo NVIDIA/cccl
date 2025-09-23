@@ -51,24 +51,16 @@ namespace detail
 {
 
 // Compute the submdspan size of a given rank
-template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
+template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
+sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, int end)
 {
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
-  for (IndexType i = Rank; i < IndexType{1 + sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
+  for (auto i = start; i < end; i++)
   {
     s *= ext.extent(i);
   }
   return s;
-}
-
-// avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <size_t Rank, typename IndexType>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType>&)
-{
-  return ::cuda::std::make_unsigned_t<IndexType>{1};
 }
 
 // TODO: move to cuda::std
@@ -76,7 +68,7 @@ template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
 size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
-  return cub::detail::sub_size<0>(ext);
+  return cub::detail::sub_size(ext, 0, ext.rank());
 }
 
 // precompute modulo/division for each submdspan size (by rank)
@@ -84,9 +76,8 @@ template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_API auto
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  // deduction guides don't work with nvcc 11.x
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
+  return ::cuda::std::array{fast_mod_div_t(sub_size(ext, Ranks + 1, ext.rank()))...};
 }
 
 // precompute modulo/division for each mdspan extent
@@ -95,15 +86,14 @@ template <typename IndexType, size_t... E, size_t... Ranks>
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
+  return ::cuda::std::array{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
-template <int Rank, typename Extents>
-[[nodiscard]] _CCCL_API constexpr bool is_sub_size_static()
+template <typename Extents>
+[[nodiscard]] _CCCL_API constexpr bool is_extents_in_range_static(int start, int end)
 {
-  using index_type = typename Extents::index_type;
-  for (index_type i = Rank; i < Extents::rank(); i++)
+  for (auto i = start; i < end; i++)
   {
     if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
     {
@@ -111,41 +101,6 @@ template <int Rank, typename Extents>
     }
   }
   return true;
-}
-
-// GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
-template <int Start, int End, typename Extents>
-[[nodiscard]] _CCCL_API constexpr bool is_extents_in_range_static()
-{
-  for (size_t i = Start; i < End; i++)
-  {
-    if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <typename IndexType, size_t... E, size_t... Ranks>
-[[nodiscard]] _CCCL_API constexpr auto
-reverse(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
-{
-  if constexpr (sizeof...(E) <= 1)
-  {
-    return ext;
-  }
-  else if constexpr (sizeof...(Ranks) == 0)
-  {
-    return cub::detail::reverse(ext, ::cuda::std::make_index_sequence<sizeof...(E)>{});
-  }
-  else
-  {
-    static_assert(sizeof...(Ranks) == sizeof...(E), "Ranks and E must have the same number of elements");
-    using Ext = decltype(ext);
-    return ::cuda::std::extents<IndexType, Ext::static_extent(Ext::rank() - 1 - Ranks)...>(
-      ext.extent(Ext::rank() - 1 - Ranks)...);
-  }
 }
 
 } // namespace detail

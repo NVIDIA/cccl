@@ -88,17 +88,17 @@ using can_regain_copy_freedom =
 // clang-format on
 
 // This kernel is used when the block size is not known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
+template <class ChainedPolicyT, class IndexType, class OpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(IndexType num_items, OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  using agent_t         = agent_block_striped_t<active_policy_t, IndexType, OpT>;
 
-  const auto block_threads  = static_cast<OffsetT>(blockDim.x);
+  const auto block_threads  = static_cast<IndexType>(blockDim.x);
   const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
-  const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
+  const auto tile_base      = static_cast<IndexType>(blockIdx.x) * items_per_tile;
   const auto num_remaining  = num_items - tile_base;
-  const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+  const auto items_in_tile  = static_cast<IndexType>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
@@ -111,20 +111,20 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
 }
 
 // This kernel is used when the block size is known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
+template <class ChainedPolicyT, class IndexType, class OpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES //
 __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
-  void static_kernel(OffsetT num_items, OpT op)
+  void static_kernel(IndexType num_items, OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  using agent_t         = agent_block_striped_t<active_policy_t, IndexType, OpT>;
 
   constexpr auto block_threads  = active_policy_t::block_threads;
   constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
 
-  const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
+  const auto tile_base     = static_cast<IndexType>(blockIdx.x) * items_per_tile;
   const auto num_remaining = num_items - tile_base;
-  const auto items_in_tile = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+  const auto items_in_tile = static_cast<IndexType>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
@@ -140,16 +140,21 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
  * ForEachInExtents
  **********************************************************************************************************************/
 
-// Returns the extent at the given rank. If the extents is static, returns it, otherwise returns the precomputed value
-template <int Rank, typename ExtentType, typename FastDivModType>
+// Retrieves the extent (dimension size) at a specific position in a multi-dimensional array
+//
+// This function efficiently returns the extent at the given position, optimizing for static extents by returning
+// compile-time constants when possible. For dynamic extents, it returns the precomputed value to avoid runtime
+// computation overhead.
+template <int Position, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType dynamic_extent)
 {
-  if constexpr (ExtentType::static_extent(Rank) != ::cuda::std::dynamic_extent)
+  if constexpr (ExtentType::static_extent(Position) != ::cuda::std::dynamic_extent)
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    return static_cast<unsigned_index_type>(extents.static_extent(Rank));
+    constexpr auto extent     = extents.static_extent(Position);
+    return static_cast<unsigned_index_type>(extent);
   }
   else
   {
@@ -157,17 +162,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType
   }
 }
 
-// Returns the product of all extents from position Rank. If the result is static, returns it, otherwise returns the
-// precomputed value
-template <int Rank, typename ExtentType, typename FastDivModType>
+// Computes the product of extents in a specified range for multi-dimensional indexing.
+// This function calculates the product of all extent dimensions from Start (inclusive) to End (exclusive).
+//
+// Performance characteristics:
+//  - Static extents in range: Product computed at compile-time, zero runtime cost
+//  - Dynamic extents present: Returns precomputed value, avoiding runtime multiplication
+template <int Start, int End, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
 {
-  if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtentType>())
+  if constexpr (cub::detail::is_extents_in_range_static<ExtentType>(Start, End))
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    return static_cast<unsigned_index_type>(cub::detail::sub_size<Rank + 1>(extents));
+    constexpr auto sub_size   = cub::detail::sub_size(extents, Start, End);
+    return static_cast<unsigned_index_type>(sub_size);
   }
   else
   {
@@ -175,57 +185,76 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, Fas
   }
 }
 
-// mathematically:
-// index_i = index / product(extent[j] for j in [i+1, rank-1]) % extent[i]
-template <int Rank, typename IndexType, typename ExtentType, typename FastDivModType>
+// Converts a linear index to a multi-dimensional coordinate at a specific position.
+//
+// This function performs the mathematical conversion from a linear (flat) index to the coordinate value at a specific
+// position in a multi-dimensional array. It supports both row-major (layout_right) and column-major (layout_left)
+// memory layouts, which affects the indexing calculation order.
+//
+// The mathematical formulation depends on the layout:
+// - Right layout (row-major):   index_i = (index / product(extent[j] for j in [i+1, rank-1])) % extent[i]
+// - Left layout (column-major): index_i = (index / product(extent[j] for j in [0, i])) % extent[i]
+//
+// This function leverages precomputed fast division and modulo operations to minimize runtime arithmetic overhead.
+template <bool IsLayoutRight, int Position, typename IndexType, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
 coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_size, FastDivModType dynamic_extent)
 {
   using cub::detail::for_each::extent_at;
   using cub::detail::for_each::get_extents_sub_size;
   using extent_index_type = typename ExtentType::index_type;
-  return static_cast<extent_index_type>(
-    (index / get_extents_sub_size<Rank>(extents, extent_sub_size)) % extent_at<Rank>(extents, dynamic_extent));
+  constexpr auto start    = IsLayoutRight ? Position : 0;
+  constexpr auto end      = IsLayoutRight ? ExtentType::rank() : Position;
+  return static_cast<extent_index_type>((index / get_extents_sub_size<start, end>(extents, extent_sub_size))
+                                        % extent_at<Position>(extents, dynamic_extent));
 }
 
-// mathematically:
-// index_i = index / product(extent[j] for j in [0, i]) % extent[i]
-
-
-
-
-template <typename OpT, typename ExtentsT, typename FastDivModArrayT>
+// Function object wrapper for applying operations with multi-dimensional coordinate conversion.
+//
+// The wrapped operation will be called with signature: `op(linear_index, coord_0, coord_1, ..., coord_n)`
+// where the number of coordinate parameters matches the rank of the extents object.
+//
+// This wrapper is used internally by DeviceFor::ForEachInLayout/ForEachInExtents
+template <typename OpT, typename ExtentsType, bool IsLayoutRight, typename FastDivModArrayT>
 struct op_wrapper_extents_t
 {
-  OpT op;
-  ExtentsT extents;
-  FastDivModArrayT sub_sizes_div_array;
-  FastDivModArrayT extents_mod_array;
+  OpT op; ///< The user-provided operation to be called with coordinates
+  ExtentsType extents; ///< The multi-dimensional extents defining array dimensions
+  FastDivModArrayT sub_sizes_div_array; ///< Precomputed fast division values for extent sub-products
+  FastDivModArrayT extents_mod_array; ///< Precomputed fast modulo values for individual extents
 
-  template <typename OffsetT, size_t... Ranks>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>)
+  // Internal implementation that converts linear index to coordinates and calls the user operation
+  template <typename IndexType, size_t... Positions>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(IndexType i, ::cuda::std::index_sequence<Positions...>)
   {
     using cub::detail::for_each::coordinate_at;
-    op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+    op(i,
+       coordinate_at<IsLayoutRight, Positions>(
+         i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 
-  template <typename OffsetT, size_t... Ranks>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>) const
+  // Internal implementation that converts linear index to coordinates and calls the user operation
+  template <typename IndexType, size_t... Positions>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(IndexType i, ::cuda::std::index_sequence<Positions...>) const
   {
     using cub::detail::for_each::coordinate_at;
-    op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+    op(i,
+       coordinate_at<IsLayoutRight, Positions>(
+         i, extents, sub_sizes_div_array[Positions], extents_mod_array[Positions])...);
   }
 
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+  // Function call operator that processes a linear index by converting it to multi-dimensional coordinates
+  template <typename IndexType>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexType i)
   {
-    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
+    impl(i, ::cuda::std::make_index_sequence<ExtentsType::rank()>{});
   }
 
-  template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i) const
+  // Function call operator that processes a linear index by converting it to multi-dimensional coordinates
+  template <typename IndexType>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexType i) const
   {
-    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
+    impl(i, ::cuda::std::make_index_sequence<ExtentsType::rank()>{});
   }
 };
 

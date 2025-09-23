@@ -51,7 +51,7 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__utility/index_sequence.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
@@ -974,17 +974,19 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    using namespace cub::detail;
-    using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
-    using extent_index_type = typename extents_type::index_type;
-    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
-    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
-    for_each::op_wrapper_extents_t<OpType, extents_type, fast_mod_array_t> op_wrapper{
-      op, extents, sub_sizes_div_array, extents_div_array};
-    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+    // using namespace cub::detail;
+    // using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
+    // using extent_index_type = typename extents_type::index_type;
+    // using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    //_CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    // static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
+    // fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
+    // fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    // constexpr bool is_layout_right       = ::cuda::std::__is_any_mdspan_layout_right_v<Layout>;
+    // for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
+    //   op, extents, sub_sizes_div_array, extents_div_array};
+    // return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right{}, extents, op, stream);
   }
 
   /*********************************************************************************************************************
@@ -1069,14 +1071,18 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
     const Layout&, const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    if constexpr (::cuda::std::__is_any_mdspan_layout_right_v<Layout>)
-    {
-      return ForEachInExtents(extents, op, stream);
-    }
-    else
-    {
-      return ForEachInExtents(cub::detail::reverse(extents), op, stream);
-    }
+    using namespace cub::detail;
+    using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
+    using extent_index_type = typename extents_type::index_type;
+    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(extents, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    constexpr bool is_layout_right       = !::cuda::std::__is_any_mdspan_layout_left_v<Layout>; // favor right layout
+    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
+      op, extents, sub_sizes_div_array, extents_div_array};
+    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
   }
 };
 
