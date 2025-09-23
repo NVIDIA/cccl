@@ -553,10 +553,6 @@
 #  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_rvalue_reference)
 
-#if _CCCL_CHECK_BUILTIN(is_same) && !_CCCL_CUDA_COMPILER(NVCC)
-#  define _CCCL_BUILTIN_IS_SAME(...) __is_same(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_same)
-
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_scalar)
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
