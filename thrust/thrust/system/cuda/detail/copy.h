@@ -58,7 +58,7 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
 
 // Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
-OutputIt THRUST_FUNCTION
+OutputIt _CCCL_API _CCCL_FORCEINLINE
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
 
 namespace __copy
@@ -192,7 +192,8 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
   }
   else
   {
-    return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
+    return cuda_cub::transform(
+      policy, first, last, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
 }
 #endif // _CCCL_HAS_CUDA_COMPILER()

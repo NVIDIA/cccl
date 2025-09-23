@@ -10,7 +10,7 @@
 template <typename T>
 struct generator
 {
-  THRUST_DEVICE_FUNCTION auto operator()() const -> T
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE auto operator()() const -> T
   {
     return 42;
   }
