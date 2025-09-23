@@ -385,7 +385,7 @@ template <typename KeyInputIteratorT,
           typename OutOffsetT,
           select SelectDirection,
           typename SelectedPolicy = policy_hub<it_value_t<KeyInputIteratorT>, OffsetT>>
-struct DispatchTopK : SelectedPolicy
+struct DispatchTopK
 {
   // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
   static_assert(::cuda::std::is_same_v<OffsetT, ::cuda::std::uint32_t>
