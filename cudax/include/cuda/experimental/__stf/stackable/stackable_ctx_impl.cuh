@@ -1851,4 +1851,3 @@ public:
 };
 
 } // end namespace cuda::experimental::stf
-
