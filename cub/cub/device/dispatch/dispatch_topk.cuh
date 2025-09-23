@@ -478,11 +478,11 @@ struct DispatchTopK
       ::cuda::std::clamp(static_cast<common_offset_t>(k), common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
-    size_t size_histogram           = num_buckets * sizeof(OffsetT);
-    OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
+    const size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
+    const size_t size_histogram           = num_buckets * sizeof(OffsetT);
+    const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-    size_t allocation_sizes[6] = {
+    const size_t allocation_sizes[6] = {
       size_counter,
       size_histogram,
       candidate_buffer_length * sizeof(key_in_t),
