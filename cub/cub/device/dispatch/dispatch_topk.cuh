@@ -224,7 +224,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
               OffsetT,
               OutOffsetT>;
 
-  // Shared memory storage
   __shared__ typename agent_topk_t::TempStorage temp_storage;
   agent_topk_t(
     temp_storage,
@@ -343,7 +342,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
               OffsetT,
               OutOffsetT>;
 
-  // Shared memory storage
   __shared__ typename agent_topk_t::TempStorage temp_storage;
   agent_topk_t(
     temp_storage,
