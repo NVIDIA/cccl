@@ -52,8 +52,8 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   static auto __get_driver_entry_point_fn = reinterpret_cast<decltype(cuGetProcAddress)*>([]() {
     void* __fn;
     ::cudaDriverEntryPointQueryResult __result;
-    ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
-    if (__result != ::cudaDriverEntryPointSuccess)
+    ::cudaError_t __status = ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
+    if (__status != ::cudaSuccess || __result != ::cudaDriverEntryPointSuccess)
     {
       ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
     }
@@ -62,16 +62,21 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
-  if (__result != ::CU_GET_PROC_ADDRESS_SUCCESS)
+  ::CUresult __status =
+    __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
+  if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
+    if (__status == ::CUDA_ERROR_INVALID_VALUE)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
+    }
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API");
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API");
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
     }
   }
   return __fn;
