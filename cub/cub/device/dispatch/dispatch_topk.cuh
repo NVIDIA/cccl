@@ -631,7 +631,7 @@ struct DispatchTopK
 
     identify_candidates_op_t identify_candidates_op(&counter->kth_key_bits, pass);
     int last_filter_kernel_blocks_per_sm = 0;
-    error                                = MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_kernel, block_threads);
+    error = MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, block_threads);
     if (cudaSuccess != error)
     {
       return error;
