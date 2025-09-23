@@ -50,7 +50,7 @@ void Initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
   std::partial_sort_copy(h_keys, h_keys + num_items, h_reference_keys, h_reference_keys + k);
 }
 
-//  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
+//  In some case the results of topK is unordered. Sort the results to compare with ground truth.
 void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int k)
 {
   CubDebugExit(cudaMemcpy(h_res_keys, d_keys_out, sizeof(float) * k, cudaMemcpyDeviceToHost));
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
     DisplayResults(h_res_keys, k);
     printf("\n\n");
   }
-  int compare = CompareResults(h_reference_keys, h_res_keys, k, g_verbose);
+  const int compare = CompareResults(h_reference_keys, h_res_keys, k, g_verbose);
   AssertEquals(0, compare);
 
   // Cleanup

@@ -87,7 +87,7 @@ void Initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
   delete[] h_reference_pairs;
 }
 
-//  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
+//  In some case the results of topK is unordered. Sort the results to compare with ground truth.
 void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int* h_res_values, int* d_values_out, int k)
 {
   CubDebugExit(cudaMemcpy(h_res_keys, d_keys_out, sizeof(float) * k, cudaMemcpyDeviceToHost));
