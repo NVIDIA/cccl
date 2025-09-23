@@ -203,7 +203,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     OffsetT* in_idx_buf,
     KeyInT* out_buf,
     OffsetT* out_idx_buf,
-    Counter<detail::it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
@@ -321,7 +321,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     ValueOutputIteratorT d_values_out,
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
-    Counter<detail::it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
@@ -431,7 +431,7 @@ struct DispatchTopK : SelectedPolicy
 
   int ptx_version;
 
-  using key_in_t                  = detail::it_value_t<KeyInputIteratorT>;
+  using key_in_t                  = it_value_t<KeyInputIteratorT>;
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
 
   //! @param[in] d_temp_storage
