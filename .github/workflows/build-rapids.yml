@@ -105,19 +105,11 @@ jobs:
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.46"}'
         run: |
-          cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
-          #! /usr/bin/env bash
-          # Start the ssh-agent and add the repo deploy keys
-          if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
-          exec "$@"
-          EOF
-
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
 
           declare -a failures
-          declare -A failures_map
 
           _print_err_exit_msg() {
             local code=$?
@@ -132,7 +124,7 @@ jobs:
               cat <<____EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
                .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
-               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j0 -v || exec /bin/bash -li'
           ____EOF
               echo ""
               echo "For additional information, see:"
@@ -152,50 +144,43 @@ jobs:
             _apply_manifest_modifications;
             for lib in ${RAPIDS_LIBS}; do
               sccache -z
-              if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
-                if ! test -v failures_map["${lib}"]; then
-                  failures+=("${lib}")
-                  failures_map["${lib}"]=1
-                fi
+              if ! configure-${lib}-cpp || ! build-${lib}-cpp -j0; then
+                failures+=("${lib}")
+                # Exit with error if any failures occurred
+                exit 1
               fi
               sccache --show-adv-stats
             done
           done
 
-          # Exit with error if any failures occurred
-          if test ${#failures[@]} -ne 0; then
-            exit 1
-          fi
-
           EOF
 
-          chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
+          chmod +x "$RUNNER_TEMP"/ci.sh
 
-           # TODO: Figure out why
-           #--env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:false}" \
-           # doesn't work
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
-            --env "CI=$CI" \
-            --env "CCCL_TAG=${CCCL_TAG}" \
-            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=${AWS_REGION:-}" \
-            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
-            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
-            --env "SCCACHE_S3_NO_CREDENTIALS=true" \
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
+            --env "CONDA_ENV_CREATE_QUIET=true" \
+            --env "CCCL_TAG=${CCCL_TAG}" \
+            --env "CCCL_VERSION=${CCCL_VERSION}" \
+            --env "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST=true" \
+            --env "INFER_NUM_DEVICE_ARCHITECTURES=true" \
+            --env "MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=100" \
+            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
+            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
-            -- /ci-entrypoint.sh ./ci/rapids/rapids-entrypoint.sh /ci.sh
+            -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
   notify-failure:
     name: Notify Slack of RAPIDS failure
