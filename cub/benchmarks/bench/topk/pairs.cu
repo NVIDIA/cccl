@@ -24,17 +24,17 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
+    static constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
 
-    static constexpr int ITEMS_PER_THREAD = cuda::std::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(KeyInT)));
+    static constexpr int items_per_thread = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
 
-    static constexpr int BITS_PER_PASS          = cub::detail::topk::calc_bits_per_pass<KeyInT>();
-    static constexpr int COEFFICIENT_FOR_BUFFER = 128;
+    static constexpr int bits_per_pass          = cub::detail::topk::calc_bits_per_pass<KeyInT>();
+    static constexpr int coefficient_for_buffer = 128;
     using TopKPolicyT                           = cub::detail::topk::AgentTopKPolicy<
                                 TUNE_THREADS_PER_BLOCK,
-                                ITEMS_PER_THREAD,
-                                BITS_PER_PASS,
-                                COEFFICIENT_FOR_BUFFER,
+                                items_per_thread,
+                                bits_per_pass,
+                                coefficient_for_buffer,
                                 cub::BLOCK_LOAD_VECTORIZE,
                                 cub::BLOCK_SCAN_WARP_SCANS>;
   };
