@@ -53,9 +53,9 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/cstdint>
@@ -236,7 +236,7 @@ struct ReduceAgent
     // Constructor
     //---------------------------------------------------------------------
 
-    THRUST_DEVICE_FUNCTION impl(TempStorage& storage_, InputIt input_it_, ReductionOp reduction_op_)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE impl(TempStorage& storage_, InputIt input_it_, ReductionOp reduction_op_)
         : storage(storage_)
         , input_it(input_it_)
         , load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(input_it))
@@ -251,7 +251,8 @@ struct ReduceAgent
     // (specialized for types we can vectorize)
     //
     template <class Iterator>
-    static THRUST_DEVICE_FUNCTION bool is_aligned(Iterator d_in, thrust::detail::true_type /* can_vectorize */)
+    static _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+    is_aligned(Iterator d_in, thrust::detail::true_type /* can_vectorize */)
     {
       return ::cuda::std::is_sufficiently_aligned<alignof(Vector)>(d_in);
     }
@@ -260,7 +261,7 @@ struct ReduceAgent
     // (specialized for types we cannot vectorize)
     //
     template <class Iterator>
-    static THRUST_DEVICE_FUNCTION bool is_aligned(Iterator, thrust::detail::false_type /* can_vectorize */)
+    static _CCCL_DEVICE_API _CCCL_FORCEINLINE bool is_aligned(Iterator, thrust::detail::false_type /* can_vectorize */)
     {
       return false;
     }
@@ -272,7 +273,7 @@ struct ReduceAgent
     // Consume a full tile of input (non-vectorized)
     //
     template <int IS_FIRST_TILE>
-    THRUST_DEVICE_FUNCTION void consume_tile(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(
       T& thread_aggregate,
       Size block_offset,
       int /*valid_items*/,
@@ -292,7 +293,7 @@ struct ReduceAgent
     // Consume a full tile of input (vectorized)
     //
     template <int IS_FIRST_TILE>
-    THRUST_DEVICE_FUNCTION void consume_tile(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(
       T& thread_aggregate,
       Size block_offset,
       int /*valid_items*/,
@@ -327,7 +328,7 @@ struct ReduceAgent
     // Consume a partial tile of input
     //
     template <int IS_FIRST_TILE, class CAN_VECTORIZE>
-    THRUST_DEVICE_FUNCTION void consume_tile(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(
       T& thread_aggregate,
       Size block_offset,
       int valid_items,
@@ -360,7 +361,8 @@ struct ReduceAgent
     // Reduce a contiguous segment of input tiles
     //
     template <class CAN_VECTORIZE>
-    THRUST_DEVICE_FUNCTION T consume_range_impl(Size block_offset, Size block_end, CAN_VECTORIZE can_vectorize)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE T
+    consume_range_impl(Size block_offset, Size block_end, CAN_VECTORIZE can_vectorize)
     {
       T thread_aggregate;
 
@@ -396,7 +398,7 @@ struct ReduceAgent
 
     // Reduce a contiguous segment of input tiles
     //
-    THRUST_DEVICE_FUNCTION T consume_range(Size block_offset, Size block_end)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE T consume_range(Size block_offset, Size block_end)
     {
       using attempt_vec = is_true<ATTEMPT_VECTORIZATION>;
       using path_a      = is_true<true && ATTEMPT_VECTORIZATION>;
@@ -409,7 +411,7 @@ struct ReduceAgent
 
     // Reduce a contiguous segment of input tiles
     //
-    THRUST_DEVICE_FUNCTION T consume_tiles(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE T consume_tiles(
       Size /*num_items*/,
       cub::GridEvenShare<Size>& even_share,
       cub::GridQueue<UnsignedSize>& /*queue*/,
@@ -434,7 +436,7 @@ struct ReduceAgent
     // Dequeue and reduce tiles of items as part of a inter-block reduction
     //
     template <class CAN_VECTORIZE>
-    THRUST_DEVICE_FUNCTION T
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE T
     consume_tiles_impl(Size num_items, cub::GridQueue<UnsignedSize> queue, CAN_VECTORIZE can_vectorize)
     {
       // We give each thread block at least one tile of input.
@@ -500,7 +502,7 @@ struct ReduceAgent
 
     // Dequeue and reduce tiles of items as part of a inter-block reduction
     //
-    THRUST_DEVICE_FUNCTION T consume_tiles(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE T consume_tiles(
       Size num_items,
       cub::GridEvenShare<Size>& /*even_share*/,
       cub::GridQueue<UnsignedSize>& queue,

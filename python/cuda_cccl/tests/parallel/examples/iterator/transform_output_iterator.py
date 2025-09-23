@@ -17,8 +17,8 @@ d_output = cp.empty(shape=1, dtype=np.float32)
 
 
 # Define the transform operation to be applied
-# to the result of the sum reduction
-def sqrt(x):
+# to the result of the sum reduction.
+def sqrt(x: np.float32) -> np.float32:
     return x**0.5
 
 
