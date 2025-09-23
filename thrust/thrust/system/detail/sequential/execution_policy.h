@@ -56,7 +56,12 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
 // tag's definition comes before the generic definition of execution_policy
 struct tag : execution_policy<tag>
 {
-  _CCCL_HOST_DEVICE constexpr tag() {}
+  constexpr tag() = default;
+
+  // allow any execution_policy to convert to the sequential tag. required for minimum_system to pick the sequential one
+  template <typename DerivedPolicy>
+  _CCCL_HOST_DEVICE tag(const thrust::execution_policy<DerivedPolicy>&)
+  {}
 };
 
 // allow conversion to tag when it is not a successor
