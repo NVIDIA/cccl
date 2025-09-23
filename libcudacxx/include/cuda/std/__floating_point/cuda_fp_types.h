@@ -58,7 +58,7 @@ _CCCL_DIAG_POP
 // crt/device_fp128_functions.h is available in CUDA 12.8+.
 // _CCCL_HAS_FLOAT128() checks the *compiler* compatibility with __float128.
 // We also need to check the toolkit version to ensure the compatibility with nvc++.
-#if _CCCL_HAS_FLOAT128() && _CCCL_CTK_AT_LEAST(12, 8)
+#if _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
 #  if !_CCCL_COMPILER(NVRTC)
 _CCCL_DIAG_PUSH
 #    include <crt/device_fp128_functions.h>
@@ -111,6 +111,6 @@ __device__ __cudart_builtin__ __float128 __nv_fp128_div(__float128, __float128);
 __device__ __cudart_builtin__ int __nv_fp128_isnan(__float128);
 __device__ __cudart_builtin__ int __nv_fp128_isunordered(__float128, __float128);
 #  endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
-#endif // _CCCL_HAS_FLOAT128() && _CCCL_CTK_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
 
 #endif // _CUDA_STD___FLOATING_POINT_NVFP_TYPES_H
