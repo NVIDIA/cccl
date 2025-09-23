@@ -73,13 +73,11 @@ struct identify_candidates_op_t
 {
   using unsigned_bits_t = typename Traits<T>::UnsignedBits;
   unsigned_bits_t* kth_key_bits;
-  int pass;
   int start_bit;
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE identify_candidates_op_t(unsigned_bits_t* kth_key_bits, int pass)
       : kth_key_bits(kth_key_bits)
-      , pass(pass - 1)
   {
-    start_bit = calc_start_bit<T, BitsPerPass>(this->pass);
+    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
