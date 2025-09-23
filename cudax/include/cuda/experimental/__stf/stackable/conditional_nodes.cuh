@@ -87,6 +87,4 @@ struct push_while_config
 #endif
 };
 
-
-
 } // end namespace cuda::experimental::stf
