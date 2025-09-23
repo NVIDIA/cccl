@@ -554,9 +554,9 @@ struct AgentTopK
     _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
     {
-      const int bin_idx = histo_offset + threadIdx.x;
-      OffsetT prev      = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
-      OffsetT cur       = temp_storage.histogram[bin_idx];
+      const int bin_idx  = histo_offset + threadIdx.x;
+      const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
+      const OffsetT cur  = temp_storage.histogram[bin_idx];
 
       // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
       // is written by only one thread
@@ -576,9 +576,9 @@ struct AgentTopK
     // Finish up with guarded initialization if necessary
     if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
     {
-      const int bin_idx = histo_offset + threadIdx.x;
-      OffsetT prev      = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
-      OffsetT cur       = temp_storage.histogram[bin_idx];
+      const int bin_idx  = histo_offset + threadIdx.x;
+      const OffsetT prev = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
+      const OffsetT cur  = temp_storage.histogram[bin_idx];
 
       // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
       // is written by only one thread
