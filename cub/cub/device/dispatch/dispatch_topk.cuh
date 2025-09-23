@@ -320,16 +320,20 @@ struct DispatchTopK
     const size_t size_histogram           = num_buckets * sizeof(OffsetT);
     const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-    const size_t allocation_sizes[6] = {
+    constexpr int allocations_array_size                  = keys_only ? 4 : 6;
+    size_t allocation_sizes[allocations_array_size] = {
       size_counter,
       size_histogram,
       candidate_buffer_length * sizeof(key_in_t),
-      candidate_buffer_length * sizeof(key_in_t),
-      keys_only ? 0 : candidate_buffer_length * sizeof(OffsetT),
-      keys_only ? 0 : candidate_buffer_length * sizeof(OffsetT)};
+      candidate_buffer_length * sizeof(key_in_t)};
+    if constexpr (!keys_only)
+    {
+      allocation_sizes[4] = candidate_buffer_length * sizeof(OffsetT);
+      allocation_sizes[5] = candidate_buffer_length * sizeof(OffsetT);
+    }
 
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-    void* allocations[6] = {};
+    void* allocations[allocations_array_size] = {};
 
     error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (cudaSuccess != error)
@@ -415,7 +419,7 @@ struct DispatchTopK
       // Initialize address variables
       in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
       out_buf = pass == 0 ? nullptr : static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
-      if (!keys_only)
+      if constexpr (!keys_only)
       {
         in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
         out_idx_buf = pass == 0 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
