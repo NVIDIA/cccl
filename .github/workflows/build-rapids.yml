@@ -85,7 +85,9 @@ jobs:
           role-duration-seconds: 43200 # 12h
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
-          CCCL_TAG: ${{ inputs.override_cccl_tag }}
+          # TODO: Temporarily hardcoding the override while RAPIDS gets updated
+          # for the various breaking changes in cudax between 3.0/3.1/3.2
+          CCCL_TAG: branch/3.1.x
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
@@ -107,7 +109,6 @@ jobs:
           #! /usr/bin/env bash
           # Start the ssh-agent and add the repo deploy keys
           if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
-          devcontainer-utils-init-ssh-deploy-keys || true
           exec "$@"
           EOF
 
@@ -170,6 +171,9 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
+           # TODO: Figure out why
+           #--env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:false}" \
+           # doesn't work
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
@@ -181,7 +185,7 @@ jobs:
             --env "AWS_REGION=${AWS_REGION:-}" \
             --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
             --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
-            --env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:-}" \
+            --env "SCCACHE_S3_NO_CREDENTIALS=true" \
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
