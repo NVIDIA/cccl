@@ -76,7 +76,7 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
 template <typename Extents>
-[[nodiscard]] _CCCL_API constexpr bool is_extents_in_range_static(int start, int end)
+[[nodiscard]] _CCCL_API constexpr bool are_extents_in_range_static(int start, int end)
 {
   for (auto i = start; i < end; i++)
   {

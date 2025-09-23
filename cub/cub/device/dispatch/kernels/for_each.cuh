@@ -88,17 +88,17 @@ using can_regain_copy_freedom =
 // clang-format on
 
 // This kernel is used when the block size is not known at compile time
-template <class ChainedPolicyT, class IndexType, class OpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(IndexType num_items, OpT op)
+template <class ChainedPolicyT, class OffsetT, class OpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, IndexType, OpT>;
+  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
 
-  const auto block_threads  = static_cast<IndexType>(blockDim.x);
+  const auto block_threads  = static_cast<OffsetT>(blockDim.x);
   const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
-  const auto tile_base      = static_cast<IndexType>(blockIdx.x) * items_per_tile;
+  const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining  = num_items - tile_base;
-  const auto items_in_tile  = static_cast<IndexType>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+  const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
@@ -111,20 +111,20 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(IndexType num_items, OpT op)
 }
 
 // This kernel is used when the block size is known at compile time
-template <class ChainedPolicyT, class IndexType, class OpT>
+template <class ChainedPolicyT, class OffsetT, class OpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES //
 __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
-  void static_kernel(IndexType num_items, OpT op)
+  void static_kernel(OffsetT num_items, OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, IndexType, OpT>;
+  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
 
   constexpr auto block_threads  = active_policy_t::block_threads;
   constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
 
-  const auto tile_base     = static_cast<IndexType>(blockIdx.x) * items_per_tile;
+  const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining = num_items - tile_base;
-  const auto items_in_tile = static_cast<IndexType>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+  const auto items_in_tile = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
@@ -171,7 +171,7 @@ _CCCL_DEVICE_API auto extent_at(ExtentType extents, FastDivModType dynamic_exten
 template <int Start, int End, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE_API auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
 {
-  if constexpr (cub::detail::is_extents_in_range_static<ExtentType>(Start, End))
+  if constexpr (cub::detail::are_extents_in_range_static<ExtentType>(Start, End))
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
