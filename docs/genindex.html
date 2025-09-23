@@ -1174,6 +1174,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html">cuda::experimental::stf::executable_graph_cache_stat</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator.html">cuda::experimental::stf::fixed_size_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html">cuda::experimental::stf::frozen_logical_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html">cuda::experimental::stf::frozen_logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html">cuda::experimental::stf::graph_ctx</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__data__interface.html">cuda::experimental::stf::graph_data_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__task.html">cuda::experimental::stf::graph_task</a></li>
@@ -3239,7 +3240,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx25enable_logical_data_statsEv">cuda::experimental::stf::backend_ctx::enable_logical_data_stats (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4I0EN4cuda12experimental3stf11backend_ctx6freezeE19frozen_logical_dataI1TEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::backend_ctx::freeze (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4I0EN4cuda12experimental3stf11backend_ctx6freezeE19frozen_logical_dataI1TEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::backend_ctx::freeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx6freezeEN4cuda12experimental3stf20logical_data_untypedE11access_mode10data_placeb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4NK4cuda12experimental3stf11backend_ctx22generate_event_symbolsEv">cuda::experimental::stf::backend_ctx::generate_event_symbols (C++ function)</a>
 </li>
@@ -3621,7 +3622,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context8finalizeEv">cuda::experimental::stf::context::finalize (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4I0EN4cuda12experimental3stf7context6freezeE19frozen_logical_dataI1TEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::context::freeze (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4I0EN4cuda12experimental3stf7context6freezeE19frozen_logical_dataI1TEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::context::freeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context6freezeEN4cuda12experimental3stf20logical_data_untypedE11access_mode10data_placeb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context7get_dotEv">cuda::experimental::stf::context::get_dot (C++ function)</a>
 </li>
@@ -4649,8 +4650,6 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html#_CPPv4NK4cuda12experimental3stf22executable_graph_cache9hash_pairclERKNSt4pairI6size_t6size_tEE">cuda::experimental::stf::executable_graph_cache::hash_pair::operator() (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html#_CPPv4N4cuda12experimental3stf22executable_graph_cache16per_device_map_tE">cuda::experimental::stf::executable_graph_cache::per_device_map_t (C++ type)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html#_CPPv4N4cuda12experimental3stf22executable_graph_cache5queryE6size_t6size_tNSt10shared_ptrI11cudaGraph_tEE">cuda::experimental::stf::executable_graph_cache::query (C++ function)</a>
@@ -4659,6 +4658,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html#_CPPv4N4cuda12experimental3stf27executable_graph_cache_stat15instantiate_cntE">cuda::experimental::stf::executable_graph_cache_stat::instantiate_cnt (C++ member)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html#_CPPv4N4cuda12experimental3stf27executable_graph_cache_stat6nedgesE">cuda::experimental::stf::executable_graph_cache_stat::nedges (C++ member)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html#_CPPv4N4cuda12experimental3stf27executable_graph_cache_stat6nnodesE">cuda::experimental::stf::executable_graph_cache_stat::nnodes (C++ member)</a>
@@ -4683,21 +4684,39 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4I0EN4cuda12experimental3stf19frozen_logical_dataE">cuda::experimental::stf::frozen_logical_data (C++ class)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data12element_typeE">cuda::experimental::stf::frozen_logical_data::element_type (C++ type)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4NK4cuda12experimental3stf19frozen_logical_data19freeze_fake_task_idEv">cuda::experimental::stf::frozen_logical_data::freeze_fake_task_id (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataE19backend_ctx_untyped12logical_dataI1TE11access_mode10data_placeb">cuda::experimental::stf::frozen_logical_data::frozen_logical_data (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataERK19frozen_logical_data">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataERR19frozen_logical_data">[2]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataEv">[3]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataE19backend_ctx_untyped12logical_dataI1TE11access_mode10data_placeb">cuda::experimental::stf::frozen_logical_data::frozen_logical_data (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataERR27frozen_logical_data_untyped">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data19frozen_logical_dataEv">[2]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data3getE10data_place">cuda::experimental::stf::frozen_logical_data::get (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data3getE10data_place12cudaStream_t">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4NK4cuda12experimental3stf19frozen_logical_data15get_access_modeEv">cuda::experimental::stf::frozen_logical_data::get_access_mode (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_dataaSERK19frozen_logical_data">cuda::experimental::stf::frozen_logical_data::operator= (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_dataaSERR19frozen_logical_data">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data22set_automatic_unfreezeEb">cuda::experimental::stf::frozen_logical_data::set_automatic_unfreeze (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data8unfreezeE10event_list">cuda::experimental::stf::frozen_logical_data::unfreeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data8unfreezeE12cudaStream_t">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4NK4cuda12experimental3stf19frozen_logical_data21unfreeze_fake_task_idEv">cuda::experimental::stf::frozen_logical_data::unfreeze_fake_task_id (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untypedE">cuda::experimental::stf::frozen_logical_data_untyped (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4NK4cuda12experimental3stf27frozen_logical_data_untyped19freeze_fake_task_idEv">cuda::experimental::stf::frozen_logical_data_untyped::freeze_fake_task_id (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped27frozen_logical_data_untypedE19backend_ctx_untyped20logical_data_untyped11access_mode10data_placeb">cuda::experimental::stf::frozen_logical_data_untyped::frozen_logical_data_untyped (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped27frozen_logical_data_untypedERK27frozen_logical_data_untyped">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped27frozen_logical_data_untypedERR27frozen_logical_data_untyped">[2]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped27frozen_logical_data_untypedEv">[3]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4I0EN4cuda12experimental3stf27frozen_logical_data_untyped3getE1T10data_place12cudaStream_t">cuda::experimental::stf::frozen_logical_data_untyped::get (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4I0EN4cuda12experimental3stf27frozen_logical_data_untyped3getENSt4pairI1T10event_listEE10data_place">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4NK4cuda12experimental3stf27frozen_logical_data_untyped15get_access_modeEv">cuda::experimental::stf::frozen_logical_data_untyped::get_access_mode (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untypedaSERK27frozen_logical_data_untyped">cuda::experimental::stf::frozen_logical_data_untyped::operator= (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untypedaSERR27frozen_logical_data_untyped">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped22set_automatic_unfreezeEb">cuda::experimental::stf::frozen_logical_data_untyped::set_automatic_unfreeze (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped8unfreezeE10event_list">cuda::experimental::stf::frozen_logical_data_untyped::unfreeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4N4cuda12experimental3stf27frozen_logical_data_untyped8unfreezeE12cudaStream_t">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data__untyped.html#_CPPv4NK4cuda12experimental3stf27frozen_logical_data_untyped21unfreeze_fake_task_idEv">cuda::experimental::stf::frozen_logical_data_untyped::unfreeze_fake_task_id (C++ function)</a>
 </li>
       <li><a href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a5c237966138c447f4227d2916b48e337.html#_CPPv4N4cuda12experimental3stf22get_device_from_streamE12cudaStream_t">cuda::experimental::stf::get_device_from_stream (C++ function)</a>
 </li>
@@ -4743,7 +4762,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx17finalize_as_graphEv">cuda::experimental::stf::graph_ctx::finalize_as_graph (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx6freezeEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::graph_ctx::freeze (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx6freezeEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::graph_ctx::freeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx6freezeEN4cuda12experimental3stf20logical_data_untypedE11access_mode10data_placeb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx22generate_event_symbolsEv">cuda::experimental::stf::graph_ctx::generate_event_symbols (C++ function)</a>
 </li>
@@ -6135,7 +6154,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx8finalizeEv">cuda::experimental::stf::stream_ctx::finalize (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx6freezeEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::stream_ctx::freeze (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx6freezeEN4cuda12experimental3stf12logical_dataI1TEE11access_mode10data_placeb">cuda::experimental::stf::stream_ctx::freeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx6freezeEN4cuda12experimental3stf20logical_data_untypedE11access_mode10data_placeb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4NK4cuda12experimental3stf10stream_ctx22generate_event_symbolsEv">cuda::experimental::stf::stream_ctx::generate_event_symbols (C++ function)</a>
 </li>
