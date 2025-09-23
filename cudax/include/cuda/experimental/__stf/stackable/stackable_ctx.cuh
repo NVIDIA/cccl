@@ -70,8 +70,13 @@ namespace cuda::experimental::stf
 //!
 //! It should behaves exactly like a logical_data with additional API to import
 //! it across nested contexts.
-class stackable_logical_data_untyped
+template <typename T>
+class stackable_logical_data
 {
+public:
+  /// @brief Alias for `T` - matches logical_data<T> convention
+  using element_type = T;
+
 private:
   class impl
   {
@@ -168,12 +173,7 @@ private:
       class data_node
       {
       public:
-        template <typename T>
         data_node(logical_data<T> ld)
-            : ld(mv(ld))
-        {}
-
-        data_node(logical_data_untyped ld)
             : ld(mv(ld))
         {}
 
@@ -197,10 +197,10 @@ private:
           ld.set_symbol(symbol);
         }
 
-        logical_data_untyped ld;
+        logical_data<T> ld;
 
         // Frozen counterpart of ld (if any)
-        ::std::optional<frozen_logical_data_untyped> frozen_ld;
+        ::std::optional<frozen_logical_data<T>> frozen_ld;
 
         event_list unfreeze_prereqs;
 
@@ -212,14 +212,14 @@ private:
         access_mode effective_mode = access_mode::none;
       };
 
-      data_node& get_data_node(int offset)
+      auto& get_data_node(int offset)
       {
         _CCCL_ASSERT(offset != -1, "invalid value");
         _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
         return data_nodes[offset].value();
       }
 
-      const data_node& get_data_node(int offset) const
+      const auto& get_data_node(int offset) const
       {
         _CCCL_ASSERT(offset != -1, "invalid value");
         _CCCL_ASSERT(data_nodes[offset].has_value(), "invalid value");
@@ -351,8 +351,6 @@ private:
 
   public:
     impl() = default;
-
-    template <typename T>
     impl(stackable_ctx sctx_,
          int target_offset,
          bool ld_from_shape,
@@ -398,7 +396,7 @@ private:
         while (!path.empty())
         {
           int offset = path.top();
-          push<T>(offset, ld_from_shape ? access_mode::write : access_mode::rw, where);
+          push(offset, ld_from_shape ? access_mode::write : access_mode::rw, where);
 
           path.pop();
         }
@@ -486,7 +484,6 @@ private:
     }
 
     /* Import data into the ctx at this offset */
-    template <typename T>
     void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
     {
       int parent_offset = sctx.get_parent_offset(ctx_offset);
@@ -521,7 +518,7 @@ private:
       if (!impl_state->data_nodes[parent_offset].has_value())
       {
         // RECURSIVE CALL: Ensure parent has data first
-        push<T>(parent_offset, max_required_parent_mode, where);
+        push(parent_offset, max_required_parent_mode, where);
       }
 
       _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data should be available here");
@@ -574,7 +571,7 @@ private:
       // Ensure there is a copy of the data in the data place, we keep a
       // reference count of each context using this frozen data so that we only
       // unfreeze once possible.
-      ::std::pair<T, event_list> get_res = frozen_ld.template get<T>(where);
+      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
       auto ld                            = to_ctx.logical_data(get_res.first, where);
       from_data_node.get_cnt++;
 
@@ -679,18 +676,17 @@ private:
   };
 
 public:
-  stackable_logical_data_untyped() = default;
+  stackable_logical_data() = default;
 
   /* Create a logical data in the stackable ctx : in order to make it possible
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
-  template <typename T>
-  stackable_logical_data_untyped(
-    stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
+  template <typename... Args>
+  stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
   {
-    static_assert(::std::is_move_constructible_v<stackable_logical_data_untyped>, "");
-    static_assert(::std::is_move_assignable_v<stackable_logical_data_untyped>, "");
+    static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
+    static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
   }
 
   int get_data_root_offset() const
@@ -713,17 +709,42 @@ public:
     return pimpl->get_unique_id();
   }
 
-  template <typename T>
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
-    pimpl->template push<T>(ctx_offset, m, mv(where));
+    pimpl->push(ctx_offset, m, mv(where));
   }
 
-  template <typename T>
   void push(access_mode m, data_place where = data_place::invalid()) const
   {
     int ctx_offset = pimpl->get_ctx_head_offset();
-    pimpl->template push<T>(ctx_offset, m, mv(where));
+    pimpl->push(ctx_offset, m, mv(where));
+  }
+
+  // Helpers
+  template <typename... Pack>
+  auto read(Pack&&... pack) const
+  {
+    using U = rw_type_of<T>;
+    return stackable_task_dep<U, ::std::monostate, false>(
+      *this, get_ld(get_data_root_offset()).read(::std::forward<Pack>(pack)...));
+  }
+
+  template <typename... Pack>
+  auto write(Pack&&... pack)
+  {
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).write(::std::forward<Pack>(pack)...));
+  }
+
+  template <typename... Pack>
+  auto rw(Pack&&... pack)
+  {
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).rw(::std::forward<Pack>(pack)...));
+  }
+
+  template <typename... Pack>
+  auto reduce(Pack&&... pack)
+  {
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).reduce(::std::forward<Pack>(pack)...));
   }
 
   // Helper to create dependency with specific access mode - avoids cascade of if-else
@@ -739,6 +760,11 @@ public:
       default: // access_mode::rw or combined modes
         return rw(::std::forward<Pack>(pack)...);
     }
+  }
+
+  auto shape() const
+  {
+    return get_ld(get_data_root_offset()).shape();
   }
 
   auto& set_symbol(::std::string symbol)
@@ -782,7 +808,6 @@ public:
   // if necessary.
   //
   // Returns true if the task_dep needs an update
-  template <typename T>
   bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
   {
     // Grab the lock of the data, note that we are already holding the context lock in read mode
@@ -851,7 +876,7 @@ public:
     while (!path.empty())
     {
       int offset = path.top();
-      pimpl->push<T>(offset, push_mode, where);
+      pimpl->push(offset, push_mode, where);
       path.pop();
     }
 
@@ -864,91 +889,6 @@ public:
 
 private:
   ::std::shared_ptr<impl> pimpl;
-};
-
-template <typename T>
-class stackable_logical_data : public stackable_logical_data_untyped
-{
-public:
-  /// @brief Alias for `T` - matches logical_data<T> convention
-  using element_type = T;
-
-  stackable_logical_data() = default;
-
-  stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
-      : stackable_logical_data_untyped(sctx, ctx_offset, ld_from_shape, mv(ld), can_export)
-  {
-    static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
-    static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
-  }
-
-  bool validate_access(int ctx_offset, const stackable_ctx& sctx, access_mode m) const
-  {
-    return stackable_logical_data_untyped::template validate_access<T>(ctx_offset, sctx, m);
-  }
-
-  // Helpers
-  template <typename... Pack>
-  auto read(Pack&&... pack) const
-  {
-    using U = rw_type_of<T>;
-    return stackable_task_dep<U, ::std::monostate, false>(*this, get_ld().read(::std::forward<Pack>(pack)...));
-  }
-
-  template <typename... Pack>
-  auto write(Pack&&... pack)
-  {
-    return stackable_task_dep(*this, get_ld().write(::std::forward<Pack>(pack)...));
-  }
-
-  template <typename... Pack>
-  auto rw(Pack&&... pack)
-  {
-    return stackable_task_dep(*this, get_ld().rw(::std::forward<Pack>(pack)...));
-  }
-
-  template <typename... Pack>
-  auto reduce(Pack&&... pack)
-  {
-    return stackable_task_dep(*this, get_ld().reduce(::std::forward<Pack>(pack)...));
-  }
-
-  auto shape() const
-  {
-    return get_ld().shape();
-  }
-
-  // Type-safe get_ld() method that returns logical_data<T>& directly
-  logical_data<T>& get_ld(int offset)
-  {
-    // Get the untyped logical_data from base class
-    logical_data_untyped& untyped_ld = stackable_logical_data_untyped::get_ld(offset);
-
-    // Since logical_data<T> inherits from logical_data_untyped with same size,
-    // we can safely cast (verified by static_assert in logical_data.cuh)
-    return static_cast<logical_data<T>&>(untyped_ld);
-  }
-
-  const logical_data<T>& get_ld(int offset) const
-  {
-    // Get the untyped logical_data from base class
-    const logical_data_untyped& untyped_ld = stackable_logical_data_untyped::get_ld(offset);
-
-    // Since logical_data<T> inherits from logical_data_untyped with same size,
-    // we can safely cast (verified by static_assert in logical_data.cuh)
-    return static_cast<const logical_data<T>&>(untyped_ld);
-  }
-
-  // Overload that uses current context offset for convenience
-  logical_data<T>& get_ld()
-  {
-    return get_ld(get_data_root_offset());
-  }
-
-  const logical_data<T>& get_ld() const
-  {
-    return get_ld(get_data_root_offset());
-  }
 };
 
 inline stackable_logical_data<void_interface> stackable_ctx::token()
@@ -982,7 +922,7 @@ public:
   {
     auto& sctx = d.get_impl()->sctx;
     int offset = sctx.get_head_offset();
-    d.template validate_access<T>(offset, sctx, get_access_mode());
+    d.validate_access(offset, sctx, get_access_mode());
     return dep;
   }
 
@@ -991,7 +931,7 @@ public:
   {
     auto& sctx = d.get_impl()->sctx;
     int offset = sctx.get_head_offset();
-    d.template validate_access<T>(offset, sctx, get_access_mode());
+    d.validate_access(offset, sctx, get_access_mode());
     return dep;
   }
 
@@ -1004,7 +944,7 @@ public:
   task_dep<T, reduce_op, initialize>& to_task_dep_with_offset(int context_offset)
   {
     auto& sctx = d.get_impl()->sctx;
-    d.template validate_access<T>(context_offset, sctx, get_access_mode());
+    d.validate_access(context_offset, sctx, get_access_mode());
 
     // Create new task_dep using the logical_data at the specified context offset
     // to ensure correct access to pushed data in nested contexts
@@ -1030,7 +970,7 @@ public:
   const task_dep<T, reduce_op, initialize>& to_task_dep_with_offset(int context_offset) const
   {
     auto& sctx = d.get_impl()->sctx;
-    d.template validate_access<T>(context_offset, sctx, get_access_mode());
+    d.validate_access(context_offset, sctx, get_access_mode());
 
     // Create new task_dep using the logical_data at the specified context offset
     // to ensure correct access to pushed data in nested contexts
