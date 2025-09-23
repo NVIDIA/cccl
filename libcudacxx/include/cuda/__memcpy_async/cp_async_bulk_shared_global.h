@@ -26,15 +26,30 @@
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
+#    include <cuda/__ptx/instructions/elect_sync.h>
+#    include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target>
 
+#    include <cooperative_groups.h>
+
 #    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+template <typename _Group>
+inline _CCCL_DEVICE bool __elect_from_group(const _Group& __g)
+{
+  return __g.thread_rank() == 0;
+}
+
+inline _CCCL_DEVICE bool __elect_from_group(const cooperative_groups::thread_block&)
+{
+  return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
+}
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
@@ -42,12 +57,14 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
   const _Group& __g, char* __dest, const char* __src, ::cuda::std::size_t __size, ::cuda::std::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    (if (__g.thread_rank() == 0) {
-                      ::cuda::ptx::cp_async_bulk(
-                        ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
-                    }),
-                    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (if (__elect_from_group(__g)) {
+      ::cuda::ptx::cp_async_bulk(
+        ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
+      ::cuda::ptx::mbarrier_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, __bar_handle, __size);
+    }),
+    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
 }
 
 _CCCL_END_NAMESPACE_CUDA

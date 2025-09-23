@@ -95,6 +95,8 @@ struct __memcpy_completion_impl
                        if (__group.thread_rank() == 0) { ::cuda::device::barrier_expect_tx(__barrier, __size); }));
 #endif // __cccl_ptx_isa >= 800
         return async_contract_fulfillment::async;
+      case __completion_mechanism::__mbarrier_complete_tx_skip:
+        return async_contract_fulfillment::async;
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything. The user will have
         // to issue `bar.arrive_wait();` to see the effect of the transaction.
