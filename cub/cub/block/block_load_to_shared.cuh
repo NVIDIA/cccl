@@ -170,28 +170,12 @@ private:
     {
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
-// LDGSTS borrowed from cuda::memcpy_async, assumes 16 byte alignment to avoid L1 (.cg)
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) // WAR for compiler state space issues
-      NV_IF_TARGET(NV_PROVIDES_SM_80,
-                   (asm volatile(R"XYZ(
-        {
-          .reg .u64 tmp;
-          .reg .u32 dst;
-
-          cvta.to.shared.u64 tmp, %0;
-          cvt.u32.u64 dst, tmp;
-          cvta.to.global.u64 tmp, %1;
-          cp.async.cg.shared.global [dst], [tmp], 16, 16;
-        }
-        )XYZ" : : "l"(thread_dst),
-                                 "l"(thread_src) : "memory");));
-#else // ^^^^ NVCC 12.0 / !NVCC 12.0 vvvvv WAR for compiler state space issues
+      // LDGSTS borrowed from cuda::memcpy_async, assumes 16 byte alignment to avoid L1 (.cg)
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                    (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
                                    static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(thread_dst))),
-                                 "l"(static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(thread_src))),
+                                 "l"(thread_src),
                                  "n"(16) : "memory");));
-#endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
     }
   }
 
@@ -342,17 +326,23 @@ public:
     }
     else
     {
-      const auto src_ptr_aligned      = ::cuda::align_down(src_ptr, minimum_align);
-      const int head_padding_bytes    = src_ptr - src_ptr_aligned;
-      const int padded_num_bytes      = num_bytes + head_padding_bytes;
-      const int padded_num_bytes_bulk = ::cuda::round_down(padded_num_bytes, minimum_align);
-      __copy_aligned(dst_ptr, src_ptr_aligned, padded_num_bytes_bulk);
+      const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, minimum_align);
+      const int head_peeling_bytes = src_ptr_aligned - src_ptr;
+      const int head_padding_bytes = minimum_align - head_peeling_bytes;
+      const int num_bytes_bulk = ::cuda::round_down(::cuda::std::max(num_bytes - head_peeling_bytes, 0), minimum_align);
+      __copy_aligned(dst_ptr + minimum_align, src_ptr_aligned, num_bytes_bulk);
       // Peeling
       static_assert(block_threads >= minimum_align - 1);
 
-      if (const int idx = padded_num_bytes_bulk + linear_tid; idx < padded_num_bytes)
+      // Peel head
+      if (const int idx = linear_tid; idx < head_peeling_bytes)
       {
-        dst_ptr[idx] = src_ptr_aligned[idx];
+        dst_ptr[head_padding_bytes + idx] = src_ptr[idx];
+      }
+      // Peel tail
+      if (const int idx = num_bytes_bulk + linear_tid; idx < num_bytes)
+      {
+        dst_ptr[minimum_align + idx] = src_ptr_aligned[idx];
       }
       return {::cuda::ptr_rebind<T>(dst_ptr + head_padding_bytes), size(gmem_src)};
     }
