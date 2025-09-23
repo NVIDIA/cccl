@@ -56,7 +56,7 @@ int main()
   for (int k = 0; k < 4; k++)
   {
     logical_data_untyped lX_untyped = lX;
-    auto fx = ctx.freeze(lX_untyped, access_mode::rw, data_place::current_device());
+    auto fx                         = ctx.freeze(lX_untyped, access_mode::rw, data_place::current_device());
 
     _CCCL_ASSERT(fx.get_access_mode() == access_mode::rw, "invalid access mode");
 
