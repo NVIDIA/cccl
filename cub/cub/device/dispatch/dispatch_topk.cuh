@@ -313,8 +313,7 @@ struct DispatchTopK
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
-    k                     = static_cast<OutOffsetT>(
-      ::cuda::std::clamp(static_cast<common_offset_t>(k), common_offset_t{k}, static_cast<common_offset_t>(num_items)));
+    k = static_cast<OutOffsetT>(::cuda::std::min(common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
     const size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
