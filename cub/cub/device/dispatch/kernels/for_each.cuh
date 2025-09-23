@@ -146,7 +146,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 // compile-time constants when possible. For dynamic extents, it returns the precomputed value to avoid runtime
 // computation overhead.
 template <int Position, typename ExtentType, typename FastDivModType>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType dynamic_extent)
+_CCCL_DEVICE_API auto extent_at(ExtentType extents, FastDivModType dynamic_extent)
 {
   if constexpr (ExtentType::static_extent(Position) != ::cuda::std::dynamic_extent)
   {
@@ -169,14 +169,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType
 //  - Static extents in range: Product computed at compile-time, zero runtime cost
 //  - Dynamic extents present: Returns precomputed value, avoiding runtime multiplication
 template <int Start, int End, typename ExtentType, typename FastDivModType>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
+_CCCL_DEVICE_API auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
 {
   if constexpr (cub::detail::is_extents_in_range_static<ExtentType>(Start, End))
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    constexpr auto sub_size   = cub::detail::sub_size(extents, Start, End);
+    constexpr auto sub_size   = cub::detail::size_range(extents, Start, End);
     return static_cast<unsigned_index_type>(sub_size);
   }
   else
@@ -197,15 +197,15 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, Fas
 //
 // This function leverages precomputed fast division and modulo operations to minimize runtime arithmetic overhead.
 template <bool IsLayoutRight, int Position, typename IndexType, typename ExtentType, typename FastDivModType>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto
+_CCCL_DEVICE_API auto
 coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_size, FastDivModType dynamic_extent)
 {
   using cub::detail::for_each::extent_at;
   using cub::detail::for_each::get_extents_sub_size;
   using extent_index_type = typename ExtentType::index_type;
-  constexpr auto start    = IsLayoutRight ? Position : 0;
+  constexpr auto start    = IsLayoutRight ? Position + 1 : 0;
   constexpr auto end      = IsLayoutRight ? ExtentType::rank() : Position;
-  return static_cast<extent_index_type>((index / get_extents_sub_size<start + 1, end>(extents, extent_sub_size))
+  return static_cast<extent_index_type>((index / get_extents_sub_size<start, end>(extents, extent_sub_size))
                                         % extent_at<Position>(extents, dynamic_extent));
 }
 
@@ -225,7 +225,7 @@ struct op_wrapper_extents_t
 
   // Internal implementation that converts linear index to coordinates and calls the user operation
   template <typename IndexType, size_t... Positions>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(IndexType i, ::cuda::std::index_sequence<Positions...>)
+  _CCCL_DEVICE_API void impl(IndexType i, ::cuda::std::index_sequence<Positions...>)
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
@@ -235,7 +235,7 @@ struct op_wrapper_extents_t
 
   // Internal implementation that converts linear index to coordinates and calls the user operation
   template <typename IndexType, size_t... Positions>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(IndexType i, ::cuda::std::index_sequence<Positions...>) const
+  _CCCL_DEVICE_API void impl(IndexType i, ::cuda::std::index_sequence<Positions...>) const
   {
     using cub::detail::for_each::coordinate_at;
     op(i,
@@ -245,14 +245,14 @@ struct op_wrapper_extents_t
 
   // Function call operator that processes a linear index by converting it to multi-dimensional coordinates
   template <typename IndexType>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexType i)
+  _CCCL_DEVICE_API void operator()(IndexType i)
   {
     impl(i, ::cuda::std::make_index_sequence<ExtentsType::rank()>{});
   }
 
   // Function call operator that processes a linear index by converting it to multi-dimensional coordinates
   template <typename IndexType>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexType i) const
+  _CCCL_DEVICE_API void operator()(IndexType i) const
   {
     impl(i, ::cuda::std::make_index_sequence<ExtentsType::rank()>{});
   }

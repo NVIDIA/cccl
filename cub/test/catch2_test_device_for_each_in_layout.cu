@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <cub/config.cuh>
 
 #include <cub/device/device_for.cuh>
@@ -42,18 +19,59 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layout);
+
+/***********************************************************************************************************************
+ * Host reference
+ **********************************************************************************************************************/
+
+template <bool IsLayoutRight, int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+{
+  if constexpr (Rank == ExtentType::rank())
+  {
+    vector[pos++] = {indices...};
+  }
+  else
+  {
+    using IndexType = typename ExtentType::index_type;
+    for (IndexType i = 0; i < ext.extent(Rank); ++i)
+    {
+      if constexpr (IsLayoutRight)
+      {
+        fill_linear_impl<IsLayoutRight, Rank + 1>(vector, ext, pos, indices..., i);
+      }
+      else
+      {
+        fill_linear_impl<IsLayoutRight, Rank + 1>(vector, ext, pos, i, indices...);
+      }
+    }
+  }
+}
+
+template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
+static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
+{
+  size_t pos = 0;
+  fill_linear_impl<IsLayoutRight>(vector, ext, pos);
+}
+
 /***********************************************************************************************************************
  * Function Objects
  **********************************************************************************************************************/
 
-struct incrementer_t
+template <typename IndexType, int Size>
+struct LinearStore
 {
-  int* d_counts;
+  using data_t = cuda::std::array<IndexType, Size>;
 
-  template <class OffsetT>
-  __device__ void operator()(OffsetT i, OffsetT)
+  cuda::std::span<data_t> d_output_raw;
+
+  template <typename... TArgs>
+  __device__ void operator()(IndexType idx, TArgs... args)
   {
-    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
+    static_assert(sizeof...(TArgs) == Size, "wrong number of arguments");
+    d_output_raw[idx] = {args...};
   }
 };
 
@@ -61,31 +79,133 @@ struct incrementer_t
  * TEST CASES
  **********************************************************************************************************************/
 
-C2H_TEST("DeviceFor::ForEachInLayout works with layout_right", "[ForEachInLayout]")
+using index_types =
+  c2h::type_list<int8_t,
+                 uint8_t,
+                 int16_t,
+                 uint16_t,
+                 int32_t,
+                 uint32_t
+#if _CCCL_HAS_INT128()
+                 ,
+                 int64_t,
+                 uint64_t
+#endif
+                 >;
+
+// int8_t/uint8_t are not enabled because they easily overflow
+using index_types_dynamic =
+  c2h::type_list<int16_t,
+                 uint16_t,
+                 int32_t,
+                 uint32_t
+#if _CCCL_HAS_INT128()
+                 ,
+                 int64_t,
+                 uint64_t
+#endif
+                 >;
+
+using dimensions =
+  c2h::type_list<cuda::std::index_sequence<>,
+                 cuda::std::index_sequence<5>,
+                 cuda::std::index_sequence<5, 3>,
+                 cuda::std::index_sequence<5, 3, 4>,
+                 cuda::std::index_sequence<3, 2, 5, 4>>;
+
+// TODO (fbusato): add padded layouts
+using layouts = c2h::type_list<cuda::std::layout_left, cuda::std::layout_right>;
+
+template <typename IndexType, size_t... Dimensions>
+auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
+  -> cuda::std::extents<IndexType, Dimensions...>
 {
-  constexpr int num_items = 1000;
-  using offset_t = int;
-  using ext_t = cuda::std::extents<offset_t, num_items>;
+  return {};
+}
+
+C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]", index_types, dimensions, layouts)
+{
+  using index_type    = c2h::get<0, TestType>;
+  using dims          = c2h::get<1, TestType>;
+  using layout_t      = c2h::get<2, TestType>;
+  auto ext            = build_static_extents(index_type{}, dims{});
+  constexpr auto rank = ext.rank();
+  using data_t        = cuda::std::array<index_type, rank>;
+  using store_op_t    = LinearStore<index_type, rank>;
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
+  CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
+
+  device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  fill_linear<is_layout_right>(h_output, ext);
+// MSVC error: C3546: '...': there are no parameter packs available to expand in
+//             make_tuple_types.h:__make_tuple_types_flat
+#if !_CCCL_COMPILER(MSVC)
+  REQUIRE(h_output == h_output_gpu);
+#endif // !_CCCL_COMPILER(MSVC)
+}
+
+C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][device]", index_types_dynamic, layouts)
+{
+  constexpr int rank = 3;
+  using index_type   = c2h::get<0, TestType>;
+  using layout_t     = c2h::get<1, TestType>;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
+  auto X             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
+  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
+  CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
+
+  device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  fill_linear<is_layout_right>(h_output, ext);
+
+#if !_CCCL_COMPILER(MSVC)
+  REQUIRE(h_output == h_output_gpu);
+#endif // !_CCCL_COMPILER(MSVC)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// No duplicates
+
+struct incrementer_t
+{
+  int* d_counts;
+
+  template <typename IndexType, class OffsetT>
+  __device__ void operator()(IndexType i, OffsetT)
+  {
+    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
+  }
+};
+
+C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", index_types, layouts)
+{
+  constexpr int max_items  = 5000000;
+  constexpr int min_items  = 1;
+  using offset_t           = c2h::get<0, TestType>;
+  using layout_t           = c2h::get<1, TestType>;
+  using ext_t              = cuda::std::dextents<offset_t, 1>;
+  const offset_t num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
   c2h::device_vector<int> counts(num_items);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
-  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right{}, ext_t{}, incrementer_t{d_counts}));
+  device_for_each_in_layout(layout_t{}, ext_t{num_items}, incrementer_t{d_counts});
 
   const auto num_of_once_marked_items =
     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
 }
-
-// TODO: Test with layout_left once the const-correctness bug in ForEachInLayout is fixed
-// C2H_TEST("DeviceFor::ForEachInLayout works with layout_left", "[ForEachInLayout]")
-// {
-//   constexpr int num_items = 1000;
-//   using offset_t = int;
-//   using ext_t = cuda::std::extents<offset_t, num_items>;
-//   c2h::device_vector<int> counts(num_items);
-//   int* d_counts = thrust::raw_pointer_cast(counts.data());
-//   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(::cuda::std::layout_left{}, ext_t{}, incrementer_t{d_counts}));
-//
-//   const auto num_of_once_marked_items =
-//     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
-//   REQUIRE(num_of_once_marked_items == num_items);
-// }
