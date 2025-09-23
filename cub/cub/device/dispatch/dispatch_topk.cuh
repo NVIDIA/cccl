@@ -41,13 +41,13 @@ enum class select
 
 // Get the bin ID from the value of element
 template <typename T, select SelectDirection, int BitsPerPass>
-struct ExtractBinOp
+struct extract_bin_op_t
 {
   int pass{};
   int start_bit;
   unsigned mask;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ExtractBinOp(int pass)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass)
       : pass(pass)
   {
     start_bit = calc_start_bit<T, BitsPerPass>(pass);
@@ -69,12 +69,12 @@ struct ExtractBinOp
 
 // Check if the input element is still a candidate for the target pass.
 template <typename T, select SelectDirection, int BitsPerPass>
-struct IdentifyCandidatesOp
+struct identify_candidates_op_t
 {
   typename Traits<T>::UnsignedBits* kth_key_bits;
   int pass;
   int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IdentifyCandidatesOp(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE identify_candidates_op_t(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
       : kth_key_bits(kth_key_bits)
       , pass(pass - 1)
   {
@@ -525,8 +525,8 @@ struct DispatchTopK : SelectedPolicy
     constexpr int num_buckets      = 1 << policy_t::bits_per_pass;
 
     // Define operators
-    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::bits_per_pass>;
-    using extract_bin_op_t         = ExtractBinOp<key_in_t, SelectDirection, policy_t::bits_per_pass>;
+    using identify_candidates_op_t = identify_candidates_op_t<key_in_t, SelectDirection, policy_t::bits_per_pass>;
+    using extract_bin_op_t         = extract_bin_op_t<key_in_t, SelectDirection, policy_t::bits_per_pass>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
@@ -717,8 +717,8 @@ struct DispatchTopK : SelectedPolicy
     using max_policy_t = typename SelectedPolicy::max_policy;
 
     using identify_candidates_op_t =
-      IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
-    using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
+      identify_candidates_op_t<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
+    using extract_bin_op_t = extract_bin_op_t<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::bits_per_pass>;
 
     return InvokePasses<ActivePolicyT>(
       detail::topk::DeviceTopKKernel<
