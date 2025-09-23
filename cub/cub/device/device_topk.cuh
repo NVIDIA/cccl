@@ -51,7 +51,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 {
   // Offset type selection
   using offset_t     = choose_offset_t<NumItemsT>;
-  using out_offset_t = cuda::std::
+  using out_offset_t = ::cuda::std::
     conditional_t<sizeof(offset_t) < sizeof(choose_offset_t<NumOutItemsT>), offset_t, choose_offset_t<NumOutItemsT>>;
 
   // Query environment properties to determine if the user-requested configuration is supported
