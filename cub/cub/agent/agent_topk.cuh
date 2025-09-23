@@ -38,10 +38,6 @@ namespace detail::topk
 //! @tparam BitsPerPass
 //!   Number of bits processed per pass
 //!
-//! @tparam CoefficientForBuffer
-//!   The coefficient parameter for reducing the size of buffer.
-//!   The size of buffer is `1 / CoefficientForBuffer` of original input
-//!
 //! @tparam LoadAlgorithm
 //!   The BlockLoad algorithm to use
 //!
