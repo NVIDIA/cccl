@@ -18,7 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
-#include <cub/block/block_load.cuh>
+#include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -31,75 +31,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-
-template <class KeyT>
-constexpr int calc_bits_per_pass()
-{
-  switch (sizeof(KeyT))
-  {
-    case 1:
-      return 8;
-    case 2:
-      return 11;
-    case 4:
-      return 11;
-    case 8:
-      return 11;
-    default:
-      return 8;
-  }
-}
-
-template <class KeyInT>
-struct sm90_tuning
-{
-  static constexpr int threads = 512; // Number of threads per block
-
-  static constexpr int nominal_4b_items_per_thread = 4;
-  static constexpr int items =
-    ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT))));
-  // Try to load 16 Bytes per thread. (int64(items=2);int32(items=4);int16(items=8)).
-
-  static constexpr int bits_per_pass = detail::topk::calc_bits_per_pass<KeyInT>();
-
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_VECTORIZE;
-};
-
-template <class KeyInT, class OffsetT>
-struct device_topk_policy_hub
-{
-  struct DefaultTuning
-  {
-    static constexpr int nominal_4b_items_per_thread = 4;
-    static constexpr int items_per_thread =
-      ::cuda::std::min(nominal_4b_items_per_thread,
-                       ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT)))));
-
-    static constexpr int bits_per_pass = detail::topk::calc_bits_per_pass<KeyInT>();
-
-    using topk_policy_t =
-      detail::topk::AgentTopKPolicy<512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  struct Policy350
-      : DefaultTuning
-      , ChainedPolicy<350, Policy350, Policy350>
-  {};
-
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy350>
-  {
-    using tuning = detail::topk::sm90_tuning<KeyInT>;
-    using topk_policy_t =
-      detail::topk::AgentTopKPolicy<tuning::threads,
-                                    tuning::items,
-                                    tuning::bits_per_pass,
-                                    tuning::load_algorithm,
-                                    BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using max_policy = Policy900;
-};
-
 enum class select
 {
   // Select the K elements with the lowest values
@@ -454,7 +385,7 @@ template <typename KeyInputIteratorT,
           typename OffsetT,
           typename OutOffsetT,
           select SelectDirection,
-          typename SelectedPolicy = detail::topk::device_topk_policy_hub<detail::it_value_t<KeyInputIteratorT>, OffsetT>>
+          typename SelectedPolicy = policy_hub<detail::it_value_t<KeyInputIteratorT>, OffsetT>>
 struct DispatchTopK : SelectedPolicy
 {
   // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
