@@ -593,7 +593,7 @@ struct AgentTopK
     int pass)
   {
     const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
-    OffsetT current_len                 = load_from_original_input ? num_items : counter->previous_len;
+    const OffsetT current_len           = load_from_original_input ? num_items : counter->previous_len;
     in_idx_buf = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
 
     if (current_len == 0)
@@ -608,30 +608,30 @@ struct AgentTopK
 
     auto f = [this, p_out_cnt, counter, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, current_len](
                key_in_t key, OffsetT i) {
-      candidate_class res = identify_candidates_op(key);
+      const candidate_class res = identify_candidates_op(key);
       if (res == candidate_class::selected)
       {
-        OutOffsetT pos  = atomicAdd(p_out_cnt, OffsetT{1});
-        d_keys_out[pos] = key;
+        const OutOffsetT pos = atomicAdd(p_out_cnt, OffsetT{1});
+        d_keys_out[pos]      = key;
         if constexpr (!keys_only)
         {
           // If writing has been skipped up to this point, `in_idx_buf` is nullptr
-          OffsetT index     = in_idx_buf ? in_idx_buf[i] : i;
-          d_values_out[pos] = d_values_in[index];
+          const OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
+          d_values_out[pos]   = d_values_in[index];
         }
       }
       else if (res == candidate_class::candidate)
       {
-        OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
+        const OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
 
         if (back_pos < num_of_kth_needed)
         {
-          OutOffsetT pos  = k - 1 - back_pos;
-          d_keys_out[pos] = key;
+          const OutOffsetT pos = k - 1 - back_pos;
+          d_keys_out[pos]      = key;
           if constexpr (!keys_only)
           {
-            OffsetT new_idx   = in_idx_buf ? in_idx_buf[i] : i;
-            d_values_out[pos] = d_values_in[new_idx];
+            const OffsetT new_idx = in_idx_buf ? in_idx_buf[i] : i;
+            d_values_out[pos]     = d_values_in[new_idx];
           }
         }
       }
