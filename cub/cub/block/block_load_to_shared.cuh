@@ -338,6 +338,14 @@ public:
     }
   }
 
+  // Avoid need to explicitly specify `T` for non-const src.
+  template <typename T, int GmemAlign = alignof(T)>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<T>
+  CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<T> gmem_src)
+  {
+    return CopyAsync<T, GmemAlign>(smem_dst, ::cuda::std::span<const T>{gmem_src});
+  }
+
   //! @brief Commit one or more @c CopyAsync() calls.
   _CCCL_DEVICE _CCCL_FORCEINLINE void Commit()
   {
