@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/__stf/places/loop_dispatch.cuh>
-#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

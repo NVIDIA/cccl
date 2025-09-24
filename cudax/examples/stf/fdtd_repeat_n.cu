@@ -17,7 +17,6 @@
  * to use the new repeat_n helper for cleaner loop patterns.
  */
 
-#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <stdlib.h>

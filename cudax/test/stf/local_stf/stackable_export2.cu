@@ -17,8 +17,6 @@
 
 #include <cuda/experimental/stf.cuh>
 
-#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
-
 using namespace cuda::experimental::stf;
 
 __global__ void kernel(slice<int> b, long long int clock_cnt)

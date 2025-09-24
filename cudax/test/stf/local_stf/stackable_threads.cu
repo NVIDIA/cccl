@@ -19,8 +19,6 @@
 
 #include <thread>
 
-#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
-
 using namespace cuda::experimental::stf;
 
 void worker(

@@ -19,8 +19,6 @@
 
 #include <iostream>
 
-#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
-
 using namespace cuda::experimental::stf;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)

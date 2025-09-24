@@ -13,7 +13,6 @@
  * @brief This test makes sure we can generate a dot file with sections and stackable contexts
  */
 
-#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

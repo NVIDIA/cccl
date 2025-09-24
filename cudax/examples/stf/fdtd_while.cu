@@ -14,7 +14,6 @@
  * @brief An example solving Maxwell equations in 3D using FDTD on multiple devices
  */
 
-#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <stdlib.h>

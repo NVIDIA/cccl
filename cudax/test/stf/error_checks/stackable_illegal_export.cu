@@ -20,8 +20,6 @@
 
 #include <csignal>
 
-#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
-
 using namespace cuda::experimental::stf;
 
 bool should_abort = false;

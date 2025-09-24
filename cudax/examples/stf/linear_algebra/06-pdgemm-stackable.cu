@@ -15,7 +15,6 @@
 
 #include <cstdlib>
 
-#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
 #include "cuda/experimental/stf.cuh"
 #include <nvtx3/nvToolsExt.h>
 
