@@ -249,7 +249,7 @@ public:
     __syncthreads();
     if (elected)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80,
+      NV_IF_TARGET(NV_PROVIDES_SM_90,
                    (
                      // Borrowed from cuda::barrier
                      asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
