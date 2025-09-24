@@ -316,10 +316,11 @@ public:
     else
     {
       const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, minimum_align);
-      const int head_peeling_bytes = src_ptr_aligned - src_ptr;
-      const int head_padding_bytes = minimum_align - head_peeling_bytes;
-      const int num_bytes_bulk = ::cuda::round_down(::cuda::std::max(num_bytes - head_peeling_bytes, 0), minimum_align);
-      __copy_aligned(dst_ptr + minimum_align, src_ptr_aligned, num_bytes_bulk);
+      const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
+      const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
+      const int head_padding_bytes = (minimum_align - align_diff) % minimum_align;
+      const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, minimum_align);
+      __copy_aligned(dst_ptr + head_padding_bytes + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
       // Peeling
       static_assert(block_threads >= minimum_align - 1);
 
