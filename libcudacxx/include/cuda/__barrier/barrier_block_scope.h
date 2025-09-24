@@ -380,23 +380,19 @@ public:
   _CCCL_API inline void wait(arrival_token&& __phase) const
   {
     // no need to back off on SM90, SYNCS unit is taking care of this
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_90,
-      (const auto __barrier_handle = ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
-       while (!__try_wait(__phase));),
-      (::cuda::std::__cccl_thread_poll_with_backoff(
-         ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__phase)));))
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (while (!__try_wait(__phase));),
+                      (::cuda::std::__cccl_thread_poll_with_backoff(
+                         ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__phase)));))
   }
 
   _CCCL_API inline void wait_parity(bool __phase_parity) const
   {
     // no need to back off on SM90, SYNCS unit is taking care of this
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_90,
-      (const auto __barrier_handle = ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
-       while (!__try_wait_parity(__phase_parity));),
-      (::cuda::std::__cccl_thread_poll_with_backoff(
-         ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity));))
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (while (!__try_wait_parity(__phase_parity));),
+                      (::cuda::std::__cccl_thread_poll_with_backoff(
+                         ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity));))
   }
 
   _CCCL_API inline void arrive_and_wait()
