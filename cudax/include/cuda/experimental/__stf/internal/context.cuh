@@ -483,6 +483,17 @@ public:
     };
   }
 
+  frozen_logical_data_untyped
+  freeze(::cuda::experimental::stf::logical_data_untyped d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
+  {
+    return payload->*[&](auto& self) {
+      return self.freeze(mv(d), m, mv(where), user_freeze);
+    };
+  }
+
   /**
    * @brief Creates logical data from a pointer and size.
    *
