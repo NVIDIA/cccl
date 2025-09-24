@@ -86,6 +86,7 @@ set(stf_test_sources
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
   stackable/graph_scope_test.cu
+  stackable/while_reduce.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
   stress/empty_tasks_alloc.cu

@@ -84,15 +84,15 @@ public:
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize(ctx);
+    ready_prereqs.optimize(ctx);
 
     // Reserve for better performance
-    ready_dependencies.reserve(prereqs.size());
+    ready_dependencies.reserve(ready_prereqs.size());
 
-    for (auto& e : prereqs)
+    for (auto& e : ready_prereqs)
     {
       auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
       if (ge->stage == stage)
@@ -114,6 +114,8 @@ public:
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
 
+    set_ready_prereqs(mv(ready_prereqs));
+
     return *this;
   }
 
@@ -133,10 +135,26 @@ public:
 
     auto done_prereqs = event_list();
 
-    if (done_nodes.size() > 0)
+    if (input_nodes.size() > 0 || done_nodes.size() > 0)
     {
+      fprintf(stderr, "INPUT NODES size() %ld DONE NODES size() %ld\n", input_nodes.size(), done_nodes.size());
       // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
-      // done_prereqs
+      // done_prereqs, and task input dependencies
+
+      for (auto& node : input_nodes)
+      {
+        // Repeat node as many times as there are input dependencies
+        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(cudaGraphAddDependencies(
+          ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(
+          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+      }
+
       for (auto& node : done_nodes)
       {
         auto gnp = reserved::graph_event(node, stage, ctx_graph);
@@ -152,6 +170,7 @@ public:
       // completion depend on task nodes, task chain, or the child graph.
       if (task_nodes.size() > 0)
       {
+        fprintf(stderr, "(non chained)task_nodes of size %ld\n", task_nodes.size());
         for (auto& node : task_nodes)
         {
 #ifndef NDEBUG
@@ -193,6 +212,7 @@ public:
       }
       else if (chained_task_nodes.size() > 0)
       {
+        fprintf(stderr, "chained_task_nodes of size %ld\n", chained_task_nodes.size());
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -438,6 +458,11 @@ public:
     done_nodes.push_back(n);
   }
 
+  void add_input_node(cudaGraphNode_t n)
+  {
+    input_nodes.push_back(n);
+  }
+
   // Get the graph associated to the whole context (not the task)
   cudaGraph_t& get_ctx_graph()
   {
@@ -501,10 +526,12 @@ private:
 
   size_t stage = 0;
 
+  // same as ready_prereqs converted to a vector of cudaGraphNode_t
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
   // If we are building our graph by hand, and using get_ready_dependencies()
   ::std::vector<cudaGraphNode_t> done_nodes;
+  ::std::vector<cudaGraphNode_t> input_nodes;
 
   backend_ctx_untyped ctx;
 };

@@ -804,9 +804,10 @@ public:
     // Allocation using uncached allocator directly
     auto& allocator              = ctx.get_uncached_allocator();
     ::std::ptrdiff_t buffer_size = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
-    event_list alloc_events      = t.get_input_events();
-    void* raw_buffer             = allocator.allocate(ctx, dplace, buffer_size, alloc_events);
-    auto* d_redux_buffer         = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(raw_buffer);
+    // Allocation depends on task dependencies
+    event_list& alloc_events = t.get_ready_prereqs();
+    void* raw_buffer         = allocator.allocate(ctx, dplace, buffer_size, alloc_events);
+    auto* d_redux_buffer     = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(raw_buffer);
 
     // Variable to hold the last kernel node for graph context
     cudaGraphNode_t last_kernel_node = nullptr;
@@ -834,8 +835,8 @@ public:
       auto lock = t.lock_ctx_graph();
       auto g    = t.get_ctx_graph();
 
-      // The allocator already handled task dependencies, so we only need allocation dependencies
-      auto stage                                 = ctx.stage();
+      auto stage = ctx.stage();
+      // Note that allocation did depend on the task dependencies, so these node depend on them
       ::std::vector<cudaGraphNode_t> alloc_nodes = reserved::join_with_graph_nodes(ctx, alloc_events, stage);
 
       // Launch the main kernel
