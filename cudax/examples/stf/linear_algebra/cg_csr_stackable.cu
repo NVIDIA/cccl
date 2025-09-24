@@ -193,8 +193,12 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
   }
 }
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#else
   size_t N = 10485760;
 
   context_t ctx;
@@ -230,4 +234,5 @@ int main(int argc, char** argv)
   cg_solver(ctx, A, X, B);
 
   ctx.finalize();
+#endif
 }
