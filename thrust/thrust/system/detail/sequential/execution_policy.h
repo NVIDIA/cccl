@@ -28,7 +28,14 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
 };
 
 struct tag : execution_policy<tag>
-{};
+{
+  constexpr tag() = default;
+
+  // allow any execution_policy to convert to the sequential tag. required for minimum_system to pick the sequential one
+  template <typename DerivedPolicy>
+  _CCCL_HOST_DEVICE tag(const thrust::execution_policy<DerivedPolicy>&)
+  {}
+};
 
 template <typename Derived>
 struct execution_policy : thrust::execution_policy<Derived>
@@ -41,9 +48,5 @@ struct execution_policy : thrust::execution_policy<Derived>
     return {};
   }
 };
-
-// TODO(bgruber): do we need this global variable? We already have thrust::seq
-_CCCL_GLOBAL_CONSTANT tag seq;
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
