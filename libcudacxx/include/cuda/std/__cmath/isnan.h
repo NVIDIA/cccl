@@ -22,9 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-#include <cuda/std/__floating_point/mask.h>
-#include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
