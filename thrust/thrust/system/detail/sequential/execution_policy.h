@@ -51,7 +51,9 @@ struct execution_policy;
 // specialize execution_policy for tag
 template <>
 struct execution_policy<tag> : thrust::execution_policy<tag>
-{};
+{
+  using tag_type = tag;
+};
 
 // tag's definition comes before the generic definition of execution_policy
 struct tag : execution_policy<tag>
@@ -68,6 +70,8 @@ struct tag : execution_policy<tag>
 template <typename Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
+  using tag_type = tag;
+
   // allow conversion to tag
   _CCCL_HOST_DEVICE inline operator tag() const
   {
