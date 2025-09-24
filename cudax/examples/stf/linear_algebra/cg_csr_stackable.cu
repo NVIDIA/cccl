@@ -17,18 +17,14 @@
 
 using namespace cuda::experimental::stf;
 
-using vector_t = stackable_logical_data<slice<double>>;
-using scalar_t = stackable_logical_data<scalar_view<double>>;
+using vector_t  = stackable_logical_data<slice<double>>;
+using scalar_t  = stackable_logical_data<scalar_view<double>>;
 using context_t = stackable_ctx;
 
 struct csr_matrix
 {
-  csr_matrix(context_t& ctx,
-             size_t num_rows,
-             size_t num_nonzeros,
-             double* values,
-             size_t* row_offsets,
-             size_t* column_indices)
+  csr_matrix(
+    context_t& ctx, size_t num_rows, size_t num_nonzeros, double* values, size_t* row_offsets, size_t* column_indices)
   {
     val_handle = ctx.logical_data(make_slice(values, num_nonzeros));
     col_handle = ctx.logical_data(make_slice(column_indices, num_nonzeros));
@@ -46,17 +42,18 @@ struct csr_matrix
 };
 
 // Note that a and b might be the same logical data
-void DOT(context_t &ctx, vector_t &a, vector_t &b, scalar_t &res)
+void DOT(context_t& ctx, vector_t& a, vector_t& b, scalar_t& res)
 {
-  ctx.parallel_for(a.shape(), a.read(), b.read(), res.reduce(reducer::sum<double>{})).set_symbol("DOT")
-      ->*[] __device__(size_t i, auto da, auto db, double& dres) {
-            dres += da(i) * db(i);
-          };
+  ctx.parallel_for(a.shape(), a.read(), b.read(), res.reduce(reducer::sum<double>{})).set_symbol("DOT")->*
+    [] __device__(size_t i, auto da, auto db, double& dres) {
+      dres += da(i) * db(i);
+    };
 };
 
-void SPMV(context_t &ctx, csr_matrix& a, vector_t& x, vector_t& y)
+void SPMV(context_t& ctx, csr_matrix& a, vector_t& x, vector_t& y)
 {
-  ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write()).set_symbol("SPMV")
+  ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
+      .set_symbol("SPMV")
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
             int row_start = da_row(row);
             int row_end   = da_row(row + 1);
@@ -116,7 +113,7 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
   I[N] = nz;
 }
 
-void cg_solver(context_t &ctx, csr_matrix &A, vector_t &X, vector_t &B)
+void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
 {
   // Initial guess X = 1
   ctx.parallel_for(X.shape(), X.write()).set_symbol("init_guess")->*[] _CCCL_DEVICE(size_t i, auto dX) {
@@ -153,42 +150,46 @@ void cg_solver(context_t &ctx, csr_matrix &A, vector_t &X, vector_t &B)
     auto Ap = ctx.logical_data(P.shape()).set_symbol("Ap");
     SPMV(ctx, A, P, Ap);
 
-    // We don't compute alpha explicitely
+    // We don't compute alpha explicitly
     // alpha = rsold / (p' * Ap);
-    auto pAp =   ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("pAp");
+    auto pAp = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("pAp");
     DOT(ctx, P, Ap, pAp);
 
     // x = x + alpha * p;
-    ctx.parallel_for(X.shape(), X.rw(), rsold.read(), pAp.read(), P.read()).set_symbol("X+=alpha*P")->*[]_CCCL_DEVICE(size_t i, auto dX, auto drsold, auto dpAp, auto dP) {
-        double alpha = (*drsold / *dpAp);
-        dX(i) += alpha * dP(i);
-    };
+    ctx.parallel_for(X.shape(), X.rw(), rsold.read(), pAp.read(), P.read()).set_symbol("X+=alpha*P")
+        ->*[] _CCCL_DEVICE(size_t i, auto dX, auto drsold, auto dpAp, auto dP) {
+              double alpha = (*drsold / *dpAp);
+              dX(i) += alpha * dP(i);
+            };
 
     // r = r - alpha * Ap;
-    ctx.parallel_for(R.shape(), R.rw(), rsold.read(), pAp.read(), Ap.read()).set_symbol("R-=alpha*Ap")->*[]_CCCL_DEVICE(size_t i, auto dR, auto drsold, auto dpAp, auto dAp) {
-        double alpha = (*drsold / *dpAp);
-        dR(i) -= alpha * dAp(i);
-    };
+    ctx.parallel_for(R.shape(), R.rw(), rsold.read(), pAp.read(), Ap.read()).set_symbol("R-=alpha*Ap")
+        ->*[] _CCCL_DEVICE(size_t i, auto dR, auto drsold, auto dpAp, auto dAp) {
+              double alpha = (*drsold / *dpAp);
+              dR(i) -= alpha * dAp(i);
+            };
 
     // rsnew = r' * r;
     auto rsnew = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("rsnew");
     DOT(ctx, R, R, rsnew);
 
     while_guard.update_cond(rsnew.read())->*[] __device__(auto drsnew) {
-        printf("RES %e\n", *drsnew);
-        bool converged = (*drsnew < 1e-13);
-        return !converged;
+      printf("RES %e\n", *drsnew);
+      bool converged = (*drsnew < 1e-13);
+      return !converged;
     };
 
     // p = r + (rsnew / rsold) * p;
-    ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")->*[]_CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
-        dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
-    };
+    ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read()).set_symbol("P=r+(rsnew/rsold)*P")
+        ->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
+              dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+            };
 
     // update old residual
-    ctx.parallel_for(box(1), rsold.write(), rsnew.read()).set_symbol("update_rsold")->*[]_CCCL_DEVICE(size_t i, auto drsold, auto drsnew) {
-       *drsold = *drsnew;
-    };
+    ctx.parallel_for(box(1), rsold.write(), rsnew.read()).set_symbol("update_rsold")
+        ->*[] _CCCL_DEVICE(size_t i, auto drsold, auto drsnew) {
+              *drsold = *drsnew;
+            };
   }
 }
 

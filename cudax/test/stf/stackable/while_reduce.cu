@@ -23,28 +23,29 @@ int main()
   stackable_ctx ctx;
 
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
-  ctx.parallel_for(lA.shape(), lA.write())->*[]__device__(size_t i, auto dA) {
-      dA(i) = 0;
+  ctx.parallel_for(lA.shape(), lA.write())->*[] __device__(size_t i, auto dA) {
+    dA(i) = 0;
   };
 
   {
-      auto while_guard = ctx.while_graph_scope();
+    auto while_guard = ctx.while_graph_scope();
 
-      auto lsum = ctx.logical_data(shape_of<scalar_view<int>>());
+    auto lsum = ctx.logical_data(shape_of<scalar_view<int>>());
 
-      ctx.parallel_for(lA.shape(), lA.rw())->*[]__device__(size_t i, auto dA) {
-          dA(i)++;
-      };
+    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto dA) {
+      dA(i)++;
+    };
 
-      ctx.parallel_for(lA.shape(), lA.read(), lsum.reduce(reducer::sum<int>()))->*[]__device__(size_t i, auto dA, int &sum) {
-          sum += dA(i);
-      };
+    ctx.parallel_for(lA.shape(), lA.read(), lsum.reduce(reducer::sum<int>()))
+        ->*[] __device__(size_t i, auto dA, int& sum) {
+              sum += dA(i);
+            };
 
-      while_guard.update_cond(lsum.read())->*[] __device__(auto sum) {
-        bool converged   = (*sum > 4096);
-        return !converged;
-      };
- }
+    while_guard.update_cond(lsum.read())->*[] __device__(auto sum) {
+      bool converged = (*sum > 4096);
+      return !converged;
+    };
+  }
 
   ctx.finalize();
 }
