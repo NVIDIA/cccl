@@ -30,86 +30,24 @@
 #include <cuda/__utility/__basic_any/semiregular.h>
 #include <cuda/__utility/__basic_any/storage.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
+#include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-// clang-format off
-// constructible_from using list initialization syntax.
-template <class _Tp, class... _Args>
-_CCCL_CONCEPT __list_initializable_from =
-  _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
-  (
-    _Tp{static_cast<_Args&&>(__args)...}
-  );
-
-template <class _Tp, class... _Args>
-_CCCL_CONCEPT __initializable_from =
-  ::cuda::std::constructible_from<_Tp, _Args...> ||
-  __list_initializable_from<_Tp, _Args...>;
-
-template <class _Tp, class... _Args>
-_CCCL_CONCEPT __nothrow_list_initializable_from =
-  _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
-  (
-    noexcept(_Tp{static_cast<_Args&&>(__args)...})
-  );
-
-template <class _Tp, class... _Args>
-_CCCL_CONCEPT __nothrow_initializable_from =
-  __initializable_from<_Tp, _Args...>
-  && (::cuda::std::constructible_from<_Tp, _Args...>
-        ? ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>
-        : __nothrow_list_initializable_from<_Tp, _Args...>);
-
-#if !_CCCL_COMPILER(MSVC)
-
-template <class _Tp, class _Fn, class... _Args>
-_CCCL_CONCEPT __emplaceable_from =
-  _CCCL_REQUIRES_EXPR((_Tp, _Fn, variadic _Args), _Fn&& __fn, _Args&&... __args)
-  (
-    _Tp(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...))
-  );
-
-template <class _Tp, class _Fn, class... _Args>
-_CCCL_CONCEPT __nothrow_emplaceable_from =
-  _CCCL_REQUIRES_EXPR((_Tp, _Fn, variadic _Args), _Fn&& __fn, _Args&&... __args)
-  (
-    noexcept(_Tp(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...)))
-  );
-
-#else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
-
-template <class _Tp, class _Fn, class... _Args>
-_CCCL_CONCEPT __emplaceable_from =
-  _CCCL_REQUIRES_EXPR((_Tp, _Fn, variadic _Args), _Fn&& __fn, _Args&&... __args)
-  (
-    _Same_as(_Tp) static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...)
-  );
-
-template <class _Tp, class _Fn, class... _Args>
-_CCCL_CONCEPT __nothrow_emplaceable_from =
-  __emplaceable_from<_Tp, _Fn, _Args...>
-  && ::cuda::std::__is_nothrow_callable_v<_Fn, _Args...>;
-
-#endif // ^^^ _CCCL_COMPILER(MSVC) ^^^
-
-// clang-format on
 
 //!
 //! __basic_any
@@ -143,7 +81,10 @@ public:
   //! requirements of `_Interface`.
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>)
-  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND __satisfies<_Up, _Interface>)
+  _CCCL_REQUIRES((!__is_basic_any<_Up>)
+                 // The following constraint seems to trip up a lot of compilers, so leave it out.
+                 // _CCCL_AND ::cuda::std::constructible_from<_Up, _Tp>
+                 _CCCL_AND __satisfies<_Up, _Interface>)
   _CCCL_API __basic_any(_Tp&& __value) noexcept(__is_small<_Up, __movable>(__size_, __align_)
                                                 && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
@@ -490,7 +431,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
   _CCCL_API auto __emplace(_Args&&... __args) noexcept(
-    __is_small<_Tp, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>) -> _Tp&
+    __is_small<_Tp, __movable>(__size_, __align_) && __nothrow_initializable_from<_Tp, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
     if constexpr (__is_small<_Tp, __movable>(__size_, __align_))
@@ -555,7 +496,7 @@ private:
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any>)
   _CCCL_API void
-  __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::is_same_v<_SrcInterface, _Interface>)
+  __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
     using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<_SrcInterface>;
@@ -568,11 +509,12 @@ private:
     {
       if (!__from.__in_situ())
       {
-        ::new (__buffer_)::cuda::std::type_identity_t<void*>(__from.__get_optr());
+        using __void_ptr_t = void*;
+        ::new (__buffer_) __void_ptr_t(__from.__get_optr());
         __vptr_.__set(__to_vptr, false);
         __from.__release_();
       }
-      else if constexpr (::cuda::std::is_same_v<_SrcInterface, _Interface>)
+      else if constexpr (::cuda::std::same_as<_SrcInterface, _Interface>)
       {
         __from.__move_to(__buffer_);
         __vptr_.__set(__from.__get_vptr(), true);
