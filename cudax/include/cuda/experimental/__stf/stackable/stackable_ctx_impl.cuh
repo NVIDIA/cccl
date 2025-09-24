@@ -30,6 +30,7 @@
 #include <thread>
 
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
+#include "cuda/experimental/__stf/internal/context.cuh"
 #include "cuda/experimental/__stf/internal/task.cuh"
 #include "cuda/experimental/__stf/stackable/conditional_nodes.cuh"
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"

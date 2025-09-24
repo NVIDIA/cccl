@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "cuda/experimental/stf.cuh"
+#include <cuda_runtime.h>
 
 namespace cuda::experimental::stf
 {
