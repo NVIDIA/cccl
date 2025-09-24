@@ -52,15 +52,18 @@ enum class address_space
   return __v >= 0 && __v < ::cuda::std::to_underlying(address_space::__max);
 }
 
+[[nodiscard]] _CCCL_DEVICE_API inline bool __is_smem_valid_ptr(const void* __ptr) noexcept
+{
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (return __ptr != nullptr;), (return true;));
+}
+
 //! @brief Checks if the given pointer is from the specified address state space.
 //! @param __ptr The address to check.
 //! @param __space The address state space to check against.
 //! @return `true` if the pointer is from the specified address space, `false` otherwise.
-[[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline bool __internal_is_address_from(const void* __ptr, address_space __space) noexcept
 {
-  _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   _CCCL_ASSERT(::cuda::device::__cccl_is_valid_address_space(__space), "invalid address space");
-
   // NVCC and NVRTC < 12.3 have problems tracking the address space of pointers, fallback to inline PTX for them
   switch (__space)
   {
@@ -83,6 +86,7 @@ enum class address_space
       return static_cast<bool>(::__isGlobal(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::shared:
+      // smem can start at address 0x0 before sm_90
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
     {
       unsigned __ret;
@@ -181,6 +185,23 @@ enum class address_space
     default:
       return false;
   }
+}
+
+//! @brief Checks if the given pointer is from the specified address state space.
+//! @param __ptr The address to check.
+//! @param __space The address state space to check against.
+//! @return `true` if the pointer is from the specified address space, `false` otherwise.
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space) noexcept
+{
+  if (__space == address_space::shared)
+  {
+    _CCCL_ASSERT(::cuda::device::__is_smem_valid_ptr(__ptr), "invalid pointer");
+  }
+  else
+  {
+    _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
+  }
+  return ::cuda::device::__internal_is_address_from(__ptr, __space);
 }
 
 //! @brief Checks if the given pointer is from the specified address state space.
