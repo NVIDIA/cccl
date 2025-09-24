@@ -79,7 +79,7 @@ class shape_of<scalar_view<T>>
 public:
   shape_of() = default;
   shape_of(const scalar_view<T>&)
-      : shape_of<scalar_view<T>>()
+      : shape_of()
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
