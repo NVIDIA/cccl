@@ -106,7 +106,7 @@ struct TransformKernelSource<Offset,
   }
 
   template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, size_t alignment)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, [[maybe_unused]] int alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
