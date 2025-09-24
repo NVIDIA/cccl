@@ -23,6 +23,7 @@
 
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -64,8 +65,28 @@ class constant_iterator
 private:
   static_assert(::cuda::std::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
 
-  ::cuda::std::ranges::__movable_box<_Tp> __value_{::cuda::std::in_place};
-  _Index __index_ = 0;
+  // Not a base because then the friend operators would be ambiguous
+  ::cuda::std::__compressed_movable_box<_Index, _Tp> __store_;
+
+  [[nodiscard]] _CCCL_API constexpr _Index& __index() noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Index& __index() const noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Tp& __value() noexcept
+  {
+    return __store_.template __get<1>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Tp& __value() const noexcept
+  {
+    return __store_.template __get<1>();
+  }
 
 public:
   using iterator_concept  = ::cuda::std::random_access_iterator_tag;
@@ -85,15 +106,16 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Tp2>)
-  _CCCL_API constexpr constant_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp2>) {}
+  _CCCL_API constexpr constant_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp2>)
+      : __store_()
+  {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
   //! @brief Creates a @c constant_iterator from a value. The index is set to zero
   //! @param __value The value to store in the @c constant_iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr constant_iterator(_Tp __value) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Tp>)
-      : __value_(::cuda::std::in_place, ::cuda::std::move(__value))
-      , __index_()
+      : __store_(0, ::cuda::std::move(__value))
   {}
 
   //! @brief Creates @c constant_iterator from a value and an index
@@ -104,32 +126,31 @@ public:
   _CCCL_REQUIRES(::cuda::std::__integer_like<_Index2>)
   _CCCL_API constexpr explicit constant_iterator(_Tp __value, _Index2 __index) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Tp>)
-      : __value_(::cuda::std::in_place, ::cuda::std::move(__value))
-      , __index_(static_cast<_Index>(__index))
+      : __store_(static_cast<_Index>(__index), ::cuda::std::move(__value))
   {}
 
   //! @brief Returns a the current index
   [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
-    return static_cast<difference_type>(__index_);
+    return static_cast<difference_type>(__index());
   }
 
   //! @brief Returns a const reference to the stored value
   [[nodiscard]] _CCCL_API constexpr const _Tp& operator*() const noexcept
   {
-    return *__value_;
+    return __value();
   }
 
   //! @brief Returns a const reference to the stored value
   [[nodiscard]] _CCCL_API constexpr const _Tp& operator[](difference_type) const noexcept
   {
-    return *__value_;
+    return __value();
   }
 
   //! @brief Increments the stored index
   _CCCL_API constexpr constant_iterator& operator++() noexcept
   {
-    ++__index_;
+    ++__index();
     return *this;
   }
 
@@ -147,9 +168,9 @@ public:
   {
     if constexpr (::cuda::std::is_signed_v<_Index>)
     {
-      _CCCL_ASSERT(__index_ > 0, "The index must be greater than or equal to 0");
+      _CCCL_ASSERT(__index() > 0, "The index must be greater than or equal to 0");
     }
-    --__index_;
+    --__index();
     return *this;
   }
 
@@ -168,9 +189,9 @@ public:
   {
     if constexpr (::cuda::std::is_signed_v<_Index>)
     {
-      _CCCL_ASSERT(__index_ + __n >= 0, "The index must be greater than or equal to 0");
+      _CCCL_ASSERT(__index() + __n >= 0, "The index must be greater than or equal to 0");
     }
-    __index_ += static_cast<_Index>(__n);
+    __index() += static_cast<_Index>(__n);
     return *this;
   }
 
@@ -200,9 +221,9 @@ public:
   {
     if constexpr (::cuda::std::is_signed_v<_Index>)
     {
-      _CCCL_ASSERT(__index_ - __n >= 0, "The index must be greater than or equal to 0");
+      _CCCL_ASSERT(__index() - __n >= 0, "The index must be greater than or equal to 0");
     }
-    __index_ -= static_cast<_Index>(__n);
+    __index() -= static_cast<_Index>(__n);
     return *this;
   }
 
@@ -220,14 +241,14 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return static_cast<difference_type>(__lhs.__index_) - static_cast<difference_type>(__rhs.__index_);
+    return static_cast<difference_type>(__lhs.__index()) - static_cast<difference_type>(__rhs.__index());
   }
 
   //! @brief Compares two @c constant_iterator for equality by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ == __rhs.__index_;
+    return __lhs.__index() == __rhs.__index();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -235,7 +256,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ != __rhs.__index_;
+    return __lhs.__index() != __rhs.__index();
   }
 #endif // _CCCL_STD_VER <= 2017
 
@@ -244,32 +265,32 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ <=> __rhs.__index_;
+    return __lhs.__index() <=> __rhs.__index();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Compares two @c constant_iterator for less than by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ < __rhs.__index_;
+    return __lhs.__index() < __rhs.__index();
   }
   //! @brief Compares two @c constant_iterator for less equal by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ <= __rhs.__index_;
+    return __lhs.__index() <= __rhs.__index();
   }
   //! @brief Compares two @c constant_iterator for greater than by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ > __rhs.__index_;
+    return __lhs.__index() > __rhs.__index();
   }
   //! @brief Compares two @c constant_iterator for greater equal by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ >= __rhs.__index_;
+    return __lhs.__index() >= __rhs.__index();
   }
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR()
 };
