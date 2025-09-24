@@ -35,7 +35,6 @@
 #include "cuda/experimental/__stf/stackable/stackable_task_dep.cuh"
 #include "cuda/experimental/__stf/utility/hash.cuh"
 #include "cuda/experimental/__stf/utility/source_location.cuh"
-#include "cuda/experimental/stf.cuh"
 
 namespace cuda::experimental::stf
 {
