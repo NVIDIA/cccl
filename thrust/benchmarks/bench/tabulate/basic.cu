@@ -27,11 +27,37 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
 #include <nvbench_helper.cuh>
 
 #include "thrust/detail/raw_pointer_cast.h"
+
+using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
+
+template <typename T>
+static void sequence(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
+
+  thrust::device_vector<T> output(elements, thrust::no_init);
+
+  state.add_element_count(elements);
+  state.add_global_memory_writes<T>(elements);
+
+  caching_allocator_t alloc;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               // sequence is implemented via thrust::tabulate
+               thrust::sequence(policy(alloc, launch), output.begin(), output.end());
+             });
+}
+
+NVBENCH_BENCH_TYPES(sequence, NVBENCH_TYPE_AXES(types))
+  .set_name("sequence")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
 
 template <class T>
 struct seg_size_t
@@ -46,12 +72,12 @@ struct seg_size_t
 };
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void seg_size(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
   thrust::device_vector<T> input(elements + 1);
-  thrust::device_vector<T> output(elements);
+  thrust::device_vector<T> output(elements, thrust::no_init);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements + 1);
@@ -65,9 +91,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
              });
 }
 
-using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
-
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
-  .set_name("base")
+NVBENCH_BENCH_TYPES(seg_size, NVBENCH_TYPE_AXES(types))
+  .set_name("seg_size")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
