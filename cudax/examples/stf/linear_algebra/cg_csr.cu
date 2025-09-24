@@ -39,153 +39,18 @@ struct csr_matrix
   mutable context ctx;
 };
 
-class vector
+// Note that a and b might be the same logical data
+void DOT(context &ctx, logical_data<slice<double>> &a, logical_data<slice<double>> &b, logical_data<scalar_view<double>> &res)
 {
-public:
-  vector(const context& _ctx, size_t N)
-      : ctx(_ctx)
-  {
-    handle = ctx.logical_data(shape_of<slice<double>>(N));
-  }
-
-  static void copy_vector(const vector& from, vector& to)
-  {
-    to.ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<const double> dfrom) {
-              dto(i) = dfrom(i);
-            };
-  }
-
-  // Copy constructor
-  vector(const vector& a)
-  {
-    ctx    = a.ctx;
-    handle = ctx.logical_data(a.handle.shape());
-    copy_vector(a, *this);
-  }
-
-  // this -= rhs
-  vector& operator-=(const vector& rhs)
-  {
-    ctx.parallel_for(handle.shape(), handle.rw(), rhs.handle.read()).set_symbol("-= vector")
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs) {
-              dthis(i) -= drhs(i);
-            };
-
-    return *this;
-  }
-
-  size_t size() const
-  {
-    return handle.shape().size();
-  }
-
-  mutable logical_data<slice<double>> handle;
-  mutable context ctx;
-};
-
-class scalar
-{
-public:
-  scalar(const context& _ctx)
-      : ctx(_ctx)
-  {
-    handle = ctx.logical_data(shape_of<scalar_view<double>>());
-  }
-
-  static void copy_scalar(const scalar& from, scalar& to)
-  {
-    to.ctx.parallel_for(box(1), to.handle.write(), from.handle.read())->*[] _CCCL_DEVICE(size_t i, auto dto, auto dfrom) {
-      *dto = *dfrom;
-    };
-  }
-
-  // Assign constructor
-  scalar& operator=(scalar const& rhs)
-  {
-    ctx    = rhs.ctx;
-    handle = ctx.logical_data(rhs.handle.shape());
-    return *this;
-  }
-
-  // Copy constructor
-  scalar(const scalar& a)
-  {
-    handle = ctx.logical_data(a.handle.shape());
-    ctx    = a.ctx;
-    copy_scalar(a, *this);
-  }
-
-  scalar& operator=(scalar&& a)
-  {
-    handle = mv(a.handle);
-    ctx    = mv(a.ctx);
-    return *this;
-  }
-
-  scalar operator/(scalar const& rhs) const
-  {
-    // Submit a task that computes this/rhs
-    scalar res(ctx);
-    res.ctx.parallel_for(box(1), handle.read(), rhs.handle.read(), res.handle.write())
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs, auto dres) {
-              *dres = *dthis / *drhs;
-            };
-
-    return res;
-  }
-
-  scalar operator-() const
-  {
-    // Submit a task that computes -s
-    scalar res(ctx);
-    res.ctx.parallel_for(box(1), handle.read(), res.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dthis, auto dres) {
-      *dres = -*dthis;
-    };
-
-    return res;
-  }
-
-  mutable logical_data<scalar_view<double>> handle;
-  mutable context ctx;
-};
-
-scalar DOT(vector& a, vector& b)
-{
-  scalar res(a.ctx);
-
-  a.ctx.parallel_for(a.handle.shape(), a.handle.read(), b.handle.read(), res.handle.reduce(reducer::sum<double>{}))
+  ctx.parallel_for(a.shape(), a.read(), b.read(), res.reduce(reducer::sum<double>{}))
       ->*[] __device__(size_t i, auto da, auto db, double& dres) {
             dres += da(i) * db(i);
           };
-
-  return res;
 };
 
-// Y = Y + alpha * X
-void AXPY(const scalar& alpha, vector& x, vector& y)
+void SPMV(context &ctx, csr_matrix& a, logical_data<slice<double>>& x, logical_data<slice<double>>& y)
 {
-  y.ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
-      ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
-            dy(i) += *dalpha * dx(i);
-          };
-};
-
-// Y = alpha*Y + X
-void SCALE_AXPY(const scalar& alpha, const vector& x, vector& y)
-{
-  y.ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
-      ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
-            dy(i) = *dalpha * dy(i) + dx(i);
-          };
-};
-
-vector SPMV(csr_matrix& a, vector& x)
-{
-  vector y(x.ctx, x.size());
-
-  y.ctx.parallel_for(
-    y.handle.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.handle.read(), y.handle.write())
+  ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
             int row_start = da_row(row);
             int row_end   = da_row(row + 1);
@@ -198,58 +63,6 @@ vector SPMV(csr_matrix& a, vector& x)
 
             dy(row) = sum;
           };
-
-  return y;
-}
-
-void cg(csr_matrix& A, vector& X, vector& B)
-{
-  context ctx = A.ctx;
-  size_t N    = B.size();
-  vector R    = B;
-
-  // R = R - A*X
-  auto Ax = SPMV(A, X);
-  R -= Ax;
-
-  vector P = R;
-
-  // RSOLD = R'*R
-  scalar rsold = DOT(R, R);
-
-  const int MAXITER = N;
-  for (int k = 0; k < MAXITER; k++)
-  {
-    // Ap = A*P
-    auto Ap = SPMV(A, P);
-
-    // alpha = rsold / (p' * Ap);
-    scalar alpha = rsold / DOT(P, Ap);
-
-    // x = x + alpha * p;
-    AXPY(alpha, P, X);
-
-    // r = r - alpha * Ap;
-    AXPY(-alpha, Ap, R);
-
-    // rsnew = r' * r;
-    scalar rsnew = DOT(R, R);
-
-    // Read the residual on the CPU, and halt the iterative process if we have converged
-    // (note that this will block the submission of tasks)
-    double err = ctx.wait(rsnew.handle);
-    if (err < 1e-10)
-    {
-      // We have converged
-      fprintf(stderr, "Successfully converged (err = %le)\n", err);
-      break;
-    }
-
-    // p = r + (rsnew / rsold) * p;
-    SCALE_AXPY(rsnew / rsold, R, P);
-
-    rsold = mv(rsnew);
-  }
 }
 
 /* genTridiag: generate a random tridiagonal symmetric matrix
@@ -297,32 +110,92 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
   I[N] = nz;
 }
 
-void cg_solver(size_t N, size_t nz, size_t* row_offsets, size_t* column_indices, double* values)
+void cg_solver(context &ctx, csr_matrix &A, logical_data<slice<double>> &X, logical_data<slice<double>> &B)
 {
-  context ctx;
-
-  csr_matrix A(ctx, N, nz, values, row_offsets, column_indices);
-
-  vector X(ctx, N), B(ctx, N);
-
-  // RHS
-  ctx.parallel_for(B.handle.shape(), B.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dB) {
-    dB(i) = 1.0;
-  };
-
-  // Initial guess
-  ctx.parallel_for(X.handle.shape(), X.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dX) {
+  // Initial guess X = 1
+  ctx.parallel_for(X.shape(), X.write())->*[] _CCCL_DEVICE(size_t i, auto dX) {
     dX(i) = 1.0;
   };
 
-  cg(A, X, B);
+  // Residual R initialized to B
+  auto R = ctx.logical_data(B.shape());
+  ctx.parallel_for(R.shape(), R.write(), B.read())->*[] _CCCL_DEVICE(size_t i, auto dR, auto dB) {
+    dR(i) = dB(i);
+  };
 
-  ctx.finalize();
+  // R = R - A*X
+  auto Ax = ctx.logical_data(X.shape());
+  SPMV(ctx, A, X, Ax);
+  ctx.parallel_for(R.shape(), R.rw(), Ax.read())->*[] _CCCL_DEVICE(size_t i, auto dR, auto dAx) {
+    dR(i) -= dAx(i);
+  };
+
+  // P = R;
+  auto P = ctx.logical_data(R.shape());
+  ctx.parallel_for(P.shape(), P.write(), R.read())->*[] _CCCL_DEVICE(size_t i, auto dP, auto dR) {
+    dP(i) = dR(i);
+  };
+
+  // RSOLD = R'*R
+  auto rsold = ctx.logical_data(shape_of<scalar_view<double>>());
+  DOT(ctx, R, R, rsold);
+
+  const int MAXITER = X.shape().size();
+  for (int k = 0; k < MAXITER; k++)
+  {
+    // Ap = A*P
+    auto Ap = ctx.logical_data(P.shape());
+    SPMV(ctx, A, P, Ap);
+
+    // We don't compute alpha explicitely
+    // alpha = rsold / (p' * Ap);
+    auto pAp =   ctx.logical_data(shape_of<scalar_view<double>>());
+    DOT(ctx, P, Ap, pAp);
+
+    // x = x + alpha * p;
+    ctx.parallel_for(X.shape(), X.rw(), rsold.read(), pAp.read(), P.read())->*[]_CCCL_DEVICE(size_t i, auto dX, auto drsold, auto dpAp, auto dP) {
+        double alpha = (*drsold / *dpAp);
+        dX(i) += alpha * dP(i);
+    };
+
+    // r = r - alpha * Ap;
+    ctx.parallel_for(R.shape(), R.rw(), rsold.read(), pAp.read(), Ap.read())->*[]_CCCL_DEVICE(size_t i, auto dR, auto drsold, auto dpAp, auto dAp) {
+        double alpha = (*drsold / *dpAp);
+        dR(i) -= alpha * dAp(i);
+    };
+
+    // rsnew = r' * r;
+    auto rsnew = ctx.logical_data(shape_of<scalar_view<double>>());
+    DOT(ctx, R, R, rsnew);
+
+    // Read the residual on the CPU, and halt the iterative process if we have converged
+    // (note that this will block the submission of tasks)
+    double err = ctx.wait(rsnew);
+    fprintf(stderr, "iter %d : residual %e\n", k, err);
+    if (err < 1e-10)
+    {
+      // We have converged
+      fprintf(stderr, "Successfully converged (err = %le)\n", err);
+      break;
+    }
+
+    // p = r + (rsnew / rsold) * p;
+    ctx.parallel_for(P.shape(), P.rw(), R.read(), rsnew.read(), rsold.read())->*[]_CCCL_DEVICE(size_t i, auto dP, auto dR, auto drsnew, auto drsold) {
+        dP(i) = dR(i) + (*drsnew / *drsold) * dP(i);
+    };
+
+    // update old residual
+    ctx.parallel_for(box(1), rsold.write(), rsnew.read())->*[]_CCCL_DEVICE(size_t i, auto drsold, auto drsnew) {
+       *drsold = *drsnew;
+    };
+  }
 }
 
 int main(int argc, char** argv)
 {
   size_t N = 10485760;
+
+  context ctx;
 
   if (argc > 1)
   {
@@ -342,6 +215,17 @@ int main(int argc, char** argv)
   // Generate a random matrix that is supposed to be invertible
   genTridiag(row_offsets, column_indices, values, N, nz);
 
-  // Solve the system using the CG algorithm
-  cg_solver(N, nz, row_offsets, column_indices, values);
+  csr_matrix A(ctx, N, nz, values, row_offsets, column_indices);
+
+  auto X = ctx.logical_data(shape_of<slice<double>>(N));
+  auto B = ctx.logical_data(shape_of<slice<double>>(N));
+
+  // RHS
+  ctx.parallel_for(B.shape(), B.write())->*[] __device__(size_t i, auto dB) {
+    dB(i) = 1.0;
+  };
+
+  cg_solver(ctx, A, X, B);
+
+  ctx.finalize();
 }
