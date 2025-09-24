@@ -13,6 +13,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -29,6 +30,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   {
@@ -42,6 +44,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 }
 
