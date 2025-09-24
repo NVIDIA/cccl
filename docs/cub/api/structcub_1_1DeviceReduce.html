@@ -1676,15 +1676,20 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub12DeviceReduce6ReduceE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT1T4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide reduction using the specified binary <code class="docutils literal notranslate"><span class="pre">reduction_op</span></code> functor and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
-<ul class="simple">
+<ul>
 <li><p>Does not support binary reduction operators that are non-commutative.</p></li>
 <li><p>By default, provides “run-to-run” determinism for pseudo-associative reduction
 (e.g., addition of floating point types) on the same GPU device.
 However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.
-To request “gpu-to-gpu” determinism, pass <cite>cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)</cite>
-as the <cite>env</cite> parameter.</p></li>
+To request “gpu-to-gpu” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)</span></code>
+as the <cite>env</cite> parameter.
+To request “not-guaranteed” determinism, pass</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::not_guaranteed)</span></code> as the <cite>env</cite> parameter.</p>
+</div></blockquote>
+</li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 </ul>
 <section id="id1">
@@ -1692,15 +1697,19 @@ as the <cite>env</cite> parameter.</p></li>
 <p>The code snippet below illustrates a user-defined min-reduction of a
 device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">op</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">plus</span><span class="p">{};</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">init</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
 
 <span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">run_to_run</span><span class="p">);</span>
 
-<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Reduce</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Reduce</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::Reduce failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">6.0f</span><span class="p">};</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">6.0f</span><span class="p">};</span>
 </pre></div>
 </div>
 </section>
@@ -1723,7 +1732,7 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
 <li><p><strong>reduction_op</strong> – <strong>[in]</strong> Binary reduction functor</p></li>
 <li><p><strong>init</strong> – <strong>[in]</strong> Initial value of the reduction</p></li>
-<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <cite>cuda::std::execution::env{}</cite>.</p>
+<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env{}</span></code>.</p>
 </p>
 </p></li>
 </ul>
@@ -1744,7 +1753,7 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3SumE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide sum using the addition (<code class="docutils literal notranslate"><span class="pre">+</span></code>) operator.</p>
-<ul class="simple">
+<ul>
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">0</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">+</span></code> operators that are non-commutative.</p></li>
 <li><p>Provides “run-to-run” determinism for pseudo-associative reduction
@@ -1752,22 +1761,31 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.
-To request “gpu-to-gpu” determinism, pass <cite>cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)</cite>
-as the <cite>env</cite> parameter.</p></li>
+To request “gpu-to-gpu” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)</span></code>
+as the <cite>env</cite> parameter.
+To request “not-guaranteed” determinism, pass</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::not_guaranteed)</span></code> as the <cite>env</cite> parameter.</p>
+</div></blockquote>
+</li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 </ul>
 <section id="id2">
 <h2>Snippet<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates a user-defined min-reduction of a
 device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 
 <span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">run_to_run</span><span class="p">);</span>
 
-<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::Sum failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">6.0f</span><span class="p">};</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">6.0f</span><span class="p">};</span>
 </pre></div>
 </div>
 </section>
@@ -1889,7 +1907,7 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce3MinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator.</p>
 <ul class="simple">
-<li><p>Uses <code class="docutils literal notranslate"><span class="pre">::cuda::std::numeric_limits&lt;T&gt;::max()</span></code> as the initial value of the reduction.</p></li>
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operators that are non-commutative.</p></li>
 <li><p>Provides “run-to-run” determinism for pseudo-associative reduction
 (e.g., addition of floating point types) on the same GPU device.
@@ -1954,6 +1972,68 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">NumItemsT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">EnvT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1af7554d01453f210aa3f76cd998fe7378"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Min</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Min::InputIteratorT"><span class="n"><span class="pre">InputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_in</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Min::OutputIteratorT"><span class="n"><span class="pre">OutputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_out</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Min::NumItemsT"><span class="n"><span class="pre">NumItemsT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Min::EnvT"><span class="n"><span class="pre">EnvT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">env</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
+<dd><p><p>Computes a device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator. The result is written to the output
+iterator.</p>
+<ul class="simple">
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()</span></code> as the initial value of the reduction.</p></li>
+<li><p>Provides determinism based on the environment’s determinism requirements.
+To request “run-to-run” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::run_to_run)</span></code>
+as the <cite>env</cite> parameter.</p></li>
+<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
+</ul>
+<section id="id5">
+<h2>Snippet<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<p>The code snippet below illustrates the min-reduction of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Min</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::Min failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">};</span>
+</pre></div>
+</div>
+</section>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>InputIteratorT</strong> – <strong>[inferred]</strong> Random-access input iterator type for reading input items (may be a simple pointer type)</p></li>
+<li><p><strong>OutputIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording the reduced aggregate (may be a simple pointer type)</p></li>
+<li><p><strong>NumItemsT</strong> – <strong>[inferred]</strong> Type of num_items</p></li>
+<li><p><strong>EnvT</strong> – <strong>[inferred]</strong> Execution environment type. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env&lt;&gt;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>d_in</strong> – <strong>[in]</strong> Pointer to the input sequence of data items</p></li>
+<li><p><strong>d_out</strong> – <strong>[out]</strong> Pointer to the output aggregate</p></li>
+<li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
+<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <cite>cuda::std::execution::env{}</cite>.</p>
+</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I000EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">IndexOutIteratorT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1a42821c452ad29ea0fc9da2b13259d09e"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgMin</span></span></span><span class="sig-paren">(</span>
 
@@ -1984,8 +2064,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code> nor <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id5">
-<h2>Snippet<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<section id="id6">
+<h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the argmin-reduction of a device vector
 of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/device/device_reduce.cuh&gt;</span>
@@ -2043,6 +2123,76 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">IndexOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">EnvT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1a5a53e9b6eb1c584a0b8b954f14f1267b"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgMin</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMin::InputIteratorT"><span class="n"><span class="pre">InputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_in</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMin::ExtremumOutIteratorT"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_min_out</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMin::IndexOutIteratorT"><span class="n"><span class="pre">IndexOutIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_index_out</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">int64_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMin::EnvT"><span class="n"><span class="pre">EnvT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">env</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="Link to this definition">#</a><br /></dt>
+<dd><p><p>Finds the first device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator and also returns the index of that item.</p>
+<ul class="simple">
+<li><p>The minimum is written to <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code></p></li>
+<li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
+<code class="docutils literal notranslate"><span class="pre">cuda::std::int64_t</span></code>.</p></li>
+<li><p>For zero-length inputs, <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()}</span></code> is written to <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code>  and the index
+<code class="docutils literal notranslate"><span class="pre">1</span></code> is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
+<li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operators that are non-commutative.</p></li>
+<li><p>Provides determinism based on the environment’s determinism requirements.
+To request “run-to-run” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::run_to_run)</span></code>
+as the <cite>env</cite> parameter.</p></li>
+<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code> nor <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
+</ul>
+<section id="id7">
+<h2>Snippet<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<p>The code snippet below illustrates the argmin-reduction of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">3.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">4.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">min_output</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">index_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">run_to_run</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">ArgMin</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">min_output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">index_output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::ArgMin failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected_min</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">};</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected_index</span><span class="p">{</span><span class="mi">3</span><span class="p">};</span>
+</pre></div>
+</div>
+</section>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>InputIteratorT</strong> – <strong>[inferred]</strong> Random-access input iterator type for reading input items (of some type <code class="docutils literal notranslate"><span class="pre">T</span></code>) (may be a simple pointer type)</p></li>
+<li><p><strong>ExtremumOutIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording minimum value</p></li>
+<li><p><strong>IndexOutIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording index of the returned value</p></li>
+<li><p><strong>EnvT</strong> – <strong>[inferred]</strong> Execution environment type. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env&lt;&gt;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>d_in</strong> – <strong>[in]</strong> Iterator to the input sequence of data items</p></li>
+<li><p><strong>d_min_out</strong> – <strong>[out]</strong> Iterator to which the minimum value is written</p></li>
+<li><p><strong>d_index_out</strong> – <strong>[out]</strong> Iterator to which the index of the returned value is written</p></li>
+<li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
+<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env{}</span></code>.</p>
+</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I00EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorTi12cudaStream_t">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIteratorT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1a0e4300a8b1fbaab0adca7775e0f352bf"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgMin</span></span></span><span class="sig-paren">(</span>
 
@@ -2062,7 +2212,7 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 (assuming the value type of <code class="docutils literal notranslate"><span class="pre">d_in</span></code> is <code class="docutils literal notranslate"><span class="pre">T</span></code>)</p>
 <ul>
 <li><p>The minimum is written to <code class="docutils literal notranslate"><span class="pre">d_out.value</span></code> and its offset in the input array is written to <code class="docutils literal notranslate"><span class="pre">d_out.key</span></code>.</p></li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">::cuda::std::numeric_limits&lt;T&gt;::max()}</span></code> tuple is produced for zero-length inputs</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()}</span></code> tuple is produced for zero-length inputs</p></li>
 </ul>
 </li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operators that are non-commutative.</p></li>
@@ -2071,11 +2221,11 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
-<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <cite>d_out</cite>.</p></li>
+<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id6">
-<h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h2>Snippet<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the argmin-reduction of a device vector
 of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/device/device_reduce.cuh&gt;</span>
@@ -2141,7 +2291,7 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce3MaxE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator.</p>
 <ul class="simple">
-<li><p>Uses <code class="docutils literal notranslate"><span class="pre">::cuda::std::numeric_limits&lt;T&gt;::lowest()</span></code> as the initial value of the reduction.</p></li>
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> operators that are non-commutative.</p></li>
 <li><p>Provides “run-to-run” determinism for pseudo-associative reduction
 (e.g., addition of floating point types) on the same GPU device.
@@ -2151,8 +2301,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id7">
-<h2>Snippet<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<section id="id9">
+<h2>Snippet<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the max-reduction of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/device/device_reduce.cuh&gt;</span>
 
@@ -2203,6 +2353,68 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">NumItemsT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">EnvT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1aa9dd9d257b9d05685d467f0a22c00bf1"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Max</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Max::InputIteratorT"><span class="n"><span class="pre">InputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_in</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Max::OutputIteratorT"><span class="n"><span class="pre">OutputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_out</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Max::NumItemsT"><span class="n"><span class="pre">NumItemsT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="cub::DeviceReduce::Max::EnvT"><span class="n"><span class="pre">EnvT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">env</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
+<dd><p><p>Computes a device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator. The result is written to the output
+iterator.</p>
+<ul class="simple">
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()</span></code> as the initial value of the reduction.</p></li>
+<li><p>Provides determinism based on the environment’s determinism requirements.
+To request “run-to-run” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::run_to_run)</span></code>
+as the <cite>env</cite> parameter.</p></li>
+<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
+</ul>
+<section id="id10">
+<h2>Snippet<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<p>The code snippet below illustrates the max-reduction of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">run_to_run</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Max</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::Max failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected</span><span class="p">{</span><span class="mf">3.0f</span><span class="p">};</span>
+</pre></div>
+</div>
+</section>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>InputIteratorT</strong> – <strong>[inferred]</strong> Random-access input iterator type for reading input items (may be a simple pointer type)</p></li>
+<li><p><strong>OutputIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording the reduced aggregate (may be a simple pointer type)</p></li>
+<li><p><strong>NumItemsT</strong> – <strong>[inferred]</strong> Type of num_items</p></li>
+<li><p><strong>EnvT</strong> – <strong>[inferred]</strong> Execution environment type. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env&lt;&gt;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>d_in</strong> – <strong>[in]</strong> Pointer to the input sequence of data items</p></li>
+<li><p><strong>d_out</strong> – <strong>[out]</strong> Pointer to the output aggregate</p></li>
+<li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
+<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env{}</span></code>.</p>
+</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I000EN3cub12DeviceReduce6ArgMaxE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">IndexOutIteratorT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1a13648ad6bed5c58af723dd45762b4fc3"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgMax</span></span></span><span class="sig-paren">(</span>
 
@@ -2234,8 +2446,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id8">
-<h2>Snippet<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<section id="id11">
+<h2>Snippet<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the argmax-reduction of a device vector
 of <cite>int</cite> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/device/device_reduce.cuh&gt;</span>
@@ -2314,7 +2526,7 @@ operator, also returning the index of that item</p>
 <ul>
 <li><p>The maximum is written to <code class="docutils literal notranslate"><span class="pre">d_out.value</span></code> and its offset in the input
 array is written to <code class="docutils literal notranslate"><span class="pre">d_out.key</span></code>.</p></li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">::cuda::std::numeric_limits&lt;T&gt;::lowest()}</span></code> tuple is produced for zero-length inputs</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">{1,</span> <span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()}</span></code> tuple is produced for zero-length inputs</p></li>
 </ul>
 </li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> operators that are non-commutative.</p></li>
@@ -2326,8 +2538,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id9">
-<h2>Snippet<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
+<section id="id12">
+<h2>Snippet<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the argmax-reduction of a device vector
 of <cite>int</cite> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span>
@@ -2381,6 +2593,77 @@ of <cite>int</cite> data elements.</p>
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">IndexOutIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">EnvT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1af36b6c5d28b6ada081b54e26c00c08e9"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgMax</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMax::InputIteratorT"><span class="n"><span class="pre">InputIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_in</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMax::ExtremumOutIteratorT"><span class="n"><span class="pre">ExtremumOutIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_max_out</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMax::IndexOutIteratorT"><span class="n"><span class="pre">IndexOutIteratorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d_index_out</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">int64_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="cub::DeviceReduce::ArgMax::EnvT"><span class="n"><span class="pre">EnvT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">env</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="Link to this definition">#</a><br /></dt>
+<dd><p><p>Finds the first device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator and also returns the index of that
+item.</p>
+<ul class="simple">
+<li><p>The maximum is written to <code class="docutils literal notranslate"><span class="pre">d_max_out</span></code></p></li>
+<li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
+<code class="docutils literal notranslate"><span class="pre">cuda::std::int64_t</span></code>.</p></li>
+<li><p>For zero-length inputs, <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()}</span></code> is written to <code class="docutils literal notranslate"><span class="pre">d_max_out</span></code>  and the index
+<code class="docutils literal notranslate"><span class="pre">1</span></code> is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
+<li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> operators that are non-commutative.</p></li>
+<li><p>Provides determinism based on the environment’s determinism requirements.
+To request “run-to-run” determinism, pass <code class="docutils literal notranslate"><span class="pre">cuda::execution::require(cuda::execution::determinism::run_to_run)</span></code>
+as the <cite>env</cite> parameter.</p></li>
+<li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_max_out</span></code> nor <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
+</ul>
+<section id="id13">
+<h2>Snippet<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
+<p>The code snippet below illustrates the argmax-reduction of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> data elements.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">{</span><span class="mf">3.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">4.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">max_output</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">index_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">ArgMax</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">max_output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">index_output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;cub::DeviceReduce::ArgMax failed with status: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected_max</span><span class="p">{</span><span class="mf">4.0f</span><span class="p">};</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected_index</span><span class="p">{</span><span class="mi">2</span><span class="p">};</span>
+</pre></div>
+</div>
+</section>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>InputIteratorT</strong> – <strong>[inferred]</strong> Random-access input iterator type for reading input items (of some type <code class="docutils literal notranslate"><span class="pre">T</span></code>) (may be a simple pointer type)</p></li>
+<li><p><strong>ExtremumOutIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording maximum value</p></li>
+<li><p><strong>IndexOutIteratorT</strong> – <strong>[inferred]</strong> Output iterator type for recording index of the returned value</p></li>
+<li><p><strong>EnvT</strong> – <strong>[inferred]</strong> Execution environment type. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env&lt;&gt;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>d_in</strong> – <strong>[in]</strong> Iterator to the input sequence of data items</p></li>
+<li><p><strong>d_max_out</strong> – <strong>[out]</strong> Iterator to which the maximum value is written</p></li>
+<li><p><strong>d_index_out</strong> – <strong>[out]</strong> Iterator to which the index of the returned value is written</p></li>
+<li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
+<li><p><strong>env</strong> – <strong>[in]</strong> <p><p><strong>[optional]</strong> Execution environment. Default is <code class="docutils literal notranslate"><span class="pre">cuda::std::execution::env{}</span></code>.</p>
+</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I000000EN3cub12DeviceReduce15TransformReduceE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT12TransformOpT1T12cudaStream_t">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ReductionOpT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">TransformOpT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">NumItemsT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1DeviceReduce_1a5397a67b57221562a508cd1ed5aa4fae"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaError_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TransformReduce</span></span></span><span class="sig-paren">(</span>
 
@@ -2408,8 +2691,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id10">
-<h2>Snippet<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
+<section id="id14">
+<h2>Snippet<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates a user-defined min-reduction of a
 device vector of <cite>int</cite> data elements.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span>
@@ -2519,8 +2802,8 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> nor <code class="docutils literal notranslate"><span class="pre">out</span></code> in any way.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
-<section id="id11">
-<h2>Snippet<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
+<section id="id15">
+<h2>Snippet<a class="headerlink" href="#id15" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates the segmented reduction of <code class="docutils literal notranslate"><span class="pre">int</span></code> values grouped by runs of
 associated <code class="docutils literal notranslate"><span class="pre">int</span></code> keys.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span>
@@ -2662,11 +2945,15 @@ associated <code class="docutils literal notranslate"><span class="pre">int</spa
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000EN3cub12DeviceReduce3SumE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT"><code class="docutils literal notranslate"><span class="pre">Sum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN3cub12DeviceReduce3SumE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">Sum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN3cub12DeviceReduce3MinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">Min()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT"><code class="docutils literal notranslate"><span class="pre">Min()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">ArgMin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT"><code class="docutils literal notranslate"><span class="pre">ArgMin()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I00EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorTi12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">ArgMin()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN3cub12DeviceReduce3MaxE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">Max()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT"><code class="docutils literal notranslate"><span class="pre">Max()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN3cub12DeviceReduce6ArgMaxE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">ArgMax()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I00EN3cub12DeviceReduce6ArgMaxE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorTi12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">ArgMax()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT"><code class="docutils literal notranslate"><span class="pre">ArgMax()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000000EN3cub12DeviceReduce15TransformReduceE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT12TransformOpT1T12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">TransformReduce()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000000EN3cub12DeviceReduce11ReduceByKeyE11cudaError_tPvR6size_t18KeysInputIteratorT21UniqueOutputIteratorT20ValuesInputIteratorT25AggregatesOutputIteratorT22NumRunsOutputIteratorT12ReductionOpT9NumItemsT12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">ReduceByKey()</span></code></a></li>
 </ul>
