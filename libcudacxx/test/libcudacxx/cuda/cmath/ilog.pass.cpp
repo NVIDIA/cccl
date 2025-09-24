@@ -67,11 +67,13 @@ __host__ __device__ constexpr void test_log10()
     }
     i++;
   }
+#if !TEST_COMPILER(MSVC)
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     constexpr auto max_v = cuda::std::numeric_limits<T>::max();
     assert(cuda::ilog10(max_v) == static_cast<int>(cuda::std::floor(cuda::std::log10(max_v))));
   }
+#endif // !TEST_COMPILER(MSVC)
 }
 
 template <class T>

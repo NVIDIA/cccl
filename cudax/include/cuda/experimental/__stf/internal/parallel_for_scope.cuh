@@ -23,6 +23,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
@@ -399,6 +400,34 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
+ * @brief Resource wrapper for managing parallel_for host callback arguments
+ *
+ * This manages the memory allocated for parallel_for host callback arguments using the
+ * ctx_resource system instead of manual delete in each callback.
+ */
+template <typename ArgsType>
+class parallel_for_args_resource : public ctx_resource
+{
+public:
+  explicit parallel_for_args_resource(ArgsType* args)
+      : args_(args)
+  {}
+
+  bool can_release_in_callback() const override
+  {
+    return true;
+  }
+
+  void release_in_callback() override
+  {
+    delete args_;
+  }
+
+private:
+  ArgsType* args_;
+};
+
+/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -581,11 +610,6 @@ public:
         cuda_safe_call(cudaEventCreate(&end_event));
         cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
       }
-    }
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename context::task_type, logical_data_untyped>(t);
     }
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
@@ -943,16 +967,20 @@ public:
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the callback
+    // that will be deleted by the resource system or immediately in callback
     auto args = new args_t(mv(instances), n, mv(f), shape);
+
+    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
+    // For stream contexts, delete immediately in callback (better memory efficiency)
+    if constexpr (::std::is_same_v<context, graph_ctx>)
+    {
+      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+      ctx.add_resource(mv(resource));
+    }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      SCOPE(exit)
-      {
-        delete p;
-      };
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
@@ -972,6 +1000,13 @@ public:
       for (size_t i = 0; i < n; ++i)
       {
         ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+      }
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<context, graph_ctx>)
+      {
+        delete p;
       }
     };
 

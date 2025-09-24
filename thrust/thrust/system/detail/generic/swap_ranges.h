@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
@@ -42,9 +38,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   ForwardIterator1 last1,
   ForwardIterator2 first2);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+}
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/swap_ranges.inl>

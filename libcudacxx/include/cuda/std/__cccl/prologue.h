@@ -253,6 +253,14 @@
 #  define _CCCL_POP_MACRO___valid
 #endif // defined(__valid)
 
+// other macros
+
+#if defined(clang)
+#  pragma push_macro("clang")
+#  undef clang
+#  define _CCCL_POP_MACRO_clang
+#endif // defined(clang)
+
 _CCCL_DIAG_PUSH
 
 // disable some msvc warnings

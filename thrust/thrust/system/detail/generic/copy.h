@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
@@ -43,9 +39,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE OutputIterator
 copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/copy.inl>

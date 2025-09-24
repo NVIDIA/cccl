@@ -46,7 +46,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
 

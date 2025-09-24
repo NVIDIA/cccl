@@ -36,6 +36,14 @@
 #  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
 #  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
 #endif
+// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
+// See NVBugs 5475335.
+#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#endif
 // workaround for error
 // * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
 // * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry

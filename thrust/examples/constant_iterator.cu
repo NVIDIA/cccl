@@ -9,11 +9,7 @@
 
 int main()
 {
-  thrust::device_vector<int> data(4);
-  data[0] = 3;
-  data[1] = 7;
-  data[2] = 2;
-  data[3] = 5;
+  thrust::device_vector<int> data{3, 7, 2, 5};
 
   // add 10 to all values in data
   thrust::transform(

@@ -13,7 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 
 CUB_NAMESPACE_BEGIN
 

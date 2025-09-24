@@ -508,6 +508,10 @@ public:
       submit();
       assert(state.submitted_stream);
     }
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
@@ -582,14 +586,7 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_stage()
-  {
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
-  }
+  void change_stage() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)

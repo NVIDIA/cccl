@@ -32,8 +32,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _ForwardIterator>
 _CCCL_API constexpr _ForwardIterator __max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
-                "::cuda::std::max_element requires a ForwardIterator");
+  static_assert(__is_cpp17_input_iterator<_ForwardIterator>, "::cuda::std::max_element requires a ForwardIterator");
   if (__first != __last)
   {
     _ForwardIterator __i = __first;

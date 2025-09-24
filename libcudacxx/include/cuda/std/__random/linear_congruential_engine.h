@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 

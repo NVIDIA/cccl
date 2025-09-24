@@ -37,9 +37,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 

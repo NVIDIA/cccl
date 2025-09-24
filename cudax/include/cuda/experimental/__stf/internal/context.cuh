@@ -483,6 +483,17 @@ public:
     };
   }
 
+  frozen_logical_data_untyped
+  freeze(::cuda::experimental::stf::logical_data_untyped d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
+  {
+    return payload->*[&](auto& self) {
+      return self.freeze(mv(d), m, mv(where), user_freeze);
+    };
+  }
+
   /**
    * @brief Creates logical data from a pointer and size.
    *
@@ -686,6 +697,29 @@ public:
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
       self.finalize();
+    };
+  }
+
+  //! Release context resources using the provided stream.
+  //!
+  //! Normally this is called automatically during finalize(), but when using
+  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
+  //! times, resources must be released manually once the graph will no longer
+  //! be used, since the same resources may be accessed repeatedly during graph replay.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
+    };
+  }
+
+  //! Add a resource to be managed by this context
+  void add_resource(::std::shared_ptr<ctx_resource> resource)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&resource](auto& self) {
+      self.add_resource(mv(resource));
     };
   }
 

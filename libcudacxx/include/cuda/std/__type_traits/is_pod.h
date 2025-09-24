@@ -21,39 +21,19 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : public integral_constant<bool, _CCCL_BUILTIN_IS_POD(_Tp)>
+struct _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : bool_constant<_CCCL_BUILTIN_IS_POD(_Tp)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
-
-#else
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod
-    : public integral_constant<
-        bool,
-        is_trivially_default_constructible<_Tp>::value && is_trivially_copy_constructible<_Tp>::value
-          && is_trivially_copy_assignable<_Tp>::value && is_trivially_destructible<_Tp>::value>
-{};
-
-template <class _Tp>
-inline constexpr bool is_pod_v = is_pod<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)
+_LIBCUDACXX_DEPRECATED_IN_CXX20 inline constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -68,8 +68,8 @@
 /**
  * \def CUB_RUNTIME_FUNCTION
  *
- * Execution space for functions that can use the CUDA runtime API (`__host__`
- * when RDC is off, `__host__ __device__` when RDC is on).
+ * Execution space for functions that use the CUDA runtime API, e.g. to launch kernels. Such functions are `__host__
+ * __device__` when compiling with RDC, otherwise only `__host__`.
  */
 #  define CUB_RUNTIME_FUNCTION
 
@@ -78,10 +78,11 @@
 #  ifndef CUB_RUNTIME_FUNCTION
 #    if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
 #      define CUB_RDC_ENABLED
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
-#    else // RDC disabled:
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST
-#    endif // RDC enabled
+#      define CUB_RUNTIME_FUNCTION _CCCL_API
+#    else
+// When we don't have RDC, CUB APIs cannot call kernels in device code, so we have to declare them __host__ only
+#      define CUB_RUNTIME_FUNCTION _CCCL_HOST_API
+#    endif
 #  endif // CUB_RUNTIME_FUNCTION predefined
 
 #  ifdef CUB_RDC_ENABLED

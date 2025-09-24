@@ -20,8 +20,9 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/limits>
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

@@ -1,11 +1,14 @@
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
+#include <thrust/sequence.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/utility>
 
 #include <iomanip>
 #include <iostream>
-
-#include "include/host_device.h"
+#include <numeric>
 
 // Helper routines
 
@@ -13,69 +16,77 @@ void initialize(thrust::device_vector<int>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  for (size_t i = 0; i < v.size(); i++)
+  thrust::host_vector<int> host_data(v.size());
+  for (auto& e : host_data)
   {
-    v[i] = dist(rng);
+    e = dist(rng);
   }
+  v = host_data;
 }
 
 void initialize(thrust::device_vector<float>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(2, 19);
-  for (size_t i = 0; i < v.size(); i++)
+  thrust::host_vector<float> host_data(v.size());
+  for (auto& e : host_data)
   {
-    v[i] = dist(rng) / 2.0f;
+    e = dist(rng) / 2.0f;
   }
+  v = host_data;
 }
 
-void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
+void initialize(thrust::device_vector<cuda::std::pair<int, int>>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(0, 9);
-  for (size_t i = 0; i < v.size(); i++)
+  thrust::host_vector<cuda::std::pair<int, int>> host_data(v.size());
+  for (auto& e : host_data)
   {
     int a = dist(rng);
     int b = dist(rng);
-    v[i]  = thrust::make_pair(a, b);
+    e     = cuda::std::make_pair(a, b);
   }
+  v = host_data;
 }
 
 void initialize(thrust::device_vector<int>& v1, thrust::device_vector<int>& v2)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  for (size_t i = 0; i < v1.size(); i++)
+  thrust::host_vector<int> host_data(v1.size());
+  for (auto& e : host_data)
   {
-    v1[i] = dist(rng);
-    v2[i] = static_cast<int>(i);
+    e = dist(rng);
   }
+  v1 = host_data;
+  thrust::sequence(v2.begin(), v2.end(), 0);
 }
 
 void print(const thrust::device_vector<int>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& value : v)
   {
-    std::cout << " " << v[i];
+    std::cout << " " << value;
   }
   std::cout << "\n";
 }
 
 void print(const thrust::device_vector<float>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& value : v)
   {
-    std::cout << " " << std::fixed << std::setprecision(1) << v[i];
+    std::cout << " " << std::fixed << std::setprecision(1) << value;
   }
   std::cout << "\n";
 }
 
-void print(const thrust::device_vector<thrust::pair<int, int>>& v)
+void print(const thrust::device_vector<cuda::std::pair<int, int>>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& p : v)
   {
-    thrust::pair<int, int> p = v[i];
-    std::cout << " (" << p.first << "," << p.second << ")";
+    cuda::std::pair<int, int> local_p = p;
+    std::cout << " (" << local_p.first << "," << local_p.second << ")";
   }
   std::cout << "\n";
 }
@@ -152,7 +163,7 @@ int main()
 
   std::cout << "\nsorting pairs\n";
   {
-    thrust::device_vector<thrust::pair<int, int>> keys(N);
+    thrust::device_vector<cuda::std::pair<int, int>> keys(N);
     initialize(keys);
     print(keys);
     thrust::sort(keys.begin(), keys.end());

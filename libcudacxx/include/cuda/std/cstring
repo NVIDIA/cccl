@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__cstring/memset.h>
 #include <cuda/std/__string/constexpr_c_functions.h>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -31,8 +33,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-using ::memcpy;
-using ::memset;
 using ::size_t;
 
 _CCCL_API constexpr char* strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src)

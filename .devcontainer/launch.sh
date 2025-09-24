@@ -134,6 +134,9 @@ launch_docker() {
     # Update run arguments and container environment variables
     ###
 
+    # Always clean up docker containers run via this script.
+    RUN_ARGS+=("--rm")
+
     # Only pass `-it` if the shell is a tty
     if ! ${CI:-'false'} && tty >/dev/null 2>&1 && (exec </dev/tty); then
         RUN_ARGS+=("-it")
@@ -177,13 +180,23 @@ launch_docker() {
         ENV_VARS+=("${env_vars[@]}")
     fi
 
-    exec docker run \
-        "${RUN_ARGS[@]}" \
-        "${ENV_VARS[@]}" \
-        "${MOUNTS[@]}" \
-        "${DOCKER_IMAGE}" \
-        "${ENTRYPOINTS[@]}" \
-        "$@"
+    ( # Contain the set -x in a subshell
+        if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+            echo "::group::Docker run command"
+            set -x
+        fi
+        exec docker run \
+          "${RUN_ARGS[@]}" \
+          "${ENV_VARS[@]}" \
+          "${MOUNTS[@]}" \
+          "${DOCKER_IMAGE}" \
+          "${ENTRYPOINTS[@]}" \
+          "$@"
+    )
+
+    if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+        echo "::endgroup::"
+    fi
 }
 
 launch_vscode() {

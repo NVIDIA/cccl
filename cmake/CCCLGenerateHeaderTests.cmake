@@ -26,7 +26,7 @@
 function(cccl_generate_header_tests target_name project_include_path)
   set(options)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
-  set(multiValueArgs GLOBS EXCLUDES HEADERS DEFINES)
+  set(multiValueArgs GLOBS EXCLUDES HEADERS)
   cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (CGHT_UNPARSED_ARGUMENTS)

@@ -36,11 +36,58 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_device.cuh>
 
-#include <stdio.h>
+#include <cuda/std/cstdint>
+
+#include <cstdio>
 
 #include "test_util.h"
 
 using namespace cub;
+
+// Borrowing nvbench's blocking_kernel for host-side control of kernel lifetimes.
+// This kernel does very bad things that violate the CUDA programming model, but
+// is okay for the tests here. Do not use this pattern in production code.
+
+// Once launched, this kernel will block the stream until `flag` updates to non-zero.
+__global__ void block_stream(const volatile cuda::std::int32_t* flag)
+{
+  while (!(*flag))
+  {
+  }
+}
+
+struct blocking_kernel
+{
+  blocking_kernel(const cudaStream_t& stream)
+      : m_stream(stream)
+  {
+    CubDebugExit(cudaHostRegister(&m_host_flag, sizeof(m_host_flag), cudaHostRegisterMapped));
+    CubDebugExit(cudaHostGetDevicePointer(&m_device_flag, &m_host_flag, 0));
+  }
+  ~blocking_kernel()
+  {
+    CubDebugExit(cudaHostUnregister(&m_host_flag));
+  }
+
+  void block()
+  {
+    _CubLog("Blocking Stream %lld\n", (long long) m_stream);
+    m_host_flag = 0;
+    block_stream<<<1, 1, 0, m_stream>>>(m_device_flag);
+  }
+
+  void unblock()
+  {
+    volatile cuda::std::int32_t& flag = m_host_flag;
+    flag                              = 1;
+    _CubLog("Unblocking Stream %lld\n", (long long) m_stream);
+  }
+
+private:
+  cuda::std::int32_t m_host_flag{};
+  cuda::std::int32_t* m_device_flag{};
+  cudaStream_t m_stream{0};
+};
 
 //---------------------------------------------------------------------
 // Main
@@ -106,8 +153,9 @@ int main(int argc, char** argv)
   char* d_999B_stream0_b;
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
 
-  // Run some big kernel in stream 0
-  cub::detail::EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
+  // Run a kernel on stream 0
+  blocking_kernel block_0_a(0);
+  block_0_a.block();
 
   // Free d_999B_stream0_a
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_a));
@@ -121,8 +169,9 @@ int main(int argc, char** argv)
   // Check that that we have no cached block on the initial GPU
   AssertEquals(allocator.cached_blocks.size(), 0);
 
-  // Run some big kernel in stream 0
-  cub::detail::EmptyKernel<void><<<32000, 512, 1024 * 8, 0>>>();
+  // Launch another kernel on stream 0
+  blocking_kernel block_0_b(0);
+  block_0_b.block();
 
   // Free d_999B_stream0_b
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_b));
@@ -139,13 +188,17 @@ int main(int argc, char** argv)
   // Check that that we have one cached block on the initial GPU
   AssertEquals(allocator.cached_blocks.size(), 1);
 
-  // Run some big kernel in other_stream
-  cub::detail::EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
+  // Now run a kernel in other_stream
+  blocking_kernel block_other(other_stream);
+  block_other.block();
 
   // Free d_999B_stream_other
   CubDebugExit(allocator.DeviceFree(d_999B_stream_other_a));
 
-  // Check that we can now use both allocations in stream 0 after synchronizing the device
+  // Check that we can now use both allocations in stream 0 after unblocking both kernels:
+  block_0_a.unblock();
+  block_0_b.unblock();
+  block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, 0));
@@ -172,7 +225,7 @@ int main(int argc, char** argv)
   AssertEquals(allocator.cached_blocks.size(), 0);
 
   // Run some big kernel in other_stream
-  cub::detail::EmptyKernel<void><<<32000, 512, 1024 * 8, other_stream>>>();
+  block_other.block();
 
   // Free d_999B_stream_other_a and d_999B_stream_other_b
   CubDebugExit(allocator.DeviceFree(d_999B_stream_other_a));
@@ -180,6 +233,7 @@ int main(int argc, char** argv)
 
   // Check that we can now use both allocations in stream 0 after synchronizing the device and destroying the other
   // stream
+  block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
   CubDebugExit(cudaStreamDestroy(other_stream));
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));

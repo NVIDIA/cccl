@@ -9,13 +9,19 @@ trap 'echo "Error in ${BASH_SOURCE[0]}:${LINENO}"' ERR
 set -o errtrace  # Ensure ERR trap propagates in functions and subshells
 
 # Usage: inspect_changes.sh <base_sha> <head_sha>
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <base_sha> <head_sha>"
+if [ "$#" -lt 2 ]; then
+  echo "Usage: $0 <base_sha> <head_sha> [<summary.md>]"
   exit 1
 fi
 
 base_sha=$1
 head_sha=$2
+summary_md=${3:-}
+
+if [[ -n "$summary_md" ]]; then
+  echo "Summary will be written to $summary_md"
+  > "${summary_md}"
+fi
 
 # Unshallow repo to make it possible to trace the common ancestor.
 if git rev-parse --is-shallow-repository &>/dev/null && git rev-parse --is-shallow-repository | grep -q true; then
@@ -41,6 +47,7 @@ subprojects=(
   stdpar
   python
   cccl_c_parallel
+  cccl_c_stf
   c2h
   nvbench_helper
 )
@@ -57,6 +64,7 @@ declare -A dependencies=(
   [stdpar]="cccl libcudacxx cub thrust"
   [python]="cccl libcudacxx cub cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust c2h"
+  [cccl_c_stf]="cccl libcudacxx cudax c2h"
   [c2h]="cccl libcudacxx cub thrust"
   [nvbench_helper]="cccl libcudacxx cub thrust"
 )
@@ -71,6 +79,7 @@ declare -A project_names=(
   [stdpar]="stdpar"
   [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
+  [cccl_c_stf]="CCCL C CUDASTF Library"
   [c2h]="Catch2Helper"
   [nvbench_helper]="NVBench Helper"
 )
@@ -84,6 +93,7 @@ declare -A project_names=(
 declare -A project_dirs=(
   [packaging]='("examples" "test/cmake")'
   [cccl_c_parallel]='("c/parallel")'
+  [cccl_c_stf]='("c/experimental/stf")'
   [stdpar]='("test/stdpar")'
 )
 
@@ -98,6 +108,7 @@ ignore_paths=(
   ".git-blame-ignore-revs"
   ".github/actions/docs-build"
   ".github/CODEOWNERS"
+  ".github/copilot-instructions.md"
   ".github/copy-pr-bot.yaml"
   ".github/ISSUE_TEMPLATE"
   ".github/PULL_REQUEST_TEMPLATE.md"
@@ -110,6 +121,7 @@ ignore_paths=(
   ".github/workflows/verify-devcontainers.yml"
   ".gitignore"
   "ci-overview.md"
+  "AGENTS.md"
   "CITATION.md"
   "CODE_OF_CONDUCT.md"
   "CONTRIBUTING.md"
@@ -154,9 +166,9 @@ write_output() {
   echo "$key=$value" | tee --append "${GITHUB_OUTPUT:-/dev/null}"
 }
 
-tee_to_step_summary() {
-  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-    tee -a "${GITHUB_STEP_SUMMARY}"
+tee_to_summary() {
+  if [ -n "${summary_md}" ]; then
+    tee -a "${summary_md}"
   else
     cat
   fi
@@ -266,19 +278,18 @@ main() {
   echo "::endgroup::"
   echo
 
-  echo "<details><summary><h3>👃 Inspect Changes</h3></summary>" | tee_to_step_summary
-  echo | tee_to_step_summary
+  echo "::group::Dirty projects"
 
-  echo -e "### Modifications in project?\n" | tee_to_step_summary
-  echo "|     | Project" | tee_to_step_summary
-  echo "|-----|---------" | tee_to_step_summary
+  echo -e "### Modifications in project?\n"
+  echo "|     | Project"
+  echo "|-----|---------"
 
   CCCL_DIRTY=0
   if core_infra_is_dirty; then
     CCCL_DIRTY=1
   fi
   checkmark="$(get_checkmark ${CCCL_DIRTY})"
-  echo "| ${checkmark} | ${project_names[cccl]}" | tee_to_step_summary
+  echo "| ${checkmark} | ${project_names[cccl]}"
 
   # Check for changes in each subprojects directory:
   for subproject in "${subprojects[@]}"; do
@@ -304,13 +315,13 @@ main() {
     declare ${subproject^^}_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"
 
-    echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
+    echo "| ${checkmark} | ${project_names[$subproject]}"
   done
-  echo | tee_to_step_summary
+  echo
 
-  echo -e "### Modifications in project or dependencies?\n" | tee_to_step_summary
-  echo "|     | Project" | tee_to_step_summary
-  echo "|-----|---------" | tee_to_step_summary
+  echo -e "### Modifications in project or dependencies?\n"
+  echo "|     | Project"
+  echo "|-----|---------"
 
   for subproject in "${subprojects[@]}"; do
     dirty=0
@@ -319,10 +330,10 @@ main() {
     fi
     declare ${subproject^^}_OR_DEPS_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"
-    echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
+    echo "| ${checkmark} | ${project_names[$subproject]}"
   done
 
-  echo "</details>" | tee_to_step_summary
+  echo "::endgroup::"
 
   declare -a dirty_subprojects=()
   for subproject in "${subprojects[@]}"; do
@@ -333,6 +344,33 @@ main() {
   done
 
   write_output "DIRTY_PROJECTS" "${dirty_subprojects[*]}"
+
+  echo "::group::Project Change Summary"
+  echo "<details><summary><h3>👃 Inspect Project Changes</h3></summary>" | tee_to_summary
+  echo | tee_to_summary
+
+  echo "| Project | Modified | Deps Modified |" | tee_to_summary
+  echo "|---------|----------|---------------|" | tee_to_summary
+
+  for subproject in "${subprojects[@]}"; do
+    eval "dirty=\${${subproject^^}_DIRTY}"
+    eval "deps_dirty=\${${subproject^^}_OR_DEPS_DIRTY}"
+
+    checkmark="$(get_checkmark ${dirty})"
+    deps_checkmark="$(get_checkmark ${deps_dirty})"
+
+    echo "| ${project_names[$subproject]} | ${checkmark} | ${deps_checkmark} |" | tee_to_summary
+  done
+
+  echo | tee_to_summary
+  echo "<details><summary><h4>👉 Dirty Files</h4></summary>" | tee_to_summary
+  echo | tee_to_summary
+  dirty_files | sed 's/^/  - /' | tee_to_summary
+  echo | tee_to_summary
+  echo "</details>" | tee_to_summary
+
+  echo "</details>" | tee_to_summary
+  echo "::endgroup::"
 }
 
 main "$@"

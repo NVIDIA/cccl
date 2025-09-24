@@ -65,12 +65,11 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <class T, typename OffsetT>
-void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <class T>
+void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 {
   using input_it_t  = const T*;
   using output_it_t = T*;
-  using offset_t    = cub::detail::choose_offset_t<OffsetT>;
 
   using init_t      = T;
   using accum_t     = T;
@@ -79,7 +78,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using dispatch_t = cub::detail::DispatchReduceDeterministic<
     input_it_t,
     output_it_t,
-    offset_t,
+    int,
     init_t,
     transform_t,
     accum_t
@@ -89,7 +88,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif
     >;
 
-  const auto elements = static_cast<T>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<int>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
@@ -101,21 +100,18 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<T>(out.size());
 
   std::size_t temp_storage_bytes{};
-  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(elements), {}, 0);
+  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in, d_out, elements, {}, 0);
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   auto* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(elements), {}, launch.get_stream());
+    dispatch_t::Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
   });
 }
 
-using types               = nvbench::type_list<float, double>;
-using custom_offset_types = nvbench::type_list<int32_t>;
-
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, custom_offset_types))
+using types = nvbench::type_list<float, double>;
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

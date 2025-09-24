@@ -6,7 +6,6 @@ from typing import List
 
 import cupy as cp
 import numba.cuda
-import numba.types
 import numpy as np
 import pytest
 
@@ -284,52 +283,41 @@ def test_merge_sort_with_stream(cuda_stream):
 
 
 def test_merge_sort_well_known_less():
-    """Test merge sort with well-known LESS operation."""
     dtype = np.int32
 
-    # Create input keys
     d_in_keys = cp.array([5, 2, 8, 1, 9, 3], dtype=dtype)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    # Run merge sort with well-known LESS operation
     parallel.merge_sort(
         d_in_keys, None, d_out_keys, None, parallel.OpKind.LESS, len(d_in_keys)
     )
 
-    # Check the result is correct
     expected = np.array([1, 2, 3, 5, 8, 9])
     np.testing.assert_equal(d_out_keys.get(), expected)
 
 
 def test_merge_sort_well_known_greater():
-    """Test merge sort with well-known GREATER operation (descending)."""
     dtype = np.int32
 
-    # Create input keys
     d_in_keys = cp.array([5, 2, 8, 1, 9, 3], dtype=dtype)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    # Run merge sort with well-known GREATER operation
     parallel.merge_sort(
         d_in_keys, None, d_out_keys, None, parallel.OpKind.GREATER, len(d_in_keys)
     )
 
-    # Check the result is correct (descending order)
     expected = np.array([9, 8, 5, 3, 2, 1])
     np.testing.assert_equal(d_out_keys.get(), expected)
 
 
 def test_merge_sort_with_values_well_known():
-    """Test merge sort with values using well-known operations."""
     dtype = np.int32
 
-    # Create input keys and values
     d_in_keys = cp.array([3, 1, 4, 2], dtype=dtype)
     d_in_values = cp.array([30, 10, 40, 20], dtype=dtype)
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    # Run merge sort with well-known LESS operation
     parallel.merge_sort(
         d_in_keys,
         d_in_values,
@@ -339,7 +327,6 @@ def test_merge_sort_with_values_well_known():
         len(d_in_keys),
     )
 
-    # Check both keys and values are sorted correctly
     expected_keys = np.array([1, 2, 3, 4])
     expected_values = np.array([10, 20, 30, 40])
     np.testing.assert_equal(d_out_keys.get(), expected_keys)

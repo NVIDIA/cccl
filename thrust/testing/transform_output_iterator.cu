@@ -27,7 +27,7 @@ void TestTransformOutputIteratorTraits()
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>);
 
   static_assert(!cuda::std::output_iterator<it, int>);
   // FIXME(bgruber): all up to and including random access should be true

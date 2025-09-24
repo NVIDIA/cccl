@@ -45,23 +45,17 @@
 #include <cub/thread/thread_simd.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/functional> // cuda::maximum
-#include <cuda/std/array> // array
-#include <cuda/std/cassert> // assert
-#include <cuda/std/cstdint> // uint16_t
-#include <cuda/std/functional> // cuda::std::plus
-#include <cuda/std/iterator> // cuda::std::iter_value_t
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
+#include <cuda/__cmath/round_down.h>
+#include <cuda/__functional/maximum.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

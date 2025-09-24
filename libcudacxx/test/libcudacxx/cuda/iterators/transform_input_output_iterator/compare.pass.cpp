@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test()
   assert(!(iter2 != iter2));
 
 #if TEST_HAS_SPACESHIP()
-  static_assert(cuda::std::three_way_comparable<cuda::transform_input_output_iterator<int>>);
+  static_assert(cuda::std::three_way_comparable<cuda::transform_input_output_iterator<PlusOne, PlusOne, int*>>);
   assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
   assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
   assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);

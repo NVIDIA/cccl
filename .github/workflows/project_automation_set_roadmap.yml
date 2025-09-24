@@ -37,6 +37,7 @@ env:
 
 jobs:
   set_roadmap_value:
+    if: github.repository == 'NVIDIA/cccl'
     runs-on: ubuntu-latest
 
     steps:

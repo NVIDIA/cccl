@@ -31,11 +31,7 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 // tag exists only to make the generic entry points the least priority match
@@ -47,7 +43,5 @@ struct tag
   {}
 };
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

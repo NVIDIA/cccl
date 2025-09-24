@@ -15,22 +15,31 @@ classifiers = [
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
   "numba>=0.60.0",
   "numpy",
-  "cuda-pathfinder>=1.1.0",
+  "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "numba-cuda>=0.18.0",
+  "llvmlite==0.44",         # TODO: remove this once numba-cuda 0.19.2 is released
 ]
 
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-cu12 = ["cuda-bindings>=12.9.1,<13.0.0", "cuda-toolkit[nvrtc,nvjitlink]==12.*"]
-cu13 = ["cuda-bindings>=13.0.0,<14.0.0", "cuda-toolkit[nvrtc,nvjitlink]==13.*"]
+cu12 = [
+  "cuda-bindings>=12.9.1,<13.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
+  "numba-cuda[cu12]",
+]
+cu13 = [
+  "cuda-bindings>=13.0.0,<14.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==13.*",
+  "numba-cuda[cu13]",
+]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
   # GH pypa #11296
@@ -90,6 +99,7 @@ module = [
   "cuda.cccl._cuda_version_utils.*",
   "cuda.bindings.*",
   "cuda.core.*",
+  "cuda.pathfinder.*",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"

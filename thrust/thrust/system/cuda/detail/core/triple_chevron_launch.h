@@ -179,7 +179,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class K, class... Args>
-  THRUST_FUNCTION cudaError_t doit(K k, Args const&... args) const
+  _CCCL_API _CCCL_FORCEINLINE cudaError_t doit(K k, Args const&... args) const
   {
     NV_IF_TARGET(NV_IS_HOST, (return doit_host(k, args...);), (return doit_device(k, args...);));
   }

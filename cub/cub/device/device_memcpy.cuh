@@ -42,8 +42,8 @@
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 

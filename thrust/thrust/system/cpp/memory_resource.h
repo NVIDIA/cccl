@@ -34,9 +34,7 @@
 #include <thrust/system/cpp/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace cpp
+namespace system::cpp
 {
 
 //! \cond
@@ -69,7 +67,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 /*! \} // memory_resources
  */
 
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 THRUST_NAMESPACE_END

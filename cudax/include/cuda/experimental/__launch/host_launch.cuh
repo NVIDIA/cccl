@@ -32,15 +32,22 @@
 namespace cuda::experimental
 {
 
-template <typename _CallablePtr>
-void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __callable_ptr)
+template <class _Callable, class... _Args>
+struct __stream_callback_data
 {
-  auto __casted_callable = static_cast<_CallablePtr>(__callable_ptr);
+  _Callable __callable_;
+  ::cuda::std::tuple<_Args...> __args_tuple_;
+};
+
+template <class _CallbackData>
+void __stream_callback_caller(::cudaStream_t, ::cudaError_t __status, void* __data_ptr)
+{
+  auto* __casted_data_ptr = static_cast<_CallbackData*>(__data_ptr);
   if (__status == cudaSuccess)
   {
-    (*__casted_callable)();
+    ::cuda::std::apply(__casted_data_ptr->__callable_, ::cuda::std::move(__casted_data_ptr->__args_tuple_));
   }
-  delete __casted_callable;
+  delete __casted_data_ptr;
 }
 
 //! @brief Launches a host callable to be executed in stream order on the provided stream
@@ -61,26 +68,24 @@ void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
 {
   static_assert(::cuda::std::is_invocable_v<_Callable, _Args...>,
                 "Callable can't be called with the supplied arguments");
-  auto __lambda_ptr = new auto([__callable   = ::cuda::std::move(__callable),
-                                __args_tuple = ::cuda::std::make_tuple(::cuda::std::move(__args)...)]() mutable {
-    ::cuda::std::apply(__callable, __args_tuple);
-  });
+
+  using _CallbackData                = __stream_callback_data<_Callable, _Args...>;
+  _CallbackData* __callback_data_ptr = new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
 
   // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
   _CCCL_TRY_CUDA_API(
     cudaStreamAddCallback,
     "Failed to launch host function",
     __stream.get(),
-    __stream_callback_caller<decltype(__lambda_ptr)>,
-    static_cast<void*>(__lambda_ptr),
+    __stream_callback_caller<_CallbackData>,
+    static_cast<void*>(__callback_data_ptr),
     0);
 }
 
-template <typename _CallablePtr>
+template <class _Callable>
 void __host_func_launcher(void* __callable_ptr)
 {
-  auto __casted_callable = static_cast<_CallablePtr>(__callable_ptr);
-  (*__casted_callable)();
+  (*static_cast<_Callable*>(__callable_ptr))();
 }
 
 //! @brief Launches a host callable to be executed in stream order on the provided stream
@@ -105,7 +110,7 @@ void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> 
     cudaLaunchHostFunc,
     "Failed to launch host function",
     __stream.get(),
-    __host_func_launcher<_Callable*>,
+    __host_func_launcher<_Callable>,
     ::cuda::std::addressof(__callable.get()));
 }
 

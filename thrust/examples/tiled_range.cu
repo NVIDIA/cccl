@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // this example illustrates how to tile a range multiple times
 // examples:
 //   tiled_range([0, 1, 2, 3], 1) -> [0, 1, 2, 3]
@@ -69,11 +67,7 @@ protected:
 
 int main()
 {
-  thrust::device_vector<int> data(4);
-  data[0] = 10;
-  data[1] = 20;
-  data[2] = 30;
-  data[3] = 40;
+  thrust::device_vector<int> data{10, 20, 30, 40};
 
   // print the initial data
   std::cout << "range        ";

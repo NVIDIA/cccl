@@ -35,11 +35,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
@@ -58,7 +54,5 @@ for_each_n(thrust::execution_policy<DerivedPolicy>&, InputIterator first, Size, 
   return first;
 } // end for_each_n()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -77,6 +77,7 @@ CompileFlags:
     - -Wno-pragma-system-header-outside-header
     - --no-cuda-version-check
     - -stdlib=libc++
+    - "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     # report all errors
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"

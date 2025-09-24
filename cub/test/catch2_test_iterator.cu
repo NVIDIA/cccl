@@ -42,38 +42,31 @@
 
 #include <c2h/catch2_test_helper.h>
 
-using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
+// %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
-using types = cuda::std::__type_push_back<
-  scalar_types,
-  char2,
-  short2,
-  int2,
-  long2,
-  longlong2,
-  float2,
-  double2,
-  char3,
-  short3,
-  int3,
-  long3,
-  longlong3,
-  float3,
-  double3,
-  char4,
-  short4,
-  int4,
-  float4,
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  long4_16a,
-  longlong4_16a,
-  double4_16a,
-#else // _CCCL_CTK_AT_LEAST(13, 0)
-  long4,
-  longlong4,
-  double4,
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
-  c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
+#if TEST_VEC_SIZE == 1
+using types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
+#elif TEST_VEC_SIZE == 2
+using types = c2h::type_list<char2, short2, int2, long2, longlong2, float2, double2>;
+#elif TEST_VEC_SIZE == 3
+using types = c2h::type_list<char3, short3, int3, long3, longlong3, float3, double3>;
+#elif TEST_VEC_SIZE == 4
+using types =
+  c2h::type_list<char4,
+                 short4,
+                 int4,
+                 float4,
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 long4_16a,
+                 longlong4_16a,
+                 double4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                 long4,
+                 longlong4,
+                 double4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
+#endif
 
 template <typename InputIteratorT, typename T>
 __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)

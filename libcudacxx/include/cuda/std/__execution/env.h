@@ -312,7 +312,9 @@ _CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 // Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
-{};
+{
+  _CCCL_API auto query() const = delete;
+};
 
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.

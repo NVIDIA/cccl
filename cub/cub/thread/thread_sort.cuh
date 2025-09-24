@@ -40,7 +40,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -89,7 +90,7 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
       {
         using ::cuda::std::swap;
         swap(keys[j], keys[j + 1]);
-        if (!KEYS_ONLY)
+        if constexpr (!KEYS_ONLY)
         {
           swap(items[j], items[j + 1]);
         }

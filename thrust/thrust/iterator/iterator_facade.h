@@ -363,8 +363,7 @@ public:
 
   /*! The type of iterator category of \p iterator_facade.
    */
-  using iterator_category =
-    typename thrust::detail::iterator_facade_category<System, Traversal, Value, Reference>::type;
+  using iterator_category = detail::iterator_facade_category_t<System, Traversal>;
 
   /*! \p operator*() dereferences this \p iterator_facade.
    *  \return A reference to the element pointed to by this \p iterator_facade.

@@ -38,6 +38,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/tuple.h>
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
@@ -90,6 +91,25 @@ struct tuple_binary_predicate
   }
 
   mutable Predicate pred;
+};
+
+template <class Predicate, class NewType, class OutputType>
+struct new_value_if_f
+{
+  Predicate pred;
+  NewType new_value;
+
+  template <class T>
+  _CCCL_DEVICE_API OutputType operator()(T const& x)
+  {
+    return pred(x) ? new_value : x;
+  }
+
+  template <class T, class P>
+  _CCCL_DEVICE_API OutputType operator()(T const& x, P const& y)
+  {
+    return pred(y) ? new_value : x;
+  }
 };
 
 // We need to mark proxy iterators as such
@@ -287,7 +307,22 @@ struct compare_first
     return comp(thrust::raw_reference_cast(::cuda::std::get<0>(x)), thrust::raw_reference_cast(::cuda::std::get<0>(y)));
   }
 }; // end compare_first
-
 } // end namespace detail
-
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename Predicate, typename IntegralType>
+struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::detail::predicate_to_integral<Predicate, IntegralType>>
+    : proclaims_copyable_arguments<Predicate>
+{};
+
+template <typename Predicate>
+struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::detail::tuple_binary_predicate<Predicate>>
+    : proclaims_copyable_arguments<Predicate>
+{};
+
+template <class Predicate, class NewType, class OutputType>
+struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::detail::new_value_if_f<Predicate, NewType, OutputType>>
+    : proclaims_copyable_arguments<Predicate>
+{};
+_CCCL_END_NAMESPACE_CUDA

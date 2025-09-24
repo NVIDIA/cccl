@@ -36,37 +36,39 @@ fi
 # We build separate wheels using separate containers for each CUDA version,
 # then merge them into a single wheel.
 
+readonly cuda12_version=12.9.1
+readonly cuda13_version=13.0.1
+readonly devcontainer_version=25.10
+readonly devcontainer_distro=rockylinux8
+
+readonly cuda12_image=rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda12_version}-${devcontainer_distro}-py${py_version}
+readonly cuda13_image=rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${py_version}
+
 mkdir -p wheelhouse
 
-echo "Building CUDA 12 wheel..."
-(
-  set -x
-  docker run --rm -i \
-      --workdir /workspace/python/cuda_cccl \
-      --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
-      ${action_mounts} \
-      --env py_version=${py_version} \
-      --env GITHUB_ACTIONS=${GITHUB_ACTIONS:-} \
-      --env GITHUB_RUN_ID=${GITHUB_RUN_ID:-} \
-      --env JOB_ID=${JOB_ID:-} \
-      rapidsai/ci-wheel:25.10-cuda12.9.1-rockylinux8-py${py_version} \
-      /workspace/ci/build_cuda_cccl_wheel.sh
-)
-
-echo "Building CUDA 13 wheel..."
-(
-  set -x
-  docker run --rm -i \
-      --workdir /workspace/python/cuda_cccl \
-      --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
-      ${action_mounts} \
-      --env py_version=${py_version} \
-      --env GITHUB_ACTIONS=${GITHUB_ACTIONS:-} \
-      --env GITHUB_RUN_ID=${GITHUB_RUN_ID:-} \
-      --env JOB_ID=${JOB_ID:-} \
-      rapidsai/ci-wheel:25.10-cuda13.0.0-rockylinux8-py${py_version} \
-      /workspace/ci/build_cuda_cccl_wheel.sh
-)
+for ctk in 12 13; do
+  image=$(eval echo \$cuda${ctk}_image)
+  echo "::group::⚒️ Building CUDA ${ctk} wheel on ${image}"
+  (
+    set -x
+    docker pull $image
+    docker run --rm -i \
+        --workdir /workspace/python/cuda_cccl \
+        --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
+        ${action_mounts} \
+        --env py_version=${py_version} \
+        --env GITHUB_ACTIONS=${GITHUB_ACTIONS:-} \
+        --env GITHUB_RUN_ID=${GITHUB_RUN_ID:-} \
+        --env JOB_ID=${JOB_ID:-} \
+        $image \
+        /workspace/ci/build_cuda_cccl_wheel.sh
+    # Prevent GHA runners from exhausting available storage with leftover images:
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+      docker rmi -f $image
+    fi
+  )
+  echo "::endgroup::"
+done
 
 echo "Merging CUDA wheels..."
 

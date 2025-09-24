@@ -37,11 +37,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename Size>
@@ -62,9 +58,7 @@ _CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Point
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 _CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2);
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/memory.inl>

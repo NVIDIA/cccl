@@ -47,7 +47,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 

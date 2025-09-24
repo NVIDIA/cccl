@@ -30,11 +30,7 @@
 #include <thrust/system/detail/generic/transform_reduce.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy,
@@ -56,7 +52,5 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   return thrust::reduce(exec, xfrm_first, xfrm_last, init, binary_op);
 } // end transform_reduce()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

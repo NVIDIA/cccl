@@ -47,10 +47,12 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
-#include <cuda/functional>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/bit>
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 

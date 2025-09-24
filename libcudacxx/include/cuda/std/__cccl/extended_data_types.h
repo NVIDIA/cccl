@@ -55,27 +55,54 @@
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1
+struct __half;
+struct __half2;
 #endif
 
 #if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && _CCCL_HAS_NVFP16() && !defined(CCCL_DISABLE_BF16_SUPPORT)
 #  undef _CCCL_HAS_NVBF16
 #  define _CCCL_HAS_NVBF16() 1
+struct __nv_bfloat16;
+struct __nv_bfloat162;
 #endif
 
 #if _CCCL_HAS_INCLUDE(<cuda_fp8.h>) && _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16() && !defined(CCCL_DISABLE_NVFP8_SUPPORT)
 #  undef _CCCL_HAS_NVFP8
 #  define _CCCL_HAS_NVFP8() 1
+struct __nv_fp8_e5m2;
+struct __nv_fp8x2_e5m2;
+struct __nv_fp8x4_e5m2;
+
+struct __nv_fp8_e4m3;
+struct __nv_fp8x2_e4m3;
+struct __nv_fp8x4_e4m3;
+
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+struct __nv_fp8_e8m0;
+struct __nv_fp8x2_e8m0;
+struct __nv_fp8x4_e8m0;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
 #endif
 
 #if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
                       && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
 #  undef _CCCL_HAS_NVFP6
 #  define _CCCL_HAS_NVFP6() 1
+struct __nv_fp6_e3m2;
+struct __nv_fp6x2_e3m2;
+struct __nv_fp6x4_e3m2;
+
+struct __nv_fp6_e2m3;
+struct __nv_fp6x2_e2m3;
+struct __nv_fp6x4_e2m3;
 #endif
 
 #if _CCCL_HAS_INCLUDE(<cuda_fp4.h>) && _CCCL_HAS_NVFP6() && !defined(CCCL_DISABLE_NVFP4_SUPPORT)
 #  undef _CCCL_HAS_NVFP4
 #  define _CCCL_HAS_NVFP4() 1
+struct __nv_fp4_e2m1;
+struct __nv_fp4x2_e2m1;
+struct __nv_fp4x4_e2m1;
 #endif
 
 #define _CCCL_HAS_NVFP4_E2M1() _CCCL_HAS_NVFP4()

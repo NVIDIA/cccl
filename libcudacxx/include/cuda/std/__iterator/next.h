@@ -32,11 +32,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _InputIter)
-_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
+_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>)
 [[nodiscard]] _CCCL_API constexpr _InputIter
 next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
-  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>,
                "Attempt to next(it, n) with negative n on a non-bidirectional iterator");
 
   ::cuda::std::advance(__x, __n);

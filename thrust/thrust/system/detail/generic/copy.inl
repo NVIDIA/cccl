@@ -34,11 +34,7 @@
 #include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
@@ -64,7 +60,5 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
   return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

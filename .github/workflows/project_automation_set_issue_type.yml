@@ -36,6 +36,7 @@ env:
 
 jobs:
   update_issue_type_in_project:
+    if: github.repository == 'NVIDIA/cccl'
     runs-on: ubuntu-latest
 
     steps:

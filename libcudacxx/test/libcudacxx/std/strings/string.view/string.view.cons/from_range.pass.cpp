@@ -28,17 +28,17 @@
 template <class CharT>
 struct TestBase
 {
-  __host__ __device__ static constexpr const CharT* range_data()
+  __host__ __device__ constexpr const CharT* range_data() const
   {
-    return TEST_STRLIT(CharT, "range_data");
+    return range_data_;
   }
-  __host__ __device__ static constexpr cuda::std::size_t range_size()
+  __host__ __device__ constexpr cuda::std::size_t range_size() const
   {
     return cuda::std::char_traits<CharT>::length(range_data());
   }
-  __host__ __device__ static constexpr const CharT* conv_data()
+  __host__ __device__ constexpr const CharT* conv_data() const
   {
-    return TEST_STRLIT(CharT, "conv_data");
+    return conv_data_;
   }
 
   __host__ __device__ constexpr const CharT* begin() const
@@ -49,6 +49,9 @@ struct TestBase
   {
     return range_data() + range_size();
   }
+
+  const CharT* range_data_;
+  const CharT* conv_data_;
 };
 
 template <class CharT>
@@ -56,6 +59,9 @@ __host__ __device__ constexpr void test_from_range()
 {
   using SV = cuda::std::basic_string_view<CharT>;
   using TB = TestBase<CharT>;
+
+  const auto range_data = TEST_STRLIT(CharT, "range_data");
+  const auto conv_data  = TEST_STRLIT(CharT, "conv_data");
 
   // 1. test construction from cuda::std::array
   {
@@ -80,9 +86,9 @@ __host__ __device__ constexpr void test_from_range()
     static_assert(cuda::std::is_constructible_v<SV, NonConstConversionOperator>);
     static_assert(!cuda::std::is_convertible_v<const NonConstConversionOperator&, SV>);
 
-    NonConstConversionOperator nc{};
+    NonConstConversionOperator nc{range_data, conv_data};
     SV sv = nc;
-    assert(sv == TB::conv_data());
+    assert(sv == nc.conv_data());
   }
 
   // 3. test construction from a type with a const conversion operator
@@ -99,14 +105,14 @@ __host__ __device__ constexpr void test_from_range()
     static_assert(cuda::std::is_constructible_v<SV, const ConstConversionOperator&>);
 
     {
-      ConstConversionOperator cv{};
+      ConstConversionOperator cv{range_data, conv_data};
       SV sv = cv;
-      assert(sv == TB::conv_data());
+      assert(sv == cv.conv_data());
     }
     {
-      const ConstConversionOperator cv{};
+      const ConstConversionOperator cv{range_data, conv_data};
       SV sv = cv;
-      assert(sv == TB::conv_data());
+      assert(sv == cv.conv_data());
     }
   }
 
@@ -125,14 +131,14 @@ __host__ __device__ constexpr void test_from_range()
     static_assert(cuda::std::is_constructible_v<SV, const DeletedConversionOperator>);
 
     {
-      DeletedConversionOperator cv{};
+      DeletedConversionOperator cv{range_data, conv_data};
       SV sv = SV(cv);
-      assert(sv == TB::range_data());
+      assert(sv == cv.range_data());
     }
     {
-      const DeletedConversionOperator cv{};
+      const DeletedConversionOperator cv{range_data, conv_data};
       SV sv = SV(cv);
-      assert(sv == TB::range_data());
+      assert(sv == cv.range_data());
     }
   }
 
@@ -151,14 +157,14 @@ __host__ __device__ constexpr void test_from_range()
     static_assert(cuda::std::is_constructible_v<SV, const DeletedConstConversionOperator>);
 
     {
-      DeletedConstConversionOperator cv{};
+      DeletedConstConversionOperator cv{range_data, conv_data};
       SV sv = SV(cv);
-      assert(sv == TB::range_data());
+      assert(sv == cv.range_data());
     }
     {
-      const DeletedConstConversionOperator cv{};
+      const DeletedConstConversionOperator cv{range_data, conv_data};
       SV sv = SV(cv);
-      assert(sv == TB::range_data());
+      assert(sv == cv.range_data());
     }
   }
 

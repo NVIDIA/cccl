@@ -18,13 +18,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-//! \addtogroup iterators
-//! \{
-
-//! \addtogroup fancyiterator Fancy Iterators
-//! \ingroup iterators
-//! \{
-
 //! Holds a runtime value
 template <typename T>
 struct runtime_value
@@ -41,6 +34,13 @@ struct compile_time_value
 {
   static constexpr decltype(Value) value = Value;
 };
+
+//! \addtogroup iterators
+//! \{
+
+//! \addtogroup fancyiterator Fancy Iterators
+//! \ingroup iterators
+//! \{
 
 namespace detail
 {

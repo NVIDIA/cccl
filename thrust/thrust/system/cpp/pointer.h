@@ -35,9 +35,7 @@
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace cpp
+namespace system::cpp
 {
 
 /*! \p cpp::pointer stores a pointer to an object allocated in memory accessible
@@ -102,8 +100,7 @@ using universal_host_pinned_pointer = universal_pointer<T>;
 template <typename T>
 using reference = thrust::reference<T, thrust::system::cpp::tag>;
 
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system

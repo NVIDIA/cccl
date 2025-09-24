@@ -32,11 +32,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
@@ -47,9 +43,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE OutputIterator
 copy_n(sequential::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/copy.inl>

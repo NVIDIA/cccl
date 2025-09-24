@@ -1,0 +1,333 @@
+name: "Git Bisect"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
+        required: true
+        default: linux-amd64-cpu16
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--cuda 12.9 --host gcc13'"
+        required: false
+        default: "--cuda 13.0 --host gcc14"
+        type: string
+      preset:
+        description: "CMake preset. Ex: cub-cpp20"
+        required: true
+        default: "cub-cpp20"
+        type: string
+      cmake_options:
+        description: "Additional options passed to CMake preset configure (e.g. -DCMAKE_CUDA_ARCHITECTURES=80;90)"
+        required: false
+        default: ""
+        type: string
+      build_targets:
+        description: "Space separated ninja build targets to build."
+        required: false
+        default: ""
+        type: string
+      ctest_targets:
+        description: "Space separated CTest -R regexes to run."
+        required: false
+        default: ""
+        type: string
+      lit_precompile_tests:
+        description: "Space-separated libcudacxx lit test paths to compile without execution"
+        required: false
+        default: ""
+        type: string
+      lit_tests:
+        description: "Space-separated libcudacxx lit test paths to compile and execute"
+        required: false
+        default: ""
+        type: string
+      good_ref:
+        description: "Good ref/sha/tag/branch. Defaults to latest release tag. '-Nd' means 'N days ago on main'."
+        required: false
+        type: string
+      bad_ref:
+        description: "Bad ref/sha/tag/branch. Defaults to main. '-Nd' means 'N days ago on main'."
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
+        required: true
+        default: linux-amd64-cpu16
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--ctk 12.9 --host gcc13'"
+        required: false
+        default: ""
+        type: string
+      preset:
+        description: "CMake preset. Ex: cub-cpp20"
+        required: true
+        default: ""
+        type: string
+      cmake_options:
+        description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
+        required: false
+        default: ""
+        type: string
+      build_targets:
+        description: "Space separated ninja build targets to build."
+        required: false
+        default: ""
+        type: string
+      ctest_targets:
+        description: "Space separated CTest -R regexes to run."
+        required: false
+        default: ""
+        type: string
+      lit_precompile_tests:
+        description: "Space-separated libcudacxx lit test paths to compile without execution"
+        required: false
+        default: ""
+        type: string
+      lit_tests:
+        description: "Space-separated libcudacxx lit test paths to compile and execute"
+        required: false
+        default: ""
+        type: string
+      good_ref:
+        description: "Good ref/sha/tag/branch. Defaults to latest release tag. '-Nd' means 'N days ago on main'."
+        required: false
+        type: string
+      bad_ref:
+        description: "Bad ref/sha/tag/branch. Defaults to main. '-Nd' means 'N days ago on main'."
+        required: false
+        type: string
+
+jobs:
+  # Hash all of the inputs and generate a descriptive, but unique, name for the bisect job.
+  # This is necessary because GitHub Actions does not provide an easy way to get the numeric
+  # job id from within a running job, unless the name is unique across the entire run.
+  generate-job-name:
+    name: Generate Unique Job Name
+    runs-on: ubuntu-latest
+    outputs:
+      job-name: ${{ steps.set-name.outputs.unique-name }}
+    steps:
+      - name: Set unique name
+        id: set-name
+        run: |
+          # Hash the inputs to create a unique identifier
+          input_string=$(cat <<HASH
+          ${{ inputs.runner }}
+          ${{ inputs.launch_args }}
+          ${{ inputs.preset }}
+          ${{ inputs.cmake_options }}
+          ${{ inputs.build_targets }}
+          ${{ inputs.ctest_targets }}
+          ${{ inputs.lit_precompile_tests }}
+          ${{ inputs.lit_tests }}
+          ${{ inputs.good_ref }}
+          ${{ inputs.bad_ref }}
+          HASH
+          )
+          hash=$(echo -n "$input_string" | sha256sum | awk '{print $1}')
+          short_hash=${hash:0:8}
+
+          function sanitize() {
+            echo "$1" | tr -cd '[:alnum:]-'
+          }
+
+          function compress() {
+            input=$1
+            input_length=${#input}
+
+            # "begin.and.end" -> "begin_d.end"
+            delim="_"
+            keep_chars=5
+            compressed_str=${input:0:keep_chars}$delim${input: -keep_chars}
+            compressed_length=${#compressed_str}
+
+            if [[ $input_length -gt $compressed_length ]]; then
+              echo "$compressed_str"
+            else
+              echo "$input"
+            fi
+          }
+
+          preset=$(sanitize "${{ inputs.preset }}")
+          good_ref=$(sanitize "${{ inputs.good_ref }}")
+          bad_ref=$(sanitize "${{ inputs.bad_ref }}")
+          build_targets=$(sanitize "${{ inputs.build_targets }}")
+          ctest_targets=$(sanitize "${{ inputs.ctest_targets }}")
+          lit_precompile_tests=$(sanitize "${{ inputs.lit_precompile_tests }}")
+          lit_tests=$(sanitize "${{ inputs.lit_tests }}")
+
+          build_targets_part=$(compress "$build_targets")
+          ctest_targets_part=$(compress "$ctest_targets")
+          lit_precompile_tests_part=$(compress "$lit_precompile_tests")
+          lit_tests_part=$(compress "$lit_tests")
+
+          # Parse "--cuda XX.Y" / "-c XX.Y" and "--host <str>" / "-H <str>"
+          launch_args="${{ inputs.launch_args }}"
+          cuda_version="ctk$(grep -oP '(?:--cuda|-c)\s+\K\S+' <<< "$launch_args" || true)"
+          host_name=$(grep -oP '(?:--host|-H)\s+\K\S+' <<< "$launch_args" || true)
+
+          # Parse `amd64/arm64` and -gpu-<gpu_name> from runner name.
+          # Ex: 'linux-amd64-gpu-rtxa6000-latest-1'
+          runner=${{ inputs.runner }}
+          cpu_arch=$(echo "${runner}" | grep -oP '(?:^|-)\K(?:amd64|arm64)(?=-)' || true)
+          gpu_name=$(echo "${runner}" | grep -oP '(?:-gpu-)\K[^-]+' || true)
+
+          # Vars to include in unique name:
+          declare -a vars=(
+            "cuda_version"
+            "host_name"
+            "preset"
+            "build_targets_part"
+            "ctest_targets_part"
+            "lit_precompile_tests_part"
+            "lit_tests_part"
+            "gpu_name"
+            "cpu_arch"
+            "short_hash"
+          )
+          unique_name="bisect"
+          for var in "${vars[@]}"; do
+            val=${!var}
+            if [[ -n "$val" ]]; then
+              unique_name+="-$val"
+            fi
+          done
+
+          echo "Unique job name: $unique_name"
+          echo "unique-name=$unique_name" >> "$GITHUB_OUTPUT"
+
+  bisect:
+    needs: [generate-job-name]
+    name: ${{ needs.generate-job-name.outputs.job-name }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && inputs.runner || 'ubuntu-latest' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0          # FULL history
+          fetch-tags: true        # Ensure tags are present
+
+      - name: Get AWS credentials for sccache bucket
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+
+      - name: Prepare AWS config for devcontainer
+        run: |
+          # The devcontainer will mount this path to the home directory
+          aws_dir="${{ github.workspace }}/.aws"
+          mkdir -p "${aws_dir}"
+          cat > "${aws_dir}/config" <<EOF
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+          cat > "${aws_dir}/credentials" <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+          chmod 0600 "${aws_dir}/credentials"
+          chmod 0664 "${aws_dir}/config"
+
+      - name: Fetch full history
+        run: |
+          # Add the NVIDIA/cccl repo in case we're running on a fork without tags:
+          git remote add upstream https://github.com/NVIDIA/cccl.git || :
+          git fetch upstream || :
+
+      - name: Run git bisect
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # AWS credentials from the configure-aws-credentials action
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          echo -e "\e[1;34mLaunching devcontainer and running git bisect...\e[0m"
+
+          GPU_ARGS=""
+          if [[ "${{ inputs.runner }}" == *"-gpu-"* ]]; then
+            if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
+              echo "GPU runner detected; enabling '--gpus all'"
+              GPU_ARGS="--gpus all"
+            else
+              echo "GPU runner detected, but '--gpus' already present in LAUNCH_ARGS"
+            fi
+          fi
+
+          # Grab the url for this step summary
+          run="$GITHUB_RUN_ID"
+          attempt="${GITHUB_RUN_ATTEMPT:-1}"
+          server="${GITHUB_SERVER_URL:-https://github.com}"
+          repo="$GITHUB_REPOSITORY"
+          job_name="${{ needs.generate-job-name.outputs.job-name }}"
+          job_id=$(
+            gh api --paginate \
+              repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs \
+              --jq ".jobs[] | select(.name | endswith(\"${job_name}\")) | .id"
+          ) || :
+
+          GHA_LOG_URL="$server/$repo/actions/runs/$run/job/$job_id"
+          STEP_SUMMARY_URL="$server/$repo/actions/runs/$run/attempts/$attempt#summary-$job_id"
+
+          echo -e "\e[1;34mGHA Log URL: $GHA_LOG_URL\e[0m"
+          echo -e "\e[1;34mBisection Results: $STEP_SUMMARY_URL\e[0m"
+
+          mkdir -p /tmp/shared
+          rc=0
+          set -x
+          .devcontainer/launch.sh -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+            --env "AWS_ROLE_ARN=" \
+            --env "AWS_REGION=${AWS_REGION}" \
+            --env "SCCACHE_REGION=${AWS_REGION}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+            --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
+            --env "STEP_SUMMARY_URL=${STEP_SUMMARY_URL}" \
+            --env "GHA_LOG_URL=${GHA_LOG_URL}" \
+            --env "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}" \
+            --volume "/tmp/shared:/tmp/shared" \
+            -- ./ci/util/git_bisect.sh \
+              --summary-file "/tmp/shared/summary.md" \
+              --good-ref "${{ inputs.good_ref }}" \
+              --bad-ref "${{ inputs.bad_ref }}" \
+              --preset "${{ inputs.preset }}" \
+              --cmake-options "${{ inputs.cmake_options }}" \
+              --build-targets "${{ inputs.build_targets }}" \
+              --ctest-targets "${{ inputs.ctest_targets }}" \
+              --lit-precompile-tests "${{ inputs.lit_precompile_tests }}" \
+              --lit-tests "${{ inputs.lit_tests }}" \
+            || rc=$?
+          set +x
+
+          # Append the summary (if any) to the GitHub step summary
+          if [[ -d /tmp/shared ]]; then
+            find /tmp/shared -type f -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" || :
+          fi
+
+          echo -e "\e[1;34mGHA Log URL: $GHA_LOG_URL\e[0m"
+          echo -e "\e[1;34mBisection Results: $STEP_SUMMARY_URL\e[0m"
+
+          exit $rc

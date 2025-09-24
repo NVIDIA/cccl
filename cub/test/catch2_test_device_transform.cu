@@ -29,6 +29,7 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
 
 using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
@@ -371,11 +372,22 @@ struct give_me_five
   }
 };
 
+C2H_TEST("DeviceTransform::Generate", "[device][transform]")
+{
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  generate(result.begin(), num_items, give_me_five{});
+
+  // compute reference and verify
+  c2h::device_vector<int> reference(num_items, 5);
+  REQUIRE(reference == result);
+}
+
 C2H_TEST("DeviceTransform::Fill", "[device][transform]")
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
-  fill(result.begin(), num_items, give_me_five{});
+  fill(result.begin(), num_items, 5);
 
   // compute reference and verify
   c2h::device_vector<int> reference(num_items, 5);

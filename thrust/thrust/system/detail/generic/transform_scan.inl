@@ -33,11 +33,7 @@
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename ExecutionPolicy,
@@ -113,7 +109,5 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   return thrust::exclusive_scan(exec, _first, _last, result, init, binary_op);
 } // end transform_exclusive_scan()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -37,14 +37,7 @@
 #endif // no system header
 #include <thrust/system/cuda/config.h>
 
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/util_temporary_storage.cuh>
-
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/cuda/detail/util.h>
-#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/type_traits>
 
@@ -394,15 +387,6 @@ template <template <class> class Plan, class Arch>
 struct get_arch<Plan<Arch>>
 {
   using type = Arch;
-};
-
-// BlockLoad
-// -----------
-// a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-struct BlockLoad
-{
-  using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 };
 
 // cuda_optional

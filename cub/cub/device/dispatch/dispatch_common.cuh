@@ -13,8 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 // Options for specifying memory aliasing

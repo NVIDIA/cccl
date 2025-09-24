@@ -52,10 +52,6 @@ runs:
         find jobs -type f -exec dos2unix -v {} \;
         echo "::endgroup::"
 
-        echo "::group::Job artifacts"
-        tree jobs
-        echo "::endgroup::"
-
     - name: Fetch workflow job info
       if: ${{ inputs.github_token != ''}}
       continue-on-error: true
@@ -96,6 +92,27 @@ runs:
         echo "Parsing job times..."
         python3 "${GITHUB_ACTION_PATH}/parse-job-times.py" workflow/workflow.json results/jobs.json
 
+        echo "::group::Unmapped jobs"
+        cat workflow/unmapped_jobs.md || :
+        echo "::endgroup::"
+
+        echo "::group::Job Times"
+        cat workflow/job_times.md || :
+        echo "::endgroup::"
+
+    - name: Check for job success
+      id: check-jobs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "::group::Checking for job success artifacts"
+        ec=0
+        "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json || ec=$?
+        echo "::endgroup::"
+
+        success=$([ $ec -eq 0 ] && echo true || echo false)
+        echo "Jobs passed: ${success}"
+        echo "success=${success}" > "${GITHUB_OUTPUT}"
+
     - name: Prepare execution summary
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -108,73 +125,78 @@ runs:
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::group::Final Summary"
-        python3 "${GITHUB_ACTION_PATH}/final-summary.py" | tee final_summary.md
-        echo "::endgroup::"
-
-        # This allows multiline strings and special characters to be passed through the GHA outputs:
-        url_encode_string() {
-          python3 -c "import sys; from urllib.parse import quote; print(quote(sys.stdin.read()))"
-        }
-
-        echo "::group::GHA Output: SUMMARY"
-        printf "SUMMARY=%s\n" "$(cat final_summary.md | url_encode_string)" | tee -a "${GITHUB_OUTPUT}"
-        echo "::endgroup::"
+        python3 "${GITHUB_ACTION_PATH}/final-summary.py" | tee workflow/final_summary.md
 
         echo "::group::GHA Output: EXEC_SUMMARY"
         printf "EXEC_SUMMARY=%s\n" "$(cat execution/heading.txt)" | tee -a "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
-        cp final_summary.md ${GITHUB_STEP_SUMMARY}
+        echo "::group::Job Results"
+        readonly success=${{ steps.check-jobs.outputs.success }}
+        readonly icon=$(if ${success}; then echo "🥳"; else echo "😬"; fi)
+        (
+          echo "## [${icon} Job Matrix Results]($(cat workflow/summary_url.txt))"
+          declare -a files=(
+            workflow/final_summary.md
+            workflow/unmapped_jobs.md
+            workflow/job_times.md
+          )
+
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              cat "$file"
+            fi
+          done
+        ) | tee -a "${GITHUB_STEP_SUMMARY}"
+        echo "::endgroup::"
+
+        # Keep this brief -- github notification emails don't collapse <details>.
+        # Just link to the summary where the above step summary will be available.
+        echo "::group::PR Comment"
+        (
+          echo "## ${icon} CI Workflow Results"
+          echo ""
+          echo "### $(cat execution/heading.txt)"
+          echo ""
+          echo "See results [here]($(cat workflow/summary_url.txt))."
+        ) | tee pr_comment.md
+        echo "::endgroup::"
 
     - name: Comment on PR
       if: ${{ !cancelled() && inputs.pr_number != '' && inputs.github_token != ''}}
       continue-on-error: true
-      env:
-        PR_NUMBER: ${{ fromJSON(inputs.pr_number) }}
-        COMMENT_BODY: ${{ steps.final-summary.outputs.SUMMARY }}
-      uses: actions/github-script@v7
+      uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
       with:
-        github-token: ${{ inputs.github_token }}
-        script: |
-          const pr_number = process.env.PR_NUMBER;
-          const owner = context.repo.owner;
-          const repo = context.repo.repo;
-          // Decode URL-encoded string for proper display in comments
-          const commentBody = decodeURIComponent(process.env.COMMENT_BODY);
-          console.log('::group::Commenting on PR #' + pr_number + ' with the following message:')
-          console.log(commentBody);
-          console.log('::endgroup::');
-          github.rest.issues.createComment({
-              owner: owner,
-              repo: repo,
-              issue_number: pr_number,
-              body: commentBody
-          });
+        github_token: ${{ inputs.github_token }}
+        header: ci-results
+        number: ${{ inputs.pr_number }}
+        path: pr_comment.md
+        hide_and_recreate: true
+        hide_classify: "OUTDATED"
 
-    - name: Check for job success
-      id: check-success
+    - name: Check for workflow success
+      id: check-workflow
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::group::Checking for success artifacts"
-        "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json
-        result=$?
-        echo "::endgroup::"
+        workflow_passed=true
 
-        if [[ $result -ne 0 ]]; then
-          echo "success=false" >> "${GITHUB_OUTPUT}"
-          exit 1
+        jobs_passed=${{ steps.check-jobs.outputs.success }}
+        if ! $jobs_passed; then
+          echo "::notice::Some jobs failed. Failing workflow."
+          workflow_passed=false
         fi
 
         if [ -f workflow/override.json ]; then
-          echo "::notice::Workflow matrix was overridden. Failing jobs."
+          echo "::notice::Workflow matrix was overridden. Failing workflow."
           echo "Override matrix:"
           cat workflow/override.json | jq -c '.'
-          echo "success=false" >> "${GITHUB_OUTPUT}"
-          exit 1
+          workflow_passed=false
         fi
 
-        echo "success=true" >> "${GITHUB_OUTPUT}"
+        echo "Workflow passed: ${workflow_passed}"
+        if ! $workflow_passed; then
+          exit 1
+        fi
 
     - name: Send Slack log notification
       if: ${{ always() && inputs.slack_token != '' && inputs.slack_log != '' }}

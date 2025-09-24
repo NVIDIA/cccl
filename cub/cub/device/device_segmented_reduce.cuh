@@ -51,9 +51,16 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 

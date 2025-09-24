@@ -39,11 +39,7 @@
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace radix_sort_detail
 {
@@ -553,7 +549,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, vals1, vals2, N);
 }
 
-} // namespace radix_sort_detail
+} // end namespace radix_sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void stable_radix_sort(
@@ -586,7 +582,5 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   radix_sort_detail::radix_sort(exec, first1, temp1.begin(), first2, temp2.begin(), N);
 }
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

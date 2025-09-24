@@ -32,7 +32,7 @@ __host__ __device__ void test_log10(T value)
 }
 
 template <class T>
-__host__ __device__ void test_ilogb(T value)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_ilogb(T value)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ilogb(value)), int>, "");
   assert(cuda::std::ilogb(value) == 0);
@@ -55,7 +55,7 @@ __host__ __device__ void test_log2(T value)
 }
 
 template <class T>
-__host__ __device__ void test_logb(T value)
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_logb(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::logb(value)), ret>, "");
@@ -101,9 +101,47 @@ __global__ void test_global_kernel(float* value)
   test(*value);
 }
 
+template <class T>
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_constexpr()
+{
+  if constexpr (cuda::std::is_integral_v<T>)
+  {
+    test_ilogb<T>(static_cast<T>(1));
+    test_logb<T>(static_cast<T>(1));
+  }
+  else
+  {
+    test_ilogb<T>(cuda::std::__fp_one<T>());
+    test_logb<T>(cuda::std::__fp_one<T>());
+  }
+}
+
+__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr()
+{
+  test_constexpr<float>();
+  test_constexpr<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test_constexpr<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
+  test_constexpr<unsigned short>();
+  test_constexpr<int>();
+  test_constexpr<unsigned int>();
+  test_constexpr<long>();
+  test_constexpr<unsigned long>();
+  test_constexpr<long long>();
+  test_constexpr<unsigned long long>();
+
+  return true;
+}
+
 int main(int, char**)
 {
   volatile float value = 1.0f;
   test(value);
+
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+  static_assert(test_constexpr());
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return 0;
 }

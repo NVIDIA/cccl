@@ -54,12 +54,6 @@ function(cudax_build_compiler_targets)
     "${cxx_compile_definitions}"
   )
 
-  # Clang-cuda only:
-  target_compile_options(cudax.compiler_interface INTERFACE
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
-  )
-
   # Ensure that we test with assertions enabled
   target_compile_definitions(cudax.compiler_interface INTERFACE CCCL_ENABLE_ASSERTIONS)
 

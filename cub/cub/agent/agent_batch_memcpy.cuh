@@ -52,9 +52,13 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 

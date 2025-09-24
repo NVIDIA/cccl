@@ -43,18 +43,20 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
-// This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
-// * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
-//   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
-//   Symposium (IPDPS), 2012
-// * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
-//   https://arxiv.org/abs/1406.2628
+//! Computes the intersection of the diagonal \c diag with the merge path in the merge matrix of two input sequences.
+//! This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
+//! * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
+//!   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
+//!   Symposium (IPDPS), 2012
+//! * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
+//!   https://arxiv.org/abs/1406.2628
+//! \returns The number of elements merged from the first sequence at the intersection of the diagonal with the merge
+//! path. The number of elements merged from the second sequence is \c diag minus the returned value.
 template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
@@ -80,6 +82,17 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
+//! Merges elements from two sorted sequences
+//! \tparam ITEMS_PER_THREAD The number of elements to merge and write to \c output
+//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
+//! \param keys1_beg The index into \c keys_shared where the first sequence starts
+//! \param keys2_beg The index into \c keys_shared where the second sequence starts
+//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param output The output array
+//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
 template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
@@ -384,7 +397,7 @@ public:
        int valid_items,
        KeyT oob_default)
   {
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // if last tile, find valid max_key
       // and fill the remaining keys with it
@@ -418,8 +431,8 @@ public:
     for (int target_merged_threads_number = 2; target_merged_threads_number <= NUM_THREADS;
          target_merged_threads_number *= 2)
     {
-      int merged_threads_number = target_merged_threads_number / 2;
-      int mask                  = target_merged_threads_number - 1;
+      const int merged_threads_number = target_merged_threads_number / 2;
+      const int mask                  = target_merged_threads_number - 1;
 
       Sync();
 
@@ -436,23 +449,23 @@ public:
 
       int indices[ITEMS_PER_THREAD];
 
-      int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
-      int size  = ITEMS_PER_THREAD * merged_threads_number;
+      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
+      const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
+      const int size  = ITEMS_PER_THREAD * merged_threads_number;
 
-      int thread_idx_in_thread_group_being_merged = mask & linear_tid;
+      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (::cuda::std::min) (valid_items, start);
-      int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
-      int keys2_beg = keys1_end;
-      int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
+      const int keys1_beg = (::cuda::std::min) (valid_items, start);
+      const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
+      const int keys2_beg = keys1_end;
+      const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
 
-      int keys1_count = keys1_end - keys1_beg;
-      int keys2_count = keys2_end - keys2_beg;
+      const int keys1_count = keys1_end - keys1_beg;
+      const int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath(
+      const int partition_diag = MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -460,12 +473,12 @@ public:
         diag,
         compare_op);
 
-      int keys1_beg_loc   = keys1_beg + partition_diag;
-      int keys1_end_loc   = keys1_end;
-      int keys2_beg_loc   = keys2_beg + diag - partition_diag;
-      int keys2_end_loc   = keys2_end;
-      int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
-      int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
+      const int keys1_beg_loc   = keys1_beg + partition_diag;
+      const int keys1_end_loc   = keys1_end;
+      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
+      const int keys2_end_loc   = keys2_end;
+      const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
+      const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
       SerialMerge(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
@@ -477,7 +490,7 @@ public:
         compare_op,
         oob_default);
 
-      if (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         Sync();
 

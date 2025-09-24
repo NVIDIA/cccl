@@ -22,7 +22,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -37,3 +37,4 @@ jobs:
           runner:  ${{ matrix.runner }}
           cuda:    ${{ matrix.cuda }}
           host:    ${{ matrix.host }}
+          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}

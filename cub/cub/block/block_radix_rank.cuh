@@ -48,12 +48,14 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/__algorithm_>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 

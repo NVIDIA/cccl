@@ -45,7 +45,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 

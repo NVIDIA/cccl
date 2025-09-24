@@ -34,11 +34,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -106,7 +102,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
     exec, keys_first, keys_last, values_first, keys_first, values_first, binary_pred);
 } // end unique_by_key()
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

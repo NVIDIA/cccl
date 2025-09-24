@@ -56,31 +56,19 @@ struct policy_hub
   struct policy500 : ChainedPolicy<500, policy500, policy500>
   {
     using merge_policy =
-      agent_policy_t<256,
-                     Nominal4BItemsToItems<tune_type>(11),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<256, Nominal4BItemsToItems<tune_type>(11), LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   struct policy520 : ChainedPolicy<520, policy520, policy500>
   {
     using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(13),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<512, Nominal4BItemsToItems<tune_type>(13), LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   struct policy600 : ChainedPolicy<600, policy600, policy520>
   {
     using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(15),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_DEFAULT,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<512, Nominal4BItemsToItems<tune_type>(15), LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   using max_policy = policy600;

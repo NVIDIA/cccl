@@ -5,10 +5,12 @@
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
+from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Optional
 
-from cuda.cccl._cuda_version_utils import get_cuda_path
+# type: ignore[import-not-found]
+from cuda.pathfinder import find_nvidia_header_directory
 
 
 @dataclass
@@ -25,14 +27,9 @@ class IncludePaths:
 
 @lru_cache()
 def get_include_paths(probe_file: str = "cub/version.cuh") -> IncludePaths:
-    # TODO: once docs env supports Python >= 3.9, we
-    # can move this to a module-level import.
-    from importlib.resources import as_file, files
-
-    cuda_incl = None
-    cuda_path = get_cuda_path()
-    if cuda_path is not None:
-        cuda_incl = cuda_path / "include"
+    cuda_incl = find_nvidia_header_directory("cudart")
+    if cuda_incl is None:
+        raise RuntimeError("Unable to locate CUDA include directory.")
 
     with as_file(files("cuda.cccl.headers.include")) as f:
         cccl_incl = Path(f)

@@ -93,7 +93,7 @@ THRUST_NAMESPACE_BEGIN
  *      unsigned int n;
  *
  *      // used to keep track of where we began
- *      const Iterator begin;
+ *      Iterator begin;
  *
  *      // it is private because only thrust::iterator_core_access needs access to it
  *      __host__ __device__

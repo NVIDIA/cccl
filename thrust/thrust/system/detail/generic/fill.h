@@ -31,11 +31,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
@@ -54,7 +50,5 @@ fill(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwa
   thrust::generate(exec, first, last, thrust::detail::fill_functor<T>{value});
 }
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

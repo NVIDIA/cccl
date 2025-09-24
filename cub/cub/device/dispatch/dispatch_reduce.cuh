@@ -58,8 +58,14 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/std/functional>
-#include <cuda/std/iterator>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -523,8 +529,13 @@ struct DispatchReduce
         kernel_source,
         launcher_factory);
 
+      // Ignore Wmaybe-uninitialized to work around a GCC 13 issue:
+      // https://github.com/NVIDIA/cccl/issues/4053
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wmaybe-uninitialized")
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+      _CCCL_DIAG_POP
       if (cudaSuccess != error)
       {
         break;

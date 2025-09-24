@@ -48,7 +48,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/functional>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__functional/invoke.h>
 
 CUB_NAMESPACE_BEGIN
 

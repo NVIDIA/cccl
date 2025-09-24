@@ -40,19 +40,16 @@
 #endif // no system header
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup iterators
- *  \addtogroup iterator_tags Iterator Tags
- *  \ingroup iterators
- *  \addtogroup iterator_tag_classes Iterator Tag Classes
- *  \ingroup iterator_tags
- *  \{
- */
+//! \addtogroup iterators
+//! \addtogroup iterator_tags Iterator Tags
+//! \ingroup iterators
+//! \{
 
 /*! \p input_device_iterator_tag is an empty class: it has no member functions,
  *  member variables, or nested types. It is used solely as a "tag": a
@@ -209,7 +206,6 @@ using bidirectional_host_iterator_tag = ::cuda::std::bidirectional_iterator_tag;
  */
 using random_access_host_iterator_tag = ::cuda::std::random_access_iterator_tag;
 
-/*! \} // end iterator_tag_classes
- */
+//! \} // end iterator_tags
 
 THRUST_NAMESPACE_END

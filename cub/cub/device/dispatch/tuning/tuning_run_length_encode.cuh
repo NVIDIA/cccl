@@ -46,8 +46,9 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/cmath>
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 

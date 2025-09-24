@@ -21,10 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/fpclassify.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -230,90 +236,59 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 // ilogb
 
-#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
-
-// Below 11.7 nvcc treats the builtin as a host only function
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_ILOGBF
-#  undef _CCCL_BUILTIN_ILOGB
-#  undef _CCCL_BUILTIN_ILOGBL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-[[nodiscard]] _CCCL_API inline int ilogb(float __x) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr int __ilogb_impl(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ILOGBF)
-  return _CCCL_BUILTIN_ILOGBF(__x);
-#else // ^^^ _CCCL_BUILTIN_ILOGBF ^^^ / vvv !_CCCL_BUILTIN_ILOGBF vvv
-  return ::ilogbf(__x);
-#endif // !_CCCL_BUILTIN_ILOGBF
+  switch (::cuda::std::fpclassify(__x))
+  {
+    case FP_ZERO:
+      return FP_ILOGB0;
+    case FP_NAN:
+      return FP_ILOGBNAN;
+    case FP_INFINITE:
+      return numeric_limits<int>::max();
+  }
+
+  constexpr auto __fmt = __fp_format_of_v<_Tp>;
+  const int __exp      = ::cuda::std::__fp_get_exp(__x);
+  if (__exp > __fp_exp_max_v<__fmt>)
+  {
+    return numeric_limits<int>::max();
+  }
+  else if (__exp < __fp_exp_min_v<__fmt>)
+  {
+    return numeric_limits<int>::min();
+  }
+  else
+  {
+    return __exp;
+  }
 }
 
-[[nodiscard]] _CCCL_API inline int ilogbf(float __x) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr int ilogb(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ILOGBF)
-  return _CCCL_BUILTIN_ILOGBF(__x);
-#else // ^^^ _CCCL_BUILTIN_ILOGBF ^^^ / vvv !_CCCL_BUILTIN_ILOGBF vvv
-  return ::ilogbf(__x);
-#endif // !_CCCL_BUILTIN_ILOGBF
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return ::cuda::std::__ilogb_impl(static_cast<double>(__x));
+  }
+  else
+  {
+    return ::cuda::std::__ilogb_impl(__x);
+  }
 }
 
-[[nodiscard]] _CCCL_API inline int ilogb(double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr int ilogbf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ILOGB)
-  return _CCCL_BUILTIN_ILOGB(__x);
-#else // ^^^ _CCCL_BUILTIN_ILOGB ^^^ / vvv !_CCCL_BUILTIN_ILOGB vvv
-  return ::ilogb(__x);
-#endif // !_CCCL_BUILTIN_ILOGB
+  return ::cuda::std::__ilogb_impl(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline int ilogb(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr int ilogbl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ILOGBL)
-  return _CCCL_BUILTIN_ILOGBL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ILOGBL ^^^ / vvv !_CCCL_BUILTIN_ILOGBL vvv
-  return ::ilogbl(__x);
-#  endif // !_CCCL_BUILTIN_ILOGBL
-}
-
-[[nodiscard]] _CCCL_API inline int ilogbl(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_ILOGBL)
-  return _CCCL_BUILTIN_ILOGBL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ILOGBL ^^^ / vvv !_CCCL_BUILTIN_ILOGBL vvv
-  return ::ilogbl(__x);
-#  endif // !_CCCL_BUILTIN_ILOGBL
+  return ::cuda::std::__ilogb_impl(__x);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
-
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline int ilogb(__half __x) noexcept
-{
-  return ::cuda::std::ilogbf(__half2float(__x));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline int ilogb(__nv_bfloat16 __x) noexcept
-{
-  return ::cuda::std::ilogbf(__bfloat162float(__x));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
-[[nodiscard]] _CCCL_API inline int ilogb(_Integer __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_ILOGB)
-  return _CCCL_BUILTIN_ILOGB((double) __x);
-#else // ^^^ _CCCL_BUILTIN_ILOGB ^^^ / vvv !_CCCL_BUILTIN_ILOGB vvv
-  return ::ilogb((double) __x);
-#endif // !_CCCL_BUILTIN_ILOGB
-}
 
 // log1p
 
@@ -491,88 +466,65 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 
 // logb
 
-#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
-#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
-
-// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_LOGBF
-#  undef _CCCL_BUILTIN_LOGB
-#  undef _CCCL_BUILTIN_LOGBL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-[[nodiscard]] _CCCL_API inline float logb(float __x) noexcept
+template <class _Tp>
+[[nodiscard]] _CCCL_API inline constexpr _Tp __logb_impl(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOGBF)
-  return _CCCL_BUILTIN_LOGBF(__x);
-#else // ^^^ _CCCL_BUILTIN_LOGBF ^^^ / vvv !_CCCL_BUILTIN_LOGBF vvv
-  return ::logbf(__x);
-#endif // !_CCCL_BUILTIN_LOGBF
+  switch (::cuda::std::fpclassify(__x))
+  {
+    case FP_ZERO:
+      return ::cuda::std::__fp_neg<_Tp>(::cuda::std::__fp_inf<_Tp>());
+    case FP_NAN:
+      return ::cuda::std::__fp_nan<_Tp>();
+    case FP_INFINITE:
+      return ::cuda::std::__fp_inf<_Tp>();
+    default:
+      break;
+  }
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
+  return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+#else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
+  // We need to go through the slow emulation for old GCC
+  if constexpr (__fp_is_native_type_v<_Tp>)
+  {
+    __x                      = ::cuda::std::fabs(__x);
+    unsigned long long __exp = 0;
+    while (__x >= _Tp(numeric_limits<_Tp>::radix))
+    {
+      __x /= numeric_limits<_Tp>::radix;
+      __exp += 1;
+    }
+    return static_cast<_Tp>(__exp);
+  }
+  else
+  {
+    return static_cast<_Tp>(::cuda::std::__fp_get_exp(__x));
+  }
+#endif // !_CCCL_HAS_CONSTEXPR_BIT_CAST()
 }
 
-[[nodiscard]] _CCCL_API inline float logbf(float __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr float logbf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_LOGBF)
-  return _CCCL_BUILTIN_LOGBF(__x);
-#else // ^^^ _CCCL_BUILTIN_LOGBF ^^^ / vvv !_CCCL_BUILTIN_LOGBF vvv
-  return ::logbf(__x);
-#endif // !_CCCL_BUILTIN_LOGBF
-}
-
-[[nodiscard]] _CCCL_API inline double logb(double __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_LOGB)
-  return _CCCL_BUILTIN_LOGB(__x);
-#else // ^^^ _CCCL_BUILTIN_LOGB ^^^ / vvv !_CCCL_BUILTIN_LOGB vvv
-  return ::logb(__x);
-#endif // !_CCCL_BUILTIN_LOGB
+  return ::cuda::std::__logb_impl(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double logb(long double __x) noexcept
+[[nodiscard]] _CCCL_API inline constexpr long double logbl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_LOGBL)
-  return _CCCL_BUILTIN_LOGBL(__x);
-#  else // ^^^ _CCCL_BUILTIN_LOGBL ^^^ / vvv !_CCCL_BUILTIN_LOGBL vvv
-  return ::logbl(__x);
-#  endif // !_CCCL_BUILTIN_LOGBL
-}
-
-[[nodiscard]] _CCCL_API inline long double logbl(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_LOGBL)
-  return _CCCL_BUILTIN_LOGBL(__x);
-#  else // ^^^ _CCCL_BUILTIN_LOGBL ^^^ / vvv !_CCCL_BUILTIN_LOGBL vvv
-  return ::logbl(__x);
-#  endif // !_CCCL_BUILTIN_LOGBL
+  return ::cuda::std::__logb_impl(__x);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half logb(__half __x) noexcept
+template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
+[[nodiscard]] _CCCL_API inline constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> logb(_Tp __x) noexcept
 {
-  return __float2half(::cuda::std::logbf(__half2float(__x)));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 logb(__nv_bfloat16 __x) noexcept
-{
-  return __float2bfloat16(::cuda::std::logbf(__bfloat162float(__x)));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
-[[nodiscard]] _CCCL_API inline double logb(_Integer __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_LOGB)
-  return _CCCL_BUILTIN_LOGB((double) __x);
-#else // ^^^ _CCCL_BUILTIN_LOGB ^^^ / vvv !_CCCL_BUILTIN_LOGB vvv
-  return ::logb((double) __x);
-#endif // !_CCCL_BUILTIN_LOGB
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return ::cuda::std::__logb_impl(static_cast<double>(__x));
+  }
+  else
+  {
+    return ::cuda::std::__logb_impl(__x);
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

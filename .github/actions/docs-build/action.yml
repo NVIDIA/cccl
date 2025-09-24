@@ -6,10 +6,7 @@ inputs:
     description: "Uploads the built docs as a workflow artifact (actions/upload-artifact)."
     required: false
     default: "true"
-  upload_pages_artifact:
-    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Legacy option, not used for branch deployment."
-    required: false
-    default: "true"
+
 
 runs:
   using: "composite"
@@ -32,7 +29,6 @@ runs:
       run: |
         mkdir -p _site
         cp -rf ./docs/_build/html/* _site/
-        # Create .nojekyll to prevent GitHub Pages from ignoring _static directories
         touch _site/.nojekyll
         ./docs/scrape_docs.bash ./_site
 
@@ -44,8 +40,3 @@ runs:
         name: docs
         path: _site/
         compression-level: 0
-
-    # Upload docs as pages artifacts
-    - name: Upload artifact
-      if: ${{ inputs.upload_pages_artifact == 'true' }}
-      uses: actions/upload-pages-artifact@v3

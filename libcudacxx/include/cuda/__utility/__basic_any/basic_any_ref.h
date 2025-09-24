@@ -50,7 +50,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Note: a `__basic_any<__ireference<_Interface>> &&` is an rvalue reference,
 //! whereas a `__basic_any<_Interface &> &&` is an lvalue reference.
 template <class _Interface>
-struct __ireference : _Interface
+struct __ireference : ::cuda::std::remove_const_t<_Interface>
 {
   static_assert(::cuda::std::is_class_v<_Interface>, "expected a class type");
   static constexpr size_t __size_      = sizeof(void*);

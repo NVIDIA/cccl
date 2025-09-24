@@ -205,20 +205,20 @@ __host__ __device__ constexpr bool test()
     assert(g.value && h.value);
   }
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
     if (cuda::std::is_constant_evaluated())
     {
-#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
       assert(arr[0].moves() == 1 && arr[1].moves() == 3);
-#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
     }
     else
     {
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
+#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   {
     int buff[2] = {1, 2};

@@ -209,6 +209,11 @@ public:
     return x.it_ != y.it_;
   }
 
+  __host__ __device__ constexpr It base() const
+  {
+    return it_;
+  }
+
   __host__ __device__ friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
@@ -700,6 +705,7 @@ public:
   void operator,(T const&) = delete;
 };
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 

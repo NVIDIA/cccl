@@ -839,7 +839,9 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // __cuda_std__
 
-#include <cuda/__ptx/instructions/get_sreg.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/get_sreg.h>
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>

@@ -12,9 +12,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

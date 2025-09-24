@@ -36,7 +36,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief Adaptor that transforms a N-ary function \c _Fn into one accepting a \c tuple of size N
+//! @addtogroup iterators
+//! @{
+
+//! @brief Adaptor that transforms a functor taking arguments of types @c Ts... into one accepting a @c tuple<Ts...>
+//! @tparam _Fn The functor to wrap
+//! @relates zip_iterator
 template <class _Fn>
 class zip_function
 {
@@ -44,7 +49,7 @@ private:
   _Fn __fun_;
 
 public:
-  //! @brief default construct a zip_function if \c _Fn is default_initializable
+  //! @brief default construct a zip_function
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Fn2>)
@@ -52,13 +57,13 @@ public:
       : __fun_()
   {}
 
-  //! @brief construct a zip_function from a functor \p __fun
+  //! @brief construct a zip_function from a functor
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr zip_function(const _Fn& __fun) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
       : __fun_(__fun)
   {}
 
-  //! @brief construct a zip_function from a functor \p __fun
+  //! @brief construct a zip_function from a functor
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr zip_function(_Fn&& __fun) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
       : __fun_(::cuda::std::move(__fun))
@@ -68,7 +73,8 @@ public:
   static constexpr bool __is_nothrow_invocable =
     noexcept(::cuda::std::apply(::cuda::std::declval<_Fn2>(), ::cuda::std::declval<_Tuple>()));
 
-  //! @brief Applies a tuple \p __tuple to the stored functor
+  //! @brief Applies a tuple to the stored functor
+  //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const
@@ -77,7 +83,7 @@ public:
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 
-  //! @brief Applies a tuple \p __tuple to the stored functor
+  //! @brief Applies a tuple to the stored functor
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
@@ -86,6 +92,8 @@ public:
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 };
+
+//! @}
 
 _CCCL_END_NAMESPACE_CUDA
 

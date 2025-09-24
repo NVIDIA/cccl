@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/prmt.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/prmt.h>
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>

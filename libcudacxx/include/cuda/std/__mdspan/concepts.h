@@ -118,6 +118,12 @@ _CCCL_CONCEPT __all_convertible_to_index_type =
   (is_convertible_v<_Indices, _IndexType> && ... && true)
   && (is_nothrow_constructible_v<_IndexType, _Indices> && ... && true);
 
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic());
+
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
+
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>

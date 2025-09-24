@@ -41,8 +41,20 @@ namespace cuda::experimental
 {
 using ::cuda::std::decay_t;
 
-template <class _Ty>
-using __declfn = _Ty && (*) () noexcept;
+template <class _Ty, bool _Nothrow = true>
+using __declfn_t = _Ty (*)() noexcept(_Nothrow);
+
+_CCCL_DIAG_PUSH
+_CCCL_NV_DIAG_PUSH()
+_CCCL_DIAG_SUPPRESS_MSVC(5046) // '__declfn': Symbol involving type with internal linkage not defined
+_CCCL_DIAG_SUPPRESS_NVCC(114) // function 'declfn' was referenced but not defined
+_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-internal") // function 'declfn' has internal linkage but is not defined
+
+template <class _Ty, bool _Nothrow = true>
+_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
+
+_CCCL_NV_DIAG_POP()
+_CCCL_DIAG_POP
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
@@ -62,7 +74,7 @@ template <template <class...> class _Fn, class... _Ts>
 _CCCL_CONCEPT __is_instantiable_with = requires { typename _Fn<_Ts...>; };
 
 template <class _Fn, class... _As>
-_CCCL_CONCEPT __callable = requires(__declfn<_Fn> __fn, __declfn<_As>... __as) { __fn()(__as()...); };
+_CCCL_CONCEPT __callable = requires(__declfn_t<_Fn> __fn, __declfn_t<_As>... __as) { __fn()(__as()...); };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
