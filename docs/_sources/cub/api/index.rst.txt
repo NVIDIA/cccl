@@ -90,6 +90,7 @@ Structs
 * :doc:`cub::DeviceSegmentedReduce <structcub_1_1DeviceSegmentedReduce>`
 * :doc:`cub::DeviceSegmentedSort <structcub_1_1DeviceSegmentedSort>`
 * :doc:`cub::DeviceSelect <structcub_1_1DeviceSelect>`
+* :doc:`cub::DeviceTopK <structcub_1_1DeviceTopK>`
 * :doc:`cub::DeviceTransform <structcub_1_1DeviceTransform>`
 * :doc:`cub::DispatchAdjacentDifference <structcub_1_1DispatchAdjacentDifference>`
 * :doc:`cub::DispatchHistogram <structcub_1_1DispatchHistogram>`
@@ -284,6 +285,7 @@ Enumerations
    structcub_1_1DeviceSegmentedReduce
    structcub_1_1DeviceSegmentedSort
    structcub_1_1DeviceSelect
+   structcub_1_1DeviceTopK
    structcub_1_1DeviceTransform
    structcub_1_1DispatchAdjacentDifference
    structcub_1_1DispatchHistogram
