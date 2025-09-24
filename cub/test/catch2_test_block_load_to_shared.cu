@@ -91,7 +91,6 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
     block_load2sh_t second_block_load2sh{storage};
     cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
-    dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
     second_block_load2sh.Commit();
     second_block_load2sh.Wait();
 
