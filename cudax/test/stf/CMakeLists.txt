@@ -99,6 +99,7 @@ set(stf_test_codegen_sources
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
+  freeze/freeze_untyped_rw.cu
   freeze/freeze_write_back.cu
   freeze/task_fence.cu
   freeze/token.cu

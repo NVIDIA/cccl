@@ -36,10 +36,10 @@
 
 namespace cuda::experimental::execution
 {
-class _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : __immovable
+class _CCCL_TYPE_VISIBILITY_DEFAULT __run_loop_base : __immovable
 {
 public:
-  _CCCL_HIDE_FROM_ABI run_loop() = default;
+  _CCCL_HIDE_FROM_ABI __run_loop_base() = default;
 
   _CCCL_API void run() noexcept
   {
@@ -65,7 +65,6 @@ public:
     }
   }
 
-  _CUDAX_SEMI_PRIVATE :
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __task : __immovable
   {
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
@@ -117,119 +116,6 @@ public:
     }
   };
 
-public:
-  class _CCCL_TYPE_VISIBILITY_DEFAULT scheduler
-  {
-    friend run_loop;
-
-    _CCCL_API constexpr explicit scheduler(run_loop* __loop) noexcept
-        : __loop_(__loop)
-    {}
-
-    run_loop* __loop_;
-
-  public:
-    using scheduler_concept = scheduler_t;
-
-    struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
-    {
-      using sender_concept = sender_t;
-
-      template <class _Rcvr>
-      [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
-      {
-        return __opstate_t<_Rcvr>{&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
-      }
-
-      template <class _Self>
-      [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
-      {
-        return completion_signatures<set_value_t(), set_stopped_t()>{};
-      }
-
-    private:
-      friend scheduler;
-
-      struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
-      {
-        run_loop* __loop_;
-
-        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept
-          -> scheduler
-        {
-          return __loop_->get_scheduler();
-        }
-
-        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept
-          -> scheduler
-        {
-          return __loop_->get_scheduler();
-        }
-
-        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
-        {
-          return completion_behavior::asynchronous;
-        }
-      };
-
-    public:
-      _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
-      {
-        return __attrs_t{__loop_};
-      }
-
-    private:
-      friend class scheduler;
-      _CCCL_API constexpr explicit __sndr_t(run_loop* __loop) noexcept
-          : __loop_(__loop)
-      {}
-
-      run_loop* const __loop_;
-    };
-
-    [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
-    {
-      return __sndr_t{__loop_};
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
-      -> forward_progress_guarantee
-    {
-      return forward_progress_guarantee::parallel;
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
-    {
-      return *this;
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
-    {
-      return *this;
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
-    {
-      return completion_behavior::asynchronous;
-    }
-
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const scheduler& __a, const scheduler& __b) noexcept
-    {
-      return __a.__loop_ == __b.__loop_;
-    }
-
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
-    {
-      return __a.__loop_ != __b.__loop_;
-    }
-  };
-
-  [[nodiscard]] _CCCL_API constexpr auto get_scheduler() noexcept -> scheduler
-  {
-    return scheduler{this};
-  }
-
-private:
   // Returns true if any tasks were executed.
   _CCCL_API bool __execute_all() noexcept
   {
@@ -261,6 +147,156 @@ private:
   __atomic_intrusive_queue<&__task::__next_> __queue_{};
   __task __noop_task{&__noop_};
 };
+
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_run_loop : __run_loop_base
+{
+private:
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
+  {
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept;
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept;
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_stopped_t>) const noexcept;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::asynchronous;
+    }
+
+    basic_run_loop* __loop_;
+  };
+
+public:
+  _CCCL_API constexpr explicit basic_run_loop(_Env __env) noexcept
+      : __env_{static_cast<_Env&&>(__env)}
+  {}
+
+  class _CCCL_TYPE_VISIBILITY_DEFAULT scheduler : __attrs_t
+  {
+  private:
+    friend basic_run_loop;
+
+    _CCCL_API constexpr explicit scheduler(basic_run_loop* __loop) noexcept
+        : __attrs_t{__loop}
+    {}
+
+  public:
+    using scheduler_concept = scheduler_t;
+
+    struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
+    {
+      using sender_concept = sender_t;
+
+      template <class _Rcvr>
+      [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+      {
+        return __opstate_t<_Rcvr>{&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
+      }
+
+      template <class _Self>
+      [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
+      {
+        return completion_signatures<set_value_t(), set_stopped_t()>{};
+      }
+
+      _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+      {
+        return __attrs_t{__loop_};
+      }
+
+    private:
+      friend scheduler;
+      _CCCL_API constexpr explicit __sndr_t(basic_run_loop* __loop) noexcept
+          : __loop_(__loop)
+      {}
+
+      basic_run_loop* __loop_;
+    };
+
+    [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
+    {
+      return __sndr_t{this->__loop_};
+    }
+
+    using __attrs_t::query;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
+      -> forward_progress_guarantee
+    {
+      return forward_progress_guarantee::parallel;
+    }
+
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const scheduler& __a, const scheduler& __b) noexcept
+    {
+      return __a.__loop_ == __b.__loop_;
+    }
+
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
+    {
+      return __a.__loop_ != __b.__loop_;
+    }
+  };
+
+  [[nodiscard]] _CCCL_API constexpr auto get_scheduler() noexcept -> scheduler
+  {
+    return scheduler{this};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> const _Env&
+  {
+    return __env_;
+  }
+
+private:
+  _CCCL_NO_UNIQUE_ADDRESS _Env __env_;
+};
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : basic_run_loop<env<>>
+{
+  _CCCL_API constexpr run_loop() noexcept
+      : basic_run_loop<env<>>{env{}}
+  {}
+};
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_scheduler_t<set_value_t>) const noexcept
+{
+  if constexpr (__callable<get_scheduler_t, _Env&>)
+  {
+    return execution::get_scheduler(__loop_->__env_);
+  }
+  else
+  {
+    return scheduler{__loop_};
+  }
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_scheduler_t<set_stopped_t>) const noexcept
+{
+  return query(get_completion_scheduler<set_value_t>);
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_domain_t<set_value_t>) const noexcept
+{
+  if constexpr (__callable<get_domain_t, _Env&>)
+  {
+    return __call_result_t<get_domain_t, _Env&>();
+  }
+  else
+  {
+    return default_domain{};
+  }
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_domain_t<set_stopped_t>) const noexcept
+{
+  return query(get_completion_domain<set_value_t>);
+}
 
 } // namespace cuda::experimental::execution
 
