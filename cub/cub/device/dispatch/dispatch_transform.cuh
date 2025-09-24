@@ -374,7 +374,7 @@ struct dispatch_t<StableAddress,
   }                                                                                                        \
                                                                                                            \
   template <typename AgentPolicy, typename = decltype(::cuda::std::declval<AgentPolicy>().runtime_name())> \
-  static constexpr CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                   \
+  static CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                             \
   {                                                                                                        \
     return +policy.runtime_name();                                                                         \
   }
@@ -437,8 +437,8 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
+      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
                    && kernel_source.IsPointerAligned(out, alignment);
     }
 

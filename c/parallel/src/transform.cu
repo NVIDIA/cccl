@@ -206,6 +206,11 @@ struct transform_kernel_source
     _CCCL_ASSERT(it.value_size != 0, "a non-pointer iterator passed into MakeALignedBasePtrKernelArg");
     return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(it.ptr), align);
   }
+
+  static auto IsPointerAligned(indirect_iterator_t it, int alignment)
+  {
+    return it.value_size != 0 && ::cuda::is_aligned(*static_cast<char**>(it.ptr), alignment);
+  }
 };
 
 } // namespace transform
