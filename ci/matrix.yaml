@@ -286,7 +286,7 @@ devcontainer_version: '25.10'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 14
-cuda99_clang_version: 19
+cuda99_clang_version: 20
 
 # All supported C++ standards:
 all_stds: [17, 20]
