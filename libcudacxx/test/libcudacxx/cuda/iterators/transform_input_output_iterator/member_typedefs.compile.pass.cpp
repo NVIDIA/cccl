@@ -21,24 +21,24 @@
 __host__ __device__ void test()
 {
   {
-    using Iter = cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>;
+    using Iter = cuda::transform_input_output_iterator<PlusOne, TimesTwo, int*>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
-    static_assert(cuda::std::same_as<Iter::reference, cuda::__transform_input_output_proxy<int*, PlusOne, TimesTwo>>);
+    static_assert(cuda::std::same_as<Iter::reference, cuda::__transform_input_output_proxy<PlusOne, TimesTwo, int*>>);
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
   }
 
   {
-    using Iter = cuda::transform_input_output_iterator<random_access_iterator<int*>, PlusOne, TimesTwo>;
+    using Iter = cuda::transform_input_output_iterator<PlusOne, TimesTwo, random_access_iterator<int*>>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
     static_assert(
       cuda::std::same_as<Iter::reference,
-                         cuda::__transform_input_output_proxy<random_access_iterator<int*>, PlusOne, TimesTwo>>);
+                         cuda::__transform_input_output_proxy<PlusOne, TimesTwo, random_access_iterator<int*>>>);
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
