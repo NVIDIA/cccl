@@ -21,27 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDACC_AT_LEAST(13, 0)
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <cuda/experimental/__memory_resource/managed_memory_pool.cuh>
-#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
+#  include <cuda/experimental/__memory_resource/managed_memory_pool.cuh>
+#  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
 namespace cuda::experimental
 {
-
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -91,10 +86,10 @@ public:
 static_assert(::cuda::mr::resource_with<managed_memory_resource, device_accessible>, "");
 static_assert(::cuda::mr::resource_with<managed_memory_resource, host_accessible>, "");
 
-#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
-
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H

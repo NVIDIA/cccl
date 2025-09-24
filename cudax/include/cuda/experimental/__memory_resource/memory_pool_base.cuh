@@ -59,7 +59,7 @@ struct __pool_attr_impl
     return static_cast<type>(__value);
   }
 
-  void set(::cudaMemPool_t __pool, type __value) const
+  void static set(::cudaMemPool_t __pool, type __value)
   {
     size_t __value_copy = __value;
     if constexpr (_Settable)
@@ -186,20 +186,25 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
 inline void __verify_device_supports_export_handle_type(
   const int __device_id, ::cudaMemAllocationHandleType __handle_type, ::CUmemLocation __location)
 {
-  if (__handle_type != ::cudaMemAllocationHandleType::cudaMemHandleTypeNone)
+  if (__handle_type == ::cudaMemAllocationHandleType::cudaMemHandleTypeNone)
   {
-    if (__location.type != ::CU_MEM_LOCATION_TYPE_DEVICE && __location.type != ::CU_MEM_LOCATION_TYPE_HOST_NUMA)
-    {
-      ::cuda::__throw_cuda_error(
-        ::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location");
-    }
-    auto __supported_handles =
-      ::cuda::devices[__device_id].attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
-    if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
-    {
-      ::cuda::__throw_cuda_error(
-        ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
-    }
+    return;
+  }
+  if (__location.type != ::CU_MEM_LOCATION_TYPE_DEVICE
+#if _CCCL_CTK_AT_LEAST(12, 6)
+      && __location.type != ::CU_MEM_LOCATION_TYPE_HOST_NUMA
+#endif
+  )
+  {
+    ::cuda::__throw_cuda_error(
+      ::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location");
+  }
+  auto __supported_handles =
+    ::cuda::devices[__device_id].attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
+  if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
+  {
+    ::cuda::__throw_cuda_error(
+      ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
   }
 }
 

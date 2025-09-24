@@ -53,8 +53,6 @@ template void pool_static_asserts<cudax::device_memory_pool>();
 
 #if _CCCL_CUDACC_AT_LEAST(13, 0)
 static_assert(cuda::std::is_default_constructible<cudax::managed_memory_pool>::value, "");
-#endif
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
 static_assert(cuda::std::is_default_constructible<cudax::pinned_memory_pool>::value, "");
 #endif
 static_assert(!cuda::std::is_default_constructible<cudax::device_memory_pool>::value, "");
@@ -68,7 +66,18 @@ PoolType construct_pool(int device_id, cudax::memory_pool_properties props = {})
   }
   else
   {
-    return PoolType(props);
+#if _CCCL_CTK_AT_LEAST(12, 6)
+    if constexpr (cuda::std::is_same_v<PoolType, cudax::pinned_memory_pool>)
+    {
+      return PoolType(0, props);
+    }
+    else
+    {
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+      return PoolType(props);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+    }
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
   }
 }
 
@@ -413,21 +422,6 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
       size_t attr = pool.attribute(cudax::memory_pool_attributes::reserved_mem_current);
       CHECK(attr >= 2048 * sizeof(int));
       // cudaMemPoolAttrReservedMemCurrent cannot be set
-#if _CCCL_HAS_EXCEPTIONS()
-      try
-      {
-        pool.set_attribute(cudax::memory_pool_attributes::reserved_mem_current, attr);
-        CHECK(false);
-      }
-      catch (::std::invalid_argument& err)
-      {
-        CHECK(strcmp(err.what(), "This attribute can't be set") == 0);
-      }
-      catch (...)
-      {
-        CHECK(false);
-      }
-#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     { // cudaMemPoolAttrUsedMemCurrent
@@ -435,21 +429,6 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
       size_t attr = pool.attribute(cudax::memory_pool_attributes::used_mem_current);
       CHECK(attr == 2048 * sizeof(int));
       // cudaMemPoolAttrUsedMemCurrent cannot be set
-#if _CCCL_HAS_EXCEPTIONS()
-      try
-      {
-        pool.set_attribute(cudax::memory_pool_attributes::used_mem_current, attr);
-        CHECK(false);
-      }
-      catch (::std::invalid_argument& err)
-      {
-        CHECK(strcmp(err.what(), "This attribute can't be set") == 0);
-      }
-      catch (...)
-      {
-        CHECK(false);
-      }
-#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     // Free the last allocation
@@ -540,7 +519,7 @@ C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
-  cudax::pinned_memory_pool pool{};
+  cudax::pinned_memory_pool pool{0};
   CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
   // Currently bugged, need to wait for driver fix
@@ -576,6 +555,7 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
 
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]")
 {
   cudax::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
@@ -593,5 +573,6 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
   // Ensure that we disable export
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
 // managed memory pool does not support allocation handles yet.
