@@ -48,8 +48,8 @@
 #  define _CCCL_PTX_ARCH() __CUDA_ARCH__
 #endif
 
-#if ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH() >= 700) \
-  || _CCCL_CUDA_COMPILER(CLANG, >=, 20)
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 20)) \
+  && _CCCL_PTX_ARCH() >= 700
 #  define _CCCL_HAS_GRID_CONSTANT() 1
 #  define _CCCL_GRID_CONSTANT       __grid_constant__
 #else // ^^^ has __grid_constant__ ^^^ / vvv no __grid_constant__ vvv
