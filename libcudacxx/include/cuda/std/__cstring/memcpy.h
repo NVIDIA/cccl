@@ -47,7 +47,7 @@ _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) n
 {
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: destination range is invalid");
-  _CCCL_ASSERT(::cuda::__are_ptrs_overlapping(__src, __dest, __count), "memcpy: source and destination overlap");
+  _CCCL_ASSERT(!::cuda::__are_ptrs_overlapping(__src, __dest, __count), "memcpy: source and destination overlap");
   return ::memcpy(__dest, __src, __count);
 }
 
