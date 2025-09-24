@@ -534,7 +534,7 @@ struct AgentTopK
   // Replace histogram with its own prefix sum
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
-    OffsetT thread_data[bins_per_thread];
+    OffsetT thread_data[bins_per_thread]{};
 
     // Load global histogram (we can skip initializing oob-items to zero because they won't be stored back)
     block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets);
