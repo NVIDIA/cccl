@@ -11,6 +11,8 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 
+#include <iostream>
+
 #include <c2h/catch2_test_helper.h>
 
 C2H_TEST("cub::DeviceScan::ExclusiveScan accepts determinism requirements", "[scan][env]")
@@ -24,6 +26,10 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts determinism requirements", "[sc
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
   auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-scan-env-determinism
@@ -44,6 +50,10 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream", "[scan][env]")
   cuda::stream_ref stream_ref{legacy_stream};
 
   auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
   // example-end exclusive-scan-env-stream
@@ -61,6 +71,10 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts determinism requirements", "[sca
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
   auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-sum-env-determinism
@@ -79,6 +93,10 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream", "[scan][env]")
   cuda::stream_ref stream_ref{legacy_stream};
 
   auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-sum-env-stream
