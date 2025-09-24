@@ -63,7 +63,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
   {
     return cub::DeviceTransform::Transform(
-      mdspan_in.data_handle(), mdspan_out.data_handle(), mdspan_in.size(), ::cuda::std::identity{}, stream);
+      mdspan_in.data_handle(), mdspan_out.data_handle(), mdspan_in.size(), ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}), stream);
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
