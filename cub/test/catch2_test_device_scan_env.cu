@@ -252,22 +252,20 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]", requir
 
       using scan_tile_state_t = typename cub::ScanTileState<accum_t>;
 
-      auto kernel1 = reinterpret_cast<void*>(
-        cub::detail::scan::DeviceScanKernel<
-          policy_t,
-          input_it_t,
-          output_it_t,
-          scan_tile_state_t,
-          scan_op_t,
-          cub::detail::InputValue<init_t>,
-          offset_t,
-          accum_t,
-          false,
-          input_value_t::value_type>);
-
-      auto kernel2 = reinterpret_cast<void*>(cub::detail::scan::DeviceScanInitKernel<scan_tile_state_t>);
-
-      return cuda::std::array<void*, 2>{kernel1, kernel2};
+      return cuda::std::array<void*, 2>{
+        reinterpret_cast<void*>(
+          cub::detail::scan::DeviceScanKernel<
+            policy_t,
+            input_it_t,
+            output_it_t,
+            scan_tile_state_t,
+            scan_op_t,
+            cub::detail::InputValue<init_t>,
+            offset_t,
+            accum_t,
+            false,
+            input_value_t::value_type>),
+        reinterpret_cast<void*>(cub::detail::scan::DeviceScanInitKernel<scan_tile_state_t>)};
     }
   }();
 
@@ -314,34 +312,35 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]", require
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    REQUIRE(
-      cudaSuccess == cub::DeviceScan::ExclusiveSum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
+    if constexpr (cuda::std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
+    {
+      REQUIRE(cudaSuccess
+              == cub::DeviceScan::ExclusiveSum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
-    using policy_t =
-      cub::detail::scan::policy_hub<cub::detail::it_value_t<input_it_t>,
-                                    cub::detail::it_value_t<output_it_t>,
-                                    accum_t,
-                                    offset_t,
-                                    scan_op_t>::MaxPolicy;
+      using policy_t =
+        cub::detail::scan::policy_hub<cub::detail::it_value_t<input_it_t>,
+                                      cub::detail::it_value_t<output_it_t>,
+                                      accum_t,
+                                      offset_t,
+                                      scan_op_t>::MaxPolicy;
 
-    using scan_tile_state_t = typename cub::ScanTileState<accum_t>;
+      using scan_tile_state_t = typename cub::ScanTileState<accum_t>;
 
-    auto kernel1 = reinterpret_cast<void*>(
-      cub::detail::scan::DeviceScanKernel<
-        policy_t,
-        input_it_t,
-        output_it_t,
-        scan_tile_state_t,
-        scan_op_t,
-        cub::detail::InputValue<init_t>,
-        offset_t,
-        accum_t,
-        false,
-        input_value_t::value_type>);
-
-    auto kernel2 = reinterpret_cast<void*>(cub::detail::scan::DeviceScanInitKernel<scan_tile_state_t>);
-
-    return cuda::std::array<void*, 2>{kernel1, kernel2};
+      return cuda::std::array<void*, 2>{
+        reinterpret_cast<void*>(
+          cub::detail::scan::DeviceScanKernel<
+            policy_t,
+            input_it_t,
+            output_it_t,
+            scan_tile_state_t,
+            scan_op_t,
+            cub::detail::InputValue<init_t>,
+            offset_t,
+            accum_t,
+            false,
+            input_value_t::value_type>),
+        reinterpret_cast<void*>(cub::detail::scan::DeviceScanInitKernel<scan_tile_state_t>)};
+    }
   }();
 
   // Equivalent to `cuexec::require(cuexec::determinism::run_to_run)` and
