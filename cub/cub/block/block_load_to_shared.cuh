@@ -124,14 +124,10 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void __init_mbarrier()
   {
     {
-      NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_90,
-        (if (elected) { ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1); }
-         // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
-         __syncthreads();),
-        NV_PROVIDES_SM_80,
-        (if (elected) { ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, block_threads); } //
-         __syncthreads();));
+      NV_IF_TARGET(NV_PROVIDES_SM_90,
+                   (if (elected) { ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1); }
+                    // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
+                    __syncthreads();));
     }
   }
 
@@ -203,14 +199,13 @@ private:
   // Dispatch to fallback for waiting pre TMA/SM_90
   _CCCL_DEVICE _CCCL_FORCEINLINE bool __try_wait()
   {
-    // TODO Add backoff at least for SM_80?
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (return ::cuda::ptx::mbarrier_try_wait_parity(&temp_storage.mbarrier_handle, phase_parity);),
       NV_PROVIDES_SM_80,
-      (const bool done = ::cuda::ptx::mbarrier_test_wait_parity(&temp_storage.mbarrier_handle, phase_parity); //
-       if (!done) { __nanosleep(0); } //
-       return done;),
+      (asm volatile("cp.async.wait_group 0;" :: : "memory"); //
+       __syncthreads();
+       return true;),
       NV_IS_DEVICE,
       (__syncthreads(); //
        return true;));
@@ -366,8 +361,9 @@ public:
       } //
        __syncthreads();),
       NV_PROVIDES_SM_80,
-      (asm volatile("cp.async.mbarrier.arrive.noinc.shared.b64 [%0];" ::"r"(
-        static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
+      (asm volatile("cp.async.commit_group ;" :: : "memory");));
+    // (asm volatile("cp.async.mbarrier.arrive.noinc.shared.b64 [%0];" ::"r"(
+    //   static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
   }
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next calls to @c CopyAsync() .
