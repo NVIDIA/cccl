@@ -78,6 +78,11 @@ struct lazy_trait
 };
 } // namespace detail
 
+//! \addtogroup iterators
+//! \addtogroup iterator_traits Iterator traits
+//! \ingroup iterators
+//! \{
+
 //! \p iterator_traits is a type trait class that provides a uniform interface for querying the properties of iterators
 //! at compile-time. You can specialize cuda::std::iterator_traits for your own iterator types if needed.
 //! deprecated [Since 3.0]
@@ -153,11 +158,13 @@ using iterator_difference_t CCCL_DEPRECATED_BECAUSE(
 
 // traversal
 
+//! Trait obtaining the iterator traversal category of an iterator type.
 template <typename Iterator>
 struct iterator_traversal
     : detail::iterator_category_to_traversal<typename iterator_traits<Iterator>::iterator_category>
 {};
 
+//! Alias to the iterator traversal category of an iterator type.
 template <typename Iterator>
 using iterator_traversal_t = typename iterator_traversal<Iterator>::type;
 
@@ -177,6 +184,7 @@ struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_trai
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+//! Trait obtaining the iterator system of an iterator type, usually as the systems tag type.
 template <typename Iterator>
 struct iterator_system : detail::iterator_system_impl<Iterator>
 {};
@@ -190,6 +198,7 @@ template <>
 struct iterator_system<const void*> : iterator_system<const int*>
 {};
 
+//! Alias to the iterator system (usually the tag type) of an iterator type
 template <typename Iterator>
 using iterator_system_t = typename iterator_system<Iterator>::type;
 
@@ -274,25 +283,25 @@ struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
   using type = random_access_traversal_tag;
 };
 
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_system<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_system<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_system<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_traversal<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_traversal<Iter>
-{};
-
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_output_iterator<Iter, Fn>> : iterator_system<Iter>
-{};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_output_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_traversal<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_traversal<Iter>
 {};
 
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_output_iterator<Fn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_output_iterator<Fn, Iter>> : iterator_traversal<Iter>
+{};
+
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_iterator<Fn, Iter>> : iterator_system<Iter>
+{};
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_iterator<Fn, Iter>> : iterator_traversal<Iter>
 {};
 
 template <class... Iterators>
@@ -306,6 +315,8 @@ struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
 
+//! \} // end iterator_traits
+
 THRUST_NAMESPACE_END
 
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
+#include <thrust/iterator/iterator_traversal_tags.h>

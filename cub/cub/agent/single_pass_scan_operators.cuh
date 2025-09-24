@@ -51,7 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <nv/target>
 
@@ -1178,13 +1179,13 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
- * Prefix call-back operator for coupling local block scan within a
+ * Prefix callback operator for coupling local block scan within a
  * block-cooperative scan
  ******************************************************************************/
 
 /**
- * Stateful block-scan prefix functor.  Provides the the running prefix for
- * the current tile by using the call-back warp to wait on on
+ * Stateful block-scan prefix functor.  Provides the running prefix for
+ * the current tile by using the callback warp to wait for
  * aggregates/prefixes from predecessor tiles to become available.
  *
  * @tparam DelayConstructorT

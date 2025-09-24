@@ -44,12 +44,18 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/cmath>
-#include <cuda/functional>
-#include <cuda/numeric>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/__functional/address_stability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__numeric/reduce.h>
-#include <cuda/std/bit>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform

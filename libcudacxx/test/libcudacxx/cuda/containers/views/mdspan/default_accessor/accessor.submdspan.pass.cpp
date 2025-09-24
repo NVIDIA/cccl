@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// nvbug5272086
-// UNSUPPORTED: msvc
-
 #include <cuda/mdspan>
 #include <cuda/std/type_traits>
 

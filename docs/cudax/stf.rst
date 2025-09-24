@@ -20,8 +20,10 @@ enforcing implicit data-driven dependencies.
 Implemented as a header-only C++ library, CUDASTF builds on top of CUDA
 APIs to simplify the development of multi-GPU applications.
 
-CUDASTF is currently capable of generating parallel applications using
-either the CUDA stream API or the CUDA graph API.
+CUDASTF enables the creation of highly concurrent parallel applications,
+leveraging both the CUDA stream API and the CUDA graph API for efficient
+task orchestration and data management. The same client code can run
+optimally on single- and multi-GPU systems.
 
 The Sequential Task Flow (STF) programming model
 ------------------------------------------------
@@ -61,7 +63,8 @@ asynchrony and asynchronous data management.
 
 To illustrate how a sequence of tasks can be transformed into a parallel
 application using annotated data accesses, consider the following
-example involving three logical data pieces denoted as X, Y and Z:
+example involving three logical data pieces denoted as ``X``, ``Y``,
+and ``Z``:
 
 ::
 
@@ -114,7 +117,7 @@ internally utilizes the CUDA library.
    # Linking flags
    nvcc -lcuda
 
-It is also possible to use CUDASTF without nvcc. This is for example
+It is also possible to use CUDASTF without ``nvcc``. This is for example
 useful when calling existing CUDA libraries such as CUBLAS which do not
 require authoring custom kernels. Note that CUDASTF APIs intended to
 automatically generate CUDA kernels such as ``parallel_for`` or
@@ -127,7 +130,7 @@ automatically generate CUDA kernels such as ``parallel_for`` or
    # Linking flags
    g++ -lcuda -lcudart
 
-Using CUDASTF within a cmake project
+Using CUDASTF within a CMake project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As part of the CCCL project, CUDASTF uses CMake for its build and installation
@@ -197,7 +200,7 @@ Compiling examples
 ^^^^^^^^^^^^^^^^^^
 
 The following commands compile STF examples from the root of the CCCL sources.
-Please note the `-j` option, which specifies how many processes should be used to
+Please note the ``-j`` option, which specifies how many processes should be used to
 compile the examples. Not specifying it will launch as many processes as there
 are processors on the machine, which might lead to an excessive resource
 consumption and system instability.
@@ -212,7 +215,7 @@ consumption and system instability.
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
-example :
+example:
 
 .. code:: bash
 
@@ -257,11 +260,11 @@ beneficial in terms of performance with a repeated task patterns. Unlike
 other context types, it is not allowed for a task to synchronize with
 the CUDA stream (e.g. with ``cudaStreamSynchronize``) within a task.
 
-Using either ``context``, ``stream_ctx`` or ``graph_ctx`` should result
+Using either ``context``, ``stream_ctx``, or ``graph_ctx`` should result
 in the same behaviour, even if the underlying implementation differs.
 One may switch from a type to another one by adapting how we initialize
 the context object, or by selecting an appropriate type to decide
-statically :
+statically:
 
 .. code:: cpp
 
@@ -274,12 +277,13 @@ statically :
    // statically select a context based on CUDA streams and CUDA events
    graph_ctx ctx;
 
-For the most part, all types can be used interchangeably. The difference
-lies in the mechanisms used internally to implement synchronization and
-to execute computation. There can be a minor runtime overhead and an
-increased compilation time when using the generic context type, but this
-generic type can be required when CUDASTF automatically select the
-context type (see Algorithms).
+For the most part, these types can be used interchangeably. The key
+difference is that ``stream_ctx`` and ``graph_ctx`` are statically bound to
+use either the CUDA stream or graph APIs, while ``context`` defers this
+decision to runtime, allowing dynamic selection of the appropriate backend.
+This flexibility does not introduce significant runtime overhead or
+compilation time differences, but it may be necessary when the user needs
+to select the context type dynamically (see Algorithms).
 
 Tasks in the Stream backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -304,7 +308,7 @@ supplies the CUDA graph, CUDASTF can automatically insert CUDA graph
 nodes to enable subsequent tasks to be submitted as child graphs of the
 user-supplied graph.
 
-Creating a ``graph_task`` results in creating a child graph in the
+Creating a ``graph_task`` object results in creating a child graph in the
 aforementioned graph associated to the ``graph_ctx`` object. The child
 graph implements the body of the task, and CUDASTF automatically inserts
 the appropriate dependencies to ensure this child graph is executed only
@@ -479,8 +483,8 @@ kernel. Example:
        }
    }
 
-Defining slices with multiple dimensions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining multidimensional slices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Slices can be used on data with multiple dimensions, and possibly
 non-contiguous data.
@@ -1880,13 +1884,15 @@ all the benefits of statically available types):
 Modular use of CUDASTF
 ----------------------
 
-CUDASTF maintains data consistency throughout the system, and infers
-concurrency opportunities based on data accesses. Depending on the use cases,
-one may however already manage coherency or enforce dependencies.
+CUDASTF maintains data consistency throughout a context and infers
+concurrency opportunities based on data accesses. An existing application
+may however already manage coherency or enforce dependencies by other means.
+CUDASTF offers several facilities that facilitate incremental adoption
+in existing code.
 
-- The "logical data freezing" mechanism ensures data availability while letting
+- The ``logical data freezing`` mechanism ensures data availability while letting
   the application take care of synchronization.
-- Tokens make it possible to enforce concurrent execution while
+- ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1896,16 +1902,15 @@ When a piece of data is used very often, it can be beneficial to avoid enforcing
 data dependencies every time it is accessed. A common example would be data that
 is written once and then read many times.
 
-CUDASTF provides a mechanism called logical data freeze that allows a
+CUDASTF provides a mechanism called ``logical data freeze`` that allows a
 logical data to be accessed outside of tasks—or within tasks—without
-enforcing data dependencies for every access, which reduces overhead to a minimum.
-
+enforcing data dependencies for every access, which minimizes overhead.
 
 By default, calling the ``freeze`` method returns a frozen logical data object
 that can be accessed in read-only mode without additional synchronization. The
 ``get`` method of the frozen logical data returns a view of the underlying data
 on the specified data place. This view can be used asynchronously with respect
-to the stream passed to ``get`` until calling the non-blocking unfreeze
+to the stream passed to ``get`` until calling the non-blocking ``unfreeze``
 method on the frozen logical data. It is possible to call ``get`` multiple times.
 Modifying these frozen read-only views results in undefined behavior.
 If necessary, implicit data transfers or allocations are performed asynchronously
@@ -1921,7 +1926,7 @@ when calling ``get``.
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
     auto hX = frozen_ld.get(data_place::host(), stream);
 
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 While data are frozen, it is still possible to launch tasks which access
 them. CUDASTF will allow tasks with a read access modes to run
@@ -1934,7 +1939,7 @@ until data is made is made modifiable again, after ``unfreeze``.
     auto dX = frozen_ld.get(data_place::current_device(), stream);
     // kernel can modify dX
     kernel<<<..., stream>>>(dX);
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 As shown above, it is also possible to create a modifiable frozen logical data,
 allowing an application to temporarily transfer ownership of the logical data

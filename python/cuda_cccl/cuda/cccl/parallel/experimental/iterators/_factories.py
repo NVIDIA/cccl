@@ -121,10 +121,9 @@ def ReverseIterator(sequence):
 
 
 def TransformIterator(it, op):
-    """Returns an Iterator representing a transformed sequence of values.
+    """An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.
 
-    Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html) and
-    [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
+    Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html)
 
     Example:
         The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
@@ -133,8 +132,23 @@ def TransformIterator(it, op):
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
             :language: python
             :start-after: # example-begin
+    Args:
+        it: The underlying iterator
+        op: The unary operation to be applied to values as they are read from ``it``
 
-        The code snippet below demonstrates the usage of a ``TransformIterator`` to transform the output
+    Returns:
+        A ``TransformIterator`` object to transform the items in ``it`` using ``op``
+    """
+    return make_transform_iterator(it, op, "input")
+
+
+def TransformOutputIterator(it, op):
+    """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
+
+    Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
+
+    Example:
+        The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
         of a reduction before writing to an output array.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
@@ -142,13 +156,13 @@ def TransformIterator(it, op):
             :start-after: # example-begin
 
     Args:
-        it: The iterator object to be transformed
-        op: The transform operation
+        it: The underlying iterator
+        op: The operation to be applied to values before they are written to ``it``
 
     Returns:
-        A ``TransformIterator`` object to transform the items in ``it`` using ``op``
+        A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
-    return make_transform_iterator(it, op)
+    return make_transform_iterator(it, op, "output")
 
 
 def ZipIterator(*iterators):
