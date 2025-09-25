@@ -254,13 +254,6 @@ struct DispatchScan
     // performance.
     policy.CheckLoadModifier();
 
-    // Get device ordinal
-    int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-    {
-      return error;
-    }
-
     // Number of input tiles
     const int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
