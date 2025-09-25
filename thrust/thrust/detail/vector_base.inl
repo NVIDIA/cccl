@@ -286,7 +286,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
-template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
@@ -296,7 +296,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)

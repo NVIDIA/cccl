@@ -17,6 +17,7 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
@@ -524,12 +525,50 @@ public:
     return __detail::convert_to_query_result(::cuda::std::apply(__detail::hierarchy_extents_helper<Unit>{}, selected));
   }
 
-  // template <typename Unit, typename Level>
-  // using extents_type = ::cuda::std::invoke_result_t<
-  //   decltype(&hierarchy_dimensions<BottomUnit, Levels...>::template extents<Unit, Level>),
-  //   hierarchy_dimensions<BottomUnit, Levels...>,
-  //   Unit(),
-  //   Level()>;
+  //!
+  //! @brief Get static extents of a multi-dimensional index space of a specified range of levels in this hierarchy.
+  //!
+  //! Each dimension in the returned static extents is a product of the corresponding dimension in static extents
+  //! of each level in the range between Level and Unit.
+  //! Unit and Level need to be levels present in this hierarchy.
+  //!
+  //! @return Returns a cuda::std::array object of type size_t.
+  //!
+  //! @par Snippet
+  //! @code
+  //! #include <cudax/hierarchy_dimensions.cuh>
+  //! #include <cassert>
+  //!
+  //! using namespace cuda::experimental;
+  //!
+  //! auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
+  //! static_assert(hierarchy.static_extents(thread, cluster)[0] == 4 * 8);
+  //! static_assert(hierarchy.static_extents(thread, cluster)[1] == 8);
+  //! static_assert(hierarchy.static_extents(thread, cluster)[2] == 8);
+  //! static_assert(hierarchy.static_extents(thread, grid)[0] == cuda::std::dynamic_extent);
+  //!
+  //! // Using default arguments:
+  //! assert(hierarchy.static_extents()[0] == cuda::std::dynamic_extent);
+  //! assert(hierarchy.static_extents(cluster)[0] == cuda::std::dynamic_extent);
+  //! @endcode
+  //! @par
+  //!
+  //! @tparam Unit
+  //!  Specifies the unit of the requested extents
+  //!
+  //! @tparam Level
+  //!  Specifies at what CUDA hierarchy level the extents are requested
+  template <class Unit = BottomUnit, class Level = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>>
+  [[nodiscard]] _CCCL_API static constexpr auto static_extents(const Unit& = Unit(), const Level& = Level()) noexcept
+  {
+    using Exts = extents_type<Unit, Level>;
+    ::cuda::std::array<::cuda::std::size_t, Exts::rank()> ret{};
+    for (::cuda::std::size_t i = 0; i < Exts::rank(); ++i)
+    {
+      ret[i] = Exts::static_extent(i);
+    }
+    return ret;
+  }
 
   /**
    * @brief Returns a count of specified entities at a level in this hierarchy.
@@ -564,8 +603,6 @@ public:
   {
     return __detail::dims_to_count(extents<Unit, Level>());
   }
-
-  // TODO static extents?
 
   /**
    * @brief Returns a compile time count of specified entities at a level in this hierarchy type.

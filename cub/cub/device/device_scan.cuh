@@ -43,13 +43,43 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/device_memory_resource.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
+#include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::scan
+{
+struct get_tuning_query_t
+{};
+
+template <class Derived>
+struct tuning
+{
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr Derived query(const get_tuning_query_t&) const noexcept
+  {
+    return static_cast<const Derived&>(*this);
+  }
+};
+
+struct default_tuning : tuning<default_tuning>
+{
+  template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
+  using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
+};
+
+} // namespace detail::scan
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a
@@ -98,6 +128,120 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceScan
 {
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            ::cuda::execution::determinism::__determinism_t Determinism,
+            ForceInclusive EnforceInclusive = ForceInclusive::No>
+  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init,
+    NumItemsT num_items,
+    ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
+    cudaStream_t stream)
+  {
+    using scan_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::scan::get_tuning_query_t, detail::scan::default_tuning>;
+
+    // Unsigned integer type for global offsets
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    using accum_t =
+      ::cuda::std::__accumulator_t<ScanOpT,
+                                   cub::detail::it_value_t<InputIteratorT>,
+                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                    cub::detail::it_value_t<InputIteratorT>,
+                                                    typename InitValueT::value_type>>;
+
+    using policy_t = typename scan_tuning_t::
+      template fn<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, accum_t, offset_t, ScanOpT>;
+
+    using dispatch_t =
+      DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, offset_t, accum_t, EnforceInclusive, policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, static_cast<offset_t>(num_items), stream);
+  }
+
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            ForceInclusive EnforceInclusive = ForceInclusive::No,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
+    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, EnvT env)
+  {
+    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    using requirements_t =
+      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+
+    using requested_determinism_t =
+      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
+                                          _CUDA_EXEC::determinism::__get_determinism_t,
+                                          _CUDA_EXEC::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it's not implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+                  "not_guaranteed determinism is not supported");
+
+    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+
+    // Query relevant properties from the environment
+    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+
+    // Query the required temporary storage size
+    cudaError_t error = scan_impl_determinism<tuning_t>(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
+
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer whenit's available
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = scan_impl_determinism<tuning_t>(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
+  }
+
   //! @name Exclusive scans
   //! @{
 
@@ -207,6 +351,83 @@ struct DeviceScan
                detail::InputValue<InitT>(init_value),
                num_items,
                stream);
+  }
+
+  //! @name Exclusive scans
+  //! @{
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix sum.
+  //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_out``.
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Preconditions
+  //! +++++++++++++
+  //!
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - ``d_in`` and ``d_out`` must not be null pointers
+  //! The code snippet below illustrates a user-defined exclusive-scan of a
+  //! device vector of ``float`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-env-determinism
+  //!     :end-before: example-end exclusive-sum-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `_CUDA_STD_EXEC::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `_CUDA_STD_EXEC::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename EnvT = _CUDA_STD_EXEC::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
+
+    using InitT = cub::detail::it_value_t<InputIteratorT>;
+
+    // Initial value
+    InitT init_value{};
+
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -414,6 +635,91 @@ struct DeviceScan
       detail::InputValue<InitValueT>(init_value),
       num_items,
       stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix scan using the specified
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
+  //! the initial value, and is assigned to ``*d_out``.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
+  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined exclusive-scan of a
+  //! device vector of ``float`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-env-determinism
+  //!     :end-before: example-end exclusive-scan-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `_CUDA_STD_EXEC::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `_CUDA_STD_EXEC::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT = _CUDA_STD_EXEC::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
+
+    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
