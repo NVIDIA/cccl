@@ -29,7 +29,7 @@
 
 #include <cub/detail/ptx-json/string.h>
 
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -68,13 +68,12 @@ struct value<Nested, void>
 {
   __forceinline__ __device__ static void emit()
   {
-    value<Nested>::emit();
+    Nested.emit();
   }
 };
 
-// Integral constants (matches both signed and unsigned integrals)
-template <auto V>
-struct value<V, cuda::std::enable_if_t<cuda::std::is_integral_v<decltype(V)>, void>>
+template <cuda::std::integral auto V>
+struct value<V, void>
 {
   __forceinline__ __device__ static void emit()
   {

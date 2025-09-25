@@ -360,11 +360,6 @@ public:
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
     int device;
     cudaEvent_t start_event, end_event;
 

@@ -48,6 +48,7 @@
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -220,6 +221,14 @@ struct no_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">() = value<string("no_delay_constructor_t")>(), key<"params">() = array<L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -248,6 +257,15 @@ struct reduce_by_key_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("reduce_by_key_delay_constructor_t")>(),
+                  key<"params">() = array<Delay, L2WriteLatency, GridThreshold>()>();
+  }
+#endif
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -270,6 +288,15 @@ struct fixed_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("fixed_delay_constructor_t")>(),
+                  key<"params">() = array<Delay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -295,6 +322,15 @@ struct exponential_backoff_constructor_t
   {
     return {InitialDelay};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -333,6 +369,15 @@ struct exponential_backoff_jitter_constructor_t
   {
     return {InitialDelay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_jitter_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -371,6 +416,15 @@ struct exponential_backoff_jitter_window_constructor_t
   {
     return {InitialDelay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_jitter_window_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -412,6 +466,15 @@ struct exponential_backon_jitter_window_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_jitter_window_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -452,6 +515,15 @@ struct exponential_backon_jitter_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_jitter_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -480,6 +552,15 @@ struct exponential_backon_constructor_t
     max_delay >>= 1;
     return {max_delay};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
@@ -497,36 +578,6 @@ using default_reduce_by_key_delay_constructor_t =
   ::cuda::std::_If<is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16),
                    reduce_by_key_delay_constructor_t<350, 450>,
                    default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
-
-// ptx-json encoders for delay constructor types. Unlike the other agent policy
-// member variables, this is defined as a type alias so we can't use the
-// CUB_DETAIL_POLICY_WRAPPER_DEFINE macro to embed it with ptx-json. To work
-// around this, we define the ptx-json encoders here. These can then be used in
-// the policy wrapper's EncodedPolicy member function to explicitly encode the
-// delay constructor.
-
-template <class DelayCtor>
-struct delay_constructor_json;
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_json<fixed_delay_constructor_t<Delay, L2WriteLatency>>
-{
-  using type =
-    ptx_json::object<ptx_json::key<"type">()  = ptx_json::value<ptx_json::string("fixed_delay_constructor_t")>(),
-                     ptx_json::key<"delay">() = ptx_json::value<Delay>(),
-                     ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
-};
-
-template <unsigned int L2WriteLatency>
-struct delay_constructor_json<no_delay_constructor_t<L2WriteLatency>>
-{
-  using type = ptx_json::object<ptx_json::key<"type">() = ptx_json::value<ptx_json::string("no_delay_constructor_t")>(),
-                                ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
-};
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 
 /**
  * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
@@ -1209,13 +1260,13 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
- * Prefix call-back operator for coupling local block scan within a
+ * Prefix callback operator for coupling local block scan within a
  * block-cooperative scan
  ******************************************************************************/
 
 /**
- * Stateful block-scan prefix functor.  Provides the the running prefix for
- * the current tile by using the call-back warp to wait on on
+ * Stateful block-scan prefix functor.  Provides the running prefix for
+ * the current tile by using the callback warp to wait for
  * aggregates/prefixes from predecessor tiles to become available.
  *
  * @tparam DelayConstructorT
