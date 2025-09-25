@@ -274,14 +274,6 @@ struct DispatchScan
     cudaError error = cudaSuccess;
     do
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
       // Number of input tiles
       int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
       int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
