@@ -30,8 +30,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   size_t n     = 4096;
   size_t m     = 4096;
-  double tol   = 0.05;
-  int max_iter = 10000;
+  double tol   = 0.5;
+  int max_iter = 1000;
 
   if (argc > 2)
   {

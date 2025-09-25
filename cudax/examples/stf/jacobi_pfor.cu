@@ -27,8 +27,8 @@ int main(int argc, char** argv)
 
   size_t n        = 4096;
   size_t m        = 4096;
-  double tol      = 0.05;
-  size_t iter_max = 10000;
+  double tol      = 0.5;
+  size_t iter_max = 1000;
 
   if (argc > 2)
   {
