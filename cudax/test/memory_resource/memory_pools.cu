@@ -58,7 +58,7 @@ static_assert(cuda::std::is_default_constructible<cudax::pinned_memory_pool>::va
 static_assert(!cuda::std::is_default_constructible<cudax::device_memory_pool>::value, "");
 
 template <typename PoolType>
-PoolType construct_pool(int device_id, cudax::memory_pool_properties props = {})
+PoolType construct_pool([[maybe_unused]] int device_id, cudax::memory_pool_properties props = {})
 {
   if constexpr (cuda::std::is_same_v<PoolType, cudax::device_memory_pool>)
   {

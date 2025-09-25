@@ -296,7 +296,10 @@ private:
       ::CUdeviceptr __ptr{0};
       ::cuda::__driver::__mallocFromPoolAsync(
         &__ptr, __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
-      ::cuda::__driver::__freeFromPoolAsync(__ptr, __cccl_allocation_stream().get());
+      if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
+      {
+        ::cuda::__throw_cuda_error(::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
+      }
     }
     return __cuda_pool_handle;
   }

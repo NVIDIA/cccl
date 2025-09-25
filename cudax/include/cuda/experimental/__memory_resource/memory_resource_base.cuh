@@ -99,8 +99,11 @@ public:
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
-    ::cuda::__driver::__freeFromPoolAsync(reinterpret_cast<::CUdeviceptr>(__ptr), __cccl_allocation_stream().get());
-    __cccl_allocation_stream().sync();
+    _CCCL_ASSERT_CUDA_API(
+      ::cuda::__driver::__freeAsyncNoThrow,
+      "deallocate failed",
+      reinterpret_cast<::CUdeviceptr>(__ptr),
+      __cccl_allocation_stream().get());
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via `cudaMallocFromPoolAsync`.
@@ -143,8 +146,8 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate(
-    [[maybe_unused]] const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment)
+  void
+  deallocate(const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
@@ -159,9 +162,10 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t)
+  void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t) noexcept
   {
-    ::cuda::__driver::__freeFromPoolAsync(reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
+    _CCCL_ASSERT_CUDA_API(
+      ::cuda::__driver::__freeAsyncNoThrow, "deallocate failed", reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied devices
