@@ -49,46 +49,21 @@
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+//! Defined if RDC is enabled and CUB_DISABLE_CDP is not defined.
+//! Deprecated [Since 3.2]
+#define CUB_RDC_ENABLED _CCCL_RDC_ENABLED
 
-/**
- * \def CUB_DISABLE_CDP
- *
- * If defined, support for device-side usage of CUB is disabled.
- */
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
+//! If defined, support for device-side usage of CUB is disabled.
+//! Deprecated [Since 3.2]. Use CCCL_DISABLE_CDP instead.
 #  define CUB_DISABLE_CDP
 
-/**
- * \def CUB_RDC_ENABLED
- *
- * Defined if RDC is enabled and CUB_DISABLE_CDP is not defined.
- */
-#  define CUB_RDC_ENABLED
-
-/**
- * \def CUB_RUNTIME_FUNCTION
- *
- * Execution space for functions that use the CUDA runtime API, e.g. to launch kernels. Such functions are `__host__
- * __device__` when compiling with RDC, otherwise only `__host__`.
- */
+//! Execution space for functions that use the CUDA runtime API, e.g. to launch kernels. Such functions are `__host__
+//! __device__` when compiling with RDC, otherwise only `__host__`.
+//! Deprecated [Since 3.2]
 #  define CUB_RUNTIME_FUNCTION
-
 #else // Non-doxygen pass:
-
 #  ifndef CUB_RUNTIME_FUNCTION
-#    if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
-#      define CUB_RDC_ENABLED
-#      define CUB_RUNTIME_FUNCTION _CCCL_API
-#    else
-// When we don't have RDC, CUB APIs cannot call kernels in device code, so we have to declare them __host__ only
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST_API
-#    endif
+#    define CUB_RUNTIME_FUNCTION _CCCL_CDP_API
 #  endif // CUB_RUNTIME_FUNCTION predefined
-
-#  ifdef CUB_RDC_ENABLED
-#    ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
-#      error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
-#    endif // CUDA_FORCE_CDP1_IF_SUPPORTED
-#  endif
-
 #endif // Do not document
