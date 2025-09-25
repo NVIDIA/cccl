@@ -544,7 +544,7 @@ struct {26} {{
 )XXX";
 
     std::string offset_t;
-    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
     const std::string src = std::format(
       src_template,

@@ -121,7 +121,7 @@ std::string get_sweep_kernel_name(
   bool is_byte_sample)
 {
   std::string samples_iterator_name;
-  check(nvrtcGetTypeName<samples_iterator_t>(&samples_iterator_name));
+  check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
 
   const std::string samples_iterator_t =
     d_samples.type == cccl_iterator_kind_t::CCCL_POINTER //
@@ -197,7 +197,7 @@ CUresult cccl_device_histogram_build_ex(
         : "long long";
 
     std::string samples_iterator_name;
-    check(nvrtcGetTypeName<samples_iterator_t>(&samples_iterator_name));
+    check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
 
     const std::string samples_iterator_src =
       make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);

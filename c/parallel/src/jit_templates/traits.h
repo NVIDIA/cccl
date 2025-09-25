@@ -16,6 +16,7 @@
 #include <string>
 
 #include "../util/errors.h"
+#include "../util/types.h"
 
 extern const char* jit_template_header_contents;
 
@@ -50,7 +51,7 @@ specialization get_specialization(template_id<Traits> id, Args... args)
   }
 
   std::string tag_name;
-  check(nvrtcGetTypeName<Tag>(&tag_name));
+  check(cccl_type_name_from_nvrtc<Tag>(&tag_name));
 
   return {std::format("{}<{}{}>", Traits::name, tag_name, ((", " + parameter_mapping<Args>::map(id, args)) + ...)),
           std::format("struct {};", tag_name) + (parameter_mapping<Args>::aux(id, args) + ...)};

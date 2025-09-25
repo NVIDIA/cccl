@@ -100,19 +100,19 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
     switch (which_iterator)
     {
       case merge_sort_iterator_t::input_keys: {
-        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_keys_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::input_items: {
-        check(nvrtcGetTypeName<input_items_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_items_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_keys: {
-        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_keys_iterator_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_items: {
-        check(nvrtcGetTypeName<output_items_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_items_iterator_t>(&iterator_t));
         break;
       }
     }
@@ -142,7 +142,7 @@ std::string get_merge_sort_kernel_name(
   cccl_iterator_t output_items_it)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_merge_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_merge_sort_policy>(&chained_policy_t));
 
   const std::string input_keys_iterator_t = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
   const std::string input_items_iterator_t =
@@ -152,10 +152,10 @@ std::string get_merge_sort_kernel_name(
     get_iterator_name<items_storage_t>(output_items_it, merge_sort_iterator_t::output_items);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
   const std::string value_t =
@@ -182,10 +182,10 @@ std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
   const std::string output_keys_iterator_t = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
 

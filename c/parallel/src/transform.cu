@@ -15,6 +15,7 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/memory>
 
 #include <format>
@@ -74,16 +75,16 @@ const std::string get_iterator_name(cccl_iterator_t iterator, const std::string&
 std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t /*op*/)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_transform_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_transform_policy>(&chained_policy_t));
 
   const std::string input_iterator_t  = get_iterator_name<input_storage_t>(input_it, input_iterator_name);
   const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&transform_op_t));
 
   return std::format(
     "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
@@ -98,17 +99,17 @@ std::string
 get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_iterator_t output_it, cccl_op_t /*op*/)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_transform_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_transform_policy>(&chained_policy_t));
 
   const std::string input1_iterator_t = get_iterator_name<input1_storage_t>(input1_it, input1_iterator_name);
   const std::string input2_iterator_t = get_iterator_name<input2_storage_t>(input2_it, input2_iterator_name);
   const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&transform_op_t));
 
   return std::format(
     "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "

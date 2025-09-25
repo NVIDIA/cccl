@@ -117,14 +117,14 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
 std::string get_input_iterator_name()
 {
   std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_state_t>(&iterator_t));
+  check(cccl_type_name_from_nvrtc<input_iterator_state_t>(&iterator_t));
   return iterator_t;
 }
 
 std::string get_output_iterator_name()
 {
   std::string iterator_t;
-  check(nvrtcGetTypeName<output_iterator_t>(&iterator_t));
+  check(cccl_type_name_from_nvrtc<output_iterator_t>(&iterator_t));
   return iterator_t;
 }
 
@@ -140,7 +140,7 @@ std::string get_scan_kernel_name(
   cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_value_t init, bool force_inclusive)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_scan_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_scan_policy>(&chained_policy_t));
 
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
@@ -155,10 +155,10 @@ std::string get_scan_kernel_name(
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string scan_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&scan_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&scan_op_t));
 
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", accum_cpp_t);
   return std::format(
