@@ -163,6 +163,20 @@ ArgPair argHandlers[] = {
      nvrtcArguments.emplace_back("-G");
      return NORMAL;
    }},
+  {// Matches --device-int128/-device-int128
+   std::regex("^(?:--device-int128|-device-int128)$"),
+   [](const std::smatch&) {
+     nvrtcArguments.emplace_back("-device-int128");
+     return NORMAL;
+   }},
+#if CUDA_VERSION >= 12080
+  {// Matches --device-float128/-device-float128
+   std::regex("^(?:--device-float128|-device-float128)$"),
+   [](const std::smatch&) {
+     enable_float128 = true;
+     return NORMAL;
+   }},
+#endif // CUDA_VERSION >= 12080
   {// Matches -D
    std::regex("^-D.+$"),
    [](const std::smatch& match) {

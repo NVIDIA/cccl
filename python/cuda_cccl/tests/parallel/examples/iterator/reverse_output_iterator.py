@@ -21,7 +21,7 @@ d_output = cp.empty(len(d_input), dtype=np.int32)
 h_init = np.array(0, dtype=np.int32)
 
 # Create the reverse output iterator.
-reverse_out_it = parallel.ReverseOutputIterator(d_output)
+reverse_out_it = parallel.ReverseIterator(d_output)
 
 # Perform the reduction.
 parallel.inclusive_scan(

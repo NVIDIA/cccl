@@ -45,8 +45,6 @@
 #include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
 
-#include <cuda/std/utility>
-
 CUB_NAMESPACE_BEGIN
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES

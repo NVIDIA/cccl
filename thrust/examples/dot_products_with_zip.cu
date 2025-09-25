@@ -5,8 +5,6 @@
 #include <thrust/random.h>
 #include <thrust/transform.h>
 
-#include "include/host_device.h"
-
 // This example shows how thrust::zip_iterator can be used to create a
 // 'virtual' array of structures.  In this case the structure is a 3d
 // vector type (Float3) whose (x,y,z) components will be stored in
@@ -33,7 +31,7 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   thrust::default_random_engine rng(seed);
   thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   thrust::host_vector<float> temp(N);
-  for (size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < N; ++i)
   {
     temp[i] = u01(rng);
   }

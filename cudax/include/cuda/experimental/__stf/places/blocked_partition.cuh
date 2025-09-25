@@ -125,6 +125,49 @@ public:
   }
 };
 
+//! Partitions a multidimensional box or shape into contiguous blocks along a selected dimension.
+//!
+//! This partitioning strategy divides the data space into contiguous blocks, distributing them
+//! across execution places. By default, partitioning occurs along the last dimension, but a
+//! specific dimension can be selected using the template parameter. This approach ensures
+//! good spatial locality and is particularly effective for regular data access patterns.
 using blocked_partition = blocked_partition_custom<>;
+
+#ifdef UNITTESTED_FILE
+UNITTEST("blocked partition with very large data arrays")
+{
+  // Test 4D blocked partitioning with massive coordinate spaces
+  // 400 x 300 x 200 x 1000 = 24,000,000,000 elements (~24 billion, ~192GB of doubles)
+  dim4 massive_4d_dims(400, 300, 200, 1000);
+  const size_t total_elements = massive_4d_dims.size();
+
+  EXPECT(total_elements == 24000000000ULL);
+  EXPECT(total_elements > (1ULL << 34)); // Verify > 16GB worth of elements
+
+  // Test blocked partitioning into 2x2x2x1 = 8 blocks
+  dim4 grid_dims(2, 2, 2, 1);
+
+  // Test get_executor for position in the middle
+  pos4 middle_coord(200, 150, 100, 500);
+  pos4 block_pos = blocked_partition::get_executor(middle_coord, massive_4d_dims, grid_dims);
+
+  // Verify block position is within grid bounds
+  EXPECT(block_pos.x >= 0);
+  EXPECT(block_pos.x < 2);
+  EXPECT(block_pos.y >= 0);
+  EXPECT(block_pos.y < 2);
+  EXPECT(block_pos.z >= 0);
+  EXPECT(block_pos.z < 2);
+  EXPECT(block_pos.t == 0);
+
+  // Expected block position: middle should map to block (1,1,1,0)
+  // 200/(400/2)=1, 150/(300/2)=1, 100/(200/2)=1, 500/(1000/1)=0
+  EXPECT(block_pos.x == 1);
+  EXPECT(block_pos.y == 1);
+  EXPECT(block_pos.z == 1);
+  EXPECT(block_pos.t == 0);
+};
+
+#endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf

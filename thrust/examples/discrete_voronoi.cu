@@ -10,7 +10,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
 #include "include/timer.h"
 
 // Compute an approximate Voronoi Diagram with a Jump Flooding Algorithm (JFA)
@@ -26,11 +25,11 @@
 // Tuple  = <seeds,seeds + k,seeds + m*k, seeds - k,
 //           seeds - m*k, seeds+ k+m*k,seeds + k-m*k,
 //           seeds- k+m*k,seeds - k+m*k, i>
-struct minFunctor
+struct voronoi_site_selector
 {
   int m, n, k;
 
-  __host__ __device__ minFunctor(int m, int n, int k)
+  __host__ __device__ voronoi_site_selector(int m, int n, int k)
       : m(m)
       , n(n)
       , k(k)
@@ -199,7 +198,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       thrust::counting_iterator<int>(0))
       + n * m,
     out.begin(),
-    minFunctor(m, n, k));
+    voronoi_site_selector(m, n, k));
 }
 /********************************************/
 

@@ -39,7 +39,8 @@ option(CCCL_ENABLE_CUB "Enable the CUB developer build." OFF)
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." OFF)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
-option(CCCL_ENABLE_C "Enable CUDA C Core Library." OFF)
+option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
+option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
 
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(CCCL_ENABLE_BENCHMARKS OFF)
@@ -82,7 +83,7 @@ if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
 endif()
 
-if (CCCL_ENABLE_C)
+if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
   add_subdirectory(c)
 endif()
 
