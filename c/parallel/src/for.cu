@@ -42,11 +42,6 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunct
     return error;
   }
 
-  if (num_items > static_cast<size_t>(std::numeric_limits<int32_t>::max()))
-  {
-    return cudaErrorInvalidValue;
-  }
-
   auto for_kernel_state = make_for_kernel_state(op, d_in);
 
   void* args[] = {&num_items, for_kernel_state.get()};
