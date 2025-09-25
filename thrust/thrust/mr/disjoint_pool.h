@@ -359,7 +359,7 @@ public:
     {
       return do_allocate_impl(bytes, alignment);
     }
-    _CCCL_CATCH (std::bad_alloc&)
+    _CCCL_CATCH ([[maybe_unused]] std::bad_alloc & e)
     {
       this->squeeze();
     }
