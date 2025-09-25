@@ -15,6 +15,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/memory>
+
 #include <format>
 #include <string>
 #include <type_traits>
