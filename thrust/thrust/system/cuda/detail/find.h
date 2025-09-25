@@ -39,11 +39,11 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/transform_iterator.h>
-#  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -117,7 +117,8 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   const Size interval_threshold = 1 << 20;
   const Size interval_size      = (::cuda::std::min) (interval_threshold, num_items);
 
-  const auto begin = ::cuda::make_zip_iterator(
+  // TODO(bgruber): we cannot use cuda::make_zip_iterator because it requires Predicate to be default-constructible
+  const auto begin = thrust::make_zip_iterator(
     ::cuda::transform_iterator<Predicate, InputIt>(first, predicate), ::cuda::counting_iterator<Size>(0));
   const auto end = begin + num_items;
 
