@@ -53,7 +53,7 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunct
 
   const unsigned int thread_count = 256;
   const size_t items_per_block    = 512;
-  const size_t block_sz           = (num_items + (items_per_block - 1)) / items_per_block;
+  const size_t block_sz           = cuda::ceil_div(num_items, items_per_block);
 
   if (block_sz > std::numeric_limits<unsigned int>::max())
   {
