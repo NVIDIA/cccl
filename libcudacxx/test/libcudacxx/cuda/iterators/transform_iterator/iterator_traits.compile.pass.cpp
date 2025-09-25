@@ -32,9 +32,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int&>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
   {
     // Member typedefs for random access iterator.
@@ -42,9 +43,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int&>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
   {
     // Member typedefs for random access iterator, LWG3798 rvalue reference.
@@ -52,9 +54,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int&&>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
   {
     // Member typedefs for random access iterator/not-lvalue-ref.
@@ -62,9 +65,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
   {
     // Member typedefs for bidirectional iterator.
@@ -72,9 +76,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int&>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::bidirectional_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_bidirectional_iterator<Iter>);
+    static_assert(cuda::std::__has_bidirectional_traversal<Iter>);
   }
   {
     // Member typedefs for forward iterator.
@@ -82,14 +87,15 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int&>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::forward_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_forward_iterator<Iter>);
+    static_assert(cuda::std::__has_forward_traversal<Iter>);
   }
   { // Nopthing to do here
     using Iter = cuda::transform_iterator<Increment, cpp17_input_iterator<int*>>;
     static_assert(!HasIterCategory<Increment, cpp17_input_iterator<int*>>);
-    static_assert(cuda::std::__is_cpp17_input_iterator<Iter>);
+    static_assert(cuda::std::__has_input_traversal<Iter>);
   }
 
   {
@@ -98,9 +104,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   {
@@ -109,9 +116,10 @@ __host__ __device__ constexpr bool test()
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, int>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   return true;
