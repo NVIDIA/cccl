@@ -150,17 +150,17 @@
 #  define _CCCL_HAS_RDC() 1
 // We have RDC, so host and device APIs can call kernels
 #  define _CCCL_CDP_API _CCCL_API
-#else
+#else // defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
 #  define _CCCL_HAS_RDC() 0
 // We don't have RDC, only host APIs can call kernels
 #  define _CCCL_CDP_API   _CCCL_HOST_API
-#endif
+#endif // defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
 
 #if _CCCL_HAS_RDC()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
 #  endif // CUDA_FORCE_CDP1_IF_SUPPORTED
-#endif
+#endif // _CCCL_HAS_RDC()
 
 //! _LIBCUDACXX_HIDE_FROM_ABI is for backwards compatibility for external projects.
 //! _CCCL_API and its variants are the preferred way to declare functions
