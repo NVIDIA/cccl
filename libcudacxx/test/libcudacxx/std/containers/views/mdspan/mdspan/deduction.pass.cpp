@@ -47,9 +47,6 @@
 //      -> mdspan<typename AccessorType::element_type, typename MappingType::extents_type,
 //                typename MappingType::layout_type, AccessorType>;
 
-// nvbug5272086
-// UNSUPPORTED: msvc
-
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/mdspan>

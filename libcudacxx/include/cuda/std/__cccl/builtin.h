@@ -531,10 +531,6 @@
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
-#if _CCCL_CHECK_BUILTIN(is_pod) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_pod) && gcc >= 4.3
-
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
 #  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
@@ -730,7 +726,7 @@
 // Bring in the bits of the STL we need
 #  if defined(_GLIBCXX_VERSION)
 #    include <bits/move.h> // for move, forward, forward_like, and addressof
-#  elif defined(_LIBCXX_VERSION)
+#  elif defined(_LIBCPP_VERSION)
 #    include <__memory/addressof.h>
 #    include <__utility/as_const.h>
 #    include <__utility/forward.h>
@@ -738,7 +734,7 @@
 #    include <__utility/move.h>
 #  endif
 
-#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION)
+#  if defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION)
 // std::move builtin
 #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
 #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
@@ -765,7 +761,7 @@
       && (__cpp_lib_forward_like >= 202217L)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
-#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION) || defined(_MSVC_STL_VERSION)
 #endif // defined(__cplusplus)
 
 #ifndef _CCCL_HAS_BUILTIN_STD_MOVE
