@@ -33,6 +33,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }
@@ -42,6 +43,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }
@@ -51,6 +53,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }
@@ -60,6 +63,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }
@@ -69,6 +73,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::bidirectional_iterator<TIter>);
   }
@@ -78,6 +83,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::forward_iterator<TIter>);
   }
@@ -87,6 +93,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::input_iterator_tag>);
     static_assert(!HasIterCategory<cpp17_input_iterator<int*>, Increment>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::input_iterator<TIter>);
   }
@@ -97,6 +104,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }
@@ -107,6 +115,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
   }

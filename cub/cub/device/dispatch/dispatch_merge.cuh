@@ -137,17 +137,18 @@ __launch_bounds__(
     ValueIt3,
     Offset,
     CompareOp>::type;
+  using MergePolicy = typename MergeAgent::policy;
 
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    keys1,
-    items1,
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
     num_keys1,
-    keys2,
-    items2,
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
     num_keys2,
     keys_result,
     items_result,

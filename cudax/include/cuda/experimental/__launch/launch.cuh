@@ -47,7 +47,7 @@ namespace cuda::experimental
 {
 
 template <typename _Config, typename _Kernel, class... _Args>
-__global__ static void __kernel_launcher(const _Config __conf, _Kernel __kernel_fn, _Args... __args)
+__global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   __kernel_fn(__conf, __args...);
 }

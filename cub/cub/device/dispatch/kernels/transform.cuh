@@ -240,7 +240,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
   using load_store_t            = decltype(load_store_type<load_store_size>());
   using output_t                = it_value_t<RandomAccessIteratorOut>;
-  using result_t                = ::cuda::std::invoke_result_t<F, const InputT&...>;
+  using result_t                = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const InputT&...>>;
   // picks output type size if there are no inputs
   constexpr int element_size     = int{first_item(sizeof(InputT)..., size_of<output_t>)};
   constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;

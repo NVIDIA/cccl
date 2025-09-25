@@ -177,7 +177,7 @@ public:
 
   // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
   // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
-  using reference = value_type;
+  using reference = ::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>;
   using pointer   = void;
 
   //! @brief Default constructs a @c transform_iterator with a value initialized iterator and functor
@@ -222,7 +222,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
+  [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(*__func_, *__current_)))
   {
     return ::cuda::std::invoke(*__func_, *__current_);
@@ -235,7 +235,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES((!::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>) )
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
+  [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(const_cast<_Fn&>(*__func_), *__current_)))
   {
     return ::cuda::std::invoke(const_cast<_Fn&>(*__func_), *__current_);
@@ -244,8 +244,7 @@ public:
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr decltype(auto)
-  operator*() noexcept(noexcept(::cuda::std::invoke(*__func_, *__current_)))
+  [[nodiscard]] _CCCL_API constexpr reference operator*() noexcept(noexcept(::cuda::std::invoke(*__func_, *__current_)))
   {
     return ::cuda::std::invoke(*__func_, *__current_);
   }
@@ -256,7 +255,7 @@ public:
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>
                    _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
+  [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
   {
     return ::cuda::std::invoke(*__func_, __current_[__n]);
@@ -271,7 +270,7 @@ public:
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2> _CCCL_AND(
     !::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>))
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
+  [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
     return ::cuda::std::invoke(const_cast<_Fn&>(*__func_), __current_[__n]);
@@ -283,7 +282,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  [[nodiscard]] _CCCL_API constexpr reference
   operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
     return ::cuda::std::invoke(*__func_, __current_[__n]);

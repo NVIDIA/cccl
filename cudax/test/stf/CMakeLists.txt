@@ -119,6 +119,7 @@ set(stf_test_codegen_sources
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
+  freeze/freeze_untyped_rw.cu
   freeze/freeze_write_back.cu
   freeze/task_fence.cu
   freeze/token.cu
@@ -217,7 +218,7 @@ set(stf_unittested_headers
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
-  cuda/experimental/__stf/utility/stackable_ctx.cuh
+  cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )

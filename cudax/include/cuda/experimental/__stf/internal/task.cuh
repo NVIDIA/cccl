@@ -121,6 +121,15 @@ private:
     // acquire the logical_data_untypeds accessed by the task
     event_list input_events;
 
+    // We make it mutable because presumably read-only access using this list
+    // may optimize it too
+    mutable event_list ready_prereqs;
+
+    auto& get_ready_prereqs() const
+    {
+      return ready_prereqs;
+    }
+
     // A string useful for debugging purpose
     mutable ::std::string symbol;
 
@@ -348,6 +357,16 @@ public:
   const event_list& get_input_events() const
   {
     return pimpl->input_events;
+  }
+
+  void set_ready_prereqs(event_list _ready_prereqs)
+  {
+    pimpl->ready_prereqs = mv(_ready_prereqs);
+  }
+
+  event_list& get_ready_prereqs() const
+  {
+    return pimpl->ready_prereqs;
   }
 
   // Get the unique task identifier

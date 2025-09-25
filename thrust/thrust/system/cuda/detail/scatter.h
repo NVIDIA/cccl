@@ -50,7 +50,12 @@ template <class Derived, class ItemsIt, class MapIt, class ResultIt>
 void _CCCL_HOST_DEVICE
 scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, ResultIt result)
 {
-  cuda_cub::transform(policy, first, last, thrust::make_permutation_iterator(result, map), ::cuda::std::identity{});
+  cuda_cub::transform(
+    policy,
+    first,
+    last,
+    thrust::make_permutation_iterator(result, map),
+    ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
 }
 
 template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
@@ -64,14 +69,21 @@ void _CCCL_HOST_DEVICE scatter_if(
   Predicate predicate)
 {
   cuda_cub::transform_if(
-    policy, first, last, stencil, thrust::make_permutation_iterator(result, map), ::cuda::std::identity{}, predicate);
+    policy,
+    first,
+    last,
+    stencil,
+    thrust::make_permutation_iterator(result, map),
+    ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
+    predicate);
 }
 
-template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
+template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt>
 void _CCCL_HOST_DEVICE scatter_if(
   execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, StencilIt stencil, ResultIt result)
 {
-  cuda_cub::scatter_if(policy, first, last, map, stencil, result, ::cuda::std::identity{});
+  cuda_cub::scatter_if(
+    policy, first, last, map, stencil, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
 }
 
 } // namespace cuda_cub

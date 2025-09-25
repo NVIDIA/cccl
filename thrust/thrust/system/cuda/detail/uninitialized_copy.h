@@ -66,7 +66,7 @@ struct functor
   using OutputType = thrust::detail::it_value_t<OutputIt>;
 
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     InputType const& in = raw_reference_cast(input[idx]);
     OutputType& out     = raw_reference_cast(output[idx]);

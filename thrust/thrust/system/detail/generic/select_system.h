@@ -67,11 +67,19 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
   {
     return thrust::detail::derived_cast(system1);
   }
-  else
+  else if constexpr (::cuda::std::is_same_v<System2, min_sys>)
   {
-    static_assert(::cuda::std::is_same_v<System2, min_sys>);
     return thrust::detail::derived_cast(system2);
   }
+  else if constexpr (thrust::detail::is_unrelated_systems<min_sys>)
+  {
+    static_assert(!sizeof(System1), "Cannot select a system: System1 and System2 are unrelated");
+  }
+  else
+  {
+    static_assert(!sizeof(System1), "select_system failed. Please file a bug report!");
+  }
+  _CCCL_UNREACHABLE();
 }
 
 template <typename System1,

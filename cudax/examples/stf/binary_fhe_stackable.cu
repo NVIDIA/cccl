@@ -13,7 +13,6 @@
  * @brief A toy example to illustrate how we can compose logical operations over encrypted data
  */
 
-#include <cuda/experimental/__stf/utility/stackable_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

@@ -168,6 +168,11 @@ source ./pretty_printing.sh
 print_environment_details() {
   begin_group "⚙️ Environment Details"
 
+  echo "free -h:"
+  free -h || :
+
+  echo "nproc=$(nproc || :)"
+
   echo "pwd=$(pwd)"
 
   print_var_values \
@@ -281,13 +286,31 @@ function build_preset() {
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
+    local memmon_log="${preset_dir}/memmon.log"
 
     source "./sccache_stats.sh" "start" || :
+
+    # Track memory usage on CI:
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --start \
+          --log-threshold ${MEMMON_LOG_THRESHOLD:-2} \
+          --print-threshold ${MEMMON_PRINT_THRESHOLD:-5} \
+          --log-file "$memmon_log" \
+          --poll ${MEMMON_POLL_INTERVAL:-5} \
+          || :
+    fi
 
     pushd .. > /dev/null
     status=0
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
     popd > /dev/null
+
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --stop || :
+      echo "::group::📝 Memory Usage"
+      head -n20 "$memmon_log" || :
+      echo "::endgroup::"
+    fi
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
 
