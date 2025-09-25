@@ -8,7 +8,6 @@
 //
 // UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: windows
-// ADDITIONAL_COMPILE_OPTIONS_HOST: -mcx16
 // UNSUPPORTED: aarch64-unknown-linux-gnu
 
 // <cuda/std/atomic>
@@ -87,8 +86,6 @@
 //     integral operator^=(integral op) volatile;
 //     integral operator^=(integral op);
 // };
-
-#define LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS
 
 #include <cuda/atomic>
 #include <cuda/std/atomic>
@@ -187,9 +184,11 @@ int main(int, char**)
   // Skip tests if PTX is insufficient
 #if __cccl_ptx_isa >= 840
   NV_DISPATCH_TARGET(
+    /* TODO: Enable when lit is capable of parsing flags
     NV_IS_HOST,
     (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
-     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();),
+    test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();),
+    */
     NV_PROVIDES_SM_90,
     (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();

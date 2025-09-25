@@ -6,31 +6,58 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: windows
-// ADDITIONAL_COMPILE_OPTIONS_HOST: -mcx16
-// UNSUPPORTED: aarch64-unknown-linux-gnu
-//
+// UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
+// UNSUPPORTED: windows && pre-sm-70
+
 // <cuda/atomic>
 
-#define LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS
 #include <cuda/atomic>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
+#include "cuda_space_selector.h"
 #include "test_macros.h"
 
-// This test specifically checks load/store operations are supported with i128.
-template <class T>
-__host__ __device__ void do_test()
+template <typename T>
+__host__ __device__ constexpr T combine_literal(uint64_t lower, uint64_t upper)
 {
-  T v(0);
-  cuda::atomic_ref<T> a(v);
-  a.store(1);
-  assert(a.load() == 1);
+  return T(lower) | (T(upper) << 64);
+}
+
+template <template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
+__host__ __device__ void test()
+{
+  {
+    using T = __int128_t;
+    typedef cuda::atomic_ref<T, ThreadScope> A;
+    Selector<T, constructor_initializer> sel;
+    T& t = *sel.construct();
+    t    = T(0);
+    A atom(t);
+    auto test_v = combine_literal<T>(0x01234567DEADBEEF, 0x1337B33701234567);
+    atom.store(test_v, cuda::std::memory_order_release);
+    assert(atom.load() == test_v);
+  }
+  {
+    using T = __uint128_t;
+    typedef cuda::atomic_ref<T, ThreadScope> A;
+    Selector<T, constructor_initializer> sel;
+    T& t = *sel.construct();
+    t    = T(0);
+    A atom(t);
+    auto test_v = combine_literal<T>(0x01234567DEADBEEF, 0x1337B33701234567);
+    atom.store(test_v);
+    assert(atom.load() == test_v);
+  }
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (do_test<__int128_t>(); do_test<__uint128_t>();))
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70,
+    (test<local_memory_selector, cuda::thread_scope_thread>(); test<shared_memory_selector, cuda::thread_scope_block>();
+     test<global_memory_selector, cuda::thread_scope_block>();
+     test<global_memory_selector, cuda::thread_scope_device>();))
+
   return 0;
 }
