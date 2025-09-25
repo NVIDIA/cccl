@@ -145,7 +145,7 @@ template <class _Ty>
   {
     return __err.status();
   }
-  _CCCL_CATCH (::std::bad_alloc&)
+  _CCCL_CATCH ([[maybe_unused]] ::std::bad_alloc & __err)
   {
     return ::cudaErrorMemoryAllocation;
   }
