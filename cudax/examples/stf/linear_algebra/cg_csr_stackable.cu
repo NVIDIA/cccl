@@ -17,6 +17,7 @@
 
 using namespace cuda::experimental::stf;
 
+#if !_CCCL_CTK_BELOW(12, 4)
 using vector_t  = stackable_logical_data<slice<double>>;
 using scalar_t  = stackable_logical_data<scalar_view<double>>;
 using context_t = stackable_ctx;
@@ -192,6 +193,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B)
             };
   }
 }
+#endif
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
