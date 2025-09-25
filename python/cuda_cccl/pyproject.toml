@@ -23,7 +23,7 @@ dependencies = [
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "numba-cuda @ git+https://github.com/caugonnet/numba-cuda.git@cuda_graph_future_memory",
-  "llvmlite==0.44",         # TODO: remove this once numba-cuda 0.19.2 is released
+  "llvmlite==0.44",                                                                        # TODO: remove this once numba-cuda 0.19.2 is released
 ]
 
 dynamic = ["version"]

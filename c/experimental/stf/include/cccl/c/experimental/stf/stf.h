@@ -456,35 +456,86 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //!
 //! \brief Create logical data from existing memory buffer
 //!
-//! Creates logical data handle from an existing host memory buffer.
-//! STF takes ownership of data management during task execution.
+//! Creates logical data handle from existing memory buffer, assuming host data place.
+//! This is a convenience wrapper around stf_logical_data_with_place() with host placement.
 //!
 //! \param ctx Context handle
 //! \param[out] ld Pointer to receive logical data handle
-//! \param addr Pointer to existing data buffer
+//! \param addr Pointer to existing data buffer (assumed to be host memory)
 //! \param sz Size of data in bytes
 //!
 //! \pre ctx must be valid context handle
 //! \pre ld must not be NULL
-//! \pre addr must not be NULL
+//! \pre addr must not be NULL and point to host-accessible memory
 //! \pre sz must be greater than 0
 //! \post *ld contains valid logical data handle
 //!
-//! \note Original data pointer should not be accessed during task execution
-//! \note Data will be written back when logical data is destroyed or context finalized
+//! \note This function assumes host memory. For device/managed memory, use stf_logical_data_with_place()
+//! \note Equivalent to: stf_logical_data_with_place(ctx, ld, addr, sz, make_host_data_place())
 //!
 //! \par Example:
 //! \code
 //! float data[1024];
 //! stf_logical_data_handle ld;
-//! stf_logical_data(ctx, &ld, data, sizeof(data));
+//! stf_logical_data(ctx, &ld, data, sizeof(data));  // Assumes host memory
 //! // ... use in tasks ...
 //! stf_logical_data_destroy(ld);
 //! \endcode
 //!
-//! \see stf_logical_data_empty(), stf_logical_data_destroy()
+//! \see stf_logical_data_with_place(), stf_logical_data_empty(), stf_logical_data_destroy()
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
+
+//!
+//! \brief Create logical data handle from address with data place specification [PRIMARY API]
+//!
+//! Creates logical data handle from existing memory buffer, explicitly specifying where
+//! the memory is located (host, device, managed, etc.). This is the primary and recommended
+//! logical data creation function as it provides STF with essential memory location information
+//! for optimal data movement and placement strategies.
+//!
+//! \param ctx Context handle
+//! \param[out] ld Pointer to receive logical data handle
+//! \param addr Pointer to existing memory buffer
+//! \param sz Size of buffer in bytes
+//! \param dplace Data place specifying memory location
+//!
+//! \pre ctx must be valid context handle
+//! \pre ld must be valid pointer to logical data handle pointer
+//! \pre addr must point to valid memory of at least sz bytes
+//! \pre sz must be greater than 0
+//! \pre dplace must be valid data place (not invalid)
+//!
+//! \post *ld contains valid logical data handle on success
+//! \post Caller owns returned handle (must call stf_logical_data_destroy())
+//!
+//! \par Examples:
+//! \code
+//! // GPU device memory (recommended for CUDA arrays)
+//! float* device_ptr;
+//! cudaMalloc(&device_ptr, 1000 * sizeof(float));
+//! stf_data_place dplace = make_device_data_place(0);
+//! stf_logical_data_handle ld;
+//! stf_logical_data_with_place(ctx, &ld, device_ptr, 1000 * sizeof(float), dplace);
+//!
+//! // Host memory
+//! float* host_data = new float[1000];
+//! stf_data_place host_place = make_host_data_place();
+//! stf_logical_data_handle ld_host;
+//! stf_logical_data_with_place(ctx, &ld_host, host_data, 1000 * sizeof(float), host_place);
+//!
+//! // Managed memory
+//! float* managed_ptr;
+//! cudaMallocManaged(&managed_ptr, 1000 * sizeof(float));
+//! stf_data_place managed_place = make_managed_data_place();
+//! stf_logical_data_handle ld_managed;
+//! stf_logical_data_with_place(ctx, &ld_managed, managed_ptr, 1000 * sizeof(float), managed_place);
+//! \endcode
+//!
+//! \see make_device_data_place(), make_host_data_place(), make_managed_data_place()
+
+void stf_logical_data_with_place(
+  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace);
 
 //!
 //! \brief Set symbolic name for logical data

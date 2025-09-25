@@ -114,6 +114,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_logical_data_handle_t
     ctypedef stf_logical_data_handle_t* stf_logical_data_handle
     void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
+    void stf_logical_data_with_place(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace)
     void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     void stf_logical_data_destroy(stf_logical_data_handle ld)
     void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle *to)
@@ -168,8 +169,9 @@ cdef class logical_data:
     cdef tuple  _shape
     cdef int    _ndim
     cdef size_t _len
+    cdef str    _symbol  # Store symbol for display purposes
 
-    def __cinit__(self, context ctx=None, object buf=None, shape=None, dtype=None):
+    def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None):
         if ctx is None or buf is None:
             # allow creation via __new__ (eg. in like_empty)
             self._ld = NULL
@@ -178,28 +180,90 @@ cdef class logical_data:
             self._dtype = None
             self._shape = ()
             self._ndim = 0
+            self._symbol = None
             return
 
+        self._ctx = ctx._ctx
+        self._symbol = None  # Initialize symbol
+
+        # Default to host data place if not specified (matches C++ API)
+        if dplace is None:
+            dplace = data_place.host()
+
+        # Try CUDA Array Interface first
+        if hasattr(buf, '__cuda_array_interface__'):
+            cai = buf.__cuda_array_interface__
+
+            # Extract CAI information
+            data_ptr, readonly = cai['data']
+            original_shape = cai['shape']
+            typestr = cai['typestr']
+
+            # Handle vector types automatically (e.g., wp.vec2, wp.vec3)
+            # STF treats these as flat scalar arrays with an additional dimension
+            if typestr.startswith('|V'):  # Vector type (e.g., '|V8' for vec2, '|V12' for vec3)
+                vector_size = int(typestr[2:])  # Extract size from '|V8' -> 8 bytes
+
+                if vector_size == 8:  # vec2 (2 * 4 bytes float32)
+                    self._shape = original_shape + (2,)
+                    self._dtype = np.dtype('<f4')  # float32
+                elif vector_size == 12:  # vec3 (3 * 4 bytes float32)
+                    self._shape = original_shape + (3,)
+                    self._dtype = np.dtype('<f4')  # float32
+                elif vector_size == 16:  # vec4 (4 * 4 bytes float32)
+                    self._shape = original_shape + (4,)
+                    self._dtype = np.dtype('<f4')  # float32
+                else:
+                    # Unknown vector type - treat as original
+                    self._shape = original_shape
+                    self._dtype = np.dtype(typestr)
+
+                print(f"STF: Automatically flattened vector type {typestr} -> {self._dtype} with shape {self._shape}")
+            else:
+                # Regular scalar type
+                self._shape = original_shape
+                self._dtype = np.dtype(typestr)
+
+            self._ndim = len(self._shape)
+
+            # Calculate total size in bytes
+            itemsize = self._dtype.itemsize
+            total_items = 1
+            for dim in self._shape:
+                total_items *= dim
+            self._len = total_items * itemsize
+
+            # Create STF logical data using the new C API with data place specification
+            stf_logical_data_with_place(ctx._ctx, &self._ld, <void*><uintptr_t>data_ptr, self._len, dplace._c_place)
+            return
+
+        # Fallback to Python buffer protocol
         cdef Py_buffer view
         cdef int flags = PyBUF_FORMAT | PyBUF_ND          # request dtype + shape
 
-        self._ctx = ctx._ctx
-
         if PyObject_GetBuffer(buf, &view, flags) != 0:
-            raise ValueError("object doesn’t support the full buffer protocol")
+            raise ValueError("object doesn't support the full buffer protocol or __cuda_array_interface__")
 
         try:
             self._ndim  = view.ndim
             self._len = view.len
             self._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
             self._dtype = np.dtype(view.format)
-            stf_logical_data(ctx._ctx, &self._ld, view.buf, view.len)
+            # For buffer protocol objects, use the specified data place (defaults to host)
+            stf_logical_data_with_place(ctx._ctx, &self._ld, view.buf, view.len, dplace._c_place)
 
         finally:
             PyBuffer_Release(&view)
 
+
     def set_symbol(self, str name):
         stf_logical_data_set_symbol(self._ld, name.encode())
+        self._symbol = name  # Store locally for retrieval
+
+    @property
+    def symbol(self):
+        """Get the symbol name of this logical data, if set."""
+        return self._symbol
 
     def __dealloc__(self):
         if self._ld != NULL:
@@ -240,6 +304,7 @@ cdef class logical_data:
         out._shape = self._shape
         out._ndim  = self._ndim
         out._len   = self._len
+        out._symbol = None  # New object has no symbol initially
 
         return out
 
@@ -254,6 +319,7 @@ cdef class logical_data:
         out._shape = shape
         out._ndim  = len(shape)
         out._len   = math.prod(shape) * out._dtype.itemsize
+        out._symbol = None  # New object has no symbol initially
         stf_logical_data_empty(ctx._ctx, out._len, &out._ld)
 
         return out
@@ -559,16 +625,46 @@ cdef class context:
                 stf_ctx_finalize(self._ctx)
         self._ctx = NULL
 
-    def logical_data(self, object buf):
+    def logical_data(self, object buf, data_place dplace=None):
         """
-        Create and return a `logical_data` object bound to this context.
+        Create and return a `logical_data` object bound to this context [PRIMARY API].
+
+        This is the primary function for creating logical data from existing buffers.
+        It supports both Python buffer protocol objects and CUDA Array Interface objects,
+        with explicit data_place specification for optimal STF data movement strategies.
 
         Parameters
         ----------
-        buf : any buffer‑supporting Python object
-              (NumPy array, bytes, bytearray, memoryview, …)
+        buf : any buffer‑supporting Python object or __cuda_array_interface__ object
+              (NumPy array, Warp array, CuPy array, bytes, bytearray, memoryview, …)
+        dplace : data_place, optional
+              Specifies where the buffer is located (host, device, managed, affine).
+              Defaults to data_place.host() for backward compatibility.
+              Essential for GPU arrays - use data_place.device() for optimal performance.
+
+        Examples
+        --------
+        >>> # Host memory (explicit - recommended)
+        >>> host_place = data_place.host()
+        >>> ld = ctx.logical_data(numpy_array, host_place)
+        >>>
+        >>> # GPU device memory (recommended for CUDA arrays)
+        >>> device_place = data_place.device(0)
+        >>> ld = ctx.logical_data(warp_array, device_place)
+        >>>
+        >>> # Managed/unified memory
+        >>> managed_place = data_place.managed()
+        >>> ld = ctx.logical_data(unified_array, managed_place)
+        >>>
+        >>> # Backward compatibility (defaults to host)
+        >>> ld = ctx.logical_data(numpy_array)  # Same as specifying host
+
+        Note
+        ----
+        For GPU arrays (Warp, CuPy, etc.), always specify data_place.device()
+        for zero-copy performance and correct memory management.
         """
-        return logical_data(self, buf)
+        return logical_data(self, buf, dplace)
 
 
     def logical_data_empty(self, shape, dtype=None):

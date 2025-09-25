@@ -28,6 +28,7 @@ import warp.render
 
 import cuda.cccl.experimental.stf as cudastf
 
+
 def stf_kernel(pyfunc):
     # let warp decorate normally
     kernel = wp.kernel(pyfunc)
@@ -35,7 +36,46 @@ def stf_kernel(pyfunc):
     # attach an STF-aware call operator
     def _stf_call(*args, dim=None, stream=None, **kwargs):
         print(f"[STF TRACE] {pyfunc.__name__}")
-        print(f"  dim={dim}, stream={stream}, args={args}, kwargs={kwargs}")
+        print(f"  dim={dim}, stream={stream}")
+
+        # Enhanced arg display with logical data detection
+        if args:
+            print("  args=[")
+            for i, arg in enumerate(args):
+                # Detect if argument is or contains STF logical data
+                is_logical_data = False
+                symbol = None
+
+                # Check if arg is directly STF logical data
+                if hasattr(arg, "__class__") and "logical_data" in str(type(arg)):
+                    is_logical_data = True
+                    if hasattr(arg, "symbol") and arg.symbol:
+                        symbol = arg.symbol
+                # Check if arg has attached STF logical data (Warp array)
+                elif hasattr(arg, "_stf_ld"):
+                    is_logical_data = True
+                    if hasattr(arg._stf_ld, "symbol") and arg._stf_ld.symbol:
+                        symbol = arg._stf_ld.symbol
+                # Fallback to _name for Warp arrays
+                elif hasattr(arg, "_name") and arg._name:
+                    symbol = arg._name
+
+                if is_logical_data:
+                    if symbol:
+                        print(f"    [{i}]: '{symbol}' [logical_data]")
+                    else:
+                        print(f"    [{i}]: logical_data")
+                else:
+                    # Regular arguments (scalars, etc.)
+                    if hasattr(arg, "shape"):  # Array-like but not logical data
+                        print(f"    [{i}]: {type(arg).__name__}")
+                    else:  # Scalar value
+                        print(f"    [{i}]: {arg}")
+            print("  ]")
+        else:
+            print(f"  args={args}")
+
+        print(f"  kwargs={kwargs}")
         return wp.stf.launch(kernel, dim=dim, inputs=args, stream=stream, **kwargs)
 
     # monkey-patch a method onto the kernel object
@@ -43,11 +83,49 @@ def stf_kernel(pyfunc):
 
     return kernel
 
+
 def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
     print(f"[STF TRACE] launching kernel: {getattr(kernel, '__name__', kernel)}")
     print(f"  dim     = {dim}")
     print(f"  stream  = {stream}")
-    print(f"  inputs  = {inputs}")
+
+    # Enhanced input display with logical data detection
+    if inputs:
+        print("  inputs  = [")
+        for i, inp in enumerate(inputs):
+            # Detect if input is or contains STF logical data
+            is_logical_data = False
+            symbol = None
+
+            # Check if inp is directly STF logical data
+            if hasattr(inp, "__class__") and "logical_data" in str(type(inp)):
+                is_logical_data = True
+                if hasattr(inp, "symbol") and inp.symbol:
+                    symbol = inp.symbol
+            # Check if inp has attached STF logical data (Warp array)
+            elif hasattr(inp, "_stf_ld"):
+                is_logical_data = True
+                if hasattr(inp._stf_ld, "symbol") and inp._stf_ld.symbol:
+                    symbol = inp._stf_ld.symbol
+            # Fallback to _name for Warp arrays
+            elif hasattr(inp, "_name") and inp._name:
+                symbol = inp._name
+
+            if is_logical_data:
+                if symbol:
+                    print(f"    [{i}]: '{symbol}' [logical_data]")
+                else:
+                    print(f"    [{i}]: logical_data")
+            else:
+                # Regular arguments (scalars, etc.)
+                if hasattr(inp, "shape"):  # Array-like but not logical data
+                    print(f"    [{i}]: {type(inp).__name__}")
+                else:  # Scalar value
+                    print(f"    [{i}]: {inp}")
+        print("  ]")
+    else:
+        print(f"  inputs  = {inputs}")
+
     print(f"  kwargs  = {kwargs}")
 
     # just forward to warp for now
@@ -62,8 +140,10 @@ def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
 
 # put it under wp.stf
 if not hasattr(wp, "stf"):
+
     class _stf:
         pass
+
     wp.stf = _stf()
 
 
@@ -159,7 +239,11 @@ def divergence(u: wp.array2d(dtype=wp.vec2), div: wp.array2d(dtype=float)):
 
 
 @wp.stf.kernel
-def pressure_solve(p0: wp.array2d(dtype=float), p1: wp.array2d(dtype=float), div: wp.array2d(dtype=float)):
+def pressure_solve(
+    p0: wp.array2d(dtype=float),
+    p1: wp.array2d(dtype=float),
+    div: wp.array2d(dtype=float),
+):
     i, j = wp.tid()
 
     s1 = lookup_float(p0, i - 1, j)
@@ -203,7 +287,12 @@ def integrate(u: wp.array2d(dtype=wp.vec2), rho: wp.array2d(dtype=float), dt: fl
 
 
 @wp.stf.kernel
-def init(rho: wp.array2d(dtype=float), u: wp.array2d(dtype=wp.vec2), radius: int, dir: wp.vec2):
+def init(
+    rho: wp.array2d(dtype=float),
+    u: wp.array2d(dtype=wp.vec2),
+    radius: int,
+    dir: wp.vec2,
+):
     i, j = wp.tid()
 
     d = wp.length(wp.vec2(float(i - grid_width / 2), float(j - grid_height / 2)))
@@ -236,14 +325,43 @@ class Example:
         self.p1 = wp.zeros(shape, dtype=float)
         self.div = wp.zeros(shape, dtype=float)
 
-        self.u0._stf_ld = self._stf_ctx.logical_data(self.u0)
+        # Create STF logical data from Warp arrays with explicit data place
+        # Warp arrays are on GPU device memory, so specify data_place.device()
+
+        # For regular float arrays, specify device data place
+        device_place = cudastf.data_place.device(0)
+
+        self.rho0._stf_ld = self._stf_ctx.logical_data(self.rho0, device_place)
+        self.rho1._stf_ld = self._stf_ctx.logical_data(self.rho1, device_place)
+        self.p0._stf_ld = self._stf_ctx.logical_data(self.p0, device_place)
+        self.p1._stf_ld = self._stf_ctx.logical_data(self.p1, device_place)
+        self.div._stf_ld = self._stf_ctx.logical_data(self.div, device_place)
+
+        # vec2 arrays - STF now automatically handles vector type flattening
+        # Store STF logical data consistently with other arrays
+        self.u0._stf_ld = self._stf_ctx.logical_data(self.u0, device_place)
+        self.u1._stf_ld = self._stf_ctx.logical_data(self.u1, device_place)
+        print(
+            "✅ Successfully created vec2 STF logical data (automatically flattened by STF)!"
+        )
+
+        print("✅ All arrays created with explicit data place specification!")
+
+        # Set descriptive symbols for STF logical data (for enhanced tracing)
+        self.rho0._stf_ld.set_symbol("density_current")
+        self.rho1._stf_ld.set_symbol("density_next")
+        self.p0._stf_ld.set_symbol("pressure_current")
+        self.p1._stf_ld.set_symbol("pressure_next")
+        self.div._stf_ld.set_symbol("velocity_divergence")
+        self.u0._stf_ld.set_symbol("velocity_current")
+        self.u1._stf_ld.set_symbol("velocity_next")
+        print("✅ Set descriptive symbols for STF logical data!")
+
+        # Set Warp array names (for Warp tracing)
         self.u0._name = "u0"
-
         self.u1._name = "u1"
-
         self.rho0._name = "rho0"
         self.rho1._name = "rho1"
-
         self.p0._name = "p0"
         self.p1._name = "p1"
         self.div._name = "div"
@@ -276,17 +394,21 @@ class Example:
                 self.p0.zero_()
                 self.p1.zero_()
 
-                # if self.use_cuda_graph:
-                #     wp.capture_launch(self.graph)
-                # else:
-                #     self.pressure_iterations()
+                # if self.use_cuda_graph:
+                #     wp.capture_launch(self.graph)
+                # else:
+                #     self.pressure_iterations()
                 self.pressure_iterations()
 
                 # velocity update
                 wp.stf.launch(pressure_apply, dim=shape, inputs=[self.p0, self.u0])
 
                 # semi-Lagrangian advection
-                wp.stf.launch(advect, dim=shape, inputs=[self.u0, self.u1, self.rho0, self.rho1, dt])
+                wp.stf.launch(
+                    advect,
+                    dim=shape,
+                    inputs=[self.u0, self.u1, self.rho0, self.rho1, dt],
+                )
 
                 # swap buffers
                 (self.u0, self.u1) = (self.u1, self.u0)
@@ -296,7 +418,9 @@ class Example:
 
     def pressure_iterations(self):
         for _ in range(self.iterations):
-            wp.stf.launch(pressure_solve, dim=self.p0.shape, inputs=[self.p0, self.p1, self.div])
+            wp.stf.launch(
+                pressure_solve, dim=self.p0.shape, inputs=[self.p0, self.p1, self.div]
+            )
 
             # swap pressure fields
             (self.p0, self.p1) = (self.p1, self.p0)
@@ -314,9 +438,15 @@ class Example:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--device", type=str, default=None, help="Override the default Warp device.")
-    parser.add_argument("--num_frames", type=int, default=100000, help="Total number of frames.")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--device", type=str, default=None, help="Override the default Warp device."
+    )
+    parser.add_argument(
+        "--num_frames", type=int, default=100000, help="Total number of frames."
+    )
     parser.add_argument(
         "--headless",
         action="store_true",
