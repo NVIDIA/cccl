@@ -240,7 +240,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
   fprintf(stderr,
           "CG solver converged after %d iterations (final residual %e, tolerance %e)\n",
           ctx.wait(cg_iter),
-          std::sqrt(ctx.wait(rsnew)),
+          std::sqrt(ctx.wait(rsold)),
           cg_tol);
 }
 #endif
@@ -334,7 +334,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       dU(i) = dU_prev(i);
     };
 
-    size_t max_newton = 10;
+    size_t max_newton = 50;
     for (size_t newton = 0; newton < max_newton; newton++)
     {
       compute_residual(ctx, U, U_prev, residual, N, h, dt, nu);

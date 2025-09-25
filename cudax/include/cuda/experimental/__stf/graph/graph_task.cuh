@@ -137,7 +137,6 @@ public:
 
     if (input_nodes.size() > 0 || done_nodes.size() > 0)
     {
-      fprintf(stderr, "INPUT NODES size() %ld DONE NODES size() %ld\n", input_nodes.size(), done_nodes.size());
       // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
       // done_prereqs, and task input dependencies
 
@@ -170,7 +169,6 @@ public:
       // completion depend on task nodes, task chain, or the child graph.
       if (task_nodes.size() > 0)
       {
-        fprintf(stderr, "(non chained)task_nodes of size %ld\n", task_nodes.size());
         for (auto& node : task_nodes)
         {
 #ifndef NDEBUG
@@ -212,7 +210,6 @@ public:
       }
       else if (chained_task_nodes.size() > 0)
       {
-        fprintf(stderr, "chained_task_nodes of size %ld\n", chained_task_nodes.size());
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
 #if _CCCL_CTK_AT_LEAST(13, 0)
