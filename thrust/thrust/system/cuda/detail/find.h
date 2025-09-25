@@ -39,10 +39,12 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/distance.h>
-#  include <thrust/iterator/counting_iterator.h>
-#  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
+
+#  include <cuda/__iterator/counting_iterator.h>
+#  include <cuda/__iterator/transform_iterator.h>
+#  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -62,7 +64,6 @@ InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first,
 }; // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -92,109 +93,13 @@ struct functor
     }
   }
 };
-
-template <class ValueType, class InputIt, class UnaryOp>
-struct transform_input_iterator_t
-{
-  using self_t            = transform_input_iterator_t;
-  using difference_type   = thrust::detail::it_difference_t<InputIt>;
-  using value_type        = ValueType;
-  using pointer           = void;
-  using reference         = value_type;
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-
-  InputIt input;
-  mutable UnaryOp op;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE transform_input_iterator_t(InputIt input, UnaryOp op)
-      : input(input)
-      , op(op)
-  {}
-
-  transform_input_iterator_t(const self_t&) = default;
-
-  // UnaryOp might not be copy assignable, such as when it is a lambda.  Define
-  // an explicit copy assignment operator that doesn't try to assign it.
-  _CCCL_HOST_DEVICE self_t& operator=(const self_t& o)
-  {
-    input = o.input;
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++(int)
-  {
-    self_t retval = *this;
-    ++input;
-    return retval;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
-  {
-    ++input;
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-  {
-    thrust::detail::it_value_t<InputIt> x = *input;
-    return op(x);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
-  {
-    thrust::detail::it_value_t<InputIt> x = *input;
-    return op(x);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator+(difference_type n) const
-  {
-    return self_t(input + n, op);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator+=(difference_type n)
-  {
-    input += n;
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator-(difference_type n) const
-  {
-    return self_t(input - n, op);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator-=(difference_type n)
-  {
-    input -= n;
-    return *this;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_t other) const
-  {
-    return input - other.input;
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](difference_type n) const
-  {
-    return op(input[n]);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_t& rhs) const
-  {
-    return (input == rhs.input);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_t& rhs) const
-  {
-    return (input != rhs.input);
-  }
-};
 } // namespace __find_if
 
 template <class Derived, class InputIt, class Size, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
 {
-  using result_type = typename thrust::tuple<bool, Size>;
+  using result_type = ::cuda::std::tuple<bool, Size>;
 
   // empty sequence
   if (num_items == 0)
@@ -212,27 +117,19 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   const Size interval_threshold = 1 << 20;
   const Size interval_size      = (::cuda::std::min) (interval_threshold, num_items);
 
-  // FIXME(bgruber): we should also be able to use transform_iterator here, but it makes nvc++ hang. See:
-  // https://github.com/NVIDIA/cccl/issues/3594. The problem does not occur with nvcc, so we could not add a test :/
-  using XfrmIterator = __find_if::transform_input_iterator_t<bool, InputIt, Predicate>;
-  // using XfrmIterator  = transform_iterator<Predicate, InputIt>;
-  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator<Size>>;
-  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
+  const auto begin = ::cuda::make_zip_iterator(
+    ::cuda::transform_iterator<Predicate, InputIt>(first, predicate), ::cuda::counting_iterator<Size>(0));
+  const auto end = begin + num_items;
 
-  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator<Size>(0));
-
-  ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
-  ZipIterator end   = begin + num_items;
-
-  for (ZipIterator interval_begin = begin; interval_begin < end; interval_begin += interval_size)
+  for (auto interval_begin = begin; interval_begin < end; interval_begin += interval_size)
   {
-    ZipIterator interval_end = interval_begin + interval_size;
+    auto interval_end = interval_begin + interval_size;
     if (end < interval_end)
     {
       interval_end = end;
     } // end if
 
-    result_type result = reduce(
+    const result_type result = reduce(
       policy, interval_begin, interval_end, result_type(false, interval_end - begin), __find_if::functor<result_type>());
 
     // see if we found something
