@@ -823,81 +823,50 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   using iterator_concept  = contiguous_iterator_tag;
 };
 
-template <class _Tp, class _Up, bool = __has_iterator_category<iterator_traits<_Tp>>::value>
-struct __has_iterator_category_convertible_to : is_convertible<typename iterator_traits<_Tp>::iterator_category, _Up>
-{};
+template <class _Iter, class _Tag>
+_CCCL_CONCEPT __has_iterator_category_convertible_to = _CCCL_REQUIRES_EXPR((_Iter, _Tag)) //
+  (typename(typename iterator_traits<_Iter>::iterator_category),
+   requires(is_convertible_v<typename iterator_traits<_Iter>::iterator_category, _Tag>));
 
-template <class _Tp, class _Up>
-struct __has_iterator_category_convertible_to<_Tp, _Up, false> : false_type
-{};
+template <class _Iter, class _Tag>
+_CCCL_CONCEPT __has_iterator_concept_convertible_to = _CCCL_REQUIRES_EXPR((_Iter, _Tag)) //
+  (typename(typename _Iter::iterator_concept), requires(is_convertible_v<typename _Iter::iterator_concept, _Tag>));
 
-template <class _Tp, class _Up, bool = __has_iterator_concept<_Tp>::value>
-struct __has_iterator_concept_convertible_to : is_convertible<typename _Tp::iterator_concept, _Up>
-{};
+template <class _Iter>
+inline constexpr bool __has_input_traversal =
+  __has_iterator_category_convertible_to<_Iter, input_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, input_iterator_tag>;
 
-template <class _Tp, class _Up>
-struct __has_iterator_concept_convertible_to<_Tp, _Up, false> : false_type
-{};
+template <class _Iter>
+inline constexpr bool __has_forward_traversal =
+  __has_iterator_category_convertible_to<_Iter, forward_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, forward_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_input_iterator : public __has_iterator_category_convertible_to<_Tp, input_iterator_tag>
-{};
+template <class _Iter>
+inline constexpr bool __has_bidirectional_traversal =
+  __has_iterator_category_convertible_to<_Iter, bidirectional_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, bidirectional_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_forward_iterator : public __has_iterator_category_convertible_to<_Tp, forward_iterator_tag>
-{};
+template <class _Iter>
+inline constexpr bool __has_random_access_traversal =
+  __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_bidirectional_iterator
-    : public __has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>
-{};
-
-template <class _Tp>
-struct __is_cpp17_random_access_iterator
-    : public __has_iterator_category_convertible_to<_Tp, random_access_iterator_tag>
-{};
-
-// __is_cpp17_contiguous_iterator determines if an iterator is known by
+// __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
 // around a (possibly fancy) pointer type, such as __wrap_iter<T*>.
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-template <class _Tp>
-struct __is_cpp17_contiguous_iterator
-    : _Or<__has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,
-          __has_iterator_concept_convertible_to<_Tp, contiguous_iterator_tag>>
-{};
+template <class _Iter>
+inline constexpr bool __has_contiguous_traversal =
+  __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
-template <class _Up>
-struct __is_cpp17_contiguous_iterator<_Up*> : true_type
-{};
-
-template <class _Iter>
-class __wrap_iter;
-
 template <class _Tp>
-struct __is_exactly_cpp17_input_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, input_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, forward_iterator_tag>::value>
-{};
-
-template <class _Tp>
-struct __is_exactly_cpp17_forward_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, forward_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>::value>
-{};
-
-template <class _Tp>
-struct __is_exactly_cpp17_bidirectional_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, random_access_iterator_tag>::value>
-{};
+inline constexpr bool __has_contiguous_traversal<_Tp*> = true;
 
 template <class _InputIterator>
 using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;

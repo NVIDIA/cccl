@@ -90,7 +90,7 @@ private:
 #endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 
 #if _CCCL_STD_VER > 2017
-  static_assert(__is_cpp17_bidirectional_iterator<_Iter>::value || bidirectional_iterator<_Iter>,
+  static_assert(__has_bidirectional_traversal<_Iter> || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");
 #endif // _CCCL_STD_VER > 2017
 
@@ -101,7 +101,7 @@ public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__is_cpp17_random_access_iterator<_Iter>::value,
+    _If<__has_random_access_traversal<_Iter>,
         random_access_iterator_tag,
         typename iterator_traits<_Iter>::iterator_category>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
@@ -395,11 +395,11 @@ class __unconstrained_reverse_iterator
   _Iter __iter_;
 
 public:
-  static_assert(__is_cpp17_bidirectional_iterator<_Iter>::value || bidirectional_iterator<_Iter>);
+  static_assert(__has_bidirectional_traversal<_Iter> || bidirectional_iterator<_Iter>);
 
   using iterator_type = _Iter;
   using iterator_category =
-    _If<__is_cpp17_random_access_iterator<_Iter>::value, random_access_iterator_tag, __iterator_category_type<_Iter>>;
+    _If<__has_random_access_traversal<_Iter>, random_access_iterator_tag, __iterator_category_type<_Iter>>;
   using pointer         = __iterator_pointer_type<_Iter>;
   using value_type      = iter_value_t<_Iter>;
   using difference_type = iter_difference_t<_Iter>;

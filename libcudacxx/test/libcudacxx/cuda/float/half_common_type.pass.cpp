@@ -7,6 +7,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
+
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

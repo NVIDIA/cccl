@@ -310,7 +310,7 @@ public:
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(_CUDA_VSTD::__has_forward_traversal<_Iter>)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
       : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::no_init)
   {
@@ -742,7 +742,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::c
 
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter)
-_CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+_CCCL_REQUIRES(_CUDA_VSTD::__has_forward_traversal<_Iter>)
 async_buffer<_Tp, _Properties...>
 make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last)
 {
@@ -752,7 +752,7 @@ make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Iter 
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter)
 _CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
-                 _CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+                 _CUDA_VSTD::__has_forward_traversal<_Iter>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
