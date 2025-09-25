@@ -224,7 +224,7 @@ private:
     using __src_interface_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(__bad_any_cast());
     }
     auto __to_vptr = __vptr_cast<__src_interface_t, interface_type>(__from.__get_vptr());
     __set_ref(__to_vptr, __from.__get_optr());

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -185,7 +186,7 @@ struct sync_wait_t
       }
       else if constexpr (__same_as<_Error, ::std::error_code>)
       {
-        throw ::std::system_error(__err);
+        _CCCL_THROW(::std::system_error(__err));
       }
       else if constexpr (__same_as<_Error, cudaError_t>)
       {
@@ -193,7 +194,7 @@ struct sync_wait_t
       }
       else
       {
-        throw static_cast<_Error&&>(__err);
+        _CCCL_THROW(static_cast<_Error&&>(__err));
       }
     }
   };

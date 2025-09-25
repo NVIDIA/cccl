@@ -77,7 +77,7 @@ struct test_buffer
     }
   }
 
-  ~test_buffer()
+  ~test_buffer() noexcept(false)
   {
     if (data_ptr)
     {

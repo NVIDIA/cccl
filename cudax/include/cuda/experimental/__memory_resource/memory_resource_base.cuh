@@ -29,6 +29,7 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cstddef>
 #include <cuda/stream_ref>
 
@@ -77,9 +78,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "__memory_resource_base::allocate_sync.");
+      _CCCL_THROW(::cuda::std::invalid_argument("Invalid alignment passed to __memory_resource_base::allocate_sync."));
     }
 
     void* __ptr{nullptr};
@@ -121,9 +120,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "__memory_resource_base::allocate.");
+      _CCCL_THROW(::cuda::std::invalid_argument("Invalid alignment passed to __memory_resource_base::allocate."));
     }
 
     return allocate(__stream, __bytes);

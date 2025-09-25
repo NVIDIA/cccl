@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 #  include <cuda/std/span>
@@ -117,12 +118,11 @@ struct all_devices::__initializer_iterator
   {
     if (size() == 0)
     {
-      ::cuda::std::__throw_out_of_range("device was requested but no CUDA devices found");
+      _CCCL_THROW(::cuda::std::out_of_range("device was requested but no CUDA devices found"));
     }
     else
     {
-      ::cuda::std::__throw_out_of_range(
-        (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
+      _CCCL_THROW(::cuda::std::out_of_range(::std::string("device index out of range: ") + ::std::to_string(__id_)));
     }
   }
   return __devices()[__id_];

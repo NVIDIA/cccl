@@ -29,6 +29,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
@@ -60,9 +61,8 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "legacy_pinned_memory_resource::allocate_sync.");
+      _CCCL_THROW(::cuda::std::invalid_argument("Invalid alignment passed to "
+                                                "legacy_pinned_memory_resource::allocate_sync."));
     }
 
     void* __ptr{nullptr};

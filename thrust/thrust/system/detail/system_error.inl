@@ -82,7 +82,7 @@ const char* system_error ::what() const noexcept
 {
   if (m_what.empty())
   {
-    try
+    _CCCL_TRY
     {
       m_what = this->std::runtime_error::what();
       if (m_error_code)
@@ -94,7 +94,7 @@ const char* system_error ::what() const noexcept
         m_what += m_error_code.message();
       }
     }
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       return std::runtime_error::what();
     }
