@@ -31,8 +31,7 @@ struct items_storage_t; // Used in merge_sort
 template <typename T>
 nvrtcResult cccl_type_name_from_nvrtc(std::string* result)
 {
-  nvrtcResult res = nvrtcGetTypeName<T>(result);
-  if (res != NVRTC_SUCCESS)
+  if (const nvrtcResult res = nvrtcGetTypeName<T>(result); res != NVRTC_SUCCESS)
   {
     return res;
   }
