@@ -218,7 +218,7 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
   return {items_per_thread, block_threads};
 }
 
-radix_sort_runtime_tuning_policy get_policy(int /*cc*/, uint64_t key_size)
+radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
   // TODO: we hardcode some of these values in order to make sure that the radix_sort tests do not fail due to the
   // memory op assertions. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
@@ -227,11 +227,10 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, uint64_t key_size)
   const int single_tile_radix_bits  = (key_size > 1) ? 6 : 5;
 
   const agent_radix_sort_histogram_policy histogram_policy{
-    256, 8, std::max(1, 1 * 4 / std::max(static_cast<int>(key_size), 4)), onesweep_radix_bits};
+    256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits};
   constexpr agent_radix_sort_exclusive_sum_policy exclusive_sum_policy{256, onesweep_radix_bits};
 
-  const auto [onesweep_items_per_thread, onesweep_block_threads] =
-    reg_bound_scaling(256, 21, static_cast<int>(key_size));
+  const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
   // const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 23, key_size);
   const int scan_items_per_thread = 5;
   const int scan_block_threads    = 512;
@@ -239,10 +238,9 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, uint64_t key_size)
   const int downsweep_items_per_thread = 5;
   const int downsweep_block_threads    = 160;
   // const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
-  const int alt_downsweep_items_per_thread = 5;
-  const int alt_downsweep_block_threads    = 256;
-  const auto [single_tile_items_per_thread, single_tile_block_threads] =
-    mem_bound_scaling(256, 19, static_cast<int>(key_size));
+  const int alt_downsweep_items_per_thread                             = 5;
+  const int alt_downsweep_block_threads                                = 256;
+  const auto [single_tile_items_per_thread, single_tile_block_threads] = mem_bound_scaling(256, 19, key_size);
 
   constexpr bool is_onesweep = false;
 
@@ -358,7 +356,8 @@ struct dynamic_radix_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<radix_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<radix_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;

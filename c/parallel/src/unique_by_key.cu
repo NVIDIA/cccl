@@ -60,7 +60,7 @@ struct unique_by_key_tuning_t
   int items_per_thread;
 };
 
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, uint64_t /*key_size*/)
+unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int /*key_size*/)
 {
   // TODO: we should update this once we figure out a way to reuse
   // tuning logic from C++. Alternately, we should implement
@@ -171,7 +171,8 @@ struct dynamic_unique_by_key_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -243,7 +244,7 @@ CUresult cccl_device_unique_by_key_build_ex(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = unique_by_key::get_policy(cc, input_keys_it.value_type.size);
+    const auto policy = unique_by_key::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
 
     const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);

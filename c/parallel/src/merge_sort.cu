@@ -121,7 +121,7 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
   }
 }
 
-merge_sort_runtime_tuning_policy get_policy(int cc, uint64_t key_size)
+merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
 {
   merge_sort_tuning_t chain[]            = {{60, 256, nominal_4b_items_to_items(17, static_cast<int>(key_size))},
                                             {35, 256, nominal_4b_items_to_items(11, static_cast<int>(key_size))}};
@@ -205,7 +205,8 @@ struct dynamic_merge_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<merge_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
