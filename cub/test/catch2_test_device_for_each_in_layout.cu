@@ -25,25 +25,25 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInLayout, device_for_each_in_layou
  * Host reference
  **********************************************************************************************************************/
 
-template <bool IsLayoutRight, int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+template <bool IsLayoutRight, int Position, typename T, typename ExtentType, typename... IndicesType>
 static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
-  if constexpr (Rank == ExtentType::rank())
+  if constexpr (sizeof...(IndicesType) == ExtentType::rank())
   {
     vector[pos++] = {indices...};
   }
   else
   {
     using IndexType = typename ExtentType::index_type;
-    for (IndexType i = 0; i < ext.extent(Rank); ++i)
+    for (IndexType i = 0; i < ext.extent(Position); ++i)
     {
       if constexpr (IsLayoutRight)
       {
-        fill_linear_impl<IsLayoutRight, Rank + 1>(vector, ext, pos, indices..., i);
+        fill_linear_impl<IsLayoutRight, Position + 1>(vector, ext, pos, indices..., i);
       }
       else
       {
-        fill_linear_impl<IsLayoutRight, Rank + 1>(vector, ext, pos, i, indices...);
+        fill_linear_impl<IsLayoutRight, Position - 1>(vector, ext, pos, i, indices...);
       }
     }
   }
@@ -53,7 +53,18 @@ template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
 static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
 {
   size_t pos = 0;
-  fill_linear_impl<IsLayoutRight>(vector, ext, pos);
+  if constexpr (sizeof...(Extents) == 0)
+  {
+    return;
+  }
+  else if constexpr (IsLayoutRight)
+  {
+    fill_linear_impl<IsLayoutRight, 0>(vector, ext, pos);
+  }
+  else
+  {
+    fill_linear_impl<IsLayoutRight, (sizeof...(Extents) - 1)>(vector, ext, pos);
+  }
 }
 
 /***********************************************************************************************************************
@@ -133,18 +144,18 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
   device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
-  fill_linear<is_layout_right>(h_output, ext);
+  fill_linear<is_layout_right>(h_output_expected, ext);
 // MSVC error: C3546: '...': there are no parameter packs available to expand in
 //             make_tuple_types.h:__make_tuple_types_flat
 #if !_CCCL_COMPILER(MSVC)
-  REQUIRE(h_output == h_output_gpu);
+  REQUIRE(h_output_expected == h_output_gpu);
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
@@ -160,17 +171,17 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
-  fill_linear<is_layout_right>(h_output, ext);
+  fill_linear<is_layout_right>(h_output_expected, ext);
 
 #if !_CCCL_COMPILER(MSVC)
-  REQUIRE(h_output == h_output_gpu);
+  REQUIRE(h_output_expected == h_output_gpu);
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
@@ -188,14 +199,13 @@ struct incrementer_t
   }
 };
 
-C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", index_types, layouts)
+C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_duplicates][device]", layouts)
 {
-  constexpr int max_items  = 5000000;
-  constexpr int min_items  = 1;
-  using offset_t           = c2h::get<0, TestType>;
-  using layout_t           = c2h::get<1, TestType>;
-  using ext_t              = cuda::std::dextents<offset_t, 1>;
-  const offset_t num_items = GENERATE_COPY(
+  constexpr int min_items = 1;
+  constexpr int max_items = 5000000;
+  using layout_t          = c2h::get<0, TestType>;
+  using ext_t             = cuda::std::dextents<int, 1>;
+  const int num_items     = GENERATE_COPY(
     take(3, random(min_items, max_items)),
     values({
       min_items,
@@ -205,7 +215,6 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
   int* d_counts = thrust::raw_pointer_cast(counts.data());
   device_for_each_in_layout(layout_t{}, ext_t{num_items}, incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items =
-    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);
 }
