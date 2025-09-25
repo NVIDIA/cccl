@@ -246,8 +246,10 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   using output_t                = it_value_t<RandomAccessIteratorOut>;
   using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
   // picks output type size if there are no inputs
-  constexpr int element_size =
-    int{first_nonzero_value(sizeof(it_value_t<RandomAccessIteratorsIn>)..., size_of<output_t>)};
+  constexpr int element_size     = int{first_nonzero_value(
+    (sizeof(it_value_t<RandomAccessIteratorsIn>)
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
+    size_of<output_t>)};
   constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
 
   static_assert((items_per_thread * element_size) % load_store_size == 0);
