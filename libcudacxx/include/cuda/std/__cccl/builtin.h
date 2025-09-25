@@ -92,7 +92,7 @@
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVHPC)
+  || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC, >=, 12, 3)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
 
@@ -384,11 +384,6 @@
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
 
-#if _CCCL_CHECK_BUILTIN(has_trivial_constructor) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_trivial_constructor) && gcc >= 4.3
-
 #if _CCCL_CHECK_BUILTIN(has_trivial_destructor) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
@@ -531,10 +526,6 @@
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
-#if _CCCL_CHECK_BUILTIN(is_pod) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_pod) && gcc >= 4.3
-
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
 #  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
@@ -589,11 +580,6 @@
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_assignable) && gcc >= 5.1
-
-#if _CCCL_CHECK_BUILTIN(is_trivially_constructible) || _CCCL_COMPILER(GCC, >=, 5, 1) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_trivially_constructible) && gcc >= 5.1
 
 #if _CCCL_CHECK_BUILTIN(is_trivially_destructible) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
@@ -724,7 +710,7 @@
 // Bring in the bits of the STL we need
 #  if defined(_GLIBCXX_VERSION)
 #    include <bits/move.h> // for move, forward, forward_like, and addressof
-#  elif defined(_LIBCXX_VERSION)
+#  elif defined(_LIBCPP_VERSION)
 #    include <__memory/addressof.h>
 #    include <__utility/as_const.h>
 #    include <__utility/forward.h>
@@ -732,7 +718,7 @@
 #    include <__utility/move.h>
 #  endif
 
-#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION)
+#  if defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION)
 // std::move builtin
 #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
 #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
@@ -759,7 +745,7 @@
       && (__cpp_lib_forward_like >= 202217L)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
-#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION) || defined(_MSVC_STL_VERSION)
 #endif // defined(__cplusplus)
 
 #ifndef _CCCL_HAS_BUILTIN_STD_MOVE

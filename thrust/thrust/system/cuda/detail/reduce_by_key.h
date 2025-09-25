@@ -46,7 +46,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
@@ -56,10 +55,12 @@
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/iterator>
 
@@ -93,8 +94,6 @@ template <>
 struct is_true<true> : thrust::detail::true_type
 {};
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD                   = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
@@ -120,22 +119,15 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  enum
-  {
-    MAX_INPUT_BYTES      = mpl::max<size_t, sizeof(Key), sizeof(Value)>::value,
-    COMBINED_INPUT_BYTES = sizeof(Key) + sizeof(Value),
-
-    NOMINAL_4B_ITEMS_PER_THREAD = 9,
-
-    ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
-        ? 9
-        : mpl::min<
-            int,
-            NOMINAL_4B_ITEMS_PER_THREAD,
-            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-              value>::value,
-  };
+  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
+  static constexpr int ITEMS_PER_THREAD =
+    (MAX_INPUT_BYTES <= 8)
+      ? 9
+      : ::cuda::std::min(
+          NOMINAL_4B_ITEMS_PER_THREAD,
+          ::cuda::std::max(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -242,9 +234,10 @@ struct ReduceByKeyAgent
 
     // Scan with identity (first tile)
     //
-    THRUST_DEVICE_FUNCTION void scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-                                          size_value_pair_t& tile_aggregate,
-                                          thrust::detail::true_type /* has_identity */)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
+              size_value_pair_t& tile_aggregate,
+              thrust::detail::true_type /* has_identity */)
     {
       size_value_pair_t identity;
       identity.value = 0;
@@ -255,16 +248,17 @@ struct ReduceByKeyAgent
     // Scan without identity (first tile).
     // Without an identity, the first output item is undefined.
     //
-    THRUST_DEVICE_FUNCTION void scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-                                          size_value_pair_t& tile_aggregate,
-                                          thrust::detail::false_type /* has_identity */)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
+              size_value_pair_t& tile_aggregate,
+              thrust::detail::false_type /* has_identity */)
     {
       BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
     }
 
     // Scan with identity (subsequent tile)
     //
-    THRUST_DEVICE_FUNCTION void scan_tile(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
       size_value_pair_t& tile_aggregate,
       TilePrefixCallback& prefix_op,
@@ -276,7 +270,7 @@ struct ReduceByKeyAgent
 
     // Scan without identity (subsequent tile).
     // Without an identity, the first output item is undefined.
-    THRUST_DEVICE_FUNCTION void scan_tile(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
       size_value_pair_t& tile_aggregate,
       TilePrefixCallback& prefix_op,
@@ -291,7 +285,7 @@ struct ReduceByKeyAgent
     //---------------------------------------------------------------------
 
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void zip_values_and_flags(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_values_and_flags(
       size_type num_remaining,
       value_type (&values)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
@@ -312,7 +306,7 @@ struct ReduceByKeyAgent
       }
     }
 
-    THRUST_DEVICE_FUNCTION void zip_keys_and_values(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_keys_and_values(
       key_type (&keys)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
@@ -334,7 +328,7 @@ struct ReduceByKeyAgent
 
     // Directly scatter flagged items to output offsets
     // (specialized for IS_SEGMENTED_REDUCTION_FIXUP == false)
-    THRUST_DEVICE_FUNCTION void scatter_direct(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_direct(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD])
@@ -358,7 +352,7 @@ struct ReduceByKeyAgent
     // the previous value aggregate:
     //   * the scatter offsets must be decremented for value aggregates
     //
-    THRUST_DEVICE_FUNCTION void scatter_two_phase(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_two_phase(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
@@ -391,7 +385,7 @@ struct ReduceByKeyAgent
 
     // Scatter flagged items
     //
-    THRUST_DEVICE_FUNCTION void scatter(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
@@ -416,7 +410,7 @@ struct ReduceByKeyAgent
 
     // Finalize the carry-out from the last tile
     // (specialized for IS_SEGMENTED_REDUCTION_FIXUP == false)
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     finalize_last_tile(size_type num_segments, size_type num_remaining, key_type last_key, value_type last_value)
     {
       // Last thread will output final count and last item, if necessary
@@ -446,7 +440,8 @@ struct ReduceByKeyAgent
     // and aggregated values (including this tile)
     //
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
     {
       key_type keys[ITEMS_PER_THREAD]; // Tile keys
       key_type pred_keys[ITEMS_PER_THREAD]; // Tile keys shifted up (predecessor)
@@ -538,7 +533,7 @@ struct ReduceByKeyAgent
     // and aggregated values (including this tile)
 
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_subsequent_tile(Size num_remaining, int tile_idx, Size tile_offset, ScanTileState& tile_state)
     {
       key_type keys[ITEMS_PER_THREAD]; // Tile keys
@@ -604,7 +599,7 @@ struct ReduceByKeyAgent
       }
     }
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_tile(size_type num_remaining, int tile_idx, size_type tile_offset, ScanTileState& tile_state)
     {
       if (tile_idx == 0)
@@ -621,7 +616,7 @@ struct ReduceByKeyAgent
     // Constructor : consume_range
     //---------------------------------------------------------------------
 
-    THRUST_DEVICE_FUNCTION impl(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE impl(
       TempStorage& storage_,
       KeysInputIt keys_input_it_,
       ValuesInputIt values_input_it_,
