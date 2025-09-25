@@ -18,10 +18,18 @@
 #include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef> // size_t
-#include <cuda/std/mdspan> // dynamic_extent
-#include <cuda/std/type_traits>
-#include <cuda/std/utility> // make_index_sequence
 
 CUB_NAMESPACE_BEGIN
 

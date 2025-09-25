@@ -92,7 +92,6 @@ constexpr ::std::string_view type_name_impl()
  *
  * @tparam T The type to show.
  *
- * @paragraph example Example
  * @snippet unittest.h type_name
  */
 template <class T>
@@ -106,10 +105,9 @@ inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
  * @tparam Fun Type of mapping function to apply
  * @param t Object to convert, must support `std::apply`
  * @param f function to convert each element of the tuple, must take a single parameter
- * @return constexpr auto The tuple resulting from the mapping
+ * @return auto The tuple resulting from the mapping
  *
- * @paragraph example Example
- * @snippet unittest.h tuple2tuple
+ * @snippet unittest.cuh tuple2tuple
  */
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
