@@ -128,21 +128,16 @@ std::string get_three_way_partition_kernel_name(
 
 std::string get_three_way_partition_policy_delay_constructor(const nlohmann::json& partition_policy)
 {
-  auto dc_json                = partition_policy["ThreeWayPartitionPolicyDelayConstructor"];
-  auto delay_constructor_type = dc_json["type"].get<std::string>();
+  auto delay_ctor_info = partition_policy["DelayConstructor"];
 
-  if (delay_constructor_type == "fixed_delay_constructor_t")
+  std::string delay_ctor_params;
+  for (auto&& param : delay_ctor_info["params"])
   {
-    auto delay            = dc_json["delay"].get<int>();
-    auto l2_write_latency = dc_json["l2_write_latency"].get<int>();
-    return std::format("cub::detail::fixed_delay_constructor_t<{}, {}>", delay, l2_write_latency);
+    delay_ctor_params.append(to_string(param) + ", ");
   }
-  else if (delay_constructor_type == "no_delay_constructor_t")
-  {
-    auto l2_write_latency = dc_json["l2_write_latency"].get<int>();
-    return std::format("cub::detail::no_delay_constructor_t<{}>", l2_write_latency);
-  }
-  throw std::runtime_error("Invalid delay constructor type: " + delay_constructor_type);
+  delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
+
+  return std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
 }
 
 std::string inject_delay_constructor_into_three_way_policy(
