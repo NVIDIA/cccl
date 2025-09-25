@@ -94,7 +94,7 @@ struct histogram_kernel_source
 
 histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, int num_active_channels)
 {
-  const int v_scale                      = (static_cast<int>(sample_t.size) + sizeof(int) - 1) / sizeof(int);
+  const int v_scale                      = static_cast<int>(cuda::ceil_div(sample_t.size, sizeof(int)));
   constexpr int nominal_items_per_thread = 16;
 
   int pixels_per_thread = (::cuda::std::max) (nominal_items_per_thread / num_active_channels / v_scale, 1);
