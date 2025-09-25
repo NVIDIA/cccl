@@ -105,7 +105,7 @@ struct __atomic_cuda_operand_deduction
   using __tag  = _OpTag;
 };
 
-struct __atomic_longlong2
+struct _CCCL_ALIGNAS(16) __atomic_longlong2
 {
   uint64_t __x;
   uint64_t __y;

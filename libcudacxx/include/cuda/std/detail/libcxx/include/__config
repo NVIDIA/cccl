@@ -147,24 +147,23 @@ extern "C++" {
 #  endif
 
 // Clang provides 128b atomics as a builtin
-#  if _CCCL_COMPILER(CLANG) || defined(LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS)
-#    define _CCCL_HAS_BUILTIN_128_ATOMICS() 1
-#    define _CCCL_HAS_LIBRARY_128_ATOMICS() 0
+#  if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B)
+#    define _CCCL_HOST_128_ATOMICS_ENABLED() 1
+#    define _CCCL_HOST_128_ATOMICS_MAYBE()   0
 // GCC does not provide 128b atomics, but they may be available as a library, this requires opt-in usage.
 // See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html "-mcx16" for more
-#  elif _CCCL_COMPILER(GCC)
-#    define _CCCL_HAS_BUILTIN_128_ATOMICS() 0
-#    define _CCCL_HAS_LIBRARY_128_ATOMICS() 1
+#  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
+#    define _CCCL_HOST_128_ATOMICS_ENABLED() 0
+#    define _CCCL_HOST_128_ATOMICS_MAYBE()   1
 #  else
-#    define _CCCL_HAS_BUILTIN_128_ATOMICS() 0
-#    define _CCCL_HAS_LIBRARY_128_ATOMICS() 0
+#    define _CCCL_HOST_128_ATOMICS_ENABLED() 0
+#    define _CCCL_HOST_128_ATOMICS_MAYBE()   0
 #  endif
 
-#  define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
 // Enable bypassing automatic storage checks in atomics when using CTK 12.2 and below and if NDEBUG is defined.
-// #  if _CCCL_CUDACC_BELOW(12, 2) && !defined(NDEBUG)
-// #    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
-// #  endif // _CCCL_CUDACC_BELOW(12, 2)
+#  if _CCCL_CUDACC_BELOW(13, 1) && !defined(NDEBUG)
+#    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
+#  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
 #  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
