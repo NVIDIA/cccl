@@ -45,7 +45,7 @@ def show_slice(t3d, plane="xy", index=None):
     plt.pause(0.01)
 
 
-def fdtd_3d_pytorch(
+def test_fdtd_3d_pytorch(
     size_x: int = 150,
     size_y: int = 150,
     size_z: int = 150,
@@ -211,5 +211,6 @@ def fdtd_3d_pytorch(
 
 if __name__ == "__main__":
     # Run FDTD simulation
-    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=1000, output_freq=5)
+    print("Running FDTD 3D PyTorch example...")
+    ex, ey, ez, hx, hy, hz = test_fdtd_3d_pytorch(timesteps=1000, output_freq=5)
     print(f"Simulation completed; Ez(center) = {ez[75, 15, 75].item():.6e}")

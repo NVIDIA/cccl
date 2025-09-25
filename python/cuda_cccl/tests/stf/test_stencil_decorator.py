@@ -79,3 +79,8 @@ def test_numba2d():
     # compare with the GPU result
     max_abs_diff = np.abs(u_out - u_out_ref).max()
     print(f"max(|gpu - ref|) = {max_abs_diff:.3e}")
+
+
+if __name__ == "__main__":
+    print("Running CUDASTF stencil decorator example...")
+    test_numba2d()
