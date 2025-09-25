@@ -39,7 +39,7 @@ on:
 jobs:
   build-matx:
     name: Build MatX
-    runs-on: linux-amd64-cpu32
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -52,6 +52,7 @@ jobs:
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -81,9 +82,9 @@ jobs:
 
           cat <<EOF > .aws/credentials
           [default]
-          aws_access_key_id=$AWS_ACCESS_KEY_ID
-          aws_session_token=$AWS_SESSION_TOKEN
-          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
           EOF
 
           chmod 0600 .aws/credentials

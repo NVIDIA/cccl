@@ -180,13 +180,23 @@ launch_docker() {
         ENV_VARS+=("${env_vars[@]}")
     fi
 
-    exec docker run \
-        "${RUN_ARGS[@]}" \
-        "${ENV_VARS[@]}" \
-        "${MOUNTS[@]}" \
-        "${DOCKER_IMAGE}" \
-        "${ENTRYPOINTS[@]}" \
-        "$@"
+    ( # Contain the set -x in a subshell
+        if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+            echo "::group::Docker run command"
+            set -x
+        fi
+        exec docker run \
+          "${RUN_ARGS[@]}" \
+          "${ENV_VARS[@]}" \
+          "${MOUNTS[@]}" \
+          "${DOCKER_IMAGE}" \
+          "${ENTRYPOINTS[@]}" \
+          "$@"
+    )
+
+    if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+        echo "::endgroup::"
+    fi
 }
 
 launch_vscode() {

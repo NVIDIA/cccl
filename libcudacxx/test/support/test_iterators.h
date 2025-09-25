@@ -209,6 +209,11 @@ public:
     return x.it_ != y.it_;
   }
 
+  __host__ __device__ constexpr It base() const
+  {
+    return it_;
+  }
+
   __host__ __device__ friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;

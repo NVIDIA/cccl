@@ -247,10 +247,10 @@ def test_scan_transform_output_iterator(floating_array):
     d_input = floating_array
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    def square(x):
+    def square(x: dtype) -> dtype:
         return x * x
 
-    d_out_it = parallel.TransformIterator(d_output, square)
+    d_out_it = parallel.TransformOutputIterator(d_output, square)
 
     parallel.inclusive_scan(
         d_input, d_out_it, parallel.OpKind.PLUS, h_init, d_input.size

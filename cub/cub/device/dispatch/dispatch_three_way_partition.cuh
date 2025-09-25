@@ -91,11 +91,6 @@ struct DeviceThreeWayPartitionKernelSource
       SelectSecondPartOp,
       per_partition_offset_t,
       streaming_context_t>);
-
-  CUB_RUNTIME_FUNCTION static constexpr size_t OffsetSize()
-  {
-    return sizeof(OffsetT);
-  }
 };
 } // namespace detail::three_way_partition
 
@@ -191,7 +186,7 @@ struct DispatchThreeWayPartitionIf
     constexpr ::cuda::std::size_t num_counters_per_pass  = 3;
     constexpr ::cuda::std::size_t num_streaming_counters = 2 * num_counters_per_pass;
     ::cuda::std::size_t streaming_selection_storage_bytes =
-      (num_partitions > 1) ? num_streaming_counters * kernel_source.OffsetSize() : ::cuda::std::size_t{0};
+      (num_partitions > 1) ? num_streaming_counters * sizeof(OffsetT) : ::cuda::std::size_t{0};
 
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[2] = {0ULL, streaming_selection_storage_bytes};
@@ -244,7 +239,7 @@ struct DispatchThreeWayPartitionIf
       }
 
       // Log three_way_partition_init_kernel configuration
-      const int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
