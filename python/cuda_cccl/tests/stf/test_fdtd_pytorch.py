@@ -206,11 +206,8 @@ def test_fdtd_3d_pytorch(
 
     ctx.finalize()
 
-    return ex, ey, ez, hx, hy, hz
-
 
 if __name__ == "__main__":
     # Run FDTD simulation
     print("Running FDTD 3D PyTorch example...")
-    ex, ey, ez, hx, hy, hz = test_fdtd_3d_pytorch(timesteps=1000, output_freq=5)
-    print(f"Simulation completed; Ez(center) = {ez[75, 15, 75].item():.6e}")
+    test_fdtd_3d_pytorch(timesteps=1000, output_freq=5)
