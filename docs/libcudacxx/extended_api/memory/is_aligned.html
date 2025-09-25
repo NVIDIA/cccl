@@ -1550,6 +1550,15 @@
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">alignment</span></code> must be a power of two.</p></li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The function is similar to the C++ standard library function <a class="reference external" href="https://en.cppreference.com/w/cpp/memory/is_sufficiently_aligned.html">cuda::std::is_sufficiently_aligned()</a> from the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/memory&gt;</span></code> header. The differences are the following:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::is_aligned()</span></code> doesn’t have a template parameter and might be less expensive to compile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::is_aligned()</span></code> supports run-time values of <code class="docutils literal notranslate"><span class="pre">alignment</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::is_sufficiently_aligned()</span></code> additionally checks the compatibility between the alignment of the pointer type and the specified alignment.</p></li>
+</ul>
+</div>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
 <div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/memory&gt;</span>
