@@ -44,7 +44,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__execution/exception_macros.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
