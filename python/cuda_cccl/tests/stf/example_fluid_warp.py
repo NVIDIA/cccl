@@ -85,17 +85,12 @@ def stf_kernel(pyfunc):
 
 
 def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
-    print(f"[STF TRACE] launching kernel: {getattr(kernel, '__name__', kernel)}")
-    print(f"  dim     = {dim}")
-    print(f"  stream  = {stream}")
-
     # Process STF dependencies and extract arrays for wp.launch
     processed_inputs = []
     stf_dependencies = []
 
-    # Enhanced input display with STF dependency detection
+    # Process inputs to separate STF dependencies from regular arguments
     if inputs:
-        print("  inputs  = [")
         for i, inp in enumerate(inputs):
             # Check if input is STF dependency wrapper
             if isinstance(inp, STFDependency):
@@ -108,7 +103,104 @@ def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
                         "data_place": inp.data_place,
                     }
                 )
+                # Add unwrapped array to processed inputs
+                processed_inputs.append(inp.array)
+            else:
+                processed_inputs.append(inp)
 
+    # STF launch REQUIRES STF dependencies - otherwise use regular wp.launch
+    if not stf_dependencies:
+        raise ValueError(
+            "wp.stf.launch() requires STF dependencies (wp.stf.read/write/rw). "
+            f"Found {len(inputs)} inputs but none are STF dependencies. "
+            "Either use regular wp.launch() or wrap arrays with wp.stf.read/write/rw(array)."
+        )
+
+    # Print tracing information (controlled by STF_TRACE_ENABLED)
+    _trace_stf_launch(kernel, dim, stream, inputs, kwargs, stf_dependencies)
+
+    # Extract the STF context from the first dependency
+    first_dep = stf_dependencies[0]
+    stf_ctx = first_dep["array"]._stf_ld.borrow_ctx_handle()
+
+    # Create STF dependency objects for the task
+    stf_task_deps = []
+    for dep in stf_dependencies:
+        stf_ld = dep["array"]._stf_ld
+        if dep["mode"] == "read":
+            stf_task_deps.append(stf_ld.read())
+        elif dep["mode"] == "write":
+            stf_task_deps.append(stf_ld.write())
+        elif dep["mode"] == "rw":
+            stf_task_deps.append(stf_ld.rw())
+
+    # Create and execute STF task
+    with stf_ctx.task(*stf_task_deps) as stf_task:
+        # Get raw CUDA stream pointer from STF task
+        stf_stream_ptr = stf_task.stream_ptr()
+
+        # Import PyTorch for stream conversion
+        import torch
+
+        # Get the current CUDA device for PyTorch
+        warp_device = wp.get_device()
+        device_id = warp_device.ordinal  # Get device number (e.g., 0 for cuda:0)
+        torch_device = torch.device(f"cuda:{device_id}")
+
+        # Create PyTorch ExternalStream from STF stream pointer with explicit device
+        torch_stream = torch.cuda.ExternalStream(stf_stream_ptr, device=torch_device)
+
+        # Convert PyTorch stream to Warp stream
+        warp_stream = wp.stream_from_torch(torch_stream)
+
+        # Launch with properly wrapped STF stream
+        return wp.launch(
+            kernel,
+            dim=dim,
+            inputs=processed_inputs,
+            stream=warp_stream,
+            **kwargs,
+        )
+
+
+# STF tracing configuration
+STF_TRACE_ENABLED = True  # Set to False to disable STF tracing
+
+
+def set_stf_trace(enabled: bool):
+    """Enable or disable STF tracing output.
+
+    Args:
+        enabled: True to enable tracing, False to disable
+    """
+    global STF_TRACE_ENABLED
+    STF_TRACE_ENABLED = enabled
+
+
+def get_stf_trace() -> bool:
+    """Get current STF tracing state.
+
+    Returns:
+        True if tracing is enabled, False otherwise
+    """
+    return STF_TRACE_ENABLED
+
+
+def _trace_stf_launch(kernel, dim, stream, inputs, kwargs, stf_dependencies):
+    """Print STF launch tracing information if enabled."""
+    if not STF_TRACE_ENABLED:
+        return
+
+    print(f"[STF TRACE] launching kernel: {getattr(kernel, '__name__', kernel)}")
+    print(f"  dim     = {dim}")
+    print(f"  stream  = {stream}")
+
+    # Enhanced input display with STF dependency detection
+    if inputs:
+        print("  inputs  = [")
+        for i, inp in enumerate(inputs):
+            # Check if input is STF dependency wrapper
+            if isinstance(inp, STFDependency):
                 # Get symbol for display (STF deps ALWAYS have _stf_ld)
                 symbol = None
                 if hasattr(inp.array._stf_ld, "symbol") and inp.array._stf_ld.symbol:
@@ -120,9 +212,6 @@ def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
                     print(f"    [{i}]: '{symbol}' [{inp.mode}] [stf_dep]")
                 else:
                     print(f"    [{i}]: logical_data [{inp.mode}] [stf_dep]")
-
-                # Add unwrapped array to processed inputs
-                processed_inputs.append(inp.array)
 
             else:
                 # Regular input - detect logical data for display
@@ -155,8 +244,6 @@ def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
                     else:  # Scalar value
                         print(f"    [{i}]: {inp}")
 
-                processed_inputs.append(inp)
-
         print("  ]")
     else:
         print(f"  inputs  = {inputs}")
@@ -179,69 +266,7 @@ def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
         print("  ]")
 
     print(f"  kwargs  = {kwargs}")
-
-    # STF launch REQUIRES STF dependencies - otherwise use regular wp.launch
-    if not stf_dependencies:
-        raise ValueError(
-            "wp.stf.launch() requires STF dependencies (wp.stf.read/write/rw). "
-            f"Found {len(inputs)} inputs but none are STF dependencies. "
-            "Either use regular wp.launch() or wrap arrays with wp.stf.read/write/rw(array)."
-        )
-
-    # STF Task-based launch with automatic dependency management
     print("  → Creating STF task with dependencies")
-
-    # Extract the STF context from the first dependency
-    first_dep = stf_dependencies[0]
-    stf_ctx = first_dep["array"]._stf_ld.borrow_ctx_handle()
-
-    # Create STF dependency objects for the task
-    stf_task_deps = []
-    for dep in stf_dependencies:
-        stf_ld = dep["array"]._stf_ld
-        if dep["mode"] == "read":
-            stf_task_deps.append(stf_ld.read())
-        elif dep["mode"] == "write":
-            stf_task_deps.append(stf_ld.write())
-        elif dep["mode"] == "rw":
-            stf_task_deps.append(stf_ld.rw())
-
-    # Create and execute STF task
-    with stf_ctx.task(*stf_task_deps) as stf_task:
-        # Get raw CUDA stream pointer from STF task
-        stf_stream_ptr = stf_task.stream_ptr()
-
-        print(f"  → STF task stream ptr: {stf_stream_ptr}")
-        print("  → Launching kernel within STF task context")
-
-        # Wrap STF stream via PyTorch ExternalStream -> Warp conversion
-        print(f"  → STF task stream ptr: {stf_stream_ptr}")
-        print("  → Creating PyTorch ExternalStream from STF stream")
-
-        # Import PyTorch for stream conversion
-        import torch
-
-        # Get the current CUDA device for PyTorch
-        warp_device = wp.get_device()
-        device_id = warp_device.ordinal  # Get device number (e.g., 0 for cuda:0)
-        torch_device = torch.device(f"cuda:{device_id}")
-
-        # Create PyTorch ExternalStream from STF stream pointer with explicit device
-        torch_stream = torch.cuda.ExternalStream(stf_stream_ptr, device=torch_device)
-
-        # Convert PyTorch stream to Warp stream
-        warp_stream = wp.stream_from_torch(torch_stream)
-
-        print(f"  → Successfully wrapped STF stream via PyTorch: {warp_stream}")
-
-        # Launch with properly wrapped STF stream
-        return wp.launch(
-            kernel,
-            dim=dim,
-            inputs=processed_inputs,
-            stream=warp_stream,
-            **kwargs,
-        )
 
 
 # put it under wp.stf
@@ -312,6 +337,10 @@ wp.stf.launch = stf_launch
 wp.stf.read = stf_read
 wp.stf.write = stf_write
 wp.stf.rw = stf_rw
+
+# STF tracing control functions
+wp.stf.set_trace = set_stf_trace
+wp.stf.get_trace = get_stf_trace
 
 grid_width = wp.constant(256 * 4)
 grid_height = wp.constant(128 * 4)
