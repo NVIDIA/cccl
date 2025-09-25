@@ -374,7 +374,9 @@ struct policy_hub<RequiresStableAddress,
   static constexpr int load_store_word_size = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
   // if there are no inputs, we take the size of the output value
   static constexpr int value_type_size = first_nonzero_value(
-    int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., int{size_of<it_value_t<RandomAccessIteratorOut>>});
+    (int{sizeof(it_value_t<RandomAccessIteratorsIn>)}
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
+    int{size_of<it_value_t<RandomAccessIteratorOut>>});
   static constexpr bool value_type_divides_load_store_size =
     load_store_word_size % value_type_size == 0; // implicitly checks that value_type_size <= load_store_word_size
   static constexpr int target_bytes_per_thread =
