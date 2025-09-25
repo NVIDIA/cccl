@@ -256,31 +256,70 @@ void stf_dowhile_2()
 {
   stackable_ctx ctx;
 
-  // We use a token to ensure that A, B(C) and D are serialized
-  auto t = ctx.token();
-
-  // A
-  ctx.task(t.rw())->*[](cudaStream_t stream) {
-    doWhileEmptyKernel<<<1, 1, 0, stream>>>();
-  };
-
-  // B
   {
-    auto repeat_guard = ctx.repeat_graph_scope(10);
+    // We force everything to be a CUDA graph
+    auto scope = ctx.graph_scope();
 
-    // C
+    // We use a token to ensure that A, B(C) and D are serialized
+    auto t = ctx.token();
+
+    // A
+    ctx.task(t.rw())->*[](cudaStream_t stream) {
+      doWhileEmptyKernel<<<1, 1, 0, stream>>>();
+    };
+
+    // B
+    {
+      auto repeat_guard = ctx.repeat_graph_scope(10);
+
+      // C
+      ctx.task(t.rw())->*[](cudaStream_t stream) {
+        doWhileEmptyKernel<<<1, 1, 0, stream>>>();
+      };
+    }
+
+    // D
     ctx.task(t.rw())->*[](cudaStream_t stream) {
       doWhileEmptyKernel<<<1, 1, 0, stream>>>();
     };
   }
 
-  // D
-  ctx.task(t.rw())->*[](cudaStream_t stream) {
-    doWhileEmptyKernel<<<1, 1, 0, stream>>>();
-  };
+  ctx.finalize();
+}
+
+void stf_dowhile_2_cuda_kernel()
+{
+  stackable_ctx ctx;
+
+  {
+    // We force everything to be a CUDA graph
+    auto scope = ctx.graph_scope();
+
+    // We use a token to ensure that A, B(C) and D are serialized
+    auto t = ctx.token();
+
+    // A
+    ctx.cuda_kernel(t.rw())->*[]() {
+      return cuda_kernel_desc{doWhileEmptyKernel, 1, 1, 0};
+    };
+
+    // B
+    {
+      auto repeat_guard = ctx.repeat_graph_scope(10);
+
+      // C
+      ctx.cuda_kernel(t.rw())->*[]() {
+        return cuda_kernel_desc{doWhileEmptyKernel, 1, 1, 0};
+      };
+    }
+
+    // D
+    ctx.cuda_kernel(t.rw())->*[]() {
+      return cuda_kernel_desc{doWhileEmptyKernel, 1, 1, 0};
+    };
+  }
 
   ctx.finalize();
-  printf("STF do while complete\n\n");
 }
 
 int main(int, char**)
@@ -290,6 +329,9 @@ int main(int, char**)
 
   capturedWhileGraph();
   stf_dowhile_2();
+
+  // same as stf_dowhile_2 but uses cuda_kernel
+  stf_dowhile_2_cuda_kernel();
 
   return 0;
 }
