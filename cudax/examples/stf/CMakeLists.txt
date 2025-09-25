@@ -44,6 +44,7 @@ set(stf_example_codegen_sources
   launch_scan.cu
   launch_sum.cu
   launch_sum_cub.cu
+  linear_algebra/burger.cu
   linear_algebra/cg_csr.cu
   linear_algebra/cg_csr_stackable.cu
   logical_gates_composition.cu
