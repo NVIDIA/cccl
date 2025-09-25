@@ -51,10 +51,8 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     # TODO: add NVRTC version check, ref nvbug 5243118
     if (
         np.issubdtype(input_array.dtype, np.complexfloating)
-        or (
-            force_inclusive
-            and np.isdtype(input_array.dtype, (np.uint8, np.int8, np.float64))
-        )
+        or (force_inclusive and np.isdtype(input_array.dtype, (np.uint8, np.int8)))
+        or (not force_inclusive and input_array.dtype == np.float64)
         or cc_major >= 9
     ):
         import cuda.cccl.parallel.experimental._cccl_interop
