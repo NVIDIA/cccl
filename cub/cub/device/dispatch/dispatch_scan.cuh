@@ -24,6 +24,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -41,12 +42,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
-
-enum class ForceInclusive
-{
-  Yes,
-  No
-};
 
 namespace detail::scan
 {
