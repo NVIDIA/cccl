@@ -34,8 +34,6 @@
 
 #include "thrust/detail/raw_pointer_cast.h"
 
-using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
-
 template <typename T>
 static void sequence(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -54,7 +52,7 @@ static void sequence(nvbench::state& state, nvbench::type_list<T>)
              });
 }
 
-NVBENCH_BENCH_TYPES(sequence, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(sequence, NVBENCH_TYPE_AXES(integral_types))
   .set_name("sequence")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
@@ -67,7 +65,7 @@ struct seg_size_t
   template <class OffsetT>
   __device__ T operator()(OffsetT i)
   {
-    return d_offsets[i + 1] - d_offsets[i];
+    return static_cast<T>(d_offsets[i + 1] - d_offsets[i]);
   }
 };
 
@@ -91,7 +89,7 @@ static void seg_size(nvbench::state& state, nvbench::type_list<T>)
              });
 }
 
-NVBENCH_BENCH_TYPES(seg_size, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(seg_size, NVBENCH_TYPE_AXES(integral_types))
   .set_name("seg_size")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
