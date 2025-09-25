@@ -114,10 +114,8 @@
 // # define __cccl_lib_execution                            201603L
 // # define __cccl_lib_filesystem                           201703L
 // #  define __cccl_lib_hardware_interference_size 201703L
-#ifdef _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#  define __cccl_lib_has_unique_object_representations 201606L
-#endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#define __cccl_lib_hypot 201603L
+#define __cccl_lib_has_unique_object_representations 201606L
+#define __cccl_lib_hypot                             201603L
 // # define __cccl_lib_incomplete_container_elements        201505L
 #ifndef _LIBCUDACXX_HAS_NO_IS_AGGREGATE
 #  define __cccl_lib_is_aggregate 201703L
