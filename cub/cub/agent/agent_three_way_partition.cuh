@@ -44,6 +44,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_device.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>

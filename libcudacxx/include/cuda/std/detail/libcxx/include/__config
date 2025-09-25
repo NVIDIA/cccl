@@ -119,7 +119,7 @@ extern "C++" {
 
 #  if !defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD) && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) \
     && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
-#    if defined(__linux__) || defined(__GNU__) || defined(__APPLE__) \
+#    if defined(__linux__) || defined(__GNU__) || defined(__APPLE__) || _CCCL_OS(QNX) \
       || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
 #      define _LIBCUDACXX_HAS_THREAD_API_PTHREAD
 #    elif defined(_WIN32)

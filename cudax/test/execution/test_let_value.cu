@@ -26,9 +26,9 @@ namespace
 // Return a different sender when we invoke this custom defined let_value implementation
 struct let_value_test_domain
 {
-  _CCCL_TEMPLATE(class Sender)
-  _CCCL_REQUIRES(::cuda::std::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
-  static auto transform_sender(Sender&&)
+  _CCCL_TEMPLATE(class Sender, class Env)
+  _CCCL_REQUIRES(ex::sender_for<Sender, ex::let_value_t>)
+  static auto transform_sender(ex::set_value_t, Sender&&, const Env&)
   {
     return ex::just(std::string{"hallo"});
   }
@@ -392,15 +392,13 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
 
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
-  auto attrs = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain{}};
-
+  auto env = ex::prop{ex::get_domain, let_value_test_domain{}};
   // The customization will return a different value
   auto sndr = ex::just(std::string{"hello"}) //
-            | ex::write_attrs(attrs) //
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
-  wait_for_value(std::move(sndr), std::string{"hallo"});
+  wait_for_value_with_env(std::move(sndr), env, std::string{"hallo"});
 }
 
 C2H_TEST("let_value can nest", "[adaptors][let_value]")
