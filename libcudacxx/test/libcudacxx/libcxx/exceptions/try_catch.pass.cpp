@@ -47,7 +47,7 @@ __host__ __device__ void test_rethrow_helper()
 {
   _CCCL_TRY
   {
-    _CCCL_THROW Exception();
+    _CCCL_THROW(Exception());
   }
   _CCCL_CATCH (Exception e)
   {
@@ -70,7 +70,7 @@ __host__ __device__ void test()
   // 1. test catch by value
   _CCCL_TRY
   {
-    _CCCL_THROW Exception();
+    _CCCL_THROW(Exception());
   }
   _CCCL_CATCH (Exception e)
   {
@@ -90,7 +90,7 @@ __host__ __device__ void test()
   // 2. test catch by lvalue reference
   _CCCL_TRY
   {
-    _CCCL_THROW Exception();
+    _CCCL_THROW(Exception());
   }
   _CCCL_CATCH (Exception & e)
   {
@@ -110,7 +110,7 @@ __host__ __device__ void test()
   // 3. test catch by const lvalue reference
   _CCCL_TRY
   {
-    _CCCL_THROW Exception();
+    _CCCL_THROW(Exception());
   }
   _CCCL_CATCH (const Exception& e)
   {
@@ -175,7 +175,7 @@ __host__ __device__ void test()
   // 6. test throwing host-only exceptions
   _CCCL_TRY
   {
-    _CCCL_THROW HostException();
+    _CCCL_THROW(HostException());
   }
   _CCCL_CATCH (const HostException& e)
   {

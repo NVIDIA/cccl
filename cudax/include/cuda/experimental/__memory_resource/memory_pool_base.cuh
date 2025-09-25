@@ -296,7 +296,6 @@ public:
       case ::cudaMemPoolAttrReservedMemCurrent:
       case ::cudaMemPoolAttrUsedMemCurrent:
         _CCCL_THROW(::cuda::std::invalid_argument("Invalid attribute passed to set_attribute."));
-        break;
       case ::cudaMemPoolAttrReservedMemHigh:
       case ::cudaMemPoolAttrUsedMemHigh:
         if (__value != 0)
