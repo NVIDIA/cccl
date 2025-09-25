@@ -124,19 +124,27 @@ def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
     return ~((eA | ~eB) & (~eA | eB))
 
 
-ctx = cudastf.context(use_graph=False)
+def test_fhe_decorator():
+    """Test Fully Homomorphic Encryption (FHE) example using @cudastf.jit decorators."""
+    global ctx  # Make ctx accessible to the classes
+    ctx = cudastf.context(use_graph=False)
 
-vA = [3, 3, 2, 2, 17]
-pA = Plaintext(ctx, vA)
-pA.set_symbol("A")
+    vA = [3, 3, 2, 2, 17]
+    pA = Plaintext(ctx, vA)
+    pA.set_symbol("A")
 
-vB = [1, 7, 7, 7, 49]
-pB = Plaintext(ctx, vB)
-pB.set_symbol("B")
+    vB = [1, 7, 7, 7, 49]
+    pB = Plaintext(ctx, vB)
+    pB.set_symbol("B")
 
-eA = pA.encrypt()
-eB = pB.encrypt()
-out = circuit(eA, eB)
+    eA = pA.encrypt()
+    eB = pB.encrypt()
+    out = circuit(eA, eB)
 
-out.decrypt().print_values()
-ctx.finalize()
+    out.decrypt().print_values()
+    ctx.finalize()
+
+
+if __name__ == "__main__":
+    print("Running CUDASTF FHE decorator example...")
+    test_fhe_decorator()
