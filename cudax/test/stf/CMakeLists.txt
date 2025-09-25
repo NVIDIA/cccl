@@ -8,6 +8,7 @@ set(stf_test_sources
   cpp/scoped_graph_task.cu
   cpp/task_get_stream.cu
   cpp/user_streams.cu
+  cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
