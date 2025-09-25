@@ -223,7 +223,7 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
 
 #if _CCCL_STD_VER <= 2017
 template <class _It>
-inline constexpr bool __is_cpp17_contiguous_iterator<__wrap_iter<_It>> = true;
+inline constexpr bool __has_contiguous_traversal<__wrap_iter<_It>> = true;
 #endif // _CCCL_STD_VER <= 2017
 
 template <class _It>
