@@ -49,11 +49,11 @@
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! Defined if RDC is enabled and CUB_DISABLE_CDP is not defined.
 //! Deprecated [Since 3.2]
-#define CUB_RDC_ENABLED _CCCL_RDC_ENABLED
+#  define CUB_RDC_ENABLED
 
-#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! If defined, support for device-side usage of CUB is disabled.
 //! Deprecated [Since 3.2]. Use CCCL_DISABLE_CDP instead.
 #  define CUB_DISABLE_CDP
@@ -63,6 +63,11 @@
 //! Deprecated [Since 3.2]
 #  define CUB_RUNTIME_FUNCTION
 #else // Non-doxygen pass:
+
+#  if _CCCL_HAS_RDC()
+#    define CUB_RDC_ENABLED
+#  endif // _CCCL_HAS_RDC()
+
 #  ifndef CUB_RUNTIME_FUNCTION
 #    define CUB_RUNTIME_FUNCTION _CCCL_CDP_API
 #  endif // CUB_RUNTIME_FUNCTION predefined

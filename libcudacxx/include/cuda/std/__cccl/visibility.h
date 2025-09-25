@@ -147,15 +147,16 @@
 // Parallelism (CDP) and require compiling with Relocatable Device Code (RDC).
 // TODO(bgruber): remove CUB_DISABLE_CDP in CCCL 4.0
 #if defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
-#  define _CCCL_RDC_ENABLED
+#  define _CCCL_HAS_RDC() 1
 // We have RDC, so host and device APIs can call kernels
 #  define _CCCL_CDP_API _CCCL_API
 #else
+#  define _CCCL_HAS_RDC() 0
 // We don't have RDC, only host APIs can call kernels
-#  define _CCCL_CDP_API _CCCL_HOST_API
+#  define _CCCL_CDP_API   _CCCL_HOST_API
 #endif
 
-#ifdef _CCCL_RDC_ENABLED
+#if _CCCL_HAS_RDC()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
 #  endif // CUDA_FORCE_CDP1_IF_SUPPORTED
