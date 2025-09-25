@@ -16,10 +16,10 @@ function(libcudacxx_build_compiler_targets)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
 
-  if (CCCL_USE_LIBCXX)
-    list(APPEND cxx_compile_options "-stdlib=libc++")
-    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
-  endif()
+  #  if (CCCL_USE_LIBCXX)
+  #    list(APPEND cxx_compile_options "-stdlib=libc++")
+  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
+  #  endif()
 
   # Set test specific flags
   list(APPEND cxx_compile_definitions "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")

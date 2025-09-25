@@ -22,7 +22,7 @@ workflows:
   #
   override:
     # libc++
-    - {jobs: ['build'], project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
+    - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
