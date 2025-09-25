@@ -72,10 +72,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {{
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {{%0, %1}}, _d;
-      mov.b128 {{%4, %5}}, _v;
-      atom.cas{3}{5}.b128 _d,[%2],_d,_v;
       mov.b128 _d, {{%0, %1}};
+      mov.b128 _v, {{%4, %5}};
+      atom.cas{3}{5}.b128 _d,[%2],_d,_v;
+      mov.b128 {{%0, %1}}, _d;
     }}
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }})XXX";
 

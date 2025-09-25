@@ -70,9 +70,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {{
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {{%3, %4}}, _v;
+      mov.b128 _v, {{%3, %4}};
       atom.exch{3}{5}.b128 _d,[%2],_v;
-      mov.b128 _d, {{%0, %1}};
+      mov.b128 {{%0, %1}}, _d;
     }}
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }})XXX";
