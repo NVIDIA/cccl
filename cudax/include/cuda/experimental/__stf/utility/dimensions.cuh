@@ -41,7 +41,7 @@ public:
   constexpr pos4() = default;
 
   /// Create a pos4 from its coordinates
-  template <typename IntegralX, typename IntegralY = size_t, typename IntegralZ = size_t, typename IntegralT = size_t>
+  template <typename IntegralX, typename IntegralY = ssize_t, typename IntegralZ = ssize_t, typename IntegralT = ssize_t>
   _CCCL_HOST_DEVICE constexpr explicit pos4(IntegralX x, IntegralY y = 0, IntegralZ z = 0, IntegralT t = 0)
       : x(static_cast<ssize_t>(x))
       , y(static_cast<ssize_t>(y))
