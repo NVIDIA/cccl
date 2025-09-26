@@ -29,7 +29,7 @@ namespace detail::copy_mdspan
 {
 
 template <typename MdspanIn, typename MdspanOut>
-struct CopyMdspan
+struct copy_mdspan_t
 {
   MdspanIn mdspan_in;
   MdspanOut mdspan_out;
