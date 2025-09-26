@@ -25,7 +25,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <bool... _Pred>
+template <bool... _Preds>
 inline constexpr bool __all_v = (_Preds && ...);
 
 _CCCL_END_NAMESPACE_CUDA_STD
