@@ -48,7 +48,7 @@ _Tp* addressof(const _Tp&&) noexcept = delete;
 #else
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
