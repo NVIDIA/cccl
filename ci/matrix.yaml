@@ -21,6 +21,7 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: 'rtx2080', cmake_options: '-DCCCL_ENABLE_ASAN=ON -DCMAKE_BUILD_TYPE=Debug'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

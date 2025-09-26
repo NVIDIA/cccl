@@ -12,13 +12,17 @@
 #   cub.compiler_interface and cccl.compiler_interface_cppXX.
 
 function(cub_build_compiler_targets)
-  set(cuda_compile_options)
+  set(c_compile_options)
   set(cxx_compile_options)
+  set(cuda_compile_options)
+  set(link_options)
   set(cxx_compile_definitions)
 
   cccl_build_compiler_interface(cub.compiler_interface
-    "${cuda_compile_options}"
+    "${c_compile_options}"
     "${cxx_compile_options}"
+    "${cuda_compile_options}"
+    "${link_options}"
     "${cxx_compile_definitions}"
   )
 
