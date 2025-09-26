@@ -44,11 +44,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 _CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::difference_type));
 
+template <class _Tp>
+_CCCL_CONCEPT __has_integral_minus_impl =
+  _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __x, const _Tp& __y)(requires(integral<decltype(__x - __y)>));
+
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template <class _Tp>
-_CCCL_CONCEPT __has_integral_minus = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __x, const _Tp& __y)( //
-  requires(!same_as<_Tp, void*>),
-  requires(integral<decltype(__x - __y)>));
+_CCCL_CONCEPT __has_integral_minus =
+  _CCCL_REQUIRES_EXPR((_Tp))(requires(!same_as<_Tp, void*>), requires(__has_integral_minus_impl<_Tp>));
 
 #if _CCCL_HAS_CONCEPTS()
 
