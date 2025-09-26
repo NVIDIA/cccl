@@ -147,14 +147,14 @@ _CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool _
     }
 
     // Read new thread block dimensions
-    ::dim3 __b(_CUDA_DEVICE::__cluster_get_dim<0>(__result), 1, 1);
+    ::dim3 __b(::cuda::device::__cluster_get_dim<0>(__result), 1, 1);
     if constexpr (__ThreadBlockRank >= 2)
     {
-      __b.y = _CUDA_DEVICE::__cluster_get_dim<1>(__result);
+      __b.y = ::cuda::device::__cluster_get_dim<1>(__result);
     }
     if constexpr (__ThreadBlockRank == 3)
     {
-      __b.z = _CUDA_DEVICE::__cluster_get_dim<2>(__result);
+      __b.z = ::cuda::device::__cluster_get_dim<2>(__result);
     }
     __block_idx = __b;
 
@@ -227,7 +227,7 @@ _CCCL_DEVICE_API void __for_each_canceled_block(bool __is_leader, __UnaryFunctio
 
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_100,
-    (_CUDA_DEVICE::__for_each_canceled_block_sm100(__block_idx, __is_leader, ::cuda::std::move(__uf));),
+    (::cuda::device::__for_each_canceled_block_sm100(__block_idx, __is_leader, ::cuda::std::move(__uf));),
     NV_ANY_TARGET,
     (::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);))
 }
@@ -252,15 +252,15 @@ _CCCL_DEVICE_API void for_each_canceled_block(__UnaryFunction __uf)
                 "For example, call with lambda: for_each_canceled_block([](dim3 block_idx) { ... });");
   if constexpr (__ThreadBlockRank == 1)
   {
-    _CUDA_DEVICE::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
+    ::cuda::device::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 2)
   {
-    _CUDA_DEVICE::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
+    ::cuda::device::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 3)
   {
-    _CUDA_DEVICE::__for_each_canceled_block<3>(
+    ::cuda::device::__for_each_canceled_block<3>(
       threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
   }
 }
@@ -285,7 +285,7 @@ template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 CCCL_DEPRECATED_BECAUSE("Use cuda::device::for_each_canceled_block instead.")
 _CCCL_DEVICE_API void for_each_canceled_block(__UnaryFunction __uf)
 {
-  _CUDA_DEVICE::for_each_canceled_block<__ThreadBlockRank>(::cuda::std::move(__uf));
+  ::cuda::device::for_each_canceled_block<__ThreadBlockRank>(::cuda::std::move(__uf));
 }
 
 _CCCL_END_NAMESPACE_CUDA

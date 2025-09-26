@@ -11,6 +11,8 @@
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/std/cmath>
 #include <cuda/work_stealing>
 
@@ -89,6 +91,13 @@ __global__ void vec_add3(int* a, int* b, int* c, int n)
 {
   cuda::device::for_each_canceled_block<3>([=](dim3 block_idx) {
     vec_add_impl3(a, b, c, n, block_idx);
+  });
+}
+
+__global__ void vec_add1_deprecated(int* a, int* b, int* c, int n)
+{
+  cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
+    vec_add_impl1(a, b, c, n, block_idx);
   });
 }
 
@@ -194,6 +203,16 @@ void test()
       int bpgz = bpgx;
       assert((bpgx * bpgy * bpgz) >= bpg);
       vec_add3<<<dim3(bpgx, bpgy, bpgz), tpb>>>(a, b, c, n);
+    };
+    assert(test(N, fn));
+  }
+
+  // test deprecated version in cuda:: namespace
+  {
+    auto fn = [](int* a, int* b, int* c, int n, int tidx) {
+      int tpb = 256;
+      int bpg = (n + tpb - 1) / tpb;
+      vec_add1_deprecated<<<bpg, tpb>>>(a, b, c, n);
     };
     assert(test(N, fn));
   }
