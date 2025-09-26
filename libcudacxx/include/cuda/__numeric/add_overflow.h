@@ -252,19 +252,31 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   {
     return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) + static_cast<_Common>(__rhs));
   }
-  // Opposite signs
+  // Opposite type signs
   // * unsigned + int < 0
   // * int < 0 + unsigned
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
+    else if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
+    }
+    {
+      const auto __lhs1 = static_cast<_Common>(__lhs);
+      const auto __rhs1 = static_cast<_Common>(__rhs);
+      const auto __sum  = static_cast<_Common>(__lhs1 + __rhs1); // no overflow because of opposite signs
+      using _SignedType = ::cuda::std::conditional_t<is_signed_v<_Lhs>, _Lhs, _Rhs>;
+      if constexpr (is_unsigned_v<_ActualResult>)
+      {
+        const auto __ret = ::cuda::overflow_cast<_ActualResult>(__sum);
+        return overflow_result<_ActualResult>{
+          __ret.value, __sum > ::cuda::std::numeric_limits<_SignedType>::max() || __ret.overflow};
+      }
     }
     const auto __lhs1 = static_cast<_CommonAll>(__lhs);
     const auto __rhs1 = static_cast<_CommonAll>(__rhs);
@@ -285,6 +297,7 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     }
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
   }
+  -
 #endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
 }
 

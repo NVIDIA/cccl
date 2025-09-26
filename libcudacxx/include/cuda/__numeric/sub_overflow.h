@@ -245,24 +245,24 @@ sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     const auto __rhs1 = static_cast<_ActualResult>(__rhs);
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__lhs1 - __rhs1), true};
   }
-  // The result falls into _ActualResult range
+  // The result falls into _Common range
   // * int < 0 - int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
   // * int >= 0 - int < 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above)
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
   {
-    return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) + static_cast<_Common>(__rhs));
+    return ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs) - static_cast<_Common>(__rhs));
   }
   // Opposite signs
-  // * unsigned + int < 0
-  // * int < 0 + unsigned
+  // * unsigned - int < 0
+  // * int < 0 - unsigned
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
+    else if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
     }
@@ -285,7 +285,7 @@ sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     }
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sub), false}; // because of opposite signs
   }
-#endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // defined(_CCCL_BUILTIN_SUB_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
 }
 
 //! @brief Subtracts two numbers \p __lhs and \p __rhs with overflow detection
