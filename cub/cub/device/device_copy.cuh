@@ -171,7 +171,7 @@ struct DeviceCopy
   //! Preconditions
   //! +++++++++++++
   //!
-  //!    * The source and destination mdspans must have identical extents (same dimensions and sizes).
+  //!    * The source and destination mdspans must have identical extents (same ranks and sizes).
   //!    * The source and destination mdspans data handle must not be nullptr if the size is not 0.
   //!    * The underlying memory of the source and destination must not overlap.
   //!    * Both mdspans must point to device memory.
