@@ -52,7 +52,7 @@ struct __ensure_current_device
 
   //! @brief If the \p __original_device was not equal to \p __target_device sets the current device back to
   //! \p __original_device
-  ~__ensure_current_device()
+  ~__ensure_current_device() noexcept(false)
   {
     if (__original_device_ != __target_device_)
     {

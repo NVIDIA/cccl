@@ -34,7 +34,7 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
-#include <cuda/std/__new_>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
@@ -109,25 +109,39 @@ public:
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
+      ({
+        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared))
+        {
           asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
                          static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
                        "r"(static_cast<::cuda::std::uint32_t>(__expected))
                        : "memory");
-        } else if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
+        }
+        else if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared))
+        {
           ::__trap();
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
+        }
+        else
+        {
+          ::cuda::std::__construct_at(&__b->__barrier, __expected);
+        }
+      }),
       NV_PROVIDES_SM_80,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
+      ({
+        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared))
+        {
           asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
                          static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
                        "r"(static_cast<::cuda::std::uint32_t>(__expected))
                        : "memory");
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
+        }
+        else
+        {
+          ::cuda::std::__construct_at(&__b->__barrier, __expected);
+        }
+      }),
       NV_ANY_TARGET,
-      (new (&__b->__barrier) __barrier_base(__expected);))
+      ({ ::cuda::std::__construct_at(&__b->__barrier, __expected); }))
   }
 
   [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)

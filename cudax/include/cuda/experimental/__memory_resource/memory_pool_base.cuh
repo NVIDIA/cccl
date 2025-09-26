@@ -29,6 +29,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__stream/internal_streams.cuh>
@@ -164,7 +165,7 @@ private:
   //! @throws cuda_error If the creation of the CUDA memory pool failed.
   //! @returns The created CUDA memory pool.
   [[nodiscard]] static cudaMemPool_t
-  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id) noexcept
+  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id)
   {
     ::cudaMemPoolProps __pool_properties{};
     __pool_properties.allocType   = ::cudaMemAllocationTypePinned;
@@ -185,14 +186,12 @@ private:
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
 #else // _CCCL_CTK_BELOW(12, 6)
-        ::cuda::std::__throw_invalid_argument(
-          "Host pinned memory pools are unavailable in this CUDA "
-          "version");
+        _CCCL_THROW(::cuda::std::invalid_argument("Host pinned memory pools are unavailable in this CUDA version"));
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:
-        ::cuda::std::__throw_invalid_argument("Invalid memory pool location type");
+        _CCCL_THROW(::cuda::std::invalid_argument("Invalid memory pool location type"));
     }
 
     ::cudaMemPool_t __cuda_pool_handle{};
@@ -296,15 +295,13 @@ public:
     {
       case ::cudaMemPoolAttrReservedMemCurrent:
       case ::cudaMemPoolAttrUsedMemCurrent:
-        ::cuda::std::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
-        break;
+        _CCCL_THROW(::cuda::std::invalid_argument("Invalid attribute passed to set_attribute."));
       case ::cudaMemPoolAttrReservedMemHigh:
       case ::cudaMemPoolAttrUsedMemHigh:
         if (__value != 0)
         {
-          ::cuda::std::__throw_invalid_argument(
-            "set_attribute: It is illegal to set this "
-            "attribute to a non-zero value.");
+          _CCCL_THROW(::cuda::std::invalid_argument("set_attribute: It is illegal to set this attribute to a non-zero "
+                                                    "value."));
         }
         break;
       default:

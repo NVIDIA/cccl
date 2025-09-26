@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -71,7 +72,7 @@ public:
   {
     if (__indexing_ == _Indexing::__manual)
     {
-      ::cuda::std::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
+      _CCCL_THROW(format_error("using automatic argument numbering in manual argument numbering mode"));
     }
     if (__indexing_ == _Indexing::__unknown)
     {
@@ -88,7 +89,7 @@ public:
   {
     if (__indexing_ == _Indexing::__automatic)
     {
-      ::cuda::std::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
+      _CCCL_THROW(format_error("using manual argument numbering in automatic argument numbering mode"));
     }
     if (__indexing_ == _Indexing::__unknown)
     {
