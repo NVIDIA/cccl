@@ -34,7 +34,12 @@ int main()
 
   // An environment we use to pass all necessary information to CUB
   cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
-  cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus{}, 0, env);
+  auto error = cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus{}, 0, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::Reduce failed: " << cudaGetErrorString(error) << "\n";
+    exit(EXIT_FAILURE);
+  }
 
   auto h_out = cudax::make_async_buffer<float>(stream, cudax::pinned_memory_resource{}, d_out);
 
