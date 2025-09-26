@@ -115,7 +115,7 @@ C2H_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]")
   }
   // Count elements that weren't overwritten (should remain as 42s)
   // Due to strided layout, not all elements in the contiguous buffer are accessed
-  auto count                          = thrust::count_if(d_output.begin(), d_output.end(), thrust::detail::equal_to_value<int>{42});
+  auto count = thrust::count_if(d_output.begin(), d_output.end(), thrust::detail::equal_to_value<int>{42});
   constexpr size_t expected_untouched = num_items - (100 * 100 - 1);
   REQUIRE(count == expected_untouched);
 }
