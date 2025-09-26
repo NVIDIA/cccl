@@ -20,33 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_trivially_default_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
+is_trivially_default_constructible : bool_constant<_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_trivially_default_constructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp);
-
-#else
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_default_constructible : public is_trivially_constructible<_Tp>
-{};
-
-template <class _Tp>
-inline constexpr bool is_trivially_default_constructible_v = is_trivially_default_constructible<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) &&
-       // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
