@@ -70,6 +70,16 @@ using ::cuda::std::execution::__query_or;
 using ::cuda::std::execution::__query_result_or_t;
 // NOLINTEND(misc-unused-using-decls)
 
+struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_source;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_token;
+
+template <class _Callback>
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback;
+
+template <class _Token, class _Callback>
+using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
+
 template <class _Env, class _Query, bool _Default>
 _CCCL_CONCEPT __nothrow_queryable_with_or =
   bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
@@ -140,12 +150,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT set_stopped_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT start_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT connect_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t;
 
 template <class _Sch>
 using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
 using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+
+template <class _Sndr, class _Env>
+using transform_sender_result_t _CCCL_NODEBUG_ALIAS =
+  decltype(declval<transform_sender_t>()(declval<_Sndr>(), declval<_Env>()));
 
 #if _CCCL_HOST_COMPILATION()
 template <class _Sndr, class _Rcvr>
@@ -197,6 +212,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT get_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_previous_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_delegation_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_forward_progress_guarantee_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT get_available_parallelism_t;
 template <class _Tag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_t;
