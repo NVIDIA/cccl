@@ -312,15 +312,15 @@ _CCCL_HOST_DEVICE constexpr bool all_nonzero_equal()
 template <typename H, typename... Ts>
 _CCCL_HOST_DEVICE constexpr auto first_nonzero_value(H head, Ts... values)
 {
-  for (size_t v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
+  for (auto v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
   {
     if (v != 0)
     {
       return v;
     }
   }
-  _CCCL_ASSERT(false, "Can never happen because at least one size needs to be non-zero");
-  return size_t{0};
+  // we only reach here when all input are not contiguous and the output has a void value type
+  return H{1};
 }
 
 template <typename T>
