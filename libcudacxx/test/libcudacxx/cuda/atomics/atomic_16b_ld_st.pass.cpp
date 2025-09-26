@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
-// UNSUPPORTED: windows && pre-sm-70
+// UNSUPPORTED: pre-sm-70
+// UNSUPPORTED: windows
 
 // <cuda/atomic>
 
@@ -53,11 +53,12 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
+#if __cccl_ptx_isa >= 840
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70,
     (test<local_memory_selector, cuda::thread_scope_thread>(); test<shared_memory_selector, cuda::thread_scope_block>();
      test<global_memory_selector, cuda::thread_scope_block>();
      test<global_memory_selector, cuda::thread_scope_device>();))
-
+#endif
   return 0;
 }
