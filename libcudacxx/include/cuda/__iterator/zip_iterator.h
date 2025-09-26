@@ -241,19 +241,23 @@ public:
       : __current_(::cuda::std::move(__iter.__current_))
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API static constexpr reference
-  __zip_op_star(const _Iterators&... __iters) noexcept(noexcept(reference{*__iters...}))
+  // needs to be a function object to avoid passing a function pointer to apply(), which confuses nvc++
+  struct __zip_op_star
   {
-    return reference{*__iters...};
-  }
+    _CCCL_EXEC_CHECK_DISABLE
+    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
+      noexcept(noexcept(reference{*__iters...}))
+    {
+      return reference{*__iters...};
+    }
+  };
 
   //! @brief Dereferences the @c zip_iterator
   //! @returns A tuple of references obtained by referencing every stored iterator
   [[nodiscard]] _CCCL_API constexpr auto operator*() const
-    noexcept(noexcept(::cuda::std::apply(__zip_op_star, __current_)))
+    noexcept(noexcept(::cuda::std::apply(__zip_op_star{}, __current_)))
   {
-    return ::cuda::std::apply(__zip_op_star, __current_);
+    return ::cuda::std::apply(__zip_op_star{}, __current_);
   }
 
   struct __zip_op_index
