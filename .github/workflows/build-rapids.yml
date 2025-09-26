@@ -124,7 +124,7 @@ jobs:
               cat <<____EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
                .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
-               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j0 -v || exec /bin/bash -li'
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
           ____EOF
               echo ""
               echo "For additional information, see:"
