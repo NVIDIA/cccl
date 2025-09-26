@@ -34,7 +34,7 @@ struct copy_mdspan_t
   MdspanIn mdspan_in;
   MdspanOut mdspan_out;
 
-  _CCCL_API CopyMdspan(MdspanIn mdspan_in, MdspanOut mdspan_out)
+  _CCCL_API copy_mdspan_t(MdspanIn mdspan_in, MdspanOut mdspan_out)
       : mdspan_in{mdspan_in}
       , mdspan_out{mdspan_out}
   {}
@@ -71,7 +71,7 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
-  return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), CopyMdspan{mdspan_in, mdspan_out}, stream);
+  return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), copy_mdspan_t{mdspan_in, mdspan_out}, stream);
 }
 
 } // namespace detail::copy_mdspan
