@@ -10,8 +10,8 @@ Defined in the ``<cuda/utility>`` header.
     namespace cuda {
 
     template <typename T, typename R>
-    __host__ __device__
-    [[nodiscard]] constexpr bool in_range(T value, R start, R end) noexcept;
+    [[nodiscard]] __host__ __device__ constexpr 
+    bool in_range(T value, R start, R end) noexcept;
 
     } // namespace cuda
 
