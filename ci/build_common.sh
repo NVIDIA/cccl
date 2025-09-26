@@ -125,8 +125,7 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-# Set PARALLEL_LEVEL to nproc - 1, but ensure it's at least 1 for single-core systems  
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}
+readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
