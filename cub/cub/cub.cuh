@@ -39,7 +39,7 @@
 #ifndef CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
 #if _CCCL_COMPILER(NVRTC)
 #  error \
-    "<cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+    "Including <cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK to disable this warning."
 #endif // _CCCL_COMPILER(NVRTC)
 #endif // CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
 
