@@ -114,7 +114,7 @@ public:
   {
     const auto& e_place = get_exec_place();
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     /* Select the stream(s) */
     if (e_place.is_grid())
@@ -149,7 +149,7 @@ public:
         // multiple streams.
         if (!getenv("CUDASTF_DO_NOT_REUSE_STREAMS"))
         {
-          for (auto& e : prereqs)
+          for (auto& e : ready_prereqs)
           {
             // fprintf(stderr, "outbounds %d (%s)\n", e->outbound_deps.load(), e->get_symbol().c_str());
             if (e->outbound_deps == 0)
@@ -191,7 +191,7 @@ public:
     auto& s0 = e_place.is_grid() ? stream_grid[0] : dstream;
 
     /* Ensure that stream depend(s) on prereqs */
-    submitted_events = stream_async_op(ctx, s0, prereqs);
+    submitted_events = stream_async_op(ctx, s0, ready_prereqs);
     if (ctx.generate_event_symbols())
     {
       submitted_events.set_symbol("Submitted" + get_symbol());
@@ -208,6 +208,8 @@ public:
     {
       dot->template add_vertex<task, logical_data_untyped>(*this);
     }
+
+    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
