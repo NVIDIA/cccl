@@ -226,7 +226,7 @@ class __tuple_leaf;
 _CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _CCCL_API inline void swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x,
-                           __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
+                           __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
 {
   swap(__x.get(), __y.get());
 }
@@ -312,7 +312,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -398,7 +398,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -488,7 +488,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -603,7 +603,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
   {
     ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
   }
@@ -957,7 +957,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline void swap(tuple& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(tuple& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
   {
     __base_.swap(__t.__base_);
   }
@@ -995,8 +995,8 @@ template <class _Alloc, class... _Tp>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
 
 template <class... _Tp>
-_CCCL_API inline enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
-swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+_CCCL_API inline enable_if_t<__all<is_nothrow_swappable_v<_Tp>...>::value, void>
+swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
 {
   __t.swap(__u);
 }
