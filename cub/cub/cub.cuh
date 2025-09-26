@@ -36,6 +36,11 @@
 // Static configuration
 #include <cub/config.cuh>
 
+#if _CCCL_COMPILER(NVRTC)
+#  error \
+    "<cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>)."
+#endif // _CCCL_COMPILER(NVRTC)
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
