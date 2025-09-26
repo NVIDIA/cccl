@@ -116,12 +116,14 @@ private:
           if ((frozen_mode == access_mode::rw) && (data_nodes[ctx_offset].value().effective_mode == access_mode::read))
           {
             static int warning_count = 0;
-            if (warning_count < 100) {
+            if (warning_count < 100)
+            {
               fprintf(stderr,
                       "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
                       symbol.empty() ? "(no symbol)" : symbol.c_str());
               warning_count++;
-              if (warning_count == 100) {
+              if (warning_count == 100)
+              {
                 fprintf(stderr, "Warning: Suppressing further write mode warnings (reached limit of 100)\n");
               }
             }
