@@ -22,7 +22,6 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/util/align.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>

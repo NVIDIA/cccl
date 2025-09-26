@@ -39,7 +39,6 @@ jobs:
           runner:  ${{ fromJSON(inputs.producers)[0].runner }}
           cuda:    ${{ fromJSON(inputs.producers)[0].cuda }}
           host:    ${{ fromJSON(inputs.producers)[0].host }}
-          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}
 
   consumers:
     name: "${{ matrix.name }}"
@@ -66,4 +65,3 @@ jobs:
           runner:  ${{ matrix.runner }}
           cuda:    ${{ matrix.cuda }}
           host:    ${{ matrix.host }}
-          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}

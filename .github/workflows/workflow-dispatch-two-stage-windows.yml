@@ -36,7 +36,6 @@ jobs:
           id:      ${{ fromJSON(inputs.producers)[0].id }}
           command: ${{ fromJSON(inputs.producers)[0].command }}
           image:   ${{ fromJSON(inputs.producers)[0].image }}
-          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}
 
   consumers:
     name: ${{ matrix.name }}
@@ -60,4 +59,3 @@ jobs:
           id:      ${{ matrix.id }}
           command: ${{ matrix.command }}
           image:   ${{ matrix.image }}
-          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}
