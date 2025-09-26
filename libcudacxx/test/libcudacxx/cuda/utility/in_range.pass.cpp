@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test()
 {
   assert(cuda::in_range(T{5}, U{0}, U{10}));
   assert(!cuda::in_range(T{15}, U{0}, U{10}));
-  assert(!cuda::in_range(T{10}, U{0}, U{10})); // end is exclusive
+  assert(cuda::in_range(T{10}, U{0}, U{10}));
 
   if constexpr (cuda::std::is_signed_v<T> && cuda::std::is_unsigned_v<U>)
   {

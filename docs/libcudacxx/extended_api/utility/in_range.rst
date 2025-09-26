@@ -15,9 +15,9 @@ Defined in the ``<cuda/utility>`` header.
 
     } // namespace cuda
 
-Checks whether a value ``value`` is within the range ``[start, end)``.
+Checks whether a value ``value`` is within the range ``[start, end]``, inclusive.
 
-For cases involving signed types or mixed signed/unsigned types, the function uses `cuda::std::cmp_greater_equal <https://en.cppreference.com/w/cpp/utility/intcmp.html>`__ and `cuda::std::cmp_less <https://en.cppreference.com/w/cpp/utility/intcmp.html>`__ to perform safe comparisons without undefined behavior and to avoid implicit conversion warnings.
+For cases involving signed types or mixed signed/unsigned types, the function uses `cuda::std::cmp_greater_equal <https://en.cppreference.com/w/cpp/utility/intcmp.html>`__ and `cuda::std::cmp_less_equal <https://en.cppreference.com/w/cpp/utility/intcmp.html>`__ to perform safe comparisons without undefined behavior and to avoid implicit conversion warnings.
 
 **Template Parameters**
 
@@ -32,7 +32,7 @@ For cases involving signed types or mixed signed/unsigned types, the function us
 
 **Return Value**
 
-- ``true`` if ``value`` is in the range ``[start, end)``, ``false`` otherwise.
+- ``true`` if ``value`` is in the range ``[start, end]``, ``false`` otherwise.
 
 **Constraints**
 
@@ -56,24 +56,24 @@ Example
 
     __global__ void in_range_kernel() {
         // unsigned integers
-        assert(cuda::in_range(5u, 1u, 10u));   // 5  is in the range     [1, 10)
-        assert(!cuda::in_range(15u, 1u, 10u)); // 15 is NOT in the range [1, 10)
-        assert(cuda::in_range(1u, 1u, 10u));   // 1  is in the range     [1, 10)
-        assert(!cuda::in_range(10u, 1u, 10u)); // 10 is NOT in the range [1, 10)
+        assert(cuda::in_range(5u, 1u, 10u));   // 5  is in the range     [1, 10]
+        assert(!cuda::in_range(15u, 1u, 10u)); // 15 is NOT in the range [1, 10]
+        assert(cuda::in_range(1u, 1u, 10u));   // 1  is in the range     [1, 10]
+        assert(cuda::in_range(10u, 1u, 10u));  // 10 is in the range     [1, 10]
 
         // signed integers
-        assert(cuda::in_range(-5, -10, 0));    // -5 is in the range    [-10, 0)
-        assert(!cuda::in_range(5, -10, 0));    // 5 is NOT in the range [-10, 0)
+        assert(cuda::in_range(-5, -10, 0));    // -5 is in the range    [-10, 0]
+        assert(!cuda::in_range(5, -10, 0));    // 5 is NOT in the range [-10, 0]
 
         // Mixed signed/unsigned (safe comparisons)
-        assert(!cuda::in_range(-1, 0u, 10u));  // -1 is NOT in the range [0, 10)
-        assert(cuda::in_range(5, 0u, 10u));    // 5 is in the range      [0, 10)
+        assert(!cuda::in_range(-1, 0u, 10u));  // -1 is NOT in the range [0, 10]
+        assert(cuda::in_range(5, 0u, 10u));    // 5 is in the range      [0, 10]
     }
 
     int main() {
-        kernel<<<1, 1>>>();
+        in_range_kernel<<<1, 1>>>();
         cudaDeviceSynchronize();
         return 0;
     }
 
-`See the example in Compiler Explorer 🔗 <https://godbolt.org/z/8GxzY67eW>`_
+`See the example in Compiler Explorer 🔗 <https://godbolt.org/z/nj3W7WY4d>`_

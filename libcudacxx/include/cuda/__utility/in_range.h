@@ -47,11 +47,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
     const auto __end1         = static_cast<_UnsignedCommonType>(__end);
     const auto __v1           = static_cast<_UnsignedCommonType>(__v);
     const auto __range        = __end1 - __start1;
-    return (__v1 - __start1) < __range;
+    return (__v1 - __start1) <= __range;
   }
   else
   {
-    return ::cuda::std::cmp_greater_equal(__v, __start) && ::cuda::std::cmp_less(__v, __end);
+    return ::cuda::std::cmp_greater_equal(__v, __start) && ::cuda::std::cmp_less_equal(__v, __end);
   }
 }
 
