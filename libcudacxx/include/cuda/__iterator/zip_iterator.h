@@ -79,7 +79,9 @@ struct __zip_iter_constraints
   static constexpr bool __all_three_way_comparable = (::cuda::std::three_way_comparable<_Iterators> && ...);
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  static constexpr bool __all_sized_sentinel = (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...);
+  // Our C++17 iterators sometimes do not satisfy `sized_sentinel_for` but they should all be random_access
+  static constexpr bool __all_sized_sentinel =
+    (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...) || __all_random_access;
   static constexpr bool __all_nothrow_iter_movable =
     (noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iterators&>())) && ...)
     && (::cuda::std::is_nothrow_move_constructible_v<::cuda::std::iter_rvalue_reference_t<_Iterators>> && ...);
