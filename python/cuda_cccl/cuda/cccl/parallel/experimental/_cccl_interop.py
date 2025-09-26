@@ -18,6 +18,8 @@ import numpy as np
 from numba import cuda, types
 from numba.core.extending import as_numba_type, intrinsic
 
+import cuda.bindings.runtime as cudart  # type: ignore
+
 # TODO: adding a type-ignore here because `cuda` being a
 # namespace package confuses mypy when `cuda.<something_else>`
 # is installed, but not `cuda.cccl`. For namespace packages,
@@ -372,6 +374,30 @@ def _check_compile_result(cubin: bytes):
     return temp_cubin_file.name
 
 
+def _should_check_sass_for_ctk_version() -> bool:
+    """
+    Check if we should verify absence of LDL/STL instructions based on CTK version.
+    Disabled for CTK < 13.1 due to nvrtc bug (nvbug 5243118).
+
+    Returns True if CTK version is 13.1 or higher, False otherwise.
+    If version detection fails, returns False (disable SASS checks).
+    """
+    err, runtime_version = cudart.cudaRuntimeGetVersion()
+
+    if err != cudart.cudaError_t.cudaSuccess:
+        warnings.warn(
+            f"CUDA runtime version query failed with error {err}. "
+            "Disabling SASS verification for LDL/STL instructions.",
+            UserWarning,
+        )
+        return False
+
+    major = runtime_version // 1000
+    minor = (runtime_version % 1000) // 10
+    # Bug is fixed in CTK 13.1+
+    return (major > 13) or (major == 13 and minor >= 1)
+
+
 # this global variable controls whether the compile result is checked
 # for LDL/STL instructions. Should be set to `True` for testing only.
 _check_sass: bool = False
@@ -395,7 +421,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         **kwargs,
     )
 
-    if _check_sass:
+    # Only check SASS if enabled AND CTK version is 13.1+
+    # (nvbug 5243118 causes false positives in earlier versions)
+    if _check_sass and _should_check_sass_for_ctk_version():
         cubin = result._get_cubin()
         temp_cubin_file_name = _check_compile_result(cubin)
         os.unlink(temp_cubin_file_name)

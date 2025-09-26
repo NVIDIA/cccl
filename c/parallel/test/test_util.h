@@ -30,6 +30,21 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/types.h>
 
+// Check if CTK version allows SASS checks for LDL/STL instructions
+// This addresses nvbug 5243118: nvrtc generates LDL/STL instructions prior to CTK 13.1
+// where nvcc would not generate them. Since c.parallel ALWAYS uses nvrtc internally to compile
+// kernel template instantiations (not nvcc), we must disable SASS checks for CTK versions prior to 13.1.
+inline bool ctk_version_allows_sass_check()
+{
+#if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
+  // Bug is fixed in CTK 13.1+
+  return (__CUDACC_VER_MAJOR__ > 13) || (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1);
+#else
+  // Conservative: disable if version unknown
+  return false;
+#endif
+}
+
 inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 {
   namespace fs = std::filesystem;
