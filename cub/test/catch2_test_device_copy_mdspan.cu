@@ -34,8 +34,8 @@ C2H_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]")
 C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts", "[copy][mdspan]")
 {
   constexpr size_t num_items = 10000;
-  c2h::device_vector<int> d_input(num_items);
-  c2h::device_vector<int> d_output(num_items);
+  c2h::device_vector<int> d_input(num_items, thrust::no_init);
+  c2h::device_vector<int> d_output(num_items, thrust::no_init);
   thrust::sequence(d_input.begin(), d_input.end(), 0);
   thrust::fill(d_output.begin(), d_output.end(), 42);
 
