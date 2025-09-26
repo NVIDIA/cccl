@@ -116,7 +116,8 @@ private:
   {
     return NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (::cuda::ptx::elect_sync(~0) && linear_tid < 32), //
+      ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
+        linear_tid >= ::cuda::round_down(block_threads - 1, 32) && ::cuda::ptx::elect_sync(~0u)),
       NV_IS_DEVICE,
       (linear_tid == 0));
   }
@@ -156,6 +157,8 @@ private:
            num_bytes,
            &temp_storage.mbarrier_handle);));
 #endif // __cccl_ptx_isa >= 800
+      // Needed for arrival on mbarrier in Commit()
+      num_bytes_bulk_total += num_bytes;
     }
   }
 
@@ -186,7 +189,6 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    num_bytes_bulk_total += num_bytes;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (__copy_aligned_async_bulk(smem_dst, gmem_src, num_bytes);),
@@ -312,28 +314,28 @@ public:
     {
       const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, minimum_align);
       const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
-      const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
       const int head_padding_bytes = (minimum_align - align_diff) % minimum_align;
+      const auto actual_dst_ptr    = dst_ptr + head_padding_bytes;
+      const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
       const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, minimum_align);
-      __copy_aligned(dst_ptr + head_padding_bytes + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
-      // Peeling
-      static_assert(block_threads >= minimum_align - 1);
+      __copy_aligned(actual_dst_ptr + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
 
-      // Peel head
-      if (const int idx = linear_tid; idx < head_peeling_bytes)
+      // Peel head and tail
+      // Make sure we have enough threads for the worst case of minimum_align bytes on each side.
+      static_assert(block_threads >= 2 * (minimum_align - 1));
+      // |-------------head--------------|--------------------------tail--------------------------|
+      // 0, 1, ... head_peeling_bytes - 1, head_peeling_bytes + num_bytes_bulk, ..., num_bytes - 1
+      const int begin_offset = linear_tid < head_peeling_bytes ? 0 : num_bytes_bulk;
+      if (const int idx = begin_offset + linear_tid; idx < num_bytes)
       {
-        dst_ptr[head_padding_bytes + idx] = src_ptr[idx];
+        actual_dst_ptr[idx] = src_ptr[idx];
       }
-      // Peel tail
-      if (const int idx = head_peeling_bytes + num_bytes_bulk + linear_tid; idx < num_bytes)
-      {
-        dst_ptr[head_padding_bytes + idx] = src_ptr[idx];
-      }
-      return {::cuda::ptr_rebind<T>(dst_ptr + head_padding_bytes), size(gmem_src)};
+      return {::cuda::ptr_rebind<T>(actual_dst_ptr), size(gmem_src)};
     }
   }
 
   // Avoid need to explicitly specify `T` for non-const src.
+  //! @brief Convenience overload, see `CopyAsync(span<char>, span<const T>)`.
   template <typename T, int GmemAlign = alignof(T)>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<T> gmem_src)
@@ -358,6 +360,7 @@ public:
           ::cuda::ptx::space_shared,
           &temp_storage.mbarrier_handle,
           num_bytes_bulk_total);
+        num_bytes_bulk_total = 0u;
       } //
        __syncthreads();),
       NV_PROVIDES_SM_80,
@@ -377,7 +380,6 @@ public:
     while (!__try_wait())
       ;
     phase_parity ^= 1u;
-    num_bytes_bulk_total = 0u;
   }
 
   // Having these as static members does require using "template" in user code which is kludgy.
