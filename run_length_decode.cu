@@ -8,87 +8,112 @@
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/functional>
 
+#include <algorithm>
+#include <ranges>
 #include <iostream>
-#include <iterator>
 
 template <typename ValueType, typename CountType>
 struct run {
   ValueType value;
   CountType count;
-  CountType offset;
+  CountType offset; // Offset where we should begin outputing the run.
+  CountType run_id; // 1-index of the run in the input sequence; subtract by 1 to get the 0-index.
 
-  __host__ __device__ run()
-    : value(ValueType{}), count(0), offset(0) {}
-  __host__ __device__ run(ValueType value, CountType count)
-    : value(value), count(count), offset(0) {}
-  __host__ __device__ run(ValueType value, CountType count, CountType offset)
-    : value(value), count(count), offset(offset) {}
+  __host__ __device__ run(ValueType value = ValueType{}, CountType count = 0,
+                          CountType offset = 0, CountType run_id = 1)
+    : value(value), count(count), offset(offset), run_id(run_id) {}
   run(run const& other) = default;
   run& operator=(run const& other) = default;
 
   __host__ __device__ friend run operator+(run l, run r) {
-    return run{r.value, r.count, l.offset + l.count + r.offset};
+    return run{r.value, r.count, l.offset + l.count + r.offset, l.run_id + r.run_id};
   }
 };
 
-template <typename OutputIterator, typename ValueType, typename CountType>
+template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
 struct expand {
   OutputIterator out;
-  cuda::std::size_t out_size;
+  CountType out_size;
+  CountType runs_size;
+  ExpandedSizeIterator expanded_size;
 
   __host__ __device__
-  expand(OutputIterator out, cuda::std::size_t out_size)
-    : out(out), out_size(out_size) {}
+  expand(OutputIterator out, CountType out_size, CountType runs_size, ExpandedSizeIterator expanded_size)
+    : out(out), out_size(out_size), runs_size(runs_size), expanded_size(expanded_size) {}
 
+  template <typename ValueType>
   __host__ __device__
   CountType operator()(run<ValueType, CountType> r) const {
-    printf("expanding %d into out[%llu:%llu]\n", r.value, r.offset, r.offset + r.count);
-    thrust::fill(thrust::seq,
-      out + r.offset, out + cuda::minimum()(r.offset + r.count, out_size), r.value);
-    return r.offset + r.count;
+    cuda::std::size_t end = cuda::minimum()(r.offset + r.count, out_size);
+    thrust::fill(thrust::seq, out + r.offset, out + end, r.value);
+    if (r.run_id == runs_size) // If we're the last run, write the expanded size.
+      *expanded_size = end;
+    return end;
   }
 };
 
-template <typename ValueIterator, typename CountIterator, typename OutputIterator>
-void run_length_decode(
-  ValueIterator values,
-  CountIterator counts,
-  cuda::std::size_t runs_size,
-  OutputIterator out,
-  cuda::std::size_t out_size)
-{
-  using ValueT = typename ValueIterator::value_type;
-  using CountT = typename CountIterator::value_type;
-  using RunT = run<ValueT, CountT>;
+template <typename ValueIterator, typename CountIterator, typename OutputIterator, typename CountType>
+OutputIterator run_length_decode(ValueIterator values, CountIterator counts, CountType runs_size,
+                                 OutputIterator out, CountType out_size) {
+  using ValueType = typename ValueIterator::value_type;
+
+  // Zip the values and counts together and convert the resulting tuples to a named struct.
   auto runs = thrust::make_transform_iterator(
     thrust::make_zip_iterator(values, counts),
-    [] __host__ __device__ (thrust::tuple<ValueT, CountT> tup) {
+    [] __host__ __device__ (thrust::tuple<ValueType, CountType> tup) {
       return run{thrust::get<0>(tup), thrust::get<1>(tup)};
     });
+
+  // Allocate storage for the expanded size. If we were using CUB directly, we could read this
+  // from the final ScanTileState.
+  thrust::device_vector<CountType> expanded_size(1);
+
+  // Iterator that writes the expanded sequence to the output and discards the actual scan results.
   auto expand_out = thrust::make_transform_output_iterator(
-    thrust::make_discard_iterator(),
-    expand<OutputIterator, ValueT, CountT>(out, out_size));
+    thrust::make_discard_iterator(), expand(out, out_size, runs_size, expanded_size.begin()));
+
+  // Scan to compute outut offsets and then write the expanded sequence.
   thrust::inclusive_scan(thrust::device, runs, runs + runs_size, expand_out);
+
+  // Calculate the end of the output sequence.
+  return out + expanded_size[0];
 }
 
 int main() {
-  cuda::std::size_t size = 32;
-  cuda::std::size_t repeat = 4;
+  using ValueType = cuda::std::int32_t;
+  using CountType = cuda::std::size_t;
 
-  thrust::device_vector<cuda::std::int32_t> values(size);
+  CountType size = 8192;
+  CountType repeat = 4;
+
+  thrust::device_vector<ValueType> values(size);
   thrust::sequence(thrust::device, values.begin(), values.end(), 0);
 
-  thrust::device_vector<cuda::std::size_t> counts(size);
+  thrust::device_vector<CountType> counts(size);
   thrust::fill(thrust::device, counts.begin(), counts.end(), repeat);
 
-  thrust::device_vector<cuda::std::int32_t> output(size * repeat);
+  thrust::device_vector<ValueType> output(size * repeat);
 
-  run_length_decode(values.begin(), counts.begin(), values.size(), output.begin(), output.size());
+  auto out_end = run_length_decode(values.begin(), counts.begin(), values.size(),
+                                   output.begin(), output.size());
 
-  thrust::copy(output.begin(), output.end(), std::ostream_iterator<cuda::std::int32_t>(std::cout, "\n"));
+  if (out_end - output.begin() != size * repeat) throw int{};
+
+  thrust::host_vector<ValueType> observed(size * repeat);
+  thrust::copy(output.begin(), out_end, observed.begin());
+
+  auto gold = std::views::iota(CountType{0})
+              | std::views::transform([=](auto x) {
+                  return std::views::iota(CountType{0}, repeat)
+                      | std::views::transform([=](auto){ return x; });
+                })
+              | std::views::join;
+
+  if (!std::equal(observed.begin(), observed.end(), gold.begin())) throw int{};
 }
