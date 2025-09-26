@@ -26,7 +26,6 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,29 +11,31 @@
 
 // time_point
 
-// template <class Duration2>
-//   time_point(const time_point<clock, Duration2>& t);
+// template <cuda/std/class Duration2>
+//   time_point(const time_point<cuda/std/clock, Duration2>& t);
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 
 #include "test_macros.h"
 
+__host__ __device__ constexpr bool test()
+{
+  using Clock     = cuda::std::chrono::system_clock;
+  using Duration1 = cuda::std::chrono::microseconds;
+  using Duration2 = cuda::std::chrono::milliseconds;
+
+  cuda::std::chrono::time_point<Clock, Duration2> t2(Duration2(3));
+  cuda::std::chrono::time_point<Clock, Duration1> t1 = t2;
+  assert(t1.time_since_epoch() == Duration1(3000));
+
+  return true;
+}
+
 int main(int, char**)
 {
-  typedef cuda::std::chrono::system_clock Clock;
-  typedef cuda::std::chrono::microseconds Duration1;
-  typedef cuda::std::chrono::milliseconds Duration2;
-  {
-    cuda::std::chrono::time_point<Clock, Duration2> t2(Duration2(3));
-    cuda::std::chrono::time_point<Clock, Duration1> t1 = t2;
-    assert(t1.time_since_epoch() == Duration1(3000));
-  }
-  {
-    constexpr cuda::std::chrono::time_point<Clock, Duration2> t2(Duration2(3));
-    constexpr cuda::std::chrono::time_point<Clock, Duration1> t1 = t2;
-    static_assert(t1.time_since_epoch() == Duration1(3000), "");
-  }
+  test();
+  static_assert(test());
 
   return 0;
 }
