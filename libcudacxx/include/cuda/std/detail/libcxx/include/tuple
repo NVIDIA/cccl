@@ -515,7 +515,7 @@ template <class _Tp>
 struct __all_default_constructible;
 
 template <class... _Tp>
-struct __all_default_constructible<__tuple_types<_Tp...>> : bool_constant<is_default_constructible_v<_Tp>&&...>
+struct __all_default_constructible<__tuple_types<_Tp...>> : bool_constant<(is_default_constructible_v<_Tp> && ...)>
 {};
 
 struct __tuple_variadic_constructor_tag
