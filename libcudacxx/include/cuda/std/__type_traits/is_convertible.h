@@ -36,8 +36,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_convertible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
 template <class _T1, class _T2>
@@ -99,10 +99,7 @@ struct __is_convertible_test<
   decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
 {};
 
-template <class _Tp,
-          bool _IsArray    = is_array<_Tp>::value,
-          bool _IsFunction = is_function<_Tp>::value,
-          bool _IsVoid     = is_void<_Tp>::value>
+template <class _Tp, bool _IsArray = is_array_v<_Tp>, bool _IsFunction = is_function_v<_Tp>, bool _IsVoid = is_void_v<_Tp>>
 struct __is_array_function_or_void
 {
   enum

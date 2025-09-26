@@ -55,7 +55,7 @@ template <class _Int>
 struct __avoid_promotions
 {
   using __base =
-    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
+    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned_v<_Int>, unsigned int, signed int>>;
 
   _CCCL_HIDE_FROM_ABI constexpr __avoid_promotions() = default;
 

@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // [concept.same]
 
 template <class _Tp, class _Up>
-_CCCL_CONCEPT __same_as_impl = _IsSame<_Tp, _Up>::value;
+_CCCL_CONCEPT __same_as_impl = is_same_v<_Tp, _Up>;
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT same_as = __same_as_impl<_Tp, _Up> && __same_as_impl<_Up, _Tp>;

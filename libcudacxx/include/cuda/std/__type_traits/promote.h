@@ -51,7 +51,7 @@ struct __numeric_type
   _CCCL_API inline static long double __test(long double);
 
   using type              = decltype(__test(declval<_Tp>()));
-  static const bool value = _IsNotSame<type, void>::value;
+  static const bool value = !is_same_v<type, void>;
 };
 
 template <>

@@ -127,7 +127,7 @@ private:
 
 public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
+  pointer_to(conditional_t<is_void_v<element_type>, __nat, element_type>& __r)
   {
     return pointer::pointer_to(__r);
   }
@@ -153,7 +153,7 @@ private:
 
 public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
+  pointer_to(conditional_t<is_void_v<element_type>, __nat, element_type>& __r) noexcept
   {
     return ::cuda::std::addressof(__r);
   }
@@ -173,7 +173,7 @@ struct __to_address_helper;
 template <class _Tp>
 _CCCL_API constexpr _Tp* __to_address(_Tp* __p) noexcept
 {
-  static_assert(!is_function<_Tp>::value, "_Tp is a function type");
+  static_assert(!is_function_v<_Tp>, "_Tp is a function type");
   return __p;
 }
 

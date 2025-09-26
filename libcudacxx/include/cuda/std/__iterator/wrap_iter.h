@@ -53,9 +53,8 @@ public:
       : __i_()
   {}
   template <class _Up>
-  _CCCL_API constexpr __wrap_iter(
-    const __wrap_iter<_Up>& __u,
-    typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
+  _CCCL_API constexpr __wrap_iter(const __wrap_iter<_Up>& __u,
+                                  typename enable_if<is_convertible_v<_Up, iterator_type>>::type* = nullptr) noexcept
       : __i_(__u.base())
   {}
   _CCCL_API constexpr reference operator*() const noexcept

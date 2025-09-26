@@ -1046,7 +1046,7 @@ _CCCL_API constexpr size_t __find_idx(size_t __i, const bool (&__matches)[_Nx])
 template <class _T1, class... _Args>
 struct __find_exactly_one_checked
 {
-  static constexpr bool __matches[sizeof...(_Args)] = {is_same<_T1, _Args>::value...};
+  static constexpr bool __matches[sizeof...(_Args)] = {is_same_v<_T1, _Args>...};
   static constexpr size_t value                     = __find_detail::__find_idx(0, __matches);
   static_assert(value != __not_found, "type not found in type list");
   static_assert(value != __ambiguous, "type occurs more than once in type list");
@@ -1055,7 +1055,7 @@ struct __find_exactly_one_checked
 template <class _T1>
 struct __find_exactly_one_checked<_T1>
 {
-  static_assert(!is_same<_T1, _T1>::value, "type not in empty type list");
+  static_assert(!is_same_v<_T1, _T1>, "type not in empty type list");
 };
 
 } // namespace __find_detail
