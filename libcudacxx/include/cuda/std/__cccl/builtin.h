@@ -380,11 +380,6 @@
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
 
-#if _CCCL_CHECK_BUILTIN(has_trivial_destructor) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(has_trivial_destructor) && gcc >= 4.3
-
 #if _CCCL_HAS_BUILTIN(__integer_pack)
 #  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__integer_pack)
@@ -522,10 +517,6 @@
 
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_copyable) && gcc >= 5.1
-
-#if _CCCL_CHECK_BUILTIN(is_trivially_destructible) || _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_trivially_destructible)
 
 #if _CCCL_CHECK_BUILTIN(is_unsigned)
 #  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
