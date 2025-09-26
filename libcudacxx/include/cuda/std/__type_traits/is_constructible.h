@@ -52,7 +52,7 @@ struct __cccl_is_constructible;
 template <class _To, class _From>
 struct __is_invalid_base_to_derived_cast
 {
-  static_assert(is_reference<_To>::value, "Wrong specialization");
+  static_assert(is_reference_v<_To>, "Wrong specialization");
   using _RawFrom = remove_cvref_t<_From>;
   using _RawTo   = remove_cvref_t<_To>;
   static const bool value =
@@ -62,7 +62,7 @@ struct __is_invalid_base_to_derived_cast
 template <class _To, class _From>
 struct __is_invalid_lvalue_to_rvalue_cast : false_type
 {
-  static_assert(is_reference<_To>::value, "Wrong specialization");
+  static_assert(is_reference_v<_To>, "Wrong specialization");
 };
 
 template <class _ToRef, class _FromRef>
@@ -107,7 +107,7 @@ struct __is_constructible_helper
   _CCCL_API inline static false_type __test_unary(...);
 };
 
-template <class _Tp, bool = is_void<_Tp>::value>
+template <class _Tp, bool = is_void_v<_Tp>>
 struct __is_default_constructible : decltype(__is_constructible_helper::__test_nary<_Tp>(0))
 {};
 
@@ -150,8 +150,8 @@ struct __cccl_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_
 
 #if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
