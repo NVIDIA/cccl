@@ -24,7 +24,7 @@ CONFIGURE_ONLY=false
 function usage {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
+    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores minus one."
     echo
     echo "Options:"
     echo "  -v/-verbose: enable shell echo for debugging"
@@ -125,7 +125,8 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+# Set PARALLEL_LEVEL to nproc - 1, but ensure it's at least 1 for single-core systems  
+readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(( $(nproc) > 1 ? $(nproc) - 1 : 1 ))}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
