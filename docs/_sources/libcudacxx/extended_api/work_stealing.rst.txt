@@ -7,12 +7,12 @@ Defined in header ``<cuda/work_stealing>`` if the CUDA compiler supports at leas
 
 .. code:: cuda
 
-   namespace cuda {
+  namespace cuda::device {
 
-    template <int ThreadBlockRank = 3, typename UnaryFunction = ..unspecified..>
-    __device__ void for_each_canceled_block(UnaryFunction uf);
+  template <int ThreadBlockRank = 3, typename UnaryFunction = /*unspecified*/>
+  __device__ void for_each_canceled_block(UnaryFunction uf);
 
-   } // namespace cuda
+  } // namespace cuda::device
 
 **Note**: On devices with compute capability 10.0 or higher, this function may leverage hardware acceleration.
 
@@ -63,7 +63,7 @@ This example demonstrates work-stealing at thread-block granularity using this A
      // - common initialization code
      // - etc.
 
-     cuda::for_each_canceled_block<1>([=](dim3 block_idx) {
+     cuda::device::for_each_canceled_block<1>([=](dim3 block_idx) {
        // block_idx may be different than the built-in blockIdx variable, that is:
        // assert(block_idx == blockIdx); // may fail!
        // so we need to use "block_idx" consistently inside for_each_canceled:

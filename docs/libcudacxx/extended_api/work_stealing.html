@@ -1530,12 +1530,12 @@
   <section id="work-stealing">
 <span id="libcudacxx-extended-api-work-stealing"></span><h1>Work stealing<a class="headerlink" href="#work-stealing" title="Link to this heading">#</a></h1>
 <p>Defined in header <code class="docutils literal notranslate"><span class="pre">&lt;cuda/work_stealing&gt;</span></code> if the CUDA compiler supports at least PTX ISA 8.7:</p>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="w"> </span><span class="p">{</span>
 
-<span class="w"> </span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">ThreadBlockRank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">UnaryFunction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">..</span><span class="n">unspecified</span><span class="p">..</span><span class="o">&gt;</span>
-<span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">for_each_canceled_block</span><span class="p">(</span><span class="n">UnaryFunction</span><span class="w"> </span><span class="n">uf</span><span class="p">);</span>
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">ThreadBlockRank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">UnaryFunction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cm">/*unspecified*/</span><span class="o">&gt;</span>
+<span class="kt">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">for_each_canceled_block</span><span class="p">(</span><span class="n">UnaryFunction</span><span class="w"> </span><span class="n">uf</span><span class="p">);</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda::device</span>
 </pre></div>
 </div>
 <p><strong>Note</strong>: On devices with compute capability 10.0 or higher, this function may leverage hardware acceleration.</p>
@@ -1594,7 +1594,7 @@
 <span class="w">  </span><span class="c1">// - common initialization code</span>
 <span class="w">  </span><span class="c1">// - etc.</span>
 
-<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">for_each_canceled_block</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">([</span><span class="o">=</span><span class="p">](</span><span class="kt">dim3</span><span class="w"> </span><span class="n">block_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">for_each_canceled_block</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">([</span><span class="o">=</span><span class="p">](</span><span class="kt">dim3</span><span class="w"> </span><span class="n">block_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// block_idx may be different than the built-in blockIdx variable, that is:</span>
 <span class="w">    </span><span class="c1">// assert(block_idx == blockIdx); // may fail!</span>
 <span class="w">    </span><span class="c1">// so we need to use &quot;block_idx&quot; consistently inside for_each_canceled:</span>
