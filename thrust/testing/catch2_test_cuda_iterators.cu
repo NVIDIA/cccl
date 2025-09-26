@@ -368,3 +368,30 @@ TEST_CASE("zip_iterator", "[iterators]")
     CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
   }
 }
+
+TEST_CASE("zip_transform_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_zip_transform_iterator(cuda::std::plus<void>{}, vec.begin(), cuda::counting_iterator{4});
+    thrust::copy(iter, iter + 4, vec.begin());
+    thrust::device_vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_zip_transform_iterator(cuda::std::plus<void>{}, vec.begin(), cuda::counting_iterator{4});
+    thrust::copy(iter, iter + 4, vec.begin());
+    thrust::host_vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_zip_transform_iterator(cuda::std::plus<void>{}, vec.begin(), cuda::counting_iterator{4});
+    thrust::copy(iter, iter + 4, vec.begin());
+    std::vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+}
