@@ -71,6 +71,7 @@ __host__ __device__ constexpr void test_type()
   constexpr auto rhs_max    = cuda::std::numeric_limits<Rhs>::max();
   constexpr auto result_min = cuda::std::numeric_limits<Result>::min();
   constexpr auto result_max = cuda::std::numeric_limits<Result>::max();
+
   // 5. Adding max and zero
   test_add_overflow<Result>(lhs_max, Rhs{}, cuda::std::cmp_greater(lhs_max, result_max));
 
@@ -108,11 +109,13 @@ __host__ __device__ constexpr void test_type()
   {
     test_add_overflow<Result>(lhs_min, Rhs{-1}, cuda::std::cmp_less_equal(lhs_min, result_min));
   }
+
   // 13. Adding minus one and min
   if constexpr (is_signed_v<Lhs>)
   {
     test_add_overflow<Result>(Lhs{-1}, rhs_min, cuda::std::cmp_less_equal(rhs_min, result_min));
   }
+
   // 14. Adding min and min
   if constexpr (sizeof(Result) >= sizeof(Lhs) && is_signed_v<Result>)
   {
