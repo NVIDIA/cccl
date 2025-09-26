@@ -251,11 +251,7 @@ struct DeviceCopy
        ::cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
-    if (mdspan_in.extents() != mdspan_out.extents())
-    {
-      _CCCL_ASSERT(false, "mdspan extents must be equal");
-      return CubDebug(::cudaErrorInvalidValue);
-    }
+    _CCCL_ASSERT(mdspan_in.extents() != mdspan_out.extents(), "mdspan extents must be equal");
     if (mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr))
     {
       _CCCL_ASSERT(false, "mdspan data handle must not be nullptr if the size is not 0");
