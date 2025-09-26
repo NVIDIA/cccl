@@ -55,7 +55,8 @@ public:
   //! @brief Construct a new legacy_managed_memory_resource.
   //! @note Synchronous allocations in CUDA are tied to a device, even if not located in device memory.
   //! This constructor takes an optional device argument to specify the device that should be tied to allocations
-  //! for the resource. This association has the effect of initializing that device and the memory being implicitly freed if the device is reset.
+  //! for the resource. This association has the effect of initializing that device and the memory being implicitly
+  //! freed if the device is reset.
   constexpr legacy_managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal,
                                            device_ref __device        = {0}) noexcept
       : __flags_(__flags & __available_flags)
@@ -104,7 +105,7 @@ public:
   //! @brief Equality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with the same flags.
-  [[nodiscard]] constexpr bool operator==(legacy_managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator==(legacy_managed_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
@@ -112,7 +113,7 @@ public:
   //! @brief Inequality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with different flags.
-  [[nodiscard]] constexpr bool operator!=(legacy_managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(legacy_managed_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }

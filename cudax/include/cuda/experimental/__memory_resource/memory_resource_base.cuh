@@ -175,7 +175,7 @@ public:
   //! Device on which this resource allocates memory can be included in the span.
   //!
   //! @param __devices A span of `device_ref`s listing devices to enable access for
-  void enable_access_from(::cuda::std::span<const device_ref> __devices)
+  _CCCL_HOST_API void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
@@ -187,7 +187,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void enable_access_from(device_ref __device)
+  _CCCL_HOST_API void enable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
@@ -199,7 +199,7 @@ public:
   //! Device on which this resource allocates memory can be included in the span.
   //!
   //! @param __devices A span of `device_ref`s listing devices to disable access for
-  void disable_access_from(::cuda::std::span<const device_ref> __devices)
+  _CCCL_HOST_API void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
@@ -211,7 +211,7 @@ public:
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be disabled
-  void disable_access_from(device_ref __device)
+  _CCCL_HOST_API void disable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
@@ -219,14 +219,14 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
-  [[nodiscard]] bool is_accessible_from(device_ref __device)
+  [[nodiscard]] _CCCL_HOST_API bool is_accessible_from(device_ref __device)
   {
     return ::cuda::experimental::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  [[nodiscard]] bool operator==(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_API bool operator==(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
@@ -234,13 +234,13 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
-  [[nodiscard]] bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_API bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  [[nodiscard]] constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }

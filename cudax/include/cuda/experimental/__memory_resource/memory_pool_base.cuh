@@ -42,7 +42,14 @@ namespace cuda::experimental
 
 namespace __detail
 {
-template <::cudaMemPoolAttr _Attr, typename _Type, bool _Settable>
+
+enum class __pool_attr_settable
+{
+  yes,
+  no
+};
+
+template <::cudaMemPoolAttr _Attr, typename _Type, __pool_attr_settable _Settable>
 struct __pool_attr_impl
 {
   using type = _Type;
@@ -62,7 +69,7 @@ struct __pool_attr_impl
   void static set(::cudaMemPool_t __pool, type __value)
   {
     size_t __value_copy = __value;
-    if constexpr (_Settable)
+    if constexpr (_Settable == __pool_attr_settable::yes)
     {
       ::cuda::__driver::__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy);
     }
@@ -74,31 +81,32 @@ struct __pool_attr_impl
 };
 
 template <::cudaMemPoolAttr _Attr>
-struct __pool_attr : __pool_attr_impl<_Attr, size_t, true>
+struct __pool_attr : __pool_attr_impl<_Attr, size_t, __pool_attr_settable::yes>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseFollowEventDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, true>
+    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, __pool_attr_settable::yes>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowOpportunistic>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, true>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, __pool_attr_settable::yes>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowInternalDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, true>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, __pool_attr_settable::yes>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemCurrent>
-    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, false>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, __pool_attr_settable::no>
 {};
 
 template <>
-struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent> : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, false>
+struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable::no>
 {};
 
 inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
@@ -111,7 +119,8 @@ inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_at
 }
 
 template <>
-struct __pool_attr<::cudaMemPoolAttrReservedMemHigh> : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, true>
+struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable::yes>
 {
   void set(::cudaMemPool_t __pool, type __value) const
   {
@@ -120,7 +129,8 @@ struct __pool_attr<::cudaMemPoolAttrReservedMemHigh> : __pool_attr_impl<::cudaMe
 };
 
 template <>
-struct __pool_attr<::cudaMemPoolAttrUsedMemHigh> : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, true>
+struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable::yes>
 {
   void set(::cudaMemPool_t __pool, type __value) const
   {
@@ -340,7 +350,7 @@ public:
   //! @param __min_bytes_to_keep the minimal guaranteed size of the pool.
   //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the
   //! pool will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
-  void trim_to(const size_t __min_bytes_to_keep)
+  _CCCL_HOST_API void trim_to(const size_t __min_bytes_to_keep)
   {
     ::cuda::__driver::__mempoolTrimTo(__pool_handle_, __min_bytes_to_keep);
   }
@@ -349,7 +359,7 @@ public:
   //! @param __attr the attribute to get.
   //! @return The value of the attribute.
   template <typename _Attr>
-  [[nodiscard]] auto attribute(_Attr __attr) const
+  [[nodiscard]] _CCCL_HOST_API auto attribute(_Attr __attr) const
   {
     return __attr(__pool_handle_);
   }
@@ -358,7 +368,7 @@ public:
   //! @param __attribute the attribute to get.
   //! @return The value of the attribute.
   template <::cudaMemPoolAttr _Attr>
-  auto attribute() const
+  _CCCL_HOST_API auto attribute() const
   {
     return attribute(__detail::__pool_attr<_Attr>());
   }
@@ -367,7 +377,7 @@ public:
   //! @param __attribute the attribute to be set.
   //! @param __value the new value of that attribute.
   template <typename _Attr>
-  void set_attribute(_Attr __attr, typename _Attr::type __value)
+  _CCCL_HOST_API void set_attribute(_Attr __attr, typename _Attr::type __value)
   {
     __attr.set(__pool_handle_, __value);
   }
@@ -376,7 +386,7 @@ public:
   //! @param __attribute the attribute to be set.
   //! @param __value the new value of that attribute.
   template <::cudaMemPoolAttr _Attr>
-  void set_attribute(typename __detail::__pool_attr<_Attr>::type __value)
+  _CCCL_HOST_API void set_attribute(typename __detail::__pool_attr<_Attr>::type __value)
   {
     return set_attribute(__detail::__pool_attr<_Attr>(), __value);
   }
@@ -386,7 +396,7 @@ public:
   //! Device on which this pool resides can be included in the span.
   //!
   //! @param __devices A span of `device_ref`s listing devices to enable access for
-  void enable_access_from(::cuda::std::span<const device_ref> __devices)
+  _CCCL_HOST_API void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
@@ -395,7 +405,7 @@ public:
   //! @brief Enable access to this memory pool from the supplied device
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void enable_access_from(device_ref __device)
+  _CCCL_HOST_API void enable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_handle_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
@@ -405,7 +415,7 @@ public:
   //! Device on which this pool resides can be included in the span.
   //!
   //! @param __devices A span of `device_ref`s listing devices to disable access for
-  void disable_access_from(::cuda::std::span<const device_ref> __devices)
+  _CCCL_HOST_API void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
@@ -414,7 +424,7 @@ public:
   //! @brief Disable access to this memory pool from the supplied device
   //!
   //! @param __device device_ref indicating for which device the access should be disable
-  void disable_access_from(device_ref __device)
+  _CCCL_HOST_API void disable_access_from(device_ref __device)
   {
     ::cuda::experimental::__mempool_set_access(__pool_handle_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
@@ -422,14 +432,14 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
-  [[nodiscard]] bool is_accessible_from(device_ref __device)
+  [[nodiscard]] _CCCL_HOST_API bool is_accessible_from(device_ref __device)
   {
     return ::cuda::experimental::__mempool_get_access(__pool_handle_, __device);
   }
 
   //! @brief Equality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are equal.
-  [[nodiscard]] constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ == __rhs.__pool_handle_;
   }
@@ -437,7 +447,7 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
-  [[nodiscard]] constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
@@ -446,33 +456,37 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  [[nodiscard]] friend constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] friend constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
-  [[nodiscard]] constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_handle_;
   }

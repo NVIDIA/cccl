@@ -51,7 +51,8 @@ public:
   //! @brief Construct a new legacy_pinned_memory_resource.
   //! @note Synchronous allocations in CUDA are tied to a device, even if not located in device memory.
   //! This constructor takes an optional device argument to specify the device that should be tied to allocations
-  //! for the resource. This association has the effect of initializing that device and the memory being implicitly freed if the device is reset.
+  //! for the resource. This association has the effect of initializing that device and the memory being implicitly
+  //! freed if the device is reset.
   constexpr legacy_pinned_memory_resource(device_ref __device = {0}) noexcept
       : __device_(__device)
   {}
@@ -97,7 +98,7 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
-  [[nodiscard]] constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
@@ -105,7 +106,7 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
-  [[nodiscard]] constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
   }
