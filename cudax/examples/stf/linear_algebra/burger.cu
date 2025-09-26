@@ -94,7 +94,7 @@ void build_tridiag_csr_structure(size_t* row_offsets, size_t* col_indices, size_
 void assemble_jacobian(context_t& ctx, vector_t U, vector_t values, size_t N, double h, double dt, double nu)
 {
   size_t n_unknowns = N - 2;
-  ctx.parallel_for(box(n_unknowns), U.read(), values.write())
+  ctx.parallel_for(box(n_unknowns), U.read(), values.write()).set_symbol("assemble_jacobian")
       ->*[n_unknowns, h, dt, nu] __device__(size_t row, auto dU, auto dvalues) {
             size_t global = row + 1; // global grid index for this interior point
             double u_i    = dU[global];
@@ -136,7 +136,7 @@ void assemble_jacobian(context_t& ctx, vector_t U, vector_t values, size_t N, do
 void compute_residual(
   context_t& ctx, vector_t U, vector_t U_prev, vector_t residual, size_t /* N */, double h, double dt, double nu)
 {
-  ctx.parallel_for(residual.shape(), residual.write(), U.read(), U_prev.read())
+  ctx.parallel_for(residual.shape(), residual.write(), U.read(), U_prev.read()).set_symbol("compute_residual")
       ->*[h, dt, nu] __device__(size_t i, auto dresidual, auto dU, auto dU_prev) {
             size_t global = i + 1;
             double u_i    = dU[global];
@@ -159,7 +159,7 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
   };
 
   // Residual R initialized to B
-  auto R = ctx.logical_data(B.shape());
+  auto R = ctx.logical_data(B.shape()).set_symbol("R");
   ctx.parallel_for(R.shape(), R.write(), B.read()).set_symbol("R=B")->*[] _CCCL_DEVICE(size_t i, auto dR, auto dB) {
     dR(i) = dB(i);
   };
@@ -219,8 +219,10 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
 
     while_guard.update_cond(rsnew.read(), cg_iter.rw())->*[cg_tol] __device__(auto drsnew, auto diter) {
       (*diter)++; // increment iteration counter
-      // printf("CG iter %d: RES %e (tol=%e)\n", *diter, *drsnew, *dtol);
       bool converged = (*drsnew < cg_tol * cg_tol);
+      if (converged) {
+          printf("CG iter %d: RES %e (tol=%e)\n", *diter, ::std::sqrt(*drsnew), cg_tol);
+      }
       return !converged;
     };
 
@@ -237,11 +239,13 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
             };
   }
 
+#if 0
   fprintf(stderr,
           "CG solver converged after %d iterations (final residual %e, tolerance %e)\n",
           ctx.wait(cg_iter),
           std::sqrt(ctx.wait(rsold)),
           cg_tol);
+#endif
 }
 #endif
 
@@ -277,6 +281,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   }
 
   size_t nsteps     = 10000;
+  if (argc > 2)
+  {
+     nsteps = atol(argv[2]);
+     fprintf(stderr, "nsteps = %ld\n", nsteps);
+  }
+
   double total_time = nsteps * dt;
 
   fprintf(stderr, "=== Simulation Parameters ===\n");
@@ -302,19 +312,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   build_tridiag_csr_structure(row_offsets, col_indices, N);
 
-  auto csr_row_offsets = ctx.logical_data(make_slice(row_offsets, n_unknowns + 1));
-  auto csr_col_ind     = ctx.logical_data(make_slice(col_indices, nz));
-  auto csr_values      = ctx.logical_data(shape_of<slice<double>>(nz));
+  auto csr_row_offsets = ctx.logical_data(make_slice(row_offsets, n_unknowns + 1)).set_symbol("csr_row");
+  auto csr_col_ind     = ctx.logical_data(make_slice(col_indices, nz)).set_symbol("csr_col");
+  auto csr_values      = ctx.logical_data(shape_of<slice<double>>(nz)).set_symbol("csr_val");
 
-  auto U      = ctx.logical_data(shape_of<slice<double>>(N));
-  auto U_prev = ctx.logical_data(shape_of<slice<double>>(N));
+  auto U      = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("U");
+  auto U_prev = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("U_prev");
 
-  auto residual = ctx.logical_data(shape_of<slice<double>>(n_unknowns));
-  auto rhs      = ctx.logical_data(shape_of<slice<double>>(n_unknowns));
-  auto delta    = ctx.logical_data(shape_of<slice<double>>(n_unknowns));
+  auto residual = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("residual");
+  auto rhs      = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("rhs");
+  auto delta    = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("delta");
 
   // Initial condition
-  ctx.parallel_for(U_prev.shape(), U_prev.write())->*[h, N] __device__(size_t i, auto dU_prev) {
+  ctx.parallel_for(U_prev.shape(), U_prev.write()).set_symbol("init conditions")->*[h, N] __device__(size_t i, auto dU_prev) {
     double x = i * h;
     if (i == 0 || i == N - 1)
     {
@@ -330,26 +340,39 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   for (size_t t = 0; t < nsteps; t++)
   {
     // initial guess: u = u_prev (with boundary conditions)
-    ctx.parallel_for(U.shape(), U.write(), U_prev.read())->*[] __device__(size_t i, auto dU, auto dU_prev) {
+    ctx.parallel_for(U.shape(), U.write(), U_prev.read()).set_symbol("init_guess")->*[] __device__(size_t i, auto dU, auto dU_prev) {
       dU(i) = dU_prev(i);
     };
 
-    size_t max_newton = 50;
-    for (size_t newton = 0; newton < max_newton; newton++)
+    size_t max_newton = 20;
+//    size_t newton_iter = 0;
+    // double newton_residual = -1.0;
+    auto newton_norm2 = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("newton_norm2");
+    auto newton_iter = ctx.logical_data(shape_of<scalar_view<size_t>>()).set_symbol("newton_iter");
+    ctx.parallel_for(box(1), newton_iter.write()).set_symbol("init_newton_iter")->*[] _CCCL_DEVICE(size_t i, auto diter) {
+      *diter = 0;
+    };
+
+
+#if 0
+    for (newton_iter = 0; newton_iter < max_newton; newton_iter++)
+#endif
     {
+      auto while_guard = ctx.while_graph_scope();
+      
       compute_residual(ctx, U, U_prev, residual, N, h, dt, nu);
 
       // Compute Newton residual norm for adaptive CG tolerance
-      auto newton_norm2 = ctx.logical_data(shape_of<scalar_view<double>>());
       DOT(ctx, residual, residual, newton_norm2);
-      double newton_residual = std::sqrt(ctx.wait(newton_norm2));
+      // newton_residual = std::sqrt(ctx.wait(newton_norm2));
 
       // Adaptive CG tolerance: Eisenstat-Walker style
-      double cg_tol = std::max(1e-12, std::min(0.1 * newton_residual, 1e-8));
+//      double cg_tol = std::max(1e-12, std::min(0.1 * newton_residual, 1e-8));
+      double cg_tol = 1e-8;
 
       assemble_jacobian(ctx, U, csr_values, N, h, dt, nu);
 
-      ctx.parallel_for(rhs.shape(), rhs.write(), residual.read())->*[] __device__(size_t i, auto drhs, auto dresidual) {
+      ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs -= residual")->*[] __device__(size_t i, auto drhs, auto dresidual) {
         drhs(i) = -dresidual(i);
       };
 
@@ -359,7 +382,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       cg_solver(ctx, A, delta, rhs, cg_tol);
 
       // Update solution: interior unknowns get delta corrections, boundaries stay zero
-      ctx.parallel_for(U.shape(), U.rw(), delta.read())->*[N] __device__(size_t i, auto dU, auto ddelta) {
+      ctx.parallel_for(U.shape(), U.rw(), delta.read()).set_symbol("apply delta")->*[N] __device__(size_t i, auto dU, auto ddelta) {
         if (i == 0 || i == N - 1)
         {
           dU(i) = 0.0; // Enforce boundary conditions
@@ -370,23 +393,34 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         }
       };
 
+#if 0
       // Convergence check (using already computed Newton residual)
-      fprintf(stderr, "Newton iter %zu: residual norm = %e, CG tol = %e\n", newton, newton_residual, cg_tol);
       if (newton_residual < 1e-10)
       {
         break;
       }
+#endif
+      // newton_residual = std::sqrt(ctx.wait(newton_norm2));
+      double newton_tol = 1e-10;
+      while_guard.update_cond(newton_norm2.read(), newton_iter.rw())->*[newton_tol, max_newton] __device__(auto dnorm2, auto diter) {
+        (*diter)++; // increment iteration counter
+        // printf("CG iter %d: RES %e (tol=%e)\n", *diter, *drsnew, *dtol);
+        bool converged = (*dnorm2 < newton_tol * newton_tol);
+        return !converged && (*diter < max_newton);
+      };
     }
 
+    fprintf(stderr, "Newton converged to  %e in %zu iterations\n", std::sqrt(ctx.wait(newton_norm2)), ctx.wait(newton_iter));
+
     // accept timestep
-    ctx.parallel_for(U.shape(), U_prev.write(), U.read())->*[] __device__(size_t i, auto dU_prev, auto dU) {
+    ctx.parallel_for(U.shape(), U_prev.write(), U.read()).set_symbol("accept timestep")->*[] __device__(size_t i, auto dU_prev, auto dU) {
       dU_prev(i) = dU(i);
     };
 
     // Dump solution for visualization (every 10 time steps to avoid too much output)
     if (t % 10 == 0 || t == nsteps - 1)
     {
-      ctx.host_launch(U.read())->*[t, h, N, dt](auto hU) {
+      ctx.host_launch(U.read()).set_symbol("dump solution")->*[t, h, N, dt](auto hU) {
         char filename[256];
         snprintf(filename, sizeof(filename), "solution_t%04zu.dat", t);
 

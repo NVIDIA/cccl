@@ -1398,7 +1398,7 @@ public:
          * configure a call to the condition_update_kernel kernel */
         ::std::apply(
           [this](auto&&... deps) {
-            return this->ctx_.cuda_kernel(deps...);
+            return this->ctx_.cuda_kernel(deps...).set_symbol("condition_update");
           },
           tdeps)
             ->*[cond_func = mv(cond_func), h = handle_](data_t_of<Deps>... args) {
