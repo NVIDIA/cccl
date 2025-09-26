@@ -514,7 +514,7 @@ public:
 };
 
 template <class _Tp, class _Dp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<__is_swappable<_Dp>::value, void>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_nothrow_swappable_v<_Dp>, void>
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
 {
   __x.swap(__y);
