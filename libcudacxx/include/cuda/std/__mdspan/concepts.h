@@ -57,12 +57,8 @@ namespace __mdspan_detail
 {
 
 // [mdspan.layout.stride.expo]/3
-template <class>
-struct __is_extents : false_type
-{};
-
 template <class _Tp>
-inline constexpr bool __is_extents_v = __is_extents<_Tp>::value;
+inline constexpr bool __is_extents_v = false;
 
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
