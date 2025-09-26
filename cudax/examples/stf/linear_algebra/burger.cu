@@ -15,6 +15,9 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+#include <vector>
+
 using namespace cuda::experimental::stf;
 
 #if !_CCCL_CTK_BELOW(12, 4)
@@ -151,7 +154,7 @@ void compute_residual(
           };
 }
 
-void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double cg_tol = 1e-10)
+void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double cg_tol = 1e-10, size_t max_cg = 1000)
 {
   // Initial guess X = 0 (better for Newton corrections)
   ctx.parallel_for(X.shape(), X.write()).set_symbol("init_guess")->*[] _CCCL_DEVICE(size_t i, auto dX) {
@@ -217,13 +220,11 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
     auto rsnew = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("rsnew");
     DOT(ctx, R, R, rsnew);
 
-    while_guard.update_cond(rsnew.read(), cg_iter.rw())->*[cg_tol] __device__(auto drsnew, auto diter) {
+    while_guard.update_cond(rsnew.read(), cg_iter.rw())->*[cg_tol, max_cg] __device__(auto drsnew, auto diter) {
       (*diter)++; // increment iteration counter
       bool converged = (*drsnew < cg_tol * cg_tol);
-      if (converged) {
-          printf("CG iter %d: RES %e (tol=%e)\n", *diter, ::std::sqrt(*drsnew), cg_tol);
-      }
-      return !converged;
+      // printf("CG iter %d: RES %e (tol=%e)\n", *diter, sqrt(*drsnew), cg_tol);
+      return !converged && (*diter < max_cg);
     };
 
     // p = r + (rsnew / rsold) * p;
@@ -239,13 +240,141 @@ void cg_solver(context_t& ctx, csr_matrix& A, vector_t& X, vector_t& B, double c
             };
   }
 
-#if 0
+#  if 0
   fprintf(stderr,
           "CG solver converged after %d iterations (final residual %e, tolerance %e)\n",
           ctx.wait(cg_iter),
           std::sqrt(ctx.wait(rsold)),
           cg_tol);
-#endif
+#  endif
+}
+
+// Newton solver for the nonlinear system arising from implicit time discretization
+void newton_solver(
+  context_t& ctx,
+  vector_t& U,
+  vector_t& U_prev,
+  vector_t& residual,
+  vector_t& rhs,
+  vector_t& delta,
+  stackable_logical_data<slice<double>>& csr_values,
+  stackable_logical_data<slice<size_t>>& csr_row_offsets,
+  stackable_logical_data<slice<size_t>>& csr_col_ind,
+  size_t N,
+  double h,
+  double dt,
+  double nu,
+  size_t max_newton = 20,
+  double newton_tol = 1e-10,
+  size_t max_cg     = 100)
+{
+  auto newton_norm2 = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("newton_norm2");
+  auto newton_iter  = ctx.logical_data(shape_of<scalar_view<size_t>>()).set_symbol("newton_iter");
+  ctx.parallel_for(box(1), newton_iter.write()).set_symbol("init_newton_iter")->*[] _CCCL_DEVICE(size_t i, auto diter) {
+    *diter = 0;
+  };
+
+  {
+    auto while_guard = ctx.while_graph_scope();
+
+    compute_residual(ctx, U, U_prev, residual, N, h, dt, nu);
+
+    // Compute Newton residual norm for adaptive CG tolerance
+    DOT(ctx, residual, residual, newton_norm2);
+
+    // Adaptive CG tolerance: fixed for now
+    double cg_tol = 1e-8;
+
+    assemble_jacobian(ctx, U, csr_values, N, h, dt, nu);
+
+    ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs -= residual")
+        ->*[] __device__(size_t i, auto drhs, auto dresidual) {
+              drhs(i) = -dresidual(i);
+            };
+
+    csr_matrix A(csr_values, csr_row_offsets, csr_col_ind);
+
+    // Solve A * delta = rhs with adaptive tolerance
+    cg_solver(ctx, A, delta, rhs, cg_tol, max_cg);
+
+    // Update solution: interior unknowns get delta corrections, boundaries stay zero
+    ctx.parallel_for(U.shape(), U.rw(), delta.read()).set_symbol("apply delta")
+        ->*[N] __device__(size_t i, auto dU, auto ddelta) {
+              if (i == 0 || i == N - 1)
+              {
+                dU(i) = 0.0; // Enforce boundary conditions
+              }
+              else
+              {
+                dU(i) += ddelta(i - 1); // Interior: delta[i-1] corresponds to interior unknown at global index i
+              }
+            };
+
+    while_guard.update_cond(newton_norm2.read(), newton_iter.rw())
+        ->*[newton_tol, max_newton] __device__(auto dnorm2, auto diter) {
+              (*diter)++; // increment iteration counter
+              bool converged = (*dnorm2 < newton_tol * newton_tol);
+              return !converged && (*diter < max_newton);
+            };
+  }
+
+#  if 0
+  ctx.host_launch(newton_iter.read(), newton_norm2.read()).set_symbol("report_convergence")->*
+  [max_newton, newton_tol](auto diter, auto dnorm2) {
+    printf("Newton solver converged after %ld iterations (final residual %e, tolerance %e)\n",
+           *diter, sqrt(*dnorm2), newton_tol);
+  };
+#  endif
+}
+
+// Initialize the solution output file (call once at simulation start)
+void initialize_solution_file(const char* filename, size_t N, double h)
+{
+  FILE* fp = fopen(filename, "w");
+  if (fp)
+  {
+    fprintf(fp, "# Burger equation solution - block format\n");
+    fprintf(fp, "# Each timestep is a separate block, separated by blank lines\n");
+    fprintf(fp, "# Format: x_coordinate  u(x,t)\n");
+    fprintf(fp, "# Grid points: %zu, h=%.6e\n", N, h);
+    fprintf(fp,
+            "# Use in gnuplot: plot for [i=0:*] 'solution.dat' index i with lines title sprintf('step %%d', i*10)\n");
+    fprintf(fp, "#\n");
+    fclose(fp);
+    printf("Initialized solution file: %s (block format)\n", filename);
+  }
+  else
+  {
+    printf("Error: Could not create %s for writing\n", filename);
+  }
+}
+
+// Function to append timestep block to solution file (simple and reliable)
+void dump_solution(
+  context_t& ctx, vector_t& U, size_t timestep, size_t N, double h, double dt, const char* filename = "solution.dat")
+{
+  ctx.host_launch(U.read()).set_symbol("dump solution")->*[timestep, h, N, dt, filename](auto hU) {
+    FILE* fp = fopen(filename, "a"); // Simple append - no read/modify/write
+    if (fp)
+    {
+      fprintf(fp, "# Timestep %zu, t=%.6e\n", timestep, timestep * dt);
+
+      for (size_t i = 0; i < N; i++)
+      {
+        double x = i * h;
+        fprintf(fp, "%.10e %.10e\n", x, hU(i));
+      }
+
+      fprintf(fp, "\n"); // Blank line to separate datasets
+      fclose(fp);
+
+      printf("Appended timestep %zu (t=%.4e) to %s\n", timestep, timestep * dt, filename);
+    }
+    else
+    {
+      printf("Error: Could not open %s for appending\n", filename);
+    }
+  };
 }
 #endif
 
@@ -255,6 +384,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
   return 0;
 #else
+  // Usage: ./burger [N] [nsteps] [nu]
+  // N      = Grid points (default: 100000)
+  // nsteps = Time steps (default: 10000)
+  // nu     = Viscosity (default: 0.05, try 0.001 for shocks)
+
   size_t N = 100000; // Large system - auto-scaled parameters maintain stability
 
   context_t ctx;
@@ -269,7 +403,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t n_unknowns = N - 2;
 
   // Set reasonable parameters - implicit method allows larger time steps
-  double nu           = 0.05;
+  double nu = 0.05; // Default viscosity
+  if (argc > 3)
+  {
+    nu = atof(argv[3]);
+    fprintf(stderr, "nu = %e\n", nu);
+  }
+
   double dt_diffusion = 0.5 * h * h / nu; // Diffusion-limited time step
   double dt_fixed     = 0.001; // Fixed reasonable time step
   double dt           = std::max(dt_diffusion, dt_fixed); // Use larger of the two
@@ -280,11 +420,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     dt = std::min(dt, 0.01); // Cap at 0.01 for large grids
   }
 
-  size_t nsteps     = 10000;
+  size_t nsteps = 10000;
   if (argc > 2)
   {
-     nsteps = atol(argv[2]);
-     fprintf(stderr, "nsteps = %ld\n", nsteps);
+    nsteps = atol(argv[2]);
+    fprintf(stderr, "nsteps = %ld\n", nsteps);
   }
 
   double total_time = nsteps * dt;
@@ -292,7 +432,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   fprintf(stderr, "=== Simulation Parameters ===\n");
   fprintf(stderr, "Grid: N=%zu, h=%e\n", N, h);
   fprintf(stderr, "Time: dt=%e, nsteps=%zu, total_time=%e\n", dt, nsteps, total_time);
-  fprintf(stderr, "Physics: nu=%e\n", nu);
+  fprintf(stderr, "Physics: nu=%e (viscosity)\n", nu);
   fprintf(stderr, "Diffusion number: nu*dt/h^2 = %e\n", nu * dt / (h * h));
   fprintf(stderr, "System size: %zu unknowns, %zu non-zeros\n", n_unknowns, 3 * n_unknowns - 2);
   if (N > 1000000)
@@ -323,154 +463,67 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   auto rhs      = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("rhs");
   auto delta    = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("delta");
 
+  // This will prevent erroneous modifications and may allow access from concurrent graphs
+  csr_row_offsets.set_read_only();
+  csr_col_ind.set_read_only();
+
   // Initial condition
-  ctx.parallel_for(U_prev.shape(), U_prev.write()).set_symbol("init conditions")->*[h, N] __device__(size_t i, auto dU_prev) {
-    double x = i * h;
-    if (i == 0 || i == N - 1)
-    {
-      dU_prev(i) = 0.0; // Homogeneous Dirichlet boundary conditions
-    }
-    else
-    {
-      dU_prev(i) = sin(M_PI * x);
-    }
-  };
+  ctx.parallel_for(U_prev.shape(), U_prev.write()).set_symbol("init conditions")
+      ->*[h, N] __device__(size_t i, auto dU_prev) {
+            double x = i * h;
+            if (i == 0 || i == N - 1)
+            {
+              dU_prev(i) = 0.0; // Homogeneous Dirichlet boundary conditions
+            }
+            else
+            {
+              dU_prev(i) = sin(M_PI * x);
+            }
+          };
+
+  // Initialize solution output file
+  initialize_solution_file("solution.dat", N, h);
 
   // Parameters are now set above with auto-scaling
-  for (size_t t = 0; t < nsteps; t++)
+  size_t substeps         = 100;
+  size_t outer_iterations = nsteps / substeps;
+
+  for (size_t outer = 0; outer < outer_iterations; outer++)
   {
-    // initial guess: u = u_prev (with boundary conditions)
-    ctx.parallel_for(U.shape(), U.write(), U_prev.read()).set_symbol("init_guess")->*[] __device__(size_t i, auto dU, auto dU_prev) {
-      dU(i) = dU_prev(i);
-    };
+    auto g = ctx.graph_scope();
 
-    size_t max_newton = 20;
-//    size_t newton_iter = 0;
-    // double newton_residual = -1.0;
-    auto newton_norm2 = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("newton_norm2");
-    auto newton_iter = ctx.logical_data(shape_of<scalar_view<size_t>>()).set_symbol("newton_iter");
-    ctx.parallel_for(box(1), newton_iter.write()).set_symbol("init_newton_iter")->*[] _CCCL_DEVICE(size_t i, auto diter) {
-      *diter = 0;
-    };
-
-
-#if 0
-    for (newton_iter = 0; newton_iter < max_newton; newton_iter++)
-#endif
+    // Repeat substeps inner iterations using STF repeat block
     {
-      auto while_guard = ctx.while_graph_scope();
-      
-      compute_residual(ctx, U, U_prev, residual, N, h, dt, nu);
+      auto repeat_guard = ctx.repeat_graph_scope(substeps);
 
-      // Compute Newton residual norm for adaptive CG tolerance
-      DOT(ctx, residual, residual, newton_norm2);
-      // newton_residual = std::sqrt(ctx.wait(newton_norm2));
+      // initial guess: u = u_prev (with boundary conditions)
+      ctx.parallel_for(U.shape(), U.write(), U_prev.read()).set_symbol("init_guess")
+          ->*[] __device__(size_t i, auto dU, auto dU_prev) {
+                dU(i) = dU_prev(i);
+              };
 
-      // Adaptive CG tolerance: Eisenstat-Walker style
-//      double cg_tol = std::max(1e-12, std::min(0.1 * newton_residual, 1e-8));
-      double cg_tol = 1e-8;
+      // Solve the nonlinear system using Newton's method
+      newton_solver(ctx, U, U_prev, residual, rhs, delta, csr_values, csr_row_offsets, csr_col_ind, N, h, dt, nu);
 
-      assemble_jacobian(ctx, U, csr_values, N, h, dt, nu);
+      // accept timestep
+      ctx.parallel_for(U.shape(), U_prev.write(), U.read()).set_symbol("accept timestep")
+          ->*[] __device__(size_t i, auto dU_prev, auto dU) {
+                dU_prev(i) = dU(i);
+              };
+    } // repeat_guard automatically manages the loop condition
 
-      ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs -= residual")->*[] __device__(size_t i, auto drhs, auto dresidual) {
-        drhs(i) = -dresidual(i);
-      };
-
-      csr_matrix A(csr_values, csr_row_offsets, csr_col_ind);
-
-      // Solve A * delta = rhs with adaptive tolerance
-      cg_solver(ctx, A, delta, rhs, cg_tol);
-
-      // Update solution: interior unknowns get delta corrections, boundaries stay zero
-      ctx.parallel_for(U.shape(), U.rw(), delta.read()).set_symbol("apply delta")->*[N] __device__(size_t i, auto dU, auto ddelta) {
-        if (i == 0 || i == N - 1)
-        {
-          dU(i) = 0.0; // Enforce boundary conditions
-        }
-        else
-        {
-          dU(i) += ddelta(i - 1); // Interior: delta[i-1] corresponds to interior unknown at global index i
-        }
-      };
-
-#if 0
-      // Convergence check (using already computed Newton residual)
-      if (newton_residual < 1e-10)
-      {
-        break;
-      }
-#endif
-      // newton_residual = std::sqrt(ctx.wait(newton_norm2));
-      double newton_tol = 1e-10;
-      while_guard.update_cond(newton_norm2.read(), newton_iter.rw())->*[newton_tol, max_newton] __device__(auto dnorm2, auto diter) {
-        (*diter)++; // increment iteration counter
-        // printf("CG iter %d: RES %e (tol=%e)\n", *diter, *drsnew, *dtol);
-        bool converged = (*dnorm2 < newton_tol * newton_tol);
-        return !converged && (*diter < max_newton);
-      };
-    }
-
-    fprintf(stderr, "Newton converged to  %e in %zu iterations\n", std::sqrt(ctx.wait(newton_norm2)), ctx.wait(newton_iter));
-
-    // accept timestep
-    ctx.parallel_for(U.shape(), U_prev.write(), U.read()).set_symbol("accept timestep")->*[] __device__(size_t i, auto dU_prev, auto dU) {
-      dU_prev(i) = dU(i);
-    };
-
-    // Dump solution for visualization (every 10 time steps to avoid too much output)
-    if (t % 10 == 0 || t == nsteps - 1)
-    {
-      ctx.host_launch(U.read()).set_symbol("dump solution")->*[t, h, N, dt](auto hU) {
-        char filename[256];
-        snprintf(filename, sizeof(filename), "solution_t%04zu.dat", t);
-
-        FILE* fp = fopen(filename, "w");
-        if (fp)
-        {
-          fprintf(fp, "# Burger equation solution at step=%zu, physical_time=%.6e\n", t, t * dt);
-          fprintf(fp, "# Format: x_coordinate  u(x,t)\n");
-          fprintf(fp, "# Grid points: %zu\n", N);
-
-          for (size_t i = 0; i < N; i++)
-          {
-            double x = i * h;
-            fprintf(fp, "%.10e %.10e\n", x, hU(i));
-          }
-
-          fclose(fp);
-          printf("Solution dumped to %s (t=%.4e)\n", filename, t * dt);
-        }
-        else
-        {
-          printf("Error: Could not open %s for writing\n", filename);
-        }
-      };
-    }
-
-    if (t % 1000 == 0 || t == nsteps - 1)
-    {
-      printf("Step %zu/%zu (t=%.4e) done\n", t, nsteps, t * dt);
-    }
+    // Dump solution after each substep block
+    size_t current_timestep = (outer + 1) * substeps;
+    dump_solution(ctx, U, current_timestep, N, h, dt);
   }
 
-  // Final solution dump
+  // Final solution information
   printf("\n=== Simulation complete ===\n");
-  printf("Solution files: solution_t*.dat (every 10th timestep)\n");
-  printf("\nVisualization options:\n");
-  printf("1. Python/matplotlib:\n");
-  printf("  python3 -c \"\n");
-  printf("import numpy as np; import matplotlib.pyplot as plt; import glob\n");
-  printf("files = sorted(glob.glob('solution_t*.dat'))\n");
-  printf("for f in files[::2]:  # plot every other file\n");
-  printf("    data = np.loadtxt(f)\n");
-  printf("    plt.plot(data[:,0], data[:,1], label=f.split('.')[0])\n");
-  printf("plt.xlabel('x'); plt.ylabel('u(x,t)'); plt.legend(); plt.show()\n");
-  printf("\"\n");
-  printf("\n2. gnuplot:\n");
-  printf("  gnuplot -e \"plot for [i=0:9] 'solution_t'.sprintf('%%04d',i*10).'.dat' u 1:2 w l title 'step '.i*10\"\n");
-  printf("\n3. Simple inspection:\n");
-  printf("  head -20 solution_t0000.dat  # initial condition\n");
-  printf("  head -20 solution_t0099.dat  # final solution\n");
+  printf("Solution file: solution.dat (block format)\n");
+  printf("  - Each timestep is a separate data block\n");
+  printf("  - Blocks separated by blank lines\n");
+  printf("  - Format: x_coordinate  u(x,t)\n");
+  printf("Now you can run the animation commands shown at the beginning!\n");
 
   ctx.finalize();
 #endif
