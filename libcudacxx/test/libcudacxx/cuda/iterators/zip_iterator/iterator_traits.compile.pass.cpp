@@ -36,7 +36,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::tuple<int>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   { // Two iterator should have pair value type
@@ -46,7 +46,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::pair<int, Foo>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   { // !=2 views should have tuple value_type
@@ -56,7 +56,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   { // If one iterator is not random access then the whole zip_iterator is not random access
@@ -66,7 +66,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(cuda::std::bidirectional_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_bidirectional_iterator<Iter>);
+    static_assert(cuda::std::__has_bidirectional_traversal<Iter>);
   }
 
   { // If one iterator is not bidirectional_iterator then the whole zip_iterator is not bidirectional_iterator
@@ -76,13 +76,13 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(cuda::std::forward_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_forward_iterator<Iter>);
+    static_assert(cuda::std::__has_forward_traversal<Iter>);
   }
 
   { // Nothing here
     using Iter = cuda::zip_iterator<forward_iterator<int*>, cpp20_input_iterator<Foo*>, bidirectional_iterator<int*>>;
     static_assert(!HasIterCategory<Iter>);
-    static_assert(cuda::std::__is_cpp17_input_iterator<Iter>);
+    static_assert(cuda::std::__has_input_traversal<Iter>);
   }
 
   { // nested iterator has the right value type
@@ -93,7 +93,7 @@ __host__ __device__ void test()
     static_assert(
       cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::pair<int, cuda::std::pair<Foo, int>>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 }
 
