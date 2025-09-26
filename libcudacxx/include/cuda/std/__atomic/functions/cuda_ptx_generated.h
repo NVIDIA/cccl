@@ -1585,10 +1585,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acquire.cta.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acquire.cta.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1604,10 +1604,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acquire.cluster.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acquire.cluster.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1623,10 +1623,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acquire.gpu.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acquire.gpu.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1642,10 +1642,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acquire.sys.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acquire.sys.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1661,10 +1661,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.relaxed.cta.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.relaxed.cta.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1680,10 +1680,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.relaxed.cluster.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.relaxed.cluster.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1699,10 +1699,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.relaxed.gpu.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.relaxed.gpu.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1718,10 +1718,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.relaxed.sys.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.relaxed.sys.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1737,10 +1737,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.release.cta.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.release.cta.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1756,10 +1756,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.release.cluster.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.release.cluster.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1775,10 +1775,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.release.gpu.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.release.gpu.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1794,10 +1794,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.release.sys.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.release.sys.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1813,10 +1813,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acq_rel.cta.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acq_rel.cta.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1832,10 +1832,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acq_rel.cluster.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acq_rel.cluster.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1851,10 +1851,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acq_rel.gpu.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acq_rel.gpu.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1870,10 +1870,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.acq_rel.sys.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.acq_rel.sys.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1889,10 +1889,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.cta.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.cta.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1908,10 +1908,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.cluster.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.cluster.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1927,10 +1927,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.gpu.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.gpu.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 template <class _Type>
@@ -1946,10 +1946,10 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%0, %1}, _d;
-      mov.b128 {%4, %5}, _v;
-      atom.cas.sys.b128 _d,[%2],_d,_v;
       mov.b128 _d, {%0, %1};
+      mov.b128 _v, {%4, %5};
+      atom.cas.sys.b128 _d,[%2],_d,_v;
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }
 
@@ -2192,9 +2192,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acquire.cta.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2211,9 +2211,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acquire.cluster.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2230,9 +2230,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acquire.gpu.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2249,9 +2249,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acquire.sys.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2268,9 +2268,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.relaxed.cta.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2287,9 +2287,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.relaxed.cluster.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2306,9 +2306,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.relaxed.gpu.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2325,9 +2325,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.relaxed.sys.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2344,9 +2344,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.release.cta.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2363,9 +2363,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.release.cluster.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2382,9 +2382,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.release.gpu.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2401,9 +2401,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.release.sys.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2420,9 +2420,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acq_rel.cta.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2439,9 +2439,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acq_rel.cluster.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2458,9 +2458,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acq_rel.gpu.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2477,9 +2477,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.acq_rel.sys.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2496,9 +2496,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.cta.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2515,9 +2515,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.cluster.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2534,9 +2534,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.gpu.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2553,9 +2553,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
     {
       .reg .b128 _d;
       .reg .b128 _v;
-      mov.b128 {%3, %4}, _v;
+      mov.b128 _v, {%3, %4};
       atom.exch.sys.b128 _d,[%2],_v;
-      mov.b128 _d, {%0, %1};
+      mov.b128 {%0, %1}, _d;
     }
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
