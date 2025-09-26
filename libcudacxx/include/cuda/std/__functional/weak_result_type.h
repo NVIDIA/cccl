@@ -31,18 +31,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-struct __has_result_type
-{
-private:
-  template <class _Up>
-  _CCCL_API inline static false_type __test(...);
-  template <class _Up>
-  _CCCL_API inline static true_type __test(typename _Up::result_type* = 0);
+template <class _Tp, class = void>
+inline constexpr bool __has_member_result_type = false;
 
-public:
-  static const bool value = decltype(__test<_Tp>(0))::value;
-};
+template <class _Tp>
+inline constexpr bool __has_member_result_type<_Tp, void_t<typename _Tp::result_type>> = true;
 
 // __weak_result_type
 
@@ -100,7 +93,7 @@ template <class _Tp>
 struct __maybe_derive_from_binary_function<_Tp, false>
 {};
 
-template <class _Tp, bool = __has_result_type<_Tp>::value>
+template <class _Tp, bool = __has_member_result_type<_Tp>>
 struct __weak_result_type_imp // bool is true
     : public __maybe_derive_from_unary_function<_Tp>
     , public __maybe_derive_from_binary_function<_Tp>
