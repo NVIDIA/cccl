@@ -628,11 +628,11 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
   using type = typename _Ip::pointer;
 };
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__cccl_unused(__i.operator->())));
+template <class _Ip, class = void>
+inline constexpr bool __has_operator_arrow = false;
 
 template <class _Ip>
-_CCCL_CONCEPT __has_operator_arrow = _CCCL_FRAGMENT(__has_operator_arrow_, _Ip);
+inline constexpr bool __has_operator_arrow<_Ip, decltype((void) ::cuda::std::declval<_Ip&>().operator->())> = true;
 
 // Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
 // type.
