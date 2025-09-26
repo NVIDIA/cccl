@@ -14,11 +14,9 @@
 #endif // no system header
 
 #include <cub/agent/agent_for.cuh>
-#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 #include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 
-#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
