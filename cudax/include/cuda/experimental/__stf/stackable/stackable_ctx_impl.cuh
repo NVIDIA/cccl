@@ -597,7 +597,14 @@ public:
           return event_list(mv(output_node_event));
         }
 
+#if 0
         cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
+#else
+        ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> query_result =
+          ctx.async_resources().cached_graphs_query(graph);
+        fprintf(stderr, "Instantiate cache hit ? %d\n", query_result.second);
+        graph_exec = *query_result.first;
+#endif
 
         // Make sure we launch after the "get" operations are done
         ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);

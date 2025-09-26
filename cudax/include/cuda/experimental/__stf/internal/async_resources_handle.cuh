@@ -439,6 +439,22 @@ public:
     return pimpl->cached_graphs.query(nnodes, nedges, g);
   }
 
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> cached_graphs_query(cudaGraph_t g)
+  {
+    size_t nedges;
+    size_t nnodes;
+
+    cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+    assert(pimpl);
+    return cached_graphs_query(nnodes, nedges, g);
+  }
+
   // Get the green context helper cached for this device (or let the user initialize it)
   auto& gc_helper(int dev_id)
   {
