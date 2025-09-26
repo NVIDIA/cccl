@@ -187,8 +187,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable : public bool_constant<is_swap
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
-    : public bool_constant<is_nothrow_swappable_with_v<_Tp, _Up>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
