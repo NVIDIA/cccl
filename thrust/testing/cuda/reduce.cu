@@ -1,6 +1,7 @@
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -104,7 +105,7 @@ void TestReduceLargeInput()
   using OffsetT           = std::size_t;
   const OffsetT num_items = 1ull << 32;
 
-  thrust::constant_iterator<T> d_data(T{1});
+  cuda::constant_iterator<T> d_data(T{1});
   thrust::device_vector<T> d_result(1);
 
   reduce_kernel<<<1, 1>>>(thrust::device, d_data, d_data + num_items, T{}, d_result.begin());

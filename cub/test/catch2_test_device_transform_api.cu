@@ -6,6 +6,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/iterator>
+
 #include <c2h/catch2_test_helper.h>
 
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
@@ -14,7 +16,7 @@ void test_transform_api()
   // example-begin transform-many
   auto input1 = thrust::device_vector<int>{0, -2, 5, 3};
   auto input2 = thrust::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f};
-  auto input3 = thrust::counting_iterator<int>{100};
+  auto input3 = cuda::counting_iterator<int>{100};
   auto op     = [] __device__(int a, float b, int c) {
     return (a + b) * c;
   };

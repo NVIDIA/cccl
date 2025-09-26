@@ -25,11 +25,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/distance.h>
-#include <thrust/iterator/counting_iterator.h>
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/tabulate.h>
 #include <thrust/transform.h>
+
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -45,7 +47,7 @@ _CCCL_HOST_DEVICE void tabulate(
   // this causes problems when a zip_iterator is created in transform's implementation -- ForwardIterator is
   // incremented by a 64b difference_type and some compilers warn
   // to avoid this, specify the counting_iterator's difference_type to be the same as ForwardIterator's.
-  thrust::counting_iterator<difference_type, thrust::use_default, thrust::use_default, difference_type> iter(0);
+  ::cuda::counting_iterator<difference_type> iter(0);
 
   thrust::transform(exec, iter, iter + ::cuda::std::distance(first, last), first, unary_op);
 } // end tabulate()

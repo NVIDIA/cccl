@@ -1,10 +1,10 @@
 #include <thrust/copy.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <iterator>
 #include <list>
@@ -168,7 +168,7 @@ void TestCopyNCountingIterator()
 {
   using T = typename Vector::value_type;
 
-  thrust::counting_iterator<T> iter(1);
+  cuda::counting_iterator<T> iter(1);
 
   Vector vec(4);
 
@@ -205,7 +205,7 @@ void TestCopyNConstantIteratorToZipIterator()
   Vector v1(4, T(0));
   Vector v2(4, T(0));
 
-  thrust::copy_n(thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
+  thrust::copy_n(::cuda::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
                  v1.size(),
                  thrust::make_zip_iterator(v1.begin(), v2.begin()));
 

@@ -3,12 +3,12 @@
 #include <thrust/copy.h>
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <array>
@@ -501,7 +501,7 @@ void TestCopyCountingIterator()
 {
   using T = typename Vector::value_type;
 
-  thrust::counting_iterator<T> iter(1);
+  cuda::counting_iterator<T> iter(1);
 
   Vector vec(4);
 
@@ -551,8 +551,8 @@ void TestCopyConstantIteratorToZipIterator()
   Vector v1(3, T(0));
   Vector v2(3, T(0));
 
-  thrust::copy(thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
-               thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)) + v1.size(),
+  thrust::copy(::cuda::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
+               ::cuda::make_constant_iterator(thrust::tuple<T, T>(4, 7)) + v1.size(),
                thrust::make_zip_iterator(v1.begin(), v2.begin()));
 
   Vector ref1{4, 4, 4};
@@ -749,8 +749,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 void TestCopyWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(0);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::counting_iterator<long long> begin(0);
+  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
