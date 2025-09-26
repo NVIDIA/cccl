@@ -175,11 +175,9 @@ struct __is_always_equal<_Alloc, true>
 };
 
 // __allocator_traits_rebind
-template <class _Tp, class _Up, class = void>
-inline constexpr bool __has_member_rebind_other = false;
-
 template <class _Tp, class _Up>
-inline constexpr bool __has_member_rebind_other<_Tp, _Up, void_t<typename _Tp::template rebind<_Up>::other>> = true;
+_CCCL_CONCEPT __has_member_rebind_other =
+  _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
@@ -215,9 +213,17 @@ inline constexpr bool __has_allocate_hint<
     ::cuda::std::declval<_SizeType>(), ::cuda::std::declval<_ConstVoidPtr>()))>> = true;
 
 // __has_construct
+template <class, class _Alloc, class... _Args>
+inline constexpr bool __has_construct_impl = false;
+
 template <class _Alloc, class... _Args>
-_CCCL_CONCEPT __has_construct = _CCCL_REQUIRES_EXPR((_Alloc, variadic _Args), _Alloc __alloc, _Args&&... __args) //
-  ((__alloc.construct(::cuda::std::forward<_Args>(__args)...)));
+inline constexpr bool
+  __has_construct_impl<decltype((void) ::cuda::std::declval<_Alloc>().construct(::cuda::std::declval<_Args>()...)),
+                       _Alloc,
+                       _Args...> = true;
+
+template <class _Alloc, class... _Args>
+inline constexpr bool __has_construct = __has_construct_impl<void, _Alloc, _Args...>;
 
 // __has_destroy
 template <class _Alloc, class _Pointer, class = void>
