@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -17,22 +18,24 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+#include <cuda/std/ratio>
 
-__host__ __device__ bool f(cuda::std::chrono::milliseconds)
-{
-  return false;
-}
+#include "test_macros.h"
 
-__host__ __device__ bool f(cuda::std::chrono::seconds)
+TEST_GLOBAL_VARIABLE bool called = false;
+
+__host__ __device__ void f(cuda::std::chrono::milliseconds);
+__host__ __device__ void f(cuda::std::chrono::seconds)
 {
-  return true;
+  called = true;
 }
 
 int main(int, char**)
 {
   {
     cuda::std::chrono::duration<int, cuda::std::exa> r(1);
-    assert(f(r));
+    f(r);
+    assert(called);
   }
 
   return 0;

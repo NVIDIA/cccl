@@ -22,7 +22,7 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 
-#  include <cuda/std/chrono>
+#  include <cuda/std/__chrono/duration.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
