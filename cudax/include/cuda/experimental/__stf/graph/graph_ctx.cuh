@@ -485,7 +485,7 @@ public:
     {
       /* This will lookup in the cache (if any) and update an existing entry, or
        * instantiate a graph if none is found. */
-      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, *g);
       state.exec_graph  = query_result.first;
 
       hit = query_result.second; // indicate if this was a hit or miss in the cache

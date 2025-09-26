@@ -433,10 +433,10 @@ public:
   }
 
   ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
-  cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
+  cached_graphs_query(size_t nnodes, size_t nedges, cudaGraph_t g)
   {
     assert(pimpl);
-    return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
+    return pimpl->cached_graphs.query(nnodes, nedges, g);
   }
 
   // Get the green context helper cached for this device (or let the user initialize it)
