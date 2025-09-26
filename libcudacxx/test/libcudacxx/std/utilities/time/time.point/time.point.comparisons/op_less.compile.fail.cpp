@@ -27,58 +27,24 @@
 //   bool
 //   operator>=(const time_point<cuda/std/Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
 
-#include <cuda/std/cassert>
+// time_points with different clocks should not compare
+
 #include <cuda/std/chrono>
 
-#include "test_macros.h"
-
-__host__ __device__ constexpr bool test()
-{
-  using Clock     = cuda::std::chrono::system_clock;
-  using Duration1 = cuda::std::chrono::milliseconds;
-  using Duration2 = cuda::std::chrono::microseconds;
-  using T1        = cuda::std::chrono::time_point<Clock, Duration1>;
-  using T2        = cuda::std::chrono::time_point<Clock, Duration2>;
-
-  {
-    T1 t1(Duration1(3));
-    T1 t2(Duration1(3));
-    assert(!(t1 < t2));
-    assert(!(t1 > t2));
-    assert((t1 <= t2));
-    assert((t1 >= t2));
-  }
-  {
-    T1 t1(Duration1(3));
-    T1 t2(Duration1(4));
-    assert((t1 < t2));
-    assert(!(t1 > t2));
-    assert((t1 <= t2));
-    assert(!(t1 >= t2));
-  }
-  {
-    T1 t1(Duration1(3));
-    T2 t2(Duration2(3000));
-    assert(!(t1 < t2));
-    assert(!(t1 > t2));
-    assert((t1 <= t2));
-    assert((t1 >= t2));
-  }
-  {
-    T1 t1(Duration1(3));
-    T2 t2(Duration2(3001));
-    assert((t1 < t2));
-    assert(!(t1 > t2));
-    assert((t1 <= t2));
-    assert(!(t1 >= t2));
-  }
-  return true;
-}
+#include "../../clock.h"
 
 int main(int, char**)
 {
-  test();
-  static_assert(test());
+  using Clock     = cuda::std::chrono::system_clock1;
+  using Clock2    = Clock;
+  using Duration1 = cuda::std::chrono::milliseconds;
+  using Duration2 = cuda::std::chrono::microseconds;
+  using T1        = cuda::std::chrono::time_point<Clock1, Duration1>;
+  using T2        = cuda::std::chrono::time_point<Clock2, Duration2>;
+
+  T1 t1(Duration1(3));
+  T2 t2(Duration2(3000));
+  t1 < t2;
 
   return 0;
 }

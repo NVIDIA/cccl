@@ -11,7 +11,7 @@
 
 // time_point
 
-// static constexpr time_point max(); // noexcept after C++17
+// constexpr time_point& operator++();
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
@@ -22,11 +22,10 @@ __host__ __device__ constexpr bool test()
 {
   using Clock    = cuda::std::chrono::system_clock;
   using Duration = cuda::std::chrono::milliseconds;
-  using TP       = cuda::std::chrono::time_point<Clock, Duration>;
-
-  static_assert(noexcept(TP::max()));
-  assert(TP::max() == TP(Duration::max()));
-
+  cuda::std::chrono::time_point<Clock, Duration> t{Duration{5}};
+  cuda::std::chrono::time_point<Clock, Duration>& tref{++t};
+  assert(&tref == &t);
+  assert(tref.time_since_epoch() == Duration{6});
   return true;
 }
 

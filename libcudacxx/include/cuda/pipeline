@@ -30,7 +30,7 @@
 #include <cuda/barrier>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/chrono>
+#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
