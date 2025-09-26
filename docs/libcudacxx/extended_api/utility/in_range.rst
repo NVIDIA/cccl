@@ -54,7 +54,7 @@ Example
     #include <cuda/utility>
     #include <cuda/std/cassert>
 
-    __global__ void kernel() {
+    __global__ void in_range_kernel() {
         // unsigned integers
         assert(cuda::in_range(5u, 1u, 10u));   // 5  is in the range     [1, 10)
         assert(!cuda::in_range(15u, 1u, 10u)); // 15 is NOT in the range [1, 10)
