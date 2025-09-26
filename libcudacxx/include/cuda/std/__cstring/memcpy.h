@@ -33,8 +33,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::size_t;
 
-// old compilers stll trigger the name conflict
-#if _CCCL_COMPILER(GCC, <=, 9)
+// old compilers still trigger the name conflict
+// nvcc 12.0 and 12.1 trigger segmentation fault
+#if _CCCL_COMPILER(GCC, <=, 9) && _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
 
 using ::memcpy;
 
