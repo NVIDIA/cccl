@@ -29,12 +29,10 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class, class = void>
-struct __is_transparent : false_type
-{};
+inline constexpr bool __is_transparent = false;
 
 template <class _Tp, class _Up>
-struct __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> : true_type
-{};
+inline constexpr bool __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
