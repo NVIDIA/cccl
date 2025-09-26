@@ -267,15 +267,29 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
       _CCCL_ASSUME(__lhs < 0);
     }
     {
-      const auto __lhs1 = static_cast<_Common>(__lhs);
-      const auto __rhs1 = static_cast<_Common>(__rhs);
-      const auto __sum  = static_cast<_Common>(__lhs1 + __rhs1); // no overflow because of opposite signs
-      using _SignedType = ::cuda::std::conditional_t<is_signed_v<_Lhs>, _Lhs, _Rhs>;
+      const auto __lhs1            = static_cast<_Common>(__lhs);
+      const auto __rhs1            = static_cast<_Common>(__rhs);
+      const auto __sum             = static_cast<_Common>(__lhs1 + __rhs1); // no overflow because of opposite signs
+      using _SignedType            = ::cuda::std::conditional_t<is_signed_v<_Lhs>, _Lhs, _Rhs>;
+      constexpr auto __signed_max  = ::cuda::std::numeric_limits<_SignedType>::max();
+      const auto __unsigned_value  = is_unsigned_v<_Lhs> ? __lhs1 : __rhs1;
+      const auto __is_sum_negative = __unsigned_value < __signed_max && __sum > __signed_max;
       if constexpr (is_unsigned_v<_ActualResult>)
       {
         const auto __ret = ::cuda::overflow_cast<_ActualResult>(__sum);
-        return overflow_result<_ActualResult>{
-          __ret.value, __sum > ::cuda::std::numeric_limits<_SignedType>::max() || __ret.overflow};
+        return overflow_result<_ActualResult>{__ret.value, __is_sum_negative || __ret.overflow};
+      }
+      else
+      {
+        using _SignedCommon = ::cuda::std::make_signed_t<_Common>;
+        if (__is_sum_negative)
+        {
+          return ::cuda::overflow_cast<_ActualResult>(static_cast<_SignedCommon>(__sum));
+        }
+        else
+        {
+          return ::cuda::overflow_cast<_ActualResult>(__sum);
+        }
       }
     }
     const auto __lhs1 = static_cast<_CommonAll>(__lhs);
@@ -297,7 +311,6 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     }
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
   }
-  -
 #endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
 }
 
