@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -40,11 +41,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, class = void>
-inline constexpr bool __has_member_difference_type = false;
-
 template <class _Tp>
-inline constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
+_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::difference_type));
 
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template <class _Tp>

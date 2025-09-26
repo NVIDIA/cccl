@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
@@ -39,17 +40,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, class = void>
-inline constexpr bool __has_member_value_type = false;
+template <class _Tp>
+_CCCL_CONCEPT __has_member_value_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::value_type));
 
 template <class _Tp>
-inline constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
-
-template <class _Tp, class = void>
-inline constexpr bool __has_member_element_type = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+_CCCL_CONCEPT __has_member_element_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::element_type));
 
 template <class, class = void>
 struct __cond_value_type

@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
@@ -31,11 +32,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, class = void>
-inline constexpr bool __has_member_result_type = false;
-
 template <class _Tp>
-inline constexpr bool __has_member_result_type<_Tp, void_t<typename _Tp::result_type>> = true;
+_CCCL_CONCEPT __has_member_result_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::result_type));
 
 // __weak_result_type
 
