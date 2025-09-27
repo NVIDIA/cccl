@@ -48,6 +48,13 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#if _CCCL_HAS_CUDA_COMPILER()
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#endif // _CCCL_HAS_CUDA_COMPILER()
+
+#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/std/tuple>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -60,6 +67,21 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
 OutputIt _CCCL_API _CCCL_FORCEINLINE
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
+
+// Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
+// We want this to unwrap zip_transform_iterator
+namespace __transform
+{
+_CCCL_EXEC_CHECK_DISABLE
+template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp, class Predicate>
+OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+  execution_policy<Derived>& policy,
+  ::cuda::std::tuple<InputIts...> firsts,
+  OutputIt result,
+  Offset num_items,
+  TransformOp transform_op,
+  Predicate pred);
+} // namespace __transform
 
 namespace __copy
 {
@@ -189,6 +211,17 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
     }
 
     return result + n;
+  }
+  else if constexpr (::cuda::__is_zip_transform_iterator<InputIt>)
+  {
+    const auto n = ::cuda::std::distance(first, last);
+    return cuda_cub::__transform::cub_transform_many(
+      policy,
+      ::cuda::std::move(first).__base(),
+      result,
+      n,
+      ::cuda::std::move(first).__pred(),
+      cub::detail::transform::always_true_predicate{});
   }
   else
   {

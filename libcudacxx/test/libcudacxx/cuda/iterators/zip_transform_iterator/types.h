@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef TEST_CUDA_ITERATOR_ZIP_ITERATOR_H
-#define TEST_CUDA_ITERATOR_ZIP_ITERATOR_H
+#ifndef TEST_CUDA_ITERATOR_ZIP_TRANSFORM_ITERATOR_H
+#define TEST_CUDA_ITERATOR_ZIP_TRANSFORM_ITERATOR_H
 
 #include <cuda/std/functional>
 
@@ -87,55 +87,6 @@ struct IterNotDefaultConstructible
   }
 #endif // TEST_STD_VER <=2017
 };
-
-struct IterNotDefaultConstructibleSized
-{
-  int i; // deliberately uninitialised
-
-  __host__ __device__ constexpr IterNotDefaultConstructibleSized(const int val) noexcept
-      : i(val)
-  {}
-
-  using iterator_category = cuda::std::random_access_iterator_tag;
-  using value_type        = int;
-  using difference_type   = intptr_t;
-  using pointer           = int*;
-  using reference         = int&;
-
-  __host__ __device__ constexpr int operator*() const
-  {
-    return i;
-  }
-
-  __host__ __device__ constexpr IterNotDefaultConstructibleSized& operator++()
-  {
-    return *this;
-  }
-  __host__ __device__ constexpr void operator++(int) {}
-
-#if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool
-  operator==(const IterNotDefaultConstructibleSized&, const IterNotDefaultConstructibleSized&) = default;
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool
-  operator==(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
-  {
-    return lhs.i == rhs.i;
-  }
-  __host__ __device__ friend constexpr bool
-  operator!=(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
-  {
-    return lhs.i != rhs.i;
-  }
-#endif // TEST_STD_VER <=2017
-
-  __host__ __device__ friend constexpr difference_type
-  operator-(const IterNotDefaultConstructibleSized& x, const IterNotDefaultConstructibleSized& y)
-  {
-    return x.i - y.i;
-  }
-};
-static_assert(::cuda::std::__has_random_access_traversal<IterNotDefaultConstructibleSized>);
 
 template <class Base = int*>
 struct forward_sized_iterator
@@ -361,4 +312,98 @@ struct LessThanIterator
 };
 static_assert(cuda::std::random_access_iterator<LessThanIterator>);
 
-#endif // TEST_CUDA_ITERATOR_ZIP_ITERATOR_H
+// Functions
+
+struct Plus
+{
+  template <class T, class U>
+  __host__ __device__ constexpr T operator()(const T x, const U y) const noexcept
+  {
+    return static_cast<T>(x + y);
+  }
+};
+
+struct PlusMutable
+{
+  template <class T, class U>
+  __host__ __device__ constexpr T operator()(const T x, const U y) noexcept
+  {
+    return static_cast<T>(x + y);
+  }
+};
+
+struct PlusMayThrow
+{
+  template <class T, class U>
+  __host__ __device__ constexpr T operator()(const T x, const U y) const
+  {
+    return static_cast<T>(x + y);
+  }
+};
+
+struct PlusNotDefaultConstructible
+{
+  __host__ __device__ constexpr PlusNotDefaultConstructible(int) {}
+
+  template <class T, class U>
+  __host__ __device__ constexpr T operator()(const T x, const U y) const noexcept
+  {
+    return static_cast<T>(x + y);
+  }
+};
+
+struct ReturnFirstLvalueReference
+{
+  template <class T, class U>
+  __host__ __device__ constexpr T& operator()(T& x, U&) const noexcept
+  {
+    return x;
+  }
+};
+
+struct ReturnFirstRvalueReference
+{
+  template <class T, class U>
+  __host__ __device__ constexpr T&& operator()(T& x, U&) const noexcept
+  {
+    return cuda::std::move(x);
+  }
+};
+
+struct TimesTwo
+{
+  template <class T>
+  __host__ __device__ constexpr T operator()(T x) const noexcept
+  {
+    return x * 2;
+  }
+};
+
+struct TimesTwoMutable
+{
+  template <class T>
+  __host__ __device__ constexpr T operator()(T x) noexcept
+  {
+    return x * 2;
+  }
+};
+
+struct TimesTwoMayThrow
+{
+  template <class T>
+  __host__ __device__ constexpr T operator()(T x) const
+  {
+    return x * 2;
+  }
+};
+
+struct Sum
+{
+  template <class T, class U, class V>
+  __host__ __device__ constexpr T operator()(T x, U y, V z) const
+  {
+    return x + y + z;
+  }
+};
+
+#endif // TEST_CUDA_ITERATOR_ZIP_TRANSFORM_ITERATOR_H

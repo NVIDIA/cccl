@@ -37,72 +37,59 @@ __host__ __device__ constexpr bool test()
   double b[] = {4.1, 3.2, 4.3, 0.1, 0.2};
 
   { // operator+(x, n) and operator+=
-    cuda::zip_iterator iter1{a, b};
+    cuda::zip_transform_iterator iter1{Plus{}, a, b};
     using Iter = decltype(iter1);
 
-    const auto iter2 = iter1 + 3;
-    auto [x2, y2]    = *iter2;
-    assert(cuda::std::addressof(x2) == cuda::std::addressof(a[3]));
-    assert(cuda::std::addressof(y2) == cuda::std::addressof(b[3]));
-    static_assert(cuda::std::is_same_v<decltype(iter1 + 3), Iter>);
+    const auto iter2 = iter1 + 2;
+    assert(iter2 - iter1 == 2);
+    static_assert(cuda::std::is_same_v<decltype(iter1 + 2), Iter>);
+    const int expected1 = a[2] + static_cast<int>(b[2]);
+    assert(*iter2 == expected1);
 
     const auto iter3 = 3 + iter1;
-    auto [x3, y3]    = *iter3;
-    assert(cuda::std::addressof(x3) == cuda::std::addressof(a[3]));
-    assert(cuda::std::addressof(y3) == cuda::std::addressof(b[3]));
+    assert(iter3 - iter1 == 3);
     static_assert(cuda::std::is_same_v<decltype(3 + iter1), Iter>);
+    const int expected2 = a[3] + static_cast<int>(b[3]);
+    assert(*iter3 == expected2);
 
-    iter1 += 3;
-    assert(iter1 == iter2);
-    auto [x1, y1] = *iter2;
-    assert(cuda::std::addressof(x1) == cuda::std::addressof(a[3]));
-    assert(cuda::std::addressof(y1) == cuda::std::addressof(b[3]));
-    static_assert(cuda::std::is_same_v<decltype(iter1 += 3), Iter&>);
-
+    iter1 += 4;
+    assert(iter1 - iter2 == 2);
+    static_assert(cuda::std::is_same_v<decltype(iter1 += 4), Iter&>);
+    const int expected3 = a[4] + static_cast<int>(b[4]);
+    assert(*iter1 == expected3);
     static_assert(canPlusEqual<Iter, intptr_t>);
   }
 
   { // operator-(x, n) and operator-=
-    cuda::zip_iterator iter1{a + 5, b + 5};
+    cuda::zip_transform_iterator iter1{Plus{}, a + 5, b + 5};
     using Iter = decltype(iter1);
 
     const auto iter2 = iter1 - 3;
-    auto [x2, y2]    = *iter2;
-    assert(cuda::std::addressof(x2) == cuda::std::addressof(a[2]));
-    assert(cuda::std::addressof(y2) == cuda::std::addressof(b[2]));
-    static_assert(cuda::std::is_same_v<decltype(iter1 - 3), Iter>);
+    assert(iter1 - iter2 == 3);
+    static_assert(cuda::std::is_same_v<decltype(iter1 - 2), Iter>);
+    const int expected1 = a[2] + static_cast<int>(b[2]);
+    assert(*iter2 == expected1);
 
     iter1 -= 3;
-    assert(iter1 == iter2);
-    auto [x1, y1] = *iter2;
-    assert(cuda::std::addressof(x1) == cuda::std::addressof(a[2]));
-    assert(cuda::std::addressof(y1) == cuda::std::addressof(b[2]));
+    assert(iter2 == iter1);
     static_assert(cuda::std::is_same_v<decltype(iter1 -= 3), Iter&>);
-
+    const int expected2 = a[2] + static_cast<int>(b[2]);
+    assert(*iter1 == expected2);
     static_assert(canMinusEqual<Iter, intptr_t>);
   }
 
   { // operator-(x, y)
-    cuda::zip_iterator iter1{a, b};
-    cuda::zip_iterator iter2{a + 5, b + 5};
+    cuda::zip_transform_iterator iter1{Plus{}, a, b};
+    cuda::zip_transform_iterator iter2{Plus{}, a + 5, b + 5};
     using Iter = decltype(iter1);
     assert(iter2 - iter1 == 5);
     assert(iter1 - iter2 == -5);
     static_assert(cuda::std::is_same_v<decltype(iter2 - iter1), cuda::std::iter_difference_t<Iter>>);
   }
 
-  { // One of the iterators is not default constructible but sized
-    cuda::zip_iterator iter1{IterNotDefaultConstructibleSized{0}, b};
-    cuda::zip_iterator iter2{IterNotDefaultConstructibleSized{5}, b + 5};
-    assert(iter2 - iter1 == 5);
-    assert(iter1 - iter2 == -5);
-
-    // Its a fake iterator, so we did not implement all the random_access interface
-  }
-
   { // One of the iterators is not random access but sized
-    cuda::zip_iterator iter1{forward_sized_iterator<>{a}, b};
-    cuda::zip_iterator iter2{forward_sized_iterator<>{a + 5}, b + 5};
+    cuda::zip_transform_iterator iter1{Plus{}, forward_sized_iterator<>{a}, b};
+    cuda::zip_transform_iterator iter2{Plus{}, forward_sized_iterator<>{a + 5}, b + 5};
     using Iter = decltype(iter1);
     assert(iter2 - iter1 == 5);
     assert(iter1 - iter2 == -5);
@@ -115,7 +102,7 @@ __host__ __device__ constexpr bool test()
   }
 
   { // One of the iterators is not random access and not sized
-    cuda::zip_iterator iter1{forward_iterator{a}, b};
+    cuda::zip_transform_iterator iter1{Plus{}, forward_iterator{a}, b};
     using Iter = decltype(iter1);
     static_assert(!cuda::std::invocable<cuda::std::plus<>, Iter, intptr_t>);
     static_assert(!cuda::std::invocable<cuda::std::plus<>, intptr_t, Iter>);
