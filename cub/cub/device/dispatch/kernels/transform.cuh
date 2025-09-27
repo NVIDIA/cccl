@@ -267,7 +267,6 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     // load inputs
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
-    // TODO(bgruber): we could support fancy iterators for loading here as well (and only vectorize some inputs)
     [[maybe_unused]] auto load_tile = [&](auto in, auto& input) {
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
