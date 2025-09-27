@@ -46,7 +46,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
-  static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
+  static_assert(!is_lvalue_reference_v<_Tp>, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);
 }
 

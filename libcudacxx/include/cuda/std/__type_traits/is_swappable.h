@@ -159,40 +159,41 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_swappable_v<_Tp, true> =
+  is_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_nothrow_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_nothrow_swappable_v<_Tp, true> =
+  is_nothrow_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with : public bool_constant<is_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable : public bool_constant<is_swappable_v<_Tp>>
 {};
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_nothrow_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
-
-template <class _Tp, class _Up>
-inline constexpr bool is_swappable_with_v = is_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-inline constexpr bool is_swappable_v = is_swappable<_Tp>::value;
-
-template <class _Tp, class _Up>
-inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -50,7 +50,7 @@ template <class _Extents>
 class layout_left::mapping : private __mdspan_ebco<_Extents>
 {
 public:
-  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "layout_left::mapping template argument must be a specialization of extents.");
 
   using extents_type = _Extents;

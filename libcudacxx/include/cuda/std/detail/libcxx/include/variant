@@ -1500,10 +1500,10 @@ struct __variant_constraints
   template <bool>
   struct __swappable
   {
-    static constexpr bool __is_swappable =
+    static constexpr bool __is_swappable_v =
       __all<(is_move_constructible_v<_Types> && is_swappable_v<_Types>) ...>::value;
 
-    static constexpr bool __is_nothrow_swappable =
+    static constexpr bool __is_nothrow_swappable_v =
       __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_swappable_v<_Types>) ...>::value;
   };
 };
@@ -1679,8 +1679,8 @@ public:
 
   template <bool _Dummy       = true,
             class _Constraint = __swap_constraint<_Dummy>,
-            class             = enable_if_t<_Constraint::__is_swappable>>
-  _CCCL_API inline void swap(variant& __that) noexcept(_Constraint::__is_nothrow_swappable)
+            class             = enable_if_t<_Constraint::__is_swappable_v>>
+  _CCCL_API inline void swap(variant& __that) noexcept(_Constraint::__is_nothrow_swappable_v)
   {
     __impl_.__swap(__that.__impl_);
   }

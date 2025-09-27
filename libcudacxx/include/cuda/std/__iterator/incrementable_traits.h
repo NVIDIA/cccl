@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -39,6 +40,23 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+_CCCL_CONCEPT __has_member_difference_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::difference_type));
+
+template <class _Tp, class = void, class = void>
+inline constexpr bool __has_integral_minus_impl = false;
+
+// In C++17 we get issues trying to bind void* to a const& so special case it here
+template <class _Tp>
+inline constexpr bool
+  __has_integral_minus_impl<_Tp,
+                            enable_if_t<!same_as<_Tp, void*>>,
+                            void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
+    integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
+
+template <class _Tp>
+_CCCL_CONCEPT __has_integral_minus = _CCCL_REQUIRES_EXPR((_Tp))(requires(__has_integral_minus_impl<_Tp>));
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -58,25 +76,17 @@ template <class _Ip>
 struct incrementable_traits<const _Ip> : incrementable_traits<_Ip>
 {};
 
-template <class _Tp>
-concept __has_member_difference_type = requires { typename _Tp::difference_type; };
-
 template <__has_member_difference_type _Tp>
 struct incrementable_traits<_Tp>
 {
   using difference_type = typename _Tp::difference_type;
 };
 
-template <class _Tp>
-concept __has_integral_minus = requires(const _Tp& __x, const _Tp& __y) {
-  { __x - __y } -> integral;
-};
-
 template <__has_integral_minus _Tp>
   requires(!__has_member_difference_type<_Tp>)
 struct incrementable_traits<_Tp>
 {
-  using difference_type = make_signed_t<decltype(declval<_Tp>() - declval<_Tp>())>;
+  using difference_type = make_signed_t<decltype(::cuda::std::declval<_Tp>() - ::cuda::std::declval<_Tp>())>;
 };
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_difference_t<I>` denotes
@@ -103,23 +113,6 @@ template <class _Ip>
 struct incrementable_traits<const _Ip> : incrementable_traits<_Ip>
 {};
 
-template <class _Tp, class = void>
-inline constexpr bool __has_member_difference_type = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
-
-template <class _Tp, class = void, class = void>
-inline constexpr bool __has_integral_minus = false;
-
-// In C++17 we get issues trying to bind void* to a const& so special case it here
-template <class _Tp>
-inline constexpr bool
-  __has_integral_minus<_Tp,
-                       enable_if_t<!same_as<_Tp, void*>>,
-                       void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
-    integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
-
 template <class _Tp>
 struct incrementable_traits<_Tp, enable_if_t<!is_pointer_v<_Tp> && !is_const_v<_Tp> && __has_member_difference_type<_Tp>>>
 {
@@ -131,7 +124,7 @@ struct incrementable_traits<
   _Tp,
   enable_if_t<!is_pointer_v<_Tp> && !is_const_v<_Tp> && !__has_member_difference_type<_Tp> && __has_integral_minus<_Tp>>>
 {
-  using difference_type = make_signed_t<decltype(declval<_Tp>() - declval<_Tp>())>;
+  using difference_type = make_signed_t<decltype(::cuda::std::declval<_Tp>() - ::cuda::std::declval<_Tp>())>;
 };
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_difference_t<I>` denotes

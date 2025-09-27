@@ -93,7 +93,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
     ::cuda::std::fill_n(__elems_, _Size, __u);
   }
 
-  _CCCL_API constexpr void swap(array& __a) noexcept(__is_nothrow_swappable<_Tp>::value)
+  _CCCL_API constexpr void swap(array& __a) noexcept(is_nothrow_swappable_v<_Tp>)
   {
     ::cuda::std::swap_ranges(__elems_, __elems_ + _Size, __a.data());
   }
@@ -434,7 +434,7 @@ template <class _Tp, size_t _Size>
 }
 
 _CCCL_TEMPLATE(class _Tp, size_t _Size)
-_CCCL_REQUIRES((_Size == 0) || __is_swappable<_Tp>::value)
+_CCCL_REQUIRES((_Size == 0) || is_nothrow_swappable_v<_Tp>)
 _CCCL_API constexpr void swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);

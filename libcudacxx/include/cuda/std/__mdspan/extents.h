@@ -687,8 +687,7 @@ namespace __mdspan_detail
 {
 
 template <class _IndexType, size_t... _ExtentsPack>
-struct __is_extents<extents<_IndexType, _ExtentsPack...>> : true_type
-{};
+inline constexpr bool __is_extents_v<extents<_IndexType, _ExtentsPack...>> = true;
 
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard

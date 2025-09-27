@@ -594,7 +594,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
   }
 };
 
-template <class _Tp, bool = is_enum<_Tp>::value>
+template <class _Tp, bool = is_enum_v<_Tp>>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __enum_hash : public __unary_function<_Tp, size_t>
 {
   _CCCL_API inline size_t operator()(_Tp __v) const noexcept
@@ -625,14 +625,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<n
 };
 
 template <class _Key, class _Hash>
-using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
-  integral_constant<bool,
-                    is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
-                      && __invocable_r<size_t, _Hash, _Key const&>::value>;
+using __check_hash_requirements _CCCL_NODEBUG_ALIAS = integral_constant<
+  bool,
+  is_copy_constructible_v<_Hash> && is_move_constructible_v<_Hash> && __invocable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
 using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
-  integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible<_Hash>::value>;
+  integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible_v<_Hash>>;
 
 template <class _Type, class>
 using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;

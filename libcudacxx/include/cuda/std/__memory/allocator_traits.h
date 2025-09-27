@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -174,18 +175,15 @@ struct __is_always_equal<_Alloc, true>
 };
 
 // __allocator_traits_rebind
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <class _Tp, class _Up, class = void>
-struct __has_rebind_other : false_type
-{};
 template <class _Tp, class _Up>
-struct __has_rebind_other<_Tp, _Up, void_t<typename _Tp::template rebind<_Up>::other>> : true_type
-{};
+_CCCL_CONCEPT __has_member_rebind_other =
+  _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
-template <class _Tp, class _Up, bool = __has_rebind_other<_Tp, _Up>::value>
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
 struct __allocator_traits_rebind
 {
-  static_assert(__has_rebind_other<_Tp, _Up>::value, "This allocator has to implement rebind");
+  static_assert(__has_member_rebind_other<_Tp, _Up>, "This allocator has to implement rebind");
   using type _CCCL_NODEBUG_ALIAS = typename _Tp::template rebind<_Up>::other;
 };
 template <template <class, class...> class _Alloc, class _Tp, class... _Args, class _Up>
@@ -204,63 +202,56 @@ using __allocator_traits_rebind_t = typename __allocator_traits_rebind<_Alloc, _
 
 // __has_allocate_hint
 template <class _Alloc, class _SizeType, class _ConstVoidPtr, class = void>
-struct __has_allocate_hint : false_type
-{};
+inline constexpr bool __has_allocate_hint = false;
 
 template <class _Alloc, class _SizeType, class _ConstVoidPtr>
-struct __has_allocate_hint<_Alloc,
-                           _SizeType,
-                           _ConstVoidPtr,
-                           decltype((void) ::cuda::std::declval<_Alloc>().allocate(
-                             ::cuda::std::declval<_SizeType>(), ::cuda::std::declval<_ConstVoidPtr>()))> : true_type
-{};
+inline constexpr bool __has_allocate_hint<
+  _Alloc,
+  _SizeType,
+  _ConstVoidPtr,
+  void_t<decltype((void) ::cuda::std::declval<_Alloc>().allocate(
+    ::cuda::std::declval<_SizeType>(), ::cuda::std::declval<_ConstVoidPtr>()))>> = true;
 
 // __has_construct
 template <class, class _Alloc, class... _Args>
-struct __has_construct_impl : false_type
-{};
+inline constexpr bool __has_construct_impl = false;
 
 template <class _Alloc, class... _Args>
-struct __has_construct_impl<decltype((void) ::cuda::std::declval<_Alloc>().construct(::cuda::std::declval<_Args>()...)),
-                            _Alloc,
-                            _Args...> : true_type
-{};
+inline constexpr bool
+  __has_construct_impl<decltype((void) ::cuda::std::declval<_Alloc>().construct(::cuda::std::declval<_Args>()...)),
+                       _Alloc,
+                       _Args...> = true;
 
 template <class _Alloc, class... _Args>
-struct __has_construct : __has_construct_impl<void, _Alloc, _Args...>
-{};
+inline constexpr bool __has_construct = __has_construct_impl<void, _Alloc, _Args...>;
 
 // __has_destroy
 template <class _Alloc, class _Pointer, class = void>
-struct __has_destroy : false_type
-{};
+inline constexpr bool __has_destroy = false;
 
 template <class _Alloc, class _Pointer>
-struct __has_destroy<_Alloc,
-                     _Pointer,
-                     decltype((void) ::cuda::std::declval<_Alloc>().destroy(::cuda::std::declval<_Pointer>()))>
-    : true_type
-{};
+inline constexpr bool
+  __has_destroy<_Alloc,
+                _Pointer,
+                void_t<decltype((void) ::cuda::std::declval<_Alloc>().destroy(::cuda::std::declval<_Pointer>()))>> =
+    true;
 
 // __has_max_size
 template <class _Alloc, class = void>
-struct __has_max_size : false_type
-{};
+inline constexpr bool __has_max_size = false;
 
 template <class _Alloc>
-struct __has_max_size<_Alloc, decltype((void) ::cuda::std::declval<_Alloc&>().max_size())> : true_type
-{};
+inline constexpr bool __has_max_size<_Alloc, void_t<decltype((void) ::cuda::std::declval<_Alloc&>().max_size())>> =
+  true;
 
 // __has_select_on_container_copy_construction
 template <class _Alloc, class = void>
-struct __has_select_on_container_copy_construction : false_type
-{};
+inline constexpr bool __has_select_on_container_copy_construction = false;
 
 template <class _Alloc>
-struct __has_select_on_container_copy_construction<
+inline constexpr bool __has_select_on_container_copy_construction<
   _Alloc,
-  decltype((void) ::cuda::std::declval<_Alloc>().select_on_container_copy_construction())> : true_type
-{};
+  void_t<decltype((void) ::cuda::std::declval<_Alloc>().select_on_container_copy_construction())>> = true;
 
 template <class _Tp>
 _CCCL_API constexpr _Tp* __to_raw_pointer(_Tp* __p) noexcept
@@ -291,40 +282,32 @@ _CCCL_API inline auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 
 // __is_default_allocator
 template <class _Tp>
-struct __is_default_allocator : false_type
-{};
+inline constexpr bool __is_default_allocator = false;
 
 template <class _Tp>
-struct __is_default_allocator<allocator<_Tp>> : true_type
-{};
+inline constexpr bool __is_default_allocator<allocator<_Tp>> = true;
+
 // __is_cpp17_move_insertable
 template <class _Alloc, class = void>
-struct __is_cpp17_move_insertable : is_move_constructible<typename _Alloc::value_type>
-{};
+inline constexpr bool __is_cpp17_move_insertable = is_move_constructible_v<typename _Alloc::value_type>;
 
 template <class _Alloc>
-struct __is_cpp17_move_insertable<
+inline constexpr bool __is_cpp17_move_insertable<
   _Alloc,
-  enable_if_t<!__is_default_allocator<_Alloc>::value
-              && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>::value>>
-    : true_type
-{};
+  enable_if_t<__is_default_allocator<_Alloc>
+              && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>>> = true;
 
 // __is_cpp17_copy_insertable
 template <class _Alloc, class = void>
-struct __is_cpp17_copy_insertable
-    : integral_constant<bool,
-                        is_copy_constructible<typename _Alloc::value_type>::value
-                          && __is_cpp17_move_insertable<_Alloc>::value>
-{};
+inline constexpr bool __is_cpp17_copy_insertable =
+  is_copy_constructible_v<typename _Alloc::value_type> && __is_cpp17_move_insertable<_Alloc>;
 
 template <class _Alloc>
-struct __is_cpp17_copy_insertable<
+inline constexpr bool __is_cpp17_copy_insertable<
   _Alloc,
-  enable_if_t<!__is_default_allocator<_Alloc>::value
-              && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>::value>>
-    : __is_cpp17_move_insertable<_Alloc>
-{};
+  enable_if_t<!__is_default_allocator<_Alloc>
+              && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>>> =
+  __is_cpp17_move_insertable<_Alloc>;
 
 template <class _Alloc>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
@@ -354,15 +337,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     return __a.allocate(__n);
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
+  template <class _Ap = _Alloc, enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>, int> = 0>
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
   {
     return __a.allocate(__n, __hint);
   }
-  template <class _Ap                                                                         = _Alloc,
-            class                                                                             = void,
-            enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
+  template <class _Ap                                                                  = _Alloc,
+            class                                                                      = void,
+            enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>, int> = 0>
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer)
   {
@@ -374,15 +357,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     __a.deallocate(__p, __n);
   }
 
-  template <class _Tp, class... _Args, enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>::value, int> = 0>
+  template <class _Tp, class... _Args, enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
   {
     __a.construct(__p, ::cuda::std::forward<_Args>(__args)...);
   }
-  template <class _Tp,
-            class... _Args,
-            class                                                                     = void,
-            enable_if_t<!__has_construct<allocator_type, _Tp*, _Args...>::value, int> = 0>
+  template <class _Tp, class... _Args, class = void, enable_if_t<!__has_construct<allocator_type, _Tp*, _Args...>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type&, _Tp* __p, _Args&&... __args)
   {
 #if _CCCL_STD_VER >= 2020
@@ -392,12 +372,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 #endif
   }
 
-  template <class _Tp, enable_if_t<__has_destroy<allocator_type, _Tp*>::value, int> = 0>
+  template <class _Tp, enable_if_t<__has_destroy<allocator_type, _Tp*>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p) noexcept
   {
     __a.destroy(__p);
   }
-  template <class _Tp, class = void, enable_if_t<!__has_destroy<allocator_type, _Tp*>::value, int> = 0>
+  template <class _Tp, class = void, enable_if_t<!__has_destroy<allocator_type, _Tp*>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p) noexcept
   {
 #if _CCCL_STD_VER >= 2020
@@ -407,26 +387,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 #endif
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_max_size<const _Ap>::value, int> = 0>
+  template <class _Ap = _Alloc, enable_if_t<__has_max_size<const _Ap>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type& __a) noexcept
   {
     return __a.max_size();
   }
-  template <class _Ap = _Alloc, class = void, enable_if_t<!__has_max_size<const _Ap>::value, int> = 0>
+  template <class _Ap = _Alloc, class = void, enable_if_t<!__has_max_size<const _Ap>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type&) noexcept
   {
     return numeric_limits<size_type>::max() / sizeof(value_type);
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_select_on_container_copy_construction<const _Ap>::value, int> = 0>
+  template <class _Ap = _Alloc, enable_if_t<__has_select_on_container_copy_construction<const _Ap>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static allocator_type
   select_on_container_copy_construction(const allocator_type& __a)
   {
     return __a.select_on_container_copy_construction();
   }
-  template <class _Ap                                                                        = _Alloc,
-            class                                                                            = void,
-            enable_if_t<!__has_select_on_container_copy_construction<const _Ap>::value, int> = 0>
+  template <class _Ap                                                                 = _Alloc,
+            class                                                                     = void,
+            enable_if_t<!__has_select_on_container_copy_construction<const _Ap>, int> = 0>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static allocator_type
   select_on_container_copy_construction(const allocator_type& __a)
   {
@@ -437,7 +417,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_API inline static void
   __construct_forward_with_exception_guarantees(allocator_type& __a, _Ptr __begin1, _Ptr __end1, _Ptr& __begin2)
   {
-    static_assert(__is_cpp17_move_insertable<allocator_type>::value,
+    static_assert(__is_cpp17_move_insertable<allocator_type>,
                   "The specified type does not meet the requirements of Cpp17MoveInsertible");
     for (; __begin1 != __end1; ++__begin1, (void) ++__begin2)
     {
@@ -454,8 +434,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 
   template <class _Tp>
   _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _Tp*, _Tp>::value)
-      && is_trivially_move_constructible<_Tp>::value,
+    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
+      && is_trivially_move_constructible_v<_Tp>,
     void>
   __construct_forward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __begin2)
   {
@@ -482,8 +462,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
             class _RawSourceTp = remove_const_t<_SourceTp>,
             class _RawDestTp   = remove_const_t<_DestTp>>
   _CCCL_API inline static enable_if_t<
-    is_trivially_move_constructible<_DestTp>::value && is_same<_RawSourceTp, _RawDestTp>::value
-      && (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _DestTp*, _SourceTp&>::value),
+    is_trivially_move_constructible_v<_DestTp> && is_same_v<_RawSourceTp, _RawDestTp>
+      && (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _DestTp*, _SourceTp&>),
     void>
   __construct_range_forward(allocator_type&, _SourceTp* __begin1, _SourceTp* __end1, _DestTp*& __begin2)
   {
@@ -499,7 +479,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_API inline static void
   __construct_backward_with_exception_guarantees(allocator_type& __a, _Ptr __begin1, _Ptr __end1, _Ptr& __end2)
   {
-    static_assert(__is_cpp17_move_insertable<allocator_type>::value,
+    static_assert(__is_cpp17_move_insertable<allocator_type>,
                   "The specified type does not meet the requirements of Cpp17MoveInsertable");
     while (__end1 != __begin1)
     {
@@ -517,8 +497,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 
   template <class _Tp>
   _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _Tp*, _Tp>::value)
-      && is_trivially_move_constructible<_Tp>::value,
+    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
+      && is_trivially_move_constructible_v<_Tp>,
     void>
   __construct_backward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __end2)
   {

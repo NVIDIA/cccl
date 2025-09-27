@@ -76,7 +76,7 @@ class layout_stride::mapping
                             __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
-  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "layout_stride::mapping template argument must be a specialization of extents.");
 
   using extents_type = _Extents;

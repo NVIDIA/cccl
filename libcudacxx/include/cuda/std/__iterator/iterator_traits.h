@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
@@ -237,6 +238,15 @@ struct __iter_concept_cache<_Iter, void_t<__iter_concept_t<_Iter>>>
 template <class _Iter>
 using _ITER_CONCEPT = typename __iter_concept_cache<_Iter>::type;
 
+template <class _Tp>
+_CCCL_CONCEPT __has_member_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::reference));
+
+template <class _Tp>
+_CCCL_CONCEPT __has_member_pointer = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::pointer));
+
+template <class _Tp>
+_CCCL_CONCEPT __has_member_iterator_category = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::iterator_category));
+
 #if _CCCL_HAS_CONCEPTS()
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
@@ -293,15 +303,6 @@ concept __cpp17_random_access_iterator =
 // We need to consider if a user has specialized std::iterator_traits
 template <class _Ip>
 concept __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
-
-template <class _Ip>
-concept __has_member_reference = requires { typename _Ip::reference; };
-
-template <class _Ip>
-concept __has_member_pointer = requires { typename _Ip::pointer; };
-
-template <class _Ip>
-concept __has_member_iterator_category = requires { typename _Ip::iterator_category; };
 
 template <class _Ip>
 concept __specifies_members = !__specialized_from_std<_Ip> && requires {
@@ -570,24 +571,6 @@ _CCCL_CONCEPT __cpp17_random_access_iterator =
 template <class _Ip>
 inline constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
 
-template <class, class = void>
-inline constexpr bool __has_member_reference = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
-
-template <class, class = void>
-inline constexpr bool __has_member_pointer = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
-
-template <class, class = void>
-inline constexpr bool __has_member_iterator_category = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
-
 template <class _Ip>
 _CCCL_CONCEPT __specifies_members =
   !__specialized_from_std<_Ip> && __has_member_value_type<_Ip> && __has_member_difference_type<_Ip>
@@ -628,11 +611,11 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
   using type = typename _Ip::pointer;
 };
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__cccl_unused(__i.operator->())));
+template <class _Ip, class = void>
+inline constexpr bool __has_operator_arrow = false;
 
 template <class _Ip>
-_CCCL_CONCEPT __has_operator_arrow = _CCCL_FRAGMENT(__has_operator_arrow_, _Ip);
+inline constexpr bool __has_operator_arrow<_Ip, decltype((void) ::cuda::std::declval<_Ip&>().operator->())> = true;
 
 // Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
 // type.

@@ -194,7 +194,7 @@ template <class _Tp, _Tp... _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
   using value_type = _Tp;
-  static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");
+  static_assert(is_integral_v<_Tp>, "std::integer_sequence can only be instantiated with an integral type");
   static _CCCL_API constexpr size_t size() noexcept
   {
     return sizeof...(_Ip);
@@ -223,7 +223,7 @@ using __make_integer_sequence_unchecked _CCCL_NODEBUG_ALIAS =
 template <class _Tp, _Tp _Ep>
 struct __make_integer_sequence_checked
 {
-  static_assert(is_integral<_Tp>::value, "std::make_integer_sequence can only be instantiated with an integral type");
+  static_assert(is_integral_v<_Tp>, "std::make_integer_sequence can only be instantiated with an integral type");
   static_assert(0 <= _Ep, "std::make_integer_sequence must have a non-negative sequence length");
   // Workaround GCC bug by preventing bad installations when 0 <= _Ep
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68929
