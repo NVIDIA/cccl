@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 template <class _Predicate>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binary_negate
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED binary_negate
     : public __binary_function<typename _Predicate::first_argument_type, typename _Predicate::second_argument_type, bool>
 {
   _Predicate __pred_;
@@ -50,7 +50,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
+CCCL_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
 {
   return binary_negate<_Predicate>(__pred);
 }

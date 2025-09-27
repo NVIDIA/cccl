@@ -197,7 +197,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
+  [[nodiscard]] _CCCL_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
   {
     return __current_;
   }
