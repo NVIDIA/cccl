@@ -83,8 +83,7 @@ _CCCL_CONCEPT resource = _CCCL_REQUIRES_EXPR(
 // We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
-  requires(synchronous_resource<_Resource>),
-  requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(synchronous_resource<_Resource>), requires((has_property<_Resource, _Properties> && ...)));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource`
 //! concept and also satisfies all the provided Properties
@@ -93,7 +92,7 @@ _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variad
 // We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
-  requires(resource<_Resource>), requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(resource<_Resource>), requires((has_property<_Resource, _Properties> && ...)));
 
 template <bool _Convertible>
 struct __different_resource__

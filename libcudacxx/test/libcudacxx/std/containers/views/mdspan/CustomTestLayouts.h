@@ -217,13 +217,11 @@ public:
     const extents_type& extents_{};
   };
 
-  template <
-    class... Indices,
-    cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                                        = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::integral<Indices>...>::value, int>                          = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_convertible<Indices, index_type>::value...>::value, int> = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>::value,
-                           int>                                                                                    = 0>
+  template <class... Indices,
+            cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                          = 0,
+            cuda::std::enable_if_t<(cuda::std::integral_v<Indices> && ...), int>                             = 0,
+            cuda::std::enable_if_t<(cuda::std::is_convertible_v<Indices, index_type> && ...), int>           = 0,
+            cuda::std::enable_if_t<(cuda::std::is_nothrow_constructible_v<index_type, Indices> && ...), int> = 0>
   __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
   {
     return rank_accumulator{extents_}(cuda::std::make_index_sequence<sizeof...(Indices)>(), idx...);
@@ -483,13 +481,11 @@ public:
     const extents_type& extents_{};
   };
 
-  template <
-    class... Indices,
-    cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                                        = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::integral<Indices>...>::value, int>                          = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_convertible<Indices, index_type>::value...>::value, int> = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>::value,
-                           int>                                                                                    = 0>
+  template <class... Indices,
+            cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                          = 0,
+            cuda::std::enable_if_t<(cuda::std::integral_v<Indices> && ...), int>                             = 0,
+            cuda::std::enable_if_t<(cuda::std::is_convertible_v<Indices, index_type> && ...), int>           = 0,
+            cuda::std::enable_if_t<(cuda::std::is_nothrow_constructible_v<index_type, Indices> && ...), int> = 0>
   __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
   {
     return offset_
