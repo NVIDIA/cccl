@@ -29,6 +29,7 @@
 
 #include <cub/detail/ptx-json/string.h>
 
+#include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -67,11 +68,11 @@ struct value<Nested, void>
 {
   __forceinline__ __device__ static void emit()
   {
-    value<Nested>::emit();
+    Nested.emit();
   }
 };
 
-template <int V>
+template <cuda::std::integral auto V>
 struct value<V, void>
 {
   __forceinline__ __device__ static void emit()
