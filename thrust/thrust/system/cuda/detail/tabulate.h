@@ -39,37 +39,23 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/distance.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
+#  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/cuda/execution_policy.h>
+
+#  include <cuda/__functional/address_stability.h>
+#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-namespace __tabulate
-{
-template <class Iterator, class TabulateOp>
-struct functor
-{
-  Iterator items;
-  TabulateOp op;
-
-  template <typename Size>
-  void _CCCL_DEVICE operator()(Size idx)
-  {
-    items[idx] = op(idx);
-  }
-};
-} // namespace __tabulate
-
 template <class Derived, class Iterator, class TabulateOp>
 void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
 {
-  using size_type = thrust::detail::it_difference_t<Iterator>;
-  size_type count = ::cuda::std::distance(first, last);
-  cuda_cub::parallel_for(policy, __tabulate::functor<Iterator, TabulateOp>{first, tabulate_op}, count);
+  using size_type  = ::cuda::std::iter_difference_t<Iterator>;
+  const auto count = ::cuda::std::distance(first, last);
+  cuda_cub::transform_n(
+    policy, ::cuda::counting_iterator<size_type>{}, count, first, ::cuda::proclaim_copyable_arguments(tabulate_op));
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif
