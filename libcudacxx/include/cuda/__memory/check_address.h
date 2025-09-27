@@ -97,9 +97,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 [[nodiscard]] _CCCL_API inline bool
 __are_ptrs_overlapping(const void* __ptr_lhs, const void* __ptr_rhs, ::cuda::std::size_t __n) noexcept
 {
-  auto __ptr1 = static_cast<const char*>(__ptr_lhs);
-  auto __ptr2 = static_cast<const char*>(__ptr_rhs);
-  return ((__ptr1 + __n) < __ptr2) || ((__ptr2 + __n) < __ptr1);
+  auto __ptr1_start = static_cast<const char*>(__ptr_lhs);
+  auto __ptr2_start = static_cast<const char*>(__ptr_rhs);
+  auto __ptr1_end   = __ptr1_start + __n;
+  auto __ptr2_end   = __ptr2_start + __n;
+  return __ptr1_start < __ptr2_end && __ptr2_start < __ptr1_end;
 }
 
 _CCCL_END_NAMESPACE_CUDA
