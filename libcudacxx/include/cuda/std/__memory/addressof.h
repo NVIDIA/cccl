@@ -42,6 +42,9 @@ template <class _Tp>
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
 
+template <class _Tp>
+_Tp* addressof(const _Tp&&) noexcept = delete;
+
 #else
 
 template <class _Tp>
@@ -50,10 +53,10 @@ template <class _Tp>
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
 
-#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
-
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
+
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

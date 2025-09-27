@@ -26,16 +26,25 @@ file(GLOB public_headers_host_only
   "${libcudacxx_SOURCE_DIR}/include/cuda/version"
 )
 
+set(public_host_header_cxx_compile_options)
+set(public_host_header_cxx_compile_definitions)
+
+# Specifically add libc++ testing if requested to the libcudacxx host suite
+if (CCCL_USE_LIBCXX)
+  list(APPEND public_host_header_cxx_compile_options "-stdlib=libc++")
+endif()
+
 function(libcudacxx_create_public_header_test_host header_name, headertest_src)
   # Create the default target for that file
   set(public_headers_host_only_${header_name} verify_${header_name})
   add_library(public_headers_host_only_${header_name} SHARED "${headertest_src}.cpp")
   target_include_directories(public_headers_host_only_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_definitions(public_headers_host_only_${header_name} PRIVATE _CCCL_HEADER_TEST)
+  target_compile_definitions(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_definitions}")
+  target_compile_options(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_options}")
 
   # Bring in the global CCCL compile definitions
   target_link_libraries(public_headertest_${header_name} PUBLIC libcudacxx.compiler_interface)
-
   add_dependencies(libcudacxx.test.public_headers_host_only public_headers_host_only_${header_name})
 endfunction()
 
