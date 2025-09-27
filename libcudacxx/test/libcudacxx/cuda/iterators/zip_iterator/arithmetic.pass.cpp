@@ -91,6 +91,15 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter2 - iter1), cuda::std::iter_difference_t<Iter>>);
   }
 
+  { // One of the iterators is not default constructible but sized
+    cuda::zip_iterator iter1{IterNotDefaultConstructibleSized{0}, b};
+    cuda::zip_iterator iter2{IterNotDefaultConstructibleSized{5}, b + 5};
+    assert(iter2 - iter1 == 5);
+    assert(iter1 - iter2 == -5);
+
+    // Its a fake iterator, so we did not implement all the random_access interface
+  }
+
   { // One of the iterators is not random access but sized
     cuda::zip_iterator iter1{forward_sized_iterator<>{a}, b};
     cuda::zip_iterator iter2{forward_sized_iterator<>{a + 5}, b + 5};
