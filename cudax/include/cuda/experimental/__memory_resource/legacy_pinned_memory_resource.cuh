@@ -62,7 +62,7 @@ public:
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate_sync(const size_t __bytes,
+  [[nodiscard]] _CCCL_HOST_API void* allocate_sync(const size_t __bytes,
                                     const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
@@ -83,7 +83,7 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  void deallocate_sync(
+  _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
     const size_t,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) noexcept
