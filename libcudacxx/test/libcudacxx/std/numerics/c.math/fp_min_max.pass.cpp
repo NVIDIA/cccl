@@ -122,6 +122,9 @@ __host__ __device__ bool test(float val)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>(val);
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>(val);
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(::__float2half(val));
@@ -172,6 +175,9 @@ __host__ __device__ constexpr bool test_constexpr()
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   test<signed char>();
   test<unsigned char>();
