@@ -239,6 +239,101 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
+_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
+  return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
+}
+
+_CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAttribute);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
+}
+
+_CCCL_HOST_API inline void __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, __value);
+}
+
+_CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolDestroy);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to destroy a memory pool", __pool);
+}
+
+_CCCL_HOST_API inline void
+__mallocFromPoolAsync(::CUdeviceptr* __dptr, ::cuda::std::size_t __bytes, ::CUmemoryPool __pool, ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocFromPoolAsync);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to allocate memory from a memory pool", __dptr, __bytes, __pool, __stream);
+}
+
+_CCCL_HOST_API inline void __mempoolTrimTo(::CUmemoryPool __pool, ::cuda::std::size_t __min_bytes_to_keep)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolTrimTo);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to trim a memory pool", __pool, __min_bytes_to_keep);
+}
+
+_CCCL_HOST_API inline ::cudaError_t __freeAsyncNoThrow(::CUdeviceptr __dptr, ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFreeAsync);
+  return static_cast<::cudaError_t>(__driver_fn(__dptr, __stream));
+}
+
+_CCCL_HOST_API inline void __mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::size_t __count)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAccess);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set access of a memory pool", __pool, __descs, __count);
+}
+
+_CCCL_HOST_API inline ::CUmemAccess_flags __mempoolGetAccess(::CUmemoryPool __pool, ::CUmemLocation* __location)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAccess);
+  ::CUmemAccess_flags __flags;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get access of a memory pool", &__flags, __pool, __location);
+  return __flags;
+}
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_CCCL_HOST_API inline ::CUmemoryPool
+__getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocation_type)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemGetDefaultMemPool, cuMemGetDefaultMemPool, 13, 0);
+  ::CUmemoryPool __result;
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
+  return __result;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+_CCCL_HOST_API inline void __mallocManaged(::CUdeviceptr* __dptr, ::cuda::std::size_t __bytes, unsigned int __flags)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocManaged);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate managed memory", __dptr, __bytes, __flags);
+}
+
+_CCCL_HOST_API inline void __mallocHost(void** __dptr, ::cuda::std::size_t __bytes)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocHost);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate host memory", __dptr, __bytes);
+}
+
+_CCCL_HOST_API inline ::cudaError_t __freeNoThrow(::CUdeviceptr __dptr)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFree);
+  return static_cast<::cudaError_t>(__driver_fn(__dptr));
+}
+
+_CCCL_HOST_API inline ::cudaError_t __freeHostNoThrow(void* __dptr)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFreeHost);
+  return static_cast<::cudaError_t>(__driver_fn(__dptr));
+}
+
 // Stream management
 
 _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)

@@ -36,8 +36,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// Trigger a rebuild of the file
-
 //! @file
 //! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
@@ -63,21 +61,11 @@ namespace cuda::experimental
 //! @endrst
 class pinned_memory_resource : public __memory_resource_base
 {
-private:
-  //! @brief  Returns the default ``cudaMemPool_t`` for host pinned memory.
-  //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
-  //! @returns The default memory pool for host pinned memory.
-  [[nodiscard]] static ::cudaMemPool_t __get_default_sysmem_pool()
-  {
-    static pinned_memory_pool __default_pool{};
-    return __default_pool.get();
-  }
-
 public:
   //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t for host pinned memory.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
   pinned_memory_resource()
-      : __memory_resource_base(__get_default_sysmem_pool())
+      : __memory_resource_base(::cuda::experimental::__get_default_host_pinned_pool())
   {}
 
   //! @brief  Constructs the pinned_memory_resource from a \c cudaMemPool_t.
