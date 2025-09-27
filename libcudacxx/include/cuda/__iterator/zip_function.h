@@ -91,6 +91,16 @@ public:
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
+
+  [[nodiscard]] _CCCL_API constexpr _Fn& __fun() noexcept
+  {
+    return __fun_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Fn& __fun() const noexcept
+  {
+    return __fun_;
+  }
 };
 
 //! @}
