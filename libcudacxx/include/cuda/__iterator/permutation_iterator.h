@@ -132,11 +132,11 @@ public:
                 "cuda::permutation_iterator: _Indexs value type must be convertible to iter_difference<Iter>");
 
   //! To actually use operator+ we need the index iterator to be random access
-  static_assert(::cuda::std::__is_cpp17_random_access_iterator<_Index>,
+  static_assert(::cuda::std::__has_random_access_traversal<_Index>,
                 "cuda::permutation_iterator: _Index must be a random access iterator!");
 
   //! To actually use operator+ we need the base iterator to be random access
-  static_assert(::cuda::std::__is_cpp17_random_access_iterator<_Iter>,
+  static_assert(::cuda::std::__has_random_access_traversal<_Iter>,
                 "cuda::permutation_iterator: _Iter must be a random access iterator!");
 
   //! @brief Default constructs an @c permutation_iterator with a value initialized iterator and index
@@ -430,7 +430,7 @@ public:
 
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(
-  ::cuda::std::__is_cpp17_random_access_iterator<_Iter> _CCCL_AND ::cuda::std::__is_cpp17_random_access_iterator<_Index>)
+  ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
 _CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
 
 //! @brief Creates an @c permutation_iterator from a base iterator and an iterator to an integral index
@@ -439,7 +439,7 @@ _CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_I
 //! @relates permutation_iterator
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(
-  ::cuda::std::__is_cpp17_random_access_iterator<_Iter> _CCCL_AND ::cuda::std::__is_cpp17_random_access_iterator<_Index>)
+  ::cuda::std::__has_random_access_traversal<_Iter> _CCCL_AND ::cuda::std::__has_random_access_traversal<_Index>)
 [[nodiscard]] _CCCL_API constexpr permutation_iterator<_Iter, _Index>
 make_permutation_iterator(_Iter __iter, _Index __index) noexcept(
   ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)

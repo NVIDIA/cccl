@@ -807,26 +807,26 @@ _CCCL_CONCEPT __has_iterator_concept_convertible_to = _CCCL_REQUIRES_EXPR((_Iter
   (typename(typename _Iter::iterator_concept), requires(is_convertible_v<typename _Iter::iterator_concept, _Tag>));
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_input_iterator =
+inline constexpr bool __has_input_traversal =
   __has_iterator_category_convertible_to<_Iter, input_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, input_iterator_tag>;
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_forward_iterator =
+inline constexpr bool __has_forward_traversal =
   __has_iterator_category_convertible_to<_Iter, forward_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, forward_iterator_tag>;
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_bidirectional_iterator =
+inline constexpr bool __has_bidirectional_traversal =
   __has_iterator_category_convertible_to<_Iter, bidirectional_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, bidirectional_iterator_tag>;
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_random_access_iterator =
+inline constexpr bool __has_random_access_traversal =
   __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
-// __is_cpp17_contiguous_iterator determines if an iterator is known by
+// __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
 // around a (possibly fancy) pointer type, such as __wrap_iter<T*>.
@@ -834,13 +834,13 @@ inline constexpr bool __is_cpp17_random_access_iterator =
 // std::copy and std::sort.
 //
 template <class _Iter>
-inline constexpr bool __is_cpp17_contiguous_iterator =
+inline constexpr bool __has_contiguous_traversal =
   __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
   || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Tp>
-inline constexpr bool __is_cpp17_contiguous_iterator<_Tp*> = true;
+inline constexpr bool __has_contiguous_traversal<_Tp*> = true;
 
 template <class _Iter>
 using __iter_value_type = typename iterator_traits<_Iter>::value_type;
