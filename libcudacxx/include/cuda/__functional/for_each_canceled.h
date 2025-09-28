@@ -282,8 +282,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! @deprecated This function was moved to cuda::device:: namespace.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-CCCL_DEPRECATED_BECAUSE("Use cuda::device::for_each_canceled_block instead.")
-_CCCL_DEVICE_API void for_each_canceled_block(__UnaryFunction __uf)
+CCCL_DEPRECATED_BECAUSE("Use cuda::device::for_each_canceled_block instead.") _CCCL_DEVICE_API void
+for_each_canceled_block(__UnaryFunction __uf)
 {
   ::cuda::device::for_each_canceled_block<__ThreadBlockRank>(::cuda::std::move(__uf));
 }
