@@ -84,14 +84,14 @@ private:
   // The amount of shared memory or virtual shared memory required by the algorithm's agent
   static constexpr ::cuda::std::size_t required_smem = sizeof(typename AgentT::TempStorage);
 
-  // Whether we need to allocate global memory-backed virtual shared memory
-  static constexpr bool needs_vsmem = required_smem > max_smem_per_block;
-
   // Padding bytes to an integer multiple of `line_size`. Only applies to virtual shared memory
   static constexpr ::cuda::std::size_t padding_bytes =
     (required_smem % line_size == 0) ? 0 : (line_size - (required_smem % line_size));
 
 public:
+  // Whether we need to allocate global memory-backed virtual shared memory
+  static constexpr bool needs_vsmem = required_smem > max_smem_per_block;
+
   // Type alias to be used for static temporary storage declaration within the algorithm's kernel
   using static_temp_storage_t = ::cuda::std::conditional_t<needs_vsmem, cub::NullType, typename AgentT::TempStorage>;
 
