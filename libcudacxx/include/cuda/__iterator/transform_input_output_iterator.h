@@ -176,7 +176,7 @@ public:
                 "cuda::transform_input_output_iterator requires that _InputFn is a function object");
   static_assert(::cuda::std::is_object_v<_OutputFn>,
                 "cuda::transform_input_output_iterator requires that _OutputFn is a function object");
-  static_assert(::cuda::std::__is_cpp17_forward_iterator<_Iter> || ::cuda::std::output_iterator<_Iter, value_type>,
+  static_assert(::cuda::std::__has_forward_traversal<_Iter> || ::cuda::std::output_iterator<_Iter, value_type>,
                 "cuda::transform_input_output_iterator requires that _Iter models forward_iterator or output_iterator");
   static_assert(::cuda::std::is_invocable_v<_InputFn&, ::cuda::std::iter_reference_t<_Iter>>,
                 "cuda::transform_input_output_iterator requires that _InputFn is invocable on the result of "
@@ -252,7 +252,7 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter2> && noexcept(__current_ + __n))
   {
@@ -266,7 +266,7 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Iter2> && noexcept(__current_ + __n))
   {
@@ -296,7 +296,7 @@ public:
   //! @brief Decrements the stored iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_bidirectional_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_bidirectional_traversal<_Iter2>)
   _CCCL_API constexpr transform_input_output_iterator& operator--() noexcept(noexcept(--__current_))
   {
     --__current_;
@@ -306,7 +306,7 @@ public:
   //! @brief Decrements the stored iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_bidirectional_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_bidirectional_traversal<_Iter2>)
   _CCCL_API constexpr transform_input_output_iterator
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter> && noexcept(--__current_))
   {
@@ -319,7 +319,7 @@ public:
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
   _CCCL_API constexpr transform_input_output_iterator&
   operator+=(difference_type __n) noexcept(noexcept(__current_ += __n))
   {
@@ -336,7 +336,7 @@ public:
   operator+(const transform_input_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter>
              && noexcept(::cuda::std::declval<const _Iter2&>() + difference_type{}))
-      _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+      _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return transform_input_output_iterator{__iter.__current_ + __n, *__iter.__input_func_, *__iter.__output_func_};
   }
@@ -350,7 +350,7 @@ public:
   operator+(difference_type __n, const transform_input_output_iterator& __iter) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Iter>
     && noexcept(::cuda::std::declval<const _Iter2&>() + difference_type{}))
-    _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return transform_input_output_iterator{__iter.__current_ + __n, *__iter.__input_func_, *__iter.__output_func_};
   }
@@ -359,7 +359,7 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
   _CCCL_API constexpr transform_input_output_iterator&
   operator-=(difference_type __n) noexcept(noexcept(__current_ -= __n))
   {
@@ -376,7 +376,7 @@ public:
   operator-(const transform_input_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter>
              && noexcept(::cuda::std::declval<const _Iter2&>() - difference_type{}))
-      _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+      _CCCL_TRAILING_REQUIRES(transform_input_output_iterator)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return transform_input_output_iterator{__iter.__current_ - __n, *__iter.__input_func_, *__iter.__output_func_};
   }
@@ -422,7 +422,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ < __rhs.__current_;
   }
@@ -433,7 +433,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ > __rhs.__current_;
   }
@@ -444,7 +444,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ <= __rhs.__current_;
   }
@@ -455,7 +455,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>=(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ >= __rhs.__current_;
   }
@@ -469,7 +469,7 @@ public:
   operator<=>(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() <=> ::cuda::std::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(
-      ::cuda::std::__is_cpp17_random_access_iterator<_Iter2>&& ::cuda::std::three_way_comparable<_Iter2>)
+      ::cuda::std::__has_random_access_traversal<_Iter2>&& ::cuda::std::three_way_comparable<_Iter2>)
   {
     return __lhs.__current_ <=> __rhs.__current_;
   }
