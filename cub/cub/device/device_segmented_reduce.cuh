@@ -134,6 +134,7 @@ private:
       EndOffsetIteratorT,
       OffsetT,
       ReductionOpT,
+      InitT,
       Ts...>::Dispatch(d_temp_storage,
                        temp_storage_bytes,
                        d_in,
