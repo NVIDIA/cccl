@@ -46,10 +46,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   return __align ? (::cuda::std::max) (__align, alignof(void*)) : __default_small_object_align;
 }
 
-template <class _Tp>
+template <class _Tp, bool _RequiresMovable = true>
 [[nodiscard]] _CCCL_API inline constexpr auto __is_small(size_t __size, size_t __align) noexcept -> bool
 {
-  return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0) && ::cuda::std::is_nothrow_move_constructible_v<_Tp>;
+  return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0)
+      && (!_RequiresMovable || ::cuda::std::is_nothrow_move_constructible_v<_Tp>);
 }
 
 _CCCL_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
