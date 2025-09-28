@@ -777,6 +777,40 @@ private:
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
+namespace detail
+{
+template <typename F>
+struct for_each_active_policy_dispatcher_t
+{
+  F f;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename ActivePolicy>
+  CUB_RUNTIME_FUNCTION auto Invoke() -> cudaError
+  {
+    f(ActivePolicy{});
+    return cudaSuccess;
+  }
+};
+
+// Invokes f for each active policy (passed per value) in the policy hub
+template <typename PolicyHub, typename F>
+CUB_RUNTIME_FUNCTION auto invoke_for_each_active_policy(F f) -> cudaError
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version))
+  {
+    return error;
+  }
+  for_each_active_policy_dispatcher_t<F> dispatcher{std::move(f)};
+  if (const auto error = PolicyHub::MaxPolicy::Invoke(ptx_version, dispatcher))
+  {
+    return error;
+  }
+  return cudaSuccess;
+}
+} // namespace detail
+
 CUB_NAMESPACE_END
 
 #if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)
