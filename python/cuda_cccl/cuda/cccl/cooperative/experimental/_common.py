@@ -58,7 +58,9 @@ def make_binary_tempfile(content: bytes, suffix: str) -> BinaryIO:
 
     :return: A binary file-like object representing the temporary file.
     """
-    tmp = tempfile.NamedTemporaryFile(mode="w+b", suffix=suffix, buffering=0)
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w+b", suffix=suffix, buffering=0, delete=False
+    )
     tmp.write(content)
     return tmp
 
