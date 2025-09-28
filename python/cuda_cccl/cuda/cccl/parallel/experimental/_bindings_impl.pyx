@@ -925,7 +925,10 @@ cdef class DeviceReduceBuildResult:
         return storage_sz
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 # ------------
 #   DeviceScan
@@ -1093,7 +1096,10 @@ cdef class DeviceScanBuildResult:
         return storage_sz
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1224,7 +1230,10 @@ cdef class DeviceSegmentedReduceBuildResult:
         return storage_sz
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 # -----------------
 #   DeviceMergeSort
@@ -1349,7 +1358,10 @@ cdef class DeviceMergeSortBuildResult:
 
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 
 # -------------------
@@ -1482,7 +1494,10 @@ cdef class DeviceUniqueByKeyBuildResult:
         return storage_sz
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 # -----------------
 # DeviceRadixSort
@@ -1621,7 +1636,10 @@ cdef class DeviceRadixSortBuildResult:
 
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
@@ -1737,7 +1755,10 @@ cdef class DeviceUnaryTransform:
 
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 
 cdef class DeviceBinaryTransform:
@@ -1810,7 +1831,10 @@ cdef class DeviceBinaryTransform:
             raise RuntimeError("Failed to compute binary transform")
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
 
 
 # -----------------
@@ -1954,4 +1978,7 @@ cdef class DeviceHistogramBuildResult:
 
 
     def _get_cubin(self):
-        return self.build_data.cubin[:self.build_data.cubin_size]
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
