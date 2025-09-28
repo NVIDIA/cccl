@@ -83,10 +83,10 @@ std::string get_device_segmented_reduce_kernel_name(
   std::string_view accum_t)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_segmented_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_segmented_reduce_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
