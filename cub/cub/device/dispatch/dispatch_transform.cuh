@@ -43,6 +43,10 @@
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 
+// On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702)
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -452,6 +456,7 @@ struct dispatch_t<StableAddress,
         ipt_found = true;
       }
     }
+
     if (!ipt_found)
     {
       // otherwise, set up the prefetch kernel
@@ -549,5 +554,8 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+
 } // namespace detail::transform
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP
