@@ -40,6 +40,7 @@
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/grid/grid_even_share.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
@@ -161,10 +162,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
-  TransformOpT transform_op)
+  TransformOpT transform_op,
+  vsmem_t global_temp_storage)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT =
+  using agent_reduce_t =
     AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
                 InputIteratorT,
                 OffsetT,
@@ -172,11 +174,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
                 AccumT,
                 TransformOpT>;
 
-  // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
+  // temporary storage
+  using vsmem_helper_t = vsmem_helper_impl<agent_reduce_t>;
+  __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
+  auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
 
   // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
+  const AccumT block_aggregate =
+    agent_reduce_t(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
 
   // Output result
   if (threadIdx.x == 0)
@@ -237,15 +242,16 @@ template <typename ChainedPolicyT,
           typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
-  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
+  1) auto DeviceReduceSingleTileKernel(InputIteratorT d_in,
                                        OutputIteratorT d_out,
                                        OffsetT num_items,
                                        ReductionOpT reduction_op,
                                        InitT init,
-                                       TransformOpT transform_op)
+                                       TransformOpT transform_op,
+                                       vsmem_t global_temp_storage) -> void
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT =
+  using agent_reduce_t =
     AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
                 InputIteratorT,
                 OffsetT,
@@ -253,8 +259,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                 AccumT,
                 TransformOpT>;
 
-  // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
+  // temporary storage
+  using vsmem_helper_t = vsmem_helper_impl<agent_reduce_t>;
+  __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
+  auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
 
   // Check if empty problem
   if (num_items == 0)
@@ -269,7 +277,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
 
   // Consume input tiles
   AccumT block_aggregate =
-    AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT(0), num_items);
+    agent_reduce_t(temp_storage, d_in, reduction_op, transform_op).ConsumeRange(OffsetT(0), num_items);
 
   // Output result
   if (threadIdx.x == 0)
