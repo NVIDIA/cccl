@@ -57,7 +57,8 @@ __global__ void vec_add_det1(int* a, int* b, int* c, int n, int leader_tidx = 0)
 __global__ void vec_add_det2(int* a, int* b, int* c, int n, int leader_tidx = 0)
 {
   ::cuda::device::__for_each_canceled_block<2>(
-    threadIdx.x == static_cast<unsigned>(leader_tidx) && threadIdx.y == static_cast<unsigned>(leader_tidx), [=](dim3 block_idx) {
+    threadIdx.x == static_cast<unsigned>(leader_tidx) && threadIdx.y == static_cast<unsigned>(leader_tidx),
+    [=](dim3 block_idx) {
       vec_add_impl2(a, b, c, n, block_idx);
     });
 }
@@ -65,7 +66,9 @@ __global__ void vec_add_det2(int* a, int* b, int* c, int n, int leader_tidx = 0)
 __global__ void vec_add_det3(int* a, int* b, int* c, int n, int leader_tidx = 0)
 {
   ::cuda::device::__for_each_canceled_block<3>(
-    threadIdx.x == static_cast<unsigned>(leader_tidx) && threadIdx.y == static_cast<unsigned>(leader_tidx) && threadIdx.z == static_cast<unsigned>(leader_tidx), [=](dim3 block_idx) {
+    threadIdx.x == static_cast<unsigned>(leader_tidx) && threadIdx.y == static_cast<unsigned>(leader_tidx)
+      && threadIdx.z == static_cast<unsigned>(leader_tidx),
+    [=](dim3 block_idx) {
       vec_add_impl3(a, b, c, n, block_idx);
     });
 }
