@@ -265,9 +265,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-
-    [[maybe_unused]] auto load_tile = [&](auto in, auto& input) {
+    [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
         auto in_vec    = reinterpret_cast<const load_store_t*>(in) + threadIdx.x;
@@ -293,6 +291,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         }
       }
     };
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile(ins, inputs), ...);
 
     // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
