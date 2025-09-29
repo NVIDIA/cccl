@@ -6,11 +6,10 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/equal.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/limits>
@@ -45,7 +44,7 @@ template <typename FirstSegmentItT, typename SecondSegmentItT>
 auto make_concat_iterators_op(FirstSegmentItT first_it, SecondSegmentItT second_it, ::cuda::std::int64_t num_first_items)
 {
   return thrust::make_transform_iterator(
-    thrust::make_counting_iterator(::cuda::std::int64_t{0}),
+    cuda::make_counting_iterator(::cuda::std::int64_t{0}),
     concat_iterators_op<FirstSegmentItT, SecondSegmentItT>{first_it, second_it, num_first_items});
 }
 
@@ -109,7 +108,7 @@ struct large_problem_test_helper
   {
     auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
     const bool all_correct =
-      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
+      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, cuda::make_constant_iterator(0xFFFFFFFFU));
 
     if (!all_correct)
     {

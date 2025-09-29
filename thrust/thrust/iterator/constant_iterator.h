@@ -28,12 +28,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/counting_iterator.h>
+
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -46,7 +47,7 @@ template <typename Value, typename Incrementable, typename System>
 struct make_constant_iterator_base
 {
   using incrementable = replace_if_use_default<Incrementable, ::cuda::std::type_identity<::cuda::std::intmax_t>>;
-  using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
+  using base_iterator = ::cuda::counting_iterator<incrementable>;
   using type =
     iterator_adaptor<constant_iterator<Value, Incrementable, System>,
                      base_iterator,
@@ -112,7 +113,8 @@ struct make_constant_iterator_base
 //!
 //! \see make_constant_iterator
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
-class constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
+class CCCL_DEPRECATED_BECAUSE("Use cuda::constant_iterator instead") constant_iterator
+    : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {
   //! \cond
   friend class iterator_core_access;
@@ -198,6 +200,7 @@ _CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
 //! \return A new \p constant_iterator with constant value & index as given by \p x & \p i.
 //! \see constant_iterator
 template <typename ValueT, typename IndexT>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead")
 inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = int())
 {
   return constant_iterator<ValueT, IndexT>(x, i);
@@ -210,6 +213,7 @@ inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterato
 //! \return A new \p constant_iterator with constant value equal to \p x and index equal to \c 0.
 //! \see constant_iterator
 template <typename V>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_constant_iterator instead")
 inline _CCCL_HOST_DEVICE constant_iterator<V> make_constant_iterator(V x)
 {
   return constant_iterator<V>(x, 0);

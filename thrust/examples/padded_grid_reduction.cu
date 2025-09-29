@@ -2,10 +2,11 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/iterator>
 
 #include <cmath>
 #include <iomanip>
@@ -110,8 +111,8 @@ int main()
   reduce_tuple<int, float> binary_op; // reduction operator
 
   result_type result = thrust::transform_reduce(
-    thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
+    thrust::make_zip_iterator(cuda::counting_iterator<int>(0), data.begin()),
+    thrust::make_zip_iterator(thrust::make_tuple(cuda::counting_iterator<int>(0), data.begin())) + data.size(),
     unary_op,
     init,
     binary_op);

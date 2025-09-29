@@ -29,10 +29,10 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
@@ -138,7 +138,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
   c2h::device_vector<int> out_num_runs(1);
 
   run_length_encode(
-    thrust::make_counting_iterator(type{}), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
+    cuda::make_counting_iterator(type{}), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
   c2h::device_vector<type> reference_unique(num_items);
   thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ...,
@@ -304,7 +304,7 @@ try
   const std::size_t num_items =
     (sizeof(offset_type) == 8) ? uint32_max + random_range : cuda::std::numeric_limits<offset_type>::max();
 
-  auto counting_it = thrust::make_counting_iterator(offset_type{0});
+  auto counting_it = cuda::make_counting_iterator(offset_type{0});
 
   // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
   const std::size_t num_small_runs = cuda::std::min(uint32_max, num_items) - 4;
@@ -369,9 +369,9 @@ try
   constexpr run_length_type second_run_size = num_items - first_run_size;
 
   // First run is a small run of equal items
-  auto small_segment_it = thrust::make_constant_iterator(item_t{3});
+  auto small_segment_it = cuda::make_constant_iterator(item_t{3});
   // Second run is a very large run of equal items
-  auto large_segment_it = thrust::make_constant_iterator(item_t{42});
+  auto large_segment_it = cuda::make_constant_iterator(item_t{42});
   auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
 
   // Allocate some memory for the results
