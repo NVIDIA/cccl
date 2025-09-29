@@ -41,33 +41,50 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
     reinterpret_cast<decltype(::versioned_fn_name)*>(                                           \
       ::cuda::__driver::__get_driver_entry_point(#function_name, major, minor))
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 //! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
 //!
 //! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
 [[nodiscard]] _CCCL_HOST_API inline void*
 __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
-  void* __fn;
-  ::cudaDriverEntryPointQueryResult __result;
-#  if _CCCL_CTK_AT_LEAST(12, 5)
-  ::cudaGetDriverEntryPointByVersion(__name, &__fn, __major * 1000 + __minor * 10, ::cudaEnableDefault, &__result);
-#  else
-  // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
-  ::cudaGetDriverEntryPoint(__name, &__fn, ::cudaEnableDefault, &__result);
-#  endif
-  if (__result != ::cudaDriverEntryPointSuccess)
-  {
-    if (__result == ::cudaDriverEntryPointVersionNotSufficent)
+  // TODO switch to dlopen of libcuda.so instead of the below and maybe pair it with cuInit to avoid checking for two
+  // initializations
+  static auto __get_driver_entry_point_fn = reinterpret_cast<decltype(cuGetProcAddress)*>([]() {
+    void* __fn;
+    ::cudaDriverEntryPointQueryResult __result;
+    ::cudaError_t __status = ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
+    if (__status != ::cudaSuccess || __result != ::cudaDriverEntryPointSuccess)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API");
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
+    }
+    return __fn;
+  }());
+
+  void* __fn;
+  ::CUdriverProcAddressQueryResult __result;
+  ::CUresult __status =
+    __get_driver_entry_point_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
+  if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
+  {
+    if (__status == ::CUDA_ERROR_INVALID_VALUE)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
+    }
+    if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API");
+      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
     }
   }
   return __fn;
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename Fn, typename... Args>
 _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args... __args)
@@ -175,6 +192,26 @@ _CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t 
     __stream);
 }
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
+  void* __dst, const void* __src, size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  size_t __zero           = 0;
+  _CUDA_DRIVER::__call_driver_fn(
+    __driver_fn,
+    "Failed to perform a memcpy with attributes",
+    reinterpret_cast<::CUdeviceptr*>(&__dst),
+    reinterpret_cast<::CUdeviceptr*>(&__src),
+    &__count,
+    1,
+    &__attributes,
+    &__zero,
+    1,
+    __stream);
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 template <typename _Tp>
 _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CUstream __stream)
 {
@@ -238,8 +275,9 @@ struct __ctx_from_stream
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
-  ::CUcontext __ctx       = nullptr;
-  ::CUgreenCtx __gctx     = nullptr;
+
+  ::CUcontext __ctx   = nullptr;
+  ::CUgreenCtx __gctx = nullptr;
   __ctx_from_stream __result;
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
   if (__gctx)

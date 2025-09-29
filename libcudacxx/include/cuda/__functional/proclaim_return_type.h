@@ -43,8 +43,7 @@ private:
 public:
   __return_type_wrapper() = delete;
 
-  template <class _Fn,
-            class = ::cuda::std::enable_if_t<::cuda::std::is_same<::cuda::std::decay_t<_Fn>, _DecayFn>::value>>
+  template <class _Fn, class = ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>>>
   _CCCL_API constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
       : __fn_(::cuda::std::forward<_Fn>(__fn))
   {}
@@ -53,7 +52,7 @@ public:
   _CCCL_API constexpr _Ret operator()(_As&&... __as) & noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(::cuda::std::is_same<_Ret, typename ::cuda::std::__invoke_of<_DecayFn&, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<_DecayFn&, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
@@ -64,7 +63,7 @@ public:
   _CCCL_API constexpr _Ret operator()(_As&&... __as) && noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(::cuda::std::is_same<_Ret, typename ::cuda::std::__invoke_of<_DecayFn, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<_DecayFn, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
@@ -75,7 +74,7 @@ public:
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(::cuda::std::is_same<_Ret, typename ::cuda::std::__invoke_of<const _DecayFn&, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<const _DecayFn&, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
@@ -86,7 +85,7 @@ public:
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const&& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(::cuda::std::is_same<_Ret, typename ::cuda::std::__invoke_of<const _DecayFn, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<const _DecayFn, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 

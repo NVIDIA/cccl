@@ -43,6 +43,12 @@
 #  define _CCCL_OS_QNX_() 0
 #endif
 
+#if defined(__APPLE__) || defined(__APPLE_CC__)
+#  define _CCCL_OS_APPLE_() 1
+#else
+#  define _CCCL_OS_APPLE_() 0
+#endif
+
 #define _CCCL_OS(...) _CCCL_OS_##__VA_ARGS__##_()
 
 #endif // __CCCL_OS_H

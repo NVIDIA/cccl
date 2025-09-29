@@ -58,7 +58,7 @@ struct functor
   using value_type = thrust::detail::it_value_t<Iterator>;
 
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     value_type& out = raw_reference_cast(items[idx]);
 
