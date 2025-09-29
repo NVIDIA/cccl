@@ -20,46 +20,22 @@
 
 #include "test_macros.h"
 
-template <typename T, typename U>
-__host__ __device__ constexpr void test()
-{
-  assert(cuda::in_range(T{5}, U{0}, U{10}));
-  assert(!cuda::in_range(T{15}, U{0}, U{10}));
-  assert(cuda::in_range(T{10}, U{0}, U{10}));
-
-  if constexpr (cuda::std::is_signed_v<T> && cuda::std::is_unsigned_v<U>)
-  {
-    assert(!cuda::in_range(T{-5}, U{0}, U{10}));
-    assert(cuda::in_range(T{5}, U{0}, U{10}));
-  }
-  if constexpr (cuda::std::is_unsigned_v<T> && cuda::std::is_signed_v<U>)
-  {
-    assert(cuda::in_range(T{5}, U{-10}, U{10}));
-    assert(cuda::in_range(T{5}, U{-1}, U{10}));
-    assert(cuda::in_range(T{0}, U{-1}, U{1}));
-  }
-  assert(!cuda::in_range(T{5}, U{cuda::std::numeric_limits<U>::max() - 1}, cuda::std::numeric_limits<U>::max()));
-  assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<U>::min(), U{cuda::std::numeric_limits<U>::min() + 1}));
-  assert(cuda::in_range(T{5}, cuda::std::numeric_limits<U>::min(), cuda::std::numeric_limits<U>::max()));
-}
-
 template <typename T>
 __host__ __device__ constexpr void test()
 {
-  test<T, unsigned char>();
-  test<T, signed char>();
-  test<T, unsigned short>();
-  test<T, short>();
-  test<T, unsigned int>();
-  test<T, int>();
-  test<T, unsigned long>();
-  test<T, long>();
-  test<T, unsigned long long>();
-  test<T, long long>();
-#if _CCCL_HAS_INT128()
-  test<T, __int128_t>();
-  test<T, __uint128_t>();
-#endif // _CCCL_HAS_INT128()
+  assert(cuda::in_range(T{5}, T{0}, T{10}));
+  assert(!cuda::in_range(T{15}, T{0}, T{10}));
+  assert(cuda::in_range(T{10}, T{0}, T{10})); // test bound
+  if constexpr (cuda::std::is_signed_v<T>)
+  {
+    assert(!cuda::in_range(T{-5}, T{0}, T{10}));
+    assert(cuda::in_range(T{5}, T{-10}, T{10}));
+    assert(cuda::in_range(T{5}, T{-1}, T{10}));
+    assert(cuda::in_range(T{0}, T{-1}, T{1}));
+  }
+  assert(!cuda::in_range(T{5}, T{cuda::std::numeric_limits<T>::max() - 1}, cuda::std::numeric_limits<T>::max()));
+  assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), T{cuda::std::numeric_limits<T>::min() + 1}));
+  assert(cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max()));
 }
 
 __host__ __device__ constexpr bool test()

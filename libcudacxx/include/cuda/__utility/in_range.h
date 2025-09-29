@@ -21,19 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_TEMPLATE(typename _Tp, typename _Up)
-_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Up>)
-[[nodiscard]] _CCCL_API constexpr bool in_range(_Tp __v, _Up __start, _Up __end) noexcept
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr bool in_range(_Tp __v, _Tp __start, _Tp __end) noexcept
 {
   _CCCL_ASSERT(__end > __start, "in_range: __end must be greater than __start");
   if constexpr (::cuda::std::is_unsigned_v<_Tp>)
@@ -41,17 +39,16 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
     // if __end > __start, we know that the range is always positive. Similarly, __v is positive if unsigned.
     // this optimization is useful when __start and __end are compile-time constants, or when in_range is used multiple
     // times with the same range
-    using _CommonType         = ::cuda::std::common_type_t<_Tp, _Up, unsigned>; // at least 32-bit
-    using _UnsignedCommonType = ::cuda::std::make_unsigned_t<_CommonType>;
-    const auto __start1       = static_cast<_UnsignedCommonType>(__start);
-    const auto __end1         = static_cast<_UnsignedCommonType>(__end);
-    const auto __v1           = static_cast<_UnsignedCommonType>(__v);
-    const auto __range        = __end1 - __start1;
+    using _Up = ::cuda::std::conditional_t<(sizeof(_Tp) <= sizeof(unsigned)), unsigned, _Tp>; // at least 32-bit
+    const auto __start1 = static_cast<_Up>(__start);
+    const auto __end1   = static_cast<_Up>(__end);
+    const auto __v1     = static_cast<_Up>(__v);
+    const auto __range  = __end1 - __start1;
     return (__v1 - __start1) <= __range;
   }
   else
   {
-    return ::cuda::std::cmp_greater_equal(__v, __start) && ::cuda::std::cmp_less_equal(__v, __end);
+    return __v >= __start && __v <= __end;
   }
 }
 
