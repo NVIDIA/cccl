@@ -100,19 +100,19 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
     switch (which_iterator)
     {
       case merge_sort_iterator_t::input_keys: {
-        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_keys_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::input_items: {
-        check(nvrtcGetTypeName<input_items_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_items_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_keys: {
-        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_keys_iterator_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_items: {
-        check(nvrtcGetTypeName<output_items_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_items_iterator_t>(&iterator_t));
         break;
       }
     }
@@ -123,8 +123,8 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
 merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
 {
-  merge_sort_tuning_t chain[] = {
-    {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
+  merge_sort_tuning_t chain[]            = {{60, 256, nominal_4b_items_to_items(17, static_cast<int>(key_size))},
+                                            {35, 256, nominal_4b_items_to_items(11, static_cast<int>(key_size))}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
@@ -142,7 +142,7 @@ std::string get_merge_sort_kernel_name(
   cccl_iterator_t output_items_it)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_merge_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_merge_sort_policy>(&chained_policy_t));
 
   const std::string input_keys_iterator_t = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
   const std::string input_items_iterator_t =
@@ -152,10 +152,10 @@ std::string get_merge_sort_kernel_name(
     get_iterator_name<items_storage_t>(output_items_it, merge_sort_iterator_t::output_items);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
   const std::string value_t =
@@ -182,10 +182,10 @@ std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
   const std::string output_keys_iterator_t = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
 
@@ -205,7 +205,8 @@ struct dynamic_merge_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<merge_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -297,7 +298,7 @@ CUresult cccl_device_merge_sort_build_ex(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
+    const auto policy = merge_sort::get_policy(cc, static_cast<int>(output_keys_it.value_type.size));
 
     const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);

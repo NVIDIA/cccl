@@ -22,8 +22,7 @@ dependencies = [
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
-  "numba-cuda>=0.18.0",
-  "llvmlite==0.44",         # TODO: remove this once numba-cuda 0.19.2 is released
+  "numba-cuda>=0.20.0",
 ]
 
 dynamic = ["version"]

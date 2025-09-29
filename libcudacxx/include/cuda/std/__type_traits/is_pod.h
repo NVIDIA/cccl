@@ -29,11 +29,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : bool_constant<_CCCL_BUILTIN_IS_POD(_Tp)>
+struct _CCCL_DEPRECATED_IN_CXX20 _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : bool_constant<_CCCL_BUILTIN_IS_POD(_Tp)>
 {};
 
 template <class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX20 inline constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
+_CCCL_DEPRECATED_IN_CXX20 inline constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
