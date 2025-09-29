@@ -59,7 +59,8 @@ public:
   //! freed if the device is reset.
   constexpr legacy_managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal,
                                            device_ref __device        = {0}) noexcept
-      : __flags_(__flags & __available_flags), __device_(__device)
+      : __flags_(__flags & __available_flags)
+      , __device_(__device)
   {
     _CCCL_ASSERT(__flags_ == __flags, "Unexpected flags passed to legacy_managed_memory_resource");
   }
@@ -69,8 +70,8 @@ public:
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] _CCCL_HOST_API void* allocate_sync(const size_t __bytes,
-                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -90,9 +91,10 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  _CCCL_HOST_API void deallocate_sync(void* __ptr,
-                       const size_t,
-                       [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+  _CCCL_HOST_API void deallocate_sync(
+    void* __ptr,
+    const size_t,
+    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
