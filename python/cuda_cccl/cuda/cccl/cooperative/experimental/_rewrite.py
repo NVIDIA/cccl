@@ -20,12 +20,12 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from numba.core import ir, ir_utils, types
-from numba.core.rewrites import Rewrite, register_rewrite
 from numba.core.typing.templates import (
     AbstractTemplate,
     Signature,
 )
 from numba.cuda import LTOIR
+from numba.cuda.core.rewrites import Rewrite, register_rewrite
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
