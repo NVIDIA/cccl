@@ -30,6 +30,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__type_traits/all.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -239,14 +240,14 @@ public:
 
   // constructors from dynamic values only -- this covers the case for rank() == 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all_v<__is_std_span_v<_DynVals>...>) )
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals) noexcept
       : _DynamicValues{static_cast<_TDynamic>(__vals)...}
   {}
 
   // constructors from all values -- here rank will be greater than 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all_v<__is_std_span_v<_DynVals>...>) )
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals)
       : _DynamicValues{}
   {
@@ -417,9 +418,8 @@ public:
 
   static_assert(is_integral_v<index_type> && !is_same_v<index_type, bool>,
                 "extents::index_type must be a signed or unsigned integer type");
-  static_assert(
-    __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
-    "extents ctor: arguments must be representable as index_type and nonnegative");
+  static_assert(((__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent)) && ...),
+                "extents ctor: arguments must be representable as index_type and nonnegative");
 
 private:
   static constexpr rank_type __rank_ = sizeof...(_Extents);

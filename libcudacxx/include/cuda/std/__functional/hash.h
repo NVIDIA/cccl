@@ -639,7 +639,7 @@ using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Type, class... _Keys>
 using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
-  __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
+  __enable_hash_helper_imp<_Type, enable_if_t<(__has_enabled_hash<_Keys>::value && ...)>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -232,6 +232,7 @@ C++20
 #include <cuda/std/__type_traits/add_cv.h>
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/add_volatile.h>
+#include <cuda/std/__type_traits/all.h>
 #include <cuda/std/__type_traits/dependent_type.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
@@ -1072,7 +1073,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _CCCL_API inline __move_constructor(__move_constructor&& __that) noexcept(
-    __all<is_nothrow_move_constructible_v<_Types>...>::value) : __move_constructor(__valueless_t{}) {
+    __all_v<is_nothrow_move_constructible_v<_Types>...>) : __move_constructor(__valueless_t{}) {
     this->__generic_construct(*this, ::cuda::std::move(__that));
   });
 
@@ -1243,7 +1244,7 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_Available,
   _CCCL_API inline __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
-    __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>::value) {
+    __all_v<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>) {
     this->__generic_assign(::cuda::std::move(__that));
     return *this;
   });
@@ -1500,29 +1501,24 @@ struct __variant_constraints
   template <bool>
   struct __swappable
   {
-    static constexpr bool __is_swappable =
-      __all<(is_move_constructible_v<_Types> && is_swappable_v<_Types>) ...>::value;
-
+    static constexpr bool __is_swappable = ((is_move_constructible_v<_Types> && is_swappable_v<_Types>) && ...);
     static constexpr bool __is_nothrow_swappable =
-      __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_swappable_v<_Types>) ...>::value;
+      ((is_nothrow_move_constructible_v<_Types> && is_nothrow_swappable_v<_Types>) && ...);
   };
 };
 } // namespace __variant_detail
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT variant
-    : private __sfinae_base<__all<is_copy_constructible_v<_Types>...>::value,
-                            __all<is_move_constructible_v<_Types>...>::value,
-                            __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
-                            __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
+    : private __sfinae_base<(is_copy_constructible_v<_Types> && ...),
+                            (is_move_constructible_v<_Types> && ...),
+                            ((is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) && ...),
+                            ((is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) && ...)>
 {
   static_assert(0 < sizeof...(_Types), "variant must consist of at least one alternative.");
-
-  static_assert(__all<!is_array_v<_Types>...>::value, "variant can not have an array type as an alternative.");
-
-  static_assert(__all<!is_reference_v<_Types>...>::value, "variant can not have a reference type as an alternative.");
-
-  static_assert(__all<!is_void_v<_Types>...>::value, "variant can not have a void type as an alternative.");
+  static_assert((!is_array_v<_Types> && ...), "variant can not have an array type as an alternative.");
+  static_assert((!is_reference_v<_Types> && ...), "variant can not have a reference type as an alternative.");
+  static_assert((!is_void_v<_Types> && ...), "variant can not have a void type as an alternative.");
 
   using __first_type  = variant_alternative_t<0, variant>;
   using __constraints = __variant_detail::__variant_constraints<_Types...>;

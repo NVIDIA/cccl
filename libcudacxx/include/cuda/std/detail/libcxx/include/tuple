@@ -168,6 +168,7 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__tuple_dir/vector_types.h>
+#include <cuda/std/__type_traits/all.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
@@ -514,19 +515,13 @@ template <class _Tp>
 struct __all_default_constructible;
 
 template <class... _Tp>
-struct __all_default_constructible<__tuple_types<_Tp...>> : __all<is_default_constructible_v<_Tp>...>
+struct __all_default_constructible<__tuple_types<_Tp...>> : bool_constant<(is_default_constructible_v<_Tp> && ...)>
 {};
 
 struct __tuple_variadic_constructor_tag
 {};
 
 // __tuple_impl
-
-template <class... _Tp>
-inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ... && true);
-
-template <class... _Tp>
-inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ... && true);
 
 template <class _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
@@ -535,20 +530,18 @@ template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
     , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
-                                        __tuple_all_copy_assignable_v<_Tp...>,
-                                        __tuple_all_move_assignable_v<_Tp...>>
+                                        (is_copy_assignable_v<_Tp> && ...),
+                                        (is_move_assignable_v<_Tp> && ...)>
 {
-  _CCCL_API constexpr __tuple_impl() noexcept(__all<is_nothrow_default_constructible_v<_Tp>...>::value)
+  _CCCL_API constexpr __tuple_impl() noexcept(__all_v<is_nothrow_default_constructible_v<_Tp>...>)
       : __tuple_leaf<_Indx, _Tp>()...
   {}
 
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments
-  template <class... _Up,
-            enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0,
-            bool __all_nothrow_constructible                   = __all<is_nothrow_constructible_v<_Tp, _Up>...>::value>
+  template <class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
-                                            _Up&&... __u) noexcept(__all_nothrow_constructible)
+                                            _Up&&... __u) noexcept(__all_v<is_nothrow_constructible_v<_Tp, _Up>...>)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<_Up>(__u))...
   {}
 
@@ -578,7 +571,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   template <class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API constexpr __tuple_impl(_Tuple&& __t) noexcept(
-    (__all<is_nothrow_constructible_v<_Tp, __tuple_elem_at<_Tuple, _Indx>>...>::value))
+    __all_v<is_nothrow_constructible_v<_Tp, __tuple_elem_at<_Tuple, _Indx>>...>)
       : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
   {}
 
@@ -591,7 +584,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API inline __tuple_impl&
-  operator=(_Tuple&& __t) noexcept((__all<is_nothrow_assignable_v<_Tp&, __tuple_elem_at<_Tuple, _Indx>>...>::value))
+  operator=(_Tuple&& __t) noexcept(__all_v<is_nothrow_assignable_v<_Tp&, __tuple_elem_at<_Tuple, _Indx>>...>)
   {
     ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
       ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...);
@@ -603,7 +596,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all_v<__is_nothrow_swappable<_Tp>::value...>)
   {
     ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
   }
@@ -619,13 +612,12 @@ struct __invalid_tuple_constraints
 template <class... _Tp>
 struct __tuple_constraints
 {
-  static constexpr bool __implicit_default_constructible =
-    __all<__is_implicitly_default_constructible<_Tp>::value...>::value;
+  static constexpr bool __implicit_default_constructible = (__is_implicitly_default_constructible<_Tp>::value && ...);
 
   static constexpr bool __explicit_default_constructible =
-    !__implicit_default_constructible && __all<is_default_constructible_v<_Tp>...>::value;
+    !__implicit_default_constructible && (is_default_constructible_v<_Tp> && ...);
 
-  static constexpr bool __nothrow_default_constructible = __all<is_nothrow_default_constructible_v<_Tp>...>::value;
+  static constexpr bool __nothrow_default_constructible = (is_nothrow_default_constructible_v<_Tp> && ...);
 
   static constexpr bool __implicit_variadic_copy_constructible =
     __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
@@ -635,7 +627,7 @@ struct __tuple_constraints
     __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
     && !__tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>::value;
 
-  static constexpr bool __nothrow_variadic_copy_constructible = __all<is_nothrow_copy_constructible_v<_Tp>...>::value;
+  static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
 
   template <class... _Args>
   struct _PackExpandsToThisTuple : false_type
@@ -656,7 +648,7 @@ struct __tuple_constraints
       __tuple_constructible<tuple<_Args...>, tuple<_Tp...>>::value
       && !__tuple_convertible<tuple<_Args...>, tuple<_Tp...>>::value;
 
-    static constexpr bool __nothrow_constructible = __all<is_nothrow_constructible_v<_Tp, _Args>...>::value;
+    static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Tp, _Args> && ...);
   };
 
   template <class... _Args>
@@ -944,9 +936,6 @@ public:
       : __base_(allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
-  using _CanCopyAssign = __all<is_copy_assignable_v<_Tp>...>;
-  using _CanMoveAssign = __all<is_move_assignable_v<_Tp>...>;
-
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
@@ -957,7 +946,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline void swap(tuple& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(tuple& __t) noexcept(__all_v<__is_nothrow_swappable<_Tp>::value...>)
   {
     __base_.swap(__t.__base_);
   }
@@ -996,7 +985,7 @@ _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>
 
 template <class... _Tp>
 _CCCL_API inline enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
-swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all_v<__is_nothrow_swappable<_Tp>::value...>)
 {
   __t.swap(__u);
 }
