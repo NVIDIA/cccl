@@ -32,7 +32,7 @@ template <bool... _Preds>
 inline constexpr bool __all_v = (_Preds && ...);
 #else // ^^^ !_CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
 template <bool... _Preds>
-inline constexpr bool __all_v = bool_constant<_Preds&&...>::value;
+inline constexpr bool __all_v = bool_constant<(_Preds && ...)>::value;
 #endif // ^^^ _CCCL_COMPILER(MSVC) ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
