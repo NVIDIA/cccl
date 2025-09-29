@@ -33,11 +33,11 @@ template <class _Callable>
 class result_of;
 
 template <class _Fp, class... _Args>
-class _LIBCUDACXX_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
+class CCCL_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
 {};
 
 template <class _Tp>
-using result_of_t _LIBCUDACXX_DEPRECATED = typename result_of<_Tp>::type;
+using result_of_t CCCL_DEPRECATED = typename result_of<_Tp>::type;
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 _CCCL_END_NAMESPACE_CUDA_STD

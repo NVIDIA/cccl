@@ -24,18 +24,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_AGGREGATE)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
-
-#endif // defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
