@@ -660,12 +660,11 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __
 
 _CCCL_END_NAMESPACE_CUDA
 
-// GCC and MSVC2019 have issues determining _IsFancyPointer in C++17 because they fail to instantiate pointer_traits
+// GCC and MSVC2019 have issues determining __is_fancy_pointer in C++17 because they fail to instantiate pointer_traits
 #if (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)) && _CCCL_STD_VER <= 2017
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class... _Iterators>
-struct _IsFancyPointer<::cuda::zip_iterator<_Iterators...>> : false_type
-{};
+inline constexpr bool __is_fancy_pointer<::cuda::zip_iterator<_Iterators...>> = false;
 _CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
 
