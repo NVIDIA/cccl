@@ -118,7 +118,8 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   const Size interval_size      = (::cuda::std::min) (interval_threshold, num_items);
 
   const auto begin = ::cuda::make_zip_iterator(
-    ::cuda::transform_iterator<Predicate, InputIt>(first, predicate), ::cuda::counting_iterator<Size>(0));
+    ::cuda::make_transform_iterator(try_unwrap_contiguous_iterator(first), predicate),
+    ::cuda::counting_iterator<Size>(0));
   const auto end = begin + num_items;
 
   for (auto interval_begin = begin; interval_begin < end; interval_begin += interval_size)
