@@ -13,30 +13,45 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+#if !TEST_COMPILER(NVRTC)
+#  include <iterator>
+#endif // !TEST_COMPILER(NVRTC)
+
+template <template <class...> class Traits>
 __host__ __device__ void test()
 {
   {
-    using baseIter             = random_access_iterator<int*>;
-    using permutation_iterator = cuda::permutation_iterator<baseIter, baseIter>;
-    using iterTraits           = cuda::std::iterator_traits<permutation_iterator>;
+    using baseIter   = random_access_iterator<int*>;
+    using Iter       = cuda::permutation_iterator<baseIter, baseIter>;
+    using IterTraits = cuda::std::iterator_traits<Iter>;
 
-    static_assert(cuda::std::same_as<iterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<iterTraits::value_type, int>);
-    static_assert(cuda::std::same_as<iterTraits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::same_as<iterTraits::pointer, void>);
-    static_assert(cuda::std::same_as<iterTraits::reference, int&>);
+    static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<IterTraits::pointer, void>);
+    static_assert(cuda::std::same_as<IterTraits::reference, int&>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
   { // still random access
-    using baseIter             = contiguous_iterator<int*>;
-    using permutation_iterator = cuda::permutation_iterator<baseIter, baseIter>;
-    using iterTraits           = cuda::std::iterator_traits<permutation_iterator>;
+    using baseIter   = contiguous_iterator<int*>;
+    using Iter       = cuda::permutation_iterator<baseIter, baseIter>;
+    using IterTraits = cuda::std::iterator_traits<Iter>;
 
-    static_assert(cuda::std::same_as<iterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
-    static_assert(cuda::std::same_as<iterTraits::value_type, int>);
-    static_assert(cuda::std::same_as<iterTraits::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::same_as<iterTraits::pointer, void>);
-    static_assert(cuda::std::same_as<iterTraits::reference, int&>);
+    static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<IterTraits::pointer, void>);
+    static_assert(cuda::std::same_as<IterTraits::reference, int&>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+}
+
+__host__ __device__ void test()
+{
+  test<cuda::std::iterator_traits>();
+#if !TEST_COMPILER(NVRTC)
+  test<std::iterator_traits>();
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)

@@ -227,7 +227,7 @@ public:
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
   _CCCL_TEMPLATE(class _Iter, class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
   _CCCL_HIDE_FROM_ABI async_buffer(
     ::cuda::stream_ref __stream,
     __resource_t __resource,
@@ -582,21 +582,6 @@ void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFro
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-template <typename _Tp>
-struct __fill_value_generator
-{
-  _Tp __value;
-
-  __fill_value_generator(_Tp __value) noexcept
-      : __value(__value)
-  {}
-
-  __device__ inline _Tp operator()() const noexcept
-  {
-    return __value;
-  }
-};
-
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
@@ -624,7 +609,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     {
 #if _CCCL_HAS_CUDA_COMPILER()
       ::cuda::experimental::__ensure_current_device __guard(__stream);
-      ::cub::DeviceTransform::Fill(__first, __count, __fill_value_generator<_Tp>{__value}, __stream.get());
+      ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #else
       static_assert(0, "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
 #endif
@@ -730,7 +715,7 @@ auto make_async_buffer(
 
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
+_CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
 async_buffer<_Tp, _Properties...> make_async_buffer(
   stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
@@ -739,7 +724,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND
-                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
+                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;

@@ -56,7 +56,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
+#include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
@@ -529,8 +529,13 @@ struct DispatchReduce
         kernel_source,
         launcher_factory);
 
+      // Ignore Wmaybe-uninitialized to work around a GCC 13 issue:
+      // https://github.com/NVIDIA/cccl/issues/4053
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wmaybe-uninitialized")
       // Dispatch to chained policy
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+      _CCCL_DIAG_POP
       if (cudaSuccess != error)
       {
         break;

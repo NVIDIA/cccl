@@ -42,7 +42,6 @@
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/extrema.h>
@@ -52,7 +51,6 @@
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__algorithm/max.h>
@@ -68,7 +66,8 @@ namespace __set_operations
 {
 
 template <bool UpperBound, class IntT, class Size, class It, class T, class Comp>
-THRUST_DEVICE_FUNCTION void binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
 {
   IntT scale = (1 << shift) - 1;
   Size mid   = (begin + scale * end) >> shift;
@@ -86,7 +85,7 @@ THRUST_DEVICE_FUNCTION void binary_search_iteration(It data, Size& begin, Size& 
 }
 
 template <bool UpperBound, class Size, class T, class It, class Comp>
-THRUST_DEVICE_FUNCTION Size binary_search(It data, Size count, T key, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size binary_search(It data, Size count, T key, Comp comp)
 {
   Size begin = 0;
   Size end   = count;
@@ -98,7 +97,7 @@ THRUST_DEVICE_FUNCTION Size binary_search(It data, Size count, T key, Comp comp)
 }
 
 template <bool UpperBound, class IntT, class Size, class T, class It, class Comp>
-THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, IntT levels, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size biased_binary_search(It data, Size count, T key, IntT levels, Comp comp)
 {
   Size begin = 0;
   Size end   = count;
@@ -128,7 +127,7 @@ THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, Int
 }
 
 template <bool UpperBound, class Size, class It1, class It2, class Comp>
-THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
 {
   using T = thrust::detail::it_value_t<It1>;
 
@@ -154,7 +153,7 @@ THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, S
 }
 
 template <class It1, class It2, class Size, class Size2, class CompareOp>
-THRUST_DEVICE_FUNCTION pair<Size, Size>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE pair<Size, Size>
 balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, Size2 levels, CompareOp compare_op)
 {
   using T = thrust::detail::it_value_t<It1>;
@@ -221,23 +220,18 @@ struct PtxPolicy
 template <class Arch, class T, class U>
 struct Tuning;
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
@@ -249,16 +243,13 @@ struct Tuning<core::detail::sm60, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
@@ -391,7 +382,7 @@ struct SetOpAgent
     //---------------------------------------------------------------------
 
     template <bool IS_FULL_TILE, class T, class It1, class It2>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
     {
       if (IS_FULL_TILE)
@@ -427,7 +418,7 @@ struct SetOpAgent
     }
 
     template <class T, class It>
-    THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -438,7 +429,7 @@ struct SetOpAgent
     }
 
     template <class OutputIt, class T, class SharedIt>
-    void THRUST_DEVICE_FUNCTION scatter(
+    void _CCCL_DEVICE_API _CCCL_FORCEINLINE scatter(
       OutputIt output,
       T (&input)[ITEMS_PER_THREAD],
       SharedIt shared,
@@ -465,7 +456,7 @@ struct SetOpAgent
       }
     }
 
-    int THRUST_DEVICE_FUNCTION serial_set_op(
+    int _CCCL_DEVICE_API _CCCL_FORCEINLINE serial_set_op(
       key_type* keys,
       int keys1_beg,
       int keys2_beg,
@@ -486,7 +477,7 @@ struct SetOpAgent
     //---------------------------------------------------------------------
 
     template <bool IS_LAST_TILE>
-    void THRUST_DEVICE_FUNCTION consume_tile(Size tile_idx)
+    void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
       using core::detail::uninitialized_array;
 
@@ -647,21 +638,21 @@ struct SetOpAgent
     // Constructor
     //---------------------------------------------------------------------
 
-    THRUST_DEVICE_FUNCTION
-    impl(TempStorage& storage_,
-         ScanTileState& tile_state_,
-         KeysIt1 keys1_,
-         KeysIt2 keys2_,
-         ValuesIt1 values1_,
-         ValuesIt2 values2_,
-         Size keys1_count_,
-         Size keys2_count_,
-         KeysOutputIt keys_out_,
-         ValuesOutputIt values_out_,
-         CompareOp compare_op_,
-         SetOp set_op_,
-         pair<Size, Size>* partitions_,
-         std::size_t* output_count_)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE impl(
+      TempStorage& storage_,
+      ScanTileState& tile_state_,
+      KeysIt1 keys1_,
+      KeysIt2 keys2_,
+      ValuesIt1 values1_,
+      ValuesIt2 values2_,
+      Size keys1_count_,
+      Size keys2_count_,
+      KeysOutputIt keys_out_,
+      ValuesOutputIt values_out_,
+      CompareOp compare_op_,
+      SetOp set_op_,
+      pair<Size, Size>* partitions_,
+      std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
         , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys1_))
@@ -794,7 +785,7 @@ struct serial_set_intersection
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -849,7 +840,7 @@ struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -911,7 +902,7 @@ struct serial_set_difference
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -973,7 +964,7 @@ struct serial_set_union
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,

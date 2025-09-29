@@ -75,7 +75,7 @@ namespace __find_if
 template <typename TupleType>
 struct functor
 {
-  THRUST_DEVICE_FUNCTION TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
     if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
