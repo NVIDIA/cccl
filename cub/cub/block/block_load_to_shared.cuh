@@ -85,6 +85,7 @@ private:
     ready_to_copy,
     ready_to_copy_or_commit,
     committed,
+    invalidated,
   };
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
@@ -240,14 +241,24 @@ public:
     __init_mbarrier();
   }
 
+  _CCCL_DEVICE BlockLoadToShared(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
+
   //! @}  end member group
 
-  //! @brief Collective destructor invalidates underlying @c mbarrier enabling reuse of its temporary storage.
+  _CCCL_DEVICE BlockLoadToShared& operator=(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
+
+  //! @brief Invalidates underlying @c mbarrier enabling reuse of its temporary storage.
   //! @note
-  //! Block-synchronization is needed afterwards to reuse the shared memory from the temporary storage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE ~BlockLoadToShared()
+  //! Block-synchronization is needed after calling `Invalidate()` to reuse the shared memory from the temporary
+  //! storage.
+  // This is not the destructor to avoid overhead when shared memory reuse is not needed.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Invalidate()
   {
-    // Make sure all threads are done interacting with mbarrier.
+#ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
+    _CCCL_ASSERT(state == State::ready_to_copy, "Wait() must be called before Invalidate()");
+    state = State::invalidated;
+#endif // CCCL_ENABLE_DEVICE_ASSERTIONS
+    // Make sure all threads are done interacting with the mbarrier
     __syncthreads();
     if (elected)
     {
