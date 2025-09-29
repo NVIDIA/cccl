@@ -143,8 +143,9 @@ enum class address_space
       return static_cast<bool>(::__isLocal(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) ^^^
     case address_space::grid_constant:
-#  if _CCCL_HAS_GRID_CONSTANT()
-#    if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 3)
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return static_cast<bool>(::__isGridConstant(__ptr));), (return false;))
+#  else // ^^^ has functional __isGridConstant() ^^^ / vvv no functional __isGridConstant() vvv
     {
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_70,
@@ -157,13 +158,7 @@ enum class address_space
          return static_cast<bool>(__ret);),
         (return false;))
     }
-#    else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-          // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return static_cast<bool>(::__isGridConstant(__ptr));), (return false;))
-#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
-#  else // ^^^ _CCCL_HAS_GRID_CONSTANT() ^^^ / vvv !_CCCL_HAS_GRID_CONSTANT() vvv
-      return false;
-#  endif // ^^^ !_CCCL_HAS_GRID_CONSTANT() ^^^
+#  endif // ^^^ no functional __isGridConstant() ^^^
     case address_space::cluster_shared:
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
     {

@@ -33,38 +33,29 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct __tuple_like_ext : false_type
-{};
+inline constexpr bool __tuple_like_ext = false;
 
 template <class _Tp>
-struct __tuple_like_ext<const _Tp> : public __tuple_like_ext<_Tp>
-{};
+inline constexpr bool __tuple_like_ext<const _Tp> = __tuple_like_ext<_Tp>;
 template <class _Tp>
-struct __tuple_like_ext<volatile _Tp> : public __tuple_like_ext<_Tp>
-{};
+inline constexpr bool __tuple_like_ext<volatile _Tp> = __tuple_like_ext<_Tp>;
 template <class _Tp>
-struct __tuple_like_ext<const volatile _Tp> : public __tuple_like_ext<_Tp>
-{};
+inline constexpr bool __tuple_like_ext<const volatile _Tp> = __tuple_like_ext<_Tp>;
 
 template <class... _Tp>
-struct __tuple_like_ext<tuple<_Tp...>> : true_type
-{};
+inline constexpr bool __tuple_like_ext<tuple<_Tp...>> = true;
 
 template <class _T1, class _T2>
-struct __tuple_like_ext<pair<_T1, _T2>> : true_type
-{};
+inline constexpr bool __tuple_like_ext<pair<_T1, _T2>> = true;
 
 template <class _Tp, size_t _Size>
-struct __tuple_like_ext<array<_Tp, _Size>> : true_type
-{};
+inline constexpr bool __tuple_like_ext<array<_Tp, _Size>> = true;
 
 template <class _Tp>
-struct __tuple_like_ext<complex<_Tp>> : true_type
-{};
+inline constexpr bool __tuple_like_ext<complex<_Tp>> = true;
 
 template <class... _Tp>
-struct __tuple_like_ext<__tuple_types<_Tp...>> : true_type
-{};
+inline constexpr bool __tuple_like_ext<__tuple_types<_Tp...>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

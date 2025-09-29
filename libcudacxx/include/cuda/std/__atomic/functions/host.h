@@ -134,7 +134,7 @@ inline bool __atomic_compare_exchange_weak_host(
     __atomic_failure_order_to_int(__failure));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   _LIBCUDACXX_INT128_WARN(_Tp)
@@ -142,7 +142,7 @@ inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_or
   return __atomic_fetch_add(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   _LIBCUDACXX_INT128_WARN(_Tp)
@@ -157,7 +157,7 @@ inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_or
   return __expected;
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   _LIBCUDACXX_INT128_WARN(_Tp)
@@ -165,7 +165,7 @@ inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_or
   return __atomic_fetch_sub(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   _LIBCUDACXX_INT128_WARN(_Tp)

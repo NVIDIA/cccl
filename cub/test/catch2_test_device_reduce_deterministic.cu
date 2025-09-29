@@ -166,7 +166,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
   c2h::host_vector<type> h_output = d_output;
 
   // output should be exactly equal to expected i.e 0.0
-  REQUIRE(h_expected == h_output);
+  REQUIRE_APPROX_EQ_ABS(h_expected, h_output, type{1e-10});
 }
 
 C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",

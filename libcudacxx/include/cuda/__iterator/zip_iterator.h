@@ -69,9 +69,9 @@ using __tuple_or_pair = typename __tuple_or_pair_impl<_Iterators...>::type;
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
-  static constexpr bool __all_forward       = (::cuda::std::__is_cpp17_forward_iterator<_Iterators> && ...);
-  static constexpr bool __all_bidirectional = (::cuda::std::__is_cpp17_bidirectional_iterator<_Iterators> && ...);
-  static constexpr bool __all_random_access = (::cuda::std::__is_cpp17_random_access_iterator<_Iterators> && ...);
+  static constexpr bool __all_forward       = (::cuda::std::__has_forward_traversal<_Iterators> && ...);
+  static constexpr bool __all_bidirectional = (::cuda::std::__has_bidirectional_traversal<_Iterators> && ...);
+  static constexpr bool __all_random_access = (::cuda::std::__has_random_access_traversal<_Iterators> && ...);
 
   static constexpr bool __all_equality_comparable = (::cuda::std::equality_comparable<_Iterators> && ...);
 
@@ -79,7 +79,9 @@ struct __zip_iter_constraints
   static constexpr bool __all_three_way_comparable = (::cuda::std::three_way_comparable<_Iterators> && ...);
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  static constexpr bool __all_sized_sentinel = (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...);
+  // Our C++17 iterators sometimes do not satisfy `sized_sentinel_for` but they should all be random_access
+  static constexpr bool __all_sized_sentinel =
+    (::cuda::std::sized_sentinel_for<_Iterators, _Iterators> && ...) || __all_random_access;
   static constexpr bool __all_nothrow_iter_movable =
     (noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iterators&>())) && ...)
     && (::cuda::std::is_nothrow_move_constructible_v<::cuda::std::iter_rvalue_reference_t<_Iterators>> && ...);
@@ -125,6 +127,55 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
   }
   _CCCL_UNREACHABLE();
 }
+
+//! @note Not static functions because nvc++ sometimes has issues with class static functions in device code
+struct __zip_op_star
+{
+  template <class... _Iterators>
+  using reference = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Iterators>
+  [[nodiscard]] _CCCL_API constexpr reference<_Iterators...> operator()(const _Iterators&... __iters) const
+    noexcept(noexcept(reference<_Iterators...>{*__iters...}))
+  {
+    return reference<_Iterators...>{*__iters...};
+  }
+};
+
+struct __zip_op_increment
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Iterators>
+  _CCCL_API constexpr void operator()(_Iterators&... __iters) const noexcept(noexcept(((void) ++__iters, ...)))
+  {
+    ((void) ++__iters, ...);
+  }
+};
+
+struct __zip_op_decrement
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Iterators>
+  _CCCL_API constexpr void operator()(_Iterators&... __iters) const noexcept(noexcept(((void) --__iters, ...)))
+  {
+    ((void) --__iters, ...);
+  }
+};
+
+struct __zip_iter_move
+{
+  template <class... _Iterators>
+  using __iter_move_ret = __tuple_or_pair<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Iterators>
+  [[nodiscard]] _CCCL_API constexpr __iter_move_ret<_Iterators...> operator()(const _Iterators&... __iters) const
+    noexcept(noexcept(__iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...}))
+  {
+    return __iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...};
+  }
+};
 
 //! @brief @c zip_iterator is an iterator which represents a @c tuple of iterators. This iterator is useful for creating
 //! a virtual array of structures while achieving the same performance and bandwidth as the structure of arrays idiom.
@@ -241,19 +292,12 @@ public:
       : __current_(::cuda::std::move(__iter.__current_))
   {}
 
-  _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API static constexpr reference
-  __zip_op_star(const _Iterators&... __iters) noexcept(noexcept(reference{*__iters...}))
-  {
-    return reference{*__iters...};
-  }
-
   //! @brief Dereferences the @c zip_iterator
   //! @returns A tuple of references obtained by referencing every stored iterator
   [[nodiscard]] _CCCL_API constexpr auto operator*() const
-    noexcept(noexcept(::cuda::std::apply(__zip_op_star, __current_)))
+    noexcept(noexcept(::cuda::std::apply(__zip_op_star{}, __current_)))
   {
-    return ::cuda::std::apply(__zip_op_star, __current_);
+    return ::cuda::std::apply(__zip_op_star{}, __current_);
   }
 
   struct __zip_op_index
@@ -274,20 +318,15 @@ public:
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr auto operator[](difference_type __n) const
+    noexcept(noexcept(::cuda::std::apply(__zip_op_index{__n}, __current_)))
   {
     return ::cuda::std::apply(__zip_op_index{__n}, __current_);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API static constexpr void __zip_op_increment(_Iterators&... __iters) noexcept(noexcept(((void) ++__iters, ...)))
-  {
-    ((void) ++__iters, ...);
-  }
-
   //! @brief Increments all stored iterators
-  _CCCL_API constexpr zip_iterator& operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment, __current_)))
+  _CCCL_API constexpr zip_iterator& operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment{}, __current_)))
   {
-    ::cuda::std::apply(__zip_op_increment, __current_);
+    ::cuda::std::apply(__zip_op_increment{}, __current_);
     return *this;
   }
 
@@ -307,18 +346,12 @@ public:
     }
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API static constexpr void __zip_op_decrement(_Iterators&... __iters) noexcept(noexcept(((void) --__iters, ...)))
-  {
-    ((void) --__iters, ...);
-  }
-
   //! @brief Decrements all stored iterators
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_bidirectional)
-  _CCCL_API constexpr zip_iterator& operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement, __current_)))
+  _CCCL_API constexpr zip_iterator& operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement{}, __current_)))
   {
-    ::cuda::std::apply(__zip_op_decrement, __current_);
+    ::cuda::std::apply(__zip_op_decrement{}, __current_);
     return *this;
   }
 
@@ -348,7 +381,8 @@ public:
   //! @param __n The number of elements to increment
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
-  _CCCL_API constexpr zip_iterator& operator+=(difference_type __n)
+  _CCCL_API constexpr zip_iterator&
+  operator+=(difference_type __n) noexcept(noexcept(::cuda::std::apply(__zip_op_pe{__n}, __current_)))
   {
     ::cuda::std::apply(__zip_op_pe{__n}, __current_);
     return *this;
@@ -370,7 +404,8 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
-  _CCCL_API constexpr zip_iterator& operator-=(difference_type __n)
+  _CCCL_API constexpr zip_iterator&
+  operator-=(difference_type __n) noexcept(noexcept(::cuda::std::apply(__zip_op_me{__n}, __current_)))
   {
     ::cuda::std::apply(__zip_op_me{__n}, __current_);
     return *this;
@@ -551,22 +586,13 @@ public:
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  using __iter_move_ret = __tuple_or_pair<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
-
-  _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API static constexpr __iter_move_ret __zip_iter_move(const _Iterators&... __iters) noexcept(
-    noexcept(__iter_move_ret{::cuda::std::ranges::iter_move(__iters)...}))
-  {
-    return __iter_move_ret{::cuda::std::ranges::iter_move(__iters)...};
-  }
-
   //! @brief Applies `iter_move` by applying it to all stored iterators
   // MSVC falls over its feet if this is not a template
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto
   iter_move(const zip_iterator& __iter) noexcept(_Constraints::__all_nothrow_iter_movable)
   {
-    return ::cuda::std::apply(__zip_iter_move, __iter.__current_);
+    return ::cuda::std::apply(__zip_iter_move{}, __iter.__current_);
   }
 
   template <class... _OtherIterators>
@@ -592,6 +618,16 @@ public:
     _CCCL_TRAILING_REQUIRES(void)(_Constraints::__all_indirectly_swappable)
   {
     return __zip_apply(__zip_op_iter_swap{}, __lhs.__current_, __rhs.__current_);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __tuple_or_pair<_Iterators...>& __iterators() noexcept
+  {
+    return __current_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const __tuple_or_pair<_Iterators...>& __iterators() const noexcept
+  {
+    return __current_;
   }
 };
 
@@ -624,12 +660,11 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __
 
 _CCCL_END_NAMESPACE_CUDA
 
-// GCC and MSVC2019 have issues determining _IsFancyPointer in C++17 because they fail to instantiate pointer_traits
+// GCC and MSVC2019 have issues determining __is_fancy_pointer in C++17 because they fail to instantiate pointer_traits
 #if (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)) && _CCCL_STD_VER <= 2017
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class... _Iterators>
-struct _IsFancyPointer<::cuda::zip_iterator<_Iterators...>> : false_type
-{};
+inline constexpr bool __is_fancy_pointer<::cuda::zip_iterator<_Iterators...>> = false;
 _CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
 
