@@ -84,47 +84,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedReduce
 {
-private:
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT,
-            typename OffsetT,
-            typename ReductionOpT,
-            typename InitT,
-            typename... Ts>
-  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    InitT initial_value,
-    cudaStream_t stream)
-  {
-    return DispatchSegmentedReduce<
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      OffsetT,
-      ReductionOpT,
-      InitT,
-      Ts...>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_out,
-                       num_segments,
-                       d_begin_offsets,
-                       d_end_offsets,
-                       reduction_op,
-                       initial_value,
-                       stream);
-  }
-
 public:
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
@@ -243,23 +202,25 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<InputIteratorT,
-                              OutputIteratorT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT,
-                              OffsetT,
-                              ReductionOpT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        reduction_op,
-        initial_value, // zero-initialize
-        stream);
+      return DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ReductionOpT,
+        T>::Dispatch(d_temp_storage,
+                     temp_storage_bytes,
+                     d_in,
+                     d_out,
+                     num_segments,
+                     d_begin_offsets,
+                     d_end_offsets,
+                     reduction_op,
+                     initial_value, // zero-initialize
+                     stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -447,26 +408,28 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_t  = OutputT;
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<InputIteratorT,
-                              OutputIteratorT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT,
-                              OffsetT,
-                              ::cuda::std::plus<>>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::std::plus<>{},
-        OutputT(), // zero-initialize
-        stream);
+      return DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ::cuda::std::plus<>,
+        init_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          ::cuda::std::plus<>{},
+                          init_t{}, // zero-initialize
+                          stream);
     }
   }
 
@@ -533,9 +496,7 @@ public:
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
     using offset_t = int;
-
-    // The output value type
-    using output_t = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
 
     return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, output_t>::Dispatch(
@@ -651,26 +612,28 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
-    using InputT  = cub::detail::it_value_t<InputIteratorT>;
+    using InputT  = detail::it_value_t<InputIteratorT>;
+    using init_t  = InputT;
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<InputIteratorT,
-                              OutputIteratorT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT,
-                              OffsetT,
-                              ::cuda::minimum<>>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::minimum<>{},
-        ::cuda::std::numeric_limits<InputT>::max(),
-        stream);
+      return DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ::cuda::minimum<>,
+        init_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          ::cuda::minimum<>{},
+                          ::cuda::std::numeric_limits<init_t>::max(),
+                          stream);
     }
   }
 
@@ -742,9 +705,7 @@ public:
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
     using offset_t = int;
-
-    // The input value type
-    using input_t = cub::detail::it_value_t<InputIteratorT>;
+    using input_t  = detail::it_value_t<InputIteratorT>;
 
     return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::Dispatch(
@@ -867,8 +828,8 @@ public:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
     using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    using InputValueT  = cub::detail::it_value_t<InputIteratorT>;
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using InputValueT  = detail::it_value_t<InputIteratorT>;
+    using OutputTupleT = detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
     using OutputValueT = typename OutputTupleT::Value;
     using AccumT       = OutputTupleT;
     using InitT        = detail::reduce::empty_problem_init_t<AccumT>;
@@ -882,24 +843,24 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<ArgIndexInputIteratorT,
-                              OutputIteratorT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT,
-                              OffsetT,
-                              cub::ArgMin,
-                              InitT,
-                              AccumT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_indexed_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        cub::ArgMin(),
-        initial_value,
-        stream);
+      return DispatchSegmentedReduce<
+        ArgIndexInputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        cub::ArgMin,
+        InitT,
+        AccumT>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_indexed_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          cub::ArgMin{},
+                          initial_value,
+                          stream);
     }
   }
 
@@ -1109,21 +1070,28 @@ public:
 
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT  = cub::detail::it_value_t<InputIteratorT>;
+    using init_t  = InputT;
 
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        ::cuda::maximum<>{},
-        ::cuda::std::numeric_limits<InputT>::lowest(),
-        stream);
+      return DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ::cuda::maximum<>,
+        init_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          ::cuda::maximum<>{},
+                          ::cuda::std::numeric_limits<init_t>::lowest(),
+                          stream);
     }
   }
 
@@ -1189,9 +1157,7 @@ public:
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
     using offset_t = int;
-
-    // The input value type
-    using input_t = cub::detail::it_value_t<InputIteratorT>;
+    using input_t  = detail::it_value_t<InputIteratorT>;
 
     return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::Dispatch(
@@ -1332,24 +1298,24 @@ public:
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return segmented_reduce<ArgIndexInputIteratorT,
-                              OutputIteratorT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT,
-                              OffsetT,
-                              cub::ArgMax,
-                              InitT,
-                              AccumT>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_indexed_in,
-        d_out,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        cub::ArgMax(),
-        initial_value,
-        stream);
+      return DispatchSegmentedReduce<
+        ArgIndexInputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        cub::ArgMax,
+        InitT,
+        AccumT>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_indexed_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          cub::ArgMax{},
+                          initial_value,
+                          stream);
     }
   }
 
@@ -1426,34 +1392,25 @@ public:
     // integral constant or larger integral types
     using input_t = int;
 
-    // The input type
-    using input_value_t = cub::detail::it_value_t<InputIteratorT>;
-
-    // The output tuple type
-    using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<input_t, input_value_t>>;
-
-    using accum_t = output_tuple_t;
-
-    using init_t = detail::reduce::empty_problem_init_t<accum_t>;
-
-    // The output value type
+    using input_value_t  = detail::it_value_t<InputIteratorT>;
+    using output_tuple_t = detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<input_t, input_value_t>>;
+    using accum_t        = output_tuple_t;
+    using init_t         = detail::reduce::empty_problem_init_t<accum_t>;
     using output_value_t = typename output_tuple_t::second_type;
 
     // Wrapped input iterator to produce index-value <input_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
-
     using arg_index_input_iterator_t = decltype(d_indexed_in);
 
-    // Initial value
     init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::lowest())};
 
     return detail::reduce::DispatchFixedSizeSegmentedReduce<
       arg_index_input_iterator_t,
       OutputIteratorT,
       input_t,
-      cub::detail::arg_max,
+      detail::arg_max,
       init_t,
       accum_t>::Dispatch(d_temp_storage,
                          temp_storage_bytes,
@@ -1461,7 +1418,7 @@ public:
                          d_out,
                          num_segments,
                          segment_size,
-                         cub::detail::arg_max(),
+                         detail::arg_max(),
                          initial_value,
                          stream);
   }
