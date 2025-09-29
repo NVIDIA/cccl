@@ -686,6 +686,8 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 namespace __mdspan_detail
 {
 
+//! NOTE we define __is_extents_v through __is_extents because nvrtc fails otherwise.
+//! Specializing __is_extents_v is valid, because all other cases remain as false
 template <class _IndexType, size_t... _ExtentsPack>
 inline constexpr bool __is_extents_v<extents<_IndexType, _ExtentsPack...>> = true;
 
