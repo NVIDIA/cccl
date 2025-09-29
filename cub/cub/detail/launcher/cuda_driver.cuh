@@ -26,7 +26,7 @@ struct CudaDriverLauncher
 {
   dim3 grid;
   dim3 block;
-  size_t shared_mem;
+  unsigned int shared_mem;
   ::CUstream stream;
   bool dependent_launch;
 
@@ -74,8 +74,8 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
-  CudaDriverLauncher operator()(
-    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::CUstream stream, bool dependent_launch = false) const
+  CudaDriverLauncher
+  operator()(dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, bool dependent_launch = false) const
   {
     return CudaDriverLauncher{grid, block, shared_mem, stream, dependent_launch};
   }

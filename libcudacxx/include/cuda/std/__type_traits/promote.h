@@ -52,7 +52,7 @@ struct __numeric_type
 #endif // _CCCL_HAS_FLOAT128()
 
   using type              = decltype(__test(declval<_Tp>()));
-  static const bool value = _IsNotSame<type, void>::value;
+  static const bool value = !is_same_v<type, void>;
 };
 
 template <>

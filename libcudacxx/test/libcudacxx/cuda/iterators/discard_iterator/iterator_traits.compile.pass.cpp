@@ -30,7 +30,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::same_as<typename IterTraits::reference, void>);
   static_assert(cuda::std::input_or_output_iterator<cuda::discard_iterator>);
   static_assert(cuda::std::output_iterator<cuda::discard_iterator, float>);
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+  static_assert(cuda::std::__has_random_access_traversal<Iter>);
 }
 
 __host__ __device__ void test()
