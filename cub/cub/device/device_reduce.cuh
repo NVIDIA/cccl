@@ -52,13 +52,12 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/tabulate_output_iterator.h>
-
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -1215,7 +1214,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     return detail::reduce::dispatch_streaming_arg_reduce_t<
@@ -1341,7 +1340,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     // Query the required temporary storage size
@@ -1883,7 +1882,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     return detail::reduce::dispatch_streaming_arg_reduce_t<
@@ -2133,7 +2132,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size
