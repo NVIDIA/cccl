@@ -84,7 +84,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedReduce
 {
-public:
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor.
