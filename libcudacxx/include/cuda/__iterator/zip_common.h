@@ -80,7 +80,7 @@ struct __zip_iter_constraints
 };
 
 template <class... _Iterators>
-_CCCL_API constexpr auto __get_zip_iterator_concept()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_zip_iterator_concept()
 {
   using _Constraints = __zip_iter_constraints<_Iterators...>;
   if constexpr (_Constraints::__all_random_access)

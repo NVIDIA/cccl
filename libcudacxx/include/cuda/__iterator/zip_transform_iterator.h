@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @{
 
 template <class _Fn, class... _Iterators>
-_CCCL_API constexpr auto __get_zip_transform_iterator_category()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_zip_transform_iterator_category()
 {
   using _Constraints = __zip_iter_constraints<_Iterators...>;
   if constexpr (!::cuda::std::is_reference_v<
