@@ -1,7 +1,8 @@
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/reduce.h>
+
+#include <cuda/iterator>
 
 #include <limits>
 
@@ -189,8 +190,8 @@ void TestReduceIntoCountingIterator()
 
   ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  cuda::counting_iterator<T> h_first{0};
+  cuda::counting_iterator<T> d_first{0};
   thrust::host_vector<T> h_result(1);
   thrust::device_vector<T> d_result(1);
 

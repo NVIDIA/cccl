@@ -98,7 +98,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
     static_cast<offset_t>(thrust::count_if(rnd_selector_val.begin(), rnd_selector_val.end(), select_lhs_op));
   if (num_items_selected_into_lhs < num_items_lhs)
   {
-    using ::cuda::std::swap;
+    using cuda::std::swap;
     swap(select_lhs_op, select_rhs_op);
   }
 
@@ -108,7 +108,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
   // selected for lhs and *all* items after the pivot point.
   constexpr std::size_t num_pivot_points = 1;
   thrust::device_vector<offset_t> pivot_point(num_pivot_points);
-  auto counting_it = thrust::make_counting_iterator(offset_t{0});
+  auto counting_it = cuda::make_counting_iterator(offset_t{0});
   thrust::copy_if(
     counting_it,
     counting_it + elements,

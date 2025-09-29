@@ -1,5 +1,6 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -77,7 +78,7 @@ struct thrust_make_counting_iterator
   template <typename... Args>
   auto operator()(Args&&... args) const
   {
-    return thrust::make_counting_iterator(cuda::std::forward<Args>(args)...);
+    return cuda::make_counting_iterator(cuda::std::forward<Args>(args)...);
   }
 };
 

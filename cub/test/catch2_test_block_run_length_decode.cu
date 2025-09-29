@@ -7,7 +7,6 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_allocator.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/iterator>
@@ -309,7 +308,7 @@ void TestAlgorithmSpecialisation()
 
   using RunItemT      = float;
   using RunLengthT    = uint32_t;
-  using ItemItT       = thrust::counting_iterator<RunItemT>;
+  using ItemItT       = cuda::counting_iterator<RunItemT>;
   using RunLengthsItT = cuda::transform_iterator<ModOp, cuda::counting_iterator<RunLengthT>>;
 
   ItemItT d_unique_items(1000U);

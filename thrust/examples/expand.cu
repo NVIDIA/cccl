@@ -5,6 +5,8 @@
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 #include <iterator>
 
@@ -32,8 +34,8 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
   // scatter the nonzero counts into their corresponding output positions
   thrust::device_vector<difference_type> output_indices(output_size, 0);
   thrust::scatter_if(
-    thrust::counting_iterator<difference_type>(0),
-    thrust::counting_iterator<difference_type>(input_size),
+    cuda::counting_iterator<difference_type>(0),
+    cuda::counting_iterator<difference_type>(input_size),
     output_offsets.begin(),
     first1,
     output_indices.begin());

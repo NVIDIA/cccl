@@ -2,8 +2,9 @@
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/gather.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/scan.h>
+
+#include <cuda/iterator>
 
 #include <iostream>
 #include <iterator>
@@ -46,8 +47,8 @@ int main()
   thrust::lower_bound(
     lengths.begin(),
     lengths.end(),
-    thrust::counting_iterator<int>(1),
-    thrust::counting_iterator<int>(N + 1),
+    cuda::counting_iterator<int>(1),
+    cuda::counting_iterator<int>(N + 1),
     indices.begin());
 
   // gather input elements
