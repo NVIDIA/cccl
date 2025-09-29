@@ -26,6 +26,7 @@
 THRUST_NAMESPACE_BEGIN
 
 //! Converts a contiguous iterator to its underlying raw pointer.
+_CCCL_EXEC_CHECK_DISABLE
 template <typename ContiguousIterator>
 _CCCL_HOST_DEVICE auto unwrap_contiguous_iterator(ContiguousIterator it)
 {
@@ -40,6 +41,7 @@ using unwrap_contiguous_iterator_t = decltype(unwrap_contiguous_iterator(::cuda:
 
 //! Takes an iterator and, if it is contiguous, unwraps it to the raw pointer it represents. Otherwise returns the
 //! iterator unmodified.
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Iterator>
 _CCCL_HOST_DEVICE auto try_unwrap_contiguous_iterator(Iterator it)
 {
