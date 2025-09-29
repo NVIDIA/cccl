@@ -250,7 +250,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr auto operator++(int) noexcept(noexcept(++__current_))
   {
-    if constexpr (::cuda::std::__is_cpp17_forward_iterator<_Iter> || ::cuda::std::output_iterator<_Iter, value_type>)
+    if constexpr (::cuda::std::__has_forward_traversal<_Iter> || ::cuda::std::output_iterator<_Iter, value_type>)
     {
       auto __tmp = *this;
       ++*this;
@@ -391,7 +391,7 @@ public:
   operator<=>(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() <=> ::cuda::std::declval<const _Iter2&>()))
     _CCCL_TRAILING_REQUIRES(bool)(
-      ::cuda::std::__is_cpp17_random_access_iterator<_Iter2>&& ::cuda::std::three_way_comparable<_Iter2>)
+      ::cuda::std::__has_random_access_traversal<_Iter2>&& ::cuda::std::three_way_comparable<_Iter2>)
   {
     return __lhs.__current_ <=> __rhs.__current_;
   }
@@ -402,7 +402,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ < __rhs.__current_;
   }
@@ -413,7 +413,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ > __rhs.__current_;
   }
@@ -424,7 +424,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ <= __rhs.__current_;
   }
@@ -435,7 +435,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>=(const transform_output_iterator& __lhs, const transform_output_iterator& __rhs) noexcept(
     noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__is_cpp17_random_access_iterator<_Iter2>)
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ >= __rhs.__current_;
   }

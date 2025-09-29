@@ -254,7 +254,7 @@ struct ReduceAgent
     static _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
     is_aligned(Iterator d_in, thrust::detail::true_type /* can_vectorize */)
     {
-      return (size_t(d_in) & (sizeof(Vector) - 1)) == 0;
+      return ::cuda::std::is_sufficiently_aligned<alignof(Vector)>(d_in);
     }
 
     // Whether or not the input is aligned with the vector type

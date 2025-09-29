@@ -32,7 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class __Operation>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED
 binder2nd : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
 {
 protected:
@@ -58,7 +58,7 @@ public:
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline binder2nd<__Operation> bind2nd(const __Operation& __op, const _Tp& __x)
+CCCL_DEPRECATED _CCCL_API inline binder2nd<__Operation> bind2nd(const __Operation& __op, const _Tp& __x)
 {
   return binder2nd<__Operation>(__op, __x);
 }

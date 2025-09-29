@@ -72,7 +72,7 @@ struct _ProjectedPred
 
 template <class _Pred,
           class _Proj,
-          enable_if_t<!(!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value), int> = 0>
+          enable_if_t<!(!is_member_pointer_v<decay_t<_Pred>> && __is_identity_v<decay_t<_Proj>>), int> = 0>
 _CCCL_API constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred, _Proj& __proj)
 {
   return _ProjectedPred<_Pred, _Proj>(__pred, __proj);
@@ -83,7 +83,7 @@ _CCCL_API constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred,
 // the call stack when the comparator is invoked, even in an unoptimized build.
 template <class _Pred,
           class _Proj,
-          enable_if_t<!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value, int> = 0>
+          enable_if_t<!is_member_pointer_v<decay_t<_Pred>> && __is_identity_v<decay_t<_Proj>>, int> = 0>
 _CCCL_API constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
 {
   return __pred;
