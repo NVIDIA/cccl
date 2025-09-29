@@ -115,10 +115,12 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_thread() const
   {
+    // Otherwise elect.sync in the last warp with a full mask is UB.
+    static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
     return NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
-        linear_tid >= ::cuda::round_down(block_threads - 1, 32) && ::cuda::ptx::elect_sync(~0u)),
+        (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u)),
       NV_IS_DEVICE,
       (linear_tid == 0));
   }
@@ -216,8 +218,7 @@ private:
 
 public:
   /// @smemstorage{BlockLoadToShared}
-  struct TempStorage : cub::Uninitialized<_TempStorage>
-  {};
+  using TempStorage = cub::Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -265,9 +266,12 @@ public:
       NV_IF_TARGET(NV_PROVIDES_SM_90,
                    (
                      // Borrowed from cuda::barrier
+                     // TODO Make this available through cuda::ptx::
                      asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
                        ::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
     }
+    // Make sure the elected thread is done invalidating the mbarrier
+    __syncthreads();
   }
 
   //! @brief Copy elements from global to shared memory
@@ -376,8 +380,6 @@ public:
        __syncthreads();),
       NV_PROVIDES_SM_80,
       (asm volatile("cp.async.commit_group ;" :: : "memory");));
-    // (asm volatile("cp.async.mbarrier.arrive.noinc.shared.b64 [%0];" ::"r"(
-    //   static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
   }
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next calls to @c CopyAsync() .

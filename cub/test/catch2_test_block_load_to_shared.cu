@@ -84,11 +84,10 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   else if constexpr (Mode == test_mode::multi_copy_multi_barrier)
   {
     block_load2sh.Invalidate();
-    // Make sure the invalidation is done
-    __syncthreads();
 
     // Reuse TempStorage
     block_load2sh_t second_block_load2sh{storage};
+
     cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
     second_block_load2sh.Commit();
@@ -128,7 +127,7 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
 }
 
 // Use dynamic shared memory for the destination buffer (and the internal static shared TempStorage and multi-dim
-// blocks)
+// blocks, and a span of non-const for the src range)
 template <int ThreadsInBlockX, int ThreadsInBlockY, int ThreadsInBlockZ, typename InputPointerT, typename OutputIteratorT>
 __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output, int num_items)
 {
@@ -143,7 +142,7 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
 
   constexpr int ThreadsInBlock = ThreadsInBlockX * ThreadsInBlockY * ThreadsInBlockZ;
 
-  cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  cuda::std::span<input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
   cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
 
   cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
