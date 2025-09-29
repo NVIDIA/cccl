@@ -181,7 +181,7 @@ void test_block_load_dyn_smem_dst(const c2h::device_vector<T>& d_input, InputPoi
 using types     = c2h::type_list<cuda::std::uint8_t, cuda::std::int32_t, cuda::std::int64_t>;
 using vec_types = c2h::type_list<long2, double2>;
 
-using threads_in_block = c2h::enum_type_list<int, 32, 128, 33, 65>;
+using threads_in_block = c2h::enum_type_list<int, 32, 64, 96, 128>;
 using a_block_size     = c2h::enum_type_list<int, 256>;
 
 using items_per_thread = c2h::enum_type_list<int, IPT>;
