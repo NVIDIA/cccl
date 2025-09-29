@@ -281,6 +281,9 @@ public:
     return _StaticValues::__get(__i);
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+
   [[nodiscard]] _CCCL_API constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
@@ -293,7 +296,10 @@ public:
            : static_cast<_TDynamic>(__static_val);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _TDynamic operator[](size_t __i) const
+  _CCCL_DIAG_POP // MSVC(4702) Unreachable code
+
+    [[nodiscard]] _CCCL_API constexpr _TDynamic
+    operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {

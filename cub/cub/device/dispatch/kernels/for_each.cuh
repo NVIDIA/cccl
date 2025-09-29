@@ -174,7 +174,7 @@ _CCCL_DEVICE_API auto get_extents_sub_size(ExtentType extents, FastDivModType ex
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-    constexpr auto sub_size   = cub::detail::size_range(extents, Start, End);
+    auto sub_size             = cub::detail::size_range(extents, Start, End);
     return static_cast<unsigned_index_type>(sub_size);
   }
   else
