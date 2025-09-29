@@ -101,15 +101,16 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or cuda::std::iter_value_t instead")
-  iterator_value
+iterator_value
 {
   using type = typename iterator_traits<Iterator>::value_type;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_value_t CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or "
-                                               "cuda::std::iter_value_t instead") = iterator_value<Iterator>;
+using iterator_value_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or "
+                          "cuda::std::iter_value_t instead") = iterator_value<Iterator>;
 
 // pointer
 
@@ -129,32 +130,32 @@ using iterator_pointer_t CCCL_DEPRECATED = typename iterator_pointer<Iterator>::
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::reference or cuda::std::iter_reference_t instead")
-  iterator_reference
+iterator_reference
 {
   using type = typename iterator_traits<Iterator>::reference;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_reference_t CCCL_DEPRECATED_BECAUSE(
-  "Use cuda::std::iterator_traits<>::reference or "
-  "cuda::std::iter_reference_t instead") = typename iterator_reference<Iterator>::type;
+using iterator_reference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::reference or "
+                          "cuda::std::iter_reference_t instead") = typename iterator_reference<Iterator>::type;
 
 // difference
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::difference_t or cuda::std::iter_difference_t instead")
-  iterator_difference
+iterator_difference
 {
   using type = typename iterator_traits<Iterator>::difference_type;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_difference_t CCCL_DEPRECATED_BECAUSE(
-  "Use cuda::std::iterator_traits<>::difference_t or "
-  "cuda::std::iter_difference_t instead") = typename iterator_difference<Iterator>::type;
+using iterator_difference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::difference_t or "
+                          "cuda::std::iter_difference_t instead") = typename iterator_difference<Iterator>::type;
 
 // traversal
 
