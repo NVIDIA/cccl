@@ -619,6 +619,16 @@ public:
   {
     return __zip_apply(__zip_op_iter_swap{}, __lhs.__current_, __rhs.__current_);
   }
+
+  [[nodiscard]] _CCCL_API constexpr __tuple_or_pair<_Iterators...>& __iterators() noexcept
+  {
+    return __current_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const __tuple_or_pair<_Iterators...>& __iterators() const noexcept
+  {
+    return __current_;
+  }
 };
 
 template <class... _Iterators>
