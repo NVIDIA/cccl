@@ -26,6 +26,7 @@
 #include <cuda/std/__tuple_dir/tuple_like_ext.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/all.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -41,12 +42,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <bool... _Preds>
-struct __all_dummy;
-
-template <bool... _Pred>
-using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
 struct __tuple_sfinae_base
 {
@@ -64,7 +59,7 @@ struct __tuple_sfinae_base
 
   template <template <class, class...> class _Trait, class... _LArgs, class... _RArgs>
   struct __test<_Trait, __tuple_types<_LArgs...>, __tuple_types<_RArgs...>, true>
-      : __all<_Trait<_LArgs, _RArgs>::value...>
+      : bool_constant<__all_v<_Trait<_LArgs, _RArgs>::value...>>
   {};
 
   template <class _FromArgs, class _ToArgs>
