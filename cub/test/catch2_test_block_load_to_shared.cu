@@ -28,6 +28,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   using storage_t       = typename block_load2sh_t::TempStorage;
 
   __shared__ storage_t storage;
+  block_load2sh_t block_load2sh{storage};
 
   constexpr int tile_size                = ItemsPerThread * ThreadsInBlock;
   constexpr int num_copies               = Mode == test_mode::single_copy ? 1 : 2;
@@ -40,53 +41,50 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   cuda::std::span<char> dst_buff{buffer[0]};
   const int num_items_first_copy = cuda::std::min(num_items, max_num_items_first_copy);
 
+  cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items_first_copy));
+  if constexpr (Mode == test_mode::single_copy || Mode == test_mode::multi_copy_multi_phase
+                || Mode == test_mode::multi_copy_multi_barrier)
   {
-    block_load2sh_t block_load2sh{storage};
-    cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items_first_copy));
+    block_load2sh.Commit();
+    block_load2sh.Wait();
 
-    if constexpr (Mode == test_mode::multi_copy_single_phase)
+    for (int idx = threadIdx.x; idx < num_items_first_copy; idx += ThreadsInBlock)
     {
-      cuda::std::span<char> dst_buff2{buffer[1]};
-      cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
-
-      block_load2sh.Commit();
-      block_load2sh.Wait();
-
-      for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
-      {
-        output[idx] = idx < num_items_first_copy ? dst[idx] : dst2[idx - num_items_first_copy];
-      }
+      output[idx] = dst[idx];
     }
-    else
-    {
-      block_load2sh.Commit();
-      block_load2sh.Wait();
-
-      for (int idx = threadIdx.x; idx < num_items_first_copy; idx += ThreadsInBlock)
-      {
-        output[idx] = dst[idx];
-      }
-    }
-
-    if constexpr (Mode == test_mode::multi_copy_multi_phase)
-    {
-      // Make sure that everyone is done reading from dst
-      __syncthreads();
-
-      dst = block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
-      block_load2sh.Commit();
-      block_load2sh.Wait();
-
-      for (int idx = static_cast<int>(threadIdx.x); idx < num_items - num_items_first_copy; idx += ThreadsInBlock)
-      {
-        output[num_items_first_copy + idx] = dst[idx];
-      }
-    }
-  } // block_load2sh scope ends here -> destructor called -> mbarrier invalidated
-
-  if constexpr (Mode == test_mode::multi_copy_multi_barrier)
+  }
+  else if constexpr (Mode == test_mode::multi_copy_single_phase)
   {
-    // Make sure the mbarrier invalidation is done.
+    cuda::std::span<char> dst_buff2{buffer[1]};
+    cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
+
+    block_load2sh.Commit();
+    block_load2sh.Wait();
+
+    for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
+    {
+      output[idx] = idx < num_items_first_copy ? dst[idx] : dst2[idx - num_items_first_copy];
+    }
+  }
+
+  if constexpr (Mode == test_mode::multi_copy_multi_phase)
+  {
+    // Make sure that everyone is done reading from dst
+    __syncthreads();
+
+    dst = block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
+    block_load2sh.Commit();
+    block_load2sh.Wait();
+
+    for (int idx = static_cast<int>(threadIdx.x); idx < num_items - num_items_first_copy; idx += ThreadsInBlock)
+    {
+      output[num_items_first_copy + idx] = dst[idx];
+    }
+  }
+  else if constexpr (Mode == test_mode::multi_copy_multi_barrier)
+  {
+    block_load2sh.Invalidate();
+    // Make sure the invalidation is done
     __syncthreads();
 
     // Reuse TempStorage
