@@ -52,7 +52,7 @@ template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
 class strided_iterator
 {
 private:
-  static_assert(::cuda::std::random_access_iterator<_Iter>,
+  static_assert(::cuda::std::__has_random_access_traversal<_Iter>,
                 "The iterator underlying a strided_iterator must be a random access iterator.");
   static_assert(::cuda::std::__integer_like<_Stride> || ::cuda::std::__integral_constant_like<_Stride>,
                 "The stride of a strided_iterator must either be an integer-like or integral-constant-like.");
@@ -68,6 +68,11 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = ::cuda::std::iter_value_t<_Iter>;
   using difference_type   = ::cuda::std::iter_difference_t<_Iter>;
+
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = value_type;
+  using pointer   = void;
 
   //! @brief value-initializes both the base iterator and stride
   //! @note _Iter must be default initializable because it is a random_access_iterator and thereby semiregular
