@@ -61,6 +61,8 @@ endif()
 include(CTest)
 enable_testing()
 
+option(CCCL_USE_LIBCXX "Use libc++ when compiling and linking" OFF)
+
 if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/AppendOptionIfAvailable.cmake)
   include(cmake/CCCLUtilities.cmake) # include this before other CCCL helpers

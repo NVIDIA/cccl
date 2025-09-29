@@ -71,33 +71,6 @@ extern "C++" {
 #    endif
 #  endif
 
-// Deprecation macros.
-//
-// Deprecations warnings are always enabled, except when users explicitly opt-out
-// by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
-// NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
-#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS)
-#    if _CCCL_HAS_ATTRIBUTE(deprecated)
-#      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
-#    else // ^^^ _CCCL_HAS_ATTRIBUTE(deprecated) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(deprecated) vvv
-#      define _LIBCUDACXX_DEPRECATED [[deprecated]]
-#    endif // !_CCCL_HAS_ATTRIBUTE(deprecated)
-#  else // ^^^ !_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS ^^^ / vvv _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS vvv
-#    define _LIBCUDACXX_DEPRECATED
-#  endif // ^^^ _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS ^^^
-
-#  if _CCCL_STD_VER >= 2020
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_DEPRECATED
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX20
-#  endif // ^^^ _CCCL_STD_VER < 2020 ^^^
-
-#  if _CCCL_STD_VER >= 2023
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX23 _LIBCUDACXX_DEPRECATED
-#  else // ^^^ _CCCL_STD_VER >= 2023 ^^^ / vvv _CCCL_STD_VER < 2023 vvv
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX23
-#  endif // ^^^ _CCCL_STD_VER < 2023 ^^^
-
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 #    if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__)
@@ -119,7 +92,7 @@ extern "C++" {
 
 #  if !defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD) && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) \
     && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
-#    if defined(__linux__) || defined(__GNU__) || defined(__APPLE__) || _CCCL_OS(QNX) \
+#    if defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX) \
       || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
 #      define _LIBCUDACXX_HAS_THREAD_API_PTHREAD
 #    elif defined(_WIN32)
@@ -184,10 +157,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
-
-#  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
-#    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
-#  endif // _LIBCUDACXX_SYS_CLOCK_DURATION
 
 // There are a handful of public standard library types that are intended to
 // support CTAD but don't need any explicit deduction guides to do so. This

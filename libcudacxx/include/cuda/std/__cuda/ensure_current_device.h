@@ -56,7 +56,7 @@ struct __ensure_current_device
   {
     if (__original_device_ != __target_device_)
     {
-      _CCCL_TRY_CUDA_API(::cudaSetDevice, "Failed to set device", __original_device_);
+      _CCCL_LOG_CUDA_API(::cudaSetDevice, "Failed to set device", __original_device_);
     }
   }
 };

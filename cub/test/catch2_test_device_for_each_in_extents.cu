@@ -41,6 +41,7 @@
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_TYPES types 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
@@ -98,32 +99,38 @@ struct LinearStore
  * TEST CASES
  **********************************************************************************************************************/
 
-using index_types =
-  c2h::type_list<int8_t,
-                 uint8_t,
-                 int16_t,
-                 uint16_t,
-                 int32_t,
-                 uint32_t
-#if _CCCL_HAS_INT128()
-                 ,
-                 int64_t,
-                 uint64_t
-#endif
-                 >;
+using index_types = c2h::type_list<
+#if TEST_TYPES == 0
+  int8_t,
+  uint8_t,
+  int16_t,
+  uint16_t
+#elif TEST_TYPES == 1
+  int32_t,
+  uint32_t
+#  if _CCCL_HAS_INT128()
+  ,
+  int64_t,
+  uint64_t
+#  endif // _CCCL_HAS_INT128()
+#endif // TEST_TYPES
+  >;
 
 // int8_t/uint8_t are not enabled because they easily overflow
-using index_types_dynamic =
-  c2h::type_list<int16_t,
-                 uint16_t,
-                 int32_t,
-                 uint32_t
-#if _CCCL_HAS_INT128()
-                 ,
-                 int64_t,
-                 uint64_t
-#endif
-                 >;
+using index_types_dynamic = c2h::type_list<
+#if TEST_TYPES == 0
+  int16_t,
+  uint16_t
+#elif TEST_TYPES == 1
+  int32_t,
+  uint32_t
+#  if _CCCL_HAS_INT128()
+  ,
+  int64_t,
+  uint64_t
+#  endif // _CCCL_HAS_INT128()
+#endif // TEST_TYPES
+  >;
 
 using dimensions =
   c2h::type_list<cuda::std::index_sequence<>,

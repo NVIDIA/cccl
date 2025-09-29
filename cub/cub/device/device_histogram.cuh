@@ -542,8 +542,8 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
@@ -789,8 +789,8 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
@@ -1245,8 +1245,8 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
@@ -1477,8 +1477,8 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays")
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+  CCCL_DEPRECATED_BECAUSE("Prefer the new overload taking cuda::std::arrays") CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,

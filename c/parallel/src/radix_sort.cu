@@ -356,7 +356,8 @@ struct dynamic_radix_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<radix_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<radix_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -445,7 +446,7 @@ CUresult cccl_device_radix_sort_build_ex(
     const char* name = "test";
 
     const int cc       = cc_major * 10 + cc_minor;
-    const auto policy  = radix_sort::get_policy(cc, input_keys_it.value_type.size);
+    const auto policy  = radix_sort::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
     const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto value_cpp =
       input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
@@ -542,7 +543,7 @@ struct {26} {{
 )XXX";
 
     std::string offset_t;
-    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
     const std::string src = std::format(
       src_template,
