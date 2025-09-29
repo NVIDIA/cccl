@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -19,28 +20,26 @@
 #include "test_macros.h"
 
 template <class D>
-__host__ __device__ void test()
+__host__ __device__ constexpr void test()
 {
   static_assert(noexcept(cuda::std::chrono::duration_values<typename D::rep>::zero()));
-#if TEST_STD_VER > 2017
-  static_assert(noexcept(cuda::std::chrono::duration_values<typename D::rep>::zero()));
-#endif
-  {
-    typedef typename D::rep Rep;
-    Rep zero_rep = cuda::std::chrono::duration_values<Rep>::zero();
-    assert(D::zero().count() == zero_rep);
-  }
-  {
-    typedef typename D::rep Rep;
-    constexpr Rep zero_rep = cuda::std::chrono::duration_values<Rep>::zero();
-    static_assert(D::zero().count() == zero_rep, "");
-  }
+
+  using DRep    = typename D::rep;
+  DRep zero_rep = cuda::std::chrono::duration_values<DRep>::zero();
+  assert(D::zero().count() == zero_rep);
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<cuda::std::chrono::duration<int>>();
+  test<cuda::std::chrono::duration<Rep>>();
+  return true;
 }
 
 int main(int, char**)
 {
-  test<cuda::std::chrono::duration<int>>();
-  test<cuda::std::chrono::duration<Rep>>();
+  test();
+  static_assert(test());
 
   return 0;
 }
