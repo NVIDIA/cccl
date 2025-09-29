@@ -113,11 +113,11 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (max_items_per_thread, MaxItemsPerThread, int),
   (not_a_vectorized_policy, NotAVectorizedPolicy, int) ) // TODO: remove with C++20
 
-template <int BlockThreads, int ItemsPerThread, int VecSize>
-struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
+template <typename Tuning>
+struct vectorized_policy_t : prefetch_policy_t<Tuning::block_threads>
 {
-  static constexpr int items_per_thread_vectorized = ItemsPerThread;
-  static constexpr int vec_size                    = VecSize;
+  static constexpr int items_per_thread_vectorized = Tuning::items_per_thread;
+  static constexpr int vec_size                    = Tuning::vec_size;
 
   using not_a_vectorized_policy = void; // TODO: remove with C++20, shadows the variable in prefetch_policy_t
 };
@@ -296,6 +296,47 @@ _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
     {{sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)}...}};
 }
 
+template <int PtxVersion, int StoreSize, int... LoadSizes>
+struct tuning_vec
+{
+  // defaults from fill on RTX 5090, but can be changed
+  static constexpr int block_threads    = 256;
+  static constexpr int vec_size         = 4;
+  static constexpr int items_per_thread = 8;
+};
+
+// manually tuned fill on A100
+template <int StoreSize>
+struct tuning_vec<800, StoreSize>
+{
+  static constexpr int block_threads    = 256;
+  static constexpr int vec_size         = ::cuda::std::max(8 / StoreSize, 1); // 64-bit instructions
+  static constexpr int items_per_thread = 8;
+};
+
+// manually tuned fill on H200
+template <int StoreSize>
+struct tuning_vec<900, StoreSize>
+{
+  static constexpr int block_threads    = StoreSize > 4 ? 128 : 256;
+  static constexpr int vec_size         = ::cuda::std::max(8 / StoreSize, 1); // 64-bit instructions
+  static constexpr int items_per_thread = 16;
+};
+
+// manually tuned fill on B200, same as H200
+template <int StoreSize>
+struct tuning_vec<1000, StoreSize> : tuning_vec<900, StoreSize>
+{};
+
+// manually tuned fill on RTX 5090
+template <int StoreSize>
+struct tuning_vec<1200, StoreSize>
+{
+  static constexpr int block_threads    = 256;
+  static constexpr int vec_size         = 4;
+  static constexpr int items_per_thread = 8;
+};
+
 template <bool RequiresStableAddress,
           bool DenseOutput,
           typename RandomAccessIteratorTupleIn,
@@ -326,12 +367,6 @@ struct policy_hub<RequiresStableAddress,
       || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>>)
      && ...);
 
-  // TODO(bgruber): make this dynamic and aim for 16 bytes per thread on RTX 5090 for no_input_streams, and 32+
-  // otherwise. Also aim for 16 byte loads in general, and 32 on Blackwell+
-  static constexpr int vector_width         = 4;
-  static constexpr int items_per_thread_vec = 8;
-  using default_vectorized_policy_t         = vectorized_policy_t<256, items_per_thread_vec, vector_width>;
-
   static constexpr bool all_value_types_have_power_of_two_size =
     (::cuda::is_power_of_two(sizeof(it_value_t<RandomAccessIteratorsIn>)) && ...)
     && ::cuda::is_power_of_two(size_of<it_value_t<RandomAccessIteratorOut>>);
@@ -346,12 +381,16 @@ struct policy_hub<RequiresStableAddress,
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, default_vectorized_policy_t>;
+    using vec_policy_t              = vectorized_policy_t<
+                   tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
+    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, vec_policy_t>;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
   private:
+    using vec_policy_t = vectorized_policy_t<
+      tuning_vec<800, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
     static constexpr int block_threads = 256;
     using async_policy                 = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -375,13 +414,17 @@ struct policy_hub<RequiresStableAddress,
     using algo_policy =
       ::cuda::std::_If<fallback_to_prefetch,
                        prefetch_policy_t<block_threads>,
-                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
+                       ::cuda::std::_If<fallback_to_vectorized, vec_policy_t, async_policy>>;
   };
 
   template <int AsyncBlockSize, int PtxVersion>
   struct bulk_copy_policy_base
   {
   private:
+    using vec_policy_t =
+      vectorized_policy_t<tuning_vec<PtxVersion,
+                                     size_of<it_value_t<RandomAccessIteratorOut>>,
+                                     sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
     static constexpr int alignment = bulk_copy_alignment(PtxVersion);
     using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -417,7 +460,7 @@ struct policy_hub<RequiresStableAddress,
     using algo_policy =
       ::cuda::std::_If<fallback_to_prefetch,
                        prefetch_policy_t<256>,
-                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
+                       ::cuda::std::_If<fallback_to_vectorized, vec_policy_t, async_policy>>;
   };
 
   struct policy900
