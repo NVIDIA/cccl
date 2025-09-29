@@ -503,11 +503,6 @@
 #  define _CCCL_BUILTIN_IS_SIGNED(...) __is_signed(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_signed)
 
-#if _CCCL_CHECK_BUILTIN(is_trivially_assignable) || _CCCL_COMPILER(GCC, >=, 5, 1) || _CCCL_COMPILER(MSVC) \
-  || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_trivially_assignable) && gcc >= 5.1
-
 #if _CCCL_CHECK_BUILTIN(is_unsigned)
 #  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_unsigned)
