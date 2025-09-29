@@ -378,13 +378,13 @@ struct dispatch_t<StableAddress,
   }                                                                                                        \
                                                                                                            \
   template <typename AgentPolicy, typename = decltype(::cuda::std::declval<AgentPolicy>().runtime_name())> \
-  static CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                             \
+  static constexpr CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                   \
   {                                                                                                        \
     return +policy.runtime_name();                                                                         \
   }
 
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_no_input, prefetch, ItemsPerThreadNoInput)
-  CUB_DEFINE_SFINAE_GETTER(load_store_word_size, vectorized, LoadStoreWordSize)
+  CUB_DEFINE_SFINAE_GETTER(vec_size, vectorized, VecSize)
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_vectorized, vectorized, ItemsPerThreadVectorized)
 
 #undef CUB_DEFINE_SFINAE_GETTER
@@ -441,9 +441,11 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
-                   && kernel_source.IsPointerAligned(out, alignment);
+      constexpr int vs = vec_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize =
+        (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), sizeof(it_value_t<RandomAccessIteratorsIn>) * vs)
+         && ...)
+        && kernel_source.IsPointerAligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vs);
     }
 
     int ipt        = 0;

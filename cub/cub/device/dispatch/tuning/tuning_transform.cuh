@@ -113,11 +113,11 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (max_items_per_thread, MaxItemsPerThread, int),
   (not_a_vectorized_policy, NotAVectorizedPolicy, int) ) // TODO: remove with C++20
 
-template <int BlockThreads, int ItemsPerThread, int LoadStoreWordSize>
+template <int BlockThreads, int ItemsPerThread, int VecSize>
 struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
 {
   static constexpr int items_per_thread_vectorized = ItemsPerThread;
-  static constexpr int load_store_word_size        = LoadStoreWordSize;
+  static constexpr int vec_size                    = VecSize;
 
   using not_a_vectorized_policy = void; // TODO: remove with C++20, shadows the variable in prefetch_policy_t
 };
@@ -130,7 +130,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (min_items_per_thread, MinItemsPerThread, int),
   (max_items_per_thread, MaxItemsPerThread, int),
   (items_per_thread_vectorized, ItemsPerThreadVectorized, int),
-  (load_store_word_size, LoadStoreWordSize, int) )
+  (vec_size, VecSize, int) )
 
 template <int BlockThreads, int BulkCopyAlignment>
 struct async_copy_policy_t
@@ -282,47 +282,6 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return 12 * 1024; // V100 and below
 }
 
-template <typename H, typename... Ts>
-_CCCL_HOST_DEVICE constexpr bool all_nonzero_equal(H head, Ts... values)
-{
-  size_t first = 0;
-  for (size_t v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
-  {
-    if (v == 0)
-    {
-      continue;
-    }
-    if (first == 0)
-    {
-      first = v;
-    }
-    else if (v != first)
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
-_CCCL_HOST_DEVICE constexpr bool all_nonzero_equal()
-{
-  return true;
-}
-
-template <typename H, typename... Ts>
-_CCCL_HOST_DEVICE constexpr auto first_nonzero_value(H head, Ts... values)
-{
-  for (auto v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
-  {
-    if (v != 0)
-    {
-      return v;
-    }
-  }
-  // we only reach here when all input are not contiguous and the output has a void value type
-  return H{1};
-}
-
 template <typename T>
 inline constexpr size_t size_of = sizeof(T);
 
@@ -367,29 +326,18 @@ struct policy_hub<RequiresStableAddress,
       || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>>)
      && ...);
 
-  // for vectorized policy:
-  static constexpr bool all_contiguous_input_values_same_size = all_nonzero_equal(
-    (sizeof(it_value_t<RandomAccessIteratorsIn>)
-     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...);
-  static constexpr int load_store_word_size = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
-  // find the value type size of the first contiguous iterator. if there are no inputs, we take the size of the output
-  // value type
-  static constexpr int contiguous_value_type_size = first_nonzero_value(
-    (int{sizeof(it_value_t<RandomAccessIteratorsIn>)}
-     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
-    int{size_of<it_value_t<RandomAccessIteratorOut>>});
-  static constexpr bool value_type_divides_load_store_size =
-    load_store_word_size % contiguous_value_type_size == 0; // implicitly checks that value_type_size <=
-                                                            // load_store_word_size
-  static constexpr int target_bytes_per_thread =
-    no_input_streams ? 16 /* by experiment on RTX 5090 */ : 32 /* guestimate by gevtushenko for loading */;
-  static constexpr int items_per_thread_vec =
-    ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / contiguous_value_type_size;
-  using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
+  // TODO(bgruber): make this dynamic and aim for 16 bytes per thread on RTX 5090 for no_input_streams, and 32+
+  // otherwise. Also aim for 16 byte loads in general, and 32 on Blackwell+
+  static constexpr int vector_width         = 4;
+  static constexpr int items_per_thread_vec = 8;
+  using default_vectorized_policy_t         = vectorized_policy_t<256, items_per_thread_vec, vector_width>;
+
+  static constexpr bool all_value_types_have_power_of_two_size =
+    (::cuda::is_power_of_two(sizeof(it_value_t<RandomAccessIteratorsIn>)) && ...)
+    && ::cuda::is_power_of_two(size_of<it_value_t<RandomAccessIteratorOut>>);
 
   static constexpr bool fallback_to_prefetch =
-    RequiresStableAddress || !can_memcpy_contiguous_inputs || !all_contiguous_input_values_same_size
-    || !value_type_divides_load_store_size || !DenseOutput;
+    RequiresStableAddress || !can_memcpy_contiguous_inputs || !all_value_types_have_power_of_two_size || !DenseOutput;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
