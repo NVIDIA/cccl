@@ -158,10 +158,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 
-#  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
-#    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
-#  endif // _LIBCUDACXX_SYS_CLOCK_DURATION
-
 // There are a handful of public standard library types that are intended to
 // support CTAD but don't need any explicit deduction guides to do so. This
 // macro is used to mark them as such, which suppresses the
