@@ -305,7 +305,7 @@ struct __align__({3}) output_storage_t {{
 struct device_transform_policy {{
   struct ActivePolicy {{
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>({1});
-    {3}
+    {2}
   }};
 }};
 )XXX",
