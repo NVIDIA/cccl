@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
