@@ -91,6 +91,9 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_HAS_NVFP16()
   test_type<__half>();
 #endif // _CCCL_HAS_NVFP16()

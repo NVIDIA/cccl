@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

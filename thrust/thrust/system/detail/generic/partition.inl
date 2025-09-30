@@ -38,11 +38,7 @@
 #include <thrust/system/detail/generic/partition.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
@@ -207,7 +203,5 @@ is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator firs
                            thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

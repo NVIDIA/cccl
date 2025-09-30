@@ -39,6 +39,7 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
@@ -57,7 +58,7 @@ struct functor
   using value_type = thrust::detail::it_value_t<Iterator>;
 
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     value_type& out = raw_reference_cast(items[idx]);
 
@@ -75,7 +76,20 @@ template <class Derived, class Iterator, class Size, class T>
 Iterator _CCCL_HOST_DEVICE
 uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size count, T const& x)
 {
-  cuda_cub::parallel_for(policy, __uninitialized_fill::functor<Iterator, T>{first, x}, count);
+  // if the output type is trivially constructible from the input, it has no side effect, and we can skip placement new
+  // and calling a constructor. Furthermore, if assigning the input value to an output element is also trivial, there is
+  // no copy constructor which could have a side effect and we can delegate to fill_n (which uses
+  // cub::DeviceTransform::Fill).
+  using value_t = thrust::detail::it_value_t<Iterator>;
+  if constexpr (::cuda::std::is_trivially_constructible_v<value_t, T const&>
+                && ::cuda::std::is_trivially_assignable_v<value_t, T const&>)
+  {
+    cuda_cub::fill_n(policy, first, count, x);
+  }
+  else
+  {
+    cuda_cub::parallel_for(policy, __uninitialized_fill::functor<Iterator, T>{first, x}, count);
+  }
   return first + count;
 }
 

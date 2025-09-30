@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
 
 __host__ __device__ void test()
 {
@@ -21,6 +22,18 @@ __host__ __device__ void test()
     cuda::std::is_same_v<decltype(cuda::execution::determinism::__get_determinism(cuda::execution::__get_requirements(
                            cuda::execution::require(cuda::execution::determinism::not_guaranteed)))),
                          cuda::execution::determinism::not_guaranteed_t>);
+
+  static_assert(
+    cuda::std::is_same_v<
+      decltype(cuda::execution::output_ordering::__get_output_ordering(
+        cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::sorted)))),
+      cuda::execution::output_ordering::sorted_t>);
+
+  static_assert(
+    cuda::std::is_same_v<
+      decltype(cuda::execution::output_ordering::__get_output_ordering(
+        cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::unsorted)))),
+      cuda::execution::output_ordering::unsorted_t>);
 }
 
 int main(int, char**)

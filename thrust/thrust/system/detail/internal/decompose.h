@@ -27,11 +27,7 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace internal
+namespace system::detail::internal
 {
 
 template <typename IndexType>
@@ -117,7 +113,5 @@ private:
   index_type m_large_interval;
 };
 
-} // end namespace internal
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::internal
 THRUST_NAMESPACE_END

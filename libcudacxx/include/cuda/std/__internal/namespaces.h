@@ -79,13 +79,13 @@
 #  define _CCCL_END_NAMESPACE_CUDA_EXECUTION } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
-#if _CCCL_COMPILER(CLANG, ==, 16)
+#if _CCCL_COMPILER(CLANG, <=, 16)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE namespace __hidden {
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS) } using __hidden::_CLASS;
-#else // ^^^ _CCCL_COMPILER(CLANG, ==, 16) ^^^ / vvv !_CCCL_COMPILER(CLANG, ==, 16) vvv
+#else // ^^^ _CCCL_COMPILER(CLANG, <=, 16) ^^^ / vvv _CCCL_COMPILER(CLANG, >, 16) vvv
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
-#endif // !_CCCL_COMPILER(CLANG, ==, 16)
+#endif // !_CCCL_COMPILER(CLANG, >, 16)
 
 #if defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 #  define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT

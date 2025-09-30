@@ -30,10 +30,10 @@
 // Enable the functionality of this header if:
 // * The NVTX3 C API is available in CTK
 // * NVTX is not explicitly disabled (via CCCL_DISABLE_NVTX or NVTX_DISABLE)
-// * the compiler is not nvc++ (NVTX3 uses module as an identifier, which trips up NVHPC)
+// * the compiler is not nvc++ (NVTX3 uses module as an identifier, which trips up NVHPC, fixed in CTK >= 13.0)
 // * the compiler is not NVRTC
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-                      && (!_CCCL_COMPILER(NVHPC))                                                    \
+                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_CTK_AT_LEAST(13, 0))                       \
                       && !_CCCL_COMPILER(NVRTC)
 
 // Since NVTX 3.2, the NVTX headers can declare themselves as system headers by declaring the following macro:

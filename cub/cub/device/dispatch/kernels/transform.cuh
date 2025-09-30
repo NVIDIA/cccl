@@ -21,14 +21,36 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/cmath>
-#include <cuda/memory>
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
+#include <cuda/__ptx/instructions/mbarrier_init.h>
+#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
-#include <cuda/std/bit>
+#include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -180,14 +202,18 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
+template <typename VectorizedPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
   bool can_vectorize,
   F f,
   RandomAccessIteratorOut out,
-  const InputT*... ins)
+  RandomAccessIteratorsIn... ins)
 {
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
@@ -218,9 +244,12 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
   using load_store_t            = decltype(load_store_type<load_store_size>());
   using output_t                = it_value_t<RandomAccessIteratorOut>;
-  using result_t                = ::cuda::std::invoke_result_t<F, const InputT&...>;
+  using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
   // picks output type size if there are no inputs
-  constexpr int element_size     = int{first_item(sizeof(InputT)..., size_of<output_t>)};
+  constexpr int element_size     = int{first_nonzero_value(
+    (sizeof(it_value_t<RandomAccessIteratorsIn>)
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
+    size_of<output_t>)};
   constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
 
   static_assert((items_per_thread * element_size) % load_store_size == 0);
@@ -236,18 +265,35 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
-    // TODO(bgruber): we could support fancy iterators for loading here as well (and only vectorize some inputs)
-    [[maybe_unused]] auto load_tile_vectorized = [&](auto* in, auto& input) {
-      auto in_vec    = reinterpret_cast<const load_store_t*>(in);
-      auto input_vec = reinterpret_cast<load_store_t*>(input.data());
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < load_store_count; ++i)
+    [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
-        input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
+        auto in_vec    = reinterpret_cast<const load_store_t*>(in) + threadIdx.x;
+        auto input_vec = reinterpret_cast<load_store_t*>(input.data());
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < load_store_count; ++i)
+        {
+          input_vec[i] = in_vec[i * VectorizedPolicy::block_threads];
+        }
+      }
+      else
+      {
+        constexpr int elems = load_store_size / element_size;
+        in += threadIdx.x * elems;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < load_store_count; ++i)
+        {
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int j = 0; j < elems; ++j)
+          {
+            input[i * elems + j] = in[i * elems * VectorizedPolicy::block_threads + j];
+          }
+        }
       }
     };
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    (load_tile_vectorized(ins, inputs), ...);
+    (load_tile(ins, inputs), ...);
+
     // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
     // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
@@ -258,7 +304,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<InputT, items_per_thread>{}...);
+  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>, items_per_thread>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -708,7 +754,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   uint64_t& bar = *reinterpret_cast<uint64_t*>(smem_with_barrier);
   static_assert(tile_padding >= sizeof(uint64_t));
   char* smem_base = smem_with_barrier + tile_padding;
-  _CCCL_ASSERT(::cuda::is_aligned(smem_base, tile_padding), "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<tile_padding>(smem_base), "");
 
   namespace ptx = ::cuda::ptx;
 

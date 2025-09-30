@@ -32,11 +32,7 @@
 #include <thrust/system/detail/generic/uninitialized_fill.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 namespace detail
 {
@@ -115,7 +111,5 @@ uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardItera
     exec, first, n, x, ValueTypeHasTrivialCopyConstructor());
 } // end uninitialized_fill()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

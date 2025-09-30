@@ -10,7 +10,6 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
-    IteratorIOKind,
     make_reverse_iterator,
     make_transform_iterator,
 )
@@ -33,7 +32,7 @@ def CacheModifiedInputIterator(device_array, modifier):
 
 
     Args:
-        device_array: CUDA device array storing the input sequence of data items
+        device_array: Array storing the input sequence of data items
         modifier: The PTX cache load modifier
 
     Returns:
@@ -93,36 +92,19 @@ def CountingIterator(offset):
     return _CountingIterator(offset)
 
 
-def ReverseInputIterator(sequence):
-    """Returns an input Iterator over an array in reverse.
+def ReverseIterator(sequence):
+    """Returns an Iterator over an array or another iterator in reverse.
 
-    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator).
 
-    Example:
-        The code snippet below demonstrates the usage of a ``ReverseInputIterator``:
+    Examples:
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_input_iterator.py
             :language: python
             :start-after: # example-begin
 
-
-    Args:
-        sequence: The iterator or CUDA device array to be reversed
-
-    Returns:
-        A ``ReverseIterator`` object initialized with ``sequence`` to use as an input
-
-    """
-    return make_reverse_iterator(sequence, IteratorIOKind.INPUT)
-
-
-def ReverseOutputIterator(sequence):
-    """Returns an output Iterator over an array in reverse.
-
-    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
-
-    Example:
-        The code snippet below demonstrates the usage of a ``ReverseOutputIterator``:
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an output iterator:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_output_iterator.py
             :language: python
@@ -130,62 +112,57 @@ def ReverseOutputIterator(sequence):
 
 
     Args:
-        sequence: The iterator or CUDA device array to be reversed to use as an output
+        sequence: The iterator or array to be reversed
 
     Returns:
-        A ``ReverseIterator`` object initialized with ``sequence`` to use as an output
-
+        A ``ReverseIterator`` object
     """
-    return make_reverse_iterator(sequence, IteratorIOKind.OUTPUT)
+    return make_reverse_iterator(sequence)
 
 
 def TransformIterator(it, op):
-    """Returns an Iterator representing a transformed sequence of values.
+    """An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.
 
-    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html
+    Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html)
 
     Example:
-        The code snippet below demonstrates the usage of a ``TransformIterator``
-        composed with a ``CountingIterator``, transforming the sequence ``[10, 11, 12]``
-        by applying a transform operation before reducing the output:
+        The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
+        to transform the input before performing a reduction.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
             :language: python
             :start-after: # example-begin
-
-
     Args:
-        it: The iterator object to be transformed
-        op: The transform operation
+        it: The underlying iterator
+        op: The unary operation to be applied to values as they are read from ``it``
 
     Returns:
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
-    return make_transform_iterator(it, op)
+    return make_transform_iterator(it, op, "input")
 
 
 def TransformOutputIterator(it, op):
-    """Returns an Iterator representing a transformed sequence of output values.
+    """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
 
-    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html
+    Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
 
     Example:
-        The code snippet below demonstrates the usage of ``TransformOutputIterator``.
-        Before the result of the reduction is written to the output iterator,
-        it is transformed by the function ``op``. Thus, the reduction operation
-        computes the square root of the sum of of the input values.
+        The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
+        of a reduction before writing to an output array.
 
-    .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
-        :language: python
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+            :language: python
+            :start-after: # example-begin
 
     Args:
-        it: The iterator object to be transformed
-        op: The transform operation
+        it: The underlying iterator
+        op: The operation to be applied to values before they are written to ``it``
 
     Returns:
-        A ``TransformOutputIterator`` object to transform the items in ``it`` using ``op``
+        A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
-    return make_transform_iterator(it, op, IteratorIOKind.OUTPUT)
+    return make_transform_iterator(it, op, "output")
 
 
 def ZipIterator(*iterators):

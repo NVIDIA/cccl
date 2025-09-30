@@ -31,9 +31,10 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/cmath>
-#include <cuda/std/functional> // ::cuda::std::identity
-#include <cuda/std/iterator> // ::cuda::std::iter_value_t
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 
 CUB_NAMESPACE_BEGIN
 

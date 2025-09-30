@@ -164,14 +164,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-    InputIteratorT,
-    AccumT*,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -246,14 +249,17 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -290,9 +296,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
@@ -319,17 +322,12 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
  * @param[in] reduction_op
  *   Binary reduction functor
  */
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename AccumT,
-          typename TransformOpT>
+template <typename ChainedPolicyT, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
-  OffsetT num_items,
+  int num_items,
   ReductionOpT reduction_op,
   TransformOpT transform_op,
   const int reduce_grid_size)
@@ -361,13 +359,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT thread_aggregate{};
   int count = 0;
 
+  int n_threads = reduce_grid_size * block_threads;
+
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = tid; i < num_items; i += items_per_thread * reduce_grid_size * block_threads)
+  for (::cuda::std::uint32_t i = tid; i < num_items; i += (n_threads * items_per_thread))
   {
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
-      const int idx = i + j * reduce_grid_size * block_threads;
+      const ::cuda::std::uint32_t idx = i + j * n_threads;
       if (idx < num_items)
       {
         items[j] = transform_op(d_in[idx]);
@@ -424,9 +424,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @tparam OutputIteratorT
  *   Output iterator type for recording the reduced aggregate @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
@@ -455,7 +452,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
-          typename OffsetT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
@@ -464,7 +460,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
-                                                    OffsetT num_items,
+                                                    int num_items,
                                                     ReductionOpT reduction_op,
                                                     InitT init,
                                                     TransformOpT transform_op)
@@ -557,14 +553,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
-    InputIteratorT,
-    AccumT*,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;

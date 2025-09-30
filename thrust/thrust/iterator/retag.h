@@ -33,9 +33,10 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \ingroup iterator_tags
- *  \{
- */
+//! \addtogroup iterators
+//! \addtogroup iterator_tag_utilities Iterator Tag Utilities
+//! \ingroup iterators
+//! \{
 
 #if _CCCL_DOXYGEN_INVOKED
 /*! \p reinterpret_tag returns a copy of an iterator and changes the type of the result's system tag.
@@ -66,7 +67,6 @@ template <typename Tag, typename Iterator>
 _CCCL_HOST_DEVICE unspecified_iterator_type retag(Iterator iter);
 #endif
 
-/*! \} // iterator_tags
- */
+//! \} // iterator_tag_utilities
 
 THRUST_NAMESPACE_END

@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // Base 2 fixed point
 class ScaledInteger
 {
@@ -109,9 +107,9 @@ int main()
   std::cout << "] \n";
 
   std::cout << "Result   [ ";
-  for (size_t i = 0; i < size; i++)
+  for (const auto& value : C_h)
   {
-    std::cout << C_h[i] << " ";
+    std::cout << value << " ";
   }
   std::cout << "] \n";
 

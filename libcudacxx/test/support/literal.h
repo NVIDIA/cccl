@@ -241,6 +241,13 @@ _test_int_literal_impl(const char (&cs)[N]) noexcept
 namespace test_integer_literals
 {
 
+// nvcc passes operator""_x to the host compiler as operator "" _x, which was deprecated in CWG 2521 (nvbug 5507437)
+// clang 20 already warns about this, so we need to suppress the warning here
+_CCCL_DIAG_PUSH
+#if _CCCL_COMPILER(CLANG, >=, 20)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
+#endif // _CCCL_COMPILER(CLANG, >=, 20)
+
 #if _CCCL_HAS_INT128()
 template <char... Cs>
 [[nodiscard]] __host__ __device__ constexpr __int128_t operator""_i128() noexcept
@@ -262,6 +269,8 @@ template <char... Cs>
   return result.value;
 }
 #endif // _CCCL_HAS_INT128()
+
+_CCCL_DIAG_POP
 
 } // namespace test_integer_literals
 

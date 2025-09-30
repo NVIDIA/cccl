@@ -22,11 +22,11 @@
 #include "types.h"
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                                  cuda::std::tuple<cuda::mr::device_accessible>,
-                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
+                                  cuda::std::tuple<int, cuda::mr::device_accessible>,
+                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
 #else
-using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif
 
 C2H_CCCLRT_TEST("cudax::async_buffer properties", "[container][async_buffer]", test_types)

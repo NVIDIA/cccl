@@ -22,30 +22,30 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/util/align.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/cmath>
-#include <cuda/memory>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
-// cooperative groups do not support NVHPC yet
-#if !_CCCL_CUDA_COMPILER(NVHPC)
-#  include <cooperative_groups.h>
-
-#  include <cooperative_groups/memcpy_async.h>
-#endif // !_CCCL_CUDA_COMPILER(NVHPC)
+// On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702)
 
 CUB_NAMESPACE_BEGIN
 
@@ -59,7 +59,6 @@ template <typename Offset,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource;
-;
 
 template <typename Offset,
           typename... RandomAccessIteratorsIn,
@@ -457,6 +456,7 @@ struct dispatch_t<StableAddress,
         ipt_found = true;
       }
     }
+
     if (!ipt_found)
     {
       // otherwise, set up the prefetch kernel
@@ -554,5 +554,8 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+
 } // namespace detail::transform
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP

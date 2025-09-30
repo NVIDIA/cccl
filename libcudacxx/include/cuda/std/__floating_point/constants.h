@@ -336,7 +336,7 @@ template <class _Tp>
 {
   static_assert(__fp_format_of_v<_Tp> != __fp_format::__fp8_nv_e8m0, "__fp_zero: __nv_fp8_e8m0 cannot represent zero");
 
-  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
+  if constexpr (__fp_is_native_type_v<_Tp>)
   {
     return _Tp{};
   }
@@ -351,13 +351,15 @@ template <class _Tp>
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_one() noexcept
 {
-  return static_cast<__fp_storage_t<_Fmt>>(__fp_exp_bias_v<_Fmt> << __fp_mant_nbits_v<_Fmt>);
+  using _Storage = __fp_storage_t<_Fmt>;
+  return static_cast<_Storage>(
+    (static_cast<_Storage>(__fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>) | __fp_explicit_bit_mask_v<_Fmt>);
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fp_one() noexcept
 {
-  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
+  if constexpr (__fp_is_native_type_v<_Tp>)
   {
     return _Tp{1};
   }

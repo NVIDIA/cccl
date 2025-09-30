@@ -46,11 +46,11 @@ struct library_symbol_info
 class library_ref
 {
 public:
-#if _CCCL_CTK_BELOW(12, 5)
+#if _CCCL_CTK_BELOW(12, 7)
   using value_type = ::CUlibrary;
-#else // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
+#else // ^^^ _CCCL_CTK_BELOW(12, 7) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 7) vvv
   using value_type = ::cudaLibrary_t;
-#endif // _CCCL_CTK_BELOW(12, 5)
+#endif // _CCCL_CTK_BELOW(12, 7)
 
   //! @brief Disallow construction from a null pointer
   library_ref(::cuda::std::nullptr_t) = delete;

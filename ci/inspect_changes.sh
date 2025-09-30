@@ -47,6 +47,7 @@ subprojects=(
   stdpar
   python
   cccl_c_parallel
+  cccl_c_stf
   c2h
   nvbench_helper
 )
@@ -63,6 +64,7 @@ declare -A dependencies=(
   [stdpar]="cccl libcudacxx cub thrust"
   [python]="cccl libcudacxx cub cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust c2h"
+  [cccl_c_stf]="cccl libcudacxx cudax c2h"
   [c2h]="cccl libcudacxx cub thrust"
   [nvbench_helper]="cccl libcudacxx cub thrust"
 )
@@ -77,6 +79,7 @@ declare -A project_names=(
   [stdpar]="stdpar"
   [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
+  [cccl_c_stf]="CCCL C CUDASTF Library"
   [c2h]="Catch2Helper"
   [nvbench_helper]="NVBench Helper"
 )
@@ -90,6 +93,7 @@ declare -A project_names=(
 declare -A project_dirs=(
   [packaging]='("examples" "test/cmake")'
   [cccl_c_parallel]='("c/parallel")'
+  [cccl_c_stf]='("c/experimental/stf")'
   [stdpar]='("test/stdpar")'
 )
 
