@@ -12,8 +12,6 @@ set(stf_example_sources
   explicit_data_places.cu
   thrust_zip_iterator.cu
   1f1b.cu
-  # Temporary: will be removed before merging
-  # bug_5891.cu
 )
 
 # Examples which rely on code generation (parallel_for or launch)
