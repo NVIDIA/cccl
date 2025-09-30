@@ -50,9 +50,9 @@ struct DeviceCopy
   //!    {
   //!      __host__ __device__ __forceinline__ auto operator()(uint32_t index)
   //!      {
-  //!        return thrust::make_constant_iterator(d_dataccessor_in[index]);
+  //!        return thrust::make_constant_iterator(d_data_in[index]);
   //!      }
-  //!      int32_t *d_dataccessor_in;
+  //!      int32_t *d_data_in;
   //!    };
   //!
   //!    struct GetPtrToRange
@@ -75,13 +75,13 @@ struct DeviceCopy
   //!    };
   //!
   //!    uint32_t num_ranges = 5;
-  //!    int32_t *d_dataccessor_in;           // e.g., [4, 2, 7, 3, 1]
+  //!    int32_t *d_data_in;           // e.g., [4, 2, 7, 3, 1]
   //!    int32_t *d_data_out;          // e.g., [0,                ...               ]
   //!    uint32_t *d_offsets;          // e.g., [0, 2, 5, 6, 9, 14]
   //!
   //!    // Returns a constant iterator to the element of the i-th run
   //!    thrust::counting_iterator<uint32_t> iota(0);
-  //!    auto iterators_in = thrust::make_transform_iterator(iota, GetIteratorToRange{d_dataccessor_in});
+  //!    auto iterators_in = thrust::make_transform_iterator(iota, GetIteratorToRange{d_data_in});
   //!
   //!    // Returns the run length of the i-th run
   //!    auto sizes = thrust::make_transform_iterator(iota, GetRunLength{d_offsets});
@@ -252,7 +252,8 @@ struct DeviceCopy
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
     _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-    _CCCL_ASSERT(mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr), "mdspan data handle must not be nullptr if the size is not 0");
+    _CCCL_ASSERT(mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr),
+                 "mdspan data handle must not be nullptr if the size is not 0");
     // Check for memory overlap between input and output mdspans
     {
       auto in_start  = mdspan_in.data_handle();
