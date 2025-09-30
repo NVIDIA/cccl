@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// cuda::std::pod is deprecated in C++20
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 // type_traits
 
 // aligned_storage

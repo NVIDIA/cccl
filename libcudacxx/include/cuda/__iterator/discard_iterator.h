@@ -32,12 +32,15 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief \p discard_iterator is an iterator which represents a special kind of pointer that ignores values written to
+//! @addtogroup iterators
+//! @{
+
+//! @brief @c discard_iterator is an iterator which represents a special kind of pointer that ignores values written to
 //! it upon dereference. This iterator is useful for ignoring the output of certain algorithms without wasting memory
-//! capacity or bandwidth. \p discard_iterator may also be used to count the size of an algorithm's output which may not
+//! capacity or bandwidth. @c discard_iterator may also be used to count the size of an algorithm's output which may not
 //! be known a priori.
 //!
-//! The following code snippet demonstrates how to use \p discard_iterator to ignore one of the output ranges of
+//! The following code snippet demonstrates how to use @c discard_iterator to ignore one of the output ranges of
 //! reduce_by_key
 //!
 //! @code
@@ -87,10 +90,10 @@ public:
   using pointer           = void;
   using reference         = void;
 
-  //! @brief Default constructs a \p discard_iterator at index zero
+  //! @brief Default constructs a @c discard_iterator at index zero
   _CCCL_HIDE_FROM_ABI constexpr discard_iterator() = default;
 
-  //! @brief Constructs a \p discard_iterator with a given \p __index
+  //! @brief Constructs a @c discard_iterator with a given index
   //! @param __index The index used for the discard iterator
   _CCCL_TEMPLATE(class _Integer)
   _CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
@@ -104,13 +107,13 @@ public:
     return __index_;
   }
 
-  //! @brief Dereferences the \c discard_iterator returning a proxy that discards all values that are assigned to it
+  //! @brief Dereferences the @c discard_iterator returning a proxy that discards all values that are assigned to it
   [[nodiscard]] _CCCL_API constexpr __discard_proxy operator*() const noexcept
   {
     return {};
   }
 
-  //! @brief Subscipts the \c discard_iterator returning a proxy that discards all values that are assigned to it
+  //! @brief Subscipts the @c discard_iterator returning a proxy that discards all values that are assigned to it
   [[nodiscard]] _CCCL_API constexpr __discard_proxy operator[](difference_type) const noexcept
   {
     return {};
@@ -146,23 +149,23 @@ public:
     return __tmp;
   }
 
-  //! @brief Returns a copy of this \c discard_iterator advanced by \p __n
+  //! @brief Returns a copy of this @c discard_iterator advanced by a number of elements
   //! @param __n The number of elements to advance
   [[nodiscard]] _CCCL_API constexpr discard_iterator operator+(difference_type __n) const noexcept
   {
     return discard_iterator{__index_ + __n};
   }
 
-  //! @brief Returns a copy of \p __x advanced by \p __n
+  //! @brief Returns a copy of a @c discard_iterator advanced by a number of elements
   //! @param __n The number of elements to advance
-  //! @param __x The original \c discard_iterator
+  //! @param __x The original @c discard_iterator
   [[nodiscard]] _CCCL_API friend constexpr discard_iterator
   operator+(difference_type __n, const discard_iterator& __x) noexcept
   {
     return __x + __n;
   }
 
-  //! @brief Advances the index of this \c discard_iterator by \p __n
+  //! @brief Advances the index of this @c discard_iterator by a number of elements
   //! @param __n The number of elements to advance
   _CCCL_API constexpr discard_iterator& operator+=(difference_type __n) noexcept
   {
@@ -170,16 +173,16 @@ public:
     return *this;
   }
 
-  //! @brief Returns a copy of this \c discard_iterator decremented by \p __n
+  //! @brief Returns a copy of this @c discard_iterator decremented by a number of elements
   //! @param __n The number of elements to decrement
   [[nodiscard]] _CCCL_API constexpr discard_iterator operator-(difference_type __n) const noexcept
   {
     return discard_iterator{__index_ - __n};
   }
 
-  //! @brief Returns the distance between \p __lhs and \p __rhs
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
+  //! @brief Returns the distance between two @c discard_iterator's
+  //! @param __lhs The left @c discard_iterator
+  //! @param __rhs The right @c discard_iterator
   //! @return __rhs.__index_ - __lhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
@@ -187,8 +190,8 @@ public:
     return __rhs.__index_ - __lhs.__index_;
   }
 
-  //! @brief Returns the distance between \p __lhs a \p default_sentinel
-  //! @param __lhs The left \c discard_iterator
+  //! @brief Returns the distance between a @c default_sentinel and a @c discard_iterator
+  //! @param __lhs The @c discard_iterator
   //! @return -__lhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
@@ -196,8 +199,8 @@ public:
     return static_cast<difference_type>(-__lhs.__index_);
   }
 
-  //! @brief Returns the distance between a \p default_sentinel and \p __rhs
-  //! @param __rhs The right \c discard_iterator
+  //! @brief Returns the distance between a @c discard_iterator and a @c default_sentinel
+  //! @param __rhs The @c discard_iterator
   //! @return __rhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
@@ -205,7 +208,7 @@ public:
     return static_cast<difference_type>(__rhs.__index_);
   }
 
-  //! @brief Decrements the index of the \c discard_iterator by \p __n
+  //! @brief Decrements the index of the @c discard_iterator by a number of elements
   //! @param __n The number of elements to decrement
   _CCCL_API constexpr discard_iterator& operator-=(difference_type __n) noexcept
   {
@@ -213,7 +216,7 @@ public:
     return *this;
   }
 
-  //! @brief Compares two \c discard_iterator for equality by comparing their indices
+  //! @brief Compares two @c discard_iterator for equality by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -221,7 +224,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two \c discard_iterator for inequality by comparing their indices
+  //! @brief Compares two @c discard_iterator for inequality by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -229,7 +232,8 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
+  //! @brief Compares a @c discard_iterator with @c default_sentinel
+  //! @returns True if the index of @param __lhs is zero
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
   {
@@ -237,21 +241,24 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
+  //! @brief Compares a @c discard_iterator with @c default_sentinel
+  //! @returns True if the index of @param __lhs is zero
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ == 0;
   }
 
-  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
+  //! @brief Compares a @c discard_iterator with @c default_sentinel
+  //! @returns True if the index of @param __lhs is not zero
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
   {
     return __lhs.__index_ != 0;
   }
 
-  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
+  //! @brief Compares a @c discard_iterator with @c default_sentinel
+  //! @returns True if the index of @param __lhs is not zero
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
@@ -260,52 +267,55 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two \c discard_iterator by comparing their indices
+  //! @brief Three-way-compares two @c discard_iterator by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr strong_ordering
   operator<=>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
   }
-#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-
-  //! @brief Compares two \c discard_iterator for less than by comparing their indices
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+  //! @brief Compares two @c discard_iterator for less than by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator for less equal by comparing their indices
+  //! @brief Compares two @c discard_iterator for less equal by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator for greater than by comparing their indices
+  //! @brief Compares two @c discard_iterator for greater than by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator for greater equal by comparing their indices
+  //! @brief Compares two @c discard_iterator for greater equal by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ >= __rhs.__index_;
   }
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
-//! @brief Creates a \p discard_iterator from an optional index.
-//! @param __index The index of the \p discard_iterator within a range. The default index is \c 0.
-//! @return A new \p discard_iterator with \p __index as the couner.
+//! @brief Creates a @c discard_iterator from an optional index.
+//! @param __index The index of the @c discard_iterator within a range. The default index is @c 0.
+//! @return A new @c discard_iterator with @c __index as the counter.
+//! @relates discard_iterator
 _CCCL_TEMPLATE(class _Integer = ::cuda::std::ptrdiff_t)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
 [[nodiscard]] _CCCL_API constexpr discard_iterator make_discard_iterator(_Integer __index = 0)
 {
   return discard_iterator{__index};
 }
+
+//! @}
 
 _CCCL_END_NAMESPACE_CUDA
 

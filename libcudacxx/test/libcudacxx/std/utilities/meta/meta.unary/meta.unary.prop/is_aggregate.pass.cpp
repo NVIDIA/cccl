@@ -18,7 +18,6 @@
 template <class T>
 __host__ __device__ void test_true()
 {
-#if defined(_CCCL_BUILTIN_IS_AGGREGATE)
   static_assert(cuda::std::is_aggregate<T>::value, "");
   static_assert(cuda::std::is_aggregate<const T>::value, "");
   static_assert(cuda::std::is_aggregate<volatile T>::value, "");
@@ -27,13 +26,11 @@ __host__ __device__ void test_true()
   static_assert(cuda::std::is_aggregate_v<const T>, "");
   static_assert(cuda::std::is_aggregate_v<volatile T>, "");
   static_assert(cuda::std::is_aggregate_v<const volatile T>, "");
-#endif
 }
 
 template <class T>
 __host__ __device__ void test_false()
 {
-#if defined(_CCCL_BUILTIN_IS_AGGREGATE)
   static_assert(!cuda::std::is_aggregate<T>::value, "");
   static_assert(!cuda::std::is_aggregate<const T>::value, "");
   static_assert(!cuda::std::is_aggregate<volatile T>::value, "");
@@ -42,7 +39,6 @@ __host__ __device__ void test_false()
   static_assert(!cuda::std::is_aggregate_v<const T>, "");
   static_assert(!cuda::std::is_aggregate_v<volatile T>, "");
   static_assert(!cuda::std::is_aggregate_v<const volatile T>, "");
-#endif
 }
 
 struct Aggregate

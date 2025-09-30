@@ -24,7 +24,7 @@ CONFIGURE_ONLY=false
 function usage {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
+    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores minus one."
     echo
     echo "Options:"
     echo "  -v/-verbose: enable shell echo for debugging"
@@ -43,6 +43,24 @@ function usage {
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
+}
+
+# Check for required dependencies
+function check_required_dependencies() {
+    local missing_deps=()
+
+    # Check for essential tools
+    local required_tools=("cmake" "git" "ninja" "nproc")
+    for tool in "${required_tools[@]}"; do
+        command -v "$tool" &>/dev/null || missing_deps+=("$tool")
+    done
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "❌ Error: Missing required dependencies:" >&2
+        printf "   • %s\n" "${missing_deps[@]}" >&2
+        echo >&2
+        exit 1
+    fi
 }
 
 # Parse options
@@ -75,9 +93,23 @@ while [ "${#args[@]}" -ne 0 ]; do
     esac
 done
 
-# Convert to full paths:
-HOST_COMPILER=$(which ${HOST_COMPILER})
-CUDA_COMPILER=$(which ${CUDA_COMPILER})
+# Convert to full paths and validate compilers exist:
+function validate_and_resolve_compiler() {
+    local compiler_name="$1"
+    local compiler_var="$2"
+    local compiler_path
+
+    compiler_path=$(which "${compiler_var}" 2>/dev/null)
+    if [ -z "$compiler_path" ]; then
+        echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
+        exit 1
+    fi
+
+    echo "$compiler_path"
+}
+
+HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
+CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
@@ -87,10 +119,13 @@ if [ $VERBOSE ]; then
     set -x
 fi
 
+# Check for required dependencies
+check_required_dependencies
+
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
@@ -132,6 +167,11 @@ source ./pretty_printing.sh
 
 print_environment_details() {
   begin_group "⚙️ Environment Details"
+
+  echo "free -h:"
+  free -h || :
+
+  echo "nproc=$(nproc || :)"
 
   echo "pwd=$(pwd)"
 
@@ -246,13 +286,31 @@ function build_preset() {
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
+    local memmon_log="${preset_dir}/memmon.log"
 
     source "./sccache_stats.sh" "start" || :
+
+    # Track memory usage on CI:
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --start \
+          --log-threshold ${MEMMON_LOG_THRESHOLD:-2} \
+          --print-threshold ${MEMMON_PRINT_THRESHOLD:-5} \
+          --log-file "$memmon_log" \
+          --poll ${MEMMON_POLL_INTERVAL:-5} \
+          || :
+    fi
 
     pushd .. > /dev/null
     status=0
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
     popd > /dev/null
+
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --stop || :
+      echo "::group::📝 Memory Usage"
+      head -n20 "$memmon_log" || :
+      echo "::endgroup::"
+    fi
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
 

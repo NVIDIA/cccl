@@ -43,9 +43,18 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
+    # Also skip for:
+    # * uint8-True
+    # * int8-True
+    # * float64-False
     # Also skip for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
-    if np.issubdtype(input_array.dtype, np.complexfloating) or cc_major >= 9:
+    if (
+        np.issubdtype(input_array.dtype, np.complexfloating)
+        or (force_inclusive and np.isdtype(input_array.dtype, (np.uint8, np.int8)))
+        or (not force_inclusive and input_array.dtype == np.float64)
+        or cc_major >= 9
+    ):
         import cuda.cccl.parallel.experimental._cccl_interop
 
         monkeypatch.setattr(
@@ -119,9 +128,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = parallel.ReverseInputIterator(
-        parallel.CountingIterator(np.int32(num_items))
-    )
+    d_input = parallel.ReverseIterator(parallel.CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -209,7 +216,19 @@ def test_exclusive_scan_well_known_plus():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_inclusive_scan_well_known_plus():
+def test_inclusive_scan_well_known_plus(monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.cccl.parallel.experimental._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.cccl.parallel.experimental._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
@@ -249,7 +268,7 @@ def test_scan_transform_output_iterator(floating_array):
     d_input = floating_array
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    def square(x):
+    def square(x: dtype) -> dtype:
         return x * x
 
     d_out_it = parallel.TransformOutputIterator(d_output, square)
@@ -294,14 +313,26 @@ def test_inclusive_scan_add():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_reverse_input_iterator():
+def test_reverse_input_iterator(monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.cccl.parallel.experimental._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.cccl.parallel.experimental._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     def add_op(a, b):
         return a + b
 
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseInputIterator(d_input)
+    reverse_it = parallel.ReverseIterator(d_input)
 
     parallel.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
 
@@ -317,7 +348,7 @@ def test_reverse_output_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseOutputIterator(d_output)
+    reverse_it = parallel.ReverseIterator(d_output)
 
     parallel.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
 

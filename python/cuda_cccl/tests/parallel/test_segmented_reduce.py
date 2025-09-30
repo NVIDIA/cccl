@@ -202,7 +202,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     input_it = parallel.ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
-        def offset_value(n: np.int64):
+        def offset_value(n: np.int64) -> np.int64:
             """
             Offset value computes closed form for
             :math:`sum(1 + (k % p), k=0..n)`.
@@ -320,7 +320,7 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
     start_offsets = cp.array([0, segment_size], dtype=np.int32)
     end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
 
-    def sqrt(x):
+    def sqrt(x: dtype) -> dtype:
         return x**0.5
 
     d_out_it = parallel.TransformOutputIterator(d_output, sqrt)

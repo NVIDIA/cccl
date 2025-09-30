@@ -444,6 +444,40 @@ struct lambda_wrapper
   }
 };
 
+struct MoveOnlyArg
+{
+  static MoveOnlyArg make()
+  {
+    return MoveOnlyArg{};
+  }
+
+  MoveOnlyArg(const MoveOnlyArg& other)      = delete;
+  MoveOnlyArg(MoveOnlyArg&&)                 = default;
+  MoveOnlyArg& operator=(const MoveOnlyArg&) = delete;
+  MoveOnlyArg& operator=(MoveOnlyArg&&)      = delete;
+
+private:
+  MoveOnlyArg() = default;
+};
+
+struct MoveOnlyCallable
+{
+  static MoveOnlyCallable make()
+  {
+    return MoveOnlyCallable{};
+  }
+
+  MoveOnlyCallable(const MoveOnlyCallable&)            = delete;
+  MoveOnlyCallable(MoveOnlyCallable&&)                 = default;
+  MoveOnlyCallable& operator=(const MoveOnlyCallable&) = delete;
+  MoveOnlyCallable& operator=(MoveOnlyCallable&&)      = delete;
+
+  void operator()(MoveOnlyArg) {}
+
+private:
+  MoveOnlyCallable() = default;
+};
+
 C2H_TEST("Host launch", "")
 {
   cuda::atomic<int> atomic = 0;
@@ -525,5 +559,11 @@ C2H_TEST("Host launch", "")
     host_launch(stream, cuda::std::ref(another_lambda_setter));
     unblock_and_wait_stream(stream, atomic);
     CUDAX_REQUIRE(i == 84);
+  }
+
+  SECTION("Check that host_launch works with move only callables and arguments")
+  {
+    cudax::host_launch(stream, MoveOnlyCallable::make(), MoveOnlyArg::make());
+    stream.sync();
   }
 }

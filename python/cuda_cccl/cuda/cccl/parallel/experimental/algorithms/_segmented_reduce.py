@@ -38,10 +38,10 @@ class _SegmentedReduce:
         op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
-        self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
-        self.end_offsets_in_cccl = cccl.to_cccl_iter(end_offsets_in)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
+        self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
         # set host advance functions
         cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
         cccl.cccl_iterator_set_host_advance(

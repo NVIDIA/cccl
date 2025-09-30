@@ -50,8 +50,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -172,8 +175,6 @@ CUB_NAMESPACE_BEGIN
 //!    .. code-block:: python
 //!
 //!        import cuda.cccl.cooperative.experimental as cudax
-//!        from pynvjitlink import patch
-//!        patch.patch_numba_linker(lto=True)
 //!
 //!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
 //!        block_radix_sort = cudax.block.radix_sort_keys(numba.int32, 128, 4)

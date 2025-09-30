@@ -36,9 +36,7 @@
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace cpp
+namespace system::cpp
 {
 
 /*! \p cpp::vector is a container that supports random access to elements,
@@ -87,8 +85,7 @@ using universal_vector = thrust::detail::vector_base<T, Allocator>;
 //! \see universal_vector
 template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 namespace cpp
 {

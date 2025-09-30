@@ -60,6 +60,12 @@ struct iderived : cuda::__basic_interface<iderived, cuda::__extends<ibase<>, cud
   using overrides = cuda::__overrides_for<T, &T::bar>;
 };
 
+struct Immovable
+{
+  Immovable()                     = default;
+  Immovable(Immovable&&) noexcept = delete;
+};
+
 template <bool Small>
 struct SmallOrLarge
 {
@@ -578,6 +584,16 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     any_regular a = ref;
     a             = ref;
   }
+
+  _CCCL_HOST_DEVICE void test_basic_any_test_for_emplacing_immovable_object()
+  {
+    // Can emplace an immovable object into a basic_any:
+    cuda::__basic_any<iempty<>> a{cuda::in_place_from_type<Immovable>, [] {
+                                    return Immovable{};
+                                  }};
+    assert(a.has_value());
+    assert(a.__in_situ());
+  }
 };
 
 template <class TestType>
@@ -596,6 +612,7 @@ _CCCL_HOST_DEVICE void test_basic_any()
   test.test_cuda_dynamic_any_cast();
   test.test_equality_comparable();
   test.test_basic_any_test_for_ambiguous_conversions();
+  test.test_basic_any_test_for_emplacing_immovable_object();
 }
 
 int main(int, char**)

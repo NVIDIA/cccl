@@ -33,11 +33,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -62,7 +58,5 @@ find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator las
   return first;
 }
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

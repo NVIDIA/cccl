@@ -41,8 +41,8 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
@@ -176,7 +176,7 @@ def exclusive_scan(
     Example:
         Below, ``exclusive_scan`` is used to compute an exclusive scan with max operation.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan_max.py
             :language: python
             :start-after: # example-begin
 
@@ -242,7 +242,7 @@ def inclusive_scan(
     Example:
         Below, ``inclusive_scan`` is used to compute an inclusive scan (prefix sum).
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan_custom.py
             :language: python
             :start-after: # example-begin
 

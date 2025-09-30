@@ -15,7 +15,7 @@ on:
 jobs:
   run-jobs:
     name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'windows-latest' }}
     permissions:
       id-token: write
       contents: read

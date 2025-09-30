@@ -20,11 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -55,7 +52,7 @@ struct __numeric_type
 #endif // _CCCL_HAS_FLOAT128()
 
   using type              = decltype(__test(declval<_Tp>()));
-  static const bool value = _IsNotSame<type, void>::value;
+  static const bool value = !is_same_v<type, void>;
 };
 
 template <>

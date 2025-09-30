@@ -801,7 +801,7 @@ def test_reduce_transform_output_iterator(floating_array):
     d_input = floating_array
     d_output = cp.empty(1, dtype=dtype)
 
-    def sqrt(x):
+    def sqrt(x: dtype) -> dtype:
         return x**0.5
 
     d_out_it = parallel.TransformOutputIterator(d_output, sqrt)

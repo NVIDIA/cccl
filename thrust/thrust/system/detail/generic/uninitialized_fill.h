@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
@@ -43,9 +39,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename Size, typen
 _CCCL_HOST_DEVICE ForwardIterator
 uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/uninitialized_fill.inl>

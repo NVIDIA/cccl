@@ -56,6 +56,16 @@ of a sequence of numbers.
    :start-after: # example-begin
    :caption: Transform iterator example.
 
+Iterators that wrap an array (or another output iterator) may be used as both input and output iterators.
+Here's an example showing how to use a
+:func:`TransformIterator <cuda.cccl.parallel.experimental.iterators.TransformIterator>` to transform the output
+of a reduction before writing to the underlying array.
+
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Transform output iterator example.
+
 Custom Types
 ------------
 

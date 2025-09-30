@@ -9,10 +9,11 @@ GENERATE_XML           = YES
 XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
-INPUT                  = ../../libcudacxx/include/cuda ../../libcudacxx/include/nv
+INPUT                  = ../../libcudacxx/include/cuda/__iterator \
+                         ../../libcudacxx/include/nv
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/* */__*
+EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
 EXCLUDE_SYMBOLS        = *detail* *__* _LIBCUDACXX_*
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
@@ -110,7 +111,7 @@ PREDEFINED = \
     "_CCCL_VISIBILITY_DEFAULT=" \
     "_CCCL_VISIBILITY_HIDDEN=" \
     "_CUDAX_CONSTEXPR_FRIEND=friend" \
-    "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
+    "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=0" \
     "CCCL_DEPRECATED=" \
     "CCCL_DEPRECATED_BECAUSE(x)=" \
     "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \

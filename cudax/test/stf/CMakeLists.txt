@@ -6,6 +6,7 @@ set(stf_test_sources
   cpp/redundant_data.cu
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
+  cpp/task_get_stream.cu
   cpp/user_streams.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
@@ -98,6 +99,7 @@ set(stf_test_codegen_sources
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
+  freeze/freeze_untyped_rw.cu
   freeze/freeze_write_back.cu
   freeze/task_fence.cu
   freeze/token.cu

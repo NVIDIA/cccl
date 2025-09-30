@@ -32,11 +32,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
@@ -57,9 +53,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp);
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/sort.inl>
