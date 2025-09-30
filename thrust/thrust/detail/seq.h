@@ -40,7 +40,7 @@ struct seq_t
       : thrust::system::detail::sequential::execution_policy<seq_t>()
   {}
 
-  // allow any execution_policy to convert to seq_t
+  // allow any execution_policy to convert to the sequential one. required for minimum_system to pick it
   template <typename DerivedPolicy>
   _CCCL_HOST_DEVICE seq_t(const thrust::execution_policy<DerivedPolicy>&)
       : thrust::system::detail::sequential::execution_policy<seq_t>()
