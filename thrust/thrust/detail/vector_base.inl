@@ -879,62 +879,17 @@ void vector_base<T, Alloc>::append(size_type n)
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T& x)
 {
-  // Early return if nothing to insert
   if (n == 0)
   {
+    // Clear existing elements so the vector has size 0
+    if (size() > 0)
+    {
+      m_storage.destroy(begin(), end());
+    }
+    m_size = 0;
     return;
   }
 
-  // Handle the simple case: empty vector
-  if (size() == 0)
-  {
-    // For empty vector, just allocate and fill with n elements of x
-    if (capacity() < n)
-    {
-      // Need to allocate new storage
-      size_type new_capacity = n;
-      new_capacity           = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-      new_capacity           = ::cuda::std::min<size_type>(new_capacity, max_size());
-
-      if (new_capacity > max_size())
-      {
-        throw std::length_error("insert(): insertion exceeds max_size().");
-      }
-
-      storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
-
-      try
-      {
-        new_storage.uninitialized_fill_n(new_storage.begin(), n, x);
-      }
-      catch (...)
-      {
-        new_storage.deallocate();
-        throw;
-      }
-
-      m_storage.swap(new_storage);
-      m_size = n;
-    }
-    else
-    {
-      // Have enough capacity, just fill
-      try
-      {
-        m_storage.uninitialized_fill_n(m_storage.begin(), n, x);
-        m_size = n;
-      }
-      catch (...)
-      {
-        // If construction fails, destroy any partially constructed elements
-        // m_size is still 0, so we don't need to update it
-        throw;
-      }
-    }
-    return;
-  }
-
-  // Non-empty vector: use the original complex insertion logic
   if (capacity() - size() < n)
   {
     const size_type old_size = size();
