@@ -252,11 +252,7 @@ struct DeviceCopy
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
     _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-    if (mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr))
-    {
-      _CCCL_ASSERT(false, "mdspan data handle must not be nullptr if the size is not 0");
-      return CubDebug(::cudaErrorInvalidValue);
-    }
+    _CCCL_ASSERT(mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr), "mdspan data handle must not be nullptr if the size is not 0");
     // Check for memory overlap between input and output mdspans
     {
       auto in_start  = mdspan_in.data_handle();
