@@ -259,11 +259,7 @@ struct DeviceCopy
       auto in_end    = in_start + mdspan_in.mapping().required_span_size();
       auto out_start = mdspan_out.data_handle();
       auto out_end   = out_start + mdspan_out.mapping().required_span_size();
-      if (in_start < out_end && out_start < in_end)
-      {
-        _CCCL_ASSERT(false, "mdspan memory ranges must not overlap");
-        return CubDebug(::cudaErrorInvalidValue);
-      }
+      _CCCL_ASSERT(in_start < out_end && out_start < in_end, "mdspan memory ranges must not overlap");
     }
     if (d_temp_storage == nullptr)
     {
