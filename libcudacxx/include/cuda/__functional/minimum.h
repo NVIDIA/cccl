@@ -36,11 +36,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    using _Up = _CUDA_VSTD::remove_cv_t<_Tp>;
     // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
-    if constexpr (_CUDA_VSTD::is_floating_point_v<_Up> || _CUDA_VSTD::__is_extended_floating_point_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Tp>
+                  || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
-      return _CUDA_VSTD::fmin(__lhs, __rhs);
+      return ::cuda::std::fmin(__lhs, __rhs);
     }
     else
     {
@@ -58,11 +58,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    using _Common = _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::common_type_t<_T1, _T2>>;
+    using _Common = ::cuda::std::common_type_t<_T1, _T2>;
     // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
-    if constexpr (_CUDA_VSTD::is_floating_point_v<_Common> || _CUDA_VSTD::__is_extended_floating_point_v<_Common>)
+    if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Common>
+                  || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {
-      return _CUDA_VSTD::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
+      return ::cuda::std::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
     else
     {
