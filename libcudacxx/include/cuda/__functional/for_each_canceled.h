@@ -34,37 +34,57 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
+#  if __cccl_ptx_isa >= 870
+
+#    if _CCCL_HAS_INT128()
+using _QueryCancelResult = __uint128_t;
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+struct alignas(16) _QueryCancelResult
+{
+  ::cuda::std::uint64_t __lo_;
+  ::cuda::std::uint64_t __hi_;
+};
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
 
 template <int _Index>
-[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(_QueryCancelResult __result) noexcept
 {
-  int __r;
+  unsigned __r;
+
+  asm volatile("{\n\t"
+               ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+  asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+
   if constexpr (_Index == 0)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else if constexpr (_Index == 1)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else if constexpr (_Index == 2)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else
   {
     _CCCL_UNREACHABLE();
   }
+  asm volatile("}");
   return __r;
 }
 
@@ -84,7 +104,7 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
 {
   __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
-  __shared__ __int128 __result;
+  __shared__ _QueryCancelResult __result;
   bool __phase = false;
 
   // Initialize barrier and kick-start try_cancel pipeline:
@@ -131,14 +151,18 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
     // the next query operations from being re-ordered above the poll loop.
     {
       int __success = 0;
-      asm volatile(
-        "{\n\t"
-        ".reg .pred p;\n\t"
-        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, %1;\n\t"
-        "selp.b32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__success)
-        : "q"(__result));
+      asm volatile("{\n\t"
+                   ".reg .pred p;\t\n"
+                   ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+      asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+      asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+      asm volatile("clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, query_result;\n\t"
+                   "selp.b32 %0, 1, 0, p;\n\t"
+                   "}\n\t"
+                   : "=r"(__success));
       if (__success != 1)
       {
         // Invalidating mbarrier and synchronizing before exiting not
@@ -189,7 +213,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   } while (true);
 }
 
-#  else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
+#  else // ^^^ __cccl_ptx_isa >= 870 ^^^ / vvv __cccl_ptx_isa < 870 vvv
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
 _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
 __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
@@ -197,7 +221,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   // We are compiling for SM100 but PTX 8.7 is not supported, so fall back to just calling the function
   _CUDA_VSTD::invoke(_CUDA_VSTD::move(__uf), __block_idx);
 }
-#  endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
+#  endif // ^^^ __cccl_ptx_isa < 870 ^^^
 
 //! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
 //! from the current grid. On success, it invokes the unary function `__uf` before trying again.
