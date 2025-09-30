@@ -100,6 +100,11 @@ function(cccl_build_compiler_targets)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
 
+  #  if (CCCL_USE_LIBCXX)
+  #    list(APPEND cxx_compile_options "-stdlib=libc++")
+  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
+  #  endif()
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")

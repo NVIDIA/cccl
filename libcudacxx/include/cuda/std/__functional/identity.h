@@ -30,8 +30,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct __is_identity : false_type
-{};
+inline constexpr bool __is_identity_v = false;
 
 struct identity
 {
@@ -45,14 +44,11 @@ struct identity
 };
 
 template <>
-struct __is_identity<identity> : true_type
-{};
+inline constexpr bool __is_identity_v<identity> = true;
 template <>
-struct __is_identity<reference_wrapper<identity>> : true_type
-{};
+inline constexpr bool __is_identity_v<reference_wrapper<identity>> = true;
 template <>
-struct __is_identity<reference_wrapper<const identity>> : true_type
-{};
+inline constexpr bool __is_identity_v<reference_wrapper<const identity>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

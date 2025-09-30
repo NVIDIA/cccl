@@ -28,9 +28,6 @@ get_policy(std::string_view policy_wrapper_expr, std::string_view translation_un
   std::string fixed_source  = std::format(
     "#include <cub/detail/ptx-json/json.h>\n"
      "{0}\n"
-     "#if _CCCL_HAS_NVFP16()\n"
-     "#include <cuda_fp16.h>\n"
-     "#endif\n"
      "__global__ void ptx_json_emitting_kernel()\n"
      "{{\n"
      "  [[maybe_unused]] auto wrapped = {1};\n"
