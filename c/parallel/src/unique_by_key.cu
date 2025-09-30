@@ -113,7 +113,7 @@ std::string get_iterator_name(cccl_iterator_t iterator, unique_by_key_iterator_t
 std::string get_compact_init_kernel_name(cccl_iterator_t output_num_selected_it)
 {
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   const std::string num_selected_iterator_t =
     get_iterator_name(output_num_selected_it, unique_by_key_iterator_t::num_selected);
@@ -130,7 +130,7 @@ std::string get_sweep_kernel_name(
   cccl_iterator_t output_num_selected_it)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_unique_by_key_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_unique_by_key_policy>(&chained_policy_t));
 
   const std::string input_keys_iterator_t = get_iterator_name(input_keys_it, unique_by_key_iterator_t::input_keys);
   const std::string input_values_iterator_t =
@@ -142,12 +142,12 @@ std::string get_sweep_kernel_name(
     get_iterator_name<num_selected_storage_t>(output_num_selected_it, unique_by_key_iterator_t::num_selected);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", offset_t);
 
   std::string equality_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&equality_op_t));
 
   return std::format(
     "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
@@ -171,7 +171,8 @@ struct dynamic_unique_by_key_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<unique_by_key_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -243,7 +244,7 @@ CUresult cccl_device_unique_by_key_build_ex(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = unique_by_key::get_policy(cc, input_keys_it.value_type.size);
+    const auto policy = unique_by_key::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
 
     const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);

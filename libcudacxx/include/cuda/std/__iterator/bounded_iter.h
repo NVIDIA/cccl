@@ -41,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // Arithmetic operations are allowed and the bounds of the resulting iterator
 // are not checked. Hence, it is possible to create an iterator pointing outside
 // its range, but it is not possible to dereference it.
-template <class _Iterator, class = enable_if_t<__is_cpp17_contiguous_iterator<_Iterator>>>
+template <class _Iterator, class = enable_if_t<__has_contiguous_traversal<_Iterator>>>
 struct __bounded_iter
 {
   using value_type        = typename iterator_traits<_Iterator>::value_type;
@@ -60,7 +60,7 @@ struct __bounded_iter
   _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter const&) = default;
   _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter&&)      = default;
 
-  template <class _OtherIterator, class = enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
+  template <class _OtherIterator, class = enable_if_t<is_convertible_v<_OtherIterator, _Iterator>>>
   _CCCL_API constexpr __bounded_iter(__bounded_iter<_OtherIterator> const& __other) noexcept
       : __current_(__other.__current_)
       , __begin_(__other.__begin_)
@@ -230,7 +230,7 @@ _CCCL_API constexpr __bounded_iter<_It> __make_bounded_iter(_It __it, _It __begi
 
 #if _CCCL_STD_VER <= 2017
 template <class _Iterator>
-inline constexpr bool __is_cpp17_contiguous_iterator<__bounded_iter<_Iterator>> = true;
+inline constexpr bool __has_contiguous_traversal<__bounded_iter<_Iterator>> = true;
 #endif // _CCCL_STD_VER <= 2017
 
 template <class _Iterator>

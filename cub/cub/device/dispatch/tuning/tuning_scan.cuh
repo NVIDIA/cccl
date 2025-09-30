@@ -469,6 +469,16 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
                   "The memory consistency model does not apply to texture "
                   "accesses");
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ScanPolicyT">() = Scan().EncodedPolicy(),
+                  key<"DelayConstructor">() =
+                    StaticPolicyT::ScanPolicyT::detail::delay_constructor_t::EncodedConstructor()>();
+  }
+#endif
 };
 
 template <typename PolicyT>

@@ -203,7 +203,6 @@ autodoc_mock_imports = [
     "numba.cuda.dispatcher",
     "numba.extending",
     "numba.types",
-    "pynvjitlink",
     "cuda.bindings",
     "cuda.bindings.driver",
     "cuda.bindings.runtime",

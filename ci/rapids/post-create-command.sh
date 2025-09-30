@@ -134,8 +134,8 @@ _run_post_create_command() {
     _apply_manifest_modifications;
 
     # Clone all the repos
-    gh config set git_protocol ssh;
-    gh config set git_protocol ssh --host github.com;
+    gh config set git_protocol https;
+    gh config set git_protocol https --host github.com;
 
     clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
