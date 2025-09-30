@@ -212,10 +212,10 @@ template <intmax_t _Num, intmax_t _Den>
 constexpr intmax_t ratio<_Num, _Den>::den;
 
 template <class _Tp>
-inline const bool __is_ratio_v = false;
+inline constexpr bool __is_ratio_v = false;
 
 template <intmax_t _Num, intmax_t _Den>
-inline const bool __is_ratio_v<ratio<_Num, _Den>> = true;
+inline constexpr bool __is_ratio_v<ratio<_Num, _Den>> = true;
 
 using atto  = ratio<1LL, 1000000000000000000LL>;
 using femto = ratio<1LL, 1000000000000000LL>;

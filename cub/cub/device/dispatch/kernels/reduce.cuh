@@ -172,6 +172,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
                 AccumT,
                 TransformOpT>;
 
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
+
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
 
@@ -252,6 +256,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                 ReductionOpT,
                 AccumT,
                 TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
