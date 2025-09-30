@@ -416,14 +416,18 @@ struct DispatchSegmentedSort
   {
     auto wrapped_policy = detail::segmented_sort::MakeSegmentedSortPolicyWrapper(policy);
 
-    wrapped_policy.CheckLoadModifierIsNotLDG();
+    CUB_DETAIL_STATIC_ISH_ASSERT(wrapped_policy.LargeSegmentLoadModifier() != CacheLoadModifier::LOAD_LDG,
+                                 "The memory consistency model does not apply to texture accesses");
 
-    if constexpr (!KEYS_ONLY)
-    {
-      wrapped_policy.CheckLoadAlgorithmIsNotStriped();
-    }
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      KEYS_ONLY || wrapped_policy.LargeSegmentLoadAlgorithm() != BLOCK_LOAD_STRIPED
+        || wrapped_policy.MediumSegmentLoadAlgorithm() != WARP_LOAD_STRIPED
+        || wrapped_policy.SmallSegmentLoadAlgorithm() != WARP_LOAD_STRIPED,
+      "Striped load will make this algorithm unstable");
 
-    wrapped_policy.CheckStoreAlgorithmIsNotStriped();
+    CUB_DETAIL_STATIC_ISH_ASSERT(wrapped_policy.MediumSegmentStoreAlgorithm() != WARP_STORE_STRIPED
+                                   || wrapped_policy.SmallSegmentStoreAlgorithm() != WARP_STORE_STRIPED,
+                                 "Striped stores will produce unsorted results");
 
     const int radix_bits = wrapped_policy.LargeSegmentRadixBits();
 

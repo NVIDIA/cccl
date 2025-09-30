@@ -81,27 +81,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr void CheckLoadModifierIsNotLDG()
-  {
-    static_assert(StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER != CacheLoadModifier::LOAD_LDG,
-                  "The memory consistency model does not apply to texture accesses");
-  }
-
-  CUB_RUNTIME_FUNCTION static constexpr void CheckLoadAlgorithmIsNotStriped()
-  {
-    static_assert(StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED
-                    || StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM != WARP_LOAD_STRIPED
-                    || StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
-                  "Striped load will make this algorithm unstable");
-  }
-
-  CUB_RUNTIME_FUNCTION static constexpr void CheckStoreAlgorithmIsNotStriped()
-  {
-    static_assert(StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM != WARP_STORE_STRIPED
-                    || StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM != WARP_STORE_STRIPED,
-                  "Striped stores will produce unsorted results");
-  }
-
   CUB_RUNTIME_FUNCTION static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
@@ -130,6 +109,36 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   CUB_RUNTIME_FUNCTION static constexpr int MediumPolicyItemsPerTile()
   {
     return StaticPolicyT::MediumSegmentPolicy::ITEMS_PER_TILE;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LargeSegmentLoadModifier()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
