@@ -77,10 +77,7 @@ struct __tuple_sfinae_base
 
 // __tuple_convertible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_convertible : public false_type
 {};
 
@@ -91,10 +88,7 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_constructible : public false_type
 {};
 
@@ -105,10 +99,7 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_assignable : public false_type
 {};
 
@@ -133,7 +124,7 @@ struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_consta
 
 template <class _Tuple, size_t _ExpectedSize, class _RawTuple = remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _CCCL_NODEBUG_ALIAS =
-  __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
+  __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>, tuple_size<_RawTuple>, _ExpectedSize>;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail
 {
