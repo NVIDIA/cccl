@@ -704,7 +704,7 @@ private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
   {
     constexpr int byte_size = 8;
-    const int num_bits      = kernel_source.KeySize() * byte_size;
+    const int num_bits      = static_cast<int>(kernel_source.KeySize()) * byte_size;
     const int num_passes    = ::cuda::ceil_div(num_bits, radix_bits);
     return num_passes;
   }
