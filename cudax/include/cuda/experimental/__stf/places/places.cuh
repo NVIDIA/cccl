@@ -1130,8 +1130,9 @@ inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& d
 //! Creates a linear grid from a vector of execution places
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
-  assert(!places.empty());
-  return make_grid(mv(places), dim4(places.size(), 1, 1, 1));
+  _CCCL_ASSERT(!places.empty(), "invalid places");
+  auto grid_dim = dim4(places.size(), 1, 1, 1);
+  return make_grid(mv(places), grid_dim);
 }
 
 /// Implementation deferred because we need the definition of exec_place_grid
@@ -1244,7 +1245,7 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
@@ -1303,7 +1304,7 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
