@@ -25,7 +25,7 @@ C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
 
   // Allocate device memory using thrust::device_vector
   thrust::device_vector<float> d_input(N * M);
-  thrust::device_vector<float> d_output(N * M);
+  thrust::device_vector<float> d_output(N * M, thrust::no_init);
 
   using extents_t    = cuda::std::extents<int, N, M>;
   using mdspan_in_t  = cuda::std::mdspan<float, extents_t, cuda::std::layout_right>; // row-major
