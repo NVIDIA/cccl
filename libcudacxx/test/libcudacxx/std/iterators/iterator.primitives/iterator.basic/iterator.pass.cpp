@@ -20,7 +20,7 @@
 //   typedef Category  iterator_category;
 // };
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>

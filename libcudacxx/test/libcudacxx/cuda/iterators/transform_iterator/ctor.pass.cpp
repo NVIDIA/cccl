@@ -92,10 +92,10 @@ __host__ __device__ constexpr void test(Fn fun)
 
   { // default initialization
     constexpr bool can_default_init = cuda::std::default_initializable<Iter> && cuda::std::default_initializable<Fn>;
-    static_assert(cuda::std::default_initializable<cuda::transform_iterator<Iter, Fn>> == can_default_init);
+    static_assert(cuda::std::default_initializable<cuda::transform_iterator<Fn, Iter>> == can_default_init);
     if constexpr (can_default_init)
     {
-      [[maybe_unused]] cuda::transform_iterator<Iter, Fn> iter{};
+      [[maybe_unused]] cuda::transform_iterator<Fn, Iter> iter{};
     }
   }
 

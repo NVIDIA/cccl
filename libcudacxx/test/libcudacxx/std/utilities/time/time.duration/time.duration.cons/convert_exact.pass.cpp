@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -20,18 +21,18 @@
 
 #include "test_macros.h"
 
+__host__ __device__ constexpr bool test()
+{
+  cuda::std::chrono::milliseconds ms(1);
+  cuda::std::chrono::microseconds us = ms;
+  assert(us.count() == 1000);
+  return true;
+}
+
 int main(int, char**)
 {
-  {
-    cuda::std::chrono::milliseconds ms(1);
-    cuda::std::chrono::microseconds us = ms;
-    assert(us.count() == 1000);
-  }
-  {
-    constexpr cuda::std::chrono::milliseconds ms(1);
-    constexpr cuda::std::chrono::microseconds us = ms;
-    static_assert(us.count() == 1000, "");
-  }
+  test();
+  static_assert(test());
 
   return 0;
 }

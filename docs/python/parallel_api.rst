@@ -23,6 +23,15 @@ Iterators
   :undoc-members:
   :imported-members:
 
+Operators
+---------
+
+.. automodule:: cuda.cccl.parallel.experimental.op
+  :members:
+  :undoc-members:
+  :imported-members:
+
+
 Utilities
 ---------
 
