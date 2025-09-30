@@ -504,7 +504,7 @@ struct DispatchSegmentedSort
 
         // Signed integer type for global offsets
         // Check if the number of items exceeds the range covered by the selected signed offset type
-        cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+        error = ChooseOffsetT::is_exceeding_offset_type(num_items);
         if (error)
         {
           return error;
