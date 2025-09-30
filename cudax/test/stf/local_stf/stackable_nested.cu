@@ -36,6 +36,7 @@ int main()
   auto ldata = sctx.logical_data(make_slice(data.data(), sz));
 
   // First scope with first context push and first data push
+  for (size_t iter = 0; iter < 3; iter++)
   {
     stackable_ctx::graph_scope_guard scope1{sctx};
     ldata.push(access_mode::rw);
@@ -64,7 +65,7 @@ int main()
   // Verify results - each element should be doubled
   for (size_t i = 0; i < sz; i++)
   {
-    int expected = static_cast<int>(i * 2 + 1);
+    int expected = static_cast<int>(((i * 2 + 1) * 2 + 1) * 2 + 1);
     _CCCL_ASSERT(data[i] == expected, "invalid result at index");
   }
 
