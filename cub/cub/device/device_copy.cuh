@@ -252,15 +252,17 @@ struct DeviceCopy
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
     _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-    _CCCL_ASSERT(mdspan_in.size() != 0 && (mdspan_in.data_handle() == nullptr || mdspan_out.data_handle() == nullptr),
+    _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
                  "mdspan data handle must not be nullptr if the size is not 0");
     // Check for memory overlap between input and output mdspans
+    if (mdspan_in.size() != 0)
     {
       auto in_start  = mdspan_in.data_handle();
       auto in_end    = in_start + mdspan_in.mapping().required_span_size();
       auto out_start = mdspan_out.data_handle();
       auto out_end   = out_start + mdspan_out.mapping().required_span_size();
-      _CCCL_ASSERT(in_start < out_end && out_start < in_end, "mdspan memory ranges must not overlap");
+      // TODO(fbusato): replace with __are_ptrs_overlapping
+      _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
     }
     if (d_temp_storage == nullptr)
     {
