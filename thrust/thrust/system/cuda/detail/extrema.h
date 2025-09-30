@@ -141,39 +141,43 @@ struct arg_minmax_f
   }
 };
 
-template <class Derived, class ItemsIt, class ArgFunctor>
-ItemsIt THRUST_RUNTIME_FUNCTION
-element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ArgFunctor arg_func)
+template <class Derived, class ItemsIt, class BinaryPred>
+ItemsIt CUB_RUNTIME_FUNCTION
+cub_min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
 {
-  if (first == last)
-  {
-    return last;
-  }
+  cudaStream_t stream  = cuda_cub::stream(policy);
+  using size_type      = thrust::detail::it_difference_t<ItemsIt>;
+  using output_it_t    = size_type*;
+  const auto num_items = static_cast<size_type>(::cuda::std::distance(first, last));
 
-  using value_t  = thrust::detail::it_value_t<ItemsIt>;
-  using offset_t = thrust::detail::it_difference_t<ItemsIt>;
-  using tuple_t  = tuple<value_t, offset_t>;
+  size_t tmp_size = 0;
+  auto error      = cub::DeviceReduce::ArgMin(
+    nullptr, tmp_size, first, ::cuda::discard_iterator{}, output_it_t{nullptr}, num_items, stream, binary_pred);
+  throw_on_error(error, "after determining ArgMin temporary storage size");
 
-  const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-  const auto zip_first = make_zip_iterator(first, counting_iterator<offset_t>{0});
+  // We allocate both the temporary storage needed for the algorithm, and a `size_type` to store the result.
+  thrust::detail::temporary_array<char, Derived> tmp(policy, sizeof(size_type) + tmp_size);
+  size_type* index_ptr = thrust::detail::aligned_reinterpret_cast<size_type*>(tmp.data().get());
+  void* tmp_ptr        = static_cast<void*>((tmp.data() + sizeof(size_type)).get());
 
-  // TODO(bgruber): the previous thrust implementation avoided creating an initial value. Should we bring this back?
-  // There is no reduction in CUB without init.
-  const auto offset = thrust::cuda_cub::detail::reduce_n_impl(
-    policy,
-    zip_first,
-    num_items,
-    tuple_t{cub::FutureValue(first), offset_t{0}},
-    arg_func,
-    [](execution_policy<Derived>& policy, const tuple_t* result_ptr) {
-      // TODO(bgruber): I only want to download the offset (element 1) and not the value (element 0), but how can I
-      // legally form a pointer to that tuple element?
-      // return get_value(policy, &thrust::get<1>(*result_ptr));
-      return thrust::get<1>(get_value(policy, result_ptr));
-    });
+  error = cub::DeviceReduce::ArgMin(
+    tmp_ptr, tmp_size, first, ::cuda::discard_iterator{}, index_ptr, num_items, stream, binary_pred);
+  cuda_cub::throw_on_error(error, "after ArgMin invocation");
 
-  return first + offset;
+  cuda_cub::throw_on_error(cuda_cub::synchronize(policy), "min_element failed to synchronize");
+
+  return first + get_value(policy, index_ptr);
 }
+
+template <typename F>
+struct swap_args : F
+{
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE decltype(auto) operator()(Ts&&... args) const
+  {
+    return F::operator()(::cuda::std::forward<Ts>(args)...);
+  }
+};
 } // namespace __extrema
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -181,8 +185,7 @@ template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<>>
 ItemsIt _CCCL_HOST_DEVICE
 min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  // FIXME(bgruber): we should not need to produce an initial value
-  THRUST_CDP_DISPATCH((return __extrema::element(policy, first, last, __extrema::arg_min_f<BinaryPred>{binary_pred});),
+  THRUST_CDP_DISPATCH((return __extrema::cub_min_element(policy, first, last, binary_pred);),
                       (return thrust::min_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
 }
 
@@ -191,8 +194,7 @@ template <class Derived, class ItemsIt, class BinaryPred = ::cuda::std::less<>>
 ItemsIt _CCCL_HOST_DEVICE
 max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred = {})
 {
-  // FIXME(bgruber): we should not need to produce an initial value
-  THRUST_CDP_DISPATCH((return __extrema::element(policy, first, last, __extrema::arg_max_f<BinaryPred>{binary_pred});),
+  THRUST_CDP_DISPATCH((return __extrema::cub_min_element(policy, first, last, __extrema::swap_args{binary_pred});),
                       (return thrust::max_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
 }
 

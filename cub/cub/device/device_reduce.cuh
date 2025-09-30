@@ -1183,7 +1183,7 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
+  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename LessThan>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1191,7 +1191,8 @@ public:
     ExtremumOutIteratorT d_min_out,
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = 0,
+    LessThan less_than  = ::cuda::std::less<>{})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
@@ -1204,15 +1205,21 @@ public:
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
     using GlobalOffsetT = ::cuda::std::int64_t;
 
-    // The value type used for the extremum
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
-
     // Reduction operation
-    using ReduceOpT = cub::ArgMin;
+    using ReduceOpT = detail::arg_min_custom_key_compare<LessThan>;
 
     // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
+    auto initial_value = [&]() {
+      using limits_t = ::cuda::std::numeric_limits<InputValueT>;
+      if constexpr (limits_t::is_specialized)
+      {
+        return ::cuda::std::numeric_limits<InputValueT>::max();
+      }
+      else
+      {
+        return FutureValue{d_in};
+      }
+    }();
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
     auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
@@ -1224,14 +1231,14 @@ public:
       PerPartitionOffsetT,
       GlobalOffsetT,
       ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream);
+      decltype(initial_value)>::Dispatch(d_temp_storage,
+                                         temp_storage_bytes,
+                                         d_in,
+                                         out_it,
+                                         static_cast<GlobalOffsetT>(num_items),
+                                         ReduceOpT{less_than},
+                                         initial_value,
+                                         stream);
   }
 
   //! @rst
