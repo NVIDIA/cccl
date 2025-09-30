@@ -230,7 +230,7 @@ struct AgentSegmentedScan
     AccumT exclusive_prefix{};
     OffsetT n_chunks = cuda::ceil_div(inp_idx_end - inp_idx_begin, TILE_ITEMS);
 
-    InputT thread_values[ITEMS_PER_THREAD] = {};
+    AccumT thread_values[ITEMS_PER_THREAD] = {};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
     {
@@ -245,7 +245,7 @@ struct AgentSegmentedScan
       // execute BlockScan
       AccumT block_aggregate;
       BlockScanT block_scan_algo(temp_storage.scan);
-      if (IS_INCLUSIVE)
+      if constexpr (IS_INCLUSIVE)
       {
         block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
       }
@@ -264,9 +264,9 @@ struct AgentSegmentedScan
       {
         constexpr auto loop_size = static_cast<int>(ITEMS_PER_THREAD);
         cuda::static_for<loop_size>([&](int i) {
-          thread_values[i] += exclusive_prefix;
+          thread_values[i] = thread_values[i] + exclusive_prefix;
         });
-        exclusive_prefix += block_aggregate;
+        exclusive_prefix = exclusive_prefix + block_aggregate;
       }
 
       // write out scan values using BlockStore

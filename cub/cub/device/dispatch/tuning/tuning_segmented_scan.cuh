@@ -415,7 +415,7 @@ struct SegmentedScanPolicyWrapper<StaticPolicyT,
 
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
-    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
+    return StaticPolicyT::SegmentedScanPolicyT::LOAD_MODIFIER;
   }
 
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
@@ -427,7 +427,7 @@ struct SegmentedScanPolicyWrapper<StaticPolicyT,
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
+CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper<PolicyT> MakeSegmentedScanPolicyWrapper(PolicyT policy)
 {
   return SegmentedScanPolicyWrapper<PolicyT>{policy};
 }
@@ -445,7 +445,7 @@ struct policy_hub
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
-    using ScanPolicyT =
+    using SegmentedScanPolicyT =
       AgentSegmentedScanPolicy<128,
                                12,
                                AccumT,
@@ -457,13 +457,13 @@ struct policy_hub
   struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
-    using ScanPolicyT =
+    using SegmentedScanPolicyT =
       AgentSegmentedScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct DefaultPolicy
   {
-    using ScanPolicyT =
+    using SegmentedScanPolicyT =
       AgentSegmentedScanPolicy<128,
                                4,
                                AccumT,
@@ -515,7 +515,7 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>>;
     template <typename Tuning, typename IVT>
-    static auto select_agent_policy750(long) -> typename Policy600::ScanPolicyT;
+    static auto select_agent_policy750(long) -> typename Policy600::SegmentedScanPolicyT;
 
     using SegmentedScanPolicyT =
       decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
@@ -560,7 +560,7 @@ struct policy_hub
       BLOCK_SCAN_WARP_SCANS,
       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>>;
     template <typename Tuning, typename IVT>
-    static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
+    static auto select_agent_policy100(long) -> typename Policy900::SegmentedScanPolicyT;
 
     using SegmentedScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
