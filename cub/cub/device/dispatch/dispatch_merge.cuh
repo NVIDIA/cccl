@@ -28,22 +28,36 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
 {
+template <typename PolicyT>
+struct policy_noblockload2smem_t : PolicyT
+{
+  static constexpr bool use_block_load_to_shared = false;
+};
+
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
 template <typename DefaultPolicy, class... Args>
 class choose_merge_agent
 {
-  using default_agent_t = agent_t<DefaultPolicy, Args...>;
-  using fallback_agent_t =
-    agent_t<policy_wrapper_t<DefaultPolicy, fallback_BLOCK_THREADS, fallback_ITEMS_PER_THREAD>, Args...>;
+  using default_load2sh_agent_t   = agent_t<DefaultPolicy, Args...>;
+  using default_noload2sh_agent_t = agent_t<policy_noblockload2smem_t<DefaultPolicy>, Args...>;
 
-  // Use fallback if merge agent exceeds maximum shared memory, but the fallback agent still fits
-  static constexpr bool use_fallback = sizeof(typename default_agent_t::TempStorage) > max_smem_per_block
-                                    && sizeof(typename fallback_agent_t::TempStorage) <= max_smem_per_block;
+  using fallback_agent_t = agent_t<
+    policy_wrapper_t<policy_noblockload2smem_t<DefaultPolicy>, fallback_BLOCK_THREADS, fallback_ITEMS_PER_THREAD>,
+    Args...>;
+
+  static constexpr bool use_default_load2sh =
+    sizeof(typename default_load2sh_agent_t::TempStorage) <= max_smem_per_block;
+  // Use fallback if merge agent exceeds maximum shared memory, but the fallback agent still fits, else use
+  // vsmem-compatible version, so noload2sh
+  static constexpr bool use_fallback = sizeof(typename fallback_agent_t::TempStorage) <= max_smem_per_block;
 
 public:
-  using type = ::cuda::std::conditional_t<use_fallback, fallback_agent_t, default_agent_t>;
+  using type =
+    ::cuda::std::conditional_t<use_default_load2sh,
+                               default_load2sh_agent_t,
+                               ::cuda::std::conditional_t<use_fallback, fallback_agent_t, default_noload2sh_agent_t>>;
 };
 
 // Computes the merge path intersections at equally wide intervals. The approach is outlined in the paper:
@@ -85,6 +99,19 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
     // Compute diagonal at the first item in the tile we merge later, clamped to the total number of items
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
     key1_beg_offsets[diagonal_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
+  }
+}
+
+template <bool Modify, CacheLoadModifier LoadModifier, typename Iterator>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator_if(Iterator it)
+{
+  if constexpr (Modify)
+  {
+    return try_make_cache_modified_iterator<LoadModifier>(it);
+  }
+  else
+  {
+    return it;
   }
 }
 
@@ -144,11 +171,11 @@ __launch_bounds__(
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
+    try_make_cache_modified_iterator_if<!MergeAgent::keys_use_block_load_to_shared, MergePolicy::LOAD_MODIFIER>(keys1),
+    try_make_cache_modified_iterator_if<!MergeAgent::items_use_block_load_to_shared, MergePolicy::LOAD_MODIFIER>(items1),
     num_keys1,
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
+    try_make_cache_modified_iterator_if<!MergeAgent::keys_use_block_load_to_shared, MergePolicy::LOAD_MODIFIER>(keys2),
+    try_make_cache_modified_iterator_if<!MergeAgent::items_use_block_load_to_shared, MergePolicy::LOAD_MODIFIER>(items2),
     num_keys2,
     keys_result,
     items_result,
