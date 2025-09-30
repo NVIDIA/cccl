@@ -15,6 +15,7 @@
 
 #include <cuda/std/__format_>
 #include <cuda/std/cassert>
+#include <cuda/std/cstring>
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
@@ -36,7 +37,8 @@ __host__ __device__ constexpr void test()
   static_assert(noexcept(cuda::std::basic_format_parse_context{cuda::std::basic_string_view<CharT>{}}));
   static_assert(noexcept(cuda::std::basic_format_parse_context{cuda::std::basic_string_view<CharT>{}, 42}));
 
-  constexpr const CharT* fmt = TEST_STRLIT(CharT, "abc");
+  CharT fmt[4]{};
+  cuda::std::__cccl_strcpy(fmt, TEST_STRLIT(CharT, "abc"));
 
   {
     cuda::std::basic_format_parse_context<CharT> context(fmt);
