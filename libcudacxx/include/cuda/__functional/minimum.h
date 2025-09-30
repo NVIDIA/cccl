@@ -54,11 +54,11 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
-  operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
+  template <class _Tp, class _Up>
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Up>
+  operator()(const _Tp& __lhs, const _Up& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    using _Common = ::cuda::std::common_type_t<_T1, _T2>;
+    using _Common = ::cuda::std::common_type_t<_Tp, _Up>;
     // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
     if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Common>
                   || ::cuda::std::__is_extended_floating_point_v<_Common>)
