@@ -684,14 +684,17 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+} // namespace detail
+#endif // !_CCCL_COMPILER(NVRTC)
 
+namespace detail
+{
 template <typename T>
 struct get_active_policy
 {
   using type = typename T::ActivePolicy;
 };
 } // namespace detail
-#endif // !_CCCL_COMPILER(NVRTC)
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -727,7 +730,7 @@ public:
         return PrevPolicyT::Invoke(device_ptx_version, op);
       }
     }
-    return op.template Invoke<PolicyPtxVersion, PolicyT>();
+    return op.template Invoke<PolicyT>();
 #  endif
   }
 #endif // !_CCCL_COMPILER(NVRTC)
