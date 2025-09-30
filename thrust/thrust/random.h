@@ -96,6 +96,30 @@ using taus88 =
                                         0>,
                      0>;
 
+  /*! \typedef philox4x32
+  *  \brief A random number engine with predefined parameters which implements the
+  *         Philox counter based random number generation algorithm.
+  *  \note The 10000th consecutive invocation of a default-constructed object of type \p philox4x32
+  *        shall produce the value \c 1955073260.
+  */
+  using philox4x32 = philox_engine<
+    std::uint_fast32_t,
+    32, 4, 10,
+    0xCD9E8D57, 0x9E3779B9,
+    0xD2511F53, 0xBB67AE85> ;
+
+  /*! \typedef philox4x64
+  *  \brief A random number engine with predefined parameters which implements the
+  *         Philox counter based random number generation algorithm.
+  *  \note The 10000th consecutive invocation of a default-constructed object of type \p philox4x64
+  *        shall produce the value \c 3409172418970261260.
+  */
+  using philox4x64 = philox_engine<
+    std::uint_fast64_t,
+    64, 4, 10,
+    0xCA5A826395121157, 0x9E3779B97F4A7C15,
+    0xD2E7470EE14C6C93, 0xBB67AE8584CAA73B>;
+
 /*! \typedef default_random_engine
  *  \brief An implementation-defined "default" random number engine.
  *  \note \p default_random_engine is currently an alias for \p minstd_rand, and may change
@@ -116,5 +140,6 @@ using random::default_random_engine;
 using random::ranlux24;
 using random::ranlux48;
 using random::taus88;
+using random::philox4x64;
 
 THRUST_NAMESPACE_END
