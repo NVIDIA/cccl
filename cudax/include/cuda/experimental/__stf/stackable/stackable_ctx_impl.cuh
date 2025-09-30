@@ -1697,6 +1697,17 @@ public:
   }
 
   template <typename... Pack>
+  auto launch(Pack&&... pack)
+  {
+    auto lock = pimpl->acquire_shared_lock();
+
+    int offset = get_head_offset();
+    process_pack(offset, pack...);
+
+    return get_ctx(get_head_offset()).launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+  }
+
+  template <typename... Pack>
   auto cuda_kernel(Pack&&... pack)
   {
     auto lock = pimpl->acquire_shared_lock();
