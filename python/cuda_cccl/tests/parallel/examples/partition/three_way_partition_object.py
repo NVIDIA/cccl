@@ -23,7 +23,7 @@ d_num_selected = cp.empty(2, dtype=np.int64)
 
 
 def less_than_op(x):
-    return x < 8 and x > 0
+    return x < 8 and x >= 0
 
 
 def greater_than_equal_op(x):
@@ -69,10 +69,15 @@ expected_first_part = np.array([0, 2, 1, 5, 6, 7], dtype=dtype)
 expected_second_part = np.array([9, 17, 10], dtype=dtype)
 expected_unselected = np.array([-3], dtype=dtype)
 expected_num_selected = np.array([6, 3], dtype=np.int64)
-actual_first_part = d_first_part.get()
-actual_second_part = d_second_part.get()
-actual_unselected = d_unselected.get()
+
 actual_num_selected = d_num_selected.get()
+num_selected_first_part = int(actual_num_selected[0])
+num_selected_second_part = int(actual_num_selected[1])
+actual_first_part = d_first_part.get()[:num_selected_first_part]
+actual_second_part = d_second_part.get()[:num_selected_second_part]
+actual_unselected = d_unselected.get()[
+    : d_input.size - num_selected_first_part - num_selected_second_part
+]
 
 np.testing.assert_array_equal(actual_first_part, expected_first_part)
 np.testing.assert_array_equal(actual_second_part, expected_second_part)
