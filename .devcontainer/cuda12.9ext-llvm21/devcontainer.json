@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.12-cpp-gcc13-cuda12.0",
+  "image": "rapidsai/devcontainers:25.12-cpp-llvm21-cuda12.9ext",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.0-gcc13"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9ext-llvm21"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -24,12 +24,12 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.0-gcc13",
-    "CCCL_CUDA_VERSION": "12.0",
-    "CCCL_HOST_COMPILER": "gcc",
-    "CCCL_HOST_COMPILER_VERSION": "13",
-    "CCCL_BUILD_INFIX": "cuda12.0-gcc13",
-    "CCCL_CUDA_EXTENDED": "false",
+    "DEVCONTAINER_NAME": "cuda12.9ext-llvm21",
+    "CCCL_CUDA_VERSION": "12.9",
+    "CCCL_HOST_COMPILER": "llvm",
+    "CCCL_HOST_COMPILER_VERSION": "21",
+    "CCCL_BUILD_INFIX": "cuda12.9ext-llvm21",
+    "CCCL_CUDA_EXTENDED": "true",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
   "workspaceFolder": "/home/coder/cccl",
@@ -62,5 +62,5 @@
       }
     }
   },
-  "name": "cuda12.0-gcc13"
+  "name": "cuda12.9ext-llvm21"
 }
