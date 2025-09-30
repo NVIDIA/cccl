@@ -430,6 +430,7 @@ struct DeviceSegmentedReduce
                           init_t{}, // zero-initialize
                           stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -634,6 +635,7 @@ struct DeviceSegmentedReduce
                           ::cuda::std::numeric_limits<init_t>::max(),
                           stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -861,6 +863,7 @@ struct DeviceSegmentedReduce
                           initial_value,
                           stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1092,6 +1095,7 @@ struct DeviceSegmentedReduce
                           ::cuda::std::numeric_limits<init_t>::lowest(),
                           stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1316,6 +1320,7 @@ struct DeviceSegmentedReduce
                           initial_value,
                           stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
