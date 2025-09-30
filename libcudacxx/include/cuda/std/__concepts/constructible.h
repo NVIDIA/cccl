@@ -138,7 +138,7 @@ _CCCL_CONCEPT __nothrow_initializable_from =
         ? ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>
         : __nothrow_list_initializable_from<_Tp, _Args...>);
 
-#if !_CCCL_COMPILER(MSVC)
+#if !_CCCL_COMPILER(MSVC) && !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
 
 //! Constructible with direct non-list initialization syntax from the result of
 //! a function call expression (often useful for immovable types).

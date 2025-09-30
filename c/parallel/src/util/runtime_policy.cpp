@@ -26,7 +26,8 @@ get_policy(std::string_view policy_wrapper_expr, std::string_view translation_un
 
   std::string_view tag_name = "c_parallel_get_policy_tag";
   std::string fixed_source  = std::format(
-    "{0}\n"
+    "#include <cub/detail/ptx-json/json.h>\n"
+     "{0}\n"
      "__global__ void ptx_json_emitting_kernel()\n"
      "{{\n"
      "  [[maybe_unused]] auto wrapped = {1};\n"
