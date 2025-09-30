@@ -369,33 +369,6 @@ struct segmented_sort_runtime_tuning_policy
     return medium_segment;
   }
 
-  void CheckLoadModifierIsNotLDG() const
-  {
-    if (large_segment.LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
-    {
-      throw std::runtime_error("The memory consistency model does not apply to texture accesses");
-    }
-  }
-
-  void CheckLoadAlgorithmIsNotStriped() const
-  {
-    if (large_segment.LoadAlgorithm() == cub::BLOCK_LOAD_STRIPED
-        || medium_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED
-        || small_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED)
-    {
-      throw std::runtime_error("Striped load will make this algorithm unstable");
-    }
-  }
-
-  void CheckStoreAlgorithmIsNotStriped() const
-  {
-    if (medium_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED
-        || small_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED)
-    {
-      throw std::runtime_error("Striped stores will produce unsorted results");
-    }
-  }
-
   int PartitioningThreshold() const
   {
     return partitioning_threshold;
@@ -424,6 +397,36 @@ struct segmented_sort_runtime_tuning_policy
   int MediumPolicyItemsPerTile() const
   {
     return medium_segment.ItemsPerTile();
+  }
+
+  cub::CacheLoadModifier LargeSegmentLoadModifier() const
+  {
+    return large_segment.LoadModifier();
+  }
+
+  cub::BlockLoadAlgorithm LargeSegmentLoadAlgorithm() const
+  {
+    return large_segment.LoadAlgorithm();
+  }
+
+  cub::WarpLoadAlgorithm MediumSegmentLoadAlgorithm() const
+  {
+    return medium_segment.LoadAlgorithm();
+  }
+
+  cub::WarpLoadAlgorithm SmallSegmentLoadAlgorithm() const
+  {
+    return small_segment.LoadAlgorithm();
+  }
+
+  cub::WarpStoreAlgorithm MediumSegmentStoreAlgorithm() const
+  {
+    return medium_segment.StoreAlgorithm();
+  }
+
+  cub::WarpStoreAlgorithm SmallSegmentStoreAlgorithm() const
+  {
+    return small_segment.StoreAlgorithm();
   }
 
   using MaxPolicy = segmented_sort_runtime_tuning_policy;
