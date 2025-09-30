@@ -170,9 +170,7 @@ struct TransformPolicyWrapper : PolicyT
 template <typename StaticPolicyT>
 struct TransformPolicyWrapper<
   StaticPolicyT,
-  ::cuda::std::
-    void_t<decltype(StaticPolicyT::algorithm), decltype(StaticPolicyT::min_bif), typename StaticPolicyT::algo_policy>>
-    : StaticPolicyT
+  ::cuda::std::void_t<decltype(StaticPolicyT::algorithm), typename StaticPolicyT::algo_policy>> : StaticPolicyT
 {
   _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -181,11 +179,6 @@ struct TransformPolicyWrapper<
   _CCCL_HOST_DEVICE static constexpr Algorithm Algorithm()
   {
     return StaticPolicyT::algorithm;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MinBif()
-  {
-    return StaticPolicyT::min_bif;
   }
 
   _CCCL_HOST_DEVICE static constexpr auto AlgorithmPolicy()
@@ -197,8 +190,7 @@ struct TransformPolicyWrapper<
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
-    return object<key<"min_bif">()     = value<StaticPolicyT::min_bif>(),
-                  key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
+    return object<key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
                   key<"algo_policy">() = AlgorithmPolicy().EncodedPolicy()>();
   }
 #endif // CUB_ENABLE_POLICY_PTX_JSON
@@ -395,7 +387,6 @@ struct policy_hub<RequiresStableAddress,
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
     using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, default_vectorized_policy_t>;
@@ -418,7 +409,6 @@ struct policy_hub<RequiresStableAddress,
     static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
@@ -460,7 +450,6 @@ struct policy_hub<RequiresStableAddress,
       || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
