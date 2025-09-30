@@ -44,6 +44,8 @@
 
 using namespace cuda::experimental::stf;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
+
 // This kernel will only be executed if the condition is true
 __global__ void doWhileEmptyKernel(void)
 {
@@ -322,8 +324,14 @@ void stf_dowhile_2_cuda_kernel()
   ctx.finalize();
 }
 
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
 int main(int, char**)
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#else
   simpleDoWhileGraph();
   stf_dowhile();
 
@@ -334,4 +342,5 @@ int main(int, char**)
   stf_dowhile_2_cuda_kernel();
 
   return 0;
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 }
