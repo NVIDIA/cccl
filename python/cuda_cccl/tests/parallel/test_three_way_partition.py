@@ -69,10 +69,10 @@ def test_three_way_partition_basic(dtype, num_items):
     h_in = random_array(num_items, dtype, max_value=100)
 
     def less_than_op(x):
-        return np.uint8(x < 42)
+        return x < 42
 
     def greater_equal_op(x):
-        return np.uint8(x >= 42)
+        return x >= 42
 
     d_in = cp.asarray(h_in)
     d_first = cp.empty_like(d_in)
@@ -117,10 +117,10 @@ def test_three_way_partition_empty():
     d_num_selected = cp.zeros(2, dtype=np.int64)
 
     def less_than_op(x):
-        return np.uint8(x < 42)
+        return x < 42
 
     def greater_equal_op(x):
-        return np.uint8(x >= 42)
+        return x >= 42
 
     parallel.three_way_partition(
         d_in,
@@ -191,10 +191,10 @@ def test_three_way_partition_struct_type():
     comparison_value = np.int32(42)
 
     def less_than_op(x: pair_type):
-        return np.uint8((x.a < 42) & (x.b < 42))
+        return (x.a < 42) & (x.b < 42)
 
     def greater_equal_op(x: pair_type):
-        return np.uint8((x.a >= 42) & (x.b >= 42))
+        return (x.a >= 42) & (x.b >= 42)
 
     num_items = 20_000
     a_vals = random_array(num_items, np.int32, max_value=100)
@@ -250,10 +250,10 @@ def test_three_way_partition_with_stream(cuda_stream):
     h_in = random_array(num_items, dtype, max_value=100)
 
     def less_than_op(x):
-        return np.uint8(x < 42)
+        return x < 42
 
     def greater_equal_op(x):
-        return np.uint8(x >= 42)
+        return x >= 42
 
     expected_first, expected_second, expected_unselected, _, _, _ = (
         _host_three_way_partition(h_in, less_than_op, greater_equal_op)
@@ -298,10 +298,10 @@ def test_three_way_partition_no_selection():
     h_in = random_array(num_items, dtype, max_value=100)
 
     def less_than_op(x):
-        return np.uint8(x == 101)
+        return x == 101
 
     def greater_equal_op(x):
-        return np.uint8(x == 102)
+        return x == 102
 
     d_in = cp.asarray(h_in)
     d_first = cp.empty_like(d_in)
@@ -338,10 +338,10 @@ def test_three_way_partition_all_selected_first():
     h_in = np.full(num_items, 37, dtype=dtype)
 
     def less_than_op(x):
-        return np.uint8(x == 37)
+        return x == 37
 
     def greater_equal_op(x):
-        return np.uint8(x == 42)
+        return x == 42
 
     d_in = cp.asarray(h_in)
     d_first = cp.empty_like(d_in)

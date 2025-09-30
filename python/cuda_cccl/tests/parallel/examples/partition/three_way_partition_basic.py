@@ -23,11 +23,11 @@ d_num_selected = cp.empty(2, dtype=np.int64)
 
 
 def less_than_op(x):
-    return np.uint8(x < 8) and np.uint8(x > 0)
+    return x < 8 and x > 0
 
 
 def greater_than_equal_op(x):
-    return np.uint8(x >= 8)
+    return x >= 8
 
 
 # Perform the three_way_partition.
