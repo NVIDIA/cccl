@@ -41,7 +41,7 @@ C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
   check_status(status);
 
   // Allocate temporary storage using thrust::device_vector
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run copy algorithm
