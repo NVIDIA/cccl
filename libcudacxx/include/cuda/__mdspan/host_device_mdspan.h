@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/__mdspan/host_device_accessor.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/span.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
