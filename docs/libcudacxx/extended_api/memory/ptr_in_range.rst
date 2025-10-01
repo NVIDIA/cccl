@@ -3,6 +3,8 @@
 ``cuda::ptr_in_range``
 ======================
 
+Defined in ``<cuda/memory>`` header.
+
 .. code:: cuda
 
    namespace cuda {
