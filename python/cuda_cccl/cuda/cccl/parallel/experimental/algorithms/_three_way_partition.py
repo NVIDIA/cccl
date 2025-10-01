@@ -204,7 +204,10 @@ def three_way_partition(
     stream=None,
 ):
     """
-    Performs device-wide three-way partition.
+    Performs device-wide three-way partition. Given an input sequence of data items, it partitions the items into three parts:
+    - The first part is selected by the ``select_first_part_op`` operator.
+    - The second part is selected by the ``select_second_part_op`` operator.
+    - The unselected items are not selected by either operator.
 
     This function automatically handles temporary storage allocation and execution.
 
