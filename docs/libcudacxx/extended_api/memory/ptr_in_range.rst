@@ -9,7 +9,7 @@ Defined in ``<cuda/memory>`` header.
 
    namespace cuda {
 
-   [[nodiscard]] __host__ __device__ inline
+   [[nodiscard]] __host__ __device__ constexpr
    bool ptr_in_range(const void* ptr, const void* start, const void* end) noexcept
 
    } // namespace cuda

@@ -68,5 +68,5 @@ Memory
 
    * - :ref:`ptr_in_range <libcudacxx-extended-api-memory-ptr_in_range>`
      - Check if a pointer is in a range
-     - CCCL 3.1.0
-     - CUDA 13.1
+     - CCCL 3.2.0
+     - CUDA 13.2

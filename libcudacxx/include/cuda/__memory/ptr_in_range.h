@@ -25,7 +25,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool ptr_in_range(const void* __ptr, const void* __start, const void* __end) noexcept
+[[nodiscard]] _CCCL_API constexpr bool ptr_in_range(const void* __ptr, const void* __start, const void* __end) noexcept
 {
   _CCCL_ASSERT(__end >= __start, "ptr_in_range: __end must be greater than __start");
   return __ptr >= __start && __ptr < __end;
