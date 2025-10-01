@@ -42,8 +42,14 @@ template <typename _ElementType,
           typename _AccessorPolicy = ::cuda::std::default_accessor<_ElementType>>
 class host_mdspan : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>>
 {
+public:
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
     host_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>);
+
+  _CCCL_API friend constexpr void swap(host_mdspan& __x, host_mdspan& __y) noexcept
+  {
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+  }
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
@@ -96,8 +102,14 @@ template <typename _ElementType,
 class device_mdspan
     : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>>
 {
+public:
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
     device_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>);
+
+  _CCCL_API friend constexpr void swap(device_mdspan& __x, device_mdspan& __y) noexcept
+  {
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+  }
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
@@ -152,8 +164,14 @@ template <typename _ElementType,
 class managed_mdspan
     : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>>
 {
+public:
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
     managed_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>);
+
+  _CCCL_API friend constexpr void swap(managed_mdspan& __x, managed_mdspan& __y) noexcept
+  {
+    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+  }
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)

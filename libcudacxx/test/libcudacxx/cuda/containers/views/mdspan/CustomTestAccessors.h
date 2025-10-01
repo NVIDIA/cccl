@@ -100,7 +100,8 @@ __host__ __device__ constexpr void test_move_counter()
 {
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
-    assert((H::move_counter() == 1));
+    // We also move into the host / device / managed accessor
+    assert((H::move_counter() == 1) || (H::move_counter() == 2));
   }
 }
 template <class MDS,
