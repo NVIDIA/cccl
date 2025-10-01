@@ -40,7 +40,7 @@ namespace detail
 template <typename Integer>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer clz(Integer x)
 {
-  return cuda::std::countl_zero(x);
+  return ::cuda::std::countl_zero(x);
 }
 
 template <typename Integer>

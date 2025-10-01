@@ -723,7 +723,7 @@ struct WarpReduceShfl
     warp_flags |= 1u << (LOGICAL_WARP_THREADS - 1);
 
     // Find the next set flag
-    int last_lane = cuda::std::countl_zero(__brev(warp_flags));
+    int last_lane = ::cuda::std::countl_zero(__brev(warp_flags));
 
     T output = input;
     // Template-iterate reduction steps
