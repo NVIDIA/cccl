@@ -27,7 +27,7 @@ Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``. The 
 
 **Preconditions**
 
-- ``end`` must be strictly greater than ``start``.
+- ``end`` must be greater than or equal to ``start``.
 
 Example
 -------

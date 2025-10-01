@@ -30,7 +30,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Tp>
 [[nodiscard]] _CCCL_API inline bool ptr_in_range(_Tp* __ptr, _Tp* __start, _Tp* __end) noexcept
 {
-  _CCCL_ASSERT(::cuda::std::greater<const _Tp*>{}(__end, __start), "ptr_in_range: __end must be greater than __start");
+  _CCCL_ASSERT(::cuda::std::greater_equal<const _Tp*>{}(__end, __start),
+               "ptr_in_range: __end must be greater than __start");
   return ::cuda::std::less_equal<const _Tp*>{}(__start, __ptr) && ::cuda::std::less<const _Tp*>{}(__ptr, __end);
 }
 
