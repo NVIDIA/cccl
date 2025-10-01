@@ -30,22 +30,21 @@
 #  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_void)
 
-// if we put this trait to cuda::std::, it colides with libstdc++, putting it to to global namespace seems to work fine
-#if defined(_CCCL_BUILTIN_IS_VOID)
-template <class _Tp>
-inline constexpr bool __cccl_is_void_v = _CCCL_BUILTIN_IS_VOID(_Tp);
-#endif // _CCCL_BUILTIN_IS_VOID
+// clang + nvcc fails with '_Tp does not refer to a value' or 'identifier __is_void is undefined'
+#if _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_IS_VOID
+#endif // _CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_VOID)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : bool_constant<::__cccl_is_void_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : bool_constant<_CCCL_BUILTIN_IS_VOID(_Tp)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_void_v = ::__cccl_is_void_v<_Tp>;
+inline constexpr bool is_void_v = _CCCL_BUILTIN_IS_VOID(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_VOID ^^^ / vvv !_CCCL_BUILTIN_IS_VOID vvv
 
