@@ -22,144 +22,57 @@
 template <class... T>
 using box = cuda::std::__compressed_movable_box<T...>;
 
+template <class T>
+__host__ __device__ constexpr void test(const int expected)
+{
+  constexpr bool is_nothrow = cuda::std::is_nothrow_move_constructible_v<T>;
+  { // single item
+    box<T> input{1337};
+    box<T> b{cuda::std::move(input)};
+    assert(b.template __get<0>() == expected);
+    static_assert(cuda::std::is_nothrow_move_constructible_v<box<T>> == is_nothrow);
+  }
+  { // two items
+    box<T, int> input{1337};
+    box<T, int> b{cuda::std::move(input)};
+    assert(b.template __get<0>() == expected);
+    static_assert(cuda::std::is_nothrow_move_constructible_v<box<T, int>> == is_nothrow);
+  }
+  { // three items
+    box<T, int, int> input{1337};
+    box<T, int, int> b{cuda::std::move(input)};
+    assert(b.template __get<0>() == expected);
+    static_assert(cuda::std::is_nothrow_move_constructible_v<box<T, int, int>> == is_nothrow);
+  }
+}
+
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  { // single element
-    { // trivial empty type
-      box<TrivialEmpty> input{};
-      box<TrivialEmpty> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<TrivialEmpty>{cuda::std::move(input)}));
-    }
-
-    { // trivial nonempty type
-      box<int> input{1337};
-      box<int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial empty type
-      box<NotTriviallyMoveConstructibleEmpty<42>> input{};
-      box<NotTriviallyMoveConstructibleEmpty<42>> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<NotTriviallyMoveConstructibleEmpty<42>>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial nonempty type
-      box<NotTriviallyMoveConstructible<42>> input{1337};
-      box<NotTriviallyMoveConstructible<42>> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<NotTriviallyMoveConstructible<42>>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial empty type, not noexcept
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>> input{};
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>> b{cuda::std::move(input)};
-      assert(b.__get<0>() == MayThrow);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructibleEmpty<MayThrow>>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial nonempty type, not noexcept
-      box<NotTriviallyMoveConstructible<MayThrow>> input{1337};
-      box<NotTriviallyMoveConstructible<MayThrow>> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructible<MayThrow>>{cuda::std::move(input)}));
-    }
+  { // trivial empty type
+    box<TrivialEmpty> input{};
+    box<TrivialEmpty> b{cuda::std::move(input)};
+    assert(b.__get<0>() == 42);
+    static_assert(noexcept(box<TrivialEmpty>{cuda::std::move(input)}));
   }
 
-  { // two elements
-    { // trivial empty type
-      box<TrivialEmpty, int> input{};
-      box<TrivialEmpty, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<TrivialEmpty, int>{cuda::std::move(input)}));
-    }
-
-    { // trivial nonempty type
-      box<int, int> input{1337};
-      box<int, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<int, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial empty type
-      box<NotTriviallyMoveConstructibleEmpty<42>, int> input{};
-      box<NotTriviallyMoveConstructibleEmpty<42>, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<NotTriviallyMoveConstructibleEmpty<42>, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial nonempty type
-      box<NotTriviallyMoveConstructible<42>, int> input{1337};
-      box<NotTriviallyMoveConstructible<42>, int> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<NotTriviallyMoveConstructible<42>, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial empty type, not noexcept
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int> input{};
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == MayThrow);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial nonempty type, not noexcept
-      box<NotTriviallyMoveConstructible<MayThrow>, int> input{1337};
-      box<NotTriviallyMoveConstructible<MayThrow>, int> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructible<MayThrow>, int>{cuda::std::move(input)}));
-    }
+  { // trivial nonempty type
+    test<int>(1337);
   }
 
-  { // three elements
-    { // trivial empty type
-      box<TrivialEmpty, int, int> input{};
-      box<TrivialEmpty, int, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<TrivialEmpty, int, int>{cuda::std::move(input)}));
-    }
+  { // non-trivial empty type
+    test<NotTriviallyCopyConstructibleEmpty<42>>(42);
+  }
 
-    { // trivial nonempty type
-      box<int, int, int> input{1337};
-      box<int, int, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<int, int, int>{cuda::std::move(input)}));
-    }
+  { // non-trivial nonempty type
+    test<NotTriviallyCopyConstructible<42>>(1337);
+  }
 
-    { // non-trivial empty type
-      box<NotTriviallyMoveConstructibleEmpty<42>, int, int> input{};
-      box<NotTriviallyMoveConstructibleEmpty<42>, int, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == 42);
-      static_assert(noexcept(box<NotTriviallyMoveConstructibleEmpty<42>, int, int>{cuda::std::move(input)}));
-    }
+  { // non-trivial empty type, not noexcept
+    test<NotTriviallyCopyConstructibleEmpty<MayThrow>>(MayThrow);
+  }
 
-    { // non-trivial nonempty type
-      box<NotTriviallyMoveConstructible<42>, int, int> input{1337};
-      box<NotTriviallyMoveConstructible<42>, int, int> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(noexcept(box<NotTriviallyMoveConstructible<42>, int, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial empty type, not noexcept
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int, int> input{};
-      box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int, int> b{cuda::std::move(input)};
-      assert(b.__get<0>() == MayThrow);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructibleEmpty<MayThrow>, int, int>{cuda::std::move(input)}));
-    }
-
-    { // non-trivial nonempty type, not noexcept
-      box<NotTriviallyMoveConstructible<MayThrow>, int, int> input{1337};
-      box<NotTriviallyMoveConstructible<MayThrow>, int, int> b{cuda::std::move(input)};
-      assert(input.__get<0>() == -1);
-      assert(b.__get<0>() == 1337);
-      static_assert(!noexcept(box<NotTriviallyMoveConstructible<MayThrow>, int, int>{cuda::std::move(input)}));
-    }
+  { // non-trivial nonempty type, not noexcept
+    test<NotTriviallyCopyConstructible<MayThrow>>(1337);
   }
 
   return true;
