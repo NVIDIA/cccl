@@ -254,9 +254,6 @@ void newton_solver(
   context_t& ctx,
   vector_t& U,
   vector_t& U_prev,
-  vector_t& residual,
-  vector_t& rhs,
-  vector_t& delta,
   stackable_logical_data<slice<double>>& csr_values,
   stackable_logical_data<slice<size_t>>& csr_row_offsets,
   stackable_logical_data<slice<size_t>>& csr_col_ind,
@@ -277,6 +274,10 @@ void newton_solver(
   {
     auto while_guard = ctx.while_graph_scope();
 
+    size_t n_unknowns = N - 2;
+    auto residual     = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("residual");
+    auto delta        = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("delta");
+
     compute_residual(ctx, U, U_prev, residual, N, h, dt, nu);
 
     // Compute Newton residual norm for adaptive CG tolerance
@@ -286,6 +287,8 @@ void newton_solver(
     double cg_tol = 1e-8;
 
     assemble_jacobian(ctx, U, csr_values, N, h, dt, nu);
+
+    auto rhs = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("rhs");
 
     ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs -= residual")
         ->*[] __device__(size_t i, auto drhs, auto dresidual) {
@@ -459,10 +462,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   auto U      = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("U");
   auto U_prev = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("U_prev");
 
-  auto residual = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("residual");
-  auto rhs      = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("rhs");
-  auto delta    = ctx.logical_data(shape_of<slice<double>>(n_unknowns)).set_symbol("delta");
-
   // This will prevent erroneous modifications and may allow access from concurrent graphs
   csr_row_offsets.set_read_only();
   csr_col_ind.set_read_only();
@@ -503,7 +502,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
               };
 
       // Solve the nonlinear system using Newton's method
-      newton_solver(ctx, U, U_prev, residual, rhs, delta, csr_values, csr_row_offsets, csr_col_ind, N, h, dt, nu);
+      newton_solver(ctx, U, U_prev, csr_values, csr_row_offsets, csr_col_ind, N, h, dt, nu);
 
       // accept timestep
       ctx.parallel_for(U.shape(), U_prev.write(), U.read()).set_symbol("accept timestep")
