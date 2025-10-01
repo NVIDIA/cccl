@@ -51,7 +51,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -723,7 +723,7 @@ struct WarpReduceShfl
     warp_flags |= 1u << (LOGICAL_WARP_THREADS - 1);
 
     // Find the next set flag
-    int last_lane = ::cuda::std::countl_zero(__brev(warp_flags));
+    int last_lane = ::cuda::std::countr_zero(__brev(warp_flags));
 
     T output = input;
     // Template-iterate reduction steps

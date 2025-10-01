@@ -1072,7 +1072,7 @@ struct BlockRadixRankMatchEarlyCounts
         int* p_match_mask         = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
         __syncwarp(WARP_MASK);
-        unsigned int bin_mask = *p_match_mask;
+        unsigned bin_mask = *p_match_mask;
         int leader            = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
         int warp_offset       = 0;
         int popc              = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
@@ -1101,7 +1101,7 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
-        unsigned int bin_mask =
+        unsigned bin_mask =
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
         int warp_offset = 0;

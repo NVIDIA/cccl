@@ -49,7 +49,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
@@ -233,7 +233,7 @@ struct WarpReduceSmem
     }
 
     // Find next flag
-    int next_flag = ::cuda::std::countl_zero(__brev(warp_flags));
+    int next_flag = ::cuda::std::countr_zero(__brev(warp_flags));
 
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
