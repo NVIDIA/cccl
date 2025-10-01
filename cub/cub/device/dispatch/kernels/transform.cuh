@@ -245,7 +245,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   using output_t = it_value_t<RandomAccessIteratorOut>;
   using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
   constexpr int load_store_count = items_per_thread / vec_size;
-  static_assert(items_per_thread % load_store_count == 0);
+  static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
 
   constexpr bool can_vectorize_store =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
