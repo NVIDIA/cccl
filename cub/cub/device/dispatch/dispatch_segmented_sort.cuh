@@ -258,7 +258,6 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   error = CubDebug(error);
 }
 #endif // CUB_RDC_ENABLED
-
 template <typename MaxPolicyT,
           SortOrder Order,
           typename KeyT,
