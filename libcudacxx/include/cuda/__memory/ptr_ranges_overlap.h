@@ -28,15 +28,14 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool
-ptr_ranges_overlap(const void* __ptr_lhs, size_t __n_lhs, const void* __ptr_rhs, size_t __n_rhs) noexcept
+[[nodiscard]] _CCCL_API inline bool ptr_ranges_overlap(
+  const void* __ptr_lhs_start,
+  const void* __ptr_lhs_end,
+  const void* __ptr_rhs_start,
+  const void* __ptr_rhs_end) noexcept
 {
-  auto __ptr_lhs_start = static_cast<const char*>(__ptr_lhs);
-  auto __ptr_rhs_start = static_cast<const char*>(__ptr_rhs);
-  auto __ptr_lhs_end   = __ptr_lhs_start + __n_lhs;
-  auto __ptr_rhs_end   = __ptr_rhs_start + __n_rhs;
-  return ::cuda::ptr_in_range(__ptr_lhs, __ptr_rhs_start, __ptr_rhs_end)
-      && ::cuda::ptr_in_range(__ptr_rhs, __ptr_lhs_start, __ptr_lhs_end);
+  return ::cuda::ptr_in_range(__ptr_lhs_start, __ptr_rhs_start, __ptr_rhs_end)
+      || ::cuda::ptr_in_range(__ptr_rhs_start, __ptr_lhs_start, __ptr_lhs_end);
 }
 
 _CCCL_END_NAMESPACE_CUDA

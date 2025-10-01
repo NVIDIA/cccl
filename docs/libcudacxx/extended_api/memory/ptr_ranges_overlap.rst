@@ -3,34 +3,30 @@
 ``cuda::ptr_ranges_overlap``
 ============================
 
+Defined in ``<cuda/memory>`` header.
+
 .. code:: cuda
 
    namespace cuda {
 
    [[nodiscard]] __host__ __device__ inline
-   bool ptr_ranges_overlap(const void* lhs, size_t lhs_count,
-                           const void* rhs, size_t rhs_count) noexcept
+   bool ptr_ranges_overlap(const void* ptr1_start, const void* ptr1_end,
+                           const void* ptr2_start, const void* ptr2_end) noexcept
 
    } // namespace cuda
 
-Returns ``true`` when the half-open byte ranges ``[lhs, lhs + lhs_count)`` and
-``[rhs, rhs + rhs_count)`` intersect.
+Returns ``true`` when the half-open byte ranges ``[ptr1_start, ptr1_end)`` and ``[ptr2_start, ptr2_end)`` intersect.
 
 **Parameters**
 
-- ``lhs``: Pointer to the beginning of the first range.
-- ``lhs_count``: Number of bytes in the first range.
-- ``rhs``: Pointer to the beginning of the second range.
-- ``rhs_count``: Number of bytes in the second range.
+- ``ptr1_start``: Pointer to the beginning of the first range.
+- ``ptr1_end``: Pointer to the end of the first range.
+- ``ptr2_start``: Pointer to the beginning of the second range.
+- ``ptr2_end``: Pointer to the end of the second range.
 
 **Return value**
 
 - ``true`` when the two ranges overlap, ``false`` otherwise.
-
-**Preconditions**
-
-- ``lhs_count`` and ``rhs_count`` describe valid ranges. In particular, the
-  computation of ``lhs + lhs_count`` and ``rhs + rhs_count`` must not overflow.
 
 Example
 -------
@@ -38,29 +34,19 @@ Example
 .. code:: cuda
 
     #include <cuda/memory>
+    #include <cuda/std/cassert>
 
-    struct packet {
-        int id;
-        float payload[4];
-    };
-
-    __host__ __device__ bool buffers_overlap(packet* a, packet* b, size_t count) {
-        const size_t bytes = sizeof(packet) * count;
-        return cuda::ptr_ranges_overlap(a, bytes, b, bytes);
+    __global__ void overlap_kernel() {
+        int arrayA[10];
+        int arrayB[10];
+        assert(cuda::ptr_ranges_overlap(arrayA + 2, arrayA + 7, arrayA, arrayA + 10)); // overlap
+        assert(!cuda::ptr_ranges_overlap(arrayA, arrayA + 10, arrayB, arrayB + 10)); // no overlap
     }
 
     int main() {
-        packet data[4]{};
-
-        packet* first = &data[0];
-        packet* overlap = &data[1];
-        packet* disjoint = &data[3];
-
-        bool expect_overlap = buffers_overlap(first, overlap, 2);   // true
-        bool expect_disjoint = buffers_overlap(first, disjoint, 1);  // false
-
-        return expect_overlap && !expect_disjoint ? 0 : 1;
+        overlap_kernel<<<1, 1>>>();
+        cudaDeviceSynchronize();
+        return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/86zq9Wh55>`_
-
+`See it on Godbolt 🔗 <https://godbolt.org/z/GPc4T4h7x>`_
