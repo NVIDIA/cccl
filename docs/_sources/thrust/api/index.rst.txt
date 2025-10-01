@@ -281,7 +281,7 @@ Functions
 * :doc:`transform_inclusive_scan <group__transformed__prefixsums_1gaf0ac7878b64b38161ba490f6aa8228d0>`
 * :doc:`transform_n <group__transformations_1ga172372017111c92f4736d3c8ff38f087>`
 * :doc:`transform_reduce <group__transformed__reductions_1ga096f193143e236850baaf3369b861137>`
-* :doc:`try_unwrap_contiguous_iterator <namespacethrust_1abfe82f1de1708a55e75b16f93ecc66c1>`
+* :doc:`try_unwrap_contiguous_iterator <namespacethrust_1a2afd9592c3194b676fda5d87897cd6c6>`
 * :doc:`uninitialized_allocate_unique <namespacethrust_1a422a511a42fdee806b0c6fd3b2c1a297>`
 * :doc:`uninitialized_allocate_unique_n <namespacethrust_1a107423505ed1d5bd9e05dda2e3c2a4ad>`
 * :doc:`uninitialized_copy <group__copying_1gad26f989a9260881c5df7707b57694fe9>`
@@ -293,7 +293,7 @@ Functions
 * :doc:`unique_by_key_copy <group__stream__compaction_1gad6f62634dca9f277f9121fe03142b468>`
 * :doc:`unique_copy <group__stream__compaction_1gad7d0b61d3bf4ed9995f69a722693973b>`
 * :doc:`unique_count <group__stream__compaction_1ga9d5a88c8b9db5ff05bf54d896d294770>`
-* :doc:`unwrap_contiguous_iterator <namespacethrust_1aed234a97960da6c79293cbf17ceafa33>`
+* :doc:`unwrap_contiguous_iterator <namespacethrust_1a86a326c73a9dd841ce086d873e0d0a99>`
 * :doc:`upper_bound <group__binary__search_1gac85cc9ea00f4bdd8f80ad25fff16741d>`
 
 Type Definitions
@@ -432,7 +432,7 @@ Type Definitions
 * :doc:`thrust::universal_host_pinned_vector <group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc>`
 * :doc:`thrust::universal_ptr <group__memory__resources_1gac349015c75728ebc709912a192d2ec55>`
 * :doc:`thrust::universal_vector <group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0>`
-* :doc:`try_unwrap_contiguous_iterator_t <namespacethrust_1accaa9d5a930a881ecaf171d077bfa701>`
+* :doc:`try_unwrap_contiguous_iterator_t <namespacethrust_1a82d5eefba55dbfa0386572555c12a285>`
 * :doc:`tuple <group__tuple_1gae1315f6a454ccb24d54615171a0c74d3>`
 * :doc:`tuple_element <group__pair_1ga2ac67d4f4e51ab988a0221e517d58c11>`
 * :doc:`tuple_size <group__pair_1ga64342a494e27118f7215e6264e6e5e44>`
@@ -444,7 +444,7 @@ Type Definitions
 * :doc:`universal_memory_resource <namespacethrust_1aeb88051fea508b633883e45b9058d587>`
 * :doc:`universal_ptr <group__memory__resources_1gac349015c75728ebc709912a192d2ec55>`
 * :doc:`universal_vector <group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0>`
-* :doc:`unwrap_contiguous_iterator_t <namespacethrust_1a0431fe8ba6dece7df59561b729a3c280>`
+* :doc:`unwrap_contiguous_iterator_t <namespacethrust_1afd5a80615bfa82c176622b69b719d5d6>`
 
 Variables
 ~~~~~~~~~
@@ -728,8 +728,8 @@ Variables
    group__transformed__reductions_1ga096f193143e236850baaf3369b861137
    group__transformed__prefixsums_1gaf0ac7878b64b38161ba490f6aa8228d0
    group__transformed__prefixsums_1gabad127fde32db45f99638f175e4b8963
-   namespacethrust_1aed234a97960da6c79293cbf17ceafa33
-   namespacethrust_1abfe82f1de1708a55e75b16f93ecc66c1
+   namespacethrust_1a86a326c73a9dd841ce086d873e0d0a99
+   namespacethrust_1a2afd9592c3194b676fda5d87897cd6c6
    group__copying_1gad26f989a9260881c5df7707b57694fe9
    group__copying_1gacf44f607e6db43cd1acd0fc17ac5e988
    group__filling_1ga309ec097df7d9064fbbd2f1f45ab3ab3
@@ -826,12 +826,12 @@ Variables
    group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc
    group__memory__resources_1gac349015c75728ebc709912a192d2ec55
    group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0
-   namespacethrust_1accaa9d5a930a881ecaf171d077bfa701
+   namespacethrust_1a82d5eefba55dbfa0386572555c12a285
    namespacethrust_1a10d1145183f4acb796aebc6146b13220
    namespacethrust_1a8d7250260cdf48a33bf78f84e71db061
    namespacethrust_1aacbddd01567276ad10210432d4c3a8ef
    namespacethrust_1aeb88051fea508b633883e45b9058d587
-   namespacethrust_1a0431fe8ba6dece7df59561b729a3c280
+   namespacethrust_1afd5a80615bfa82c176622b69b719d5d6
    group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded
    group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5
    group__type__traits_1ga1da323e7acfe527a28ea6bd940488584
