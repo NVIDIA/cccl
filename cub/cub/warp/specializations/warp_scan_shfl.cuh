@@ -51,7 +51,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -631,7 +631,7 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = ::cuda::std::max(0, 31 - ::cuda::std::countl_zero(ballot));
+    int segment_first_lane = ::cuda::std::__bit_log2(ballot);
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
