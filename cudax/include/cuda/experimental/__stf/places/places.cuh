@@ -1662,7 +1662,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
   {
     size_t l0_size = p.get_width(0);
     size_t l1_size = p.get_width(1);
-    size_t l2_size = p.get_width(1);
+    size_t l2_size = p.get_width(2);
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
     bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
