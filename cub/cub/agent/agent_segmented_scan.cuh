@@ -247,7 +247,22 @@ struct AgentSegmentedScan
       BlockScanT block_scan_algo(temp_storage.scan);
       if constexpr (IS_INCLUSIVE)
       {
-        block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
+        if constexpr (HAS_INIT)
+        {
+          if (chunk_id == 0)
+          {
+            block_scan_algo.InclusiveScan(thread_values, thread_values, initial_value, scan_op, block_aggregate);
+            block_aggregate = scan_op(initial_value, block_aggregate);
+          }
+          else
+          {
+            block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
+          }
+        }
+        else
+        {
+          block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
+        }
       }
       else
       {
@@ -264,9 +279,9 @@ struct AgentSegmentedScan
       {
         constexpr auto loop_size = static_cast<int>(ITEMS_PER_THREAD);
         cuda::static_for<loop_size>([&](int i) {
-          thread_values[i] = thread_values[i] + exclusive_prefix;
+          thread_values[i] = scan_op(thread_values[i], exclusive_prefix);
         });
-        exclusive_prefix = exclusive_prefix + block_aggregate;
+        exclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       }
 
       // write out scan values using BlockStore

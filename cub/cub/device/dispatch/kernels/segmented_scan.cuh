@@ -56,7 +56,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_
     ScanOpT,
     ActualInitValueT,
     AccumT,
-    ForceInclusive || !::cuda::std::is_same_v<InitValueT, NullType>>;
+    ForceInclusive>;
 
   // Declare shared memory of AgentSegmentedScanT::TempStorage type
   __shared__ typename AgentSegmentedScanT::TempStorage temp_storage;
