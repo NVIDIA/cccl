@@ -39,7 +39,7 @@
 
 struct device_segmented_sort_policy;
 struct device_three_way_partition_policy;
-using OffsetT = long;
+using OffsetT = ptrdiff_t;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
 // check we can map OffsetT to cuda::std::int64_t
