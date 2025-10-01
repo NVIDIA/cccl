@@ -247,9 +247,8 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_count = items_per_thread / vec_size;
   static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
 
-  constexpr bool can_vectorize_store =
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> /*&& size_of<output_t> == element_size*/;
+  constexpr bool can_vectorize_store = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+                                    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
