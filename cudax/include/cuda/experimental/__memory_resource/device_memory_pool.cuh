@@ -53,7 +53,7 @@ class device_memory_pool : public __memory_pool_base
 {
   //! @brief Constructs a \c device_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit device_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
+  _CCCL_HOST_API explicit device_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
       : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
   {}
 
@@ -64,7 +64,8 @@ public:
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit device_memory_pool(const ::cuda::device_ref __device_id, memory_pool_properties __properties = {})
+  _CCCL_HOST_API explicit device_memory_pool(const ::cuda::device_ref __device_id,
+                                             memory_pool_properties __properties = {})
       : __memory_pool_base(__properties,
                            ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_id.get()},
                            ::CU_MEM_ALLOCATION_TYPE_PINNED)

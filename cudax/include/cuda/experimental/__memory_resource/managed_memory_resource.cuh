@@ -59,26 +59,26 @@ class managed_memory_resource : public __memory_resource_base
 public:
   //! @brief Default constructs the managed_memory_resource using the default \c cudaMemPool_t for host pinned memory.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  managed_memory_resource()
+  _CCCL_HOST_API managed_memory_resource()
       : __memory_resource_base(::cuda::experimental::__get_default_managed_pool())
   {}
 
   //! @brief  Constructs the managed_memory_resource from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  explicit managed_memory_resource(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit managed_memory_resource(::cudaMemPool_t __pool) noexcept
       : __memory_resource_base(__pool)
   {}
 
   //! @brief  Constructs the managed_memory_resource from a \c managed_memory_pool by calling get().
   //! @param __pool The \c managed_memory_pool used to allocate memory.
-  explicit managed_memory_resource(managed_memory_pool& __pool) noexcept
+  _CCCL_HOST_API explicit managed_memory_resource(managed_memory_pool& __pool) noexcept
       : __memory_resource_base(__pool.get())
   {}
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
 
   using default_queries = properties_list<device_accessible, host_accessible>;
 };

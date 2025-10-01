@@ -64,26 +64,26 @@ class pinned_memory_resource : public __memory_resource_base
 public:
   //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t for host pinned memory.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  pinned_memory_resource()
+  _CCCL_HOST_API pinned_memory_resource()
       : __memory_resource_base(::cuda::experimental::__get_default_host_pinned_pool())
   {}
 
   //! @brief  Constructs the pinned_memory_resource from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  explicit pinned_memory_resource(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit pinned_memory_resource(::cudaMemPool_t __pool) noexcept
       : __memory_resource_base(__pool)
   {}
 
   //! @brief  Constructs the pinned_memory_resource from a \c pinned_memory_pool by calling get().
   //! @param __pool The \c pinned_memory_pool used to allocate memory.
-  explicit pinned_memory_resource(pinned_memory_pool& __pool) noexcept
+  _CCCL_HOST_API explicit pinned_memory_resource(pinned_memory_pool& __pool) noexcept
       : __memory_resource_base(__pool.get())
   {}
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 
   using default_queries = properties_list<device_accessible, host_accessible>;
 };

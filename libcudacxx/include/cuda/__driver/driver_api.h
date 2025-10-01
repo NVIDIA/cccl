@@ -251,10 +251,12 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-_CCCL_HOST_API inline void __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+_CCCL_HOST_API inline size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
 {
+  size_t __value;
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, __value);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, &__value);
+  return __value;
 }
 
 _CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
@@ -263,12 +265,14 @@ _CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to destroy a memory pool", __pool);
 }
 
-_CCCL_HOST_API inline void
-__mallocFromPoolAsync(::CUdeviceptr* __dptr, ::cuda::std::size_t __bytes, ::CUmemoryPool __pool, ::CUstream __stream)
+_CCCL_HOST_API inline ::CUdeviceptr
+__mallocFromPoolAsync(::cuda::std::size_t __bytes, ::CUmemoryPool __pool, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocFromPoolAsync);
+  ::CUdeviceptr __result  = 0;
   ::cuda::__driver::__call_driver_fn(
-    __driver_fn, "Failed to allocate memory from a memory pool", __dptr, __bytes, __pool, __stream);
+    __driver_fn, "Failed to allocate memory from a memory pool", &__result, __bytes, __pool, __stream);
+  return __result;
 }
 
 _CCCL_HOST_API inline void __mempoolTrimTo(::CUmemoryPool __pool, ::cuda::std::size_t __min_bytes_to_keep)
@@ -303,23 +307,27 @@ __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocat
 {
   static auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemGetDefaultMemPool, cuMemGetDefaultMemPool, 13, 0);
-  ::CUmemoryPool __result;
+  ::CUmemoryPool __result = nullptr;
   ::cuda::__driver::__call_driver_fn(
     __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
   return __result;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-_CCCL_HOST_API inline void __mallocManaged(::CUdeviceptr* __dptr, ::cuda::std::size_t __bytes, unsigned int __flags)
+_CCCL_HOST_API inline ::CUdeviceptr __mallocManaged(::cuda::std::size_t __bytes, unsigned int __flags)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocManaged);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate managed memory", __dptr, __bytes, __flags);
+  ::CUdeviceptr __result  = 0;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate managed memory", &__result, __bytes, __flags);
+  return __result;
 }
 
-_CCCL_HOST_API inline void __mallocHost(void** __dptr, ::cuda::std::size_t __bytes)
+_CCCL_HOST_API inline void* __mallocHost(::cuda::std::size_t __bytes)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemAllocHost);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate host memory", __dptr, __bytes);
+  void* __result          = nullptr;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to allocate host memory", &__result, __bytes);
+  return __result;
 }
 
 _CCCL_HOST_API inline ::cudaError_t __freeNoThrow(::CUdeviceptr __dptr)

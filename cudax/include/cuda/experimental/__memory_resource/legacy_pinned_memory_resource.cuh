@@ -53,7 +53,7 @@ public:
   //! This constructor takes an optional device argument to specify the device that should be tied to allocations
   //! for the resource. This association has the effect of initializing that device and the memory being implicitly
   //! freed if the device is reset.
-  constexpr legacy_pinned_memory_resource(device_ref __device = {0}) noexcept
+  _CCCL_HOST_API constexpr legacy_pinned_memory_resource(device_ref __device = {0}) noexcept
       : __device_(__device)
   {}
 
@@ -73,9 +73,8 @@ public:
         "legacy_pinned_memory_resource::allocate_sync.");
     }
 
-    void* __ptr{nullptr};
     ::cuda::__ensure_current_context __guard(__device_);
-    ::cuda::__driver::__mallocHost(&__ptr, __bytes);
+    void* __ptr = ::cuda::__driver::__mallocHost(__bytes);
     return __ptr;
   }
 
@@ -98,7 +97,7 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
-  [[nodiscard]] _CCCL_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
@@ -106,16 +105,16 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
-  [[nodiscard]] _CCCL_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
   }
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept

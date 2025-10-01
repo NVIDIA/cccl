@@ -54,19 +54,18 @@ struct __pool_attr_impl
 {
   using type = _Type;
 
-  [[nodiscard]] constexpr operator ::cudaMemPoolAttr() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr operator ::cudaMemPoolAttr() const noexcept
   {
     return _Attr;
   }
 
-  [[nodiscard]] type operator()(::cudaMemPool_t __pool) const
+  [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
   {
-    size_t __value = 0;
-    ::cuda::__driver::__mempoolGetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value);
+    size_t __value = ::cuda::__driver::__mempoolGetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr));
     return static_cast<type>(__value);
   }
 
-  void static set(::cudaMemPool_t __pool, type __value)
+  static void set(::cudaMemPool_t __pool, type __value)
   {
     size_t __value_copy = __value;
     if constexpr (_Settable == __pool_attr_settable::yes)
@@ -122,7 +121,7 @@ template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
     : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable::yes>
 {
-  void set(::cudaMemPool_t __pool, type __value) const
+  static void set(::cudaMemPool_t __pool, type __value)
   {
     ::cuda::experimental::__detail::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
   }
@@ -132,7 +131,7 @@ template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
     : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable::yes>
 {
-  void set(::cudaMemPool_t __pool, type __value) const
+  static void set(::cudaMemPool_t __pool, type __value)
   {
     ::cuda::experimental::__detail::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
   }
@@ -303,9 +302,8 @@ private:
     // We need to use a new stream so we do not wait on other work
     if (__properties.initial_pool_size != 0)
     {
-      ::CUdeviceptr __ptr{0};
-      ::cuda::__driver::__mallocFromPoolAsync(
-        &__ptr, __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
+      ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
+        __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
       if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
       {
         ::cuda::__throw_cuda_error(::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
@@ -439,7 +437,7 @@ public:
 
   //! @brief Equality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are equal.
-  [[nodiscard]] _CCCL_API constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ == __rhs.__pool_handle_;
   }
@@ -447,7 +445,7 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
-  [[nodiscard]] _CCCL_API constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
@@ -456,7 +454,7 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
@@ -464,21 +462,21 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
@@ -486,7 +484,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
-  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_handle_;
   }

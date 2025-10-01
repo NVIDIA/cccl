@@ -55,7 +55,7 @@ class managed_memory_pool : public __memory_pool_base
 private:
   //! @brief Constructs a \c managed_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit managed_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
+  _CCCL_HOST_API explicit managed_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
       : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
   {}
 
@@ -64,7 +64,7 @@ public:
   //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
   //! threshold, unused memory held by the pool will be released at the next synchronization event.
   //! @param __properties Optional, additional properties of the pool to be created.
-  explicit managed_memory_pool(memory_pool_properties __properties = {})
+  _CCCL_HOST_API explicit managed_memory_pool(memory_pool_properties __properties = {})
       : __memory_pool_base(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)
   {}

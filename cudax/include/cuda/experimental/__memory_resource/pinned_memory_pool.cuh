@@ -49,7 +49,7 @@ class pinned_memory_pool : public __memory_pool_base
 private:
   //! @brief Constructs a \c pinned_memory_pool from a handle taking ownership of the pool
   //! @param __handle The handle to the existing pool
-  explicit pinned_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
+  _CCCL_HOST_API explicit pinned_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
       : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
   {}
 
@@ -63,7 +63,7 @@ public:
   //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
   //!
   //! @param __properties Optional, additional properties of the pool to be created.
-  explicit pinned_memory_pool(memory_pool_properties __properties = {})
+  _CCCL_HOST_API explicit pinned_memory_pool(memory_pool_properties __properties = {})
       : __memory_pool_base(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED)
   {
@@ -80,7 +80,7 @@ public:
   //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
+  _CCCL_HOST_API explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
       : __memory_pool_base(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST_NUMA, __numa_id}, ::CU_MEM_ALLOCATION_TYPE_PINNED)
   {

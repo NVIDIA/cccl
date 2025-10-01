@@ -82,8 +82,7 @@ public:
         "__memory_resource_base::allocate_sync.");
     }
 
-    ::CUdeviceptr __ptr{0};
-    ::cuda::__driver::__mallocFromPoolAsync(&__ptr, __bytes, __pool_, __cccl_allocation_stream().get());
+    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
     return reinterpret_cast<void*>(__ptr);
   }
@@ -133,8 +132,7 @@ public:
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
-    ::CUdeviceptr __ptr{0};
-    ::cuda::__driver::__mallocFromPoolAsync(&__ptr, __bytes, __pool_, __stream.get());
+    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
     return reinterpret_cast<void*>(__ptr);
   }
 
@@ -227,7 +225,7 @@ public:
 
   //! @brief Equality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  [[nodiscard]] _CCCL_API bool operator==(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool operator==(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
@@ -235,13 +233,13 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
-  [[nodiscard]] _CCCL_API bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  [[nodiscard]] _CCCL_API constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }
