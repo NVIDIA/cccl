@@ -34,7 +34,7 @@ _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool in_range(_Tp __v, _Tp __start, _Tp __end) noexcept
 {
-  _CCCL_ASSERT(__end > __start, "in_range: __end must be greater than __start");
+  _CCCL_ASSERT(__end >= __start, "in_range: __end must be greater than or equal to __start");
   if constexpr (::cuda::std::is_unsigned_v<_Tp>)
   {
     // if __end > __start, we know that the range is always positive. Similarly, __v is positive if unsigned.
