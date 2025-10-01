@@ -35,6 +35,7 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
