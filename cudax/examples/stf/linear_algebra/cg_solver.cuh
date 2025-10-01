@@ -8,12 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#pragma once
 /**
  * @file
  * @brief Sparse conjugate gradient algorithm
  */
 
 #include <cuda/experimental/stf.cuh>
+
+#include "dot.cuh"
 
 using namespace cuda::experimental::stf;
 

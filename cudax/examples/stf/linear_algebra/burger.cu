@@ -16,6 +16,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "cg_solver.cuh"
@@ -141,23 +142,53 @@ void compute_residual_full(
           };
 }
 
-// Note: For a truly generic Newton solver, you would define callbacks like:
-// - ResidualCallback: void operator()(ctx_t&, const vector_t<T>&, vector_t<T>&, ...)
-// - JacobianCallback: void operator()(ctx_t&, const vector_t<T>&, vector_t<T>&, ...)
-// This allows the solver to be reused for different nonlinear systems.
+// Callback function objects for Burger's equation
+struct BurgerResidualCallback
+{
+  size_t N;
+  double h, dt, nu;
 
-// Newton solver for the nonlinear system arising from implicit time discretization
-template <typename ctx_t>
+  template <typename ctx_t>
+  void
+  operator()(ctx_t& ctx, const vector_t<double>& x, const vector_t<double>& x_prev, vector_t<double>& residual) const
+  {
+    compute_residual_full(ctx, x, x_prev, residual, N, h, dt, nu);
+  }
+};
+
+struct BurgerJacobianCallback
+{
+  size_t N;
+  double h, dt, nu;
+
+  template <typename ctx_t>
+  void operator()(ctx_t& ctx, const vector_t<double>& x, vector_t<double>& jacobian_values) const
+  {
+    assemble_jacobian_full(ctx, x, jacobian_values, N, h, dt, nu);
+  }
+};
+
+/**
+ * Generic Newton solver for nonlinear systems F(x) = 0
+ *
+ * @tparam ctx_t STF context type
+ * @tparam ResidualCallback Callback to compute residual F(x)
+ * @tparam JacobianCallback Callback to assemble Jacobian J = ∂F/∂x
+ *
+ * The callbacks must be callable with these signatures:
+ * - ResidualCallback: void fn(ctx_t&, const vector_t<double>& x, const vector_t<double>& x_prev, vector_t<double>&
+ * residual)
+ * - JacobianCallback: void fn(ctx_t&, const vector_t<double>& x, vector_t<double>& jacobian_values)
+ */
+template <typename ctx_t, typename ResidualCallback, typename JacobianCallback>
 void newton_solver(
   ctx_t& ctx,
   vector_t<double>& U,
   vector_t<double>& csr_values,
   const vector_t<size_t>& csr_row_offsets,
   const vector_t<size_t>& csr_col_ind,
-  size_t N,
-  double h,
-  double dt,
-  double nu,
+  ResidualCallback compute_residual_fn,
+  JacobianCallback assemble_jacobian_fn,
   size_t max_newton = 20,
   double newton_tol = 1e-10,
   size_t max_cg     = 100)
@@ -178,20 +209,19 @@ void newton_solver(
   {
     auto while_guard = ctx.while_graph_scope();
 
-    // Full system: all vectors have dimension N
     auto residual = ctx.logical_data(U.shape()).set_symbol("residual");
     auto delta    = ctx.logical_data(U.shape()).set_symbol("delta");
 
-    // Compute residual F(U) including boundary conditions
-    compute_residual_full(ctx, U, U_prev, residual, N, h, dt, nu);
+    // Compute residual F(U)
+    compute_residual_fn(ctx, U, U_prev, residual);
 
     // Compute Newton residual norm for convergence check
     DOT(ctx, residual, residual, newton_norm2);
 
-    // Assemble Jacobian J = ∂F/∂U including boundary conditions
-    assemble_jacobian_full(ctx, U, csr_values, N, h, dt, nu);
+    // Assemble Jacobian J = ∂F/∂U
+    assemble_jacobian_fn(ctx, U, csr_values);
 
-    auto rhs = ctx.logical_data(shape_of<slice<double>>(N)).set_symbol("rhs");
+    auto rhs = ctx.logical_data(U.shape()).set_symbol("rhs");
 
     // Set up RHS: rhs = -F(U)
     ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs = -residual")
@@ -383,8 +413,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     {
       auto repeat_guard = ctx.repeat_graph_scope(substeps);
 
-      // Solve the nonlinear system using Newton's method
-      newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, N, h, dt, nu);
+      // Create callback function objects for Burger's equation
+      BurgerResidualCallback residual_callback{N, h, dt, nu};
+      BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+
+      // Solve the nonlinear system using generic Newton solver
+      newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
     } // repeat_guard automatically manages the loop condition
 
     // Dump solution after each substep block
