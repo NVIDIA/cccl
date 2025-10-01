@@ -47,7 +47,6 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -104,7 +103,34 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
-using SwitchDevice = ::cuda::__ensure_current_device;
+class SwitchDevice
+{
+  int target_device_;
+  int original_device_;
+
+public:
+  //! @brief Queries the current device and if that is different than @p target_device sets the current device to
+  //! @p target_device
+  SwitchDevice(const int target_device)
+      : target_device_(target_device)
+  {
+    CubDebug(cudaGetDevice(&original_device_));
+    if (original_device_ != target_device_)
+    {
+      CubDebug(cudaSetDevice(target_device_));
+    }
+  }
+
+  //! @brief If the @p original_device was not equal to @p target_device sets the current device back to
+  //! @p original_device
+  ~SwitchDevice()
+  {
+    if (original_device_ != target_device_)
+    {
+      CubDebug(cudaSetDevice(original_device_));
+    }
+  }
+};
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
