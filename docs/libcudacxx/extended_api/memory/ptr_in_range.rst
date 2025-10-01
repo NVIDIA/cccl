@@ -11,7 +11,7 @@
    bool ptr_in_range(const void* ptr, const void* start, const void* end) noexcept
 
    } // namespace cuda
- 
+
 Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``.
 
 **Parameters**
