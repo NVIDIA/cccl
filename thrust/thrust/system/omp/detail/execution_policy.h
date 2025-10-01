@@ -1,19 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
+// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -25,89 +11,117 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp
 {
-// put the canonical tag in the same ns as the backend's entry points
-namespace omp
-{
-namespace detail
-{
+//! \addtogroup execution_policies
+//! \{
 
-// this awkward sequence of definitions arise
-// from the desire both for tag to derive
-// from execution_policy and for execution_policy
-// to convert to tag (when execution_policy is not
-// an ancestor of tag)
-
-// forward declaration of tag
+//! \p thrust::omp::tag is a type representing Thrust's OpenMP backend system in C++'s type system. Iterators "tagged"
+//! with a type which is convertible to \p omp::tag assert that they may be "dispatched" to algorithm implementations in
+//! the \p omp system.
 struct tag;
 
-// forward declaration of execution_policy
-template <typename>
+//! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution policies which are derived from
+//! Thrust's OpenMP backend system.
+template <typename Derived>
 struct execution_policy;
 
-// specialize execution_policy for tag
 template <>
-struct execution_policy<tag> : thrust::system::cpp::detail::execution_policy<tag>
-{};
+struct execution_policy<tag> : cpp::execution_policy<tag>
+{
+  using tag_type = tag;
+};
 
-// tag's definition comes before the
-// generic definition of execution_policy
 struct tag : execution_policy<tag>
 {};
 
-// allow conversion to tag when it is not a successor
 template <typename Derived>
-struct execution_policy : thrust::system::cpp::detail::execution_policy<Derived>
+struct execution_policy : cpp::execution_policy<Derived>
 {
   using tag_type = tag;
+
+  // allow conversion to tag when it is not a successor
   operator tag() const
   {
     return tag();
   }
 };
 
-// overloads of select_system
+namespace detail
+{
+struct par_t
+    : execution_policy<par_t>
+    , thrust::detail::allocator_aware_execution_policy<execution_policy>
+{};
 
-// XXX select_system(tbb, omp) & select_system(omp, tbb) are ambiguous
-//     because both convert to cpp without these overloads, which we
-//     arbitrarily define in the omp backend
+// select_system(tbb, omp) & select_system(omp, tbb) are ambiguous because both convert to cpp without these overloads,
+// which we arbitrarily define in the omp backend
 
 template <typename System1, typename System2>
-inline _CCCL_HOST_DEVICE System1
-select_system(execution_policy<System1> s, thrust::system::tbb::detail::execution_policy<System2>)
+_CCCL_HOST_DEVICE System1 select_system(execution_policy<System1> s, tbb::execution_policy<System2>)
 {
   return thrust::detail::derived_cast(s);
-} // end select_system()
+}
 
 template <typename System1, typename System2>
-inline _CCCL_HOST_DEVICE System2
-select_system(thrust::system::tbb::detail::execution_policy<System1>, execution_policy<System2> s)
+_CCCL_HOST_DEVICE System2 select_system(tbb::execution_policy<System1>, execution_policy<System2> s)
 {
   return thrust::detail::derived_cast(s);
-} // end select_system()
-
+}
 } // namespace detail
 
-// alias execution_policy and tag here
-using thrust::system::omp::detail::execution_policy;
-using thrust::system::omp::detail::tag;
+//! \p thrust::omp::par is the parallel execution policy associated with Thrust's OpenMP backend system.
+//!
+//! Instead of relying on implicit algorithm dispatch through iterator system tags, users may directly target Thrust's
+//! OpenMP backend system by providing \p thrust::omp::par as an algorithm parameter.
+//!
+//! Explicit dispatch can be useful in avoiding the introduction of data copies into containers such as \p
+//! thrust::omp::vector.
+//!
+//! The type of \p thrust::omp::par is implementation-defined.
+//!
+//! The following code snippet demonstrates how to use \p thrust::omp::par to explicitly dispatch an invocation of \p
+//! thrust::for_each to the OpenMP backend system:
+//!
+//! \code
+//! #include <thrust/for_each.h>
+//! #include <thrust/system/omp/execution_policy.h>
+//! #include <cstdio>
+//!
+//! struct printf_functor
+//! {
+//!   __host__ __device__
+//!   void operator()(int x)
+//!   {
+//!     printf("%d\n", x);
+//!   }
+//! };
+//! ...
+//! int vec[3]{0, 1, 2}
+//! thrust::for_each(thrust::omp::par, vec.begin(), vec.end(), printf_functor{});
+//!
+//! // 0 1 2 is printed to standard output in some unspecified order
+//! \endcode
+inline constexpr detail::par_t par;
 
-} // namespace omp
-} // namespace system
+//! \}
 
-// alias items at top-level
+} // namespace system::omp
+
+// aliases:
 namespace omp
 {
-
-using thrust::system::omp::execution_policy;
-using thrust::system::omp::tag;
-
+using system::omp::execution_policy;
+using system::omp::par;
+using system::omp::tag;
 } // namespace omp
 THRUST_NAMESPACE_END

@@ -164,7 +164,7 @@ private:
   //! @throws cuda_error If the creation of the CUDA memory pool failed.
   //! @returns The created CUDA memory pool.
   [[nodiscard]] static cudaMemPool_t
-  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id) noexcept
+  __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id)
   {
     ::cudaMemPoolProps __pool_properties{};
     __pool_properties.allocType   = ::cudaMemAllocationTypePinned;

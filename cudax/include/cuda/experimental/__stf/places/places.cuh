@@ -835,7 +835,7 @@ public:
     // Define a grid directly from a vector of places
     // This creates an execution grid automatically
     impl(::std::vector<exec_place> _places)
-        : dims(static_cast<int>(_places.size()), 1, 1, 1)
+        : dims(_places.size(), 1, 1, 1)
         , places(mv(_places))
     {
       _CCCL_ASSERT(!places.empty(), "");
@@ -992,8 +992,7 @@ public:
 
     const exec_place& get_place(size_t p_index) const
     {
-      // TODO (miscco): should this method take an int?
-      return coords_to_place(static_cast<int>(p_index));
+      return coords_to_place(p_index);
     }
 
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
@@ -1009,10 +1008,10 @@ public:
 
   private:
     // What is the execution place at theses coordinates in the exec place grid ?
-    const exec_place& coords_to_place(int c0, int c1 = 0, int c2 = 0, int c3 = 0) const
+    const exec_place& coords_to_place(size_t c0, size_t c1 = 0, size_t c2 = 0, size_t c3 = 0) const
     {
       // Flatten the (c0, c1, c2, c3) vector into a global index
-      int index = c0 + dims.get(0) * (c1 + dims.get(1) * (c2 + c3 * dims.get(2)));
+      size_t index = c0 + dims.get(0) * (c1 + dims.get(1) * (c2 + c3 * dims.get(2)));
       return places[index];
     }
 
@@ -1131,9 +1130,9 @@ inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& d
 //! Creates a linear grid from a vector of execution places
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
-  assert(!places.empty());
-  const auto x = static_cast<int>(places.size());
-  return make_grid(mv(places), dim4(x, 1, 1, 1));
+  _CCCL_ASSERT(!places.empty(), "invalid places");
+  auto grid_dim = dim4(places.size(), 1, 1, 1);
+  return make_grid(mv(places), grid_dim);
 }
 
 /// Implementation deferred because we need the definition of exec_place_grid
@@ -1193,7 +1192,7 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
 /* Get the first N available devices */
 inline exec_place_grid exec_place::n_devices(size_t n)
 {
-  return n_devices(n, dim4(static_cast<int>(n), 1, 1, 1));
+  return n_devices(n, dim4(n, 1, 1, 1));
 }
 
 inline exec_place_grid exec_place::all_devices()
@@ -1246,7 +1245,7 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
@@ -1305,7 +1304,7 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
