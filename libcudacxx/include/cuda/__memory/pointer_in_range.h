@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MEMORY
-#define _CUDA_MEMORY
+#ifndef _CUDA___MEMORY_POINTER_IN_RANGE_H
+#define _CUDA___MEMORY_POINTER_IN_RANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/pointer_in_range.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__memory/aligned_size.h>
-#include <cuda/__memory/discard_memory.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory/ptr_rebind.h>
-#include <cuda/std/memory>
+#include <cuda/std/__functional/operations.h>
 
-#endif // _CUDA_MEMORY
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+template <typename _Tp>
+[[nodiscard]] _CCCL_API inline bool pointer_in_range(_Tp* __ptr, _Tp* __start, _Tp* __end) noexcept
+{
+  _CCCL_ASSERT(::cuda::std::greater<const _Tp*>{}(__end, __start),
+               "pointer_in_range: __end must be greater than __start");
+  return ::cuda::std::less_equal<const _Tp*>{}(__start, __ptr) && ::cuda::std::less<const _Tp*>{}(__ptr, __end);
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMORY_POINTER_IN_RANGE_H
