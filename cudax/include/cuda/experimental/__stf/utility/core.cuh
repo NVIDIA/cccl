@@ -250,7 +250,7 @@ auto each(T to)
  * compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr void unroll(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+constexpr void unroll(F&& f, ::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
@@ -359,7 +359,7 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
@@ -372,19 +372,56 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
 }
 
 /**
- * @brief Iterates over the elements of a tuple, applying a given function object to each element.
+ * @brief Applies a transformation to each element of a tuple, optionally passing the index.
  *
- * The function `each_in_tuple` accepts a tuple and a callable object `f`. If `f` accepts two parameters, it is invoked
- * with the index as a `std::integral_constant` and the value at that index in the tuple for each element. If `f`
- * accepts only one parameter, it is invoked with the value at each index in the tuple.
+ * Iterates over the elements of a tuple and applies the provided functor `f` to each element.
+ * If `f` is invocable with both the index and the element (`f(index, element)`), that form is used.
+ * Otherwise, it falls back to `f(element)`. The index is a compile-time constant of type
+ * `std::integral_constant<std::size_t, i>`, where `i` is the index of the element in the tuple.
  *
- * @tparam Tuple The type of the tuple over which to iterate.
- * @tparam F The type of the callable object to apply to each element in the tuple.
- * @tparam i... An optional parameter pack representing indices (used internally in the recursive implementation).
- * @param t The tuple over which to iterate.
- * @param f The callable object to apply to each element in the tuple.
- * @param std::index_sequence<i...> An optional index sequence used internally in the recursive implementation
- * (default-constructed as empty).
+ * @tparam Tuple The type of the input tuple.
+ * @tparam F The type of the transformation functor.
+ * @param t The input tuple to transform.
+ * @param f The transformation functor. Must be invocable with either `f(element)` or `f(index, element)`.
+ * @return A new tuple containing the results of applying `f` to each element of `t`.
+ */
+template <typename Tuple, typename F>
+constexpr auto tuple_transform(Tuple&& t, F&& f)
+{
+  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  return make_tuple_indexwise<n>([&](auto j) {
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    {
+      return f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+    }
+    else
+    {
+      return f(::std::get<j>(::std::forward<Tuple>(t)));
+    }
+  });
+}
+
+/**
+ * @brief Iterates over the elements of a tuple, applying a function to each element.
+ *
+ * @details
+ * This function traverses the elements of a tuple at compile time and applies the provided
+ * callable `f` to each element. If the callable can be invoked with both the element's index
+ * and value (`f(index, element)`), both are passed; otherwise, only the element is passed (`f(element)`).
+ *
+ * The iteration is performed using compile-time unrolling, making this utility suitable for
+ * constexpr and template metaprogramming scenarios.
+ *
+ * @tparam Tuple The type of the tuple to iterate over. May be an lvalue or rvalue reference.
+ * @tparam F The type of the callable to apply. Must be invocable with either `(index, element)` or `(element)`.
+ *
+ * @param[in] t The tuple whose elements will be visited.
+ * @param[in] f The function or functor to apply to each element (and optionally its index).
+ *
+ * @note
+ *   - The index is provided as a compile-time constant (such as a `std::integral_constant`).
+ *   - The function is `constexpr` and can be used in constant expressions.
+ *   - This utility requires an `unroll<N>(lambda)` facility for compile-time iteration.
  */
 template <typename Tuple, typename F>
 constexpr void each_in_tuple(Tuple&& t, F&& f)
@@ -439,7 +476,7 @@ constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p)
  * assert(s == "1, 2, 3, 4, 5, ");
  * s = "";
  * cuda::experimental::stf::each_in_pack([&](auto i, auto&& p) { s += (i ? ", " : "") + std::to_string(i) + p; }, "a",
- * "b", "c"); assert(s == "0a, 1b, 2c"); \endcode
+ * "b", "c"); assert(s == "0a, 1b, 2c");
  * \endcode
  */
 template <typename F, typename... P>

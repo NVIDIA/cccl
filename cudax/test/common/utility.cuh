@@ -40,13 +40,13 @@ private:
 public:
   explicit _malloc_pinned(std::size_t size)
   {
-    cudax::__ensure_current_device guard(cudax::device_ref{0});
+    cudax::__ensure_current_device guard(cuda::device_ref{0});
     _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
   {
-    cudax::__ensure_current_device guard(cudax::device_ref{0});
+    cudax::__ensure_current_device guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 

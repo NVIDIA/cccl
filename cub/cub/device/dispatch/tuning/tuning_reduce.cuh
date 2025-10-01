@@ -57,9 +57,9 @@ struct ReducePolicyWrapper : PolicyT
 
 template <typename StaticPolicyT>
 struct ReducePolicyWrapper<StaticPolicyT,
-                           _CUDA_VSTD::void_t<typename StaticPolicyT::ReducePolicy,
-                                              typename StaticPolicyT::SingleTilePolicy,
-                                              typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
+                           ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
+                                               typename StaticPolicyT::SingleTilePolicy,
+                                               typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -68,14 +68,16 @@ struct ReducePolicyWrapper<StaticPolicyT,
   CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
   CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(ReduceNondeterministic)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
-    return object<key<"ReducePolicy">()          = Reduce().EncodedPolicy(),
-                  key<"SingleTilePolicy">()      = SingleTile().EncodedPolicy(),
-                  key<"SegmentedReducePolicy">() = SegmentedReduce().EncodedPolicy()>();
+    return object<key<"ReducePolicy">()                 = Reduce().EncodedPolicy(),
+                  key<"SingleTilePolicy">()             = SingleTile().EncodedPolicy(),
+                  key<"SegmentedReducePolicy">()        = SegmentedReduce().EncodedPolicy(),
+                  key<"ReduceNondeterministicPolicy">() = ReduceNondeterministic().EncodedPolicy()>();
   }
 #endif
 };
@@ -227,6 +229,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
@@ -246,6 +256,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
@@ -272,6 +290,14 @@ struct policy_hub
 
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
+
+    using ReduceNondeterministicPolicy =
+      AgentReducePolicy<ReducePolicy::BLOCK_THREADS,
+                        ReducePolicy::ITEMS_PER_THREAD,
+                        AccumT,
+                        ReducePolicy::VECTOR_LOAD_LENGTH,
+                        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                        ReducePolicy::LOAD_MODIFIER>;
   };
 
   using MaxPolicy = Policy1000;
@@ -281,6 +307,37 @@ struct policy_hub
 
 namespace rfa
 {
+
+template <class AccumT>
+struct sm90_tuning;
+
+template <>
+struct sm90_tuning<float>
+{
+  // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
+  static constexpr int items   = 13;
+  static constexpr int threads = 224;
+};
+
+template <class AccumT>
+struct sm86_tuning;
+
+template <>
+struct sm86_tuning<float>
+{
+  // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
+  static constexpr int items   = 6;
+  static constexpr int threads = 224;
+};
+
+template <>
+struct sm86_tuning<double>
+{
+  // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
+  static constexpr int items   = 11;
+  static constexpr int threads = 128;
+};
+
 /**
  * @tparam AccumT
  *   Accumulator data type
@@ -340,7 +397,46 @@ struct policy_hub
     using SingleTilePolicy = ReducePolicy;
   };
 
-  using MaxPolicy = Policy600;
+  /// SM86
+  struct Policy860 : ChainedPolicy<860, Policy860, Policy600>
+  {
+    static constexpr int items_per_vec_load = 4;
+
+    // Use values from tuning if a specialization exists, otherwise pick Policy600
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
+
+    // use Policy600 as DefaultPolicy
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+
+    using ReducePolicy = decltype(select_agent_policy<sm86_tuning<AccumT>>(0));
+
+    using SingleTilePolicy = ReducePolicy;
+  };
+
+  /// SM90
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  {
+    static constexpr int items_per_vec_load = 4;
+
+    // Use values from tuning if a specialization exists, otherwise pick Policy860
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
+
+    // use Policy860 as DefaultPolicy
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
+
+    using ReducePolicy = decltype(select_agent_policy<sm90_tuning<AccumT>>(0));
+
+    // SingleTilePolicy
+    using SingleTilePolicy = ReducePolicy;
+  };
+
+  using MaxPolicy = Policy900;
 };
 } // namespace rfa
 

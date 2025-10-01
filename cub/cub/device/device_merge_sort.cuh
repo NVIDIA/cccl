@@ -81,7 +81,7 @@ CUB_NAMESPACE_BEGIN
  *
  * // Initialize iterator
  * using KeyIterator = typename thrust::device_vector<KeyType>::iterator;
- * thrust::reverse_iterator<KeyIterator> reverse_iter(d_keys.end());
+ * cuda::std::reverse_iterator<KeyIterator> reverse_iter(d_keys.end());
  *
  * // Determine temporary device storage requirements
  * size_t temp_storage_bytes = 0;

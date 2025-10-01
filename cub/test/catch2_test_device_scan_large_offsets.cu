@@ -73,7 +73,7 @@ struct mod_op
 C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
 try
 {
-  using op_t     = ::cuda::std::plus<>;
+  using op_t     = cuda::std::plus<>;
   using item_t   = std::uint32_t;
   using index_t  = std::uint64_t;
   using offset_t = typename c2h::get<0, TestType>;

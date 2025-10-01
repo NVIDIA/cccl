@@ -20,7 +20,7 @@ void test_ready(cuda::stream_ref& ref)
 #if TEST_HAS_EXCEPTIONS()
   try
   {
-    assert(ref.ready());
+    assert(ref.is_done());
   }
   catch (...)
   {

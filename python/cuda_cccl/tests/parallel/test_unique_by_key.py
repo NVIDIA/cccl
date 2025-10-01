@@ -8,9 +8,7 @@ import numba.cuda
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 DTYPE_LIST = [
     np.uint8,
@@ -21,6 +19,7 @@ DTYPE_LIST = [
     np.int16,
     np.int32,
     np.int64,
+    np.float16,
     np.float32,
     np.float64,
 ]
@@ -34,12 +33,6 @@ def get_mark(dt, log_size):
 
 PROBLEM_SIZES = [2, 8, 16, 22]
 
-DTYPE_SIZE_PAIRS = [
-    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
-    for dt in DTYPE_LIST
-    for log_size in PROBLEM_SIZES
-]
-
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
@@ -48,6 +41,8 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
             max_value = np.iinfo(dtype).max
         return rng.integers(max_value, size=size, dtype=dtype)
     elif np.isdtype(dtype, "real floating"):
+        if dtype == np.float16:  # Cannot generate float16 directly
+            return rng.random(size=size, dtype=np.float32).astype(dtype)
         return rng.random(size=size, dtype=dtype)
     else:
         raise ValueError(f"Unsupported dtype {dtype}")
@@ -63,32 +58,16 @@ def unique_by_key_device(
     num_items,
     stream=None,
 ):
-    unique_by_key = algorithms.unique_by_key(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
-    )
-
-    temp_storage_size = unique_by_key(
-        None,
+    # Call single-phase API directly with all parameters including num_items
+    parallel.unique_by_key(
         d_in_keys,
         d_in_items,
         d_out_keys,
         d_out_items,
         d_out_num_selected,
+        op,
         num_items,
-        stream=stream,
-    )
-    d_temp_storage = numba.cuda.device_array(
-        temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
-    )
-    unique_by_key(
-        d_temp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        d_out_num_selected,
-        num_items,
-        stream=stream,
+        stream,
     )
 
 
@@ -121,11 +100,20 @@ def compare_op(lhs, rhs):
     return np.uint8(lhs == rhs)
 
 
-@pytest.mark.parametrize(
-    "dtype, num_items",
-    DTYPE_SIZE_PAIRS,
-)
-def test_unique_by_key(dtype, num_items):
+unique_by_key_params = [
+    pytest.param(
+        dt,
+        2**log_size,
+        parallel.OpKind.EQUAL_TO if dt == np.float16 else compare_op,
+        marks=get_mark(dt, log_size),
+    )
+    for dt in DTYPE_LIST
+    for log_size in PROBLEM_SIZES
+]
+
+
+@pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
+def test_unique_by_key(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -144,7 +132,7 @@ def test_unique_by_key(dtype, num_items):
         d_out_keys,
         d_out_items,
         d_out_num_selected,
-        compare_op,
+        op,
         num_items,
     )
 
@@ -159,11 +147,8 @@ def test_unique_by_key(dtype, num_items):
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-@pytest.mark.parametrize(
-    "dtype, num_items",
-    DTYPE_SIZE_PAIRS,
-)
-def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
+@pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
+def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
@@ -188,8 +173,8 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-    i_in_keys = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
-    i_in_items = iterators.CacheModifiedInputIterator(d_in_items, modifier="stream")
+    i_in_keys = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_in_items = parallel.CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     unique_by_key_device(
         i_in_keys,
@@ -197,7 +182,7 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
         d_out_keys,
         d_out_items,
         d_out_num_selected,
-        compare_op,
+        op,
         num_items,
     )
 
@@ -257,12 +242,12 @@ def test_unique_by_key_complex():
 
 
 def test_unique_by_key_struct_types():
-    @gpu_struct
+    @parallel.gpu_struct
     class key_pair:
         a: np.int16
         b: np.uint64
 
-    @gpu_struct
+    @parallel.gpu_struct
     class item_pair:
         a: np.int32
         b: np.float32
@@ -363,3 +348,33 @@ def test_unique_by_key_with_stream(cuda_stream):
 
     np.testing.assert_array_equal(h_out_keys, expected_keys)
     np.testing.assert_array_equal(h_out_items, expected_items)
+
+
+def test_unique_by_key_well_known_equal_to():
+    dtype = np.int32
+
+    # Create input keys and values: keys=[1,1,1,2,2,3] values=[10,20,30,40,50,60]
+    d_in_keys = cp.array([1, 1, 1, 2, 2, 3], dtype=dtype)
+    d_in_values = cp.array([10, 20, 30, 40, 50, 60], dtype=dtype)
+    d_out_keys = cp.empty_like(d_in_keys)
+    d_out_values = cp.empty_like(d_in_values)
+    d_num_selected = cp.empty(1, dtype=dtype)
+
+    # Run unique by key with well-known EQUAL_TO operation
+    parallel.unique_by_key(
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_num_selected,
+        parallel.OpKind.EQUAL_TO,
+        len(d_in_keys),
+    )
+
+    # Check the result is correct
+    assert d_num_selected.get()[0] == 3  # three unique keys
+    expected_keys = [1, 2, 3]
+    expected_values = [10, 40, 60]  # first occurrence of each key
+
+    np.testing.assert_equal(d_out_keys.get()[:3], expected_keys)
+    np.testing.assert_equal(d_out_values.get()[:3], expected_values)

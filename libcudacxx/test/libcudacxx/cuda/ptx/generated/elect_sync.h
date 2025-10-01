@@ -17,10 +17,10 @@
 __global__ void test_elect_sync(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-        // elect.sync _|is_elected, membermask;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<bool (*)(const uint32_t&)>(cuda::ptx::elect_sync));));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // elect.sync _|is_elected, membermask;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<bool (*)(const cuda::std::uint32_t&)>(cuda::ptx::elect_sync));));
 #endif // __cccl_ptx_isa >= 800
 }

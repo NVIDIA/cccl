@@ -66,6 +66,10 @@ using integral_vector_list = cuda::std::__type_list<
   thrust::universal_vector<int>,
   thrust::universal_host_pinned_vector<int>>;
 
+// corresponds to DECLARE_GENERIC_UNITTEST
+using generic_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
+
 // corresponds to DECLARE_VARIABLE_UNITTEST
 using variable_list =
   cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;

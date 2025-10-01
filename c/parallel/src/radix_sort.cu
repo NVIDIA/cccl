@@ -13,6 +13,7 @@
 #include <cub/device/device_radix_sort.cuh>
 
 #include <format>
+#include <vector>
 
 #include "cccl/c/types.h"
 #include "cub/util_type.cuh"
@@ -22,6 +23,7 @@
 #include "util/types.h"
 #include <cccl/c/radix_sort.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
@@ -354,7 +356,8 @@ struct dynamic_radix_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<radix_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<radix_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -422,7 +425,7 @@ struct radix_sort_kernel_source
 
 } // namespace radix_sort
 
-CUresult cccl_device_radix_sort_build(
+CUresult cccl_device_radix_sort_build_ex(
   cccl_device_radix_sort_build_result_t* build_ptr,
   cccl_sort_order_t sort_order,
   cccl_iterator_t input_keys_it,
@@ -434,7 +437,8 @@ CUresult cccl_device_radix_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -442,7 +446,7 @@ CUresult cccl_device_radix_sort_build(
     const char* name = "test";
 
     const int cc       = cc_major * 10 + cc_minor;
-    const auto policy  = radix_sort::get_policy(cc, input_keys_it.value_type.size);
+    const auto policy  = radix_sort::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
     const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto value_cpp =
       input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
@@ -539,7 +543,7 @@ struct {26} {{
 )XXX";
 
     std::string offset_t;
-    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
     const std::string src = std::format(
       src_template,
@@ -607,17 +611,18 @@ struct {26} {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
-    appender.append({decomposer.ltoir, decomposer.ltoir_size});
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+    appender.append_operation(decomposer);
 
     nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
@@ -631,7 +636,7 @@ struct {26} {{
         ->add_expression({histogram_kernel_name})
         ->add_expression({exclusive_sum_kernel_name})
         ->add_expression({onesweep_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
         ->get_name({upsweep_kernel_name, upsweep_kernel_lowered_name})
         ->get_name({alt_upsweep_kernel_name, alt_upsweep_kernel_lowered_name})
@@ -642,7 +647,7 @@ struct {26} {{
         ->get_name({exclusive_sum_kernel_name, exclusive_sum_kernel_lowered_name})
         ->get_name({onesweep_kernel_name, onesweep_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -803,6 +808,36 @@ CUresult cccl_device_radix_sort(
     is_overwrite_okay,
     selector,
     stream);
+}
+
+CUresult cccl_device_radix_sort_build(
+  cccl_device_radix_sort_build_result_t* build,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_values_it,
+  cccl_op_t decomposer,
+  const char* decomposer_return_type,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_radix_sort_build_ex(
+    build,
+    sort_order,
+    input_keys_it,
+    input_values_it,
+    decomposer,
+    decomposer_return_type,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* build_ptr)

@@ -137,7 +137,7 @@ struct get_scan_tuning_query_t
 
 struct scan_tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
   {
     return *this;
   }
@@ -196,7 +196,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
@@ -208,9 +208,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(
         cudaSuccess
@@ -240,6 +238,33 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             init_t,
             accumulator_t>)};
     }
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(
+        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
+    }
     else
     {
       using policy_t              = cub::detail::rfa::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
@@ -261,25 +286,18 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             policy_t,
             decltype(d_in),
             output_it_t,
-            offset_t,
             reduction_op_t,
             init_t,
             deterministic_accum_t,
             transform_t>),
         reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceKernel<
-            policy_t,
-            decltype(d_in),
-            offset_t,
-            reduction_op_t,
-            deterministic_accum_t,
-            transform_t>),
+          cub::detail::reduce::
+            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
         reinterpret_cast<void*>(
           cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
             output_it_t,
-            int, // always used with int offset
             reduction_op_t,
             init_t,
             deterministic_accum_t,
@@ -305,7 +323,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
@@ -316,9 +334,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
-    // TODO(gevtushenko): split `not_guaranteed` kernels once atomic reduce is merged
-    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>
-                  || std::is_same_v<determinism_t, cuda::execution::determinism::not_guaranteed_t>)
+    if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
     {
       REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
@@ -346,6 +362,33 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             init_t,
             accumulator_t>)};
     }
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(cudaSuccess
+              == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
+    }
     else
     {
       using policy_t              = cub::detail::rfa::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
@@ -367,25 +410,18 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             policy_t,
             decltype(d_in),
             output_it_t,
-            offset_t,
             reduction_op_t,
             init_t,
             deterministic_accum_t,
             transform_t>),
         reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceKernel<
-            policy_t,
-            decltype(d_in),
-            offset_t,
-            reduction_op_t,
-            deterministic_accum_t,
-            transform_t>),
+          cub::detail::reduce::
+            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
         reinterpret_cast<void*>(
           cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
             output_it_t,
-            int, // always used with int offset
             reduction_op_t,
             init_t,
             deterministic_accum_t,

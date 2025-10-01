@@ -8,8 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
+#include <cuda/memory>
 
 #include <cuda/experimental/graph.cuh>
+#include <cuda/experimental/kernel.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -59,6 +61,11 @@ struct functor_taking_config
   }
 };
 
+__global__ void kernel_no_arguments()
+{
+  kernel_run_proof = true;
+}
+
 __global__ void kernel_int_argument(int dummy)
 {
   kernel_run_proof = true;
@@ -83,7 +90,7 @@ struct dynamic_smem_single
   {
     auto& dynamic_smem = cudax::dynamic_smem_ref(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CUDAX_REQUIRE(__isShared(&dynamic_smem));
+    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -98,7 +105,7 @@ struct dynamic_smem_span
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
-    CUDAX_REQUIRE(__isShared(&dynamic_smem[1]));
+    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -151,7 +158,7 @@ struct launch_transform_to_int_convertible
 template <typename StreamOrPathBuilder>
 void launch_smoke_test(StreamOrPathBuilder& dst)
 {
-  cudax::__ensure_current_device guard(cudax::device_ref{0});
+  cudax::__ensure_current_device guard(cuda::device_ref{0});
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
 
@@ -165,6 +172,9 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
     // Not taking dims
     {
+      cudax::launch(dst, config, kernel_no_arguments);
+      check_kernel_run(dst);
+
       const int dummy = 1;
       cudax::launch(dst, config, kernel_int_argument, dummy);
       check_kernel_run(dst);
@@ -172,14 +182,25 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_int_argument, launch_transform_to_int_convertible{1});
       check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_int_argument, 1U);
+      check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, dummy);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, launch_transform_to_int_convertible{1});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1U);
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
+
       cudax::launch(dst, config, functor_int_argument(), dummy);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), launch_transform_to_int_convertible{1});
-      check_kernel_run(dst);
-
-      cudax::launch(dst, config, kernel_int_argument, 1U);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1U);
       check_kernel_run(dst);
@@ -189,12 +210,17 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     {
       auto functor_instance = functor_taking_config<block_size>();
       auto kernel_instance  = kernel_taking_config<decltype(config), block_size>;
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::kernel_ref kernel_ref_instance = kernel_instance;
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
 
       cudax::launch(dst, config, functor_instance, grid_size);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
 
       cudax::launch(dst, config, kernel_instance, grid_size);
@@ -203,11 +229,19 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(dst);
-
-      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, kernel_ref_instance, grid_size);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, ::cuda::std::move(grid_size));
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, static_cast<unsigned int>(grid_size));
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
     }
   }
 
@@ -279,10 +313,15 @@ C2H_TEST("Launch smoke path builder", "[launch]")
 
   launch_smoke_test(pb);
 
-  CUDAX_REQUIRE(g.node_count() == 46);
+  // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
+#if _CCCL_CTK_BELOW(12, 1)
+  CUDAX_REQUIRE(g.node_count() == 48);
+#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
+  CUDAX_REQUIRE(g.node_count() == 64);
+#endif // _CCCL_CTK_BELOW(12, 1)
 
   auto exec = g.instantiate();
-  cudax::stream s{cudax::device_ref{0}};
+  cudax::stream s{cuda::device_ref{0}};
   exec.launch(s);
   s.sync();
 }
@@ -310,7 +349,7 @@ struct kernel_with_default_config
 
 void test_default_config()
 {
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   auto grid  = cudax::grid_dims(4);
   auto block = cudax::block_dims<256>;
 
@@ -405,10 +444,44 @@ struct lambda_wrapper
   }
 };
 
+struct MoveOnlyArg
+{
+  static MoveOnlyArg make()
+  {
+    return MoveOnlyArg{};
+  }
+
+  MoveOnlyArg(const MoveOnlyArg& other)      = delete;
+  MoveOnlyArg(MoveOnlyArg&&)                 = default;
+  MoveOnlyArg& operator=(const MoveOnlyArg&) = delete;
+  MoveOnlyArg& operator=(MoveOnlyArg&&)      = delete;
+
+private:
+  MoveOnlyArg() = default;
+};
+
+struct MoveOnlyCallable
+{
+  static MoveOnlyCallable make()
+  {
+    return MoveOnlyCallable{};
+  }
+
+  MoveOnlyCallable(const MoveOnlyCallable&)            = delete;
+  MoveOnlyCallable(MoveOnlyCallable&&)                 = default;
+  MoveOnlyCallable& operator=(const MoveOnlyCallable&) = delete;
+  MoveOnlyCallable& operator=(MoveOnlyCallable&&)      = delete;
+
+  void operator()(MoveOnlyArg) {}
+
+private:
+  MoveOnlyCallable() = default;
+};
+
 C2H_TEST("Host launch", "")
 {
   cuda::atomic<int> atomic = 0;
-  cudax::stream stream{cudax::device_ref{0}};
+  cudax::stream stream{cuda::device_ref{0}};
   int i = 0;
 
   auto set_lambda = [&](int set) {
@@ -486,5 +559,11 @@ C2H_TEST("Host launch", "")
     host_launch(stream, cuda::std::ref(another_lambda_setter));
     unblock_and_wait_stream(stream, atomic);
     CUDAX_REQUIRE(i == 84);
+  }
+
+  SECTION("Check that host_launch works with move only callables and arguments")
+  {
+    cudax::host_launch(stream, MoveOnlyCallable::make(), MoveOnlyArg::make());
+    stream.sync();
   }
 }

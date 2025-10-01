@@ -43,7 +43,7 @@ def filter_by_type(df):
 def alg_dfs(files):
     result = {}
     for file in files:
-        storage = cccl.bench.StorageBase(file)
+        storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
             for subbench in storage.subbenches(algname):
                 df = storage.alg_to_df(algname, subbench)

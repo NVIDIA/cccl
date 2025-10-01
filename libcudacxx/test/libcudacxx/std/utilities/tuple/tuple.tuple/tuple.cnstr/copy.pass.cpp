@@ -23,19 +23,19 @@ struct Empty
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T;
+    using T = cuda::std::tuple<>;
     T t0;
     T t = t0;
     unused(t); // Prevent unused warning
   }
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     T t0(2);
     T t = t0;
     assert(cuda::std::get<0>(t) == 2);
   }
   {
-    typedef cuda::std::tuple<int, char> T;
+    using T = cuda::std::tuple<int, char>;
     T t0(2, 'a');
     T t = t0;
     assert(cuda::std::get<0>(t) == 2);
@@ -44,7 +44,7 @@ int main(int, char**)
   // cuda::std::string not supported
   /*
   {
-      typedef cuda::std::tuple<int, char, cuda::std::string> T;
+      using T = cuda::std::tuple<int, char, cuda::std::string>;
       const T t0(2, 'a', "some text");
       T t = t0;
       assert(cuda::std::get<0>(t) == 2);
@@ -53,13 +53,13 @@ int main(int, char**)
   }
   */
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     constexpr T t0(2);
     constexpr T t = t0;
     static_assert(cuda::std::get<0>(t) == 2, "");
   }
   {
-    typedef cuda::std::tuple<Empty> T;
+    using T = cuda::std::tuple<Empty>;
     constexpr T t0;
     constexpr T t                      = t0;
     [[maybe_unused]] constexpr Empty e = cuda::std::get<0>(t);

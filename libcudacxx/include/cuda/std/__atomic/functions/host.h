@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
-#define _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#ifndef _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
+#define _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
@@ -112,14 +112,14 @@ inline bool __atomic_compare_exchange_weak_host(
     __atomic_failure_order_to_int(__failure));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_add(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
@@ -133,14 +133,14 @@ inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_or
   return __expected;
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_sub(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
@@ -204,8 +204,8 @@ inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_orde
 
 _CCCL_DIAG_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#endif // _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H

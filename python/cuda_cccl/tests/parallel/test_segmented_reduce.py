@@ -6,9 +6,7 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])
@@ -43,17 +41,14 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
-    segmented_reduce_fn = algorithms.segmented_reduce(
-        d_in, d_out, start_offsets, end_offsets, binary_op, h_init
-    )
+    if input_array.dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = binary_op
 
-    temp_nbytes = segmented_reduce_fn(
-        None, d_in, d_out, n_segments, start_offsets, end_offsets, h_init
-    )
-    temp = cp.empty(temp_nbytes, dtype="uint8")
-
-    segmented_reduce_fn(
-        temp, d_in, d_out, n_segments, start_offsets, end_offsets, h_init
+    # Call single-phase API directly with num_segments parameter
+    parallel.segmented_reduce(
+        d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
     )
 
     d_expected = cp.empty_like(d_out)
@@ -67,9 +62,7 @@ def test_segmented_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    from cuda.cccl.parallel.experimental import algorithms
-
-    @gpu_struct
+    @parallel.gpu_struct
     class Pixel:
         r: np.int32
         g: np.int32
@@ -93,16 +86,9 @@ def test_segmented_reduce_struct_type():
 
     h_init = Pixel(0, 0, 0)
 
-    alg = algorithms.segmented_reduce(
-        d_rgb, d_out, start_offsets, end_offsets, max_g_value, h_init
-    )
-    temp_storage_bytes = alg(
-        None, d_rgb, d_out, n_segments, start_offsets, end_offsets, h_init
-    )
-
-    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = alg(
-        d_temp_storage, d_rgb, d_out, n_segments, start_offsets, end_offsets, h_init
+    # Call single-phase API directly with n_segments parameter
+    parallel.segmented_reduce(
+        d_rgb, d_out, start_offsets, end_offsets, max_g_value, h_init, n_segments
     )
 
     h_rgb = np.reshape(d_rgb.get(), (n_segments, -1))
@@ -133,8 +119,8 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
         return (Fu(idx + 1) - Fu(idx)) % p
 
-    input_it = iterators.TransformIterator(
-        iterators.CountingIterator(np.int64(0)), make_difference
+    input_it = parallel.TransformIterator(
+        parallel.CountingIterator(np.int64(0)), make_difference
     )
 
     def make_scaler(step):
@@ -146,8 +132,8 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     segment_size = 116
     offset0 = np.int64(0)
     row_offset = make_scaler(np.int64(segment_size))
-    start_offsets = iterators.TransformIterator(
-        iterators.CountingIterator(offset0), row_offset
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(offset0), row_offset
     )
     end_offsets = start_offsets + 1
 
@@ -162,17 +148,9 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
         return (a + b) % np.uint8(7)
 
     h_init = np.zeros(tuple(), dtype=np.uint8)
-    alg = algorithms.segmented_reduce(
-        input_it, res, start_offsets, end_offsets, my_add, h_init
-    )
-
-    temp_storage_bytes = alg(
-        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
-    )
-
-    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = alg(
-        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    # Call single-phase API directly with num_segments parameter
+    parallel.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, my_add, h_init, num_segments
     )
 
     # Validation
@@ -188,19 +166,18 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
     # reset the iterator since it has been mutated by being incremented on host
     start_offsets.cvalue = type(start_offsets.cvalue)(offset0)
-    expected = iterators.TransformIterator(start_offsets, get_expected_value)
+    expected = parallel.TransformIterator(start_offsets, get_expected_value)
 
     def cmp_op(a: np.uint8, b: np.uint8) -> np.uint8:
         return np.uint8(1) if (a == b) else np.uint8(0)
 
     validate = cp.zeros(2**20, dtype=np.uint8)
-    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
 
     id = 0
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        cmp_fn(res[id:], expected + id, validate, num_items)
+        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -222,10 +199,10 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     given by transformed iterator over counting iterator
     transformed by `k -> min + (k % p)` function.
     """
-    input_it = iterators.ConstantIterator(np.int16(1))
+    input_it = parallel.ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
-        def offset_value(n: np.int64):
+        def offset_value(n: np.int64) -> np.int64:
             """
             Offset value computes closed form for
             :math:`sum(1 + (k % p), k=0..n)`.
@@ -245,9 +222,9 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
 
         return offset_value
 
-    m0, p = 265, 163
-    offsets_it = iterators.TransformIterator(
-        iterators.CountingIterator(np.int64(-1)), offset_functor(m0, p)
+    m0, p = np.int64(265), np.int64(163)
+    offsets_it = parallel.TransformIterator(
+        parallel.CountingIterator(np.int64(-1)), offset_functor(m0, p)
     )
     start_offsets = offsets_it
     end_offsets = offsets_it + 1
@@ -263,17 +240,9 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     assert res.size == num_segments
 
     h_init = np.zeros(tuple(), dtype=np.int16)
-    alg = algorithms.segmented_reduce(
-        input_it, res, start_offsets, end_offsets, _plus, h_init
-    )
-
-    temp_storage_bytes = alg(
-        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
-    )
-
-    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = alg(
-        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    # Call single-phase API directly with num_segments parameter
+    parallel.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, _plus, h_init, num_segments
     )
 
     # Validation
@@ -281,21 +250,125 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     def get_expected_value(k: np.int64) -> np.int16:
         return np.int16(m0 + (k % p))
 
-    expected = iterators.TransformIterator(
-        iterators.CountingIterator(np.int64(0)), get_expected_value
+    expected = parallel.TransformIterator(
+        parallel.CountingIterator(np.int64(0)), get_expected_value
     )
 
     def cmp_op(a: np.int16, b: np.int16) -> np.uint8:
         return np.uint8(1) if (a == b) else np.uint8(0)
 
     validate = cp.zeros(2**20, dtype=np.uint8)
-    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
 
     id = 0
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        cmp_fn(res[id:], expected + id, validate, num_items)
+        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
+
+
+def test_segmented_reduce_well_known_plus():
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.PLUS, h_init, 3
+    )
+
+    expected = np.array([6, 9, 30])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
+def test_segmented_reduce_well_known_maximum():
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+
+    # Create segmented data: [1, 9, 3] | [4, 2] | [6, 7, 1, 8]
+    d_input = cp.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.MAXIMUM, h_init, 3
+    )
+
+    expected = np.array([9, 4, 8])  # max of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_transform_output_iterator(floating_array):
+    """Test segmented reduce with TransformOutputIterator."""
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+
+    # Create 2 segments of roughly equal size
+    segment_size = d_input.size // 2
+    d_output = cp.empty(2, dtype=dtype)
+    start_offsets = cp.array([0, segment_size], dtype=np.int32)
+    end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
+
+    def sqrt(x: dtype) -> dtype:
+        return x**0.5
+
+    d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+
+    parallel.segmented_reduce(
+        d_input, d_out_it, start_offsets, end_offsets, parallel.OpKind.PLUS, h_init, 2
+    )
+
+    expected = cp.sqrt(
+        cp.array(
+            [
+                cp.sum(d_input[0:segment_size]),
+                cp.sum(d_input[segment_size : d_input.size]),
+            ]
+        )
+    )
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+
+
+def test_device_segmented_reduce_for_rowwise_sum():
+    def add_op(a, b):
+        return a + b
+
+    n_rows, n_cols = 67, 12345
+    rng = cp.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int32(0)
+    row_offset = make_scaler(np.int32(n_cols))
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(zero), row_offset
+    )
+
+    end_offsets = start_offsets + 1
+
+    d_input = mat
+    h_init = np.zeros(tuple(), dtype=np.int32)
+    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
+    )
+
+    expected = cp.sum(mat, axis=-1)
+    assert cp.all(d_output == expected)

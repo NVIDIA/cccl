@@ -187,7 +187,7 @@ inline void fork_from_graph_node(
   {
     for (const auto& e : previous_prereqs)
     {
-      dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, 1);
+      dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, edge_type::prereqs);
     }
   }
 

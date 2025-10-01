@@ -45,8 +45,6 @@
 #include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
 
-#include <cuda/std/utility>
-
 CUB_NAMESPACE_BEGIN
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
@@ -87,5 +85,13 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
 #  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
 #endif // !CCCL_AVOID_SORT_UNROLL
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+#  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
+#  define CUB_DETAIL_CONSTEXPR_ISH
+#else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv
+#  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) static_assert(expr, msg);
+#  define CUB_DETAIL_CONSTEXPR_ISH                constexpr
+#endif // !(CUB_DEFINE_RUNTIME_POLICIES)
 
 CUB_NAMESPACE_END

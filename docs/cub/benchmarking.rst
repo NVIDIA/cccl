@@ -21,14 +21,10 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark
 
 You clone the repository, create a build directory and configure the build with CMake.
-It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
-build in Release mode (`CMAKE_BUILD_TYPE=Release`),
-and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=XX`).
-This `website <https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/>`_
-contains a great table listing the architectures for different brands of GPUs.
+The preset `cub-benchmark` takes care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
 
@@ -309,7 +305,7 @@ With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake 
 
 .. code-block:: bash
 
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
 
 To profile the kernels, use the `ncu` command.
 A typical invocation, if you work on a remote cluster, could look like this:

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_LITERALS_H
-#define _LIBCUDACXX___COMPLEX_LITERALS_H
+#ifndef _CUDA_STD___COMPLEX_LITERALS_H
+#define _CUDA_STD___COMPLEX_LITERALS_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifdef _LIBCUDACXX_HAS_STL_LITERALS
 // Literal suffix for complex number literals [complex.literals]
@@ -99,8 +99,8 @@ _CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX_HAS_STL_LITERALS
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_LITERALS_H
+#endif // _CUDA_STD___COMPLEX_LITERALS_H

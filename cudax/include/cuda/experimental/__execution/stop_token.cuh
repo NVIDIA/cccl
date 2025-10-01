@@ -74,7 +74,7 @@ protected:
   __inplace_stop_callback_base* __next_      = nullptr;
   __inplace_stop_callback_base** __prev_ptr_ = nullptr;
   bool* __removed_during_callback_           = nullptr;
-  _CUDA_VSTD::atomic<bool> __callback_completed_{false};
+  ::cuda::std::atomic<bool> __callback_completed_{false};
 };
 
 struct __spin_wait
@@ -90,7 +90,7 @@ struct __spin_wait
     else
     {
       --__count_;
-      _CUDA_VSTD::__cccl_thread_yield_processor();
+      ::cuda::std::__cccl_thread_yield_processor();
     }
   }
 
@@ -109,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token
 private:
   struct __callback_type
   {
-    _CCCL_API constexpr explicit __callback_type(never_stop_token, _CUDA_VSTD::__ignore_t) noexcept {}
+    _CCCL_API constexpr explicit __callback_type(never_stop_token, ::cuda::std::__ignore_t) noexcept {}
   };
 
 public:
@@ -154,7 +154,7 @@ public:
 
   _CCCL_API auto stop_requested() const noexcept -> bool
   {
-    return (__state_.load(_CUDA_VSTD::memory_order_acquire) & __stop_requested_flag) != 0;
+    return (__state_.load(::cuda::std::memory_order_acquire) & __stop_requested_flag) != 0;
   }
 
 private:
@@ -175,7 +175,7 @@ private:
   static constexpr uint8_t __stop_requested_flag = 1;
   static constexpr uint8_t __locked_flag         = 2;
 
-  mutable _CUDA_VSTD::atomic<uint8_t> __state_{0};
+  mutable ::cuda::std::atomic<uint8_t> __state_{0};
   mutable __stok::__inplace_stop_callback_base* __callbacks_ = nullptr;
   execution::__thread_id __notifying_thread_;
 };
@@ -298,7 +298,7 @@ _CCCL_API constexpr void __inplace_stop_callback_base::__register_callback() noe
 
 _CCCL_API inline inplace_stop_source::~inplace_stop_source()
 {
-  _CCCL_ASSERT((__state_.load(_CUDA_VSTD::memory_order_relaxed) & __locked_flag) == 0, "");
+  _CCCL_ASSERT((__state_.load(::cuda::std::memory_order_relaxed) & __locked_flag) == 0, "");
   _CCCL_ASSERT(__callbacks_ == nullptr, "");
 }
 
@@ -322,7 +322,7 @@ _CCCL_API inline auto inplace_stop_source::request_stop() noexcept -> bool
       __callbacks_->__prev_ptr_ = &__callbacks_;
     }
 
-    __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
+    __state_.store(__stop_requested_flag, ::cuda::std::memory_order_release);
 
     bool __removed_during_callback_      = false;
     __callbk->__removed_during_callback_ = &__removed_during_callback_;
@@ -332,43 +332,43 @@ _CCCL_API inline auto inplace_stop_source::request_stop() noexcept -> bool
     if (!__removed_during_callback_)
     {
       __callbk->__removed_during_callback_ = nullptr;
-      __callbk->__callback_completed_.store(true, _CUDA_VSTD::memory_order_release);
+      __callbk->__callback_completed_.store(true, ::cuda::std::memory_order_release);
     }
 
     __lock();
   }
 
-  __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
+  __state_.store(__stop_requested_flag, ::cuda::std::memory_order_release);
   return false;
 }
 
 _CCCL_API inline auto inplace_stop_source::__lock() const noexcept -> uint8_t
 {
   __stok::__spin_wait __spin;
-  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+  auto __old_state = __state_.load(::cuda::std::memory_order_relaxed);
   do
   {
     while ((__old_state & __locked_flag) != 0)
     {
       __spin.__wait();
-      __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+      __old_state = __state_.load(::cuda::std::memory_order_relaxed);
     }
   } while (!__state_.compare_exchange_weak(
-    __old_state, __old_state | __locked_flag, _CUDA_VSTD::memory_order_acquire, _CUDA_VSTD::memory_order_relaxed));
+    __old_state, __old_state | __locked_flag, ::cuda::std::memory_order_acquire, ::cuda::std::memory_order_relaxed));
 
   return __old_state;
 }
 
 _CCCL_API inline void inplace_stop_source::__unlock(uint8_t __old_state) const noexcept
 {
-  (void) __state_.store(__old_state, _CUDA_VSTD::memory_order_release);
+  (void) __state_.store(__old_state, ::cuda::std::memory_order_release);
 }
 
 _CCCL_API inline auto inplace_stop_source::__try_lock_unless_stop_requested(bool __set_stop_requested) const noexcept
   -> bool
 {
   __stok::__spin_wait __spin;
-  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+  auto __old_state = __state_.load(::cuda::std::memory_order_relaxed);
   do
   {
     while (true)
@@ -385,14 +385,14 @@ _CCCL_API inline auto inplace_stop_source::__try_lock_unless_stop_requested(bool
       else
       {
         __spin.__wait();
-        __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+        __old_state = __state_.load(::cuda::std::memory_order_relaxed);
       }
     }
   } while (!__state_.compare_exchange_weak(
     __old_state,
     __set_stop_requested ? (__locked_flag | __stop_requested_flag) : __locked_flag,
-    _CUDA_VSTD::memory_order_acq_rel,
-    _CUDA_VSTD::memory_order_relaxed));
+    ::cuda::std::memory_order_acq_rel,
+    ::cuda::std::memory_order_relaxed));
 
   // Lock acquired successfully
   return true;
@@ -454,7 +454,7 @@ inplace_stop_source::__remove_callback(__stok::__inplace_stop_callback_base* __c
       // Concurrently executing on another thread.
       // Wait until the other thread finishes executing the callback.
       __stok::__spin_wait __spin;
-      while (!__callbk->__callback_completed_.load(_CUDA_VSTD::memory_order_acquire))
+      while (!__callbk->__callback_completed_.load(::cuda::std::memory_order_acquire))
       {
         __spin.__wait();
       }

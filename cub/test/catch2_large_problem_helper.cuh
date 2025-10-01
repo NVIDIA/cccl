@@ -28,7 +28,7 @@ struct concat_iterators_op
   SecondSegmentItT second_it;
   ::cuda::std::int64_t num_first_items;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
+  __host__ __device__ _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
   {
     if (i < num_first_items)
     {
@@ -57,7 +57,7 @@ struct flag_correct_writes_op
 
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
   template <typename OffsetT, typename T>
-  _CCCL_HOST_DEVICE void operator()(OffsetT index, T val)
+  __host__ __device__ void operator()(OffsetT index, T val)
   {
     // Set bit-flag if the correct result has been written at the given index
     if (expected_it[index] == val)
@@ -145,13 +145,13 @@ struct large_problem_test_helper
 };
 
 template <typename Offset>
-auto make_large_offset() -> Offset
+auto make_large_offset(::cuda::std::size_t num_extra_items = 2000000ULL) -> Offset
 {
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const auto num_items_max_ull = ::cuda::std::clamp(
     static_cast<::cuda::std::size_t>(::cuda::std::numeric_limits<Offset>::max()),
     ::cuda::std::size_t{0},
-    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + static_cast<::cuda::std::size_t>(2000000ULL));
+    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + num_extra_items);
   return static_cast<Offset>(num_items_max_ull);
 }
 

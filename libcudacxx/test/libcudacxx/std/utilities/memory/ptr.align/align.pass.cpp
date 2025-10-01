@@ -19,15 +19,15 @@
 
 #if TEST_HAS_CUDA_COMPILER()
 
-struct MutableStruct
+struct MyStruct
 {
-  mutable int v;
+  int v;
 };
 
 __device__ int global_var;
 __constant__ int constant_var;
 
-__global__ void test_kernel(const _CCCL_GRID_CONSTANT MutableStruct grid_constant_var)
+__global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var)
 {
   using cuda::device::address_space;
   using cuda::device::is_address_from;
@@ -38,25 +38,25 @@ __global__ void test_kernel(const _CCCL_GRID_CONSTANT MutableStruct grid_constan
   size_t space = 20;
   {
     void* global_ptr = &global_var;
-    assert(is_address_from(address_space::global, cuda::std::align(4, 10, global_ptr, space)));
+    assert(is_address_from(cuda::std::align(4, 10, global_ptr, space), address_space::global));
   }
   {
     void* shared_ptr = &shared_var;
-    assert(is_address_from(address_space::shared, cuda::std::align(4, 10, shared_ptr, space)));
+    assert(is_address_from(cuda::std::align(4, 10, shared_ptr, space), address_space::shared));
   }
   {
     void* constant_ptr = &constant_var;
-    assert(is_address_from(address_space::constant, cuda::std::align(4, 10, constant_ptr, space)));
+    assert(is_address_from(cuda::std::align(4, 10, constant_ptr, space), address_space::constant));
   }
   {
     void* local_ptr = &local_var;
-    assert(is_address_from(address_space::local, cuda::std::align(4, 10, local_ptr, space)));
+    assert(is_address_from(cuda::std::align(4, 10, local_ptr, space), address_space::local));
   }
 // Compilation with lang-14 with nvcc-12 stucks
 #  if _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   {
     void* grid_constant_ptr = const_cast<void*>(static_cast<const void*>(&grid_constant_var.v));
-    assert(is_address_from(address_space::grid_constant, cuda::std::align(4, 10, grid_constant_ptr, space)));
+    assert(is_address_from(cuda::std::align(4, 10, grid_constant_ptr, space), address_space::grid_constant));
   }
 #  endif // _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <= 14)
   // todo: test address_space::cluster_shared
@@ -133,7 +133,7 @@ int main(int, char**)
   assert(s == N);
 
 #if TEST_HAS_CUDA_COMPILER()
-  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(MutableStruct{}); assert(cudaDeviceSynchronize() == cudaSuccess);))
+  NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(MyStruct{}); assert(cudaDeviceSynchronize() == cudaSuccess);))
 #endif // TEST_HAS_CUDA_COMPILER()
 
   return 0;

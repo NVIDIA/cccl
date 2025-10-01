@@ -46,10 +46,12 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -125,11 +127,9 @@ public:
 #if _CCCL_COMPILER(NVRTC)
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-    THRUST_NS_QUALIFIER::device_system_tag,
-    THRUST_NS_QUALIFIER::random_access_traversal_tag,
-    value_type,
-    reference>::type;
+  using iterator_category =
+    THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
+                                                            THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_COMPILER(NVRTC)
 
 public:
@@ -234,5 +234,26 @@ public:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+template <CacheLoadModifier LoadModifier, typename Iterator>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+{
+  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  {
+    return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
+      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+  }
+  else
+  {
+    return it;
+  }
+}
+
+template <CacheLoadModifier LoadModifier, typename Iterator>
+using try_make_cache_modified_iterator_t =
+  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -33,6 +33,7 @@
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Sync only will not move data....
@@ -48,10 +49,11 @@ class exec_place_grid;
 class exec_place_cuda_stream;
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
 class exec_place_green_ctx;
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
+//! Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
@@ -143,9 +145,9 @@ public:
 
   static data_place composite(get_executor_func_t f, const exec_place_grid& grid);
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   bool operator==(const data_place& rhs) const;
 
@@ -165,14 +167,14 @@ public:
   /// checks if this data place is a green context data place
   bool is_green_ctx() const
   {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
     // If the devid indicates green_ctx_devid then we must have a descriptor
     _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
 
     return (devid == green_ctx_devid);
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
     return false;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
   }
 
   bool is_invalid() const
@@ -259,11 +261,11 @@ public:
   {
     if (p.is_green_ctx())
     {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
       return p.gc_view->devid;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
       assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
     }
 
     // TODO: restrict this function, i.e. sometimes it's called with invalid places.
@@ -293,9 +295,9 @@ private:
   ::std::shared_ptr<composite_state> composite_desc;
 
 public:
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   ::std::shared_ptr<green_ctx_view> gc_view;
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
   //} state
 
 private:
@@ -602,10 +604,10 @@ public:
   static exec_place device(int devid);
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   static exec_place green_ctx(const green_ctx_view& gc_view);
   static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr);
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
   static exec_place_cuda_stream cuda_stream(const decorated_stream& dstream);
@@ -820,6 +822,7 @@ UNITTEST("exec_place copyable")
 };
 #endif // UNITTESTED_FILE
 
+//! A multidimensional grid of execution places for structured parallel computation
 class exec_place_grid : public exec_place
 {
 public:
@@ -832,7 +835,7 @@ public:
     // Define a grid directly from a vector of places
     // This creates an execution grid automatically
     impl(::std::vector<exec_place> _places)
-        : dims(static_cast<int>(_places.size()), 1, 1, 1)
+        : dims(_places.size(), 1, 1, 1)
         , places(mv(_places))
     {
       _CCCL_ASSERT(!places.empty(), "");
@@ -971,7 +974,7 @@ public:
       return dims;
     }
 
-    int get_dim(int axis_id) const
+    size_t get_dim(int axis_id) const
     {
       return dims.get(axis_id);
     }
@@ -989,8 +992,7 @@ public:
 
     const exec_place& get_place(size_t p_index) const
     {
-      // TODO (miscco): should this method take an int?
-      return coords_to_place(static_cast<int>(p_index));
+      return coords_to_place(p_index);
     }
 
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
@@ -1006,10 +1008,10 @@ public:
 
   private:
     // What is the execution place at theses coordinates in the exec place grid ?
-    const exec_place& coords_to_place(int c0, int c1 = 0, int c2 = 0, int c3 = 0) const
+    const exec_place& coords_to_place(size_t c0, size_t c1 = 0, size_t c2 = 0, size_t c3 = 0) const
     {
       // Flatten the (c0, c1, c2, c3) vector into a global index
-      int index = c0 + dims.get(0) * (c1 + dims.get(1) * (c2 + c3 * dims.get(2)));
+      size_t index = c0 + dims.get(0) * (c1 + dims.get(1) * (c2 + c3 * dims.get(2)));
       return places[index];
     }
 
@@ -1036,7 +1038,7 @@ public:
     return get_impl()->get_dims();
   }
 
-  int get_dim(int axis_id) const
+  size_t get_dim(int axis_id) const
   {
     return get_dims().get(axis_id);
   }
@@ -1119,16 +1121,18 @@ public:
   {}
 };
 
+//! Creates a grid of execution places with specified dimensions
 inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   return exec_place_grid(mv(places), dims);
 }
 
+//! Creates a linear grid from a vector of execution places
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
-  assert(!places.empty());
-  const auto x = static_cast<int>(places.size());
-  return make_grid(mv(places), dim4(x, 1, 1, 1));
+  _CCCL_ASSERT(!places.empty(), "invalid places");
+  auto grid_dim = dim4(places.size(), 1, 1, 1);
+  return make_grid(mv(places), grid_dim);
 }
 
 /// Implementation deferred because we need the definition of exec_place_grid
@@ -1142,6 +1146,7 @@ inline exec_place exec_place::iterator::operator*()
   return exec_place(it_impl);
 }
 
+//! Creates a grid by replicating an execution place multiple times
 inline exec_place_grid exec_place::repeat(const exec_place& e, size_t cnt)
 {
   return make_grid(::std::vector<exec_place>(cnt, e));
@@ -1187,7 +1192,7 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
 /* Get the first N available devices */
 inline exec_place_grid exec_place::n_devices(size_t n)
 {
-  return n_devices(n, dim4(static_cast<int>(n), 1, 1, 1));
+  return n_devices(n, dim4(n, 1, 1, 1));
 }
 
 inline exec_place_grid exec_place::all_devices()
@@ -1195,6 +1200,7 @@ inline exec_place_grid exec_place::all_devices()
   return n_devices(cuda_try<cudaGetDeviceCount>());
 }
 
+//! Creates a cyclic partition of an execution place grid with specified strides
 inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 strides, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();
@@ -1223,13 +1229,13 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = tile_id.t; t < g_dims.t; t += strides.t)
+  for (size_t t = static_cast<size_t>(tile_id.t); t < g_dims.t; t += strides.t)
   {
-    for (int z = tile_id.z; z < g_dims.z; z += strides.z)
+    for (size_t z = static_cast<size_t>(tile_id.z); z < g_dims.z; z += strides.z)
     {
-      for (int y = tile_id.y; y < g_dims.y; y += strides.y)
+      for (size_t y = static_cast<size_t>(tile_id.y); y < g_dims.y; y += strides.y)
       {
-        for (int x = tile_id.x; x < g_dims.x; x += strides.x)
+        for (size_t x = static_cast<size_t>(tile_id.x); x < g_dims.x; x += strides.x)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
@@ -1239,13 +1245,15 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
 
-// example :
-// auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
+//! Creates a tiled partition of an execution place grid with specified tile sizes
+//!
+//! example :
+//! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
 inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_sizes, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();
@@ -1280,13 +1288,13 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = begin_coords.t; t < end_coords.t; t++)
+  for (size_t t = static_cast<size_t>(begin_coords.t); t < end_coords.t; t++)
   {
-    for (int z = begin_coords.z; z < end_coords.z; z++)
+    for (size_t z = static_cast<size_t>(begin_coords.z); z < end_coords.z; z++)
     {
-      for (int y = begin_coords.y; y < end_coords.y; y++)
+      for (size_t y = static_cast<size_t>(begin_coords.y); y < end_coords.y; y++)
       {
-        for (int x = begin_coords.x; x < end_coords.x; x++)
+        for (size_t x = static_cast<size_t>(begin_coords.x); x < end_coords.x; x++)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
@@ -1296,7 +1304,7 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(int(places.size()) == size.x * size.y * size.z * size.t);
+  _CCCL_ASSERT(places.size() == size.x * size.y * size.z * size.t, "");
 
   return make_grid(mv(places), size);
 }
@@ -1342,7 +1350,7 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
   return result;
 }
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   data_place result;
@@ -1350,7 +1358,7 @@ inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
   result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
   return result;
 }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t>
@@ -1381,13 +1389,13 @@ inline exec_place data_place::get_affine_exec_place() const
     return get_grid();
   }
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
   if (is_green_ctx())
   {
     EXPECT(gc_view != nullptr);
     return exec_place::green_ctx(gc_view);
   }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   // This must be a device
   return exec_place::device(devid);
@@ -1426,12 +1434,12 @@ inline bool data_place::operator==(const data_place& rhs) const
 
   if (is_green_ctx())
   {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
     _CCCL_ASSERT(devid == green_ctx_devid, "");
     return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
     assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
@@ -1486,77 +1494,52 @@ UNITTEST("grid exec place equality")
 
   EXPECT(all != repeated_dev0);
 };
+
+UNITTEST("pos4 dim4 handle large values beyond 32bit")
+{
+  // Test that pos4 and dim4 can handle values > 2^32 (4,294,967,296)
+  const size_t large_unsigned  = 6000000000ULL; // 6 billion
+  const ssize_t large_signed   = 5000000000LL; // 5 billion
+  const ssize_t negative_large = -3000000000LL; // -3 billion
+
+  // Test dim4 with large unsigned values (all same type for template deduction)
+  dim4 large_dim(large_unsigned, large_unsigned + size_t(1000));
+  EXPECT(large_dim.x == large_unsigned);
+  EXPECT(large_dim.y == large_unsigned + 1000);
+  EXPECT(large_dim.z == 1); // default
+  EXPECT(large_dim.t == 1); // default
+
+  // Test pos4 with large signed values (positive and negative, all same type)
+  pos4 large_pos(large_signed, negative_large);
+  EXPECT(large_pos.x == large_signed);
+  EXPECT(large_pos.y == negative_large);
+  EXPECT(large_pos.z == 0); // default
+  EXPECT(large_pos.t == 0); // default
+
+  // Test get_index calculation with large coordinates
+  dim4 dims(size_t(100000), size_t(100000)); // 100k x 100k = 10 billion elements
+  pos4 pos(ssize_t(50000), ssize_t(50000)); // Middle position
+
+  size_t index = dims.get_index(pos);
+  // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
+  const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
+  EXPECT(index == expected_index);
+  EXPECT(expected_index > (1ULL << 32)); // Verify it exceeds 2^32
+};
+
+UNITTEST("dim4 very large total size calculation")
+{
+  // Test that dim4.size() can handle products > 2^40 (1TB)
+  // 2000 x 2000 x 2000 x 64 = 1,024,000,000,000 elements = ~1TB of data
+  dim4 huge_dims(size_t(2000), size_t(2000), size_t(2000), size_t(64));
+
+  const size_t total_size    = huge_dims.size();
+  const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
+
+  EXPECT(total_size == expected_size);
+};
+
 #endif // UNITTESTED_FILE
-
-namespace reserved
-{
-
-template <typename Kernel>
-::std::pair<int /*min_grid_size*/, int /*block_size*/>
-compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
-{
-  using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
-  static ::std::
-    unordered_map<key_t, ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
-      occupancy_cache;
-  const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
-
-  if (auto i = occupancy_cache.find(key); i != occupancy_cache.end())
-  {
-    // Cache hit
-    return i->second;
-  }
-  // Miss
-  auto& result = occupancy_cache[key];
-  cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&result.first, &result.second, f, dynamicSMemSize, blockSizeLimit));
-  return result;
-}
-
-/**
- * This method computes the block and grid sizes to optimize thread occupancy.
- *
- * If cooperative kernels are needed, the grid size is capped to the number of
- * blocks
- *
- * - min_grid_size and max_block_size are the grid and block sizes to
- *   _optimize_ occupancy
- * - block_size_limit is the absolute maximum of threads in a block due to
- *   resource constraints
- */
-template <typename Fun>
-void compute_kernel_limits(
-  const Fun&& f,
-  int& min_grid_size,
-  int& max_block_size,
-  size_t shared_mem_bytes,
-  bool cooperative,
-  int& block_size_limit)
-{
-  static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
-                "Template parameter Fun must be a pointer to a function type.");
-
-  ::std::tie(min_grid_size, max_block_size) = compute_occupancy(f, shared_mem_bytes);
-
-  if (cooperative)
-  {
-    // For cooperative kernels, the number of blocks is limited. We compute the number of SM on device 0 and assume
-    // we have a homogeneous machine.
-    static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
-
-    // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    min_grid_size = ::std::min(min_grid_size, sm_count);
-  }
-
-  /* Compute the maximum block size (not the optimal size) */
-  static const auto maxThreadsPerBlock = [&] {
-    cudaFuncAttributes result;
-    cuda_safe_call(cudaFuncGetAttributes(&result, f));
-    return result.maxThreadsPerBlock;
-  }();
-  block_size_limit = maxThreadsPerBlock;
-}
-
-} // end namespace reserved
 
 template <auto... spec>
 template <typename Fun>
@@ -1582,26 +1565,24 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     size_t l0_size = p.get_width(0);
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
 
-    int max_block_size = 0, min_grid_size = 0;
     size_t shared_mem_bytes = 0;
-    int block_size_limit    = 0;
 
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     int grid_size = 0;
     int block_size;
 
     if (l0_size == 0)
     {
-      grid_size = min_grid_size;
+      grid_size = kernel_limits.min_grid_size;
       // Maximum occupancy without exceeding limits
-      block_size = ::std::min(max_block_size, block_size_limit);
+      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
       l0_size    = ndevs * grid_size * block_size;
     }
     else
     {
       // Find grid_size and block_size such that grid_size*block_size = l0_size and block_size <= max_block_size
-      for (block_size = max_block_size; block_size >= 1; block_size--)
+      for (block_size = kernel_limits.max_block_size; block_size >= 1; block_size--)
       {
         if (l0_size % block_size == 0)
         {
@@ -1615,7 +1596,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     assert(l0_size > 0);
 
     assert(grid_size > 0);
-    assert(block_size <= max_block_size);
+    assert(block_size <= kernel_limits.max_block_size);
 
     assert(l0_size % ndevs == 0);
     assert(l0_size % (ndevs * block_size) == 0);
@@ -1635,25 +1616,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 1 will be mapped on threads, level 0 on blocks and above */
     size_t shared_mem_bytes = size_t(p.get_mem(1));
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l1_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l1_size = ::std::min(max_block_size, block_size_limit);
+      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l1_size) > block_size_limit)
+      if (int(l1_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l1_size);
         abort();
       }
@@ -1661,11 +1640,11 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l0_size == 0)
     {
-      l0_size = min_grid_size * ndevs;
+      l0_size = kernel_limits.min_grid_size * ndevs;
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= block_size_limit);
+    assert(int(l1_size) <= kernel_limits.block_size_limit);
 
     assert(l0_size % ndevs == 0);
 
@@ -1687,26 +1666,23 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
     bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
 
-    int max_block_size = 0, min_grid_size = 0;
-    int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    reserved::compute_kernel_limits(
-      f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync || l1_sync);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)
     {
       // Maximum occupancy without exceeding limits
-      l2_size = ::std::min(max_block_size, block_size_limit);
+      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
     }
     else
     {
-      if (int(l2_size) > block_size_limit)
+      if (int(l2_size) > kernel_limits.block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
-                block_size_limit,
+                kernel_limits.block_size_limit,
                 l2_size);
         abort();
       }
@@ -1714,7 +1690,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
 
     if (l1_size == 0)
     {
-      l1_size = min_grid_size;
+      l1_size = kernel_limits.min_grid_size;
     }
 
     if (l0_size == 0)
@@ -1723,7 +1699,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= block_size_limit);
+    assert(int(l2_size) <= kernel_limits.block_size_limit);
     assert(int(l0_size) <= ndevs);
 
     /* Merge blocks and devices */
@@ -1760,11 +1736,11 @@ struct hash<data_place>
     // TODO fix gc_view visibility or provide a getter
     if (k.is_green_ctx())
     {
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
       return hash<green_ctx_view>()(*(k.gc_view));
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
       assert(0);
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
     }
 
     return ::std::hash<int>()(device_ordinal(k));

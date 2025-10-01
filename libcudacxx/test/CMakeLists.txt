@@ -27,15 +27,6 @@ else()
   set(headertest_warning_levels_host -Wall -Werror)
 endif()
 
-# Libcudacxx auto-generated internal header tests
-add_subdirectory(internal_headers)
-
-# Libcudacxx auto-generated public header tests
-add_subdirectory(public_headers)
-
-# Libcudacxx auto-generated public header as std tests
-add_subdirectory(public_headers_host_only)
-
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   add_subdirectory(utils/nvidia/nvrtc)

@@ -13,6 +13,7 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <format>
+#include <vector>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -23,6 +24,7 @@
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct op_wrapper;
 struct device_merge_sort_policy;
@@ -98,19 +100,19 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
     switch (which_iterator)
     {
       case merge_sort_iterator_t::input_keys: {
-        check(nvrtcGetTypeName<input_keys_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_keys_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::input_items: {
-        check(nvrtcGetTypeName<input_items_iterator_state_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<input_items_iterator_state_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_keys: {
-        check(nvrtcGetTypeName<output_keys_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_keys_iterator_t>(&iterator_t));
         break;
       }
       case merge_sort_iterator_t::output_items: {
-        check(nvrtcGetTypeName<output_items_iterator_t>(&iterator_t));
+        check(cccl_type_name_from_nvrtc<output_items_iterator_t>(&iterator_t));
         break;
       }
     }
@@ -121,8 +123,8 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
 merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
 {
-  merge_sort_tuning_t chain[] = {
-    {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
+  merge_sort_tuning_t chain[]            = {{60, 256, nominal_4b_items_to_items(17, static_cast<int>(key_size))},
+                                            {35, 256, nominal_4b_items_to_items(11, static_cast<int>(key_size))}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
@@ -140,7 +142,7 @@ std::string get_merge_sort_kernel_name(
   cccl_iterator_t output_items_it)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_merge_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_merge_sort_policy>(&chained_policy_t));
 
   const std::string input_keys_iterator_t = get_iterator_name(input_keys_it, merge_sort_iterator_t::input_keys);
   const std::string input_items_iterator_t =
@@ -150,10 +152,10 @@ std::string get_merge_sort_kernel_name(
     get_iterator_name<items_storage_t>(output_items_it, merge_sort_iterator_t::output_items);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   const std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
   const std::string value_t =
@@ -180,10 +182,10 @@ std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
   const std::string output_keys_iterator_t = get_iterator_name(output_keys_it, merge_sort_iterator_t::output_keys);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string compare_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&compare_op_t));
+  check(cccl_type_name_from_nvrtc<op_wrapper>(&compare_op_t));
 
   std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
 
@@ -203,7 +205,8 @@ struct dynamic_merge_sort_policy_t
   template <typename F>
   cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    return op.template Invoke<merge_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+    return op.template Invoke<merge_sort_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
   }
 
   uint64_t key_size;
@@ -274,7 +277,7 @@ private:
 };
 } // namespace merge_sort
 
-CUresult cccl_device_merge_sort_build(
+CUresult cccl_device_merge_sort_build_ex(
   cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -286,7 +289,8 @@ CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -294,7 +298,7 @@ CUresult cccl_device_merge_sort_build(
     const char* name = "test";
 
     const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = merge_sort::get_policy(cc, output_keys_it.value_type.size);
+    const auto policy = merge_sort::get_policy(cc, static_cast<int>(output_keys_it.value_type.size));
 
     const auto input_keys_it_value_t   = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_items_it_value_t  = cccl_type_enum_to_name(input_items_it.value_type.type);
@@ -408,19 +412,19 @@ struct device_merge_sort_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender list_appender{linkable_list};
 
-    nvrtc_ltoir_list_appender list_appender{ltoir_list};
-
-    list_appender.append({op.ltoir, op.ltoir_size});
+    list_appender.append_operation(op);
     list_appender.add_iterator_definition(input_keys_it);
     list_appender.add_iterator_definition(input_items_it);
     list_appender.add_iterator_definition(output_keys_it);
@@ -432,12 +436,12 @@ struct device_merge_sort_vsmem_helper {{
         ->add_expression({block_sort_kernel_name})
         ->add_expression({partition_kernel_name})
         ->add_expression({merge_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
         ->get_name({partition_kernel_name, partition_kernel_lowered_name})
         ->get_name({merge_kernel_name, merge_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -535,6 +539,36 @@ CUresult cccl_device_merge_sort(
   }
 
   return error;
+}
+
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_merge_sort_build_ex(
+    build,
+    d_in_keys,
+    d_in_items,
+    d_out_keys,
+    d_out_items,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)

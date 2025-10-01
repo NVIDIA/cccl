@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/atomic_intrusive_queue.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
@@ -34,15 +36,15 @@
 
 namespace cuda::experimental::execution
 {
-class _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : __immovable
+class _CCCL_TYPE_VISIBILITY_DEFAULT __run_loop_base : __immovable
 {
 public:
-  _CCCL_HIDE_FROM_ABI run_loop() = default;
+  _CCCL_HIDE_FROM_ABI __run_loop_base() = default;
 
   _CCCL_API void run() noexcept
   {
     // execute work items until the __finishing_ flag is set:
-    while (!__finishing_.load(_CUDA_VSTD::memory_order_acquire))
+    while (!__finishing_.load(::cuda::std::memory_order_acquire))
     {
       __queue_.wait_for_item();
       __execute_all();
@@ -55,20 +57,20 @@ public:
 
   _CCCL_API void finish() noexcept
   {
-    if (!__finishing_.exchange(true, _CUDA_VSTD::memory_order_acq_rel))
+    if (!__finishing_.exchange(true, ::cuda::std::memory_order_acq_rel))
     {
-      // push an empty work item to the queue to wake up any waiting threads
-      __queue_.push(&__finish_task);
+      // push an empty work item to the queue to wake up the consuming thread
+      // and let it finish:
+      __queue_.push(&__noop_task);
     }
   }
 
-  _CUDAX_SEMI_PRIVATE :
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __task : __immovable
   {
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
     _CCCL_HIDE_FROM_ABI __task() = default;
-    _CCCL_TRIVIAL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
+    _CCCL_NODEBUG_API explicit __task(__execute_fn_t* __execute_fn) noexcept
         : __execute_fn_(__execute_fn)
     {}
 
@@ -89,24 +91,16 @@ public:
 
     _CCCL_API static void __execute_impl(__task* __p) noexcept
     {
+      static_assert(noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()));
       auto& __rcvr = static_cast<__opstate_t*>(__p)->__rcvr_;
-      _CCCL_TRY
+
+      if (get_stop_token(get_env(__rcvr)).stop_requested())
       {
-        if (get_stop_token(get_env(__rcvr)).stop_requested())
-        {
-          set_stopped(static_cast<_Rcvr&&>(__rcvr));
-        }
-        else
-        {
-          set_value(static_cast<_Rcvr&&>(__rcvr));
-        }
+        set_stopped(static_cast<_Rcvr&&>(__rcvr));
       }
-      _CCCL_CATCH_ALL
+      else
       {
-        if constexpr (!noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()))
-        {
-          set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
-        }
+        set_value(static_cast<_Rcvr&&>(__rcvr));
       }
     }
 
@@ -122,23 +116,78 @@ public:
     }
   };
 
-public:
-  class _CCCL_TYPE_VISIBILITY_DEFAULT scheduler
+  // Returns true if any tasks were executed.
+  _CCCL_API bool __execute_all() noexcept
   {
-    friend run_loop;
+    // Dequeue all tasks at once. This returns an __intrusive_queue.
+    auto __queue = __queue_.pop_all();
 
-    _CCCL_API constexpr explicit scheduler(run_loop* __loop) noexcept
-        : __loop_(__loop)
+    // Execute all the tasks in the queue.
+    auto __it = __queue.begin();
+    if (__it == __queue.end())
+    {
+      return false; // No tasks to execute.
+    }
+
+    do
+    {
+      // Take care to increment the iterator before executing the task,
+      // because __execute() may invalidate the current node.
+      auto __prev = __it++;
+      (*__prev)->__execute();
+    } while (__it != __queue.end());
+
+    __queue.clear();
+    return true;
+  }
+
+  _CCCL_API static void __noop_(__task*) noexcept {}
+
+  ::cuda::std::atomic<bool> __finishing_{false};
+  __atomic_intrusive_queue<&__task::__next_> __queue_{};
+  __task __noop_task{&__noop_};
+};
+
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_run_loop : __run_loop_base
+{
+private:
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
+  {
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept;
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept;
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_stopped_t>) const noexcept;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::asynchronous;
+    }
+
+    basic_run_loop* __loop_;
+  };
+
+public:
+  _CCCL_API constexpr explicit basic_run_loop(_Env __env) noexcept
+      : __env_{static_cast<_Env&&>(__env)}
+  {}
+
+  class _CCCL_TYPE_VISIBILITY_DEFAULT scheduler : __attrs_t
+  {
+  private:
+    friend basic_run_loop;
+
+    _CCCL_API constexpr explicit scheduler(basic_run_loop* __loop) noexcept
+        : __attrs_t{__loop}
     {}
 
-    run_loop* __loop_;
-
   public:
-    using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
+    using scheduler_concept = scheduler_t;
 
     struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     {
-      using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+      using sender_concept = sender_t;
 
       template <class _Rcvr>
       [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
@@ -146,57 +195,34 @@ public:
         return __opstate_t<_Rcvr>{&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
-      template <class _Self, class _Env>
+      template <class _Self>
       [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
       {
-#if _CCCL_HAS_EXCEPTIONS()
-        if constexpr (!noexcept(get_stop_token(declval<_Env>()).stop_requested()))
-        {
-          return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>{};
-        }
-        else
-#endif // !_CCCL_HAS_EXCEPTIONS()
-          return completion_signatures<set_value_t(), set_stopped_t()>{};
+        return completion_signatures<set_value_t(), set_stopped_t()>{};
+      }
+
+      _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+      {
+        return __attrs_t{__loop_};
       }
 
     private:
       friend scheduler;
-
-      struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
-      {
-        run_loop* __loop_;
-
-        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
-        {
-          return __loop_->get_scheduler();
-        }
-
-        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
-        {
-          return __loop_->get_scheduler();
-        }
-      };
-
-      _CCCL_API constexpr auto get_env() const noexcept -> __env_t
-      {
-        return __env_t{__loop_};
-      }
-
-    private:
-      friend class scheduler;
-      _CCCL_API constexpr explicit __sndr_t(run_loop* __loop) noexcept
+      _CCCL_API constexpr explicit __sndr_t(basic_run_loop* __loop) noexcept
           : __loop_(__loop)
       {}
 
-      run_loop* const __loop_;
+      basic_run_loop* __loop_;
     };
 
     [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
     {
-      return __sndr_t{__loop_};
+      return __sndr_t{this->__loop_};
     }
 
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_forward_progress_guarantee_t) noexcept
+    using __attrs_t::query;
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
       -> forward_progress_guarantee
     {
       return forward_progress_guarantee::parallel;
@@ -218,31 +244,59 @@ public:
     return scheduler{this};
   }
 
-private:
-  // Returns true if any tasks were executed.
-  _CCCL_API bool __execute_all() noexcept
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> const _Env&
   {
-    // Wait until the queue has tasks to execute and then dequeue all of them.
-    auto __queue = __queue_.pop_all();
-    if (__queue.empty())
-    {
-      return false;
-    }
-    // Execute all the tasks in the queue.
-    for (auto __task : __queue)
-    {
-      __task->__execute();
-    }
-    __queue.clear();
-    return true;
+    return __env_;
   }
 
-  _CCCL_API static void __noop_(__task*) noexcept {}
-
-  _CUDA_VSTD::atomic<bool> __finishing_{false};
-  __atomic_intrusive_queue<&__task::__next_> __queue_{};
-  __task __finish_task{&__noop_};
+private:
+  _CCCL_NO_UNIQUE_ADDRESS _Env __env_;
 };
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : basic_run_loop<env<>>
+{
+  _CCCL_API constexpr run_loop() noexcept
+      : basic_run_loop<env<>>{env{}}
+  {}
+};
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_scheduler_t<set_value_t>) const noexcept
+{
+  if constexpr (__callable<get_scheduler_t, _Env&>)
+  {
+    return execution::get_scheduler(__loop_->__env_);
+  }
+  else
+  {
+    return scheduler{__loop_};
+  }
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_scheduler_t<set_stopped_t>) const noexcept
+{
+  return query(get_completion_scheduler<set_value_t>);
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_domain_t<set_value_t>) const noexcept
+{
+  if constexpr (__callable<get_domain_t, _Env&>)
+  {
+    return __call_result_t<get_domain_t, _Env&>();
+  }
+  else
+  {
+    return default_domain{};
+  }
+}
+
+template <class _Env>
+_CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_domain_t<set_stopped_t>) const noexcept
+{
+  return query(get_completion_domain<set_value_t>);
+}
 
 } // namespace cuda::experimental::execution
 

@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 namespace determinism
 {
@@ -47,7 +47,7 @@ struct __determinism_holder_t : __requirement
 {
   static constexpr __determinism_t value = _Guarantee;
 
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const __get_determinism_t&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_determinism_t&) const noexcept
     -> __determinism_holder_t<_Guarantee>
   {
     return *this;
@@ -66,14 +66,15 @@ struct __get_determinism_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_determinism_t>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_determinism_t>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]]
+  _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -83,7 +84,7 @@ _CCCL_GLOBAL_CONSTANT auto __get_determinism = __get_determinism_t{};
 
 } // namespace determinism
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

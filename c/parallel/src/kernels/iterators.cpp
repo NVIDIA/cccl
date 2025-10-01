@@ -44,7 +44,7 @@ std::string make_kernel_input_iterator(
   std::string_view advance)
 {
   const std::string iter_def = std::format(R"XXX(
-extern "C" __device__ VALUE_T DEREF(const void *self_ptr);
+extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T* result);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
 struct __align__(OP_ALIGNMENT) {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
@@ -52,7 +52,11 @@ struct __align__(OP_ALIGNMENT) {0} {{
   using difference_type = DIFF_T;
   using pointer = VALUE_T*;
   using reference = VALUE_T&;
-  __device__ inline value_type operator*() const {{ return DEREF(data); }}
+  __device__ inline value_type operator*() const {{
+    value_type result;
+    DEREF(data, &result);
+    return result;
+  }}
   __device__ inline {0}& operator+=(difference_type diff) {{
       ADVANCE(data, diff);
       return *this;
@@ -156,7 +160,7 @@ std::string make_kernel_inout_iterator(
   std::string_view deref,
   std::string_view advance)
 {
-  constexpr std::string_view format_template = R"XXX(
+  constexpr std::string_view in_out_template = R"XXX(
 extern "C" __device__ {1}* {2}(const void *self_ptr);
 extern "C" __device__ void {3}(void *self_ptr, {0} offset);
 
@@ -189,7 +193,7 @@ struct output_iterator_t {{
 }};
 )XXX";
 
-  return std::format(format_template, diff_t, alignment, size, value_t, deref, advance);
+  return std::format(in_out_template, diff_t, alignment, size, value_t, deref, advance);
 };
 
 std::string make_kernel_inout_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)

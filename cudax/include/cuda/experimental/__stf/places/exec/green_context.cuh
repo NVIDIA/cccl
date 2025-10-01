@@ -29,7 +29,8 @@
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/places/places.cuh>
 
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
+
 namespace cuda::experimental::stf
 {
 
@@ -116,6 +117,7 @@ public:
         CUcontext green_primary;
         cuda_safe_call(cuCtxFromGreenCtx(&green_primary, ctxs[i]));
 
+        // Store pool in the helper
         pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size, devid, green_primary));
       }
     }
@@ -137,6 +139,13 @@ public:
   green_ctx_view get_view(size_t id)
   {
     return green_ctx_view(ctxs[id], pools[id], devid);
+  }
+
+  // Get stream pool by green context ID
+  stream_pool& get_pool(size_t gc_id) const
+  {
+    assert(gc_id < pools.size());
+    return *pools[gc_id];
   }
 
   size_t get_count() const
@@ -272,5 +281,19 @@ inline exec_place exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>&
   return exec_place_green_ctx(gc_view_ptr);
 }
 
+// Implementation of async_resources_handle::get_gc_helper moved here to avoid circular dependencies
+inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_helper(int dev_id, int sm_count)
+{
+  assert(pimpl);
+  assert(dev_id < int(pimpl->per_device_gc_helper.size()));
+  auto& h = pimpl->per_device_gc_helper[dev_id];
+  if (!h)
+  {
+    h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
+  }
+  return h;
+}
+
 } // end namespace cuda::experimental::stf
-#endif
+
+#endif // _CCCL_CTK_AT_LEAST(12, 4)

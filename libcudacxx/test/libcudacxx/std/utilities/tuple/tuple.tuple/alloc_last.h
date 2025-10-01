@@ -17,7 +17,7 @@ struct alloc_last
 {
   STATIC_MEMBER_VAR(allocator_constructed, bool)
 
-  typedef A1<int> allocator_type;
+  using allocator_type = A1<int>;
 
   int data_;
 

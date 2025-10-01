@@ -57,28 +57,21 @@ __host__ __device__ constexpr bool test()
   test<double4_32a, 4>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-  return true;
-}
+#if _CCCL_HAS_NVFP16()
+  test<__half2, 2>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat162, 2>();
+#endif // _CCCL_HAS_NVBF16()
 
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
-{
   test<dim3, 3>();
+
   return true;
 }
 
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test());
   return 0;
 }

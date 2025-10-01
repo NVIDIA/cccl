@@ -19,6 +19,14 @@ class DeviceArrayLike(Protocol):
     __cuda_array_interface__: dict
 
 
+class StreamLike(Protocol):
+    """
+    Objects representing a stream, having a `.__cuda_stream__` attribute.
+    """
+
+    def __cuda_stream__(self) -> tuple[int, int]: ...
+
+
 # TODO: type GpuStruct appropriately. It should be any type that has
 # been decorated with `@gpu_struct`.
 GpuStruct = Any

@@ -51,7 +51,7 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   using out_t    = cub::KeyValuePair<offset_t, in_t>;
 
   constexpr int n     = 10;
-  constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
+  constexpr float inf = cuda::std::numeric_limits<float>::infinity();
 
   c2h::device_vector<out_t> out(1);
   out_t* d_out          = thrust::raw_pointer_cast(out.data());

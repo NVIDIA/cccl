@@ -94,26 +94,26 @@ __host__ __device__ void test_sfinae()
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T;
+    using T = cuda::std::tuple<>;
     T t0;
     T t = cuda::std::move(t0);
     unused(t); // Prevent unused warning
   }
   {
-    typedef cuda::std::tuple<MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly>;
     T t0(MoveOnly(0));
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly, MoveOnly>;
     T t0(MoveOnly(0), MoveOnly(1));
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
     assert(cuda::std::get<1>(t) == 1);
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly> T;
+    using T = cuda::std::tuple<MoveOnly, MoveOnly, MoveOnly>;
     T t0(MoveOnly(0), MoveOnly(1), MoveOnly(2));
     T t = cuda::std::move(t0);
     assert(cuda::std::get<0>(t) == 0);
@@ -124,7 +124,7 @@ int main(int, char**)
   //  as its move constructor. This tests that ConstructsWithTupleLeaf is not called
   // (w/ __tuple_leaf)
   {
-    typedef cuda::std::tuple<ConstructsWithTupleLeaf> d_t;
+    using d_t = cuda::std::tuple<ConstructsWithTupleLeaf>;
     d_t d((ConstructsWithTupleLeaf()));
     d_t d2(static_cast<d_t&&>(d));
     unused(d2);

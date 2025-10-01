@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FIND_FIRST_OF_H
-#define _LIBCUDACXX___ALGORITHM_FIND_FIRST_OF_H
+#ifndef _CUDA_STD___ALGORITHM_FIND_FIRST_OF_H
+#define _CUDA_STD___ALGORITHM_FIND_FIRST_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
@@ -56,18 +56,18 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__find_first_of_ce(__first1, __last1, __first2, __last2, __pred);
+  return ::cuda::std::__find_first_of_ce(__first1, __last1, __first2, __last2, __pred);
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_first_of(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
-  return _CUDA_VSTD::__find_first_of_ce(__first1, __last1, __first2, __last2, __equal_to{});
+  return ::cuda::std::__find_first_of_ce(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FIND_FIRST_OF_H
+#endif // _CUDA_STD___ALGORITHM_FIND_FIRST_OF_H

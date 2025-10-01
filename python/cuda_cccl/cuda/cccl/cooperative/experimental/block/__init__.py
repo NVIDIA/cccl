@@ -1,7 +1,11 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from cuda.cccl.cooperative.experimental.block._block_exchange import (
+    BlockExchangeType,
+    exchange,
+)
 from cuda.cccl.cooperative.experimental.block._block_load_store import load, store
 from cuda.cccl.cooperative.experimental.block._block_merge_sort import merge_sort_keys
 from cuda.cccl.cooperative.experimental.block._block_radix_sort import (
@@ -18,16 +22,18 @@ from cuda.cccl.cooperative.experimental.block._block_scan import (
 )
 
 __all__ = [
-    "merge_sort_keys",
-    "reduce",
-    "sum",
-    "scan",
+    "BlockExchangeType",
+    "exchange",
     "exclusive_scan",
-    "inclusive_scan",
     "exclusive_sum",
+    "inclusive_scan",
     "inclusive_sum",
+    "load",
+    "merge_sort_keys",
     "radix_sort_keys",
     "radix_sort_keys_descending",
-    "load",
+    "reduce",
+    "scan",
     "store",
+    "sum",
 ]

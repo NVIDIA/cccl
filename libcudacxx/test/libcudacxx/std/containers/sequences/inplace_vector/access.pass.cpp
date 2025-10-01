@@ -114,6 +114,32 @@ void test_exceptions()
     {
       assert(false);
     }
+
+    try
+    {
+      vec too_small{};
+      auto res = too_small.at(too_small.size());
+      unused(res);
+    }
+    catch (const std::out_of_range&)
+    {}
+    catch (...)
+    {
+      assert(false);
+    }
+
+    try
+    {
+      const vec too_small{};
+      auto res = too_small.at(too_small.size());
+      unused(res);
+    }
+    catch (const std::out_of_range&)
+    {}
+    catch (...)
+    {
+      assert(false);
+    }
   }
 }
 #endif // TEST_HAS_EXCEPTIONS()

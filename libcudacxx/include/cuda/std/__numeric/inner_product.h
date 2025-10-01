@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_INNER_PRODUCT_H
-#define _LIBCUDACXX___NUMERIC_INNER_PRODUCT_H
+#ifndef _CUDA_STD___NUMERIC_INNER_PRODUCT_H
+#define _CUDA_STD___NUMERIC_INNER_PRODUCT_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
@@ -34,7 +34,7 @@ inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
   {
-    __init = _CUDA_VSTD::move(__init) + *__first1 * *__first2;
+    __init = ::cuda::std::move(__init) + *__first1 * *__first2;
   }
   return __init;
 }
@@ -50,13 +50,13 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
   {
-    __init = __binary_op1(_CUDA_VSTD::move(__init), __binary_op2(*__first1, *__first2));
+    __init = __binary_op1(::cuda::std::move(__init), __binary_op2(*__first1, *__first2));
   }
   return __init;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_INNER_PRODUCT_H
+#endif // _CUDA_STD___NUMERIC_INNER_PRODUCT_H

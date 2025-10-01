@@ -234,12 +234,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-
-    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
   }
 
   template <typename... Deps>
@@ -514,6 +509,10 @@ public:
       submit();
       assert(state.submitted_stream);
     }
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
@@ -588,14 +587,7 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_stage()
-  {
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
-  }
+  void change_stage() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
@@ -666,10 +658,9 @@ private:
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    event_list stream_to_event_list(cudaStream_t stream, ::std::string) const override
+    event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream));
-      /// e->set_symbol(mv(event_symbol));
+      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
@@ -1154,6 +1145,29 @@ inline void unit_test_pfor()
 UNITTEST("basic parallel_for test")
 {
   unit_test_pfor();
+};
+
+inline void unit_test_pfor_integral_shape()
+{
+  stream_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("parallel_for with integral shape")
+{
+  unit_test_pfor_integral_shape();
 };
 
 inline void unit_test_host_pfor()

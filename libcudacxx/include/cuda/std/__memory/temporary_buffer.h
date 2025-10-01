@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
-#define _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
+#ifndef _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H
+#define _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]] _CCCL_NO_CFI _CCCL_API inline pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
@@ -51,8 +51,8 @@ template <class _Tp>
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
     if (__is_overaligned_for_new(alignof(_Tp)))
     {
-      _CUDA_VSTD::align_val_t __al = _CUDA_VSTD::align_val_t(_CUDA_VSTD::alignment_of<_Tp>::value);
-      __r.first                    = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
+      ::cuda::std::align_val_t __al = ::cuda::std::align_val_t(::cuda::std::alignment_of<_Tp>::value);
+      __r.first                     = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
     }
     else
     {
@@ -82,11 +82,11 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
-  _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
+  ::cuda::std::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
+#endif // _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H

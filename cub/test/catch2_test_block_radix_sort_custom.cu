@@ -56,7 +56,7 @@ static __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 
 struct decomposer_t
 {
-  __device__ ::cuda::std::tuple<float&, long long int&> //
+  __device__ cuda::std::tuple<float&, long long int&> //
   operator()(custom_t& key) const
   {
     return {key.f, key.lli};

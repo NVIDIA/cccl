@@ -44,7 +44,7 @@ __host__ __device__ constexpr cuda::std::tuple<int, int> getP()
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     T t(3);
     assert(cuda::std::get<0>(t) == 3);
     cuda::std::get<0>(t) = 2;
@@ -53,7 +53,7 @@ int main(int, char**)
   // cuda::std::string not supported
   /*
   {
-      typedef cuda::std::tuple<cuda::std::string, int> T;
+      using T = cuda::std::tuple<cuda::std::string, int>;
       T t("high", 5);
       assert(cuda::std::get<0>(t) == "high");
       assert(cuda::std::get<1>(t) == 5);
@@ -63,7 +63,7 @@ int main(int, char**)
       assert(cuda::std::get<1>(t) == 4);
   }
   {
-      typedef cuda::std::tuple<double&, cuda::std::string, int> T;
+      using T = cuda::std::tuple<double&, cuda::std::string, int>;
       double d = 1.5;
       T t(d, "high", 5);
       assert(cuda::std::get<0>(t) == 1.5);

@@ -38,12 +38,11 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 #include <nv/target>
 
@@ -183,8 +182,8 @@ public:
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
-  using KeysLoadItT  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const KeyT*>::type;
-  using ItemsLoadItT = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const ValueT*>::type;
+  using KeysLoadItT  = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const KeyT*>;
+  using ItemsLoadItT = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const ValueT*>;
 
   using WarpLoadKeysT = cub::WarpLoad<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM, PolicyT::WARP_THREADS>;
   using WarpLoadItemsT =

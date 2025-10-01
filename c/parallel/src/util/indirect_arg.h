@@ -25,7 +25,7 @@ struct indirect_arg_t
   {}
 
   indirect_arg_t(cccl_op_t& op)
-      : ptr(op.type == cccl_op_kind_t::CCCL_STATELESS ? this : op.state)
+      : ptr(op.type == cccl_op_kind_t::CCCL_STATEFUL ? op.state : this)
   {}
 
   indirect_arg_t(cccl_value_t& val)

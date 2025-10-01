@@ -82,7 +82,7 @@ struct weird_buffer
 
   weird_buffer(legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
-      , data((int*) res.allocate(s * sizeof(int)))
+      , data((int*) res.allocate_sync(s * sizeof(int)))
       , size(s)
   {
     memset(data, 0, size);
@@ -90,7 +90,7 @@ struct weird_buffer
 
   ~weird_buffer()
   {
-    resource.deallocate(data, size);
+    resource.deallocate_sync(data, size);
   }
 
   weird_buffer(const weird_buffer&) = delete;

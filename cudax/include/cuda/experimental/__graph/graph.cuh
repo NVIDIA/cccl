@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \note After the move, the source object is left in the empty state.
   //! \post `__other.get() == nullptr`
   _CCCL_HOST_API constexpr graph(graph&& __other) noexcept
-      : __exec_{_CUDA_VSTD::exchange(__other.__exec_, nullptr)}
+      : __exec_{::cuda::std::exchange(__other.__exec_, nullptr)}
   {}
 
   //! \brief Destructor for `graph`.
@@ -83,13 +83,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \throws None
   _CCCL_HOST_API constexpr void swap(graph& __other) noexcept
   {
-    _CUDA_VSTD::swap(__exec_, __other.__exec_);
+    ::cuda::std::swap(__exec_, __other.__exec_);
   }
 
   //! \brief Retrieves the underlying CUDA graph execution object.
   //! \return The `cudaGraphExec_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
   {
     return __exec_;
   }
@@ -98,9 +98,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \return The `cudaGraphExec_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
   {
-    return _CUDA_VSTD::exchange(__exec_, nullptr);
+    return ::cuda::std::exchange(__exec_, nullptr);
   }
 
   //! \brief Resets the `graph` object, destroying the underlying CUDA graph execution object.
@@ -108,7 +108,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \post `get() == nullptr`
   _CCCL_HOST_API constexpr void reset() noexcept
   {
-    if (auto __exec = _CUDA_VSTD::exchange(__exec_, nullptr))
+    if (auto __exec = ::cuda::std::exchange(__exec_, nullptr))
     {
       _CCCL_ASSERT_CUDA_API(cudaGraphExecDestroy, "cudaGraphDestroy failed", __exec);
     }

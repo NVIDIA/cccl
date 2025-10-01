@@ -173,9 +173,9 @@ void __global__ __launch_bounds__(
   kernel_test_info->uses_vsmem_ptr =
     (reinterpret_cast<char*>(&temp_storage)
      == (static_cast<char*>(vsmem.gmem_ptr) + (blockIdx.x * vsmem_helper_t::vsmem_per_block)));
-  kernel_test_info->uses_fallback_agent = ::cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
+  kernel_test_info->uses_fallback_agent = cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
   kernel_test_info->uses_fallback_policy =
-    ::cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
+    cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
 
   // Instantiate the algorithm's agent
   agent_t agent(temp_storage, d_in, d_out);
@@ -298,7 +298,7 @@ struct dispatch_dummy_algorithm_t
     constexpr auto block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size        = block_threads * items_per_thread;
-    const auto num_tiles            = ::cuda::ceil_div(num_items, tile_size);
+    const auto num_tiles            = cuda::ceil_div(num_items, tile_size);
     const auto total_vsmem          = num_tiles * vsmem_helper_t::vsmem_per_block;
 
     // Get device ordinal

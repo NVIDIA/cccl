@@ -224,7 +224,7 @@ def iterate_case_dfs(args, callable):
     algnames = set()
     filenames_map = get_filenames_map(args.files)
     for file in args.files:
-        storage = cccl.bench.StorageBase(file)
+        storage = cccl.bench.SQLiteStorage(file)
         algnames.update(storage.algnames())
         storages[filenames_map[file]] = storage
 

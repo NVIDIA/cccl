@@ -22,16 +22,16 @@ struct invalid_argument
 
 struct valid_resource
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const valid_resource&) const
   {
     return true;
@@ -41,16 +41,16 @@ struct valid_resource
     return false;
   }
 };
-static_assert(cuda::mr::async_resource<valid_resource>, "");
+static_assert(cuda::mr::resource<valid_resource>, "");
 
 struct invalid_allocate_missing
 {
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const invalid_allocate_missing&) const
   {
     return true;
@@ -60,19 +60,19 @@ struct invalid_allocate_missing
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<invalid_allocate_missing>, "");
+static_assert(!cuda::mr::resource<invalid_allocate_missing>, "");
 
 struct invalid_deallocate_missing
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const invalid_allocate_missing&) const
   {
     return true;
@@ -82,20 +82,20 @@ struct invalid_deallocate_missing
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<invalid_deallocate_missing>, "");
+static_assert(!cuda::mr::resource<invalid_deallocate_missing>, "");
 
 struct invalid_allocate_async_argument
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(invalid_argument, std::size_t)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(std::size_t, invalid_argument)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const invalid_allocate_async_argument&) const
   {
     return true;
@@ -105,20 +105,20 @@ struct invalid_allocate_async_argument
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<invalid_allocate_async_argument>, "");
+static_assert(!cuda::mr::resource<invalid_allocate_async_argument>, "");
 
 struct invalid_allocate_async_return
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  int allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  int allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return 42;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const invalid_allocate_async_return&) const
   {
     return true;
@@ -128,20 +128,20 @@ struct invalid_allocate_async_return
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<invalid_allocate_async_return>, "");
+static_assert(!cuda::mr::resource<invalid_allocate_async_return>, "");
 
 struct invalid_deallocate_async_argument
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, invalid_argument, std::size_t) {}
+  void deallocate(std::size_t, void*, invalid_argument) {}
   bool operator==(const invalid_deallocate_async_argument&) const
   {
     return true;
@@ -151,61 +151,61 @@ struct invalid_deallocate_async_argument
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<invalid_deallocate_async_argument>, "");
+static_assert(!cuda::mr::resource<invalid_deallocate_async_argument>, "");
 
 struct non_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
 };
-static_assert(!cuda::mr::async_resource<non_comparable>, "");
+static_assert(!cuda::mr::resource<non_comparable>, "");
 
 struct non_eq_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator!=(const non_eq_comparable&) const
   {
     return false;
   }
 };
-static_assert(!cuda::mr::async_resource<non_eq_comparable>, "");
+static_assert(!cuda::mr::resource<non_eq_comparable>, "");
 
 #if TEST_STD_VER < 2020
 struct non_neq_comparable
 {
-  void* allocate(std::size_t, std::size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) noexcept {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
+  void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) {}
   bool operator==(const non_neq_comparable&) const
   {
     return true;
   }
 };
-static_assert(!cuda::mr::async_resource<non_neq_comparable>, "");
+static_assert(!cuda::mr::resource<non_neq_comparable>, "");
 #endif // TEST_STD_VER < 2020
 
 int main(int, char**)

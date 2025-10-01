@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_NATIVE_TYPE_H
-#define _LIBCUDACXX___FLOATING_POINT_NATIVE_TYPE_H
+#ifndef _CUDA_STD___FLOATING_POINT_NATIVE_TYPE_H
+#define _CUDA_STD___FLOATING_POINT_NATIVE_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 _CCCL_API constexpr auto __fp_native_type_impl()
@@ -44,7 +44,7 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   else if constexpr (_Fmt == __fp_format::__binary128)
   {
 #if _CCCL_HAS_FLOAT128()
-    return __float128{};
+    return __float128{0.0};
 #elif _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
     return (long double) {};
 #else // ^^^ has native binary128 ^^^ / vvv no native binary128 vvv
@@ -69,13 +69,13 @@ template <__fp_format _Fmt>
 using __fp_native_type_t = decltype(__fp_native_type_impl<_Fmt>());
 
 template <__fp_format _Fmt>
-inline constexpr bool __fp_has_native_type_v = !_CCCL_TRAIT(is_void, __fp_native_type_t<_Fmt>);
+inline constexpr bool __fp_has_native_type_v = !is_void_v<__fp_native_type_t<_Fmt>>;
 
 template <class _Tp>
 inline constexpr bool __fp_is_native_type_v = __is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_NATIVE_TYPE_H
+#endif // _CUDA_STD___FLOATING_POINT_NATIVE_TYPE_H

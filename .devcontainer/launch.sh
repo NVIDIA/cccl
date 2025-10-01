@@ -111,126 +111,62 @@ launch_docker() {
     local -;
     set -euo pipefail
 
-    inline_vars() {
-        cat - \
-        `# inline local workspace folder` \
-      | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
-        `# inline local workspace folder basename` \
-      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g" \
-        `# inline container workspace folder` \
-      | sed "s@\${containerWorkspaceFolder}@${WORKSPACE_FOLDER:-}@g" \
-        `# inline container workspace folder basename` \
-      | sed "s@\${containerWorkspaceFolderBasename}@$(basename "${WORKSPACE_FOLDER:-}")@g" \
-        `# translate local envvars to shell syntax` \
-      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/g'
-    }
-
-    args_to_path() {
-        local -a keys=("${@}")
-        keys=("${keys[@]/#/[}")
-        keys=("${keys[@]/%/]}")
-        echo "$(IFS=; echo "${keys[*]}")"
-    }
-
-    json_string() {
-        python3 -c "import json,sys; print(json.load(sys.stdin)$(args_to_path "${@}"))" 2>/dev/null | inline_vars
-    }
-
-    json_array() {
-        python3 -c "import json,sys; [print(f'\"{x}\"') for x in json.load(sys.stdin)$(args_to_path "${@}")]" 2>/dev/null | inline_vars
-    }
-
-    json_map() {
-        python3 -c "import json,sys; [print(f'{k}=\"{v}\"') for k,v in json.load(sys.stdin)$(args_to_path "${@}").items()]" 2>/dev/null | inline_vars
-    }
-
-    devcontainer_metadata_json() {
-        docker inspect --type image --format '{{json .Config.Labels}}' "$DOCKER_IMAGE" \
-      | json_string '"devcontainer.metadata"'
-    }
-
     ###
     # Read relevant values from devcontainer.json
     ###
 
-    local devcontainer_json="${path}/devcontainer.json";
+    # Read and merge the devcontainer feature and `devcontainer.json` metadata
+    # Introduces the `DOCKER_IMAGE`, `ENTRYPOINTS`, `ENV_VARS`, `GPU_REQUEST`,
+    # `INITIALIZE_COMMANDS`, `MOUNTS`, `REMOTE_USER`, `RUN_ARGS`, and
+    # `WORKSPACE_FOLDER` variables
+    source <(python3 .devcontainer/launch.py "${path}/devcontainer.json")
 
-    # Read image
-    local DOCKER_IMAGE="$(json_string '"image"' < "${devcontainer_json}")"
-    # Always pull the latest copy of the image
-    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-        echo "::group::Pulling Docker image ${DOCKER_IMAGE}"
-    fi
-    docker pull "$DOCKER_IMAGE"
-    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-        echo "::endgroup::"
-    fi
+    ###
+    # Run the initialize command(s) before starting the container
+    ###
 
-    # Read workspaceFolder
-    local WORKSPACE_FOLDER="$(json_string '"workspaceFolder"' < "${devcontainer_json}")"
-    # Read remoteUser
-    local REMOTE_USER="$(json_string '"remoteUser"' < "${devcontainer_json}")"
-    # If remoteUser isn't in our devcontainer.json, read it from the image's "devcontainer.metadata" label
-    if test -z "${REMOTE_USER:-}"; then
-        REMOTE_USER="$(devcontainer_metadata_json | json_string "-1" '"remoteUser"')"
-    fi
-    # Read runArgs
-    local -a RUN_ARGS="($(json_array '"runArgs"' < "${devcontainer_json}"))"
-    # Read initializeCommand
-    local -a INITIALIZE_COMMAND="($(json_array '"initializeCommand"' < "${devcontainer_json}"))"
-    # Read containerEnv
-    local -a ENV_VARS="($(json_map '"containerEnv"' < "${devcontainer_json}" | sed -r 's/(.*)=(.*)/--env \1=\2/'))"
-    # Read mounts
-    local -a MOUNTS="($(
-        tee < "${devcontainer_json}"          \
-            1>/dev/null                       \
-            >(json_array '"mounts"')          \
-            >(json_string '"workspaceMount"') \
-      | xargs -r -I% echo --mount '%'
-    ))"
+    local init_cmd;
+    for init_cmd in "${INITIALIZE_COMMANDS[@]}"; do
+        eval "${init_cmd}"
+    done
 
     ###
     # Update run arguments and container environment variables
     ###
+
+    # Always clean up docker containers run via this script.
+    RUN_ARGS+=("--rm")
 
     # Only pass `-it` if the shell is a tty
     if ! ${CI:-'false'} && tty >/dev/null 2>&1 && (exec </dev/tty); then
         RUN_ARGS+=("-it")
     fi
 
-    for flag in rm init; do
-        if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
-            RUN_ARGS+=("--${flag}")
-        fi
-    done
-
     # Prefer the user-provided --gpus argument
     if test -n "${gpu_request:-}"; then
         RUN_ARGS+=(--gpus "${gpu_request}")
     else
         # Otherwise read and infer from hostRequirements.gpu
-        local GPU_REQUEST="$(json_string '"hostRequirements"' '"gpu"' < "${devcontainer_json}")"
-        if test "${GPU_REQUEST:-false}" = true; then
-            RUN_ARGS+=(--gpus all)
-        elif test "${GPU_REQUEST:-false}" = optional && \
-             command -v nvidia-container-runtime >/dev/null 2>&1; then
-            RUN_ARGS+=(--gpus all)
-        fi
+        RUN_ARGS+=("${GPU_REQUEST[@]}")
     fi
 
-    RUN_ARGS+=(--workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}")
-
     if test -n "${REMOTE_USER:-}"; then
-        ENV_VARS+=(--env NEW_UID="$(id -u)")
-        ENV_VARS+=(--env NEW_GID="$(id -g)")
-        ENV_VARS+=(--env REMOTE_USER="$REMOTE_USER")
-        RUN_ARGS+=(-u root:root)
-        RUN_ARGS+=(--entrypoint "${WORKSPACE_FOLDER:-/home/coder/cccl}/.devcontainer/docker-entrypoint.sh")
+        case "${REMOTE_USER:-}" in
+            root)
+                RUN_ARGS+=(-u root:root)
+                ;;
+            *)
+                RUN_ARGS+=(-u root:root)
+                ENV_VARS+=(--env NEW_UID="$(id -u)")
+                ENV_VARS+=(--env NEW_GID="$(id -g)")
+                ENV_VARS+=(--env REMOTE_USER="$REMOTE_USER")
+                ENTRYPOINTS+=("${WORKSPACE_FOLDER}/.devcontainer/docker-entrypoint.sh")
+                ;;
+        esac
     fi
 
     if test -n "${SSH_AUTH_SOCK:-}" && test -e "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
-        ENV_VARS+=(--env "HOST_WORKSPACE=$(pwd)")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi
 
@@ -239,25 +175,28 @@ launch_docker() {
         MOUNTS+=("${volumes[@]}")
     fi
 
-    # mount /var/run/docker.sock
-    MOUNTS+=(--mount "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
-
     # Append user-provided envvars
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then
         ENV_VARS+=("${env_vars[@]}")
     fi
 
-    # Run the initialize command before starting the container
-    if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
-        eval "${INITIALIZE_COMMAND[*]@Q}"
-    fi
+    ( # Contain the set -x in a subshell
+        if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+            echo "::group::Docker run command"
+            set -x
+        fi
+        exec docker run \
+          "${RUN_ARGS[@]}" \
+          "${ENV_VARS[@]}" \
+          "${MOUNTS[@]}" \
+          "${DOCKER_IMAGE}" \
+          "${ENTRYPOINTS[@]}" \
+          "$@"
+    )
 
-    exec docker run \
-        "${RUN_ARGS[@]}" \
-        "${ENV_VARS[@]}" \
-        "${MOUNTS[@]}" \
-        "${DOCKER_IMAGE}" \
-        "$@"
+    if [[ -n ${GITHUB_ACTIONS:-} ]]; then
+        echo "::endgroup::"
+    fi
 }
 
 launch_vscode() {

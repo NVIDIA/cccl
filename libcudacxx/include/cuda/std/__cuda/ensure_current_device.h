@@ -27,7 +27,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #  if !_CCCL_COMPILER(NVRTC)
 
@@ -56,14 +56,14 @@ struct __ensure_current_device
   {
     if (__original_device_ != __target_device_)
     {
-      _CCCL_TRY_CUDA_API(::cudaSetDevice, "Failed to set device", __original_device_);
+      _CCCL_LOG_CUDA_API(::cudaSetDevice, "Failed to set device", __original_device_);
     }
   }
 };
 
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

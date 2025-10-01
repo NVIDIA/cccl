@@ -28,25 +28,25 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
-template <_CUDA_VSTD::size_t _Copy_size>
+template <::cuda::std::size_t _Copy_size>
 struct __copy_chunk
 {
   _CCCL_ALIGNAS(_Copy_size) char data[_Copy_size];
 };
 
-template <_CUDA_VSTD::size_t _Alignment, typename _Group>
+template <::cuda::std::size_t _Alignment, typename _Group>
 inline _CCCL_HOST_DEVICE void
-__cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size)
+__cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
 {
   // Maximal copy size is 16 bytes
-  constexpr _CUDA_VSTD::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;
+  constexpr ::cuda::std::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;
 
   using __chunk_t = __copy_chunk<__copy_size>;
 
   // "Group"-strided loop over memory
-  const _CUDA_VSTD::size_t __stride = __g.size() * __copy_size;
+  const ::cuda::std::size_t __stride = __g.size() * __copy_size;
 
   // An unroll factor of 64 ought to be enough for anybody. This unroll pragma
   // is mainly intended to place an upper bound on loop unrolling. The number
@@ -58,14 +58,14 @@ __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA
   // compile times from increasing unreasonably, and also has negligible
   // impact on runtime performance.
   _CCCL_PRAGMA_UNROLL(64)
-  for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride)
+  for (::cuda::std::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride)
   {
     __chunk_t tmp                                    = *reinterpret_cast<const __chunk_t*>(__src + __offset);
     *reinterpret_cast<__chunk_t*>(__dest + __offset) = tmp;
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

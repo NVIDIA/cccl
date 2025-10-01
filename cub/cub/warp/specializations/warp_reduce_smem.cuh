@@ -48,9 +48,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
+
 namespace detail
 {
 /**
@@ -235,7 +237,7 @@ struct WarpReduceSmem
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
     {
-      next_flag = _CUDA_VSTD::min(next_flag, LOGICAL_WARP_THREADS);
+      next_flag = ::cuda::std::min(next_flag, LOGICAL_WARP_THREADS);
     }
 
     _CCCL_PRAGMA_UNROLL_FULL()

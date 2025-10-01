@@ -15,10 +15,10 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
   fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
   return 0;
-#else
+#else // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 4) vvv
   async_resources_handle handle;
   for (auto p : place_partition(handle, exec_place::current_device(), place_partition_scope::green_context))
   {
@@ -29,7 +29,6 @@ int main()
     _CCCL_ASSERT(handle.current_affinity()[0]->affine_data_place().is_green_ctx(), "expected a green context");
     handle.pop_affinity();
   }
-
   return 0;
-#endif
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
 }

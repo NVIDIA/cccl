@@ -1,0 +1,132 @@
+name: "Upload Artifacts"
+description: "Upload an arbitrary (but limited) number of artifacts."
+
+inputs:
+  artifacts:
+    description: "JSCN array objects produced via ci/util/artifacts/upload/print_matrix.sh. Each object must include 'name', 'path', 'retention_days', and 'compression_level'."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Parse artifact array
+      id: parse
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        # Save artifacts json for parsing:
+        jq -r '.' <<< '${{ inputs.artifacts }}' > artifacts.json
+
+        echo "::group::List of artifacts to upload"
+        cat artifacts.json
+        echo "::endgroup::"
+
+        max_artifacts=10
+
+        count=$(jq '. | length' artifacts.json)
+        if [ "$count" -gt "$max_artifacts" ]; then
+          echo "Error: Too many artifacts to upload. Maximum is $max_artifacts, got $count."
+          echo "Update the action to support more artifacts if needed."
+          exit 1
+        fi
+
+        for i in $(seq 0 $((count - 1))); do
+          name=$(jq -r ".[$i].name" artifacts.json)
+          path=$(jq -r ".[$i].path" artifacts.json)
+          retention_days=$(jq -r ".[$i].retention_days" artifacts.json)
+          compression_level=$(jq -r ".[$i].compression_level" artifacts.json)
+
+          echo "enabled$i=true"                         >> "${GITHUB_OUTPUT}"
+          echo "name$i=$name"                           >> "${GITHUB_OUTPUT}"
+          echo "path$i=$path"                           >> "${GITHUB_OUTPUT}"
+          echo "retention_days$i=$retention_days"       >> "${GITHUB_OUTPUT}"
+          echo "compression_level$i=$compression_level" >> "${GITHUB_OUTPUT}"
+        done
+
+        for i in $(seq $((count)) $((max_artifacts - 1))); do
+          echo "enabled$i=false"      >> "${GITHUB_OUTPUT}"
+          echo "name$i="              >> "${GITHUB_OUTPUT}"
+          echo "path$i="              >> "${GITHUB_OUTPUT}"
+          echo "retention_days$i="    >> "${GITHUB_OUTPUT}"
+          echo "compression_level$i=" >> "${GITHUB_OUTPUT}"
+        done
+
+    - name: Upload artifact 0
+      if: ${{ steps.parse.outputs.enabled0 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name0 }}
+        path: ${{ steps.parse.outputs.path0 }}
+        retention-days: ${{ steps.parse.outputs.retention_days0 }}
+        compression-level: ${{ steps.parse.outputs.compression_level0 }}
+    - name: Upload artifact 1
+      if: ${{ steps.parse.outputs.enabled1 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name1 }}
+        path: ${{ steps.parse.outputs.path1 }}
+        retention-days: ${{ steps.parse.outputs.retention_days1 }}
+        compression-level: ${{ steps.parse.outputs.compression_level1 }}
+    - name: Upload artifact 2
+      if: ${{ steps.parse.outputs.enabled2 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name2 }}
+        path: ${{ steps.parse.outputs.path2 }}
+        retention-days: ${{ steps.parse.outputs.retention_days2 }}
+        compression-level: ${{ steps.parse.outputs.compression_level2 }}
+    - name: Upload artifact 3
+      if: ${{ steps.parse.outputs.enabled3 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name3 }}
+        path: ${{ steps.parse.outputs.path3 }}
+        retention-days: ${{ steps.parse.outputs.retention_days3 }}
+        compression-level: ${{ steps.parse.outputs.compression_level3 }}
+    - name: Upload artifact 4
+      if: ${{ steps.parse.outputs.enabled4 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name4 }}
+        path: ${{ steps.parse.outputs.path4 }}
+        retention-days: ${{ steps.parse.outputs.retention_days4 }}
+        compression-level: ${{ steps.parse.outputs.compression_level4 }}
+    - name: Upload artifact 5
+      if: ${{ steps.parse.outputs.enabled5 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name5 }}
+        path: ${{ steps.parse.outputs.path5 }}
+        retention-days: ${{ steps.parse.outputs.retention_days5 }}
+        compression-level: ${{ steps.parse.outputs.compression_level5 }}
+    - name: Upload artifact 6
+      if: ${{ steps.parse.outputs.enabled6 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name6 }}
+        path: ${{ steps.parse.outputs.path6 }}
+        retention-days: ${{ steps.parse.outputs.retention_days6 }}
+        compression-level: ${{ steps.parse.outputs.compression_level6 }}
+    - name: Upload artifact 7
+      if: ${{ steps.parse.outputs.enabled7 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name7 }}
+        path: ${{ steps.parse.outputs.path7 }}
+        retention-days: ${{ steps.parse.outputs.retention_days7 }}
+        compression-level: ${{ steps.parse.outputs.compression_level7 }}
+    - name: Upload artifact 8
+      if: ${{ steps.parse.outputs.enabled8 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name8 }}
+        path: ${{ steps.parse.outputs.path8 }}
+        retention-days: ${{ steps.parse.outputs.retention_days8 }}
+        compression-level: ${{ steps.parse.outputs.compression_level8 }}
+    - name: Upload artifact 9
+      if: ${{ steps.parse.outputs.enabled9 == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.parse.outputs.name9 }}
+        path: ${{ steps.parse.outputs.path9 }}
+        retention-days: ${{ steps.parse.outputs.retention_days9 }}
+        compression-level: ${{ steps.parse.outputs.compression_level9 }}

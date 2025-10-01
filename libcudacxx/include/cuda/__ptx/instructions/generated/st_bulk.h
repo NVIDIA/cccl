@@ -14,7 +14,7 @@ __device__ static inline void st_bulk(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_st_bulk_is_not_supported_before_SM_100__();
 template <int _N32>
-_CCCL_DEVICE static inline void st_bulk(void* __addr, _CUDA_VSTD::uint64_t __size, n32_t<_N32> __initval)
+_CCCL_DEVICE static inline void st_bulk(void* __addr, ::cuda::std::uint64_t __size, ::cuda::ptx::n32_t<_N32> __initval)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.bulk.weak.shared::cta [%0], %1, %2;"

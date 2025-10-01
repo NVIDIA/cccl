@@ -7,9 +7,13 @@ Memory
    :hidden:
    :maxdepth: 1
 
-   memory/is_aligned
-   memory/align_up
    memory/align_down
+   memory/align_up
+   memory/aligned_size
+   memory/discard_memory
+   memory/get_device_address
+   memory/is_address_from
+   memory/is_aligned
    memory/ptr_rebind
 
 .. list-table::
@@ -20,6 +24,26 @@ Memory
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
+
+   * - :ref:`aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`
+     - Defines an extent of bytes with a statically defined alignment.
+     - libcu++ 1.2.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
+     - CUDA 11.1
+
+   * - :ref:`discard_memory <libcudacxx-extended-api-memory-discard-memory>`
+     - Writes indeterminate values to memory
+     - libcu++ 1.6.0 / CCCL 2.0.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
+     - CUDA 11.5
+
+   * - :ref:`get_device_address <libcudacxx-extended-api-memory-get-device-address>`
+     - Returns a valid address to a device object
+     - CCCL 2.8.0 (in ``<cuda/memory>`` since CCCL 3.1.0)
+     - CUDA 12.9
+
+   * - :ref:`is_address_from and is_object_from <libcudacxx-extended-api-memory-is_address_from>`
+     - Check if a pointer or object is from a specific address space
+     - CCCL 3.1.0
+     - CUDA 13.1
 
    * - :ref:`is_aligned <libcudacxx-extended-api-memory-is_aligned>`
      - Check if a pointer is aligned

@@ -175,7 +175,7 @@ C2H_TEST("Block histogram can be computed with random input",
 
   const sample_t min_bin = static_cast<sample_t>(0);
   const sample_t max_bin = static_cast<sample_t>(
-    std::min(static_cast<std::int32_t>(::cuda::std::numeric_limits<sample_t>::max()),
+    std::min(static_cast<std::int32_t>(cuda::std::numeric_limits<sample_t>::max()),
              static_cast<std::int32_t>(params::bins - 1)));
 
   c2h::gen(C2H_SEED(10), d_samples, min_bin, max_bin);

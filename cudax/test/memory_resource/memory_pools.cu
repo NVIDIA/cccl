@@ -343,10 +343,10 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{cudax::device_ref{0}};
+    cudax::stream stream{cuda::device_ref{0}};
 
     // Allocate a buffer to prime
-    auto* ptr = resource.allocate_async(256 * sizeof(int), stream);
+    auto* ptr = resource.allocate(stream, 256 * sizeof(int));
     stream.sync();
 
     { // cudaMemPoolAttrReservedMemHigh
@@ -408,8 +408,8 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
     }
 
     // Reallocate as the checks above have screwed with the allocation count
-    resource.deallocate_async(ptr, 256 * sizeof(int), stream);
-    ptr = resource.allocate_async(2048 * sizeof(int), stream);
+    resource.deallocate(stream, ptr, 256 * sizeof(int));
+    ptr = resource.allocate(stream, 2048 * sizeof(int));
     stream.sync();
 
     { // cudaMemPoolAttrReservedMemCurrent
@@ -457,7 +457,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
     }
 
     // Free the last allocation
-    resource.deallocate_async(ptr, 2048 * sizeof(int), stream);
+    resource.deallocate(stream, ptr, 2048 * sizeof(int));
     stream.sync();
   }
 
@@ -467,12 +467,12 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // prime the pool to a given size
     memory_resource_for_pool<memory_pool> resource{pool};
-    cudax::stream stream{cudax::device_ref{0}};
+    cudax::stream stream{cuda::device_ref{0}};
 
     // Allocate 2 buffers
-    auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);
-    auto* ptr2 = resource.allocate_async(2048 * sizeof(int), stream);
-    resource.deallocate_async(ptr1, 2048 * sizeof(int), stream);
+    auto* ptr1 = resource.allocate(stream, 2048 * sizeof(int));
+    auto* ptr2 = resource.allocate(stream, 2048 * sizeof(int));
+    resource.deallocate(stream, ptr1, 2048 * sizeof(int));
     stream.sync();
 
     // Ensure that we still hold some memory, otherwise everything is freed
@@ -502,7 +502,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
     CHECK(new_backing_size >= 4096 * sizeof(int));
 
     // Free the last allocation
-    resource.deallocate_async(ptr2, 2048 * sizeof(int), stream);
+    resource.deallocate(stream, ptr2, 2048 * sizeof(int));
     stream.sync();
 
     // There is nothing allocated anymore, so all memory is released
@@ -519,13 +519,13 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
 C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 {
-  if (cudax::devices.size() > 1)
+  if (cuda::devices.size() > 1)
   {
-    auto peers = cudax::devices[0].peer_devices();
+    auto peers = cuda::devices[0].peer_devices();
     if (peers.size() > 0)
     {
-      cudax::device_memory_pool pool{cudax::devices[0]};
-      CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+      cudax::device_memory_pool pool{cuda::devices[0]};
+      CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       pool.enable_access_from(peers);
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
@@ -545,13 +545,13 @@ C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 C2H_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{};
-  CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
   // Currently bugged, need to wait for driver fix
-  // pool.disable_access_from(cudax::devices[0]);
-  // CUDAX_CHECK(!pool.is_accessible_from(cudax::devices[0]));
+  // pool.disable_access_from(cuda::devices[0]);
+  // CUDAX_CHECK(!pool.is_accessible_from(cuda::devices[0]));
 
-  // pool.enable_access_from(cudax::devices[0]);
-  // CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
+  // pool.enable_access_from(cuda::devices[0]);
+  // CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 }
 #endif

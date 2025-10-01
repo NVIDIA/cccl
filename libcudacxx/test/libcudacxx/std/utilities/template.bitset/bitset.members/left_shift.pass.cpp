@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // The CI "Apple back-deployment with assertions enabled" needs a higher value
-// ADDITIONAL_COMPILE_FLAGS(has-fconstexpr-steps): -fconstexpr-steps=12712420
+// CONSTEXPR_STEPS: 12712420
 
 // bitset<N> operator<<(size_t pos) const; // constexpr since C++23
 

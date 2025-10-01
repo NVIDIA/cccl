@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
-#define _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
+#ifndef _CUDA_STD___TUPLE_SFINAE_HELPERS_H
+#define _CUDA_STD___TUPLE_SFINAE_HELPERS_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool... _Preds>
 struct __all_dummy;
@@ -77,10 +77,7 @@ struct __tuple_sfinae_base
 
 // __tuple_convertible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_convertible : public false_type
 {};
 
@@ -91,10 +88,7 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_constructible : public false_type
 {};
 
@@ -105,10 +99,7 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
 struct __tuple_assignable : public false_type
 {};
 
@@ -133,7 +124,7 @@ struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_consta
 
 template <class _Tuple, size_t _ExpectedSize, class _RawTuple = remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _CCCL_NODEBUG_ALIAS =
-  __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
+  __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>, tuple_size<_RawTuple>, _ExpectedSize>;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail
 {
@@ -222,15 +213,48 @@ struct _TestSynthesizeAssignment
 };
 
 template <class _Tp>
-struct __must_synthesize_assignment
-    : integral_constant<
-        bool,
-        (_CCCL_TRAIT(is_copy_assignable, _Tp) && !_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_Tp>))
-          || (_CCCL_TRAIT(is_move_assignable, _Tp) && !_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_Tp>))>
+inline constexpr bool __must_synthesize_assignment_v =
+  (is_copy_assignable_v<_Tp> && !is_copy_assignable_v<_TestSynthesizeAssignment<_Tp>>)
+  || (is_move_assignable_v<_Tp> && !is_move_assignable_v<_TestSynthesizeAssignment<_Tp>>);
+
+// We need to ensure that __tuple_impl_sfinae_helper is unique for every instantiation of __tuple_impl, so its templated
+// on the impl
+template <class _Impl, bool _AllCopyAssignable, bool _AllMoveAssignable>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Impl>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, false, true>
+{
+  __tuple_impl_sfinae_helper()                                             = default;
+  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
+  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
+  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = delete;
+  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = default;
+};
+
+template <class _Impl>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, true, false>
+{
+  __tuple_impl_sfinae_helper()                                             = default;
+  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
+  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
+  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = default;
+  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = delete;
+};
+
+template <class _Impl>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, false, false>
+{
+  __tuple_impl_sfinae_helper()                                             = default;
+  __tuple_impl_sfinae_helper(const __tuple_impl_sfinae_helper&)            = default;
+  __tuple_impl_sfinae_helper(__tuple_impl_sfinae_helper&&)                 = default;
+  __tuple_impl_sfinae_helper& operator=(const __tuple_impl_sfinae_helper&) = delete;
+  __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = delete;
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
+#endif // _CUDA_STD___TUPLE_SFINAE_HELPERS_H

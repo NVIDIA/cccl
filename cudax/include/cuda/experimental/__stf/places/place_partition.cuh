@@ -81,9 +81,9 @@ public:
   /** @brief Partition an execution place into a vector of subplaces */
   place_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope)
   {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
-#endif
+#endif // _CCCL_CTK_BELOW(12, 4)
     compute_subplaces(handle, place, scope);
   }
 
@@ -171,7 +171,7 @@ private:
     }
 
 // Green contexts are only supported since CUDA 12.4
-#if CUDA_VERSION >= 12040
+#if _CCCL_CTK_AT_LEAST(12, 4)
     if (place.is_grid() && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
@@ -185,18 +185,14 @@ private:
 
     if (place.is_device() && scope == place_partition_scope::green_context)
     {
-      // Find the device associated to the place, and get the cached green context helper in the
-      // async_resources_handle (if any)
-      int dev_id                                 = device_ordinal(place.affine_data_place());
-      ::std::shared_ptr<green_context_helper>& h = handle.gc_helper(dev_id);
-      // Lazy initialization : if this is a nullptr we haven't created the helper yet
-      if (h.get() == nullptr)
-      {
-        // 8 SMs per green context is a granularity that should work on any arch.
-        const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
-        int sm_cnt      = env ? atoi(env) : 8;
-        h               = ::std::make_shared<green_context_helper>(sm_cnt, dev_id);
-      }
+      // Find the device associated to the place, and get the green context helper
+      int dev_id = device_ordinal(place.affine_data_place());
+
+      // 8 SMs per green context is a granularity that should work on any arch.
+      const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
+      int sm_cnt      = env ? atoi(env) : 8;
+
+      auto h = handle.get_gc_helper(dev_id, sm_cnt);
 
       // Get views of green context out of the helper to create execution places
       size_t cnt = h->get_count();
@@ -207,7 +203,7 @@ private:
 
       return;
     }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
     assert(!"Internal error: unreachable code.");
   }
 

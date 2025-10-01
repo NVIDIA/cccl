@@ -29,20 +29,21 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 struct __get_tuning_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_tuning_t>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_tuning_t>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]]
+  _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -51,18 +52,18 @@ struct __get_tuning_t
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
 template <class... _Tunings>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __tune(_Tunings...)
+[[nodiscard]] _CCCL_NODEBUG_API auto __tune(_Tunings...)
 {
-  static_assert((_CUDA_VSTD::is_empty_v<_Tunings> && ...), "Stateful tunings are not implemented");
+  static_assert((::cuda::std::is_empty_v<_Tunings> && ...), "Stateful tunings are not implemented");
 
   // clang < 19 doesn't like this code
   // since all the tunings are stateless, let's ignore incoming parameters
-  _CUDA_STD_EXEC::env<_Tunings...> __env{};
+  ::cuda::std::execution::env<_Tunings...> __env{};
 
-  return _CUDA_STD_EXEC::prop{__get_tuning_t{}, __env};
+  return ::cuda::std::execution::prop{__get_tuning_t{}, __env};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

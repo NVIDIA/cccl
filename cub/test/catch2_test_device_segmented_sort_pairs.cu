@@ -31,22 +31,28 @@
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
+// %PARAM% TEST_TYPES types 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
+#if TEST_TYPES == 0
+using pair_types = c2h::type_list<c2h::type_list<bool, std::uint8_t>, //
+                                  c2h::type_list<std::int8_t, std::uint64_t>>;
+#elif TEST_TYPES == 1
 using pair_types =
-  c2h::type_list<c2h::type_list<bool, std::uint8_t>,
-                 c2h::type_list<std::int8_t, std::uint64_t>,
-                 c2h::type_list<double, float>
-#if TEST_HALF_T()
+  c2h::type_list<c2h::type_list<double, float>
+#  if TEST_HALF_T()
                  ,
                  c2h::type_list<half_t, std::int8_t>
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
                  ,
                  c2h::type_list<bfloat16_t, float>
-#endif // TEST_BF_T()
+#  endif // TEST_BF_T()
                  >;
+#endif // TEST_TYPES
+
+#if TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")
 {
@@ -119,6 +125,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
 }
+
+#endif // TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
          "[pairs][segmented][sort][device][skip-cs-racecheck]",
@@ -201,6 +209,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
   test_unspecified_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
+#if TEST_TYPES == 0
+
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          all_offset_types)
@@ -212,11 +222,11 @@ try
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max;
-  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   // Generate input
@@ -266,10 +276,10 @@ try
   using value_t                    = cuda::std::uint8_t;
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
@@ -308,3 +318,5 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
+
+#endif // TEST_TYPES == 0

@@ -29,8 +29,8 @@
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
-#include <cuda/experimental/__stf/internal/hooks.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
@@ -59,6 +59,8 @@ class logical_data;
 
 template <typename T>
 class frozen_logical_data;
+
+class frozen_logical_data_untyped;
 
 class graph_ctx;
 
@@ -515,7 +517,7 @@ protected:
           // Add an edge between that leaf task and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(t_id, fence_unique_id, 1);
+            dot.add_edge(t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -540,7 +542,7 @@ protected:
           // Add an edge between that freeze and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(fake_t_id, fence_unique_id, 1);
+            dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -601,6 +603,24 @@ protected:
     // cleaned when unfreezing which means it has been synchronized with.
     ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
     ::std::mutex pending_freeze_mutex;
+
+  private:
+    // Resources associated to the context (e.g. allocator resources, host
+    // callbacks argument buffers)
+    ctx_resource_set ctx_resources;
+
+  public:
+    // Release context resources using the provided stream
+    void release_ctx_resources(cudaStream_t stream)
+    {
+      ctx_resources.release(stream);
+    }
+
+    // Add a resource to be managed by the context
+    void add_resource(::std::shared_ptr<ctx_resource> resource)
+    {
+      ctx_resources.add(mv(resource));
+    }
   };
 
 public:
@@ -674,6 +694,19 @@ public:
   size_t task_count() const
   {
     return pimpl->total_task_cnt;
+  }
+
+  //! Release context resources using the provided stream
+  //! This should be called after graph execution completes to clean up resources
+  void release_resources(cudaStream_t stream)
+  {
+    pimpl->release_ctx_resources(stream);
+  }
+
+  //! Add a resource to be managed by this context
+  void add_resource(::std::shared_ptr<ctx_resource> resource)
+  {
+    pimpl->add_resource(mv(resource));
   }
 
   /* Customize the allocator used by all logical data */
@@ -814,7 +847,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot_section::guard(get_dot(), mv(symbol));
   }
 
   auto get_phase() const
@@ -963,12 +996,20 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
+
+  frozen_logical_data_untyped
+  freeze(cuda::experimental::stf::logical_data_untyped d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true);
 
   /**
    * @brief Creates a typed task on the current CUDA device
@@ -1053,8 +1094,15 @@ public:
             typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename partitioner_t,
@@ -1062,17 +1110,24 @@ public:
             typename S,
             typename... Deps,
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
-  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
+  auto parallel_for([[maybe_unused]] partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(p), mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename S, typename... Deps>
   auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
-  template <typename S, typename... Deps, typename... Ops, bool... flags>
-  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
+  template <typename S, typename... Deps>
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }

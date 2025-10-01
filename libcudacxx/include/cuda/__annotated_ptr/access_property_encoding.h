@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
-#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
+#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H
+#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_descriptor_mode_t : uint32_t
 {
@@ -74,10 +74,10 @@ enum class __l2_descriptor_mode_t : uint32_t
   _CCCL_ASSERT(__primary_bytes <= __total_bytes, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  auto __raw_ptr         = _CUDA_VSTD::bit_cast<uintptr_t>(__ptr);
+  auto __raw_ptr         = ::cuda::std::bit_cast<uintptr_t>(__ptr);
   auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
-  // replace with _CUDA_VSTD::add_sat when available PR #3449
-  auto __block_size_enum = static_cast<uint32_t>(_CUDA_VSTD::max(__log2_total_size - 19, 0)); // min block size = 4K
+  // replace with ::cuda::std::add_sat when available PR #3449
+  auto __block_size_enum = static_cast<uint32_t>(::cuda::std::max(__log2_total_size - 19, 0)); // min block size = 4K
   auto __log2_block_size = 12u + __block_size_enum;
   auto __block_size      = 1u << __log2_block_size;
   auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
@@ -88,11 +88,11 @@ enum class __l2_descriptor_mode_t : uint32_t
   //       following code:
   // auto __block_count        = (__block_size_enum == 13)
   //                            ? ((__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1)
-  //                            : _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
-  auto __block_count        = _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
-  auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
-  auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
-  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
+  //                            : ::cuda::std::clamp(__block_end - __block_start, 1u, 127u);
+  auto __block_count        = ::cuda::std::clamp(__block_end - __block_start, 1u, 127u);
+  auto __l2_cop_off         = ::cuda::std::to_underlying(__secondary);
+  auto __l2_cop_on          = ::cuda::std::to_underlying(__primary);
+  auto __l2_descriptor_mode = ::cuda::std::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
   return static_cast<uint64_t>(__block_count) << 37 //
        | static_cast<uint64_t>(__block_start) << 44 //
        | static_cast<uint64_t>(__block_size_enum) << 52 //
@@ -138,7 +138,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 [[nodiscard]] _CCCL_API constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_80, (return ::cuda::__createpolicy_fraction(__primary, __secondary, __fraction);), (return 0;))
@@ -146,11 +146,11 @@ __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fracti
   _CCCL_ASSERT(__fraction > 0.0f && __fraction <= 1.0f, "fraction must be between 0.0f and 1.0f");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  constexpr auto __epsilon  = _CUDA_VSTD::numeric_limits<float>::epsilon();
+  constexpr auto __epsilon  = ::cuda::std::numeric_limits<float>::epsilon();
   auto __num                = static_cast<uint32_t>((__fraction - __epsilon) * 16.0f); // fraction = num / 16
-  auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
-  auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
-  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Interleaved);
+  auto __l2_cop_off         = ::cuda::std::to_underlying(__secondary);
+  auto __l2_cop_on          = ::cuda::std::to_underlying(__primary);
+  auto __l2_descriptor_mode = ::cuda::std::to_underlying(__l2_descriptor_mode_t::_Desc_Interleaved);
   return static_cast<uint64_t>(__num) << 52 //
        | static_cast<uint64_t>(__l2_cop_off) << 56 //
        | static_cast<uint64_t>(__l2_cop_on) << 57 //
@@ -165,8 +165,8 @@ inline constexpr auto __l2_interleave_persisting = uint64_t{0x14F0000000000000};
 
 inline constexpr auto __l2_interleave_normal_demote = uint64_t{0x16F0000000000000};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
+#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H

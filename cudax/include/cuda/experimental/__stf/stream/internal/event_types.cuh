@@ -335,7 +335,7 @@ public:
     {
       for (int id : joined_ids)
       {
-        dot.add_edge(id, e->unique_prereq_id, 1);
+        dot.add_edge(id, e->unique_prereq_id, reserved::edge_type::prereqs);
       }
     }
 
@@ -449,6 +449,14 @@ inline event join_with_stream(
 inline event record_event_in_stream(const decorated_stream& dstream)
 {
   return reserved::handle<stream_and_event>(dstream, true);
+}
+
+/* Overload to provide a symbol */
+inline event record_event_in_stream(const decorated_stream& dstream, reserved::per_ctx_dot& dot, ::std::string symbol)
+{
+  event res = record_event_in_stream(dstream);
+  res->set_symbol_with_dot(dot, mv(symbol));
+  return res;
 }
 
 } // end namespace reserved

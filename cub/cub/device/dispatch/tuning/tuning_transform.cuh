@@ -39,17 +39,45 @@
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/cmath>
-#include <cuda/numeric>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/__functional/address_stability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/bit>
+#include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
+struct always_true_predicate
+{
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
+  {
+    return true;
+  }
+};
+} // namespace detail::transform
+CUB_NAMESPACE_END
 
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
+{};
+_CCCL_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
 enum class Algorithm
@@ -70,14 +98,39 @@ struct prefetch_policy_t
   static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   static constexpr int min_items_per_thread      = 1;
   static constexpr int max_items_per_thread      = 32;
+
+  // TODO: remove with C++20
+  // The value of the below does not matter.
+  static constexpr int not_a_vectorized_policy = 0;
 };
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentPrefetchPolicy,
+  (always_true),
+  (block_threads, BlockThreads, int),
+  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int),
+  (not_a_vectorized_policy, NotAVectorizedPolicy, int) ) // TODO: remove with C++20
 
 template <int BlockThreads, int ItemsPerThread, int LoadStoreWordSize>
 struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
 {
   static constexpr int items_per_thread_vectorized = ItemsPerThread;
   static constexpr int load_store_word_size        = LoadStoreWordSize;
+
+  using not_a_vectorized_policy = void; // TODO: remove with C++20, shadows the variable in prefetch_policy_t
 };
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentVectorizedPolicy,
+  (always_true), // TODO: restore with C++20: (TransformAgentPrefetchPolicy),
+  (block_threads, BlockThreads, int),
+  (items_per_thread_no_input, ItemsPerThreadNoInput, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int),
+  (items_per_thread_vectorized, ItemsPerThreadVectorized, int),
+  (load_store_word_size, LoadStoreWordSize, int) )
 
 template <int BlockThreads, int BulkCopyAlignment>
 struct async_copy_policy_t
@@ -90,6 +143,73 @@ struct async_copy_policy_t
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  TransformAgentAsyncPolicy,
+  (always_true),
+  (block_threads, BlockThreads, int),
+  (min_items_per_thread, MinItemsPerThread, int),
+  (max_items_per_thread, MaxItemsPerThread, int),
+  (bulk_copy_alignment, BulkCopyAlignment, int) )
+
+_CCCL_TEMPLATE(typename PolicyT)
+_CCCL_REQUIRES((!TransformAgentPrefetchPolicy<PolicyT> && !TransformAgentAsyncPolicy<PolicyT>
+                && !TransformAgentVectorizedPolicy<PolicyT>) )
+__host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
+{
+  return policy;
+}
+
+template <typename PolicyT, typename = void>
+struct TransformPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct TransformPolicyWrapper<
+  StaticPolicyT,
+  ::cuda::std::
+    void_t<decltype(StaticPolicyT::algorithm), decltype(StaticPolicyT::min_bif), typename StaticPolicyT::algo_policy>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr Algorithm Algorithm()
+  {
+    return StaticPolicyT::algorithm;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MinBif()
+  {
+    return StaticPolicyT::min_bif;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto AlgorithmPolicy()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::algo_policy());
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"min_bif">()     = value<StaticPolicyT::min_bif>(),
+                  key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
+                  key<"algo_policy">() = AlgorithmPolicy().EncodedPolicy()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
+{
+  return TransformPolicyWrapper<PolicyT>(base);
+}
+
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
@@ -98,19 +218,20 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 
 constexpr int ldgsts_size_and_align = 16;
 
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto
-memcpy_async_smem_for_tile_size(int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
+template <typename ItValueSizesAlignments>
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
+  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
 {
-  int smem_size                    = 0;
-  [[maybe_unused]] auto count_smem = [&](int vt_size, int vt_alignment) {
-    smem_size = ::cuda::round_up(smem_size, ::cuda::std::max(vt_alignment, copy_alignment));
+  int smem_size = 0;
+  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  {
+    smem_size =
+      static_cast<int>(::cuda::round_up(smem_size, ::cuda::std::max(static_cast<int>(vt_alignment), copy_alignment)));
     // max head/tail padding is copy_alignment - sizeof(T) each
-    const int max_bytes_to_copy = vt_size * tile_size + ::cuda::std::max(copy_alignment - vt_size, 0) * 2;
+    const int max_bytes_to_copy =
+      static_cast<int>(vt_size) * tile_size + ::cuda::std::max(copy_alignment - static_cast<int>(vt_size), 0) * 2;
     smem_size += max_bytes_to_copy;
   };
-  // left to right evaluation!
-  (..., count_smem(sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)));
   return smem_size;
 }
 
@@ -121,17 +242,27 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
   return sm_arch < 1000 ? 128 : 16;
 }
 
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
+template <typename ItValueSizesAlignments>
+_CCCL_HOST_DEVICE constexpr auto
+bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int bulk_copy_align)
+  -> int
 {
   // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
-  return ::cuda::round_up(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
-       + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       // padding for each input tile (handles before + after as long as tile_size is a multiple of bulk_copy_align)
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
+  int tile_padding = bulk_copy_align;
+  for (auto&& [_, vt_alignment] : it_value_sizes_alignments)
+  {
+    tile_padding = ::cuda::std::max(tile_padding, static_cast<int>(vt_alignment));
+  }
+
+  int smem_size = tile_padding; // for the barrier and padding
+  for (auto&& [vt_size, _] : it_value_sizes_alignments)
+  {
+    smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
+  }
+  return smem_size;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
@@ -151,124 +282,123 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return 12 * 1024; // V100 and below
 }
 
-template <typename T, typename... Ts>
-_CCCL_HOST_DEVICE constexpr bool all_equal([[maybe_unused]] T head, Ts... tail)
+template <typename H, typename... Ts>
+_CCCL_HOST_DEVICE constexpr bool all_nonzero_equal(H head, Ts... values)
 {
-  return ((head == tail) && ...);
+  size_t first = 0;
+  for (size_t v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
+  {
+    if (v == 0)
+    {
+      continue;
+    }
+    if (first == 0)
+    {
+      first = v;
+    }
+    else if (v != first)
+    {
+      return false;
+    }
+  }
+  return true;
 }
 
-_CCCL_HOST_DEVICE constexpr bool all_equal()
+_CCCL_HOST_DEVICE constexpr bool all_nonzero_equal()
 {
   return true;
 }
 
-template <typename PolicyT, typename = void>
-struct TransformPolicyWrapper : PolicyT
+template <typename H, typename... Ts>
+_CCCL_HOST_DEVICE constexpr auto first_nonzero_value(H head, Ts... values)
 {
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::algorithm)>> : StaticPolicyT
-{
-  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  _CCCL_HOST_DEVICE static constexpr int MinBif()
+  for (auto v : ::cuda::std::array<H, 1 + sizeof...(Ts)>{head, values...})
   {
-    return StaticPolicyT::min_bif;
+    if (v != 0)
+    {
+      return v;
+    }
   }
-
-  _CCCL_HOST_DEVICE static constexpr Algorithm GetAlgorithm()
-  {
-    return StaticPolicyT::algorithm;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
-  {
-    return StaticPolicyT::algo_policy::block_threads;
-  }
-
-  template <typename = void>
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadNoInput()
-  {
-    return StaticPolicyT::algo_policy::items_per_thread_no_input;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MinItemsPerThread()
-  {
-    return StaticPolicyT::algo_policy::min_items_per_thread;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MaxItemsPerThread()
-  {
-    return StaticPolicyT::algo_policy::max_items_per_thread;
-  }
-
-  template <typename = void>
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadForVectorizedPath()
-  {
-    return StaticPolicyT::algo_policy::items_per_thread_vectorized;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int LoadStoreWordSize()
-  {
-    return StaticPolicyT::algo_policy::load_store_word_size;
-  }
-};
-
-template <typename PolicyT>
-_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
-{
-  return TransformPolicyWrapper<PolicyT>(base);
+  // we only reach here when all input are not contiguous and the output has a void value type
+  return H{1};
 }
 
-template <typename T, typename... Ts>
-_CCCL_HOST_DEVICE constexpr auto first_item(T head, Ts...) -> T
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
+
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
 {
-  return head;
+  return ::cuda::std::array<::cuda::std::pair<::cuda::std::size_t, ::cuda::std::size_t>,
+                            sizeof...(RandomAccessIteratorsIn)>{
+    {{sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)}...}};
 }
 
-template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn, typename RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename RandomAccessIteratorTupleIn,
+          typename RandomAccessIteratorOut>
 struct policy_hub
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
 
-template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut>
-struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename... RandomAccessIteratorsIn,
+          typename RandomAccessIteratorOut>
+struct policy_hub<RequiresStableAddress,
+                  DenseOutput,
+                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                  RandomAccessIteratorOut>
 {
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_inputs_contiguous =
     (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn> && ...);
   static constexpr bool all_input_values_trivially_reloc =
     (THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>> && ...);
-  static constexpr bool can_memcpy_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
+  static constexpr bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
+  // the vectorized kernel supports mixing contiguous and non-contiguous iterators
+  static constexpr bool can_memcpy_contiguous_inputs =
+    ((!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>
+      || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>>)
+     && ...);
 
   // for vectorized policy:
-  static constexpr bool all_input_values_same_size = all_equal(sizeof(it_value_t<RandomAccessIteratorsIn>)...);
-  static constexpr int load_store_word_size        = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
-  static constexpr int value_type_size             = first_item(int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., 1);
+  static constexpr bool all_contiguous_input_values_same_size = all_nonzero_equal(
+    (sizeof(it_value_t<RandomAccessIteratorsIn>)
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...);
+  static constexpr int load_store_word_size = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
+  // find the value type size of the first contiguous iterator. if there are no inputs, we take the size of the output
+  // value type
+  static constexpr int contiguous_value_type_size = first_nonzero_value(
+    (int{sizeof(it_value_t<RandomAccessIteratorsIn>)}
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
+    int{size_of<it_value_t<RandomAccessIteratorOut>>});
   static constexpr bool value_type_divides_load_store_size =
-    load_store_word_size % value_type_size == 0; // implicitly checks that value_type_size <= load_store_word_size
-  static constexpr int target_bytes_per_thread = 32; // guestimate by gevtushenko
+    load_store_word_size % contiguous_value_type_size == 0; // implicitly checks that value_type_size <=
+                                                            // load_store_word_size
+  static constexpr int target_bytes_per_thread =
+    no_input_streams ? 16 /* by experiment on RTX 5090 */ : 32 /* guestimate by gevtushenko for loading */;
   static constexpr int items_per_thread_vec =
-    ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size;
+    ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / contiguous_value_type_size;
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
+
+  static constexpr bool fallback_to_prefetch =
+    RequiresStableAddress || !can_memcpy_contiguous_inputs || !all_contiguous_input_values_same_size
+    || !value_type_divides_load_store_size || !DenseOutput;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy_inputs || no_input_streams
-                                      || !all_input_values_same_size || !value_type_divides_load_store_size;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
+    static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
+    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
@@ -280,16 +410,24 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        block_threads * async_policy::min_items_per_thread, ldgsts_size_and_align)
+      memcpy_async_dyn_smem_for_tile_size(
+        make_sizes_alignments<RandomAccessIteratorsIn...>(),
+        block_threads* async_policy::min_items_per_thread,
+        ldgsts_size_and_align)
       > int{max_smem_per_block};
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+    static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(800);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<block_threads>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::memcpy_async;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<block_threads>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   template <int AsyncBlockSize, int PtxVersion>
@@ -302,18 +440,36 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        AsyncBlockSize * async_policy::min_items_per_thread, alignment)
+      bulk_copy_dyn_smem_for_tile_size(
+        make_sizes_alignments<RandomAccessIteratorsIn...>(),
+        AsyncBlockSize* async_policy::min_items_per_thread,
+        alignment)
       > int{max_smem_per_block};
-    // FIXME(bgruber): we need to support overaligned types eventually !!!
-    static constexpr bool any_type_is_overalinged = ((alignof(it_value_t<RandomAccessIteratorsIn>) > alignment) || ...);
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || any_type_is_overalinged;
+
+    // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
+    // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
+    // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
+    // complex, so let's fall back in this case.
+    static constexpr int max_alignment =
+      ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
+    static constexpr bool tile_sizes_retain_alignment =
+      (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
+    static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
+    static constexpr bool fallback_to_vectorized =
+      exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams
+      || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::ublkcp;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<256>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   struct policy900
@@ -326,15 +482,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
-  // UBLKCP is disabled on sm120 for now
-  struct policy1200 : ChainedPolicy<1200, policy1200, policy1000>
-  {
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(1200);
-    static constexpr auto algorithm = Algorithm::prefetch;
-    using algo_policy               = prefetch_policy_t<256>;
-  };
-
-  using max_policy = policy1200;
+  using max_policy = policy1000;
 };
 
 } // namespace detail::transform

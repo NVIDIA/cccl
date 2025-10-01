@@ -14,6 +14,7 @@ import pytest
         np.uint16,
         np.uint32,
         np.uint64,
+        np.float16,
         np.float32,
         np.float64,
         np.complex64,
@@ -45,6 +46,22 @@ def input_array(request):
         imag_part = packed[sample_size:]
         array = (real_part + 1j * imag_part).astype(dtype)
 
+    return array
+
+
+# Define a pytest fixture that returns random floating-point arrays only
+@pytest.fixture(
+    params=[
+        np.float32,
+        np.float64,
+    ]
+)
+def floating_array(request):
+    dtype = np.dtype(request.param)
+    sample_size = 1000
+
+    # Generate random floating-point values
+    array = cp.random.random(sample_size).astype(dtype)
     return array
 
 

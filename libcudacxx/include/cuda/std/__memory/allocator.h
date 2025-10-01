@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ALLOCATOR_H
-#define _LIBCUDACXX___MEMORY_ALLOCATOR_H
+#ifndef _CUDA_STD___MEMORY_ALLOCATOR_H
+#define _CUDA_STD___MEMORY_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,21 +40,21 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER <= 2017
-// These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED.
+// These specializations shouldn't be marked CCCL_DEPRECATED.
 // Specializing allocator<void> is deprecated, but not using it.
 template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
-  using pointer _LIBCUDACXX_DEPRECATED       = void*;
-  using const_pointer _LIBCUDACXX_DEPRECATED = const void*;
-  using value_type _LIBCUDACXX_DEPRECATED    = void;
+  using pointer CCCL_DEPRECATED       = void*;
+  using const_pointer CCCL_DEPRECATED = const void*;
+  using value_type CCCL_DEPRECATED    = void;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED rebind
+  struct CCCL_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
@@ -64,12 +64,12 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
-  using pointer _LIBCUDACXX_DEPRECATED       = const void*;
-  using const_pointer _LIBCUDACXX_DEPRECATED = const void*;
-  using value_type _LIBCUDACXX_DEPRECATED    = const void;
+  using pointer CCCL_DEPRECATED       = const void*;
+  using const_pointer CCCL_DEPRECATED = const void*;
+  using value_type CCCL_DEPRECATED    = const void;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED rebind
+  struct CCCL_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
@@ -104,9 +104,9 @@ struct __non_trivial_if<true, _Unique>
 //       allocator<void> trivial in C++20.
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!is_void_v<_Tp>, allocator<_Tp>>
 {
-  static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
+  static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
 public:
   using size_type                              = size_t;
@@ -129,13 +129,13 @@ public:
       __throw_bad_array_new_length();
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
     {
-      return static_cast<_Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), alignof(_Tp)));
+      return static_cast<_Tp*>(::cuda::std::__cccl_allocate(__n * sizeof(_Tp), alignof(_Tp)));
     }
   }
 
@@ -150,56 +150,56 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
     else
 #endif // _CCCL_STD_VER >= 2020
     {
-      _CUDA_VSTD::__cccl_deallocate((void*) __p, __n * sizeof(_Tp), alignof(_Tp));
+      ::cuda::std::__cccl_deallocate((void*) __p, __n * sizeof(_Tp), alignof(_Tp));
     }
   }
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  using pointer _LIBCUDACXX_DEPRECATED         = _Tp*;
-  using const_pointer _LIBCUDACXX_DEPRECATED   = const _Tp*;
-  using reference _LIBCUDACXX_DEPRECATED       = _Tp&;
-  using const_reference _LIBCUDACXX_DEPRECATED = const _Tp&;
+  using pointer CCCL_DEPRECATED         = _Tp*;
+  using const_pointer CCCL_DEPRECATED   = const _Tp*;
+  using reference CCCL_DEPRECATED       = _Tp&;
+  using const_reference CCCL_DEPRECATED = const _Tp&;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED rebind
+  struct CCCL_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline pointer address(reference __x) const noexcept
+  CCCL_DEPRECATED _CCCL_API inline pointer address(reference __x) const noexcept
   {
-    return _CUDA_VSTD::addressof(__x);
+    return ::cuda::std::addressof(__x);
   }
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline const_pointer address(const_reference __x) const noexcept
+  CCCL_DEPRECATED _CCCL_API inline const_pointer address(const_reference __x) const noexcept
   {
-    return _CUDA_VSTD::addressof(__x);
+    return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline _LIBCUDACXX_DEPRECATED _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline size_type max_size() const noexcept
+  CCCL_DEPRECATED _CCCL_API inline size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline void construct(_Up* __p, _Args&&... __args)
+  CCCL_DEPRECATED _CCCL_API inline void construct(_Up* __p, _Args&&... __args)
   {
-    ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
+    ::new ((void*) __p) _Up(::cuda::std::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline void destroy(pointer __p) noexcept
+  CCCL_DEPRECATED _CCCL_API inline void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -208,9 +208,9 @@ public:
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
-allocator<const _Tp> : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
+allocator<const _Tp> : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
 {
-  static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
+  static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
 public:
   using size_type                              = size_t;
@@ -231,13 +231,13 @@ public:
     {
       __throw_bad_array_new_length();
     }
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       return static_cast<const _Tp*>(::operator new(__n * sizeof(_Tp)));
     }
     else
     {
-      return static_cast<const _Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), alignof(_Tp)));
+      return static_cast<const _Tp*>(::cuda::std::__cccl_allocate(__n * sizeof(_Tp), alignof(_Tp)));
     }
   }
 
@@ -250,51 +250,51 @@ public:
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       ::operator delete(const_cast<_Tp*>(__p));
     }
     else
     {
-      _CUDA_VSTD::__cccl_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), alignof(_Tp));
+      ::cuda::std::__cccl_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), alignof(_Tp));
     }
   }
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  using pointer _LIBCUDACXX_DEPRECATED         = const _Tp*;
-  using const_pointer _LIBCUDACXX_DEPRECATED   = const _Tp*;
-  using reference _LIBCUDACXX_DEPRECATED       = const _Tp&;
-  using const_reference _LIBCUDACXX_DEPRECATED = const _Tp&;
+  using pointer CCCL_DEPRECATED         = const _Tp*;
+  using const_pointer CCCL_DEPRECATED   = const _Tp*;
+  using reference CCCL_DEPRECATED       = const _Tp&;
+  using const_reference CCCL_DEPRECATED = const _Tp&;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED rebind
+  struct CCCL_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline const_pointer address(const_reference __x) const noexcept
+  CCCL_DEPRECATED _CCCL_API inline const_pointer address(const_reference __x) const noexcept
   {
-    return _CUDA_VSTD::addressof(__x);
+    return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline _LIBCUDACXX_DEPRECATED const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline size_type max_size() const noexcept
+  CCCL_DEPRECATED _CCCL_API inline size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline void construct(_Up* __p, _Args&&... __args)
+  CCCL_DEPRECATED _CCCL_API inline void construct(_Up* __p, _Args&&... __args)
   {
-    ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
+    ::new ((void*) __p) _Up(::cuda::std::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED _CCCL_API inline void destroy(pointer __p) noexcept
+  CCCL_DEPRECATED _CCCL_API inline void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -313,8 +313,8 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
   return false;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ALLOCATOR_H
+#endif // _CUDA_STD___MEMORY_ALLOCATOR_H

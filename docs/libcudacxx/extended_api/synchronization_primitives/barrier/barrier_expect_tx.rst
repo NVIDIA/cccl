@@ -17,7 +17,7 @@ Increments the expected transaction count of a barrier in shared memory.
 Preconditions
 -------------
 
--  ``__isShared(&bar) == true``
+-  ``cuda::device::is_object_from(bar, cuda::device::address_space::shared) == true``
 -  ``0 <= transaction_count_update && transaction_count_update <= (1 << 20) - 1``
 
 Effects

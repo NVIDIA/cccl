@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_STORAGE_H
-#define _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#ifndef _CUDA_STD___FLOATING_POINT_STORAGE_H
+#define _CUDA_STD___FLOATING_POINT_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/format.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr auto __fp_storage_type_impl() noexcept
@@ -89,18 +89,18 @@ struct __cccl_nvbf16_manip_helper : __nv_bfloat16
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
+  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<_Tp>(__v);
+    return ::cuda::std::bit_cast<_Tp>(__v);
   }
-  else if constexpr (_CCCL_TRAIT(__is_ext_cccl_fp, _Tp))
+  else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {
     _Tp __ret{};
     __ret.__storage_ = __v;
     return __ret;
   }
 #if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (is_same_v<_Tp, __half>)
   {
     __cccl_nvfp16_manip_helper __helper{};
     __helper.__x = __v;
@@ -108,7 +108,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
     __cccl_nvbf16_manip_helper __helper{};
     __helper.__x = __v;
@@ -116,7 +116,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e4m3>)
   {
     __nv_fp8_e4m3 __ret{};
     __ret.__x = __v;
@@ -124,7 +124,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e5m2>)
   {
     __nv_fp8_e5m2 __ret{};
     __ret.__x = __v;
@@ -132,7 +132,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
     __nv_fp8_e8m0 __ret{};
     __ret.__x = __v;
@@ -140,7 +140,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e2m3>)
   {
     _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e2m3 storage value");
     __nv_fp6_e2m3 __ret{};
@@ -149,7 +149,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e3m2>)
   {
     _CCCL_ASSERT((__v & 0xc0u) == 0u, "Invalid __nv_fp6_e3m2 storage value");
     __nv_fp6_e3m2 __ret{};
@@ -158,7 +158,7 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
+  else if constexpr (is_same_v<_Tp, __nv_fp4_e2m1>)
   {
     _CCCL_ASSERT((__v & 0xf0u) == 0u, "Invalid __nv_fp4_e2m1 storage value");
     __nv_fp4_e2m1 __ret{};
@@ -173,64 +173,64 @@ template <class _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES((!_CCCL_TRAIT(is_same, _Up, __fp_storage_of_t<_Tp>)))
+_CCCL_REQUIRES((!is_same_v<_Up, __fp_storage_of_t<_Tp>>) )
 _CCCL_API constexpr _Tp __fp_from_storage(const _Up& __v) noexcept = delete;
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
+  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<__fp_storage_of_t<_Tp>>(__v);
+    return ::cuda::std::bit_cast<__fp_storage_of_t<_Tp>>(__v);
   }
-  else if constexpr (_CCCL_TRAIT(__is_ext_cccl_fp, _Tp))
+  else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {
     return __v.__storage_;
   }
 #if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (is_same_v<_Tp, __half>)
   {
     return __cccl_nvfp16_manip_helper{__v}.__x;
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
     return __cccl_nvbf16_manip_helper{__v}.__x;
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e4m3>)
   {
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e5m2>)
   {
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e2m3>)
   {
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e3m2>)
   {
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
+  else if constexpr (is_same_v<_Tp, __nv_fp4_e2m1>)
   {
     return __v.__x;
   }
@@ -241,8 +241,8 @@ template <class _Tp>
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#endif // _CUDA_STD___FLOATING_POINT_STORAGE_H

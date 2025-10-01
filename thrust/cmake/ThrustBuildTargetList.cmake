@@ -19,7 +19,7 @@
 #   - <prop> is one of the following:
 #     - HOST: The host system. Valid values: CPP, OMP, TBB.
 #     - DEVICE: The device system. Valid values: CUDA, CPP, OMP, TBB.
-#     - DIALECT: The C++ dialect. Valid values: 11, 14, 17, 20.
+#     - DIALECT: The C++ dialect. Valid values: 17, 20.
 #     - PREFIX: A unique prefix that should be used to name all
 #       targets/tests/examples that use this configuration.
 #
@@ -43,8 +43,8 @@ define_property(TARGET PROPERTY _THRUST_DEVICE
   FULL_DOCS "A target's device system: CUDA, CPP, TBB, or OMP."
 )
 define_property(TARGET PROPERTY _THRUST_DIALECT
-  BRIEF_DOCS "A target's C++ dialect: 11, 14, or 17."
-  FULL_DOCS "A target's C++ dialect: 11, 14, or 17."
+  BRIEF_DOCS "A target's C++ dialect: 17 or 20."
+  FULL_DOCS "A target's C++ dialect: 17 or 20."
 )
 define_property(TARGET PROPERTY _THRUST_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'thrust.cpp.cuda.cpp14'."

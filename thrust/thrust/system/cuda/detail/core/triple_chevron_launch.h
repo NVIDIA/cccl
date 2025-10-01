@@ -87,7 +87,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#  if _CCCL_HAS_PDL
+#  if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       cudaLaunchAttribute attribute[1];
@@ -108,7 +108,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 #    endif
     }
     else
-#  endif // _CCCL_HAS_PDL
+#  endif // _CCCL_HAS_PDL()
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
@@ -179,7 +179,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class K, class... Args>
-  THRUST_FUNCTION cudaError_t doit(K k, Args const&... args) const
+  _CCCL_API _CCCL_FORCEINLINE cudaError_t doit(K k, Args const&... args) const
   {
     NV_IF_TARGET(NV_IS_HOST, (return doit_host(k, args...);), (return doit_device(k, args...);));
   }

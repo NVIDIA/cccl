@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___EXPECTED_UNEXPECT_H
-#define _LIBCUDACXX___EXPECTED_UNEXPECT_H
+#ifndef _CUDA_STD___EXPECTED_UNEXPECT_H
+#define _CUDA_STD___EXPECTED_UNEXPECT_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct unexpect_t
 {
@@ -30,8 +30,8 @@ struct unexpect_t
 
 _CCCL_GLOBAL_CONSTANT unexpect_t unexpect{};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXPECTED_UNEXPECT_H
+#endif // _CUDA_STD___EXPECTED_UNEXPECT_H

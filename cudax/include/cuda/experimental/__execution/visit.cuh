@@ -25,13 +25,14 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 #define _CCCL_BIND_CHILD(_Ord) , _CCCL_PP_CAT(__child, _Ord)
 #define _CCCL_FWD_CHILD(_Ord)  , _CCCL_FWD_LIKE(_Sndr, _CCCL_PP_CAT(__child, _Ord))
-#define _CCCL_FWD_LIKE(_X, _Y) static_cast<_CUDA_VSTD::__copy_cvref_t<_X&&, decltype(_Y)>>(_Y)
+#define _CCCL_FWD_LIKE(_X, _Y) static_cast<::cuda::std::__copy_cvref_t<_X&&, decltype(_Y)>>(_Y)
 
 namespace cuda::experimental::execution
 {
@@ -54,7 +55,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-field-initializers")
 
 // use the "magic tuple" trick to get the arity of a structured binding
 // see https://github.com/apolukhin/magic_get
-template <class _Ty, bool = _CUDA_VSTD::is_aggregate_v<_Ty>>
+template <class _Ty, bool = ::cuda::std::is_aggregate_v<_Ty>>
 struct __arity_of_t
 {
   template <class... _Ts, class _Uy = _Ty, class _Uy2 = decltype(_Uy{_Ts{}...}), class _Self = __arity_of_t>
@@ -94,7 +95,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class _CvSndr, class _Context>
     requires(static_cast<int>(structured_binding_size<_CvSndr>) >= 2)
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
     auto&& [__tag, __data, ... __children] = static_cast<_CvSndr&&>(__sndr);
@@ -112,9 +113,9 @@ struct __unpack
 {
   // This is to generate a compile-time error if the sender type cannot be used to
   // initialize a structured binding.
-  _CCCL_API void operator()(_CUDA_VSTD::__ignore_t,
+  _CCCL_API void operator()(::cuda::std::__ignore_t,
                             __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
-                            _CUDA_VSTD::__ignore_t) const;
+                            ::cuda::std::__ignore_t) const;
 };
 
 #  define _CCCL_UNPACK_SENDER(_Arity)                                                                               \
@@ -144,7 +145,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_TEMPLATE(class _Visitor, class _Sndr, class _Context)
   _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_Sndr>) >= 2))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
     // This `if constexpr` shouldn't be needed given the `requires` clause above. It is

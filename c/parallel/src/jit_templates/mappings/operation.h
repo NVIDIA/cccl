@@ -11,8 +11,11 @@
 #pragma once
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+#  include <cuda/std/optional>
+#  include <cuda/std/span>
+
 #  include "../traits.h"
-#  include "cccl/c/types.h"
+#  include <cccl/c/types.h>
 #endif
 
 struct cccl_op_t_mapping
@@ -34,7 +37,7 @@ struct parameter_mapping<cccl_op_t>
   {
     return std::format(
       "cccl_op_t_mapping{{.is_stateless = {}, .size = {}, .alignment = {}, .operation = {}}}",
-      op.type == cccl_op_kind_t::CCCL_STATELESS,
+      op.type != cccl_op_kind_t::CCCL_STATEFUL,
       op.size,
       op.alignment,
       op.name);

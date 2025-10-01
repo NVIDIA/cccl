@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -17,21 +18,22 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+#include <cuda/std/ratio>
 
 #include "test_macros.h"
 
+__host__ __device__ constexpr bool test()
+{
+  cuda::std::chrono::duration<int> i(3);
+  cuda::std::chrono::duration<double, cuda::std::milli> d = i;
+  assert(d.count() == 3000);
+
+  return true;
+}
 int main(int, char**)
 {
-  {
-    cuda::std::chrono::duration<int> i(3);
-    cuda::std::chrono::duration<double, cuda::std::milli> d = i;
-    assert(d.count() == 3000);
-  }
-  {
-    constexpr cuda::std::chrono::duration<int> i(3);
-    constexpr cuda::std::chrono::duration<double, cuda::std::milli> d = i;
-    static_assert(d.count() == 3000, "");
-  }
+  test();
+  static_assert(test());
 
   return 0;
 }

@@ -78,7 +78,7 @@ public:
       , m_is_descending(is_descending)
   {}
 
-  _CCCL_HOST_DEVICE KeyType operator()(std::size_t idx) const
+  __host__ __device__ KeyType operator()(std::size_t idx) const
   {
     return m_is_descending ? static_cast<KeyType>((m_num_items - 1 - idx) * m_conversion)
                            : static_cast<KeyType>(idx * m_conversion);
@@ -103,7 +103,7 @@ struct index_to_summary
   bool is_descending;
 
   template <typename index_type>
-  _CCCL_HOST_DEVICE summary_t operator()(index_type idx) const
+  __host__ __device__ summary_t operator()(index_type idx) const
   {
     constexpr KeyType max_key = ::cuda::std::numeric_limits<KeyType>::max();
 
@@ -137,7 +137,7 @@ public:
       , m_is_descending(is_descending)
   {}
 
-  _CCCL_HOST_DEVICE KeyType operator()(std::size_t idx) const
+  __host__ __device__ KeyType operator()(std::size_t idx) const
   {
     // The final summary may be padded, so truncate the summary_idx at the last valid idx:
     const std::size_t summary_idx = cuda::std::min(m_num_summaries - 1, idx / m_unpadded_run_size);
@@ -152,7 +152,7 @@ template <typename ValueType>
 struct index_to_value
 {
   template <typename index_type>
-  _CCCL_HOST_DEVICE ValueType operator()(index_type index)
+  __host__ __device__ ValueType operator()(index_type index)
   {
     return static_cast<ValueType>(index);
   }

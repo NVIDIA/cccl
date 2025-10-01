@@ -24,18 +24,18 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<> T;
+    using T = cuda::std::tuple<>;
     T t0;
     T t(cuda::std::allocator_arg, A1<int>(), t0);
   }
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     T t0(2);
     T t(cuda::std::allocator_arg, A1<int>(), t0);
     assert(cuda::std::get<0>(t) == 2);
   }
   {
-    typedef cuda::std::tuple<alloc_first> T;
+    using T = cuda::std::tuple<alloc_first>;
     T t0(2);
     alloc_first::allocator_constructed() = false;
     T t(cuda::std::allocator_arg, A1<int>(5), t0);
@@ -43,7 +43,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 2);
   }
   {
-    typedef cuda::std::tuple<alloc_last> T;
+    using T = cuda::std::tuple<alloc_last>;
     T t0(2);
     alloc_last::allocator_constructed() = false;
     T t(cuda::std::allocator_arg, A1<int>(5), t0);
@@ -53,7 +53,7 @@ int main(int, char**)
 // testing extensions
 #ifdef _LIBCUDACXX_VERSION
   {
-    typedef cuda::std::tuple<alloc_first, alloc_last> T;
+    using T = cuda::std::tuple<alloc_first, alloc_last>;
     T t0(2, 3);
     alloc_first::allocator_constructed() = false;
     alloc_last::allocator_constructed()  = false;
@@ -64,7 +64,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t) == 3);
   }
   {
-    typedef cuda::std::tuple<int, alloc_first, alloc_last> T;
+    using T = cuda::std::tuple<int, alloc_first, alloc_last>;
     T t0(1, 2, 3);
     alloc_first::allocator_constructed() = false;
     alloc_last::allocator_constructed()  = false;

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "~/Developer/github/cccl/build:/workspace",
+        "mcp/sqlite",
+        "--db-path",
+        "/workspace/cccl_meta_bench.db"
+      ]
+    }
+  }
+}

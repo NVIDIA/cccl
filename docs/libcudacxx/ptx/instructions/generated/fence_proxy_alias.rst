@@ -3,7 +3,7 @@
 
 fence.proxy.alias
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.alias; // 4. PTX ISA 75, SM_70
    template <typename = void>
