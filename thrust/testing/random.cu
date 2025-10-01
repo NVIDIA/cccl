@@ -325,6 +325,25 @@ void TestEngineUnequal()
   ASSERT_EQUAL(true, d[0]);
 }
 
+template <typename Engine>
+void TestEngineSetCounter()
+{
+  std::int64_t seed = 12345;
+  Engine e0(seed);
+  e0.discard(345);
+
+  Engine e1(seed);
+  e1.set_counter(345);
+
+  // Expect outputs to be the same, but the standard says nothing about internal state
+  // So they may not be equal
+  ASSERT_EQUAL(e0(), e1());
+
+  e1.set_counter(345, 1);
+
+  ASSERT_NOT_EQUAL(e0(), e1());
+}
+
 void TestRanlux24BaseValidation()
 {
   using Engine = thrust::random::ranlux24_base;
@@ -669,6 +688,117 @@ void TestRanlux48Unequal()
   TestEngineUnequal<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux48Unequal);
+
+void TestPhilox4x32Validation()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineValidation<Engine, 1955073260u>();
+}
+DECLARE_UNITTEST(TestPhilox4x32Validation);
+
+void TestPhilox4x32Min()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineMin<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x32Min);
+
+void TestPhilox4x32Max()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineMax<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x32Max);
+
+void TestPhilox4x32SaveRestore()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineSaveRestore<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x32SaveRestore);
+
+void TestPhilox4x32Equal()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineEqual<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x32Equal);
+
+void TestPhilox4x32Unequal()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineUnequal<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x32Unequal);
+
+void TestPhilox4x32SetCounter()
+{
+  using Engine = thrust::random::philox4x32;
+
+  TestEngineSetCounter<Engine>();
+}
+
+void TestPhilox4x64Validation()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineValidation<Engine, 3409172418970261260ull>();
+}
+
+DECLARE_UNITTEST(TestPhilox4x64Validation);
+
+void TestPhilox4x64Min()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineMin<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x64Min);
+
+void TestPhilox4x64Max()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineMax<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x64Max);
+
+void TestPhilox4x64SaveRestore()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineSaveRestore<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x64SaveRestore);
+
+void TestPhilox4x64Equal()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineEqual<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x64Equal);
+
+void TestPhilox4x64Unequal()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineUnequal<Engine>();
+}
+DECLARE_UNITTEST(TestPhilox4x64Unequal);
+
+void TestPhilox4x64SetCounter()
+{
+  using Engine = thrust::random::philox4x64;
+
+  TestEngineSetCounter<Engine>();
+}
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation warning

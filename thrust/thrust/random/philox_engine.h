@@ -17,7 +17,7 @@
 /*! \file philox_engine.h
  *  \brief A Philox counter-based pseudorandom number engine.
  */
- #pragma once
+#pragma once
 
 #include <thrust/detail/config.h>
 
@@ -28,6 +28,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/random/detail/random_core_access.h>
+
+#include <cuda/std/cstddef> // for size_t
+#include <cuda/std/cstdint>
+
+#include <array>
+#include <iostream>
+#include <limits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -42,7 +51,8 @@ namespace random
 /*! \class philox_engine
  *  \brief A \p philox_engine random number engine produces unsigned integer
  *         random numbers using a Philox counter-based random number generation algorithm
- *         as described in: Salmon, John K., et al. "Parallel random numbers: as easy as 1, 2, 3." Proceedings of 2011 international conference for high performance computing, networking, storage and analysis. 2011.
+ *         as described in: Salmon, John K., et al. "Parallel random numbers: as easy as 1, 2, 3." Proceedings of 2011
+ * international conference for high performance computing, networking, storage and analysis. 2011.
  *
  *
  *  \tparam UIntType The type of unsigned integer to produce.
@@ -111,31 +121,28 @@ namespace random
  *  \see thrust::random::philox4x32
  *  \see thrust::random::philox4x64
  */
-template<typename UIntType, size_t w, size_t n, size_t r,
-    UIntType... consts>
+template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 class philox_engine
 {
-  static_assert(n == 2 || n == 4,
-        "N argument must be either 2 or 4");
-  static_assert(sizeof...(consts) == n,
-        "consts array must be of length N");
+  static_assert(n == 2 || n == 4, "N argument must be either 2 or 4");
+  static_assert(sizeof...(consts) == n, "consts array must be of length N");
   static_assert(0 < r, "rounds must be a natural number");
-  static_assert((0 < w && w <= numeric_limits<UIntType>::digits),
-        "Word size w must satisfy 0 < w <= numeric_limits<UIntType>::digits");
+  static_assert((0 < w && w <= std::numeric_limits<UIntType>::digits),
+                "Word size w must satisfy 0 < w <= numeric_limits<UIntType>::digits");
 
-  public:
-    using result_type = UIntType;
+public:
+  using result_type = UIntType;
 
   /*! The smallest value this engine may potentially produce.
    */
-    static const result_type min = 0;
+  static const result_type min = 0;
   /*! The largest value this engine may potentially produce.
    */
-    static const result_type max = ((1ull << (w - 1)) | ((1ull << (w - 1)) - 1));
+  static const result_type max = ((1ull << (w - 1)) | ((1ull << (w - 1)) - 1));
 
   /*! The default seed.
    */
-	static constexpr result_type default_seed = 20111115u;
+  static constexpr result_type default_seed = 20111115u;
 
   /*! This constructor, which optionally accepts a seed, initializes a new
    *  \p philox_engine.
@@ -155,43 +162,53 @@ class philox_engine
    *
    *  \param counter The counter.
    */
-    void set_counter(const array<result_type, n>& counter);
+  _CCCL_HOST_DEVICE void set_counter(const std::array<result_type, n>& counter);
 
   // generating functions
 
-/*! This member function produces a new random value and updates this \p philox_engine's state.
- *  \return A new random number.
- */
-_CCCL_HOST_DEVICE result_type operator()(void);
+  /*! This member function produces a new random value and updates this \p philox_engine's state.
+   *  \return A new random number.
+   */
+  _CCCL_HOST_DEVICE result_type operator()(void);
 
-/*! This member function advances this \p philox_engine's state a given number of times
- *  and discards the results. \p philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
- *
- *  \param z The number of random values to discard.
- */
-_CCCL_HOST_DEVICE void discard(unsigned long long z);
+  /*! This member function advances this \p philox_engine's state a given number of times
+   *  and discards the results. \p philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
+   *
+   *  \param z The number of random values to discard.
+   */
+  _CCCL_HOST_DEVICE void discard(unsigned long long z);
 
-/*! \cond
- */
+  /*! \cond
+   */
+
 private:
+  friend struct thrust::random::detail::random_core_access;
 
-  void increment_counter();
+  _CCCL_HOST_DEVICE bool equal(const philox_engine& rhs) const;
 
-  std::pair<result_type, result_type> mulhilo(result_type a, result_type b);
+  template <typename CharT, typename Traits>
+  std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
 
-  void philox();
+  template <typename CharT, typename Traits>
+  std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
+
+  _CCCL_HOST_DEVICE void increment_counter();
+
+  _CCCL_HOST_DEVICE void mulhilo(result_type a, result_type b, result_type& hi, result_type& lo) const;
+
+  _CCCL_HOST_DEVICE void philox();
 
   // The counter X, a big integer stored as n w-bit words.
   // The least significant word is m_x[0].
-	std::array<UIntType, n> m_x;
+  UIntType m_x[n];
   // K is the "Key", storing the seed
-	std::array<UIntType, n / 2> m_k;
+  UIntType m_k[n / 2];
   // The output buffer Y
   // Each time m_j reaches n, we generate n new values and store them in m_y.
-	std::array<UIntType, n> m_y;
+  UIntType m_y[n];
   // Each generation produces n random numbers, which are returned one at a time.
   // m_j cycles through [0, n-1].
-	unsigned long long m_j = 0;        
+  unsigned long long m_j = 0;
 
 }; // end philox_engine
 
