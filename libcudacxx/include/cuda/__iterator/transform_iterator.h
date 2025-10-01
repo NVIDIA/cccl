@@ -164,11 +164,11 @@ public:
   ::cuda::std::ranges::__movable_box<_Fn> __func_;
 
   using iterator_concept = ::cuda::std::conditional_t<
-    ::cuda::std::random_access_iterator<_Iter>,
+    ::cuda::std::__has_random_access_traversal<_Iter>,
     ::cuda::std::random_access_iterator_tag,
-    ::cuda::std::conditional_t<::cuda::std::bidirectional_iterator<_Iter>,
+    ::cuda::std::conditional_t<::cuda::std::__has_bidirectional_traversal<_Iter>,
                                ::cuda::std::bidirectional_iterator_tag,
-                               ::cuda::std::conditional_t<::cuda::std::forward_iterator<_Iter>,
+                               ::cuda::std::conditional_t<::cuda::std::__has_forward_traversal<_Iter>,
                                                           ::cuda::std::forward_iterator_tag,
                                                           ::cuda::std::input_iterator_tag>>>;
   using value_type =

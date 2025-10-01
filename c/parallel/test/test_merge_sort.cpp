@@ -124,7 +124,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with well-known predicate", "[merge_so
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
-  cccl_op_t op                     = make_well_known_binary_predicate();
+  cccl_op_t op                     = make_well_known_less_binary_predicate();
   std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
   std::vector<key_t> expected_keys = input_keys;
 

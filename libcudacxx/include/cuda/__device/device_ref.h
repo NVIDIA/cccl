@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__runtime/types.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
 
 #  include <string>
 #  include <vector>
@@ -143,16 +142,10 @@ public:
   //!
   //! @param __other_dev Device to query the peer access
   //! @return true if its possible for this device to access the specified device's memory
-  bool has_peer_access_to(device_ref __other_dev) const
+  [[nodiscard]] bool has_peer_access_to(device_ref __other_dev) const
   {
-    int __can_access;
-    _CCCL_TRY_CUDA_API(
-      ::cudaDeviceCanAccessPeer,
-      "Could not query if device can be peer accessed",
-      &__can_access,
-      get(),
-      __other_dev.get());
-    return __can_access;
+    return ::cuda::__driver::__deviceCanAccessPeer(
+      ::cuda::__driver::__deviceGet(get()), ::cuda::__driver::__deviceGet(__other_dev.get()));
   }
 
   //! @brief Retrieve architecture traits of this device.

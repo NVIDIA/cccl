@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -84,6 +85,22 @@ template <typename Extents>
   for (auto i = start; i < end; i++)
   {
     if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename MappingTypeLhs, typename MappingTypeRhs>
+[[nodiscard]] _CCCL_API bool have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
+{
+  auto extents_lhs = mapping_lhs.extents();
+  auto extents_rhs = mapping_rhs.extents();
+  _CCCL_ASSERT(extents_lhs.rank() == extents_rhs.rank(), "extents must have the same rank");
+  for (size_t i = 0; i < extents_lhs.rank(); i++)
+  {
+    if (mapping_lhs.stride(i) != mapping_rhs.stride(i))
     {
       return false;
     }
