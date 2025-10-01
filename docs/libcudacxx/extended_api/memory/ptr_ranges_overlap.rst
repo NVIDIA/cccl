@@ -9,7 +9,7 @@ Defined in ``<cuda/memory>`` header.
 
    namespace cuda {
 
-   [[nodiscard]] __host__ __device__ inline
+   [[nodiscard]] __host__ __device__ constexpr
    bool ptr_ranges_overlap(const void* ptr1_start, const void* ptr1_end,
                            const void* ptr2_start, const void* ptr2_end) noexcept
 

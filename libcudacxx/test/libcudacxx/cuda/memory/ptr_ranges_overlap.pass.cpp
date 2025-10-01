@@ -63,8 +63,17 @@ __host__ __device__ bool test()
   return true;
 }
 
+__host__ __device__ constexpr bool constexpr_test()
+{
+  constexpr int array[5] = {0, 1, 2, 3, 4};
+  assert(cuda::ptr_ranges_overlap(array + 1, array + 5, array, array + 5));
+  assert(!cuda::ptr_ranges_overlap(array + 5, array + 5, array, array + 5));
+  return true;
+}
+
 int main(int, char**)
 {
   assert(test());
+  static_assert(constexpr_test());
   return 0;
 }

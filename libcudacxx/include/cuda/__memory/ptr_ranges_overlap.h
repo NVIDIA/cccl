@@ -22,13 +22,12 @@
 #endif // no system header
 
 #include <cuda/__memory/ptr_in_range.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool ptr_ranges_overlap(
+[[nodiscard]] _CCCL_API constexpr bool ptr_ranges_overlap(
   const void* __ptr_lhs_start,
   const void* __ptr_lhs_end,
   const void* __ptr_rhs_start,
