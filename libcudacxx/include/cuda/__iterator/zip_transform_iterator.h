@@ -103,21 +103,22 @@ template <class _Fn, class... _Iterators>
 //! #include <cuda/iterator>
 //! #include <thrust/device_vector.h>
 //!
-//! thrust::device_vector<int> int_v{0, 1, 2};
-//! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
-//! thrust::device_vector<char> char_v{'a', 'b', 'c'};
+//! struct SumArgs {
+//!   __host__ __device__ float operator()(float a, float b, float c) const noexcept {
+//!     return a + b + c;
+//!   }
+//! };
 //!
-//! cuda::zip_transform_iterator iter{int_v.begin(), float_v.begin(), char_v.begin()};
+//! thrust::device_vector<float> A{0.f, 1.f, 2.f};
+//! thrust::device_vector<float> B{1.f, 2.f, 3.f};
+//! thrust::device_vector<float> C{2.f, 3.f, 4.f};
 //!
-//! *iter;   // returns (0, 0.0f, 'a')
-//! iter[0]; // returns (0, 0.0f, 'a')
-//! iter[1]; // returns (1, 1.0f, 'b')
-//! iter[2]; // returns (2, 2.0f, 'c')
+//! cuda::zip_transform_iterator iter{SumArgs{}, A.begin(), B.begin(), C.begin()};
 //!
-//! cuda::std::get<0>(iter[2]); // returns 2
-//! cuda::std::get<1>(iter[0]); // returns 0.0f
-//! cuda::std::get<2>(iter[1]); // returns 'b'
-//!
+//! *iter;   // returns (3.f)
+//! iter[0]; // returns (3.f)
+//! iter[1]; // returns (6.f)
+//! iter[2]; // returns (9.f)
 //! // iter[3] is an out-of-bounds error
 //! @endcode
 //!
@@ -130,15 +131,21 @@ template <class _Fn, class... _Iterators>
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
-//!   thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
+//!   struct SumArgs {
+//!     __host__ __device__ float operator()(float a, float b, float c) const noexcept {
+//!       return a + b + c;
+//!     }
+//!   };
 //!
-//!   thrust::copy(cuda::zip_transform_iterator{int_in.begin(), float_in.begin()},
-//!                cuda::zip_transform_iterator{int_in.end(),   float_in.end()},
-//!                cuda::zip_transform_iterator{int_out.begin(),float_out.begin()});
+//!   thrust::device_vector<float> A{0.f, 1.f, 2.f};
+//!   thrust::device_vector<float> B{1.f, 2.f, 3.f};
+//!   thrust::device_vector<float> C{2.f, 3.f, 4.f};
+//!   thrust::device_vector<float> out(3);
 //!
-//!   // int_out is now [0, 1, 2]
-//!   // float_out is now [0.0f, 10.0f, 20.0f]
+//!   cuda::zip_transform_iterator iter{SumArgs{}, A.begin(), B.begin(), C.begin()}
+//!   thrust::copy(iter, iter + 3, out.begin());
+//!
+//!   // out is now [3.0f, 6.0f, 9.0f]
 //!
 //!   return 0;
 //! }
