@@ -54,7 +54,7 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="cub::ChainedPolicy&lt; PolicyPtxVersion, PolicyT, PolicyT &gt;" href="structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4.html" />
+    <link rel="next" title="cub::DispatchAdjacentDifference" href="structcub_1_1DispatchAdjacentDifference.html" />
     <link rel="prev" title="cub::CastOp" href="structcub_1_1CastOp.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -496,7 +496,6 @@
 <li class="toctree-l4"><a class="reference internal" href="structcub_1_1CachingDeviceAllocator.html">cub::CachingDeviceAllocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcub_1_1CastOp.html">cub::CastOp</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">cub::ChainedPolicy</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4.html">cub::ChainedPolicy&lt; PolicyPtxVersion, PolicyT, PolicyT &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcub_1_1DeviceAdjacentDifference.html">cub::DeviceAdjacentDifference</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcub_1_1DeviceCopy.html">cub::DeviceCopy</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcub_1_1DeviceFor.html">cub::DeviceFor</a></li>
@@ -1537,7 +1536,7 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub13ChainedPolicy12ActivePolicyE">
-<span class="target" id="structcub_1_1ChainedPolicy_1a23f08d43e04098fb12e1b797b018e9fd"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ActivePolicy</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">_If</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">CUB_PTX_ARCH</span></span><span class="w"> </span><span class="o"><span class="pre">&lt;</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PolicyPtxVersion"><span class="n"><span class="pre">PolicyPtxVersion</span></span></a><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PrevPolicyT"><span class="n"><span class="pre">PrevPolicyT</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ActivePolicy</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PolicyT"><span class="n"><span class="pre">PolicyT</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3cub13ChainedPolicy12ActivePolicyE" title="Link to this definition">#</a><br /></dt>
+<span class="target" id="structcub_1_1ChainedPolicy_1a17aed8f8f560fd24803d29a31a72e47f"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ActivePolicy</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">_If</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">CUB_PTX_ARCH</span></span><span class="w"> </span><span class="o"><span class="pre">&lt;</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PolicyPtxVersion"><span class="n"><span class="pre">PolicyPtxVersion</span></span></a><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="n"><span class="pre">have_previous_policy</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">get_active_policy</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PrevPolicyT"><span class="n"><span class="pre">PrevPolicyT</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">type_identity</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_i00EN3cub13ChainedPolicyE" title="cub::ChainedPolicy::PolicyT"><span class="n"><span class="pre">PolicyT</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">type</span></span><a class="headerlink" href="#_CPPv4N3cub13ChainedPolicy12ActivePolicyE" title="Link to this definition">#</a><br /></dt>
 <dd><p>The policy for the active compiler pass. </p>
 </dd></dl>
 
@@ -1582,11 +1581,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4.html"
+       href="structcub_1_1DispatchAdjacentDifference.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cub::ChainedPolicy&lt; PolicyPtxVersion, PolicyT, PolicyT &gt;</p>
+        <p class="prev-next-title">cub::DispatchAdjacentDifference</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

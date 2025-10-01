@@ -72,7 +72,6 @@ Structs
 * :doc:`cub::CachingDeviceAllocator <structcub_1_1CachingDeviceAllocator>`
 * :doc:`cub::CastOp <structcub_1_1CastOp>`
 * :doc:`cub::ChainedPolicy <structcub_1_1ChainedPolicy>`
-* :doc:`structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4`
 * :doc:`cub::DeviceAdjacentDifference <structcub_1_1DeviceAdjacentDifference>`
 * :doc:`cub::DeviceCopy <structcub_1_1DeviceCopy>`
 * :doc:`cub::DeviceFor <structcub_1_1DeviceFor>`
@@ -267,7 +266,6 @@ Enumerations
    structcub_1_1CachingDeviceAllocator
    structcub_1_1CastOp
    structcub_1_1ChainedPolicy
-   structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4
    structcub_1_1DeviceAdjacentDifference
    structcub_1_1DeviceCopy
    structcub_1_1DeviceFor
