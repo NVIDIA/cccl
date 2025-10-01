@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
