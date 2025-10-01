@@ -57,6 +57,7 @@ Example
         assert(!cuda::in_range(15u, 1u, 10u)); // 15 is NOT in the range [1, 10]
         assert(cuda::in_range(1u, 1u, 10u));   // 1  is in the range     [1, 10]
         assert(cuda::in_range(10u, 1u, 10u));  // 10 is in the range     [1, 10]
+        assert(cuda::in_range(10u, 10u, 10u)); // 10 is in the range     [10, 10]
 
         // signed integers
         assert(cuda::in_range(-5, -10, 0));    // -5 is in the range    [-10, 0]
@@ -69,4 +70,4 @@ Example
         return 0;
     }
 
-`See the example in Compiler Explorer 🔗 <https://godbolt.org/z/ejr95Wzez>`_
+`See the example in Compiler Explorer 🔗 <https://godbolt.org/z/WjG4rWT3G>`_

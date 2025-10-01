@@ -26,6 +26,7 @@ __host__ __device__ constexpr void test()
   assert(cuda::in_range(T{5}, T{0}, T{10}));
   assert(!cuda::in_range(T{15}, T{0}, T{10}));
   assert(cuda::in_range(T{10}, T{0}, T{10})); // test bound
+  assert(cuda::in_range(T{10}, T{10}, T{10})); // test bound
   if constexpr (cuda::std::is_signed_v<T>)
   {
     assert(!cuda::in_range(T{-5}, T{0}, T{10}));
