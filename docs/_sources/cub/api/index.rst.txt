@@ -54,7 +54,6 @@ Structs
 * :doc:`cub::AgentScanByKeyPolicy <structcub_1_1AgentScanByKeyPolicy>`
 * :doc:`cub::AgentScanPolicy <structcub_1_1AgentScanPolicy>`
 * :doc:`cub::AgentSelectIfPolicy <structcub_1_1AgentSelectIfPolicy>`
-* :doc:`cub::AgentSmallAndMediumSegmentedSortPolicy <structcub_1_1AgentSmallAndMediumSegmentedSortPolicy>`
 * :doc:`cub::AgentSubWarpMergeSortPolicy <structcub_1_1AgentSubWarpMergeSortPolicy>`
 * :doc:`cub::AgentThreeWayPartitionPolicy <structcub_1_1AgentThreeWayPartitionPolicy>`
 * :doc:`cub::AgentUniqueByKeyPolicy <structcub_1_1AgentUniqueByKeyPolicy>`
@@ -248,7 +247,6 @@ Enumerations
    structcub_1_1AgentScanByKeyPolicy
    structcub_1_1AgentScanPolicy
    structcub_1_1AgentSelectIfPolicy
-   structcub_1_1AgentSmallAndMediumSegmentedSortPolicy
    structcub_1_1AgentSubWarpMergeSortPolicy
    structcub_1_1AgentThreeWayPartitionPolicy
    structcub_1_1AgentUniqueByKeyPolicy
