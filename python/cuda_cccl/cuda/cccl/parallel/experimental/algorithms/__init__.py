@@ -18,6 +18,8 @@ from ._scan import make_exclusive_scan as make_exclusive_scan
 from ._scan import make_inclusive_scan as make_inclusive_scan
 from ._segmented_reduce import make_segmented_reduce as make_segmented_reduce
 from ._segmented_reduce import segmented_reduce
+from ._three_way_partition import make_three_way_partition as make_three_way_partition
+from ._three_way_partition import three_way_partition as three_way_partition
 from ._transform import binary_transform, unary_transform
 from ._transform import make_binary_transform as make_binary_transform
 from ._transform import make_unary_transform as make_unary_transform
@@ -45,6 +47,8 @@ __all__ = [
     "make_segmented_reduce",
     "unique_by_key",
     "make_unique_by_key",
+    "three_way_partition",
+    "make_three_way_partition",
     "DoubleBuffer",
     "SortOrder",
 ]

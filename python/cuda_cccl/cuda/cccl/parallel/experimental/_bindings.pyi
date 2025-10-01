@@ -390,6 +390,7 @@ class DeviceHistogramBuildResult:
         num_rows: int,
         row_stride_samples: int,
         is_evenly_segmented: bool,
+        info: CommonData,
     ): ...
     def compute_even(
         self,
@@ -403,3 +404,30 @@ class DeviceHistogramBuildResult:
         row_stride_samples: int,
         stream,
     ) -> None: ...
+
+# ---------------------
+# DeviceThreeWayPartition
+# ---------------------
+
+class DeviceThreeWayPartitionBuildResult:
+    def __init__(
+        self,
+        d_in: Iterator,
+        d_first_part_out: Iterator,
+        d_second_part_out: Iterator,
+        d_unselected_out: Iterator,
+        d_num_selected_out: Iterator,
+        select_first_part_op: Op,
+        select_second_part_op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_in: Iterator,
+        d_first_part_out: Iterator,
+        d_second_part_out: Iterator,
+        d_unselected_out: Iterator,
+        d_num_selected_out: Iterator,
+        num_items: int,
+        stream,
+    ) -> int: ...

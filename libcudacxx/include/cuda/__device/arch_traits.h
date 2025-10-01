@@ -516,7 +516,7 @@ inline constexpr int __highest_known_arch = 120;
     case id::sm_120a:
       return ::cuda::arch::traits<id::sm_120a>();
     default:
-      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
   }
 }
@@ -525,7 +525,7 @@ inline constexpr int __highest_known_arch = 120;
 {
   if (compute_capability < 60 || compute_capability > __highest_known_arch)
   {
-    ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
+    ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Compute capability out of range");
   }
   return static_cast<id>(compute_capability);
 }
@@ -550,7 +550,7 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
     case 120:
       return id::sm_120a;
     default:
-      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
+      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Compute capability out of range");
       break;
   }
 }
