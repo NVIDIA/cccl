@@ -143,8 +143,8 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   constexpr auto rank = ext.rank();
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
-  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{});
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
+  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
@@ -170,8 +170,8 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   auto Y             = GENERATE_COPY(take(3, random(2, 10)));
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
-  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{});
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
+  c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
@@ -211,7 +211,7 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
       min_items,
       max_items,
     }));
-  c2h::device_vector<int> counts(num_items);
+  c2h::device_vector<int> counts(num_items, 0);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
   device_for_each_in_layout(layout_t{}, ext_t{num_items}, incrementer_t{d_counts});
 
