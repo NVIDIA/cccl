@@ -37,7 +37,7 @@ Checks whether a value ``value`` is within the range ``[start, end]``, inclusive
 
 **Preconditions**
 
-- ``end`` must be greater than ``start``.
+- ``end`` must be greater than or equal to ``start``.
 
 **Performance considerations**
 
