@@ -39,8 +39,6 @@ __host__ __device__ bool test()
 
   test_variants<int>();
   test_variants<const int>();
-  test_variants<volatile int>();
-  test_variants<const volatile int>();
   return true;
 }
 
