@@ -1,13 +1,13 @@
-.. _libcudacxx-extended-api-memory-pointer_in_range:
+.. _libcudacxx-extended-api-memory-ptr_in_range:
 
-``cuda::pointer_in_range``
-=========================
+``cuda::ptr_in_range``
+======================
 
 .. code:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline
-   T* pointer_in_range(T* ptr, T* start, T* end) noexcept
+   T* ptr_in_range(T* ptr, T* start, T* end) noexcept
 
 Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``. The interval bounds are interpreted using the standard pointer comparison semantics for ``T*``.
 
@@ -41,7 +41,7 @@ Example
         float* last  = data + count;
 
         float* elem_ptr = data + threadIdx.x;
-        if (cuda::pointer_in_range(elem_ptr, first, last)) {
+        if (cuda::ptr_in_range(elem_ptr, first, last)) {
             *elem_ptr = static_cast<float>(threadIdx.x);
         }
     }
@@ -58,4 +58,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/EPfMErjGK>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/6Ybevcr5e>`_

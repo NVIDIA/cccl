@@ -15,10 +15,10 @@
 template <typename Pointer>
 __host__ __device__ void test_in_range([[maybe_unused]] Pointer first, [[maybe_unused]] Pointer last)
 {
-  assert(cuda::pointer_in_range(first, first, last));
-  assert(cuda::pointer_in_range(first + 1, first, last));
-  assert(cuda::pointer_in_range(last - 1, first, last));
-  assert(!cuda::pointer_in_range(last, first, last));
+  assert(cuda::ptr_in_range(first, first, last));
+  assert(cuda::ptr_in_range(first + 1, first, last));
+  assert(cuda::ptr_in_range(last - 1, first, last));
+  assert(!cuda::ptr_in_range(last, first, last));
 }
 
 template <typename T>
@@ -33,8 +33,8 @@ __host__ __device__ void test_variants()
 __host__ __device__ bool test()
 {
   constexpr auto nullptr_int = static_cast<int*>(nullptr);
-  static_assert(noexcept(cuda::pointer_in_range(nullptr_int, nullptr_int, nullptr_int)));
-  using ret_type = decltype(cuda::pointer_in_range(nullptr_int, nullptr_int, nullptr_int));
+  static_assert(noexcept(cuda::ptr_in_range(nullptr_int, nullptr_int, nullptr_int)));
+  using ret_type = decltype(cuda::ptr_in_range(nullptr_int, nullptr_int, nullptr_int));
   static_assert(::cuda::std::is_same_v<bool, ret_type>);
 
   test_variants<int>();
