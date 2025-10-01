@@ -261,7 +261,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       using value_t = it_value_t<it_t>;
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
-        // TODO(bgruber): we could add a max_load_store_size tp the policy to avoid huge load types and huge alignment
+        // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements
         using load_t   = decltype(load_store_type<sizeof(value_t) * vec_size>());
         auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
