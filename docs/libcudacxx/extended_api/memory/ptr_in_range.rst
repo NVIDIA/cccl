@@ -5,15 +5,14 @@
 
 .. code:: cuda
 
-   template <typename T>
+   namespace cuda {
+
    [[nodiscard]] __host__ __device__ inline
-   T* ptr_in_range(T* ptr, T* start, T* end) noexcept
+   bool ptr_in_range(const void* ptr, const void* start, const void* end) noexcept
 
-Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``. The interval bounds are interpreted using the standard pointer comparison semantics for ``T*``.
-
-**Template parameters**
-
-- ``T``: The type of the pointer being tested.
+   } // namespace cuda
+ 
+Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``.
 
 **Parameters**
 

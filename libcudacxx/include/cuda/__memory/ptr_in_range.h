@@ -21,18 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/operations.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <typename _Tp>
-[[nodiscard]] _CCCL_API inline bool ptr_in_range(_Tp* __ptr, _Tp* __start, _Tp* __end) noexcept
+[[nodiscard]] _CCCL_API inline bool ptr_in_range(const void* __ptr, const void* __start, const void* __end) noexcept
 {
-  _CCCL_ASSERT(::cuda::std::greater_equal<const _Tp*>{}(__end, __start),
-               "ptr_in_range: __end must be greater than __start");
-  return ::cuda::std::less_equal<const _Tp*>{}(__start, __ptr) && ::cuda::std::less<const _Tp*>{}(__ptr, __end);
+  _CCCL_ASSERT(__end >= __start, "ptr_in_range: __end must be greater than __start");
+  return __ptr >= __start && __ptr < __end;
 }
 
 _CCCL_END_NAMESPACE_CUDA
