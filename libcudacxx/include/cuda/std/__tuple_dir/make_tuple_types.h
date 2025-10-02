@@ -65,11 +65,13 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
   using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
 };
 
-template <class _Vt>
-struct __make_tuple_types_flat<complex<_Vt>, __tuple_indices<0, 1>>
+template <class _Vt, size_t... _Idx>
+struct __make_tuple_types_flat<complex<_Vt>, __tuple_indices<_Idx...>>
 {
+  template <size_t>
+  using __value_type = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, _Vt>, __type_call<_ApplyFn, _Vt>>;
+  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
 };
 
 template <class _Tp,
