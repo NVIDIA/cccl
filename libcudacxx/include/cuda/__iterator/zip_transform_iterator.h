@@ -33,6 +33,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -152,8 +153,29 @@ template <class _Fn, class... _Iterators>
 template <class _Fn, class... _Iterators>
 class zip_transform_iterator
 {
-  ::cuda::std::ranges::__movable_box<_Fn> __func_;
-  ::cuda::std::tuple<_Iterators...> __current_;
+private:
+  // Not a base because then the friend operators would be ambiguous
+  ::cuda::std::__compressed_movable_box<::cuda::std::tuple<_Iterators...>, _Fn> __store_;
+
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::tuple<_Iterators...>& __iters() noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const ::cuda::std::tuple<_Iterators...>& __iters() const noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Fn& __func() noexcept
+  {
+    return __store_.template __get<1>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Fn& __func() const noexcept
+  {
+    return __store_.template __get<1>();
+  }
 
   template <class, class...>
   friend class zip_transform_iterator;
@@ -170,13 +192,6 @@ class zip_transform_iterator
 
 public:
   //! @brief Default-constructs a @c zip_transform_iterator by value-initializing the functor and all stored iterators
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI zip_transform_iterator()
-    requires ::cuda::std::default_initializable<_Fn>
-            && __zip_iter_constraints<_Iterators...>::__all_default_initializable
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
   _CCCL_REQUIRES(
@@ -184,23 +199,27 @@ public:
   _CCCL_API constexpr zip_transform_iterator() noexcept(
     ::cuda::std::is_nothrow_default_constructible_v<_Fn2>
     && __zip_iter_constraints<_Iterators...>::__all_nothrow_default_constructible)
-      : __func_(::cuda::std::in_place)
-      , __current_()
+      : __store_()
   {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+
+  //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
+  //! @param __iters A tuple or pair of iterators
+  _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __iters)
+      : __store_(::cuda::std::move(__iters), ::cuda::std::move(__fun))
+  {}
 
   //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
   //! @param __iters A tuple of iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __iters)
-      : __func_(::cuda::std::in_place, ::cuda::std::move(__fun))
-      , __current_(::cuda::std::move(__iters))
+      : __store_(::cuda::std::tuple<_Iterators...>{::cuda::std::get<0>(::cuda::std::move(__iters)),
+                                                   ::cuda::std::get<1>(::cuda::std::move(__iters))},
+                 ::cuda::std::move(__fun))
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from variadic set of iterators
   //! @param __iters The input iterators
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, _Iterators... __iters)
-      : __func_(::cuda::std::in_place, ::cuda::std::move(__fun))
-      , __current_(::cuda::std::move(__iters)...)
+      : __store_(::cuda::std::tuple<_Iterators...>{::cuda::std::move(__iters)...}, ::cuda::std::move(__fun))
   {}
 
   using iterator_concept  = decltype(::cuda::__get_zip_iterator_concept<_Iterators...>());
@@ -218,12 +237,12 @@ public:
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::tuple<_Iterators...>
   __base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<::cuda::std::tuple<_Iterators...>>)
   {
-    return ::cuda::std::move(__current_);
+    return ::cuda::std::move(__iters());
   }
 
   [[nodiscard]] _CCCL_API constexpr _Fn __pred() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
   {
-    return ::cuda::std::move(*__func_);
+    return ::cuda::std::move(__func());
   }
 
   struct __zip_transform_op_star
@@ -242,7 +261,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, ::cuda::std::iter_reference_t<const _Iterators>...>)
   {
-    return ::cuda::std::apply(__zip_transform_op_star{const_cast<_Fn&>(*__func_)}, __current_);
+    return ::cuda::std::apply(__zip_transform_op_star{const_cast<_Fn&>(__func())}, __iters());
   }
 
   struct __zip_transform_op_subscript
@@ -264,16 +283,16 @@ public:
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr reference operator[](difference_type __n) const
-    noexcept(noexcept(::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(*__func_)}, __current_)))
+    noexcept(noexcept(::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(__func())}, __iters())))
   {
-    return ::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(*__func_)}, __current_);
+    return ::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(__func())}, __iters());
   }
 
   //! @brief Increments all stored iterators
   _CCCL_API constexpr zip_transform_iterator&
-  operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment{}, __current_)))
+  operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment{}, __iters())))
   {
-    ::cuda::std::apply(__zip_op_increment{}, __current_);
+    ::cuda::std::apply(__zip_op_increment{}, __iters());
     return *this;
   }
 
@@ -297,9 +316,9 @@ public:
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_bidirectional)
   _CCCL_API constexpr zip_transform_iterator&
-  operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement{}, __current_)))
+  operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement{}, __iters())))
   {
-    ::cuda::std::apply(__zip_op_decrement{}, __current_);
+    ::cuda::std::apply(__zip_op_decrement{}, __iters());
     return *this;
   }
 
@@ -330,9 +349,9 @@ public:
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr zip_transform_iterator&
-  operator+=(difference_type __n) noexcept(noexcept(::cuda::std::apply(__zip_op_pe{__n}, __current_)))
+  operator+=(difference_type __n) noexcept(noexcept(::cuda::std::apply(__zip_op_pe{__n}, __iters())))
   {
-    ::cuda::std::apply(__zip_op_pe{__n}, __current_);
+    ::cuda::std::apply(__zip_op_pe{__n}, __iters());
     return *this;
   }
 
@@ -354,7 +373,7 @@ public:
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr zip_transform_iterator& operator-=(difference_type __n)
   {
-    ::cuda::std::apply(__zip_op_me{__n}, __current_);
+    ::cuda::std::apply(__zip_op_me{__n}, __iters());
     return *this;
   }
 
@@ -439,7 +458,7 @@ public:
   _CCCL_API friend constexpr auto operator-(const zip_transform_iterator& __n, const zip_transform_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
-    return __zip_apply(__zip_op_minus{}, __n.__current_, __y.__current_);
+    return __zip_apply(__zip_op_minus{}, __n.__iters(), __y.__iters());
   }
 
   struct __zip_op_eq
@@ -462,11 +481,11 @@ public:
   {
     if constexpr (_Constraints::__all_bidirectional)
     {
-      return __n.__current_ == __y.__current_;
+      return __n.__iters() == __y.__iters();
     }
     else
     {
-      return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
+      return __zip_apply(__zip_op_eq{}, __n.__iters(), __y.__iters());
     }
     _CCCL_UNREACHABLE();
   }
@@ -479,11 +498,11 @@ public:
   {
     if constexpr (_Constraints::__all_bidirectional)
     {
-      return __n.__current_ != __y.__current_;
+      return __n.__iters() != __y.__iters();
     }
     else
     {
-      return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
+      return !__zip_apply(__zip_op_eq{}, __n.__iters(), __y.__iters());
     }
     _CCCL_UNREACHABLE();
   }
@@ -495,7 +514,7 @@ public:
   _CCCL_API friend constexpr auto operator<=>(const zip_transform_iterator& __n, const zip_transform_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access&& _Constraints::__all_three_way_comparable)
   {
-    return __n.__current_ <=> __y.__current_;
+    return __n.__iters() <=> __y.__iters();
   }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
@@ -505,7 +524,7 @@ public:
   _CCCL_API friend constexpr auto operator<(const zip_transform_iterator& __n, const zip_transform_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
   {
-    return __n.__current_ < __y.__current_;
+    return __n.__iters() < __y.__iters();
   }
 
   //! @brief Compares two @c zip_transform_iterator for greater than by comparing the tuple of stored iterators
