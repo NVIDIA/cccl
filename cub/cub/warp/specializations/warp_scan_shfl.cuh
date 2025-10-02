@@ -50,7 +50,6 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__functional/operations.h>
