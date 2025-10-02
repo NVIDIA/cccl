@@ -28,6 +28,7 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__bit/countl.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -67,7 +68,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
   Integer num_bits           = 8 * sizeof(Integer);
   Integer num_bits_minus_one = num_bits - 1;
 
-  return num_bits_minus_one - ::cuda::std::countl_zero(x);
+  return num_bits_minus_one - ::cuda::std::countl_zero(::cuda::std::__to_unsigned_like(x));
 }
 
 template <typename Integer>
