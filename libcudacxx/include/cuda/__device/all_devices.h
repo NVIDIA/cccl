@@ -22,6 +22,7 @@
 #endif // no system header
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/cassert>
@@ -201,31 +202,14 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return devices[get()].arch_traits();
 }
 
-[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
+[[nodiscard]] inline ::cuda::std::string_view device_ref::name() const
 {
-  ::std::vector<device_ref> __result;
-  __result.reserve(devices.size());
+  return devices[get()].__name();
+}
 
-  for (const physical_device& __other_dev : devices)
-  {
-    // Exclude the device this API is called on. The main use case for this API
-    // is enable/disable peer access. While enable peer access can be called on
-    // device on which memory resides, disable peer access will error-out.
-    // Usage of the peer access control is smoother when *this is excluded,
-    // while it can be easily added with .push_back() on the vector if a full
-    // group of peers is needed (for cases other than peer access control)
-    if (__other_dev != *this)
-    {
-      // While in almost all practical applications peer access should be symmetrical,
-      // it is possible to build a system with one directional peer access, check
-      // both ways here just to be safe
-      if (has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(*this))
-      {
-        __result.push_back(__other_dev);
-      }
-    }
-  }
-  return __result;
+[[nodiscard]] inline ::cuda::std::span<const device_ref> device_ref::peer_devices() const
+{
+  return devices[get()].__peers();
 }
 
 _CCCL_END_NAMESPACE_CUDA

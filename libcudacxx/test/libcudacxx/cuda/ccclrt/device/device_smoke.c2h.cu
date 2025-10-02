@@ -272,7 +272,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
   }
   SECTION("Name")
   {
-    std::string name = device_ref(0).name();
+    const auto name = device_ref(0).name();
     CCCLRT_REQUIRE(name.length() != 0);
     CCCLRT_REQUIRE(name[0] != 0);
   }
