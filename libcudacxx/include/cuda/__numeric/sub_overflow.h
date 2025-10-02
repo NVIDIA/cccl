@@ -22,7 +22,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/uabs.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -34,11 +33,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cstdint>
 
 #include <nv/target>
 
@@ -62,21 +58,6 @@ template <typename _Tp>
   else
   {
     return overflow_result<_Tp>{__sub, __sub > __lhs};
-  }
-}
-
-template <typename _Result, typename _Tp>
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __sub_overflow_generic_impl_2(_Tp __lhs, _Tp __rhs) noexcept
-{
-  using _Up  = ::cuda::std::make_unsigned_t<_Tp>;
-  auto __sub = static_cast<_Result>(static_cast<_Up>(__lhs) - static_cast<_Up>(__rhs));
-  if constexpr (::cuda::std::is_signed_v<_Result>)
-  {
-    return overflow_result<_Result>{__sub, (::cuda::std::cmp_greater(__sub, __lhs)) == (__rhs >= _Tp{0})};
-  }
-  else
-  {
-    return overflow_result<_Result>{__sub, ::cuda::std::cmp_greater(__sub, __lhs)};
   }
 }
 
@@ -192,6 +173,26 @@ template <typename _Tp>
   return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
 }
 
+// subtraction with unsigned types to avoid UB, return an unsigned type
+template <typename _Result, typename _Lhs, typename _Rhs>
+[[nodiscard]] _CCCL_API constexpr _Result __safe_sub(_Lhs __lhs, _Rhs __rhs) noexcept
+{
+  using _UnsignedResult = ::cuda::std::make_unsigned_t<_Result>;
+  const auto __lhs1     = static_cast<_UnsignedResult>(__lhs);
+  const auto __rhs1     = static_cast<_UnsignedResult>(__rhs);
+  return static_cast<_Result>(__lhs1 - __rhs1);
+}
+
+// addition with unsigned types to avoid UB, return an unsigned type
+template <typename _Result, typename _Lhs, typename _Rhs>
+[[nodiscard]] _CCCL_API constexpr _Result __safe_add(_Lhs __lhs, _Rhs __rhs) noexcept
+{
+  using _UnsignedResult = ::cuda::std::make_unsigned_t<_Result>;
+  const auto __lhs1     = static_cast<_UnsignedResult>(__lhs);
+  const auto __rhs1     = static_cast<_UnsignedResult>(__rhs);
+  return static_cast<_Result>(__lhs1 + __rhs1);
+}
+
 /***********************************************************************************************************************
  * Public interface
  **********************************************************************************************************************/
@@ -214,34 +215,29 @@ sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   __result.overflow = _CCCL_BUILTIN_SUB_OVERFLOW(__lhs, __rhs, &__result.value);
   return __result;
 #else
-  using ::cuda::std::__make_nbit_int_t;
-  using ::cuda::std::__make_nbit_uint_t;
-  using ::cuda::std::__num_bits_v;
-  using ::cuda::std::is_same_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
-  using _CommonAll = ::cuda::std::common_type_t<_Common, _ActualResult>;
-  //[[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
-  // shortcut for the case where inputs are representable with the common type
-  if constexpr (__is_integer_representable_v<_Lhs, _CommonAll> && __is_integer_representable_v<_Rhs, _CommonAll>)
+  // shortcut for the case where inputs are representable with the result type
+  if constexpr (__is_integer_representable_v<_Lhs, _ActualResult> && __is_integer_representable_v<_Rhs, _ActualResult>)
   {
-    const auto __lhs1 = static_cast<_CommonAll>(__lhs);
-    const auto __rhs1 = static_cast<_CommonAll>(__rhs);
-    const auto __sub  = static_cast<_CommonAll>(__lhs1 - __rhs1);
-    return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sub), false};
+    const auto __lhs1 = static_cast<_ActualResult>(__lhs);
+    const auto __rhs1 = static_cast<_ActualResult>(__rhs);
+    const auto __sub  = static_cast<_ActualResult>(__lhs1 - __rhs1);
+    return overflow_result<_ActualResult>{__sub, false};
   }
   // all types have the same sign
   else if constexpr (is_signed_v<_Lhs> == is_signed_v<_Rhs> && is_signed_v<_Lhs> == is_signed_v<_ActualResult>)
   {
+    using _CommonAll  = ::cuda::std::common_type_t<_Common, _ActualResult>;
     const auto __lhs1 = static_cast<_CommonAll>(__lhs);
     const auto __rhs1 = static_cast<_CommonAll>(__rhs);
     const auto __sub  = ::cuda::__sub_overflow_uniform_type(__lhs1, __rhs1);
     const auto __ret  = ::cuda::overflow_cast<_ActualResult>(__sub.value);
     return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __sub.overflow};
   }
-  else if (::cuda::std::cmp_less(__lhs, __rhs)) // negative result
+  else if (::cuda::std::cmp_less(__lhs, __rhs)) // lhs < rhs -> negative result
   {
-    if constexpr (is_unsigned_v<_ActualResult>) // If Result is unsigned, any negative result is an overflow
+    if constexpr (is_unsigned_v<_ActualResult>) // if _ActualResult is unsigned, any negative result is an underflow
     {
       const auto __lhs1 = static_cast<_ActualResult>(__lhs);
       const auto __rhs1 = static_cast<_ActualResult>(__rhs);
@@ -249,121 +245,50 @@ sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     }
     else
     {
-      // perform the operation as unsigned to avoid UB
-      using _SignedCommonAll   = ::cuda::std::make_signed_t<_CommonAll>;
-      using _UnsignedCommonAll = ::cuda::std::make_unsigned_t<_CommonAll>;
-      const auto __lhs1        = static_cast<_UnsignedCommonAll>(__lhs);
-      const auto __rhs1        = static_cast<_UnsignedCommonAll>(__rhs);
-      const auto __ret         = ::cuda::overflow_cast<_ActualResult>(static_cast<_SignedCommonAll>(__lhs1 - __rhs1));
+      // perform the subtraction as signed (negative result) and check if the result is out of range
+      // Then, there are two cases depending on the sign of the rhs
+      using _SignedCommonAll          = ::cuda::std::make_signed_t<::cuda::std::common_type_t<_Common, _ActualResult>>;
+      const auto __sub                = ::cuda::__safe_sub<_SignedCommonAll>(__lhs, __rhs);
+      constexpr auto __result_min     = ::cuda::std::numeric_limits<_ActualResult>::min();
+      const auto __is_out_of_range    = ::cuda::std::cmp_less(__sub, __result_min);
+      const auto __sub_ret            = static_cast<_ActualResult>(__sub);
       const bool __rhs_less_than_zero = !is_unsigned_v<_Rhs> && __rhs < _Rhs{0};
       if (__rhs_less_than_zero) // if rhs <= 0, lhs - rhs > lhs -> ok, no overflow if possible
       {
-        return __ret;
+        return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range};
       }
-      else // lhs < 0 && rhs >= 0 -> lhs - rhs < result_min? -> lhs < result_min + rhs
+      else // rhs >= 0 -> lhs - rhs < result_min? -> lhs < result_min + rhs
       {
-        // check for underflow, use unsigned type to avoid UB
-        constexpr auto __signed_min   = ::cuda::std::numeric_limits<_SignedCommonAll>::min();
-        constexpr auto __signed_min_u = static_cast<_UnsignedCommonAll>(__signed_min);
-        const auto __safe_sum         = static_cast<_SignedCommonAll>(__signed_min_u + __rhs1);
-        const bool __is_underflow     = ::cuda::std::cmp_less(__lhs, __safe_sum);
-        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __is_underflow};
+        using _Sp                   = ::cuda::std::make_signed_t<::cuda::std::common_type_t<_Rhs, _ActualResult>>;
+        constexpr auto __signed_min = ::cuda::std::numeric_limits<_Sp>::min();
+        const auto __safe_sum       = ::cuda::__safe_add<_SignedCommonAll>(__signed_min, __rhs);
+        const bool __is_underflow   = ::cuda::std::cmp_less(__lhs, __safe_sum);
+        return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range || __is_underflow};
       }
     }
   }
-  else
-  { // positive result
-    using _UnsignedCommonAll    = ::cuda::std::make_unsigned_t<_CommonAll>;
-    const auto __lhs1           = static_cast<_UnsignedCommonAll>(__lhs);
-    const auto __rhs1           = static_cast<_UnsignedCommonAll>(__rhs);
-    const auto __ret            = ::cuda::overflow_cast<_ActualResult>(__lhs1 - __rhs1);
-    const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
-    if (__is_rhs_ge_zero) // lhs - rhs < lhs -> ok, no overflow
-    {
-      return __ret;
-    }
-    else // rhs < 0 -> lhs - rhs > result_max? -> lhs > result_max + rhs
-    {
-      constexpr auto __unsigned_max = ::cuda::std::numeric_limits<_UnsignedCommonAll>::max();
-      const bool __is_overflow      = ::cuda::std::cmp_greater(__lhs, __unsigned_max + __rhs1);
-      return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __is_overflow};
-    }
-  }
-/*
-  // * signed - signed = signed
-  if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>) // all signed
+  else // lhs >= rhs -> positive result
   {
-    using _Sp         = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
-    const auto __lhs1 = static_cast<_Sp>(__lhs);
-    const auto __rhs1 = static_cast<_Sp>(__rhs);
-    const auto __sub  = ::cuda::__sub_overflow_uniform_type(__lhs1, __rhs1);
-    const auto __ret  = ::cuda::overflow_cast<_ActualResult>(__sub.value);
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __sub.overflow};
-  }
-  // Positive inputs -> handle them as unsigned
-  // * unsigned - unsigned (compile-time)
-  // * unsigned - int >= 0 (compile-time + run-time check)
-  // * int >= 0 - unsigned (compile-time + run-time check)
-  // * int >= 0 - int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
-  else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
-  {
-    using _Up         = __make_nbit_uint_t<__num_bits_v<_CommonAll>>;
-    const auto __lhs1 = static_cast<_Up>(__lhs);
-    const auto __rhs1 = static_cast<_Up>(__rhs);
-    const auto __sub  = ::cuda::__sub_overflow_uniform_type(__lhs1, __rhs1);
-    const auto __ret  = ::cuda::overflow_cast<_ActualResult>(__sub.value);
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __sub.overflow};
-  }
-  // Negative result
-  // * int < 0 - int >= 0
-  else if (!__is_lhs_ge_zero && __is_rhs_ge_zero)
-  {
-    if constexpr (is_unsigned_v<_ActualResult>) // If Result is unsigned, any negative result is an overflow
+    // perform the subtraction as unsigned (positive result) and check if the result is out of range
+    // Then, there are two cases depending on the sign of the rhs
+    using _UnsignedCommonAll     = ::cuda::std::make_unsigned_t<::cuda::std::common_type_t<_Common, _ActualResult>>;
+    const auto __sub             = ::cuda::__safe_sub<_UnsignedCommonAll>(__lhs, __rhs);
+    const auto __sub_ret         = static_cast<_ActualResult>(__sub);
+    constexpr auto __result_max  = ::cuda::std::numeric_limits<_ActualResult>::max();
+    const auto __is_out_of_range = ::cuda::std::cmp_greater(__sub, __result_max);
+    const bool __is_rhs_ge_zero  = is_unsigned_v<_Rhs> || __rhs >= 0;
+    if (__is_rhs_ge_zero) // rhs >= 0 -> lhs - rhs < lhs -> no overflow
     {
-      const auto __lhs1 = static_cast<_ActualResult>(__lhs);
-      const auto __rhs1 = static_cast<_ActualResult>(__rhs);
-      return overflow_result<_ActualResult>{static_cast<_ActualResult>(__lhs1 - __rhs1), true};
+      return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range};
     }
-    else // signed - unsigned = signed
+    else // lhs >= 0 && rhs < 0 -> lhs - rhs > result_max? -> lhs > result_max + rhs
     {
-      using _SignedCommon = ::cuda::std::make_signed_t<_CommonAll>;
-      const auto __lhs1   = static_cast<_SignedCommon>(__lhs);
-      const auto __rhs1   = static_cast<_SignedCommon>(__rhs);
-      return ::cuda::overflow_cast<_ActualResult>(__lhs1 - __rhs1);
+      using _Up                     = ::cuda::std::make_unsigned_t<::cuda::std::common_type_t<_Rhs, _ActualResult>>;
+      constexpr auto __unsigned_max = ::cuda::std::numeric_limits<_Up>::max();
+      const bool __is_overflow      = ::cuda::std::cmp_greater(__lhs, __unsigned_max + __rhs);
+      return overflow_result<_ActualResult>{__sub_ret, __is_out_of_range || __is_overflow};
     }
   }
-  // The result falls into _Common range (opposite signs)
-  // * int < 0 - int < 0   -> _ActualResult=unsigned (_ActualResult=signed already handled above)
-  // * int >= 0 - int >= 0 -> already handled above
-  else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
-  {
-    using _UCommon    = ::cuda::std::make_unsigned_t<_Common>; // use unsigned to avoid UB
-    const auto __lhs1 = static_cast<_UCommon>(__lhs);
-    const auto __rhs1 = static_cast<_UCommon>(__rhs);
-    const auto __ret  = ::cuda::overflow_cast<_ActualResult>(static_cast<_Common>(__lhs1 - __rhs1));
-    return overflow_result<_ActualResult>{__ret.value, __ret.overflow};
-  }
-  // Opposite type signs
-  // * unsigned - int < 0
-  // * \\\\\ int < 0 - unsigned
-  else
-  {
-    const auto __lhs1 = static_cast<_Common>(__lhs); // _Common is unsigned
-    const auto __rhs1 = static_cast<_Common>(__rhs);
-    const auto __sub  = static_cast<_Common>(__lhs1 - __rhs1);
-    // if constexpr (is_unsigned_v<_Lhs>) // unsigned - int < 0 -> positive value representable with _Common
-    //{
-    return ::cuda::overflow_cast<_ActualResult>(__sub);
-    //}
-    // else // int < 0 - unsigned -> negative value
-    //{
-    //  using _SignedCommon       = ::cuda::std::make_signed_t<_Common>;
-    //  const auto __ret          = ::cuda::overflow_cast<_ActualResult>(static_cast<_SignedCommon>(__sub));
-    //  const bool __is_underflow = __sub > ::cuda::uabs{cuda::std::numeric_limits<_SignedCommon>::min()};
-    //  return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __is_underflow};
-    //}
-  }
-*/
 #endif // defined(_CCCL_BUILTIN_SUB_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
 }
 
