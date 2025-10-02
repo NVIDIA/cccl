@@ -99,7 +99,7 @@ __host__ __device__ constexpr void test_type()
   }
   else // rhs_max > lhs_max, negative result: lhs_max - rhs_max < result_min -> lhs_max < result_min + rhs_max
   {
-    // *** very special case ***:
+    // *** very special case ***: test case cannot be validated in a constexpr context
     // example: int - unsigned = int
     // the expression 'static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs))' translate to:
     // INT_MAX - UINT_MAX = INT_MIN -> no overflow, but
@@ -111,11 +111,10 @@ __host__ __device__ constexpr void test_type()
   }
   //--------------------------------------------------------------------------------------------------------------------
   // min cases
-
   if constexpr (is_signed_v<Rhs>) // if Rhs is unsigned, rhs_min = 0, already handled above
   {
     // 10. 0 - min -> -min > result_max? -> min < -result_max?
-    if constexpr (is_same_v<Rhs, Result>) // e.g. -INT_MIN  -> overflow
+    if constexpr (is_same_v<Rhs, Result>) // e.g. 0 - INT_MIN -> overflow
     {
       test_sub_overflow<Result>(Lhs{}, rhs_min, true);
     }
@@ -176,7 +175,7 @@ __host__ __device__ constexpr void test_type()
   test_type<T, R, unsigned>();
   test_type<T, R, int>();
   // instantiation of all tests is very expensive. clang hits "constexpr evaluation hit maximum step limit"
-#if _CCCL_COMPILER(GCC)
+#if !_CCCL_COMPILER(CLANG)
   test_type<T, R, long long>();
   test_type<T, R, unsigned long long>();
   test_type<T, R, signed char>();
