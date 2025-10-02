@@ -213,7 +213,7 @@ public:
                 "cuda::transform_input_output_iterator requires that _InputFn is invocable on the result of "
                 "dereferencing _Iter");
 
-  //! @brief Default constructs a @c transform_input_output_iterator with a value initialized iterator and functors
+//! @brief Default constructs a @c transform_input_output_iterator with a value initialized iterator and functors
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI transform_input_output_iterator()
