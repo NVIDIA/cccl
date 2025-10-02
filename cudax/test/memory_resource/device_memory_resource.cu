@@ -15,6 +15,7 @@
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <stdexcept>
+#include <vector>
 
 #include <testing.cuh>
 #include <utility.cuh>
