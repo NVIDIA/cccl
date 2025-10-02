@@ -39,6 +39,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER <= 2017
@@ -313,6 +315,8 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
