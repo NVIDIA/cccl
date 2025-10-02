@@ -550,14 +550,7 @@ public:
 
         ctx.to_graph_ctx().finalize_as_graph();
 
-        // Debug: Print DOT output of the finalized graph
-        if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
-        {
-          static int debug_graph_cnt = 0; // Warning: not thread-safe
-          ::std::string filename     = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
-          cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0));
-          ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
-        }
+
 
         auto& parent_ctx = parent_ctx_node->ctx;
 
@@ -595,6 +588,15 @@ public:
           auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
 
           return event_list(mv(output_node_event));
+        }
+
+        // Debug: Print DOT output of the finalized graph
+        if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
+        {
+          static int debug_graph_cnt = 0; // Warning: not thread-safe
+          ::std::string filename     = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
+          cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+          ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
         }
 
 #if 0
