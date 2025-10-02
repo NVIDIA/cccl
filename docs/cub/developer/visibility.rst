@@ -9,6 +9,7 @@ Symbol Visibility
 
    visibility/host_stub_visibility
    visibility/device_kernel_visibility
+   visibility/different_architectures
 
 Using CUB/Thrust in shared libraries is a known source of issues. This relates to the visibility of the kernel functions
 but also of the stub functions NVCC generates to actually call the kernel.
@@ -33,6 +34,19 @@ inside ``lib_b`` instead of ``lib_b::foo``, or vice versa. The CUDA runtime from
 the kernel function pointer we passed from ``lib_b``.
 
 A more detailed description can be found :ref:`here <cub-developer-guide-visibility-device-kernel-visibility>`.
+
+Problem 3: linking TUs compiled for different architectures
+------------------------------------------------------------
+
+This is orthogonal to the visibility of the functions themself but relates to ODR violations in case a TU is compiled
+for different architectures. As new architectures come out, we adopt new features to provide the best possible
+performance for all existing architectures.
+
+However, consider a kernel that contains an `NV_IF_TARGET` that conditionally selects different architecture features.
+If we build 2 TUs for different architectures then we will end up in a situation that the kernel implementation differs
+between the two TUs, but the kernel itself will be mangled as the same symbol, which is a clear ODR violation.
+
+A more detailed description can be found :ref:`here <cub-developer-guide-visibility-different-architectures>`.
 
 Possible Solutions
 -------------------
