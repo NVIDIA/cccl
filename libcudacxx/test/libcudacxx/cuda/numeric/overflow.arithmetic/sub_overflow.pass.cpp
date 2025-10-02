@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/numeric>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
-#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -29,23 +27,19 @@ __host__ __device__ constexpr void test_sub_overflow(Lhs lhs, Rhs rhs, bool over
     {
       assert(result.value == static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs)));
     }
-    if (result.overflow != overflow)
-    {
-      //  printf("result.overflow: %d, overflow: %d\n", result.overflow, overflow);
-    }
     assert(result.overflow == overflow);
   }
   // test bool sub_overflow(Lhs lhs, Rhs rhs, Result & result) overload
-  //{
-  //  Result result{};
-  //  bool has_overflow = cuda::sub_overflow<Result>(result, lhs, rhs);
-  //  // overflow result is well-defined only for unsigned types
-  //  if (!overflow || cuda::std::is_unsigned_v<Result>)
-  //  {
-  //    assert(result == static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs)));
-  //  }
-  //  assert(has_overflow == overflow);
-  //}
+  {
+    Result result{};
+    bool has_overflow = cuda::sub_overflow<Result>(result, lhs, rhs);
+    // overflow result is well-defined only for unsigned types
+    if ((!overflow && !skip_special_cases) || cuda::std::is_unsigned_v<Result>)
+    {
+      assert(result == static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs)));
+    }
+    assert(has_overflow == overflow);
+  }
 }
 
 template <typename Lhs, typename Rhs, typename Result>
@@ -55,11 +49,18 @@ __host__ __device__ constexpr void test_type()
   using cuda::std::is_signed_v;
   using cuda::std::is_unsigned_v;
   static_assert(is_same_v<decltype(cuda::sub_overflow<Result>(Lhs{}, Rhs{})), cuda::overflow_result<Result>>);
-  static_assert(noexcept(cuda::sub_overflow(Lhs{}, Rhs{})));
-
-  static_assert(is_same_v<decltype(cuda::sub_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})), bool>);
-  static_assert(noexcept(cuda::sub_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})));
-
+  using UResult                 = cuda::std::make_unsigned_t<Result>;
+  using URhs                    = cuda::std::make_unsigned_t<Rhs>;
+  constexpr auto lhs_min        = cuda::std::numeric_limits<Lhs>::min();
+  constexpr auto lhs_max        = cuda::std::numeric_limits<Lhs>::max();
+  constexpr auto rhs_min        = cuda::std::numeric_limits<Rhs>::min();
+  constexpr auto rhs_max        = cuda::std::numeric_limits<Rhs>::max();
+  constexpr auto result_min     = cuda::std::numeric_limits<Result>::min();
+  constexpr auto result_max     = cuda::std::numeric_limits<Result>::max();
+  constexpr auto neg_result_min = static_cast<UResult>(cuda::neg(result_min));
+  constexpr auto neg_rhs_min    = static_cast<URhs>(cuda::neg(rhs_min));
+  //--------------------------------------------------------------------------------------------------------------------
+  // trivial cases
   // 1. 0 - 0 -> should never overflow
   test_sub_overflow<Result>(Lhs{}, Rhs{}, false);
 
@@ -71,32 +72,23 @@ __host__ __device__ constexpr void test_type()
   {
     test_sub_overflow<Result>(Lhs{}, Rhs{1}, is_unsigned_v<Result>);
   }
-  constexpr auto lhs_min    = cuda::std::numeric_limits<Lhs>::min();
-  constexpr auto lhs_max    = cuda::std::numeric_limits<Lhs>::max();
-  constexpr auto rhs_min    = cuda::std::numeric_limits<Rhs>::min();
-  constexpr auto rhs_max    = cuda::std::numeric_limits<Rhs>::max();
-  constexpr auto result_min = cuda::std::numeric_limits<Result>::min();
-  constexpr auto result_max = cuda::std::numeric_limits<Result>::max();
-
-  // 5. max - 0 -> max >= result_max? (should overflow if the destination type is too small)
+  // 4. 1 - 0 -> should never overflow
+  test_sub_overflow<Result>(Lhs{1}, Rhs{0}, false);
+  //--------------------------------------------------------------------------------------------------------------------
+  // max cases
+  // 5. max - 0 -> max >= result_max?
   test_sub_overflow<Result>(lhs_max, Rhs{}, cuda::std::cmp_greater(lhs_max, result_max));
 
-  // 7. max - 1 -> max - 1 >= result_max? (should overflow if the destination type is too small)
+  // 6. max - 1 -> max - 1 >= result_max?
   test_sub_overflow<Result>(lhs_max, Rhs{1}, cuda::std::cmp_greater(Lhs{lhs_max - 1}, result_max));
 
-  // 6. 0 - max -> -max < result_min? (should overflow if the destination type is too small)
-  if constexpr (is_signed_v<Rhs>) // if Rhs is not signed, rhs_max = 0, already handled above
-  {
-    test_sub_overflow<Result>(Lhs{}, rhs_max, cuda::std::cmp_less(Rhs{-rhs_max}, result_min));
-  }
+  // 7. 0 - max -> -rhs_max > result_min? -> rhs_max < -result_min?
+  test_sub_overflow<Result>(Lhs{}, rhs_max, cuda::std::cmp_greater(rhs_max, neg_result_min));
 
-  // 8. 1 - max -> -(max - 1) < result_min? (should overflow if the destination type is too small)
-  if constexpr (is_signed_v<Rhs>) // if Rhs is not signed, rhs_max = 0, already handled above
-  {
-    test_sub_overflow<Result>(Lhs{1}, rhs_max, cuda::std::cmp_less(Rhs{-Rhs{rhs_max - 1}}, Result{result_min}));
-  }
+  // 8. 1 - max -> (rhs_max - 1) < -result_min?
+  test_sub_overflow<Result>(Lhs{1}, rhs_max, cuda::std::cmp_greater(Rhs{rhs_max - 1}, neg_result_min));
 
-  //  9. max - max
+  // 9. max - max
   if constexpr (lhs_max >= rhs_max) // positive result
   {
     test_sub_overflow<Result>(lhs_max, rhs_max, cuda::std::cmp_greater(lhs_max - rhs_max, result_max));
@@ -107,71 +99,54 @@ __host__ __device__ constexpr void test_type()
   }
   else // rhs_max > lhs_max, negative result: lhs_max - rhs_max < result_min -> lhs_max < result_min + rhs_max
   {
-    // using UnsignedCommon = cuda::std::make_unsigned_t<cuda::std::common_type_t<Rhs, Result>>;
-    // using SignedCommon   = cuda::std::make_signed_t<UnsignedCommon>;
-    // using SignedCommon   = cuda::std::make_signed_t<cuda::std::common_type_t<Lhs, Rhs>>;
-    // auto sum             = SignedCommon(UnsignedCommon(result_min) + UnsignedCommon(rhs_max));
-    // test_sub_overflow<Result>(lhs_max, rhs_max, cuda::std::cmp_less(lhs_max, result_min));
-
-    using UResult = cuda::std::make_unsigned_t<Result>;
-    // if constexpr (is_same_v<Lhs, int> && is_same_v<Rhs, unsigned> && is_same_v<Result, int>)
-    //{
-    //   assert(!cuda::std::cmp_greater(rhs_max - lhs_max, UResult(cuda::neg(result_min))));
-    //   assert(static_cast<Result>(lhs_max) != 0);
-    //   assert(static_cast<Result>(rhs_max) != 0);
-    //   assert(static_cast<Result>(static_cast<Result>(rhs_max) - static_cast<Result>(lhs_max)) != 0);
-    // }
-    //  if constexpr (cuda::std::cmp_greater(rhs_max, result_max)) // rhs_max is larger than both lhs_max and result_max
-    //{
-    // very special case:
+    // *** very special case ***:
     // example: int - unsigned = int
     // the expression 'static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs))' translate to:
-    // INT_MAX - UINT_MAX = INT_MIN -> no overflow, but 
+    // INT_MAX - UINT_MAX = INT_MIN -> no overflow, but
     // INT_MIN - 1 -> is less than INT_MIN and constexpr fails to compile
-
     bool skip_special_case = sizeof(Lhs) == sizeof(Rhs) && sizeof(Rhs) == sizeof(Result)
-                           && is_signed_v<Lhs> && is_unsigned_v<Rhs> && cuda::std::is_constant_evaluated();
+                          && is_signed_v<Lhs> && is_unsigned_v<Rhs> && cuda::std::is_constant_evaluated();
     test_sub_overflow<Result>(
-      lhs_max, rhs_max, cuda::std::cmp_greater(rhs_max - lhs_max, UResult(cuda::neg(result_min))), skip_special_case);
-    //}
-    // else
-    //{
-    //  test_sub_overflow<Result>(lhs_max, rhs_max, cuda::std::cmp_less(lhs_max, result_min + Result{rhs_max}));
-    //}
+      lhs_max, rhs_max, cuda::std::cmp_greater(rhs_max - lhs_max, neg_result_min), skip_special_case);
   }
+  //--------------------------------------------------------------------------------------------------------------------
+  // min cases
 
-  // 10. min - 0 -> should overflow only if the destination type is too small
-  test_sub_overflow<Result>(lhs_min, Rhs{}, cuda::std::cmp_less(lhs_min, result_min));
-
-  // 11. 0 - min -> -min > result_max? -> min < -result_max?
-  if constexpr (is_signed_v<Rhs>)
+  if constexpr (is_signed_v<Rhs>) // if Rhs is unsigned, rhs_min = 0, already handled above
   {
-    if constexpr (is_same_v<Rhs, Result>)
+    // 10. 0 - min -> -min > result_max? -> min < -result_max?
+    if constexpr (is_same_v<Rhs, Result>) // e.g. -INT_MIN  -> overflow
     {
-      test_sub_overflow<Result>(Lhs{}, rhs_min, true); // -INT_MIN  -> overflow
+      test_sub_overflow<Result>(Lhs{}, rhs_min, true);
     }
-    else if constexpr (is_signed_v<Result>) // if Result is unsigned, -rhs_min is always positive
+    else // Result is unsigned -> 0 - min -> -min > result_max?
     {
-      test_sub_overflow<Result>(Lhs{}, rhs_min, cuda::std::cmp_less(rhs_min, Result{-result_max}));
+      test_sub_overflow<Result>(Lhs{}, rhs_min, cuda::std::cmp_greater(neg_rhs_min, result_max));
+    }
+
+    // 11. (-1) - min -> -min < result_min + 1 -> min > -(result_min + 1)?
+    if constexpr (is_signed_v<Lhs>)
+    {
+      test_sub_overflow<Result>(Lhs{-1}, rhs_min, cuda::std::cmp_greater(Rhs{-Rhs{rhs_min + 1}}, result_max));
     }
   }
 
-  // 12. min - (-1) -> should overflow only if the destination type is too small
-  if constexpr (is_signed_v<Rhs>)
+  if constexpr (is_signed_v<Lhs>) // otherwise lhs_min = 0, already handled above
   {
-    test_sub_overflow<Result>(lhs_min, Rhs{-1}, cuda::std::cmp_less(Lhs{lhs_min + 1}, Result{result_min}));
+    // 12. min - 0 -> should overflow only if the destination type is too small
+    test_sub_overflow<Result>(lhs_min, Rhs{}, cuda::std::cmp_less(lhs_min, result_min));
+
+    // 13. min - (-1) -> min + 1 < result_min?
+    if constexpr (is_signed_v<Rhs>)
+    {
+      test_sub_overflow<Result>(lhs_min, Rhs{-1}, cuda::std::cmp_less(Lhs{lhs_min + 1}, Result{result_min}));
+    }
+
+    // 14. min - 1
+    test_sub_overflow<Result>(lhs_min, Rhs{1}, cuda::std::cmp_less(lhs_min, Result{result_min + 1}));
   }
 
-  // 12b. min - 1
-  test_sub_overflow<Result>(lhs_min, Rhs{1}, cuda::std::cmp_less(lhs_min, Result{result_min + 1}));
-
-  // 13. (-1) - min -> -min < result_min + 1 -> min > -(result_min + 1)?
-  if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
-  {
-    test_sub_overflow<Result>(Lhs{-1}, rhs_min, cuda::std::cmp_greater(Rhs{-Rhs{rhs_min + 1}}, result_max));
-  }
-
-  // 14. min - min
+  // 15. min - min
   if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
   {
     if constexpr (cuda::std::cmp_equal(lhs_min, rhs_min)) // lhs_min == rhs_min
@@ -180,14 +155,15 @@ __host__ __device__ constexpr void test_type()
     }
     else if constexpr (cuda::std::cmp_less(lhs_min, rhs_min)) // lhs_min < rhs_min
     {
-      test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_less(lhs_min, result_min));
+      // negative result -> lhs_min - rhs_min < result_min?
+      using SignedCommon = cuda::std::make_signed_t<cuda::std::common_type_t<Lhs, Rhs>>;
+      auto sub           = cuda::__safe_sub<SignedCommon>(lhs_min, rhs_min);
+      test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_less(sub, result_min));
     }
     else // lhs_min > rhs_min -> positive result -> lhs_min - rhs_min > result_max + rhs_min?
     {
-      // lhs_min > rhs_min -> positive result -> lhs_min > result_max + rhs_min?
-      // test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_greater(lhs_min, Result{result_max + rhs_min}));
-      using SignedCommon = cuda::std::make_signed_t<cuda::std::common_type_t<Lhs, Rhs>>;
-      auto sub           = SignedCommon{SignedCommon{lhs_min} - SignedCommon{rhs_min}};
+      using UnsignedCommon = cuda::std::make_unsigned_t<cuda::std::common_type_t<Lhs, Rhs>>;
+      auto sub             = cuda::__safe_sub<UnsignedCommon>(lhs_min, rhs_min);
       test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_greater(sub, Result{result_max}));
     }
   }
@@ -229,6 +205,11 @@ __host__ __device__ constexpr void test_type()
 
 __host__ __device__ constexpr bool test()
 {
+  using cuda::std::is_same_v;
+  static_assert(noexcept(cuda::sub_overflow(int{}, int{})));
+  static_assert(noexcept(cuda::sub_overflow<unsigned>(cuda::std::declval<unsigned&>(), int{}, int{})));
+  static_assert(is_same_v<decltype(cuda::sub_overflow<unsigned>(cuda::std::declval<unsigned&>(), int{}, int{})), bool>);
+
   test_type<signed char>();
   test_type<unsigned char>();
   test_type<short>();
