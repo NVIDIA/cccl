@@ -288,7 +288,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
-  _CCCL_API constexpr __compressed_box_base(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr __compressed_box_base(in_place_t,
+                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
