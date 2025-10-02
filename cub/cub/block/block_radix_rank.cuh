@@ -50,7 +50,7 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__bit/countl.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1072,10 +1072,10 @@ struct BlockRadixRankMatchEarlyCounts
         int* p_match_mask         = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
         __syncwarp(WARP_MASK);
-        unsigned bin_mask = *p_match_mask;
-        int leader            = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
-        int warp_offset       = 0;
-        int popc              = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        int bin_mask    = *p_match_mask;
+        int leader      = ::cuda::std::__bit_log2(bin_mask);
+        int warp_offset = 0;
+        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1101,7 +1101,7 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
-        unsigned bin_mask =
+        int bin_mask =
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = ::cuda::std::__bit_log2(bin_mask);
         int warp_offset = 0;
