@@ -43,19 +43,19 @@ template <class _Rep, class _Period = ratio<1>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT duration;
 
 template <class _Tp>
-inline const bool __is_duration_v = false;
+inline constexpr bool __is_duration_v = false;
 
 template <class _Rep, class _Period>
-inline const bool __is_duration_v<duration<_Rep, _Period>> = true;
+inline constexpr bool __is_duration_v<duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline const bool __is_duration_v<const duration<_Rep, _Period>> = true;
+inline constexpr bool __is_duration_v<const duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline const bool __is_duration_v<volatile duration<_Rep, _Period>> = true;
+inline constexpr bool __is_duration_v<volatile duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline const bool __is_duration_v<const volatile duration<_Rep, _Period>> = true;
+inline constexpr bool __is_duration_v<const volatile duration<_Rep, _Period>> = true;
 
 } // namespace chrono
 
@@ -190,29 +190,29 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT duration
   struct __no_overflow
   {
   private:
-    static const intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
-    static const intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
-    static const intmax_t __n1        = _R1::num / __gcd_n1_n2;
-    static const intmax_t __d1        = _R1::den / __gcd_d1_d2;
-    static const intmax_t __n2        = _R2::num / __gcd_n1_n2;
-    static const intmax_t __d2        = _R2::den / __gcd_d1_d2;
-    static const intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
+    static constexpr intmax_t __gcd_n1_n2 = __static_gcd<_R1::num, _R2::num>::value;
+    static constexpr intmax_t __gcd_d1_d2 = __static_gcd<_R1::den, _R2::den>::value;
+    static constexpr intmax_t __n1        = _R1::num / __gcd_n1_n2;
+    static constexpr intmax_t __d1        = _R1::den / __gcd_d1_d2;
+    static constexpr intmax_t __n2        = _R2::num / __gcd_n1_n2;
+    static constexpr intmax_t __d2        = _R2::den / __gcd_d1_d2;
+    static constexpr intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
 
     template <intmax_t _Xp, intmax_t _Yp, bool __overflow>
     struct __mul // __overflow == false
     {
-      static const intmax_t value = _Xp * _Yp;
+      static constexpr intmax_t value = _Xp * _Yp;
     };
 
     template <intmax_t _Xp, intmax_t _Yp>
     struct __mul<_Xp, _Yp, true>
     {
-      static const intmax_t value = 1;
+      static constexpr intmax_t value = 1;
     };
 
   public:
-    static const bool value = (__n1 <= max / __d2) && (__n2 <= max / __d1);
-    using type              = ratio<__mul<__n1, __d2, !value>::value, __mul<__n2, __d1, !value>::value>;
+    static constexpr bool value = (__n1 <= max / __d2) && (__n2 <= max / __d1);
+    using type                  = ratio<__mul<__n1, __d2, !value>::value, __mul<__n2, __d1, !value>::value>;
   };
 
 public:

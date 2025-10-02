@@ -40,11 +40,11 @@ namespace chrono
 class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
-  using duration                        = nanoseconds;
-  using rep                             = duration::rep;
-  using period                          = duration::period;
-  using time_point                      = ::cuda::std::chrono::time_point<steady_clock, duration>;
-  static constexpr const bool is_steady = true;
+  using duration                  = nanoseconds;
+  using rep                       = duration::rep;
+  using period                    = duration::period;
+  using time_point                = ::cuda::std::chrono::time_point<steady_clock, duration>;
+  static constexpr bool is_steady = true;
 
   [[nodiscard]] _CCCL_API static time_point now() noexcept;
 };
