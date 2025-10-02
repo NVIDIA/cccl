@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
   Integer num_bits           = 8 * sizeof(Integer);
   Integer num_bits_minus_one = num_bits - 1;
 
-  return num_bits_minus_one - ::cuda::std::countl_zero(x)(x);
+  return num_bits_minus_one - ::cuda::std::countl_zero(x);
 }
 
 template <typename Integer>
