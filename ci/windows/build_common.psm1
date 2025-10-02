@@ -228,3 +228,60 @@ function sccache_stats {
 
 Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, sccache_stats
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION
+
+# Additional shared helpers for Windows Python/CI scripts
+function Get-Python {
+    Param([Parameter(Mandatory = $true)][string]$Version)
+    $exe = $null
+    try { $exe = (& py -$Version -c "import sys; print(sys.executable)" 2>$null) } catch {}
+    if (-not $exe) {
+        $exe = (Get-Command python).Source
+        $ver = & $exe -c "import sys; print('%d.%d'%sys.version_info[:2])"
+        if ($ver -ne $Version) { throw "Requested Python $Version not found" }
+    }
+    return $exe
+}
+
+function Get-CudaMajor {
+    if ($env:CUDA_PATH) {
+        $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
+        if (Test-Path $nvcc) {
+            $out = & $nvcc --version
+            if ($out -match "release (\d+)\.") { return $Matches[1] }
+        }
+    }
+    return '13'
+}
+
+function Convert-ToUnixPath {
+    Param([Parameter(Mandatory = $true)][string]$p)
+    return ($p -replace "\\", "/")
+}
+
+function Get-RepoRoot {
+    return (Resolve-Path "$PSScriptRoot/../..")
+}
+
+function Ensure-CudaCcclWheel {
+    Param(
+        [Parameter(Mandatory = $true)][string]$PyVersion,
+        [Parameter(Mandatory = $false)][switch]$UseNinja
+    )
+
+    $repoRoot = Get-RepoRoot
+    $wheelhouse = Join-Path $repoRoot "wheelhouse"
+    New-Item -ItemType Directory -Path $wheelhouse -Force | Out-Null
+
+    $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $wheel) {
+        $buildScript = Join-Path $PSScriptRoot "build_cuda_cccl_python.ps1"
+        $args = @('-File', $buildScript, '-py-version', $PyVersion)
+        if ($UseNinja) { $args += '-UseNinja' }
+        & pwsh @args | Write-Host
+        $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" | Select-Object -First 1
+    }
+    if (-not $wheel) { throw "cuda_cccl wheel not found in $wheelhouse" }
+    return $wheel.FullName
+}
+
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Ensure-CudaCcclWheel
