@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/array.h>
+#include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -53,6 +54,9 @@ inline constexpr bool __tuple_like_ext<array<_Tp, _Size>> = true;
 
 template <class _Tp>
 inline constexpr bool __tuple_like_ext<complex<_Tp>> = true;
+
+template <class _Tp>
+inline constexpr bool __tuple_like_ext<::cuda::complex<_Tp>> = true;
 
 template <class... _Tp>
 inline constexpr bool __tuple_like_ext<__tuple_types<_Tp...>> = true;
