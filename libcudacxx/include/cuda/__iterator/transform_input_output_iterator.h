@@ -213,14 +213,7 @@ public:
                 "cuda::transform_input_output_iterator requires that _InputFn is invocable on the result of "
                 "dereferencing _Iter");
 
-//! @brief Default constructs a @c transform_input_output_iterator with a value initialized iterator and functors
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI transform_input_output_iterator()
-    requires ::cuda::std::default_initializable<_Iter> && ::cuda::std::default_initializable<_InputFn>
-            && ::cuda::std::default_initializable<_OutputFn>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
+  //! @brief Default constructs a @c transform_input_output_iterator with a value initialized iterator and functors
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter, class _InputFn2 = _InputFn, class _OutputFn2 = _OutputFn)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_InputFn2>
@@ -231,7 +224,6 @@ public:
     && ::cuda::std::is_nothrow_default_constructible_v<_OutputFn2>)
       : __store_()
   {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a @c transform_input_output_iterator with base iterator, input functor and output functor
   //! @param __iter The iterator to transform
