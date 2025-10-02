@@ -202,14 +202,18 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
+template <typename VectorizedPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
   bool can_vectorize,
   F f,
   RandomAccessIteratorOut out,
-  const InputT*... ins)
+  RandomAccessIteratorsIn... ins)
 {
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
@@ -240,9 +244,12 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
   using load_store_t            = decltype(load_store_type<load_store_size>());
   using output_t                = it_value_t<RandomAccessIteratorOut>;
-  using result_t                = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const InputT&...>>;
+  using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
   // picks output type size if there are no inputs
-  constexpr int element_size     = int{first_item(sizeof(InputT)..., size_of<output_t>)};
+  constexpr int element_size     = int{first_nonzero_value(
+    (sizeof(it_value_t<RandomAccessIteratorsIn>)
+     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
+    size_of<output_t>)};
   constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
 
   static_assert((items_per_thread * element_size) % load_store_size == 0);
@@ -258,18 +265,35 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
-    // TODO(bgruber): we could support fancy iterators for loading here as well (and only vectorize some inputs)
-    [[maybe_unused]] auto load_tile_vectorized = [&](auto* in, auto& input) {
-      auto in_vec    = reinterpret_cast<const load_store_t*>(in);
-      auto input_vec = reinterpret_cast<load_store_t*>(input.data());
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < load_store_count; ++i)
+    [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
-        input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
+        auto in_vec    = reinterpret_cast<const load_store_t*>(in) + threadIdx.x;
+        auto input_vec = reinterpret_cast<load_store_t*>(input.data());
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < load_store_count; ++i)
+        {
+          input_vec[i] = in_vec[i * VectorizedPolicy::block_threads];
+        }
+      }
+      else
+      {
+        constexpr int elems = load_store_size / element_size;
+        in += threadIdx.x * elems;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < load_store_count; ++i)
+        {
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int j = 0; j < elems; ++j)
+          {
+            input[i * elems + j] = in[i * elems * VectorizedPolicy::block_threads + j];
+          }
+        }
       }
     };
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    (load_tile_vectorized(ins, inputs), ...);
+    (load_tile(ins, inputs), ...);
+
     // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
     // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
@@ -280,7 +304,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<InputT, items_per_thread>{}...);
+  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>, items_per_thread>{}...);
 
   // write output
   if constexpr (can_vectorize_store)

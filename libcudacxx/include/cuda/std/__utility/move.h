@@ -59,7 +59,7 @@ template <class _Tp>
 
 template <class _Tp>
 using __move_if_noexcept_result_t =
-  conditional_t<!is_nothrow_move_constructible<_Tp>::value && is_copy_constructible<_Tp>::value, const _Tp&, _Tp&&>;
+  conditional_t<!is_nothrow_move_constructible_v<_Tp> && is_copy_constructible_v<_Tp>, const _Tp&, _Tp&&>;
 
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
