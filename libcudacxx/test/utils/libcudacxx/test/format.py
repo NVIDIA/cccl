@@ -148,7 +148,8 @@ class LibcxxTestFormat(object):
             "FORCE_WARNINGS.", parsers
         ).getValue()
 
-        test_cxx.useWarnings(True)
+        if force_all_warnings:
+            test_cxx.useWarnings(True)
 
         extra_compile_definitions = self._get_parser(
             "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
