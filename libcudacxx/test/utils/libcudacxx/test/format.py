@@ -62,8 +62,7 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
-            IntegratedTestKeywordParser(
-                "CONSTEXPR_STEPS:", ParserKind.INTEGER),
+            IntegratedTestKeywordParser("CONSTEXPR_STEPS:", ParserKind.INTEGER),
         ]
 
     @staticmethod
@@ -107,8 +106,7 @@ class LibcxxTestFormat(object):
         is_sh_test = name_root.endswith(".sh")
         is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
         is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
-        is_runfail_test = name.endswith(
-            ".runfail.cpp") or name.endswith(".runfail.mm")
+        is_runfail_test = name.endswith(".runfail.cpp") or name.endswith(".runfail.mm")
         assert is_sh_test or name_ext == ".cpp" or name_ext == ".mm", (
             "non-cpp file must be sh test"
         )
@@ -135,8 +133,7 @@ class LibcxxTestFormat(object):
             lit_config.fatal("Unsupported RUN line found in test %s" % name)
 
         tmpDir, tmpBase = lit.TestRunner.getTempPaths(test)
-        substitutions = lit.TestRunner.getDefaultSubstitutions(
-            test, tmpDir, tmpBase)
+        substitutions = lit.TestRunner.getDefaultSubstitutions(test, tmpDir, tmpBase)
         script = lit.TestRunner.applySubstitutions(script, substitutions)
 
         test_cxx = copy.deepcopy(self.cxx)
@@ -144,9 +141,7 @@ class LibcxxTestFormat(object):
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
 
-        force_all_warnings = self._get_parser(
-            "FORCE_WARNINGS.", parsers
-        ).getValue()
+        force_all_warnings = self._get_parser("FORCE_WARNINGS.", parsers).getValue()
 
         if force_all_warnings:
             test_cxx.useWarnings(True)
@@ -177,8 +172,7 @@ class LibcxxTestFormat(object):
                 if test_cxx.addCompileFlagIfSupported(flag.strip()):
                     test_cxx.warning_flags += [flag.strip()]
 
-        extra_modules_defines = self._get_parser(
-            "MODULES_DEFINES:", parsers).getValue()
+        extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:
             test_cxx.compile_flags += [
                 ("-D%s" % mdef.strip()) for mdef in extra_modules_defines
@@ -194,8 +188,7 @@ class LibcxxTestFormat(object):
                     test_cxx.useModules(False)
 
         # Handle constexpr steps if specified
-        constexpr_steps = self._get_parser(
-            "CONSTEXPR_STEPS:", parsers).getValue()
+        constexpr_steps = self._get_parser("CONSTEXPR_STEPS:", parsers).getValue()
         if constexpr_steps is not None:
             constexpr_steps = constexpr_steps[0]
             cxx = test_cxx.host_cxx if test_cxx.type == "nvcc" else test_cxx
@@ -212,8 +205,7 @@ class LibcxxTestFormat(object):
 
             if constexpr_steps_opt is not None:
                 if test_cxx.type == "nvcc":
-                    test_cxx.compile_flags += ["-Xcompiler",
-                                               f'"{constexpr_steps_opt}"']
+                    test_cxx.compile_flags += ["-Xcompiler", f'"{constexpr_steps_opt}"']
                 else:
                     test_cxx.compile_flags += [constexpr_steps_opt]
 
@@ -342,8 +334,7 @@ class LibcxxTestFormat(object):
             #
             # Therefore, we check if the test was expected to fail because of
             # nodiscard before enabling it
-            test_str_list = [b"ignoring return value",
-                             b"nodiscard", b"NODISCARD"]
+            test_str_list = [b"ignoring return value", b"nodiscard", b"NODISCARD"]
             if any(test_str in contents for test_str in test_str_list):
                 if test_cxx.type != "nvc++":
                     test_cxx.flags += [
