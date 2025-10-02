@@ -141,7 +141,7 @@ class LibcxxTestFormat(object):
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
 
-        force_all_warnings = self._get_parser("FORCE_WARNINGS.", parsers).getValue()
+        force_all_warnings = self._get_parser("FORCE_ALL_WARNINGS.", parsers).getValue()
 
         if force_all_warnings:
             test_cxx.useWarnings(True)
