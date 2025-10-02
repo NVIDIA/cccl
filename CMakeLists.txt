@@ -2,6 +2,12 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
+# TODO remove before merging.
+set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "Disabling for stress testing runners" FORCE)
+set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "Disabling for stress testing runners" FORCE)
+set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "Disabling for stress testing runners" FORCE)
+
+
 # sccache cannot handle the -Fd option generating pdb files:
 if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)

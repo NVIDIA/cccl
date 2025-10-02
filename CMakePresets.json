@@ -68,6 +68,7 @@
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
+        "CUB_ENABLE_HEADER_TESTING": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
@@ -182,6 +183,7 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_CUB": true,
+        "CUB_ENABLE_HEADER_TESTING": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_ENABLE_DIALECT_CPP17": false,
