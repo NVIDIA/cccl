@@ -233,7 +233,7 @@ struct WarpReduceSmem
     }
 
     // Find next flag
-    int next_flag = ::cuda::std::countr_zero(__brev(warp_flags));
+    int next_flag = ::cuda::std::countr_zero(warp_flags);
 
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
