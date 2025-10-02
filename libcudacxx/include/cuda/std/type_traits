@@ -136,6 +136,7 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__type_traits/is_virtual_base_of.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/lazy.h>
