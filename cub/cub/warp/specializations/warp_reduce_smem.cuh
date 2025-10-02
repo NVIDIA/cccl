@@ -216,7 +216,7 @@ struct WarpReduceSmem
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = __ballot_sync(member_mask, flag);
+    unsigned warp_flags = __ballot_sync(member_mask, flag);
 
     if (!HEAD_SEGMENTED)
     {
