@@ -38,12 +38,6 @@ namespace detail
 {
 
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer clz(Integer x)
-{
-  return ::cuda::std::countl_zero(x);
-}
-
-template <typename Integer>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
@@ -73,7 +67,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
   Integer num_bits           = 8 * sizeof(Integer);
   Integer num_bits_minus_one = num_bits - 1;
 
-  return num_bits_minus_one - clz(x);
+  return num_bits_minus_one - ::cuda::std::countl_zero(x)(x);
 }
 
 template <typename Integer>
