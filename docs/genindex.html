@@ -342,6 +342,12 @@
 <li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/classtransform__output__iterator.html">transform_output_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/classzip__function.html">zip_function</a></li>
 <li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/classzip__iterator.html">zip_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/classzip__transform__iterator.html">zip_transform_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334.html">zip_iterator::difference_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744.html">zip_iterator::iterator_concept</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators_1ga3a57fccd85438fe6ac517f59802807b5.html">zip_iterator::pointer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators_1ga843f5392a85c60af68ceedbd62d71d7f.html">zip_iterator::reference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators_1ga64c3e03435ec5e5dc3b9eaad6349c1c2.html">zip_iterator::value_type</a></li>
 <li class="toctree-l4"><a class="reference internal" href="libcudacxx/api/group__iterators.html">Iterators</a></li>
 </ul>
 </details></li>
@@ -723,6 +729,7 @@
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1transform__iterator_3_01Fn_00_01Iter_01_4_01_4.html">thrust::iterator_system&lt;::cuda::transform_iterator&lt; Fn, Iter &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1transform__output__iterator_3_01Fn_00_01Iter_01_4_01_4.html">thrust::iterator_system&lt;::cuda::transform_output_iterator&lt; Fn, Iter &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html">thrust::iterator_system&lt;::cuda::zip_iterator&lt; Iterators… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html">thrust::iterator_system&lt;::cuda::zip_transform_iterator&lt; Fn, Iterators… &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal.html">thrust::iterator_traversal</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::constant_iterator&lt; T, Index &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::counting_iterator&lt; Start &gt; &gt;</a></li>
@@ -736,6 +743,7 @@
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__iterator_3_01Fn_00_01Iter_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::transform_iterator&lt; Fn, Iter &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__output__iterator_3_01Fn_00_01Iter_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::transform_output_iterator&lt; Fn, Iter &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::zip_iterator&lt; Iterators… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html">thrust::iterator_traversal&lt;::cuda::zip_transform_iterator&lt; Fn, Iterators… &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1iterator__value.html">thrust::iterator_value</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1no__traversal__tag.html">thrust::no_traversal_tag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/structthrust_1_1output__device__iterator__tag.html">thrust::output_device_iterator_tag</a></li>
@@ -9277,6 +9285,10 @@
 </li>
       <li><a href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html#_CPPv4N6thrust15iterator_systemIN4cuda12zip_iteratorIDp9IteratorsEEE4typeE">thrust::iterator_system&lt;::cuda::zip_iterator&lt;Iterators...&gt;&gt;::type (C++ type)</a>
 </li>
+      <li><a href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html#_CPPv4I0DpEN6thrust15iterator_systemIN4cuda22zip_transform_iteratorI2FnDp9IteratorsEEEE">thrust::iterator_system&lt;::cuda::zip_transform_iterator&lt;Fn, Iterators...&gt;&gt; (C++ struct)</a>
+</li>
+      <li><a href="thrust/api/structthrust_1_1iterator__system_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html#_CPPv4N6thrust15iterator_systemIN4cuda22zip_transform_iteratorI2FnDp9IteratorsEEE4typeE">thrust::iterator_system&lt;::cuda::zip_transform_iterator&lt;Fn, Iterators...&gt;&gt;::type (C++ type)</a>
+</li>
       <li><a href="thrust/api/structthrust_1_1iterator__system_3_01const_01void_01_5_01_4.html#_CPPv4IEN6thrust15iterator_systemIPKvEE">thrust::iterator_system&lt;const void*&gt; (C++ struct)</a>
 </li>
       <li><a href="thrust/api/structthrust_1_1iterator__system_3_01void_01_5_01_4.html#_CPPv4IEN6thrust15iterator_systemIPvEE">thrust::iterator_system&lt;void*&gt; (C++ struct)</a>
@@ -9324,6 +9336,10 @@
       <li><a href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html#_CPPv4IDpEN6thrust18iterator_traversalIN4cuda12zip_iteratorIDp9IteratorsEEEE">thrust::iterator_traversal&lt;::cuda::zip_iterator&lt;Iterators...&gt;&gt; (C++ struct)</a>
 </li>
       <li><a href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html#_CPPv4N6thrust18iterator_traversalIN4cuda12zip_iteratorIDp9IteratorsEEE4typeE">thrust::iterator_traversal&lt;::cuda::zip_iterator&lt;Iterators...&gt;&gt;::type (C++ type)</a>
+</li>
+      <li><a href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html#_CPPv4I0DpEN6thrust18iterator_traversalIN4cuda22zip_transform_iteratorI2FnDp9IteratorsEEEE">thrust::iterator_traversal&lt;::cuda::zip_transform_iterator&lt;Fn, Iterators...&gt;&gt; (C++ struct)</a>
+</li>
+      <li><a href="thrust/api/structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html#_CPPv4N6thrust18iterator_traversalIN4cuda22zip_transform_iteratorI2FnDp9IteratorsEEE4typeE">thrust::iterator_traversal&lt;::cuda::zip_transform_iterator&lt;Fn, Iterators...&gt;&gt;::type (C++ type)</a>
 </li>
       <li><a href="thrust/api/group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html#_CPPv4I0EN6thrust20iterator_traversal_tE">thrust::iterator_traversal_t (C++ type)</a>
 </li>
@@ -9563,12 +9579,12 @@
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource.html#_CPPv4N6thrust2mr19new_delete_resource13do_deallocateE7pointerNSt6size_tENSt6size_tE">thrust::mr::new_delete_resource::do_deallocate (C++ function)</a>, <a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource.html#_CPPv4N6thrust2mr19new_delete_resource13do_deallocateEPvNSt6size_tENSt6size_tE">[1]</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource.html#_CPPv4NK6thrust2mr19new_delete_resource11do_is_equalERK15memory_resource">thrust::mr::new_delete_resource::do_is_equal (C++ function)</a>
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource.html#_CPPv4NK6thrust2mr19new_delete_resource8is_equalERK15memory_resource">thrust::mr::new_delete_resource::is_equal (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource.html#_CPPv4N6thrust2mr19new_delete_resource7pointerE">thrust::mr::new_delete_resource::pointer (C++ type)</a>
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1new__delete__resource__base.html#_CPPv4N6thrust2mr24new_delete_resource_baseE">thrust::mr::new_delete_resource_base (C++ class)</a>
@@ -10781,13 +10797,13 @@
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4IDpE12zip_iterator">zip_iterator (C++ class)</a>
 </li>
-      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator15difference_typeE">zip_iterator::difference_type (C++ type)</a>
+      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator15difference_typeE">zip_iterator::difference_type (C++ type)</a>, <a href="libcudacxx/api/group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334.html#_CPPv4N12zip_iterator15difference_typeE">[1]</a>
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0EN12zip_iterator9iter_moveEDaRK12zip_iterator">zip_iterator::iter_move (C++ function)</a>
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0EIQN12_Constraints26__all_indirectly_swappableEEN12zip_iterator9iter_swapEvRK12zip_iteratorRK12zip_iterator">zip_iterator::iter_swap (C++ function)</a>
 </li>
-      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator16iterator_conceptE">zip_iterator::iterator_concept (C++ type)</a>
+      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator16iterator_conceptE">zip_iterator::iterator_concept (C++ type)</a>, <a href="libcudacxx/api/group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744.html#_CPPv4N12zip_iterator16iterator_conceptE">[1]</a>
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4NK12zip_iteratormlEv">zip_iterator::operator* (C++ function)</a>
 </li>
@@ -10799,8 +10815,6 @@
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN12zip_iteratormiE12zip_iteratorRK12zip_iterator15difference_type">zip_iterator::operator- (C++ function)</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0EIQN12_Constraints20__all_sized_sentinelEEN12zip_iteratormiE15difference_typeRK12zip_iteratorRK12zip_iterator">[1]</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_bidirectionalEiEEEN12zip_iteratormmE12zip_iteratori">zip_iterator::operator-- (C++ function)</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_bidirectionalEiEEEN12zip_iteratormmER12zip_iteratorv">[1]</a>
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_random_accessEiEEEN12zip_iteratormIER12zip_iterator15difference_type">zip_iterator::operator-= (C++ function)</a>
@@ -10817,13 +10831,57 @@
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_random_accessEiEEENK12zip_iteratorixEDa15difference_type">zip_iterator::operator[] (C++ function)</a>
 </li>
-      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator7pointerE">zip_iterator::pointer (C++ type)</a>
+      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator7pointerE">zip_iterator::pointer (C++ type)</a>, <a href="libcudacxx/api/group__iterators_1ga3a57fccd85438fe6ac517f59802807b5.html#_CPPv4N12zip_iterator7pointerE">[1]</a>
 </li>
-      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator9referenceE">zip_iterator::reference (C++ type)</a>
+      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator9referenceE">zip_iterator::reference (C++ type)</a>, <a href="libcudacxx/api/group__iterators_1ga843f5392a85c60af68ceedbd62d71d7f.html#_CPPv4N12zip_iterator9referenceE">[1]</a>
 </li>
-      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator10value_typeE">zip_iterator::value_type (C++ type)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator10value_typeE">zip_iterator::value_type (C++ type)</a>, <a href="libcudacxx/api/group__iterators_1ga64c3e03435ec5e5dc3b9eaad6349c1c2.html#_CPPv4N12zip_iterator10value_typeE">[1]</a>
 </li>
       <li><a href="libcudacxx/api/classzip__iterator.html#_CPPv4IDp_N4cudaSt11enable_if_tIXaaeqsZ11_OtherIterssZ10_Iterators17__all_convertibleIDp11_OtherItersEEiEEEN12zip_iterator12zip_iteratorE12zip_iteratorIDp11_OtherItersE">zip_iterator::zip_iterator (C++ function)</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4I_6size_t_N4cudaSt11enable_if_tIXeq13_NumIteratorsL2EEiEEEN12zip_iterator12zip_iteratorEN4cudaSt5tupleIDp10_IteratorsEE">[1]</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator12zip_iteratorE15__tuple_or_pairIDp10_IteratorsE">[2]</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator12zip_iteratorEDp10_Iterators">[3]</a>, <a href="libcudacxx/api/classzip__iterator.html#_CPPv4N12zip_iterator12zip_iteratorEv">[4]</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0DpE22zip_transform_iterator">zip_transform_iterator (C++ class)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator15difference_typeE">zip_transform_iterator::difference_type (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator17iterator_categoryE">zip_transform_iterator::iterator_category (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator16iterator_conceptE">zip_transform_iterator::iterator_concept (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4NK22zip_transform_iteratormlEv">zip_transform_iterator::operator* (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorplE22zip_transform_iterator15difference_typeRK22zip_transform_iterator">zip_transform_iterator::operator+ (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorplE22zip_transform_iteratorRK22zip_transform_iterator15difference_type">[1]</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iteratorppEi">zip_transform_iterator::operator++ (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iteratorppEv">[1]</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_random_accessEiEEEN22zip_transform_iteratorpLER22zip_transform_iterator15difference_type">zip_transform_iterator::operator+= (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratormiE22zip_transform_iteratorRK22zip_transform_iterator15difference_type">zip_transform_iterator::operator- (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints20__all_sized_sentinelEEN22zip_transform_iteratormiE15difference_typeRK22zip_transform_iteratorRK22zip_transform_iterator">[1]</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_bidirectionalEiEEEN22zip_transform_iteratormmE22zip_transform_iteratori">zip_transform_iterator::operator-- (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_bidirectionalEiEEEN22zip_transform_iteratormmER22zip_transform_iteratorv">[1]</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_random_accessEiEEEN22zip_transform_iteratormIER22zip_transform_iterator15difference_type">zip_transform_iterator::operator-= (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorltEbRK22zip_transform_iteratorRK22zip_transform_iterator">zip_transform_iterator::operator&lt; (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorleEbRK22zip_transform_iteratorRK22zip_transform_iterator">zip_transform_iterator::operator&lt;= (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints25__all_equality_comparableEEN22zip_transform_iteratoreqEbRK22zip_transform_iteratorRK22zip_transform_iterator">zip_transform_iterator::operator== (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorgtEbRK22zip_transform_iteratorRK22zip_transform_iterator">zip_transform_iterator::operator&gt; (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0EIQN12_Constraints19__all_random_accessEEN22zip_transform_iteratorgeEbRK22zip_transform_iteratorRK22zip_transform_iterator">zip_transform_iterator::operator&gt;= (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIN12_Constraints19__all_random_accessEiEEENK22zip_transform_iteratorixE9reference15difference_type">zip_transform_iterator::operator[] (C++ function)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator7pointerE">zip_transform_iterator::pointer (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator9referenceE">zip_transform_iterator::reference (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator10value_typeE">zip_transform_iterator::value_type (C++ type)</a>
+</li>
+      <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIXaaN4cudaSt21default_initializableI4_Fn2EEN22__zip_iter_constraintsIDp10_IteratorsE27__all_default_initializableEEiEEEN22zip_transform_iterator22zip_transform_iteratorEv">zip_transform_iterator::zip_transform_iterator (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I_6size_t_N4cudaSt11enable_if_tIXeq13_NumIteratorsL2EEiEEEN22zip_transform_iterator22zip_transform_iteratorE3_FnN4cudaSt5tupleIDp10_IteratorsEE">[1]</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator22zip_transform_iteratorE3_Fn15__tuple_or_pairIDp10_IteratorsE">[2]</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator22zip_transform_iteratorE3_FnDp10_Iterators">[3]</a>
 </li>
       <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.ZipIterator">ZipIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
 </li>

@@ -18,3 +18,9 @@ Iterators
    classtransform__output__iterator
    classzip__function
    classzip__iterator
+   classzip__transform__iterator
+   group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744
+   group__iterators_1ga64c3e03435ec5e5dc3b9eaad6349c1c2
+   group__iterators_1ga843f5392a85c60af68ceedbd62d71d7f
+   group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334
+   group__iterators_1ga3a57fccd85438fe6ac517f59802807b5
