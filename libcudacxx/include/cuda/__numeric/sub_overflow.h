@@ -255,7 +255,8 @@ sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
       const auto __lhs1        = static_cast<_UnsignedCommonAll>(__lhs);
       const auto __rhs1        = static_cast<_UnsignedCommonAll>(__rhs);
       const auto __ret         = ::cuda::overflow_cast<_ActualResult>(static_cast<_SignedCommonAll>(__lhs1 - __rhs1));
-      if (!is_unsigned_v<_Rhs> && __rhs < _Rhs{0}) // if rhs <= 0, lhs - rhs > lhs -> ok, no overflow if possible
+      const bool __rhs_less_than_zero = !is_unsigned_v<_Rhs> && __rhs < _Rhs{0};
+      if (__rhs_less_than_zero) // if rhs <= 0, lhs - rhs > lhs -> ok, no overflow if possible
       {
         return __ret;
       }
