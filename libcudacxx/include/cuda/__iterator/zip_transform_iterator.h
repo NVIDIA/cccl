@@ -585,7 +585,6 @@ _CCCL_END_NAMESPACE_CUDA
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Fn, class... _Iterators>
 inline constexpr bool __is_fancy_pointer<::cuda::zip_transform_iterator<_Fn, _Iterators...>> = false;
-{};
 _CCCL_END_NAMESPACE_CUDA_STD
 #endif // (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)) && _CCCL_STD_VER <= 2017
 
