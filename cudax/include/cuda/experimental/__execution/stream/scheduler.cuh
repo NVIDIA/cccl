@@ -40,6 +40,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 namespace cuda::experimental
 {
