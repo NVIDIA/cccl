@@ -16,8 +16,15 @@ $ErrorActionPreference = "Stop"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
-$script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+$script:HOST_COMPILER = (Get-Command "cl").source -replace '\\', '/'
+$script:PARALLEL_LEVEL = (Get-WmiObject -Class Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum
+
+Write-Host "=== Docker Container Resource Info ==="
+Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
+Get-WmiObject Win32_OperatingSystem | ForEach-Object {
+    Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize / 1MB), ($_.FreePhysicalMemory / 1MB))
+}
+Write-Host "======================================"
 
 # Extract the CL version for export to build scripts:
 $script:CL_VERSION_STRING = & cl.exe /?
@@ -38,7 +45,7 @@ if (-not $env:CCCL_BUILD_INFIX) {
 # Presets will be configured in this directory:
 $BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
-If(!(test-path -PathType container "../build")) {
+If (!(test-path -PathType container "../build")) {
     New-Item -ItemType Directory -Path "../build"
 }
 
@@ -49,7 +56,10 @@ New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 
 # Prepare environment for CMake:
-$env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
+if (-not $env:CMAKE_BUILD_PARALLEL_LEVEL -or [string]::IsNullOrWhiteSpace($env:CMAKE_BUILD_PARALLEL_LEVEL)) {
+    # Only set CMAKE_BUILD_PARALLEL_LEVEL if it's not already defined.
+    $env:CMAKE_BUILD_PARALLEL_LEVEL = $script:PARALLEL_LEVEL
+}
 $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
@@ -142,7 +152,7 @@ function build_preset {
     echo "$step complete"
 
     If ($test_result -ne 0) {
-         throw "$step Failed"
+        throw "$step Failed"
     }
 
     popd
@@ -173,7 +183,7 @@ function test_preset {
     echo "$step complete"
 
     If ($test_result -ne 0) {
-         throw "$step Failed"
+        throw "$step Failed"
     }
 
     popd
@@ -199,35 +209,37 @@ function sccache_stats {
     Param (
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet('Start','Stop')]
+        [ValidateSet('Start', 'Stop')]
         [string]$MODE
     )
 
     $sccache_stats = sccache -s
-    If($MODE -eq 'Start') {
+    If ($MODE -eq 'Start') {
         [int]$script:sccache_compile_requests = ($sccache_stats[0] -replace '[^\d]+')
-        [int]$script:sccache_cache_hits_cpp   = ($sccache_stats[2] -replace '[^\d]+')
-        [int]$script:sccache_cache_hits_cuda  = ($sccache_stats[3] -replace '[^\d]+')
-        [int]$script:sccache_cache_miss_cpp   = ($sccache_stats[5] -replace '[^\d]+')
-        [int]$script:sccache_cache_miss_cuda  = ($sccache_stats[6] -replace '[^\d]+')
-    } else {
+        [int]$script:sccache_cache_hits_cpp = ($sccache_stats[2] -replace '[^\d]+')
+        [int]$script:sccache_cache_hits_cuda = ($sccache_stats[3] -replace '[^\d]+')
+        [int]$script:sccache_cache_miss_cpp = ($sccache_stats[5] -replace '[^\d]+')
+        [int]$script:sccache_cache_miss_cuda = ($sccache_stats[6] -replace '[^\d]+')
+    }
+    else {
         [int]$final_sccache_compile_requests = ($sccache_stats[0] -replace '[^\d]+')
-        [int]$final_sccache_cache_hits_cpp   = ($sccache_stats[2] -replace '[^\d]+')
-        [int]$final_sccache_cache_hits_cuda  = ($sccache_stats[3] -replace '[^\d]+')
-        [int]$final_sccache_cache_miss_cpp   = ($sccache_stats[5] -replace '[^\d]+')
-        [int]$final_sccache_cache_miss_cuda  = ($sccache_stats[6] -replace '[^\d]+')
+        [int]$final_sccache_cache_hits_cpp = ($sccache_stats[2] -replace '[^\d]+')
+        [int]$final_sccache_cache_hits_cuda = ($sccache_stats[3] -replace '[^\d]+')
+        [int]$final_sccache_cache_miss_cpp = ($sccache_stats[5] -replace '[^\d]+')
+        [int]$final_sccache_cache_miss_cuda = ($sccache_stats[6] -replace '[^\d]+')
 
-        [int]$total_requests  = $final_sccache_compile_requests - $script:sccache_compile_requests
-        [int]$total_hits_cpp  = $final_sccache_cache_hits_cpp   - $script:sccache_cache_hits_cpp
-        [int]$total_hits_cuda = $final_sccache_cache_hits_cuda  - $script:sccache_cache_hits_cuda
-        [int]$total_miss_cpp  = $final_sccache_cache_miss_cpp   - $script:sccache_cache_miss_cpp
-        [int]$total_miss_cuda = $final_sccache_cache_miss_cuda  - $script:sccache_cache_miss_cuda
+        [int]$total_requests = $final_sccache_compile_requests - $script:sccache_compile_requests
+        [int]$total_hits_cpp = $final_sccache_cache_hits_cpp - $script:sccache_cache_hits_cpp
+        [int]$total_hits_cuda = $final_sccache_cache_hits_cuda - $script:sccache_cache_hits_cuda
+        [int]$total_miss_cpp = $final_sccache_cache_miss_cpp - $script:sccache_cache_miss_cpp
+        [int]$total_miss_cuda = $final_sccache_cache_miss_cuda - $script:sccache_cache_miss_cuda
         If ( $total_requests -gt 0 ) {
-            [int]$hit_rate_cpp  = $total_hits_cpp  / $total_requests * 100;
+            [int]$hit_rate_cpp = $total_hits_cpp / $total_requests * 100;
             [int]$hit_rate_cuda = $total_hits_cuda / $total_requests * 100;
             echo "sccache hits cpp:  $total_hits_cpp  `t| misses: $total_miss_cpp  `t| hit rate: $hit_rate_cpp%"
             echo "sccache hits cuda: $total_hits_cuda `t| misses: $total_miss_cuda `t| hit rate: $hit_rate_cuda%"
-        } else {
+        }
+        else {
             echo "sccache stats: N/A No new compilation requests"
         }
     }
@@ -235,3 +247,148 @@ function sccache_stats {
 
 Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, sccache_stats
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION
+
+# Additional shared helpers for Windows Python/CI scripts
+function Get-Python {
+    Param([Parameter(Mandatory = $true)][string]$Version)
+    $exe = $null
+    try { $exe = (& py -$Version -c "import sys; print(sys.executable)" 2>$null) } catch {}
+    if (-not $exe) {
+        $exe = (Get-Command python).Source
+        $ver = & $exe -c "import sys; print('%d.%d'%sys.version_info[:2])"
+        if ($ver -ne $Version) { throw "Requested Python $Version not found" }
+    }
+    return $exe
+}
+
+function Get-CudaMajor {
+    if ($env:CUDA_PATH) {
+        $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
+        if (Test-Path $nvcc) {
+            $out = & $nvcc --version 2>&1
+            $text = ($out -join "`n")
+            if ($text -match 'release\s+(\d+)\.') { return $Matches[1] }
+        }
+        # Fallback: parse major from CUDA_PATH like ...\v13.0 or ...\CUDA\13
+        $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+)(?:\.\d+)?')
+        if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
+    }
+    return '13'
+}
+
+function Convert-ToUnixPath {
+    Param([Parameter(Mandatory = $true)][string]$p)
+    return ($p -replace "\\", "/")
+}
+
+function Get-RepoRoot {
+    return (Resolve-Path "$PSScriptRoot/../..")
+}
+
+function Get-CudaCcclWheel {
+    Param()
+
+    $repoRoot = Get-RepoRoot
+    if ($env:GITHUB_ACTIONS) {
+        Push-Location $repoRoot
+        try {
+            $wheelArtifactName = (& bash -lc "ci/util/workflow/get_wheel_artifact_name.sh").Trim()
+            if (-not $wheelArtifactName) { throw 'Failed to resolve wheel artifact name' }
+            $repoRootPosix = Convert-ToUnixPath $repoRoot
+            # Ensure output from downloader goes to console, not function return pipeline
+            $null = (& bash -lc "ci/util/artifacts/download.sh $wheelArtifactName $repoRootPosix" 2>&1 | Out-Host)
+            if ($LASTEXITCODE -ne 0) { throw "Failed to download wheel artifact '$wheelArtifactName'" }
+        }
+        finally { Pop-Location }
+    }
+
+    $wheelhouse = Join-Path $repoRoot 'wheelhouse'
+    $wheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
+    return $wheelPath
+}
+
+function Ensure-CudaCcclWheel {
+    Param(
+        [Parameter(Mandatory = $true)][string]$PyVersion,
+        [Parameter(Mandatory = $false)][switch]$UseNinja
+    )
+
+    $repoRoot = Get-RepoRoot
+    $wheelhouse = Join-Path $repoRoot "wheelhouse"
+    New-Item -ItemType Directory -Path $wheelhouse -Force | Out-Null
+
+    $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $wheel) {
+        $buildScript = Join-Path $PSScriptRoot "build_cuda_cccl_python.ps1"
+        $psArgs = ('-File', $buildScript, '-py-version', $PyVersion)
+        if ($UseNinja) { $psArgs += '-UseNinja' }
+        & powershell @psArgs | Write-Host
+        $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" | Select-Object -First 1
+    }
+    if (-not $wheel) { throw "cuda_cccl wheel not found in $wheelhouse" }
+    return $wheel.FullName
+}
+
+function Get-OnePathMatch {
+    [CmdletBinding(DefaultParameterSetName = 'FileSet')]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path,
+
+        [Parameter(Mandatory)]
+        [string] $Pattern,
+
+        [Parameter(Mandatory, ParameterSetName = 'FileSet')]
+        [switch] $File,
+
+        [Parameter(Mandatory, ParameterSetName = 'DirSet')]
+        [switch] $Directory,
+
+        [switch] $Recurse
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "Path not found or not a directory: $Path"
+    }
+
+    $gciArgs = @{
+        LiteralPath = $Path
+        ErrorAction = 'SilentlyContinue'
+    }
+
+    if ($Recurse) { $gciArgs['Recurse'] = $true }
+    if ($PSCmdlet.ParameterSetName -eq 'FileSet') {
+        $gciArgs['File'] = $true
+    }
+    else {
+        $gciArgs['Directory'] = $true
+    }
+
+    $pathMatches = @(
+        Get-ChildItem @gciArgs |
+        Where-Object { $_.Name -match $Pattern } |
+        Select-Object -ExpandProperty FullName
+    )
+
+    if ($pathMatches.Count -ne 1) {
+        $kind = if ($PSCmdlet.ParameterSetName -eq 'FileSet') { 'file' }
+        else { 'directory' }
+        $indented = ($pathMatches | ForEach-Object { "    $_" }) -join "`n"
+
+        $msg = @"
+Expected exactly one $kind name matching regex:
+  $Pattern
+under:
+  $Path
+Found:
+  $($pathMatches.Count)
+
+$indented
+"@
+        throw $msg
+    }
+
+    return $pathMatches[0]
+}
+
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Ensure-CudaCcclWheel, Get-OnePathMatch
