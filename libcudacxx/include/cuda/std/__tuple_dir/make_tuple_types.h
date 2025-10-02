@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -68,6 +69,17 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
 template <class _Vt, size_t... _Idx>
 struct __make_tuple_types_flat<complex<_Vt>, __tuple_indices<_Idx...>>
 {
+  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
+  template <size_t>
+  using __value_type = _Vt;
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+};
+
+template <class _Vt, size_t... _Idx>
+struct __make_tuple_types_flat<::cuda::complex<_Vt>, __tuple_indices<_Idx...>>
+{
+  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
   template <size_t>
   using __value_type = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
