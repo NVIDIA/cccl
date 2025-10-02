@@ -253,4 +253,35 @@ NVBENCH_BENCH_TYPES(nstream_stable, NVBENCH_TYPE_AXES(element_types))
   .set_name("nstream_stable")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", array_size_powers);
+
+template <typename T>
+static void nstream_zip_transform(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(3 * n);
+  state.add_global_memory_writes<T>(n);
+
+  const T scalar = startScalar;
+  auto lambda    = cuda::proclaim_copyable_arguments([scalar] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) -> T {
+    return ai + bi + scalar * ci;
+  });
+  cuda::zip_transform_iterator begin{lambda, a.begin(), b.begin(), c.begin()};
+  cuda::zip_transform_iterator end{lambda, a.end(), b.end(), c.end()};
+  caching_allocator_t alloc; // transform shouldn't allocate, but let's be consistent
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::copy(policy(alloc, launch), begin, end, a.begin());
+             });
+}
+
+NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
+  .set_name("nstream_zip_transform")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", array_size_powers);
+
 } // namespace babelstream
