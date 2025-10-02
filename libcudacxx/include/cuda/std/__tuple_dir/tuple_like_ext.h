@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/array.h>
 #include <cuda/__fwd/complex.h>
+#include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
