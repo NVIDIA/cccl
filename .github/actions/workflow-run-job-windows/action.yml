@@ -188,6 +188,7 @@ runs:
         docker_exit=0
         set +e
         docker run \
+          -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
           --mount type=bind,source="${{ env.ARTIFACT_ARCHIVES_WIN }}",target="${{ env.ARTIFACT_ARCHIVES_WIN }}" \
@@ -197,14 +198,18 @@ runs:
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
           --env COMMAND='& ${{inputs.command}}' \
+          --env COMMAND='& ${{inputs.command}}' \
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
           --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
           --env "AWS_ACCESS_KEY_ID=${{env.AWS_ACCESS_KEY_ID}}" \
           --env "AWS_SECRET_ACCESS_KEY=${{env.AWS_SECRET_ACCESS_KEY}}" \
           --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN}}" \
+          --env "CONTAINER_WORKSPACE=${{steps.paths.outputs.MOUNT_REPO}}" \
           --env "CI=true" \
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
+          --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
+          --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
           --env "GH_TOKEN=$GH_TOKEN" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
