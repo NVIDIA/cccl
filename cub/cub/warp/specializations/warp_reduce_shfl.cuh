@@ -48,7 +48,16 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
@@ -694,7 +703,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = __ballot_sync(member_mask, flag);
+    unsigned warp_flags = __ballot_sync(member_mask, flag);
 
     // Convert to tail-segmented
     if (HEAD_SEGMENTED)
@@ -715,7 +724,7 @@ struct WarpReduceShfl
     warp_flags |= 1u << (LOGICAL_WARP_THREADS - 1);
 
     // Find the next set flag
-    int last_lane = __clz(__brev(warp_flags));
+    int last_lane = ::cuda::std::countr_zero(warp_flags);
 
     T output = input;
     // Template-iterate reduction steps
