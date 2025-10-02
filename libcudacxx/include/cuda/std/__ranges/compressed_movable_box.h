@@ -111,8 +111,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Tp, _Args...>)
-  _CCCL_API constexpr __compressed_box_base(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr __compressed_box_base(in_place_t,
+                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __elem_(::cuda::std::forward<_Args>(__args)...)
   {}
 
@@ -153,8 +154,9 @@ __compressed_box_base<_Index, _Tp, __compressed_box_specialization::__empty_non_
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Tp, _Args...>)
-  _CCCL_API constexpr __compressed_box_base(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr __compressed_box_base(in_place_t,
+                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : _Tp(::cuda::std::forward<_Args>(__args)...)
   {}
 
@@ -193,7 +195,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
         : __null_state_()
     {}
     _CCCL_EXEC_CHECK_DISABLE
-    template <class... _Args>
+    _CCCL_TEMPLATE(class... _Args)
+    _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
     _CCCL_API constexpr __storage(in_place_t, _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
         : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
@@ -202,8 +205,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage
   __storage __storage_{};
   bool __engaged_{};
 
-  _CCCL_HIDE_FROM_ABI constexpr __compressed_box_storage() noexcept = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
+  _CCCL_API constexpr __compressed_box_storage() noexcept(is_nothrow_default_constructible_v<_Tp2>)
+      : __storage_(in_place)
+      , __engaged_(true)
+  {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __compressed_box_storage(in_place_t, _Args&&... __args) noexcept(
@@ -234,7 +244,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage<_Index, _Tp, true>
         : __null_state_()
     {}
     _CCCL_EXEC_CHECK_DISABLE
-    template <class... _Args>
+    _CCCL_TEMPLATE(class... _Args)
+    _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
     _CCCL_API constexpr __storage(in_place_t, _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
         : __val_(::cuda::std::forward<_Args>(__args)...)
     {}
@@ -242,8 +253,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_storage<_Index, _Tp, true>
   __storage __storage_{};
   bool __engaged_{};
 
-  _CCCL_HIDE_FROM_ABI constexpr __compressed_box_storage() noexcept = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
+  _CCCL_API constexpr __compressed_box_storage() noexcept(is_nothrow_default_constructible_v<_Tp2>)
+      : __storage_(in_place)
+      , __engaged_(true)
+  {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr explicit __compressed_box_storage(in_place_t, _Args&&... __args) noexcept(
@@ -269,7 +287,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Tp, _Args...>)
+  _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
   _CCCL_API constexpr __compressed_box_base(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
@@ -619,7 +637,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Elem1, _Args...>)
   _CCCL_API constexpr __compressed_movable_box(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Elem1, _Args...>)
-      : __base1(::cuda::std::forward<_Args>(__args)...)
+      : __base1(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -672,7 +690,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
-      : __base1(::cuda::std::forward<_Arg1>(__arg1))
+      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
   {}
 
@@ -689,8 +707,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
     __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
-      : __base1(::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(::cuda::std::forward<_Arg2>(__arg2))
+      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -766,7 +784,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_TEMPLATE(class _Arg1)
   _CCCL_REQUIRES(__is_constructible_from_one_arg<_Arg1>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1) noexcept(__is_nothrow_constructible_from_one_arg<_Arg1>)
-      : __base1(::cuda::std::forward<_Arg1>(__arg1))
+      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
       , __base2()
       , __base3()
   {}
@@ -785,8 +803,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_REQUIRES(__is_constructible_from_two_args<_Arg1, _Arg2>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
     __is_nothrow_constructible_from_two_args<_Arg1, _Arg2>)
-      : __base1(::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(::cuda::std::forward<_Arg2>(__arg2))
+      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
       , __base3()
   {}
 
@@ -804,9 +822,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   _CCCL_REQUIRES(__is_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
   _CCCL_API constexpr __compressed_movable_box(_Arg1&& __arg1, _Arg2&& __arg2, _Arg3&& __arg3) noexcept(
     __is_nothrow_constructible_from_three_args<_Arg1, _Arg2, _Arg3>)
-      : __base1(::cuda::std::forward<_Arg1>(__arg1))
-      , __base2(::cuda::std::forward<_Arg2>(__arg2))
-      , __base3(::cuda::std::forward<_Arg3>(__arg3))
+      : __base1(in_place, ::cuda::std::forward<_Arg1>(__arg1))
+      , __base2(in_place, ::cuda::std::forward<_Arg2>(__arg2))
+      , __base3(in_place, ::cuda::std::forward<_Arg3>(__arg3))
   {}
 
   _CCCL_TEMPLATE(size_t _Index)
