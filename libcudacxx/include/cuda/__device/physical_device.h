@@ -121,7 +121,7 @@ public:
     return ::cuda::std::string_view{__name_, __name_length_};
   }
 
-  [[nodisccard]] ::cuda::std::span<const device_ref> __peers() const
+  [[nodiscard]] ::cuda::std::span<const device_ref> __peers() const
   {
     ::std::call_once(__init_once_peers_, [this]() {
       const auto __count = ::cuda::__driver::__deviceGetCount();
