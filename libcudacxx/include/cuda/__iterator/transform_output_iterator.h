@@ -185,12 +185,6 @@ public:
   using reference         = void;
 
   //! @brief Default constructs a @c transform_output_iterator with a value initialized iterator and functor
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI transform_output_iterator()
-    requires ::cuda::std::default_initializable<_Iter> && ::cuda::std::default_initializable<_Fn>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Fn2 = _Fn)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_Fn2>)
@@ -198,7 +192,6 @@ public:
     ::cuda::std::is_nothrow_default_constructible_v<_Iter2> && ::cuda::std::is_nothrow_default_constructible_v<_Fn2>)
       : __store_()
   {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a @c transform_output_iterator with a given iterator and output functor
   //! @param __iter The iterator to transform

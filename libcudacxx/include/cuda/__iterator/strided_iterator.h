@@ -99,7 +99,12 @@ public:
   //! @note _Iter must be default initializable because it is a random_access_iterator and thereby semiregular
   //!       _Stride must be integer-like or integral_constant_like which requires default constructability
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI strided_iterator() = default;
+  _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Stride2 = _Stride)
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Iter2> _CCCL_AND ::cuda::std::default_initializable<_Stride2>)
+  _CCCL_API constexpr strided_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Iter2>
+                                                  && ::cuda::std::is_nothrow_default_constructible_v<_Stride2>)
+      : __store_()
+  {}
 
   //! @brief Constructs a @c strided_iterator from a base iterator
   //! @param __iter The base iterator

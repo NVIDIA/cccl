@@ -99,17 +99,11 @@ public:
   using reference = _Tp;
   using pointer   = void;
 
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_HIDE_FROM_ABI constant_iterator()
-    requires ::cuda::std::default_initializable<_Tp>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Tp2>)
   _CCCL_API constexpr constant_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp2>)
       : __store_()
   {}
-#endif // !_CCCL_HAS_CONCEPTS()
 
   //! @brief Creates a @c constant_iterator from a value. The index is set to zero
   //! @param __value The value to store in the @c constant_iterator

@@ -145,19 +145,12 @@ public:
   using pointer           = void;
   using reference         = void;
 
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI tabulate_output_iterator()
-    requires ::cuda::std::default_initializable<_Fn>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Fn2>)
   _CCCL_API constexpr tabulate_output_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Fn2>)
       : __store_()
   {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a @c tabulate_output_iterator with a given functor and an optional index
   //! @param __func the output function
