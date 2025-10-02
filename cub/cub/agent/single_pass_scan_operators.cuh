@@ -228,7 +228,7 @@ struct no_delay_constructor_t
     using namespace ptx_json;
     return object<key<"name">() = value<string("no_delay_constructor_t")>(), key<"params">() = array<L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -265,7 +265,7 @@ struct reduce_by_key_delay_constructor_t
     return object<key<"name">()   = value<string("reduce_by_key_delay_constructor_t")>(),
                   key<"params">() = array<Delay, L2WriteLatency, GridThreshold>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -330,7 +330,7 @@ struct exponential_backoff_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -377,7 +377,7 @@ struct exponential_backoff_jitter_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_jitter_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -424,7 +424,7 @@ struct exponential_backoff_jitter_window_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_jitter_window_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -474,7 +474,7 @@ struct exponential_backon_jitter_window_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_jitter_window_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -523,7 +523,7 @@ struct exponential_backon_jitter_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_jitter_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -560,7 +560,7 @@ struct exponential_backon_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
