@@ -20,29 +20,6 @@
 
 using namespace cuda::experimental::stf;
 
-template <typename T = double>
-struct csr_matrix
-{
-  csr_matrix(stackable_logical_data<slice<T>> _val_handle,
-             stackable_logical_data<slice<size_t>> _row_handle,
-             stackable_logical_data<slice<size_t>> _col_handle)
-      : val_handle(mv(_val_handle))
-      , row_handle(mv(_row_handle))
-      , col_handle(mv(_col_handle))
-  {}
-
-  /* Description of the CSR */
-  mutable stackable_logical_data<slice<T>> val_handle;
-  mutable stackable_logical_data<slice<size_t>> row_handle;
-  mutable stackable_logical_data<slice<size_t>> col_handle;
-};
-
-template <typename T>
-using vector_t = stackable_logical_data<slice<T>>;
-
-template <typename T>
-using scalar_t = stackable_logical_data<scalar_view<T>>;
-
 #if !_CCCL_CTK_BELOW(12, 4)
 template <typename ctx_t, typename T>
 void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, double cg_tol = 1e-10, size_t max_cg = 1000)
