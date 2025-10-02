@@ -502,19 +502,22 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
-      peers.push_back(cuda::devices[0]);
-      resource.enable_access_from(peers);
+      {
+        std::vector peers_ext(peers.begin(), peers.end());
+        peers_ext.push_back(cuda::devices[0]);
+        resource.enable_access_from(peers_ext);
 
-      // Check the resource using the default pool
-      cudax::device_memory_resource default_pool_resource{cuda::device_ref{0}};
-      cudax::device_memory_resource another_default_pool_resource{cuda::device_ref{0}};
+        // Check the resource using the default pool
+        cudax::device_memory_resource default_pool_resource{cuda::device_ref{0}};
+        cudax::device_memory_resource another_default_pool_resource{cuda::device_ref{0}};
 
-      default_pool_resource.enable_access_from(peers.front());
+        default_pool_resource.enable_access_from(peers_ext.front());
 
-      CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
-      allocate_and_check_access(default_pool_resource);
-      CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers.front()));
-      allocate_and_check_access(another_default_pool_resource);
+        CUDAX_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
+        allocate_and_check_access(default_pool_resource);
+        CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        allocate_and_check_access(another_default_pool_resource);
+      }
     }
   }
 }
