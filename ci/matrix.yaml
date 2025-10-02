@@ -336,7 +336,7 @@ host_compilers:
     versions:
       14.29: { stds: [17,   ], alias: '2019' }
       14.39: { stds: [17, 20] } # CTK 12.0 doesn't recognize >14.39 as MSVC 2022.
-      14.43: { stds: [17, 20], alias: '2022' }
+      14.44: { stds: [17, 20], alias: '2022' }
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
