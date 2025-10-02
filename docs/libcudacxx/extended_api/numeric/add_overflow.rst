@@ -28,8 +28,8 @@ The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and 
 
 **Return value**
 
-1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object that contains the result of the addition and a boolean indicating whether an overflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
-2. Returns a boolean indicating whether an overflow occurred, and if no overflow occurred, the result is stored in the provided ``result`` variable.
+1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object  containing the result of the addition and a boolean indicating whether an overflow or underflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
+2. Returns ``true`` if an overflow or underflow occurred. When ``false`` is returned, the computed difference is stored in ``result``.
 
 **Constraints**
 
@@ -37,10 +37,10 @@ The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and 
 
 **Performance considerations**
 
-- No overflow checking if ``Lhs +  Rhs`` is always  representable with the ``Result`` type.
-- The computation is faster when ``Lhs``, ``Rhs``, and ``Result`` have the same sign.
-- The computation with unsigned types is faster than signed types.
-- The function uses PTX ``asm`` on device, and compiler-intrinsics on host whenever possible.
+- No overflow checking is required if ``Lhs +  Rhs`` is always representable with the ``Result`` type.
+- Computation is generally faster when ``Lhs``, ``Rhs``, and ``Result`` have the same signedness.
+- Unsigned computations are generally faster than signed computations.
+- The function uses PTX ``asm`` on device and compiler intrinsics on host whenever possible.
 
 Example
 -------
@@ -58,9 +58,9 @@ Example
 
         // cuda::add_overflow(lhs, rhs) returning common type of lhs and rhs
         // 'result' is evaluated to true if an overflow occurred, false otherwise
-        if (auto result = cuda::add_overflow(1, int_max))
+        if (auto result = cuda::add_overflow(1, 2))
         {
-            assert(result.value == int_min);
+            assert(result.value == 3);
         }
 
         // cuda::add_overflow<Result>(lhs, rhs) with explicit return type
@@ -70,11 +70,10 @@ Example
 
         unsigned result{};
         // cuda::add_overflow(result, lhs, rhs) with bool return type
-        if (cuda::add_overflow(result, 1, int_max))
+        if (!cuda::add_overflow(result, 1, int_max))
         {
-            assert(false); // should not be reached
+            assert(result.value == static_cast<unsigned>(int_max) + 1u);
         }
-        assert(result.value == static_cast<unsigned>(int_max) + 1u);
     }
 
     int main()
@@ -83,4 +82,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/n1dWPf8c6>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/KTGPKjbdv>`_
