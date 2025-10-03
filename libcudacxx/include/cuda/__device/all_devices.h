@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_ALL_DEVICES_H
 #define _CUDA___DEVICE_ALL_DEVICES_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -49,9 +49,9 @@ public:
 
   [[nodiscard]] size_type size() const;
 
-  [[nodiscard]] iterator begin() const noexcept;
+  [[nodiscard]] iterator begin() const;
 
-  [[nodiscard]] iterator end() const noexcept;
+  [[nodiscard]] iterator end() const;
 
   operator ::cuda::std::span<const device_ref>() const;
 
@@ -133,12 +133,12 @@ struct all_devices::__initializer_iterator
   return __devices().size();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::begin() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::begin() const
 {
   return __devices().begin();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::end() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::end() const
 {
   return __devices().end();
 }

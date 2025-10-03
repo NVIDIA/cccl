@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/complex.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
@@ -57,6 +58,9 @@ inline constexpr bool __tuple_like_impl<array<_Tp, _Size>> = true;
 
 template <class _Tp>
 inline constexpr bool __tuple_like_impl<complex<_Tp>> = true;
+
+template <class _Tp>
+inline constexpr bool __tuple_like_impl<::cuda::complex<_Tp>> = true;
 
 template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
 inline constexpr bool __tuple_like_impl<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> = true;

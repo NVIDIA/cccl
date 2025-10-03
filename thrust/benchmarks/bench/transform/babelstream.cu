@@ -25,85 +25,15 @@
  *
  ******************************************************************************/
 
-#include <thrust/copy.h>
-#include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/transform.h>
-#include <thrust/zip_function.h>
 
 #include <cuda/__functional/address_stability.h>
 
 #include <nvbench_helper.cuh>
 
-template <class InT, class OutT>
-struct fib_t
-{
-  __device__ OutT operator()(InT n)
-  {
-    OutT t1 = 0;
-    OutT t2 = 1;
-
-    if (n < 1)
-    {
-      return t1;
-    }
-    else if (n == 1)
-    {
-      return t1;
-    }
-    else if (n == 2)
-    {
-      return t2;
-    }
-    for (InT i = 3; i <= n; ++i)
-    {
-      const auto next = t1 + t2;
-      t1              = t2;
-      t2              = next;
-    }
-
-    return t2;
-  }
-};
-
-template <typename... Args>
-void bench_transform(nvbench::state& state, Args&&... args)
-{
-  caching_allocator_t alloc; // transform shouldn't allocate, but let's be consistent
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               thrust::transform(policy(alloc, launch), ::cuda::std::forward<Args>(args)...);
-             });
-}
-
-template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
-{
-  const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
-
-  thrust::device_vector<T> input = generate(elements, bit_entropy::_1_000, T{0}, T{42});
-  thrust::device_vector<T> output(elements);
-
-  state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<nvbench::uint32_t>(elements);
-
-  fib_t<T, nvbench::uint32_t> op{};
-  bench_transform(state, input.cbegin(), input.cend(), output.begin(), op);
-}
-
-using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
-
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
-  .set_name("base")
-  .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
-
-namespace babelstream
-{
-// The benchmarks in this namespace are inspired by the BabelStream thrust version:
+// The benchmarks are inspired by the BabelStream thrust version:
 // https://github.com/UoB-HPC/BabelStream/blob/main/src/thrust/ThrustStream.cu
 
 // Modified from BabelStream to also work for integers
@@ -116,6 +46,16 @@ using element_types = nvbench::type_list<std::int8_t, std::int16_t, float, doubl
 // Different benchmarks use a different number of buffers. H200/B200 can fit 2^31 elements for all benchmarks and types.
 // Upstream BabelStream uses 2^25. Allocation failure just skips the benchmark
 auto array_size_powers = std::vector<std::int64_t>{25, 31};
+
+template <typename... Args>
+void bench_transform(nvbench::state& state, Args&&... args)
+{
+  caching_allocator_t alloc; // transform shouldn't allocate, but let's be consistent
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::transform(policy(alloc, launch), ::cuda::std::forward<Args>(args)...);
+             });
+}
 
 template <typename T>
 static void mul(nvbench::state& state, nvbench::type_list<T>)
@@ -253,4 +193,3 @@ NVBENCH_BENCH_TYPES(nstream_stable, NVBENCH_TYPE_AXES(element_types))
   .set_name("nstream_stable")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", array_size_powers);
-} // namespace babelstream

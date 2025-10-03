@@ -39,11 +39,11 @@ namespace chrono
 class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
 {
 public:
-  using duration                        = ::cuda::std::chrono::nanoseconds;
-  using rep                             = duration::rep;
-  using period                          = duration::period;
-  using time_point                      = ::cuda::std::chrono::time_point<system_clock>;
-  static constexpr const bool is_steady = false;
+  using duration                  = ::cuda::std::chrono::nanoseconds;
+  using rep                       = duration::rep;
+  using period                    = duration::period;
+  using time_point                = ::cuda::std::chrono::time_point<system_clock>;
+  static constexpr bool is_steady = false;
 
   [[nodiscard]] _CCCL_API inline static time_point now() noexcept
   {
