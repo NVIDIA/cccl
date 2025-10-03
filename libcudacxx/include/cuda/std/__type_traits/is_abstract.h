@@ -24,6 +24,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_ABSTRACT(...) __is_abstract(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>

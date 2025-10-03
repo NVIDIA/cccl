@@ -137,12 +137,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                InputIteratorT,
-                OutputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT>;
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -230,14 +225,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
+  using AgentReduceT = AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentMediumReduceT =
-    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
+    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentSmallReduceT =
-    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, OutputIteratorT, int, ReductionOpT, AccumT>;
+    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   constexpr auto segments_per_medium_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
   constexpr auto medium_threads_per_warp   = ActivePolicyT::MediumReducePolicy::WARP_THREADS;

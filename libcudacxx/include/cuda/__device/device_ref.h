@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_DEVICE_REF_H
 #define _CUDA___DEVICE_DEVICE_REF_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,7 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__runtime/types.h>
 
 #  include <string>
 #  include <vector>
@@ -113,6 +113,14 @@ public:
     return attribute(__detail::__dev_attr<_Attr>());
   }
 
+  //! @brief Retrieve the memory location of this device
+  //!
+  //! @return The memory location of this device
+  [[nodiscard]] operator memory_location() const noexcept
+  {
+    return memory_location{::cudaMemLocationTypeDevice, get()};
+  }
+
   //! @brief Retrieve string with the name of this device.
   //!
   //! @return String containing the name of this device.
@@ -134,16 +142,10 @@ public:
   //!
   //! @param __other_dev Device to query the peer access
   //! @return true if its possible for this device to access the specified device's memory
-  bool has_peer_access_to(device_ref __other_dev) const
+  [[nodiscard]] bool has_peer_access_to(device_ref __other_dev) const
   {
-    int __can_access;
-    _CCCL_TRY_CUDA_API(
-      ::cudaDeviceCanAccessPeer,
-      "Could not query if device can be peer accessed",
-      &__can_access,
-      get(),
-      __other_dev.get());
-    return __can_access;
+    return ::cuda::__driver::__deviceCanAccessPeer(
+      ::cuda::__driver::__deviceGet(get()), ::cuda::__driver::__deviceGet(__other_dev.get()));
   }
 
   //! @brief Retrieve architecture traits of this device.

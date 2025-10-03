@@ -23,13 +23,6 @@ inputs:
   # This token must have the "read:enterprise" scope
   dist-token:
     description: "The token used to authenticate with the sccache-dist build cluster."
-  github_token:
-    description: >-
-      Optional GitHub PAT with at least gist, repo (read), and read:org scopes
-      to enable sccache S3 auth on forks. Typically supplied via the
-      'SCCACHE_AUTH_TOKEN' repository secret in forks.
-    required: false
-    default: ""
 
 runs:
   using: "composite"
@@ -108,7 +101,7 @@ runs:
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
-        GH_TOKEN: ${{ inputs.github_token != '' && inputs.github_token || github.token }}
+        GH_TOKEN: ${{ github.token }}
         CI: true
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
@@ -216,8 +209,6 @@ runs:
         fi
 
         # Clear the ARN when using the pre-minted aws creds on the main repo.
-        # Leave this on forks, as they'll need it to authenticate using the
-        # devcontainer-utils scripting via GH_TOKEN.
         if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
           extra_launch_args+=(--env "AWS_ROLE_ARN=")
         fi
@@ -248,7 +239,6 @@ runs:
             "${extra_launch_args[@]}" \
             --env "COMMAND=$COMMAND" \
             --env "CI=true" \
-            --env "SCCACHE_DIST_GH_SCOPES=read:org" \
             --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
             --env "GITHUB_SHA=$GITHUB_SHA" \

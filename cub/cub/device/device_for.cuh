@@ -48,6 +48,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
@@ -127,15 +128,6 @@ struct op_wrapper_vectorized_t
 struct DeviceFor
 {
 private:
-  /**
-   * Checks if the pointer is aligned to the given vector type
-   */
-  template <class VectorT, class T>
-  CUB_RUNTIME_FUNCTION static bool is_aligned(const T* ptr)
-  {
-    return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
-  }
-
   template <bool UseVectorization, class RandomAccessOrContiguousIteratorT, class OffsetT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   for_each_n(RandomAccessOrContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream)
@@ -146,7 +138,7 @@ private:
       using wrapped_op_t =
         detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
 
-      if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
+      if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
       { // Vectorize loads
         const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 

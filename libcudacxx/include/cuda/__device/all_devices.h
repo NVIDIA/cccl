@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_ALL_DEVICES_H
 #define _CUDA___DEVICE_ALL_DEVICES_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,7 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__device/physical_device.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 #  include <cuda/std/span>
@@ -49,9 +49,9 @@ public:
 
   [[nodiscard]] size_type size() const;
 
-  [[nodiscard]] iterator begin() const noexcept;
+  [[nodiscard]] iterator begin() const;
 
-  [[nodiscard]] iterator end() const noexcept;
+  [[nodiscard]] iterator end() const;
 
   operator ::cuda::std::span<const device_ref>() const;
 
@@ -133,12 +133,12 @@ struct all_devices::__initializer_iterator
   return __devices().size();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::begin() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::begin() const
 {
   return __devices().begin();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::end() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::end() const
 {
   return __devices().end();
 }
@@ -151,11 +151,8 @@ inline all_devices::operator ::cuda::std::span<const device_ref>() const
 
 inline const ::std::vector<physical_device>& all_devices::__devices()
 {
-  static const ::std::vector<physical_device> __devices = [] {
-    int __count = 0;
-    _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
-    return ::std::vector<physical_device>{__initializer_iterator{0}, __initializer_iterator{__count}};
-  }();
+  static const ::std::vector<physical_device> __devices{
+    __initializer_iterator{0}, __initializer_iterator{::cuda::__driver::__deviceGetCount()}};
   return __devices;
 }
 } // namespace __detail

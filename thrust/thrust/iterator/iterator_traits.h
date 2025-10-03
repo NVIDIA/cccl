@@ -101,15 +101,16 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or cuda::std::iter_value_t instead")
-  iterator_value
+iterator_value
 {
   using type = typename iterator_traits<Iterator>::value_type;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_value_t CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or "
-                                               "cuda::std::iter_value_t instead") = iterator_value<Iterator>;
+using iterator_value_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::value_type or "
+                          "cuda::std::iter_value_t instead") = iterator_value<Iterator>;
 
 // pointer
 
@@ -129,32 +130,32 @@ using iterator_pointer_t CCCL_DEPRECATED = typename iterator_pointer<Iterator>::
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::reference or cuda::std::iter_reference_t instead")
-  iterator_reference
+iterator_reference
 {
   using type = typename iterator_traits<Iterator>::reference;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_reference_t CCCL_DEPRECATED_BECAUSE(
-  "Use cuda::std::iterator_traits<>::reference or "
-  "cuda::std::iter_reference_t instead") = typename iterator_reference<Iterator>::type;
+using iterator_reference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::reference or "
+                          "cuda::std::iter_reference_t instead") = typename iterator_reference<Iterator>::type;
 
 // difference
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
 struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::difference_t or cuda::std::iter_difference_t instead")
-  iterator_difference
+iterator_difference
 {
   using type = typename iterator_traits<Iterator>::difference_type;
 };
 
 //! deprecated [Since 3.0]
 template <typename Iterator>
-using iterator_difference_t CCCL_DEPRECATED_BECAUSE(
-  "Use cuda::std::iterator_traits<>::difference_t or "
-  "cuda::std::iter_difference_t instead") = typename iterator_difference<Iterator>::type;
+using iterator_difference_t
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits<>::difference_t or "
+                          "cuda::std::iter_difference_t instead") = typename iterator_difference<Iterator>::type;
 
 // traversal
 
@@ -283,25 +284,25 @@ struct iterator_traversal<::cuda::tabulate_output_iterator<Fn, Index>>
   using type = random_access_traversal_tag;
 };
 
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_system<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_system<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_system<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class InputFn, class OutputFn>
-struct iterator_traversal<::cuda::transform_input_output_iterator<Iter, InputFn, OutputFn>> : iterator_traversal<Iter>
-{};
-
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_output_iterator<Iter, Fn>> : iterator_system<Iter>
-{};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_output_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class InputFn, class OutputFn, class Iter>
+struct iterator_traversal<::cuda::transform_input_output_iterator<InputFn, OutputFn, Iter>> : iterator_traversal<Iter>
 {};
 
-template <class Iter, class Fn>
-struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_output_iterator<Fn, Iter>> : iterator_system<Iter>
 {};
-template <class Iter, class Fn>
-struct iterator_traversal<::cuda::transform_iterator<Iter, Fn>> : iterator_traversal<Iter>
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_output_iterator<Fn, Iter>> : iterator_traversal<Iter>
+{};
+
+template <class Fn, class Iter>
+struct iterator_system<::cuda::transform_iterator<Fn, Iter>> : iterator_system<Iter>
+{};
+template <class Fn, class Iter>
+struct iterator_traversal<::cuda::transform_iterator<Fn, Iter>> : iterator_traversal<Iter>
 {};
 
 template <class... Iterators>
@@ -311,6 +312,17 @@ struct iterator_system<::cuda::zip_iterator<Iterators...>>
 };
 template <class... Iterators>
 struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
+{
+  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+};
+
+template <class Fn, class... Iterators>
+struct iterator_system<::cuda::zip_transform_iterator<Fn, Iterators...>>
+{
+  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+};
+template <class Fn, class... Iterators>
+struct iterator_traversal<::cuda::zip_transform_iterator<Fn, Iterators...>>
 {
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };

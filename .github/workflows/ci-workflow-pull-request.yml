@@ -24,15 +24,6 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-  # Disabling the pull_request trigger to avoid double runs on NVIDIA/cccl.
-  # This was added to support CI on forks, but would launch two runs on
-  # NVIDIA/cccl: one for the push to the copy-pr-bot branch, and one for
-  # the pull_request event.
-  # Since the CI job gates branch protection checks and the pull_request
-  # trigger causes that job to be skipped (which counts as "success" for GHA branch
-  # protections...), PRs could be merged regardless of the real 'on-push' workflow status.
-  #
-  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -41,13 +32,6 @@ concurrency:
 jobs:
   build-workflow:
     name: Build workflow from matrix
-    # On NVIDIA/cccl, run when pushed to a copy-pr-bot branch.
-    # On forks, run when a pull request is opened:
-    if: >-
-      ${{
-        (github.repository == 'NVIDIA/cccl' && github.event_name == 'push') ||
-        (github.repository != 'NVIDIA/cccl' && github.event_name == 'pull_request')
-      }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,7 +40,6 @@ jobs:
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
-      ci_enabled: ${{ steps.export-flags.outputs.ci_enabled }}
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
@@ -68,7 +51,6 @@ jobs:
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
-          output ci_enabled     "true" # This job only runs when CI is enabled (see `if:` field)
           output matrix_enabled "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
           output vdc_enabled    "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
           output docs_enabled   "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
@@ -104,7 +86,6 @@ jobs:
     name: ${{ matrix.name }}
     if: >-
       ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
         needs.build-workflow.outputs.matrix_enabled == 'true' &&
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]'
       }}
@@ -119,13 +100,11 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
-    secrets: inherit
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
     if: >-
       ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
         needs.build-workflow.outputs.matrix_enabled == 'true' &&
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]'
       }}
@@ -140,13 +119,11 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
-    secrets: inherit
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
     if: >-
       ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
         needs.build-workflow.outputs.matrix_enabled == 'true' &&
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]'
       }}
@@ -161,13 +138,11 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
-    secrets: inherit
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
     if: >-
       ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
         needs.build-workflow.outputs.matrix_enabled == 'true' &&
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]'
       }}
@@ -182,13 +157,11 @@ jobs:
     uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
-    secrets: inherit
 
   verify-workflow:
     name: Verify and summarize workflow results
     if: >-
       ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
         always() &&
         !cancelled() &&
         needs.build-workflow.outputs.matrix_enabled == 'true'
@@ -219,11 +192,7 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
-        needs.build-workflow.outputs.vdc_enabled == 'true'
-      }}
+    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -237,7 +206,6 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.ci_enabled  == 'true' &&
         needs.build-workflow.outputs.docs_enabled == 'true'
       }}
     permissions:
@@ -252,11 +220,7 @@ jobs:
   build-rapids:
     name: Build RAPIDS (optional)
     needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.ci_enabled   == 'true' &&
-        needs.build-workflow.outputs.rapids_enabled == 'true'
-      }}
+    if: ${{ needs.build-workflow.outputs.rapids_enabled == 'true' }}
     secrets: inherit
     permissions:
       actions: read
@@ -269,11 +233,7 @@ jobs:
   build-matx:
     name: Build MatX (optional)
     needs: build-workflow
-    if: >-
-      ${{
-        needs.build-workflow.outputs.ci_enabled  == 'true' &&
-        needs.build-workflow.outputs.matx_enabled == 'true'
-      }}
+    if: ${{ needs.build-workflow.outputs.matx_enabled == 'true' }}
     secrets: inherit
     permissions:
       id-token: write
@@ -287,12 +247,7 @@ jobs:
     # !! Need to use always() instead of !cancelled() because skipped jobs count as success
     # !! for Github branch protection checks. Yes, really: by default, branch protections
     # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
-    if: >-
-      ${{
-        github.repository == 'NVIDIA/cccl' &&
-        needs.build-workflow.outputs.ci_enabled == 'true' &&
-        always()
-      }}
+    if: ${{ always() }}
     needs:
       - build-workflow
       - verify-workflow

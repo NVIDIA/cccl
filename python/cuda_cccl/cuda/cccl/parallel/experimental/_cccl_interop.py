@@ -366,11 +366,10 @@ def _check_compile_result(cubin: bytes):
     except FileNotFoundError:
         sass = "nvdiasm not found, skipping SASS validation"
         warnings.warn(sass)
-    finally:
-        os.unlink(temp_cubin_file.name)
 
     assert "LDL" not in sass, "LDL instruction found in SASS"
     assert "STL" not in sass, "STL instruction found in SASS"
+    return temp_cubin_file.name
 
 
 # this global variable controls whether the compile result is checked
@@ -398,7 +397,8 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
 
     if _check_sass:
         cubin = result._get_cubin()
-        _check_compile_result(cubin)
+        temp_cubin_file_name = _check_compile_result(cubin)
+        os.unlink(temp_cubin_file_name)
 
     return result
 

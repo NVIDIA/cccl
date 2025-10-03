@@ -61,24 +61,6 @@ workflows:
     - <...>
 ```
 
-### Running PR CI with sccache on Personal CCCL Forks
-
-> 💡 This section only applies to the uncommon case of wanting to run CI in a pull request made to a github fork of `NVIDIA/cccl`. **This is not applicable to the common case of creating a PR against the main `NVIDIA/cccl` repo.**
-
-Pull requests opened against a Github fork of CCCL run CI on GitHub‑hosted, CPU-only runners with a reduced job matrix. Authorized NVIDIA developers can enable compiler caching via sccache for forked PRs by adding a GitHub Personal Access Token (PAT) as a secret on your fork:
-
-1. Create a PAT:
-   - Generate a PAT (classic) in your GitHub account with the following minimum scopes: `repo` (read), `read:org`, and `gist`.
-   - A fine‑grained PAT with equivalent read access also works.
-2. Add the secret on your fork:
-   - Navigate to `Settings → Secrets and variables → Actions` on your fork.
-   - Add a new Repository secret named `SCCACHE_AUTH_TOKEN` and paste the PAT value.
-3. Create a pull request to an up-to-date `main` branch of your github fork.
-   - This will automatically start the PR workflow on GH-hosted runners for users with appropriate access to your fork.
-4. Verify that the job results show sccache hits on our S3 bucket.
-
-For local development, you can also share cache with CI by following the guidance in [Accelerating Build Times with `sccache`](#accelerating-build-times-with-sccache).
-
 ### Accelerating Build Times with `sccache`
 
 CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler artifacts for files that haven't changed and dramatically accelerate build times. Local builds inside [CCCL's Dev Containers](.devcontainer/README.md) can share the same cache such that local builds and CI jobs mutually benefit from accelerated build times. Follow the [GitHub Authentication](.devcontainer/README.md#optional-authenticate-with-github-for-sccache) guide to enable this feature.
