@@ -76,13 +76,13 @@ __host__ __device__ constexpr void test_type()
   test_add_overflow<Result>(lhs_max, Rhs{}, cuda::std::cmp_greater(lhs_max, result_max));
 
   // 6. 0 + max
-  //test_add_overflow<Result>(Lhs{}, rhs_max, cuda::std::cmp_greater(rhs_max, result_max));
+  // test_add_overflow<Result>(Lhs{}, rhs_max, cuda::std::cmp_greater(rhs_max, result_max));
 
   // 7. 1 + max
   test_add_overflow<Result>(lhs_max, Rhs{1}, cuda::std::cmp_greater_equal(lhs_max, result_max));
 
   // 8. Adding max and one
-  //test_add_overflow<Result>(Lhs{1}, rhs_max, cuda::std::cmp_greater_equal(rhs_max, result_max));
+  // test_add_overflow<Result>(Lhs{1}, rhs_max, cuda::std::cmp_greater_equal(rhs_max, result_max));
 
   //  9. max + max
   if constexpr (result_max >= lhs_max)
@@ -102,7 +102,7 @@ __host__ __device__ constexpr void test_type()
   test_add_overflow<Result>(lhs_min, Rhs{}, cuda::std::cmp_less(lhs_min, result_min));
 
   // 11. 0 + min
-  //test_add_overflow<Result>(Lhs{}, rhs_min, cuda::std::cmp_less(rhs_min, result_min));
+  // test_add_overflow<Result>(Lhs{}, rhs_min, cuda::std::cmp_less(rhs_min, result_min));
 
   // 12. min and -1
   if constexpr (is_signed_v<Rhs>)
@@ -111,7 +111,7 @@ __host__ __device__ constexpr void test_type()
   }
 
   // 13. Adding -1 and min
-  //if constexpr (is_signed_v<Lhs>)
+  // if constexpr (is_signed_v<Lhs>)
   //{
   //  test_add_overflow<Result>(Lhs{-1}, rhs_min, cuda::std::cmp_less_equal(rhs_min, result_min));
   //}
