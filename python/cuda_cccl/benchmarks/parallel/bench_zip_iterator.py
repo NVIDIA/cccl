@@ -2,15 +2,15 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute as cc
 
 
-@parallel.gpu_struct
+@cc.gpu_struct
 class Single:
     value: np.int32
 
 
-@parallel.gpu_struct
+@cc.gpu_struct
 class Pair:
     first: np.int32
     second: np.int32
@@ -22,12 +22,12 @@ def reduce_zip_array(input_array, build_only):
     h_init = Single(0)
 
     # Create zip iterator with single array - wraps each element in Single struct
-    zip_iter = parallel.ZipIterator(input_array)
+    zip_iter = cc.ZipIterator(input_array)
 
     def my_add(a, b):
         return Single(a.value + b.value)
 
-    alg = parallel.make_reduce_into(zip_iter, res, my_add, h_init)
+    alg = cc.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -41,12 +41,12 @@ def reduce_zip_iterator(inp, size, build_only):
     h_init = Single(0)
 
     # Create zip iterator with single iterator - wraps each element in Single struct
-    zip_iter = parallel.ZipIterator(inp)
+    zip_iter = cc.ZipIterator(inp)
 
     def my_add(a, b):
         return Single(a.value + b.value)
 
-    alg = parallel.make_reduce_into(zip_iter, res, my_add, h_init)
+    alg = cc.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -60,13 +60,13 @@ def reduce_zip_array_iterator(input_array, size, build_only):
     h_init = Pair(0, 0)
 
     # Create a counting iterator to zip with the array
-    inp = parallel.CountingIterator(np.int32(0))
-    zip_iter = parallel.ZipIterator(input_array, inp)
+    inp = cc.CountingIterator(np.int32(0))
+    zip_iter = cc.ZipIterator(input_array, inp)
 
     def my_add(a, b):
         return Pair(a.first + b.first, a.second + b.second)
 
-    alg = parallel.make_reduce_into(zip_iter, res, my_add, h_init)
+    alg = cc.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -85,7 +85,7 @@ def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
         # We need to extract the values and create a new Pair
         return Pair(a[0] + b[0], a[1] + b[1])
 
-    alg = parallel.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
+    alg = cc.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
 
     if not build_only:
         alg(zip_iter1, zip_iter2, res, size)
@@ -102,14 +102,14 @@ def bench_zip_array(bench_fixture, request):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_reduce_into, run)
+        fixture(cc.make_reduce_into, run)
     else:
         fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_zip_iterator(bench_fixture, request):
-    inp = parallel.CountingIterator(np.int32(0))
+    inp = cc.CountingIterator(np.int32(0))
 
     def run():
         reduce_zip_iterator(
@@ -118,7 +118,7 @@ def bench_zip_iterator(bench_fixture, request):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_reduce_into, run)
+        fixture(cc.make_reduce_into, run)
     else:
         fixture(run)
 
@@ -134,7 +134,7 @@ def bench_zip_array_iterator(bench_fixture, request):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_reduce_into, run)
+        fixture(cc.make_reduce_into, run)
     else:
         fixture(run)
 
@@ -144,10 +144,10 @@ def bench_transform_zip_array_iterator(bench_fixture, request):
     input_array = cp.arange(1000, dtype=cp.int32)
 
     # Create two zip iterators with consistent Pair structures
-    counting_iter1 = parallel.CountingIterator(np.int32(0))
-    zip_iter1 = parallel.ZipIterator(input_array, counting_iter1)
-    counting_iter2 = parallel.CountingIterator(np.int32(1))
-    zip_iter2 = parallel.ZipIterator(input_array, counting_iter2)
+    counting_iter1 = cc.CountingIterator(np.int32(0))
+    zip_iter1 = cc.ZipIterator(input_array, counting_iter1)
+    counting_iter2 = cc.CountingIterator(np.int32(1))
+    zip_iter2 = cc.ZipIterator(input_array, counting_iter2)
 
     def run():
         transform_zip_array_iterator(
@@ -159,6 +159,6 @@ def bench_transform_zip_array_iterator(bench_fixture, request):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_binary_transform, run)
+        fixture(cc.make_binary_transform, run)
     else:
         fixture(run)

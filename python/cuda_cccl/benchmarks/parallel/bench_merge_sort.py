@@ -2,15 +2,13 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute as cc
 
 
 def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
     size = len(keys)
 
-    alg = parallel.make_merge_sort(
-        keys, vals, output_keys, output_vals, parallel.OpKind.LESS
-    )
+    alg = cc.make_merge_sort(keys, vals, output_keys, output_vals, cc.OpKind.LESS)
     if not build_only:
         temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -25,7 +23,7 @@ def merge_sort_pointer_custom_op(keys, vals, output_keys, output_vals, build_onl
     def my_cmp(a: np.int32, b: np.int32) -> np.int32:
         return np.int32(a < b)
 
-    alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
+    alg = cc.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
     if not build_only:
         temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -35,9 +33,7 @@ def merge_sort_pointer_custom_op(keys, vals, output_keys, output_vals, build_onl
 
 
 def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
-    alg = parallel.make_merge_sort(
-        keys, vals, output_keys, output_vals, parallel.OpKind.LESS
-    )
+    alg = cc.make_merge_sort(keys, vals, output_keys, output_vals, cc.OpKind.LESS)
     if not build_only:
         temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -46,7 +42,7 @@ def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@parallel.gpu_struct
+@cc.gpu_struct
 class MyStruct:
     x: np.int32
     y: np.int32
@@ -58,7 +54,7 @@ def merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only):
     def my_cmp(a: MyStruct, b: MyStruct) -> np.int8:
         return np.int8(a.x < b.x)
 
-    alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
+    alg = cc.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
     if not build_only:
         temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -87,7 +83,7 @@ def bench_merge_sort_pointer(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_merge_sort, run)
+        fixture(cc.make_merge_sort, run)
     else:
         fixture(run)
 
@@ -111,7 +107,7 @@ def bench_merge_sort_pointer_custom_op(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_merge_sort, run)
+        fixture(cc.make_merge_sort, run)
     else:
         fixture(run)
 
@@ -120,8 +116,8 @@ def bench_merge_sort_pointer_custom_op(bench_fixture, request, size):
 def bench_merge_sort_iterator(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    keys = parallel.CountingIterator(np.int32(0))
-    vals = parallel.CountingIterator(np.int64(0))
+    keys = cc.CountingIterator(np.int32(0))
+    vals = cc.CountingIterator(np.int64(0))
     output_keys = cp.empty(actual_size, dtype="int32")
     output_vals = cp.empty(actual_size, dtype="int64")
 
@@ -137,7 +133,7 @@ def bench_merge_sort_iterator(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_merge_sort, run)
+        fixture(cc.make_merge_sort, run)
     else:
         fixture(run)
 
@@ -163,6 +159,6 @@ def bench_merge_sort_struct(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_merge_sort, run)
+        fixture(cc.make_merge_sort, run)
     else:
         fixture(run)

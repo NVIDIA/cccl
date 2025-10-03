@@ -85,7 +85,6 @@ git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
-"cuda/cccl" = "cuda/cccl"
 
 [tool.mypy]
 python_version = "3.10"
@@ -110,8 +109,8 @@ extend = "../../pyproject.toml"
 known-first-party = [
   "cuda.cccl",
   "cuda.cccl.headers",
-  "cuda.cccl.parallel",
-  "cuda.cccl.cooperative",
+  "cuda.compute",
+  "cuda.coop",
 ]
 
 [tool.pytest.ini_options]

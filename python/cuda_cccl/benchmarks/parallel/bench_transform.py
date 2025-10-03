@@ -2,7 +2,7 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute as cc
 
 
 def unary_transform_pointer(inp, out, build_only):
@@ -11,7 +11,7 @@ def unary_transform_pointer(inp, out, build_only):
     def op(a):
         return a + 1
 
-    transform = parallel.make_unary_transform(inp, out, op)
+    transform = cc.make_unary_transform(inp, out, op)
     if not build_only:
         transform(inp, out, size)
 
@@ -19,19 +19,19 @@ def unary_transform_pointer(inp, out, build_only):
 
 
 def unary_transform_iterator(size, out, build_only):
-    d_in = parallel.CountingIterator(np.int32(0))
+    d_in = cc.CountingIterator(np.int32(0))
 
     def op(a):
         return a + 1
 
-    transform = parallel.make_unary_transform(d_in, out, op)
+    transform = cc.make_unary_transform(d_in, out, op)
     if not build_only:
         transform(d_in, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
 
-@parallel.gpu_struct
+@cc.gpu_struct
 class MyStruct:
     x: np.int32
     y: np.int32
@@ -43,7 +43,7 @@ def unary_transform_struct(inp, out, build_only):
     def op(a):
         return MyStruct(a.x + 1, a.y + 1)
 
-    transform = parallel.make_unary_transform(inp, out, op)
+    transform = cc.make_unary_transform(inp, out, op)
 
     if not build_only:
         transform(inp, out, size)
@@ -54,7 +54,7 @@ def unary_transform_struct(inp, out, build_only):
 def binary_transform_pointer(inp1, inp2, out, build_only):
     size = len(inp1)
 
-    transform = parallel.make_binary_transform(inp1, inp2, out, parallel.OpKind.PLUS)
+    transform = cc.make_binary_transform(inp1, inp2, out, cc.OpKind.PLUS)
     if not build_only:
         transform(inp1, inp2, out, size)
 
@@ -67,7 +67,7 @@ def binary_transform_pointer_custom_op(inp1, inp2, out, build_only):
     def op(a, b):
         return a + b
 
-    transform = parallel.make_binary_transform(inp1, inp2, out, op)
+    transform = cc.make_binary_transform(inp1, inp2, out, op)
 
     if not build_only:
         transform(inp1, inp2, out, size)
@@ -76,10 +76,10 @@ def binary_transform_pointer_custom_op(inp1, inp2, out, build_only):
 
 
 def binary_transform_iterator(size, out, build_only):
-    d_in1 = parallel.CountingIterator(np.int32(0))
-    d_in2 = parallel.CountingIterator(np.int32(1))
+    d_in1 = cc.CountingIterator(np.int32(0))
+    d_in2 = cc.CountingIterator(np.int32(1))
 
-    transform = parallel.make_binary_transform(d_in1, d_in2, out, parallel.OpKind.PLUS)
+    transform = cc.make_binary_transform(d_in1, d_in2, out, cc.OpKind.PLUS)
     if not build_only:
         transform(d_in1, d_in2, out, size)
 
@@ -92,7 +92,7 @@ def binary_transform_struct(inp1, inp2, out, build_only):
     def op(a, b):
         return MyStruct(a.x + b.x, a.y + b.y)
 
-    transform = parallel.make_binary_transform(inp1, inp2, out, op)
+    transform = cc.make_binary_transform(inp1, inp2, out, op)
     if not build_only:
         transform(inp1, inp2, out, size)
 
@@ -113,7 +113,7 @@ def bench_unary_transform_pointer(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_unary_transform, run)
+        fixture(cc.make_unary_transform, run)
     else:
         fixture(run)
 
@@ -131,7 +131,7 @@ def bench_unary_transform_iterator(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_unary_transform, run)
+        fixture(cc.make_unary_transform, run)
     else:
         fixture(run)
 
@@ -150,7 +150,7 @@ def bench_unary_transform_struct(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_unary_transform, run)
+        fixture(cc.make_unary_transform, run)
     else:
         fixture(run)
 
@@ -170,7 +170,7 @@ def bench_binary_transform_pointer(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_binary_transform, run)
+        fixture(cc.make_binary_transform, run)
     else:
         fixture(run)
 
@@ -188,7 +188,7 @@ def bench_binary_transform_iterator(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_binary_transform, run)
+        fixture(cc.make_binary_transform, run)
     else:
         fixture(run)
 
@@ -208,7 +208,7 @@ def bench_binary_transform_struct(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_binary_transform, run)
+        fixture(cc.make_binary_transform, run)
     else:
         fixture(run)
 
@@ -227,6 +227,6 @@ def bench_binary_transform_pointer_custom_op(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_binary_transform, run)
+        fixture(cc.make_binary_transform, run)
     else:
         fixture(run)
