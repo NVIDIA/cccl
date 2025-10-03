@@ -811,7 +811,7 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent 
+  //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent
   //! dimension.
   //!
   //! - a single linear index that represents the current iteration
@@ -945,7 +945,8 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping{extents}, op, stream);
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, stream);
   }
 
   /*********************************************************************************************************************
