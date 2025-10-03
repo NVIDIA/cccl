@@ -283,14 +283,15 @@ public:
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr reference operator[](difference_type __n) const
-    noexcept(noexcept(::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(__func())}, __iters())))
+    noexcept(noexcept(::cuda::std::apply(__zip_transform_op_subscript{__n, ::cuda::std::declval<_Fn&>()},
+                                         ::cuda::std::declval<const __tuple_or_pair<_Iterators...>&>())))
   {
     return ::cuda::std::apply(__zip_transform_op_subscript{__n, const_cast<_Fn&>(__func())}, __iters());
   }
 
   //! @brief Increments all stored iterators
-  _CCCL_API constexpr zip_transform_iterator&
-  operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment{}, __iters())))
+  _CCCL_API constexpr zip_transform_iterator& operator++() noexcept(
+    noexcept(::cuda::std::apply(__zip_op_increment{}, ::cuda::std::declval<__tuple_or_pair<_Iterators...>&>())))
   {
     ::cuda::std::apply(__zip_op_increment{}, __iters());
     return *this;
@@ -315,8 +316,8 @@ public:
   //! @brief Decrements all stored iterators
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_bidirectional)
-  _CCCL_API constexpr zip_transform_iterator&
-  operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement{}, __iters())))
+  _CCCL_API constexpr zip_transform_iterator& operator--() noexcept(
+    noexcept(::cuda::std::apply(__zip_op_decrement{}, ::cuda::std::declval<__tuple_or_pair<_Iterators...>&>())))
   {
     ::cuda::std::apply(__zip_op_decrement{}, __iters());
     return *this;
@@ -348,8 +349,8 @@ public:
   //! @param __n The number of elements to increment
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
-  _CCCL_API constexpr zip_transform_iterator&
-  operator+=(difference_type __n) noexcept(noexcept(::cuda::std::apply(__zip_op_pe{__n}, __iters())))
+  _CCCL_API constexpr zip_transform_iterator& operator+=(difference_type __n) noexcept(
+    noexcept(::cuda::std::apply(__zip_op_pe{__n}, ::cuda::std::declval<__tuple_or_pair<_Iterators...>&>())))
   {
     ::cuda::std::apply(__zip_op_pe{__n}, __iters());
     return *this;
@@ -371,7 +372,8 @@ public:
   //! @param __n The number of elements to decrement
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
-  _CCCL_API constexpr zip_transform_iterator& operator-=(difference_type __n)
+  _CCCL_API constexpr zip_transform_iterator& operator-=(difference_type __n) noexcept(
+    noexcept(::cuda::std::apply(__zip_op_me{__n}, ::cuda::std::declval<__tuple_or_pair<_Iterators...>&>())))
   {
     ::cuda::std::apply(__zip_op_me{__n}, __iters());
     return *this;
