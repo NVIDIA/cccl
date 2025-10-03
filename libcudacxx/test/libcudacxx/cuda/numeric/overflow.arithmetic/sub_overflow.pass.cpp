@@ -104,8 +104,8 @@ __host__ __device__ constexpr void test_type()
     // the expression 'static_cast<Result>(static_cast<Result>(lhs) - static_cast<Result>(rhs))' translate to:
     // INT_MAX - UINT_MAX = INT_MIN -> no overflow, but
     // INT_MIN - 1 -> is less than INT_MIN and constexpr fails to compile
-    bool skip_special_case = sizeof(Lhs) == sizeof(Rhs) && sizeof(Rhs) == sizeof(Result)
-                          && is_signed_v<Lhs> && is_unsigned_v<Rhs> && cuda::std::is_constant_evaluated();
+    bool skip_special_case = sizeof(Lhs) == sizeof(Rhs) && sizeof(Rhs) == sizeof(Result) && is_signed_v<Lhs>
+                          && is_unsigned_v<Rhs> && cuda::std::__cccl_default_is_constant_evaluated();
     test_sub_overflow<Result>(
       lhs_max, rhs_max, cuda::std::cmp_greater(rhs_max - lhs_max, neg_result_min), skip_special_case);
   }
