@@ -82,6 +82,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* __cccl_allocate(size_t __size, size_t __align)
     return _CUDA_VSTD::__cccl_operator_new(__size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
+  (void) __align;
   return _CUDA_VSTD::__cccl_operator_new(__size);
 }
 
@@ -105,6 +106,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate(void* __ptr, size_t __size, siz
     return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
+  (void) __align;
   return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size);
 }
 
@@ -117,6 +119,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate_unsized(void* __ptr, size_t __a
     return _CUDA_VSTD::__cccl_operator_delete(__ptr, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
+  (void) __align;
   return _CUDA_VSTD::__cccl_operator_delete(__ptr);
 }
 
