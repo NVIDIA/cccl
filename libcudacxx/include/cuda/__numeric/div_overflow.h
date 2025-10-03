@@ -38,7 +38,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Result, typename _Lhs, typename _Rhs>
 inline constexpr bool __is_div_representable_v =
   (sizeof(_Result) > sizeof(_Lhs) && sizeof(_Result) > sizeof(_Rhs) && ::cuda::std::is_signed_v<_Result>)
-  || (sizeof(_Result) == sizeof(_Lhs) && sizeof(_Result) == sizeof(_Rhs) && ::cuda::std::is_unsigned_v<_Result>);
+  || (sizeof(_Result) >= sizeof(_Lhs) && sizeof(_Result) >= sizeof(_Rhs)
+      && ::cuda::std::is_unsigned_v<_Lhs> && ::cuda::std::is_unsigned_v<_Rhs> && ::cuda::std::is_unsigned_v<_Result>);
 
 /***********************************************************************************************************************
  * Public interface
@@ -67,16 +68,31 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
   {
     using ::cuda::std::is_same_v;
     using ::cuda::std::is_signed_v;
+    using ::cuda::std::is_unsigned_v;
     // special case for -1 / min -> overflow
-    if constexpr (is_signed_v<_Lhs> && is_same_v<_Lhs, _Rhs> && is_same_v<_Lhs, _ActualResult>)
+    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>
+                  && sizeof(_ActualResult) >= sizeof(_Lhs) && sizeof(_ActualResult) >= sizeof(_Rhs))
     {
-      constexpr auto __rhs_min = ::cuda::std::numeric_limits<_Rhs>::min();
-      if (__lhs == _Lhs{-1} && __rhs == __rhs_min)
+      constexpr auto __lhs_min = ::cuda::std::numeric_limits<_Lhs>::min();
+      if (__lhs == __lhs_min && __rhs == _Rhs{-1})
       {
         return overflow_result<_ActualResult>{_ActualResult{}, true};
       }
     }
-    return ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
+    // e.g. 7 / -1 = unsigned -> underflow
+    auto __ret = ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
+    if constexpr (is_unsigned_v<_ActualResult>)
+    {
+      if constexpr (is_signed_v<_Lhs> && !is_signed_v<_Rhs>)
+      {
+        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || (__rhs != _Rhs{0} && __lhs < _Lhs{0})};
+      }
+      else if constexpr (!is_signed_v<_Lhs> && is_signed_v<_Rhs>)
+      {
+        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || (__lhs != _Lhs{0} && __rhs < _Rhs{0})};
+      }
+    }
+    return __ret;
   }
 }
 
