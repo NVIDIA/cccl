@@ -77,7 +77,7 @@ struct _NV_BITSET_ATTRIBUTE target_description
 {
   base_int_t targets;
 
-  constexpr target_description(base_int_t a)
+  __host__ __device__ constexpr target_description(base_int_t a)
       : targets(a)
   {}
 };
@@ -107,12 +107,12 @@ enum class sm_selector : base_int_t
   sm_120 = 120,
 };
 
-constexpr base_int_t toint(sm_selector a)
+__host__ __device__ constexpr base_int_t toint(sm_selector a)
 {
   return static_cast<base_int_t>(a);
 }
 
-constexpr base_int_t bitexact(sm_selector a)
+__host__ __device__ constexpr base_int_t bitexact(sm_selector a)
 {
   return toint(a) == 35  ? sm_35_bit
        : toint(a) == 37  ? sm_37_bit
@@ -137,7 +137,7 @@ constexpr base_int_t bitexact(sm_selector a)
                          : 0;
 }
 
-constexpr base_int_t bitrounddown(sm_selector a)
+__host__ __device__ constexpr base_int_t bitrounddown(sm_selector a)
 {
   return toint(a) >= 120 ? sm_120_bit
        : toint(a) >= 110 ? sm_110_bit
@@ -164,29 +164,29 @@ constexpr base_int_t bitrounddown(sm_selector a)
 
 // Public API for NVIDIA GPUs
 
-constexpr target_description is_exactly(sm_selector a)
+__host__ __device__ constexpr target_description is_exactly(sm_selector a)
 {
   return target_description(bitexact(a));
 }
 
-constexpr target_description provides(sm_selector a)
+__host__ __device__ constexpr target_description provides(sm_selector a)
 {
   return target_description(~(bitrounddown(a) - 1) & all_devices);
 }
 
 // Boolean operations on target sets
 
-constexpr target_description operator&&(target_description a, target_description b)
+__host__ __device__ constexpr target_description operator&&(target_description a, target_description b)
 {
   return target_description(a.targets & b.targets);
 }
 
-constexpr target_description operator||(target_description a, target_description b)
+__host__ __device__ constexpr target_description operator||(target_description a, target_description b)
 {
   return target_description(a.targets | b.targets);
 }
 
-constexpr target_description operator!(target_description a)
+__host__ __device__ constexpr target_description operator!(target_description a)
 {
   return target_description(~a.targets & (all_devices | all_hosts));
 }
