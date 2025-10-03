@@ -17,6 +17,10 @@
 
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
+
+#include <cuda/std/__algorithm_>
+#include <cuda/std/cassert>
+#include <cuda/std/bit> // <--- Added for std::popcount
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 #  include <cuda/std/memory>
 #endif // _LIBCUDACXX_HAS_MEMORY
@@ -151,7 +155,7 @@ __host__ __device__ constexpr void test()
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+__host__ __device__ constexpr void test1()
 {
   constexpr unsigned N = 100;
   cuda::std::unique_ptr<int> ia[N];
