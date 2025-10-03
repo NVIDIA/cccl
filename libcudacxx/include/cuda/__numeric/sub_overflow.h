@@ -269,17 +269,25 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
         //      note: rhs >= 0, result_min < 0
         // * if sizeof(_ActualResult) >= sizeof(_Rhs) or _Rhs is signed, we can use the signed common type
         //   because the sum is always representable
-        // use __safe_add to avoid UB with INT_MIN
+        // * if sizeof(_ActualResult) < sizeof(_Rhs) and _Rhs is unsigned, we can still use the signed common type
+        //   if rhs <= result_max because the sum is always representable, e.g. INT_MIN + uint64_t{UINT_MAX} = INT_MAX
         constexpr auto __signed_min = numeric_limits<_ActualResult>::min();
-        if (sizeof(_ActualResult) >= sizeof(_Rhs) || is_signed_v<_Rhs>)
+        constexpr auto __result_max = numeric_limits<make_signed_t<_ActualResult>>::max();
+        if (sizeof(_ActualResult) >= sizeof(_Rhs)
+            || is_signed_v<_Rhs> || ::cuda::std::cmp_less_equal(__rhs, __result_max))
         {
-          using _SumType              = make_signed_t<common_type_t<_Rhs, _ActualResult>>;
-          const auto __safe_sum       = ::cuda::__safe_add<_SumType>(__signed_min, __rhs);
-          const bool __is_underflow   = ::cuda::std::cmp_less(__lhs, __safe_sum);
+          // use __safe_add to avoid UB with INT_MIN
+          using _SumType            = make_signed_t<common_type_t<_Rhs, _ActualResult>>;
+          const auto __safe_sum     = ::cuda::__safe_add<_SumType>(__signed_min, __rhs);
+          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __safe_sum);
           return overflow_result<_ActualResult>{__sub_ret, __is_underflow};
         }
-        else {
-        // * if sizeof(_ActualResult) < sizeof(_Rhs) and _Rhs is unsigned
+        else // * otherwise, rhs > result_max and we need to use the unsigned common type
+        {
+          using _SumType            = make_unsigned_t<common_type_t<_Rhs, _ActualResult>>;
+          const auto __safe_sum     = ::cuda::__safe_add<_SumType>(__signed_min, __rhs);
+          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __safe_sum);
+          return overflow_result<_ActualResult>{__sub_ret, __is_underflow};
         }
       }
     }
