@@ -17,22 +17,41 @@
 #include "test_macros.h"
 
 template <typename Result, typename Lhs, typename Rhs>
-__host__ __device__ constexpr void test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow)
+__host__ __device__ constexpr void
+test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case = false, Result expected = {})
 {
+  // test overflow_result<Result> div_overflow(Lhs lhs, Rhs rhs) overload
+  //   skip_special_case is used to skip special cases that are not valid in a constexpr context, e.g. INT_MIN / -1
+  //   but the result fits in the Result type
   {
     const auto result = cuda::div_overflow<Result>(lhs, rhs);
     if (!overflow)
     {
-      assert(result.value == static_cast<Result>(lhs / rhs));
+      if (special_case)
+      {
+        assert(result.value == expected);
+      }
+      else
+      {
+        assert(result.value == static_cast<Result>(lhs / rhs));
+      }
     }
     assert(result.overflow == overflow);
   }
+  // test bool div_overflow(Result& result, Lhs lhs, Rhs rhs) overload
   {
     Result result{};
     const bool has_overflow = cuda::div_overflow<Result>(result, lhs, rhs);
     if (!overflow)
     {
-      assert(result == static_cast<Result>(lhs / rhs));
+      if (special_case)
+      {
+        assert(result == expected);
+      }
+      else
+      {
+        assert(result == static_cast<Result>(lhs / rhs));
+      }
     }
     assert(has_overflow == overflow);
   }
@@ -45,24 +64,15 @@ __host__ __device__ constexpr void test_type()
   using cuda::std::is_signed_v;
   using cuda::std::is_unsigned_v;
   static_assert(is_same_v<decltype(cuda::div_overflow<Result>(Lhs{}, Rhs{})), cuda::overflow_result<Result>>);
-  using UResult = cuda::std::make_unsigned_t<Result>;
-  using ULhs    = cuda::std::make_unsigned_t<Lhs>;
-  using URhs    = cuda::std::make_unsigned_t<Rhs>;
+  using ULhs                 = cuda::std::make_unsigned_t<Lhs>;
+  constexpr auto lhs_min     = cuda::std::numeric_limits<Lhs>::min();
+  constexpr auto lhs_max     = cuda::std::numeric_limits<Lhs>::max();
+  constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
+  constexpr auto neg_lhs_min = static_cast<ULhs>(cuda::neg(lhs_min));
 
-  using Common                  = cuda::std::common_type_t<Lhs, Rhs>;
-  using CommonUnsigned          = cuda::std::make_unsigned_t<Common>;
-  constexpr auto lhs_min        = cuda::std::numeric_limits<Lhs>::min();
-  constexpr auto lhs_max        = cuda::std::numeric_limits<Lhs>::max();
-  constexpr auto rhs_min        = cuda::std::numeric_limits<Rhs>::min();
-  constexpr auto rhs_max        = cuda::std::numeric_limits<Rhs>::max();
-  constexpr auto result_min     = cuda::std::numeric_limits<Result>::min();
-  constexpr auto result_max     = cuda::std::numeric_limits<Result>::max();
-  constexpr auto neg_lhs_min    = static_cast<ULhs>(cuda::neg(lhs_min));
-  constexpr auto neg_result_min = static_cast<UResult>(cuda::neg(result_min));
-  constexpr auto neg_rhs_min    = static_cast<URhs>(cuda::neg(rhs_min));
   //--------------------------------------------------------------------------------------------------------------------
-  // trivial cases
-  // 1. 1 / 0 -> should overflow
+  //  trivial cases
+  //  1. 1 / 0 -> should overflow
   test_div_overflow<Result>(Lhs{1}, Rhs{0}, true);
 
   // 2. 0 / 0 -> should overflow
@@ -94,7 +104,9 @@ __host__ __device__ constexpr void test_type()
   if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
   {
     // 8. min / -1
-    test_div_overflow<Result>(lhs_min, Rhs{-1}, cuda::std::cmp_greater(neg_lhs_min, result_max));
+    bool special_case = is_unsigned_v<Result> && sizeof(Result) >= sizeof(Lhs);
+    bool overflow     = cuda::std::cmp_greater(neg_lhs_min, result_max);
+    test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, special_case, static_cast<Result>(neg_lhs_min));
 
     // 9. min / -2
     test_div_overflow<Result>(lhs_min, Rhs{-2}, cuda::std::cmp_greater(neg_lhs_min / 2, result_max));

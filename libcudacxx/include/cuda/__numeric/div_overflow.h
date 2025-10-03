@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/neg.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -70,27 +71,31 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     using ::cuda::std::is_signed_v;
     using ::cuda::std::is_unsigned_v;
     // special case for -1 / min -> overflow
-    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>
-                  && sizeof(_ActualResult) >= sizeof(_Lhs) && sizeof(_ActualResult) >= sizeof(_Rhs))
+    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && sizeof(_Lhs) >= sizeof(_ActualResult))
     {
       constexpr auto __lhs_min = ::cuda::std::numeric_limits<_Lhs>::min();
       if (__lhs == __lhs_min && __rhs == _Rhs{-1})
       {
-        return overflow_result<_ActualResult>{_ActualResult{}, true};
+        if constexpr (sizeof(_ActualResult) <= sizeof(_Lhs) && (is_signed_v<_ActualResult>)
+                      || sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>)
+        {
+          return overflow_result<_ActualResult>{_ActualResult{}, true};
+        }
+        else
+        {
+          constexpr auto __result = static_cast<_ActualResult>(::cuda::neg(__lhs_min));
+          return overflow_result<_ActualResult>{__result, false};
+        }
       }
     }
-    // e.g. 7 / -1 = unsigned -> underflow
+    // e.g. 7 / -2 = unsigned -> underflow
     auto __ret = ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
     if constexpr (is_unsigned_v<_ActualResult>)
     {
-      if constexpr (is_signed_v<_Lhs> && !is_signed_v<_Rhs>)
-      {
-        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || (__rhs != _Rhs{0} && __lhs < _Lhs{0})};
-      }
-      else if constexpr (!is_signed_v<_Lhs> && is_signed_v<_Rhs>)
-      {
-        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || (__lhs != _Lhs{0} && __rhs < _Rhs{0})};
-      }
+      bool __lhs_less_than_zero = !is_unsigned_v<_Lhs> && __lhs < _Lhs{0};
+      bool __rhs_less_than_zero = !is_unsigned_v<_Rhs> && __rhs < _Rhs{0};
+      bool __overflow = (__lhs > _Lhs{0} && __rhs_less_than_zero) || (__lhs_less_than_zero && !__rhs_less_than_zero);
+      return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __overflow};
     }
     return __ret;
   }
