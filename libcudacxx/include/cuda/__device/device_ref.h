@@ -159,7 +159,7 @@ public:
   //! The device on which this API is called is not included in the vector.
   //!
   //! @throws cuda_error if any peer access query fails
-  [[nodiscard]] ::cuda::std::span<const device_ref> peer_devices() const;
+  [[nodiscard]] ::cuda::std::span<const device_ref> peers() const;
 };
 
 _CCCL_END_NAMESPACE_CUDA

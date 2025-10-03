@@ -207,7 +207,7 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return devices[get()].__name();
 }
 
-[[nodiscard]] inline ::cuda::std::span<const device_ref> device_ref::peer_devices() const
+[[nodiscard]] inline ::cuda::std::span<const device_ref> device_ref::peers() const
 {
   return devices[get()].__peers();
 }

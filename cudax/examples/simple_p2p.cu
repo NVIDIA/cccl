@@ -200,7 +200,7 @@ try
   std::vector<cuda::device_ref> peers;
   for (auto& dev : cuda::devices)
   {
-    const auto dev_peers = dev.peer_devices();
+    const auto dev_peers = dev.peers();
     if (dev_peers.size() != 0)
     {
       peers.assign(dev_peers.begin(), dev_peers.end());

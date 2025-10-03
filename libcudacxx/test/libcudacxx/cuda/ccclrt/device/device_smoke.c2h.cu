@@ -308,7 +308,7 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
     CCCLRT_REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(std::prev(cuda::devices.end())->get()));
     CCCLRT_REQUIRE(cuda::devices.size() - 1 == static_cast<std::size_t>(cuda::devices.end()[-1].get()));
 
-    auto peers = cuda::devices[0].peer_devices();
+    auto peers = cuda::devices[0].peers();
     for (auto peer : peers)
     {
       CCCLRT_REQUIRE(cuda::devices[0].has_peer_access_to(peer));
