@@ -154,10 +154,9 @@ public:
   // TODO we might want to include the calling device, depends on what we decide
   // peer access APIs
 
-  //! @brief Retrieve a vector of `device_ref`s that are peers of this device
+  //! @brief Retrieve `device_ref`s that are peers of this device
   //!
-  //! The device on which this API is called is not included in the vector,
-  //! if a full group of peer devices is needed, it needs to be pushed_back separately.
+  //! The device on which this API is called is not included in the vector.
   //!
   //! @throws cuda_error if any peer access query fails
   [[nodiscard]] ::cuda::std::span<const device_ref> peer_devices() const;
