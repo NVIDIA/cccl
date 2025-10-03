@@ -25,13 +25,14 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
+
 // Compute the submdspan size of a given rank
 template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
 size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, int end)
 {
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
   _CCCL_ASSERT(start >= 0 && end <= static_cast<int>(ext.rank()), "invalid start or end");
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
   for (auto i = start; i < end; i++)
@@ -39,8 +40,9 @@ size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, in
     s *= ext.extent(i);
   }
   return s;
-  _CCCL_DIAG_POP
 }
+
+_CCCL_DIAG_POP // MSVC(4702)
 
 template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
