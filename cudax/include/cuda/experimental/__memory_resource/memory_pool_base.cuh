@@ -43,10 +43,8 @@ namespace cuda::experimental
 namespace __detail
 {
 
-enum class __pool_attr_settable
+enum class __pool_attr_settable : bool
 {
-  yes,
-  no
 };
 
 template <::cudaMemPoolAttr _Attr, typename _Type, __pool_attr_settable _Settable>
@@ -68,7 +66,7 @@ struct __pool_attr_impl
   static void set(::cudaMemPool_t __pool, type __value)
   {
     size_t __value_copy = __value;
-    if constexpr (_Settable == __pool_attr_settable::yes)
+    if constexpr (_Settable == __pool_attr_settable{true})
     {
       ::cuda::__driver::__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy);
     }
@@ -80,32 +78,32 @@ struct __pool_attr_impl
 };
 
 template <::cudaMemPoolAttr _Attr>
-struct __pool_attr : __pool_attr_impl<_Attr, size_t, __pool_attr_settable::yes>
+struct __pool_attr : __pool_attr_impl<_Attr, size_t, __pool_attr_settable{true}>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseFollowEventDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, __pool_attr_settable::yes>
+    : __pool_attr_impl<::cudaMemPoolReuseFollowEventDependencies, bool, __pool_attr_settable{true}>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowOpportunistic>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, __pool_attr_settable::yes>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowOpportunistic, bool, __pool_attr_settable{true}>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolReuseAllowInternalDependencies>
-    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, __pool_attr_settable::yes>
+    : __pool_attr_impl<::cudaMemPoolReuseAllowInternalDependencies, bool, __pool_attr_settable{true}>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemCurrent>
-    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, __pool_attr_settable::no>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemCurrent, size_t, __pool_attr_settable{false}>
 {};
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemCurrent>
-    : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable::no>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemCurrent, size_t, __pool_attr_settable{false}>
 {};
 
 inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_attribute __attr, size_t __value)
@@ -119,7 +117,7 @@ inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_at
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
-    : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable::yes>
+    : __pool_attr_impl<::cudaMemPoolAttrReservedMemHigh, size_t, __pool_attr_settable{true}>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
@@ -129,7 +127,7 @@ struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
 
 template <>
 struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
-    : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable::yes>
+    : __pool_attr_impl<::cudaMemPoolAttrUsedMemHigh, size_t, __pool_attr_settable{true}>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
