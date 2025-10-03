@@ -24,7 +24,6 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
@@ -113,7 +112,7 @@ template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
 private:
-  ::cuda::std::ranges::__movable_box<_Fn> __func_;
+  _Fn __func_;
   _Index __index_ = 0;
 
 public:
@@ -141,7 +140,7 @@ public:
   //! @param __index the position in the output sequence
   _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
-      : __func_(::cuda::std::in_place, ::cuda::std::move(__func))
+      : __func_(::cuda::std::move(__func))
       , __index_(__index)
   {}
 
@@ -155,14 +154,14 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator*() const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(*__func_), __index_};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func_), __index_};
   }
 
   //! @brief Dereferences the @c tabulate_output_iterator
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator*() noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{*__func_, __index_};
+    return __tabulate_proxy<_Fn, _Index>{__func_, __index_};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -170,7 +169,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(*__func_), __index_ + __n};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func_), __index_ + __n};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -178,7 +177,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{*__func_, __index_ + __n};
+    return __tabulate_proxy<_Fn, _Index>{__func_, __index_ + __n};
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
@@ -218,7 +217,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator+(difference_type __n) const
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{*__func_, __index_ + __n};
+    return tabulate_output_iterator{__func_, __index_ + __n};
   }
 
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
@@ -244,7 +243,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator-(difference_type __n) const
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{*__func_, __index_ - __n};
+    return tabulate_output_iterator{__func_, __index_ - __n};
   }
 
   //! @brief Returns the distance between two @c tabulate_output_iterator 's

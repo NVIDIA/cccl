@@ -8,9 +8,9 @@
 #include <thrust/equal.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/limits>
@@ -97,11 +97,11 @@ struct large_problem_test_helper
   // Prepares and returns a tabulate_output_iterator that checks whether the correct result has been written at each
   // index
   template <typename ExpectedValuesItT>
-  thrust::tabulate_output_iterator<flag_correct_writes_op<ExpectedValuesItT>>
+  cuda::tabulate_output_iterator<flag_correct_writes_op<ExpectedValuesItT>>
   get_flagging_output_iterator(ExpectedValuesItT expected_it)
   {
     auto check_op = make_checking_write_op(expected_it, thrust::raw_pointer_cast(correctness_flags.data()));
-    return thrust::make_tabulate_output_iterator(check_op);
+    return cuda::make_tabulate_output_iterator(check_op);
   }
 
   // Checks whether all results have been written correctly
