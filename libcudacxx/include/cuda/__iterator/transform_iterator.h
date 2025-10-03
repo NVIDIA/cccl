@@ -394,7 +394,7 @@ public:
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator-(const transform_iterator& __lhs, const transform_iterator& __rhs)
-    _CCCL_TRAILING_REQUIRES(difference_type)(::cuda::std::sized_sentinel_for<_Iter2, _Iter2>)
+    _CCCL_TRAILING_REQUIRES(difference_type)(::cuda::std::__has_random_access_traversal<_Iter2>)
   {
     return __lhs.__current_ - __rhs.__current_;
   }
