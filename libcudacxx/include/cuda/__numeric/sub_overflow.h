@@ -134,7 +134,7 @@ template <class _Tp>
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
-        __result.overflow = ::_sub_overflow_i32(0, __lhs, __rhs, &__result.value);
+        __result.overflow = ::_sub_overflow_i32(0, __lhs, __rhs, static_cast<int*>(&__result.value));
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
