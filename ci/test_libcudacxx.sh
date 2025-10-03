@@ -14,8 +14,8 @@ configure_preset libcudacxx "$PRESET" "$CMAKE_OPTIONS"
 
 test_preset "libcudacxx (CTest)" "libcudacxx-ctest-cpp${CXX_STANDARD}"
 
-source "./sccache_stats.sh" "start" || :
+sccache -z > /dev/null || :
 test_preset "libcudacxx (lit)" "libcudacxx-lit-cpp${CXX_STANDARD}"
-source "./sccache_stats.sh" "end" || :
+sccache --show-adv-stats || :
 
 print_time_summary
