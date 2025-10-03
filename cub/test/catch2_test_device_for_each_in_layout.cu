@@ -148,7 +148,7 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
-  device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
+  device_for_each_in_layout(typename layout_t::mapping{ext}, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
@@ -175,7 +175,7 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
-  device_for_each_in_layout(layout_t{}, ext, store_op_t{d_output_raw});
+  device_for_each_in_layout(typename layout_t::mapping{ext}, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
@@ -213,7 +213,7 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
     }));
   c2h::device_vector<int> counts(num_items, 0);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
-  device_for_each_in_layout(layout_t{}, ext_t{num_items}, incrementer_t{d_counts});
+  device_for_each_in_layout(typename layout_t::mapping{ext_t{num_items}}, incrementer_t{d_counts});
 
   auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);

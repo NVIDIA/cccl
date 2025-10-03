@@ -17,7 +17,6 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/distance.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
@@ -26,9 +25,10 @@
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/layout_left.h>
+#include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
@@ -542,6 +542,10 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
@@ -807,7 +811,8 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents into
+  //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent 
+  //! dimension.
   //!
   //! - a single linear index that represents the current iteration
   //! - indices of each extent dimension
@@ -940,7 +945,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right{}, extents, op, stream);
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping{extents}, op, stream);
   }
 
   /*********************************************************************************************************************
@@ -1013,18 +1018,19 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  _CCCL_TEMPLATE(typename Layout, typename IndexType, size_t... Extents, typename OpType)
-  _CCCL_REQUIRES(::cuda::std::is_any_mdspan_layout_left_or_right_v<Layout>)
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
-    const Layout&, const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_any_mdspan_layout_mapping_left_or_right_v<LayoutMapping>)
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream = {})
   {
     using namespace cub::detail;
-    using extents_type      = ::cuda::std::extents<IndexType, Extents...>;
+    using extents_type      = typename LayoutMapping::extents_type;
     using extent_index_type = typename extents_type::index_type;
     using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    constexpr bool is_layout_right       = !::cuda::std::__is_any_mdspan_layout_left_v<Layout>; // favor right layout
+    constexpr bool is_layout_right       = ::cuda::std::__is_any_mdspan_layout_mapping_right_v<LayoutMapping>;
+    auto extents                         = layout_mapping.extents();
     fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
     fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
     for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
@@ -1036,7 +1042,7 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents using a specific mdspan layout, producing
+  //! Iterate through a multi-dimensional extents using a specific mdspan layout mapping, producing
   //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
@@ -1070,8 +1076,9 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam Layout
-  //!   **[inferred]** The mdspan layout type, must be either ``cuda::std::layout_left`` or ``cuda::std::layout_right``
+  //! @tparam LayoutMapping
+  //!   **[inferred]** The mdspan layout type, must be either ``cuda::std::layout_left::mapping`` or
+  //!   ``cuda::std::layout_right::mapping``
   //!
   //! @tparam IndexType
   //!   **[inferred]** An integral type that represents the extent index space
@@ -1090,11 +1097,9 @@ public:
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] layout
-  //!   Layout object that determines the iteration order (layout_left for column-major, layout_right for row-major)
-  //!
-  //! @param[in] extents
-  //!   Extents object that represents a multi-dimensional index space
+  //! @param[in] layout_mapping
+  //!   Layout mapping object that determines the iteration order
+  //!   (layout_left::mapping for column-major, layout_right::mapping for row-major)
   //!
   //! @param[in] op
   //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.
@@ -1105,13 +1110,12 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  _CCCL_TEMPLATE(typename Layout, typename IndexType, size_t... Extents, typename OpType)
-  _CCCL_REQUIRES(::cuda::std::is_any_mdspan_layout_left_or_right_v<Layout>)
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_any_mdspan_layout_mapping_left_or_right_v<LayoutMapping>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    const Layout& layout,
-    const ::cuda::std::extents<IndexType, Extents...>& extents,
+    const LayoutMapping& layout_mapping,
     OpType op,
     cudaStream_t stream = {})
   {
@@ -1120,7 +1124,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachInLayout(layout, extents, op, stream);
+    return ForEachInLayout(layout_mapping, op, stream);
   }
 };
 

@@ -84,27 +84,27 @@ template <class _ElementType, class _Extents, class _LayoutPolicy, class _Access
 inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
 
 template <typename _Layout>
-inline constexpr bool __is_any_mdspan_layout_left_v = false;
+inline constexpr bool __is_any_mdspan_layout_mapping_left_v = false;
 
-template <>
-inline constexpr bool __is_any_mdspan_layout_left_v<layout_left> = true;
-
-template <typename _Layout>
-inline constexpr bool __is_any_mdspan_layout_right_v = false;
-
-template <>
-inline constexpr bool __is_any_mdspan_layout_right_v<layout_right> = true;
+template <typename _Extents>
+inline constexpr bool __is_any_mdspan_layout_mapping_left_v<layout_left::mapping<_Extents>> = true;
 
 template <typename _Layout>
-inline constexpr bool is_any_mdspan_layout_left_or_right_v =
-  __is_any_mdspan_layout_left_v<_Layout> || __is_any_mdspan_layout_right_v<_Layout>;
+inline constexpr bool __is_any_mdspan_layout_mapping_right_v = false;
+
+template <typename _Extents>
+inline constexpr bool __is_any_mdspan_layout_mapping_right_v<layout_right::mapping<_Extents>> = true;
+
+template <typename _Layout>
+inline constexpr bool __is_any_mdspan_layout_mapping_left_or_right_v =
+  __is_any_mdspan_layout_mapping_left_v<_Layout> || __is_any_mdspan_layout_mapping_right_v<_Layout>;
 
 // TODO (fbusato): Add support for layout_right_padded and layout_left_padded
 // template<>
-// inline constexpr bool __is_any_mdspan_layout_left_v<layout_right_padded> = true;
+// inline constexpr bool __is_any_mdspan_layout_mapping_right_v<layout_right_padded> = true;
 
 // template<>
-// inline constexpr bool __is_any_mdspan_layout_left_v<layout_left_padded> = true;
+// inline constexpr bool __is_any_mdspan_layout_mapping_right_v<layout_left_padded> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

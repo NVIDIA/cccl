@@ -53,7 +53,7 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
                                                {0, 0, 1}, {1, 0, 1}, {2, 0, 1},
                                                {0, 1, 1}, {1, 1, 1}, {2, 1, 1}};
 
-  auto status = cub::DeviceFor::ForEachInLayout(cuda::std::layout_left{}, extents,
+  auto status = cub::DeviceFor::ForEachInLayout(cuda::std::layout_left::mapping{extents},
                                                 [=] __device__ (int idx, int x, int y, int z) {
     d_output_raw[idx] = {x, y, z};
   });
@@ -70,7 +70,7 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
   }
 
   thrust::fill(d_output.begin(), d_output.end(), data_t{});
-  status = cub::DeviceFor::ForEachInLayout(cuda::std::layout_left{}, extents, layout_store_3D{d_output_raw});
+  status = cub::DeviceFor::ForEachInLayout(cuda::std::layout_left::mapping{extents}, layout_store_3D{d_output_raw});
   if (status != cudaSuccess)
   {
     std::cerr << "cub::DeviceFor::ForEachInLayout failed with status: " << status << std::endl;
