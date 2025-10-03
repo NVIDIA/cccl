@@ -7,16 +7,20 @@ Defined in ``<cuda/numeric>`` header.
 
 .. code:: cpp
 
+   namespace cuda {
+
    template <class T>
    struct overflow_result;
 
    template <class Result = /*unspecified*/, class Lhs, class Rhs>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    overflow_result</*see-below*/> sub_overflow(Lhs lhs, Rhs rhs) noexcept; // (1)
 
    template <class Result, class Lhs, class Rhs>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    bool sub_overflow(Result& result, Lhs lhs, Rhs rhs) noexcept; // (2)
+
+   } // namespace cuda
 
 The function ``cuda::sub_overflow`` performs subtraction of two values ``lhs`` and ``rhs`` with overflow detection. The result is the same as if the operands were first promoted to an infinite precision signed type, subtracted, and then the result truncated to the type of the return value.
 
