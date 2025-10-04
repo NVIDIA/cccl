@@ -246,9 +246,13 @@ function Get-CudaMajor {
     if ($env:CUDA_PATH) {
         $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
         if (Test-Path $nvcc) {
-            $out = & $nvcc --version
-            if ($out -match "release (\d+)\.") { return $Matches[1] }
+            $out = & $nvcc --version 2>&1
+            $text = ($out -join "`n")
+            if ($text -match 'release\s+(\d+)\.') { return $Matches[1] }
         }
+        # Fallback: parse major from CUDA_PATH like ...\v13.0 or ...\CUDA\13
+        $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+)(?:\.\d+)?')
+        if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
     return '13'
 }
@@ -284,4 +288,66 @@ function Ensure-CudaCcclWheel {
     return $wheel.FullName
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Ensure-CudaCcclWheel
+function Get-OnePathMatch {
+    [CmdletBinding(DefaultParameterSetName = 'FileSet')]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path,
+
+        [Parameter(Mandatory)]
+        [string] $Pattern,
+
+        [Parameter(Mandatory, ParameterSetName = 'FileSet')]
+        [switch] $File,
+
+        [Parameter(Mandatory, ParameterSetName = 'DirSet')]
+        [switch] $Directory,
+
+        [switch] $Recurse
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+        throw "Path not found or not a directory: $Path"
+    }
+
+    $gciArgs = @{
+        LiteralPath = $Path
+        ErrorAction = 'SilentlyContinue'
+    }
+
+    if ($Recurse) { $gciArgs['Recurse'] = $true }
+    if ($PSCmdlet.ParameterSetName -eq 'FileSet') {
+        $gciArgs['File'] = $true
+    }
+    else {
+        $gciArgs['Directory'] = $true
+    }
+
+    $pathMatches = @(
+        Get-ChildItem @gciArgs |
+        Where-Object { $_.Name -match $Pattern } |
+        Select-Object -ExpandProperty FullName
+    )
+
+    if ($pathMatches.Count -ne 1) {
+        $kind = if ($PSCmdlet.ParameterSetName -eq 'FileSet') { 'file' }
+        else { 'directory' }
+        $indented = ($pathMatches | ForEach-Object { "    $_" }) -join "`n"
+
+        $msg = @"
+Expected exactly one $kind name matching regex:
+  $Pattern
+under:
+  $Path
+Found:
+  $($pathMatches.Count)
+
+$indented
+"@
+        throw $msg
+    }
+
+    return $pathMatches[0]
+}
+
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Ensure-CudaCcclWheel, Get-OnePathMatch
