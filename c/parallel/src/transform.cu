@@ -126,17 +126,11 @@ struct runtime_tuning_policy_variant
   using max_policy = runtime_tuning_policy_variant;
 
   cdt::Algorithm algorithm;
-  int min_bif;
   AgentPolicy algo_policy;
 
   cdt::Algorithm Algorithm() const
   {
     return algorithm;
-  }
-
-  int MinBif() const
-  {
-    return min_bif;
   }
 
   AgentPolicy AlgorithmPolicy() const
@@ -158,14 +152,13 @@ using runtime_tuning_policy =
 
 runtime_tuning_policy* make_runtime_tuning_policy(
   cdt::Algorithm algorithm,
-  int min_bif,
   std::variant<cdt::RuntimeTransformAgentPrefetchPolicy,
                cdt::RuntimeTransformAgentVectorizedPolicy,
                cdt::RuntimeTransformAgentAsyncPolicy> algo_policy)
 {
   return new auto(std::visit(
     [&](auto policy) -> runtime_tuning_policy {
-      return runtime_tuning_policy_variant{algorithm, min_bif, policy};
+      return runtime_tuning_policy_variant{algorithm, policy};
     },
     algo_policy));
 }
@@ -281,7 +274,6 @@ struct __align__({3}) output_storage_t {{
       ptx_args);
 
     auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
-    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
 
     auto [transform_policy, transform_policy_src] =
       [&]() -> std::tuple<std::variant<transform::cdt::RuntimeTransformAgentPrefetchPolicy,
@@ -313,14 +305,12 @@ struct __align__({3}) output_storage_t {{
 struct device_transform_policy {{
   struct ActivePolicy {{
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>({1});
-    static constexpr int min_bif = {2};
-    {3}
+    {2}
   }};
 }};
 )XXX",
       src,
       static_cast<int>(algorithm),
-      min_bif,
       transform_policy_src);
 
 #if false // CCCL_DEBUGGING_SWITCH
@@ -378,7 +368,7 @@ struct device_transform_policy {{
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
-    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
+    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, transform_policy);
   }
   catch (const std::exception& exc)
   {
@@ -527,7 +517,6 @@ struct __align__({5}) output_storage_t {{
       ptx_args);
 
     auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
-    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
 
     auto [transform_policy, transform_policy_src] =
       [&]() -> std::tuple<std::variant<transform::cdt::RuntimeTransformAgentPrefetchPolicy,
@@ -559,14 +548,12 @@ struct __align__({5}) output_storage_t {{
 struct device_transform_policy {{
   struct ActivePolicy {{
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>({1});
-    static constexpr int min_bif = {2};
     {3}
   }};
 }};
 )XXX",
       src,
       static_cast<int>(algorithm),
-      min_bif,
       transform_policy_src);
 
 #if false // CCCL_DEBUGGING_SWITCH
@@ -622,7 +609,7 @@ struct device_transform_policy {{
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
-    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
+    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, transform_policy);
   }
   catch (const std::exception& exc)
   {

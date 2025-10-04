@@ -189,7 +189,6 @@ struct dispatch_t<StableAddress,
   Offset num_items;
   Predicate pred;
   TransformOp op;
-  int bulk_copy_align;
   cudaStream_t stream;
   KernelSource kernel_source             = {};
   KernelLauncherFactory launcher_factory = {};
@@ -213,14 +212,16 @@ struct dispatch_t<StableAddress,
   }
 
   template <typename ActivePolicy, typename SMemFunc>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, SMemFunc dyn_smem_for_tile_size, ActivePolicy policy = {}) -> cuda_expected<
-    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_async_kernel(
+    int min_bif, int bulk_copy_alignment, SMemFunc dyn_smem_for_tile_size, ActivePolicy policy = {})
+    -> cuda_expected<
+      ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
   {
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
     int block_threads   = wrapped_policy.AlgorithmPolicy().BlockThreads();
 
-    _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
+    _CCCL_ASSERT(block_threads % bulk_copy_alignment == 0,
+                 "block_threads needs to be a multiple of the bulk copy alignment");
     // ^ then tile_size is a multiple of it
 
     CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = wrapped_policy.AlgorithmPolicy().MinItemsPerThread();
@@ -246,7 +247,7 @@ struct dispatch_t<StableAddress,
       for (int items_per_thread = +min_items_per_thread; items_per_thread <= +max_items_per_thread; ++items_per_thread)
       {
         const int tile_size     = block_threads * items_per_thread;
-        const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+        const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, bulk_copy_alignment);
         int max_occupancy       = 0;
         error                   = CubDebug(launcher_factory.MaxSmOccupancy(
           max_occupancy, kernel_source.TransformKernel(), block_threads, dyn_smem_size));
@@ -264,7 +265,7 @@ struct dispatch_t<StableAddress,
         const auto config = async_config{items_per_thread, max_occupancy, sm_count};
 
         const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
-        if (wrapped_policy.MinBif() <= bytes_in_flight_SM)
+        if (min_bif <= bytes_in_flight_SM)
         {
           return config;
         }
@@ -294,12 +295,12 @@ struct dispatch_t<StableAddress,
     }
     _CCCL_ASSERT(config->items_per_thread > 0, "");
     _CCCL_ASSERT(config->items_per_thread > 0, "");
-    _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
+    _CCCL_ASSERT((config->items_per_thread * block_threads) % bulk_copy_alignment == 0, "");
 
     const int ipt =
       spread_out_items_per_thread(policy, config->items_per_thread, config->sm_count, config->max_occupancy);
     const int tile_size     = block_threads * ipt;
-    const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+    const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, bulk_copy_alignment);
     _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (dyn_smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
@@ -328,9 +329,13 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
-    int alignment, SMemFunc dyn_smem_for_tile_size, cuda::std::index_sequence<Is...>, ActivePolicy policy = {})
+    int min_bif,
+    int bulk_copy_alignment,
+    SMemFunc dyn_smem_for_tile_size,
+    cuda::std::index_sequence<Is...>,
+    ActivePolicy policy = {})
   {
-    auto ret = configure_async_kernel(alignment, dyn_smem_for_tile_size, policy);
+    auto ret = configure_async_kernel(min_bif, bulk_copy_alignment, dyn_smem_for_tile_size, policy);
     if (!ret)
     {
       return ret.error();
@@ -352,7 +357,7 @@ struct dispatch_t<StableAddress,
         op,
         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
         kernel_source.MakeAlignedBasePtrKernelArg(
-          THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
+          THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_alignment)...);
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
     }
     else
@@ -378,20 +383,20 @@ struct dispatch_t<StableAddress,
   }                                                                                                        \
                                                                                                            \
   template <typename AgentPolicy, typename = decltype(::cuda::std::declval<AgentPolicy>().runtime_name())> \
-  static CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                             \
+  static constexpr CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                   \
   {                                                                                                        \
     return +policy.runtime_name();                                                                         \
   }
 
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_no_input, prefetch, ItemsPerThreadNoInput)
-  CUB_DEFINE_SFINAE_GETTER(load_store_word_size, vectorized, LoadStoreWordSize)
+  CUB_DEFINE_SFINAE_GETTER(vec_size, vectorized, VecSize)
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_vectorized, vectorized, ItemsPerThreadVectorized)
 
 #undef CUB_DEFINE_SFINAE_GETTER
 
   template <typename ActivePolicy, size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy active_policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized_algorithm(
+    int min_bif, ::cuda::std::index_sequence<Is...>, ActivePolicy active_policy = {})
   {
     auto wrapped_policy     = MakeTransformPolicyWrapper(active_policy);
     const int block_threads = wrapped_policy.AlgorithmPolicy().BlockThreads();
@@ -441,9 +446,11 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
-                   && kernel_source.IsPointerAligned(out, alignment);
+      constexpr int vs = vec_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize =
+        (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), sizeof(it_value_t<RandomAccessIteratorsIn>) * vs)
+         && ...)
+        && kernel_source.IsPointerAligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vs);
     }
 
     int ipt        = 0;
@@ -466,7 +473,7 @@ struct dispatch_t<StableAddress,
       const int items_per_thread =
         loaded_bytes_per_iter == 0
           ? items_per_thread_no_input(wrapped_policy.AlgorithmPolicy())
-          : ::cuda::ceil_div(wrapped_policy.MinBif(), config->max_occupancy * block_threads * loaded_bytes_per_iter);
+          : ::cuda::ceil_div(min_bif, config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
       // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
       ipt = spread_out_items_per_thread(active_policy, items_per_thread, config->sm_count, config->max_occupancy);
@@ -486,17 +493,21 @@ struct dispatch_t<StableAddress,
                 THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
   }
 
-  template <typename ActivePolicyT>
+  template <int PtxVersion, typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
+    constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+
     auto wrapped_policy = transform::MakeTransformPolicyWrapper(active_policy);
     const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
-        bulk_copy_align,
-        [this](int tile_size, int alignment) {
-          return bulk_copy_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
+        min_bif,
+        bulk_copy_alignment(PtxVersion),
+        [this](int tile_size, int bulk_copy_alignment) {
+          return bulk_copy_dyn_smem_for_tile_size(
+            kernel_source.ItValueSizesAlignments(), tile_size, bulk_copy_alignment);
         },
         seq,
         active_policy);
@@ -504,16 +515,19 @@ struct dispatch_t<StableAddress,
     else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == wrapped_policy.Algorithm())
     {
       return invoke_async_algorithm(
+        min_bif,
         ldgsts_size_and_align,
-        [this](int tile_size, int alignment) {
-          return memcpy_async_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
+        [this](int tile_size, int bulk_copy_alignment) {
+          return memcpy_async_dyn_smem_for_tile_size(
+            kernel_source.ItValueSizesAlignments(), tile_size, bulk_copy_alignment);
         },
         seq,
         active_policy);
     }
     else
     {
-      return invoke_prefetch_or_vectorized_algorithm(seq, active_policy);
+      // those kernels work on any architecture
+      return invoke_prefetch_or_vectorized_algorithm(min_bif, seq, active_policy);
     }
   }
 
@@ -547,7 +561,6 @@ struct dispatch_t<StableAddress,
       num_items,
       ::cuda::std::move(pred),
       ::cuda::std::move(op),
-      bulk_copy_alignment(ptx_version),
       stream,
       kernel_source,
       launcher_factory};

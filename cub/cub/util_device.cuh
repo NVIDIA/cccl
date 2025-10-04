@@ -779,6 +779,22 @@ private:
     return e;
   }
 
+  // try to pass DevicePtxVersion
+  template <int DevicePtxVersion, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto call_invoke(FunctorT& op, int)
+    -> decltype(op.template Invoke<DevicePtxVersion, PolicyT>())
+  {
+    return op.template Invoke<DevicePtxVersion, PolicyT>();
+  }
+
+  // fallback if we cannot pass DevicePtxVersion
+  template <int, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t call_invoke(FunctorT& op, long)
+  {
+    return op.template Invoke<PolicyT>();
+  }
+
+public:
   template <int DevicePtxVersion, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
@@ -788,7 +804,7 @@ private:
     }
     else
     {
-      return op.template Invoke<PolicyT>();
+      return call_invoke<DevicePtxVersion>(op, 0);
     }
   }
 #endif // !_CCCL_COMPILER(NVRTC)
