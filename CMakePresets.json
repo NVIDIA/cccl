@@ -249,7 +249,8 @@
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": false,
-        "cudax_ENABLE_DIALECT_CPP20": false
+        "cudax_ENABLE_DIALECT_CPP20": false,
+        "cudax_ENABLE_CUFILE": true
       }
     },
     {
