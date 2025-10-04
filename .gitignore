@@ -16,3 +16,5 @@ CMakeUserPresets.json
 *.pyc
 __pycache__
 *.pyd
+.venv
+venv
