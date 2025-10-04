@@ -44,7 +44,7 @@ invocation of ninja. Ideas for future statistics, and implementations are
 appreciated.
 
 The "weighted" time is the elapsed time of each build step divided by the number
-of tasks that were running in cc. This makes it an excellent approximation
+of tasks that were running in parallel. This makes it an excellent approximation
 of how "important" a slow step was. A link that is entirely or mostly serialized
 will have a weighted time that is the same or similar to its elapsed time. A
 compile that runs in parallel with 999 other compiles will have a weighted time
