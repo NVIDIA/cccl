@@ -1,4 +1,4 @@
-Param(
+﻿Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-$script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
+$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
 
 # Extract the CL version for export to build scripts:
 $script:CL_VERSION_STRING = & cl.exe /?

@@ -12,9 +12,25 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
-export ARTIFACT_UPLOAD_STAGE="/tmp/artifact_upload_stage"
-export ARTIFACT_ARCHIVES="/tmp/artifact_archives"
-export ARTIFACT_UPLOAD_REGISTERY="$ARTIFACT_UPLOAD_STAGE/artifact_upload_registry.json"
+to_posix_path() {
+  local path="$1"
+
+  if [[ "$path" =~ ^([A-Za-z]):([\\/]?.*)$ ]]; then
+    local drive="${BASH_REMATCH[1]}"
+    local rest="${BASH_REMATCH[2]}"
+    rest="${rest//\\/\/}"
+    printf '/%s%s\n' "${drive,,}" "$rest"
+    return
+  fi
+
+  printf '%s\n' "$path"
+}
+
+runner_temp_posix="$(to_posix_path "${RUNNER_TEMP:-/tmp}")"
+
+export ARTIFACT_UPLOAD_STAGE="${runner_temp_posix}/artifact_upload_stage"
+export ARTIFACT_ARCHIVES="${runner_temp_posix}/artifact_archives"
+export ARTIFACT_UPLOAD_REGISTERY="${ARTIFACT_UPLOAD_STAGE}/artifact_upload_registry.json"
 
 mkdir -p "$ARTIFACT_UPLOAD_STAGE" "$ARTIFACT_ARCHIVES"
 
@@ -23,10 +39,10 @@ if [ ! -f "$ARTIFACT_UPLOAD_REGISTERY" ]; then
 fi
 
 # Use parallel bzip2 if available:
-if command -v pbzip2 &> /dev/null; then
-  BZIP2_EXE=`which pbzip2`
-elif command -v bzip2 &> /dev/null; then
-  BZIP2_EXE=`which bzip2`
+if command -v pbzip2 > /dev/null 2>&1; then
+  BZIP2_EXE="$(command -v pbzip2)"
+elif command -v bzip2 > /dev/null 2>&1; then
+  BZIP2_EXE="$(command -v bzip2)"
 else
   echo "Error: bzip2 or pbzip2 not found." >&2
   exit 1

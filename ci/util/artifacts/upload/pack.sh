@@ -34,6 +34,6 @@ echo "Packing artifact '$artifact_stage_path' into '$artifact_archive'"
 echo "Using bzip2 executable: $BZIP2_EXE (use pbzip2 for fast parallel compression)"
 echo "Pulling artifacts from working directory: $(cat "$artifact_cwd_file")"
 
-tar -cv -C "$(cat ${artifact_cwd_file})" -T "$artifact_index_file" \
+tar -cv -C "$(cat "$artifact_cwd_file")" -T "$artifact_index_file" \
   | $BZIP2_EXE -c \
   > "$artifact_archive"

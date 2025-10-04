@@ -17,21 +17,15 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
+# Build first
+$build_command = "$PSScriptRoot/build_cudax.ps1 -std $CXX_STANDARD -arch `"$CUDA_ARCH`""
+Write-Host "Executing: $build_command"
+Invoke-Expression $build_command
 
-$PRESET = "thrust-cpp$CXX_STANDARD"
-$CMAKE_OPTIONS = ""
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
-if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DCCCL_IGNORE_DEPRECATED_COMPILER=ON "
-}
-
-configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
-
-if ($env:GITHUB_ACTIONS) {
-    Write-Host "Packaging test artifacts..."
-    & bash "./upload_thrust_test_artifacts.sh"
-}
+$PRESET = "cudax-cpp$CXX_STANDARD"
+test_preset "CUDA Experimental" "$PRESET"
 
 If($CURRENT_PATH -ne "ci") {
     popd

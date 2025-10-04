@@ -1,4 +1,4 @@
-Param(
+﻿Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -15,7 +15,7 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Remove-Module -Name build_common
+Remove-Module -Name build_common -ErrorAction SilentlyContinue
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
 
 $PRESET = "cudax-cpp$CXX_STANDARD"
