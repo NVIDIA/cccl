@@ -23,6 +23,7 @@ dependencies = [
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "numba-cuda>=0.20.0",
+  "typing_extensions",
 ]
 
 dynamic = ["version"]
@@ -46,7 +47,6 @@ test-cu12 = [
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
-  "typing_extensions",
   "pytest-benchmark",
 ]
 test-cu13 = [
@@ -54,7 +54,6 @@ test-cu13 = [
   "pytest",
   "pytest-xdist",
   "cupy-cuda13x",
-  "typing_extensions",
   "pytest-benchmark",
 ]
 

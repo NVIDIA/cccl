@@ -21,6 +21,7 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: 'python', ctk: ['13.0'], cxx: ['msvc14.44'], py_version: ['3.13'], gpu: 'l4'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -471,7 +472,7 @@ projects:
     name: "Python"
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', test_py_examples]
+      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
