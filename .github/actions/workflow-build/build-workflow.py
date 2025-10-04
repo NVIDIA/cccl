@@ -460,7 +460,13 @@ def generate_dispatch_job_runner(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return f"{runner_os}-{cpu}-cpu16"
+        suffix = ""
+        # Special case: Build CUB with `-arch=all` requires a runner with extra memory:
+        is_cub = matrix_job["project"] == "cub"
+        is_arch_all = "sm" in matrix_job and matrix_job["sm"] == "all"
+        if is_cub and is_arch_all and runner_os == "linux":
+            suffix = "m"
+        return f"{runner_os}-{cpu}-cpu16{suffix}"
 
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
