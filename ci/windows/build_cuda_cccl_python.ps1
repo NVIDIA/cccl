@@ -18,7 +18,7 @@ $RepoRoot = Resolve-Path "$PSScriptRoot/../.."
 Write-Host "Repo root: $RepoRoot"
 
 # Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1"
+Import-Module "$PSScriptRoot/build_common.psm1" -Verbose
 
 $PythonExe = Get-Python -Version $PyVersion
 Write-Host "Using Python: $PythonExe"
@@ -43,10 +43,10 @@ if (-not (Test-Path $Nvcc)) {
 
 # Determine CUDA major version if not provided
 if (-not $CudaVersion) {
-    $nvccOut = & $Nvcc --version
-    if ($nvccOut -Match "release (\d+)\.") { $CudaVersion = $Matches[1] }
+    $CudaVersion = Get-CudaMajor
 }
-if ($CudaVersion -NotIn @('12', '13')) { # codespell: ignore
+if ($CudaVersion -NotIn @('12', '13')) {
+    # codespell: ignore
     throw "Unsupported/unknown CUDA version '$CudaVersion'. Supported: 12 or 13."
 }
 Write-Host "Using CUDA Toolkit: $CudaVersion at $CudaPath"
@@ -84,17 +84,82 @@ New-Item -ItemType Directory -Path $Wheelhouse -Force | Out-Null
 Push-Location (Join-Path $RepoRoot "python/cuda_cccl")
 try {
     Write-Host "Building cuda-cccl wheel for CUDA $CudaVersion..."
-    $args = @('-m', 'pip', 'wheel', '-w', $Wheelhouse, ".[${extra}]", '-v') + $pipConfigArgs
-    Write-Host ("python " + ($args -join ' '))
-    & $PythonExe @args
+    $PythonArgs = @('-m', 'pip', 'wheel', '-w', $Wheelhouse, ".[${extra}]", '-v') + $pipConfigArgs
+    Write-Host ("python " + ($PythonArgs -join ' '))
+    & $PythonExe @PythonArgs
     if ($LASTEXITCODE -ne 0) { throw "Wheel build failed" }
 }
 finally {
     Pop-Location
 }
 
-Write-Host "Built wheels in ${Wheelhouse}:" -ForegroundColor Green
-Get-ChildItem $Wheelhouse -Filter "cuda_cccl-*.whl" | ForEach-Object { Write-Host " - $($_.Name)" }
+$BuiltWheel = Get-OnePathMatch -Path $Wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
+Write-Host "Built wheel: $BuiltWheel"
+
+# I don't think any of this delvewheel stuff is needed.
+
+#$BuildRoot = Join-Path $RepoRoot "python/cuda_cccl/build"
+## There should only be one directory in $BuildRoot, verify this now.
+#$BuildDir = Get-OnePathMatch -Path $BuildRoot -Pattern '.*' -Directory
+#Write-Host "Using build directory: $BuildDir"
+#
+#$ReleaseDir = Join-Path $BuildDir "Release"
+## Raise an error if $ReleaseDir does not exist.
+#if (-not (Test-Path $ReleaseDir)) {
+#    throw "Release directory $ReleaseDir does not exist"
+#}
+#Write-Host "Using release directory: $ReleaseDir"
+#
+## Find exactly one _bindings_impl-*.pyd under $ReleaseDir.
+#$BindingsImplPyd = Get-OnePathMatch -Path $ReleaseDir `
+#    -Pattern '^_bindings_impl\..*\.pyd$' -File
+#Write-Host "Using bindings implementation: $BindingsImplPyd"
+#
+## The c.parallel DLL will live in a quirkier location, e.g.:
+## build/cp313-cp313-win_amd64/_parent_cccl/c/parallel/cuda_cccl/Release/cccl.c.parallel.dll
+#$CParallelDir = Join-Path $BuildDir "_parent_cccl/c/parallel/cuda_cccl/Release"
+#$CParallelDll = Get-OnePathMatch -Path $CParallelDir `
+#    -Pattern '^cccl\.c\.parallel\.dll$' -File
+#Write-Host "Using c.parallel DLL: $CPParallelDll"
+#
+## Install and run delvewheel to repair Windows wheels (embed needed DLLs)
+#Write-Host "Installing delvewheel..."
+#$DelveInstallArgs = @('-m', 'pip', 'install', '--disable-pip-version-check', '--quiet', 'delvewheel')
+#& $PythonExe @DelveInstallArgs
+#if ($LASTEXITCODE -ne 0) { throw "Failed to install delvewheel" }
+#
+#$WheelhouseFinal = Join-Path $RepoRoot "wheelhouse_final"
+#New-Item -ItemType Directory -Path $WheelhouseFinal -Force | Out-Null
+#
+#Write-Host "Repairing wheel with delvewheel: $($wheel.FullName)"
+#$CudaBin = Join-Path $CudaPath 'bin'
+#$excludeDlls = @('nvcuda.dll')
+#$excludeDlls += (Get-ChildItem $CudaBin -Filter 'nvrtc64_*.dll' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
+#$excludeDlls += (Get-ChildItem $CudaBin -Filter 'nvJitLink64_*.dll' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
+#$excludeJoined = ($excludeDlls | Select-Object -Unique) -join ';'
+#Write-Host "Excluding DLLs: $excludeJoined"
+#
+#$includedDlls = @($CParallelDll, $BindingsImplPyd)
+#$includedJoined = ($includedDlls | Select-Object -Unique) -join ';'
+#
+#$DelveArgs = @(
+#    '-m', 'delvewheel', 'repair',
+#    '--wheel-dir', $WheelhouseFinal,
+#    '--include', $includedJoined,
+#    '--exclude', $excludeJoined,
+#    $BuiltWheel
+#)
+#Write-Host ("python " + ($DelveArgs -join ' '))
+#& $PythonExe @DelveArgs
+#if ($LASTEXITCODE -ne 0) { throw "delvewheel repair failed for $($wheel.Name)" }
+#
+## Replace original wheels with repaired ones
+#Remove-Item (Join-Path $Wheelhouse '*.whl') -ErrorAction SilentlyContinue
+#Get-ChildItem $WheelhouseFinal -Filter "cuda_cccl-*.whl" | ForEach-Object { Move-Item -Force $_.FullName $Wheelhouse }
+#Remove-Item $WheelhouseFinal -Recurse -Force -ErrorAction SilentlyContinue
+#
+#Write-Host "Final repaired wheel in ${Wheelhouse}:" -ForegroundColor Green
+#Get-ChildItem $Wheelhouse -Filter "cuda_cccl-*.whl" | ForEach-Object { Write-Host " - $($_.Name)" }
 
 if ($env:GITHUB_ACTIONS) {
     Write-Host "GITHUB_ACTIONS detected; ensure workflow picks up artifacts from wheelhouse/"
