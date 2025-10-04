@@ -57,6 +57,8 @@ runs:
           --env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
           --env CI=true \
           --env GH_TOKEN=${GH_TOKEN} \
+          --env SCCACHE_ERROR_LOG="C:/cccl/sccache_error.log" \
+          --env SCCACHE_LOG="debug" \
           ${{ inputs.image }} \
           powershell -c "
             [System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}');
@@ -68,7 +70,16 @@ runs:
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
             [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
             git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
-            Invoke-Expression \$env:COMMAND; exit \$LASTEXITCODE"
+            Invoke-Expression \$env:COMMAND;
+            \$exitCode = \$LASTEXITCODE;
+            Write-Host '::group::sccache error log';
+            if (Test-Path 'C:/cccl/sccache_error.log') {
+              Get-Content 'C:/cccl/sccache_error.log' | ForEach-Object { Write-Host \$_ }
+            } else {
+              Write-Host 'sccache_error.log does not exist.';
+            }
+            Write-Host '::endgroup::';
+            exit \$exitCode;"
     - name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       id: done
