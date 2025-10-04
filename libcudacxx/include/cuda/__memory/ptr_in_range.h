@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MEMORY
-#define _CUDA_MEMORY
+#ifndef _CUDA___MEMORY_POINTER_IN_RANGE_H
+#define _CUDA___MEMORY_POINTER_IN_RANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__memory/aligned_size.h>
-#include <cuda/__memory/discard_memory.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory/ptr_in_range.h>
-#include <cuda/__memory/ptr_ranges_overlap.h>
-#include <cuda/__memory/ptr_rebind.h>
-#include <cuda/std/memory>
+#include <cuda/std/__cccl/prologue.h>
 
-#endif // _CUDA_MEMORY
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+[[nodiscard]] _CCCL_API constexpr bool ptr_in_range(const void* __ptr, const void* __start, const void* __end) noexcept
+{
+  _CCCL_ASSERT(__end >= __start, "ptr_in_range: __end must be greater than __start");
+  return __ptr >= __start && __ptr < __end;
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMORY_POINTER_IN_RANGE_H
