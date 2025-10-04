@@ -10,14 +10,18 @@ Example showing how to use cache_modified_iterator.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CacheModifiedInputIterator,
+    OpKind,
+)
 
 # Prepare the input array.
 h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input = cp.asarray(h_input)
 
 # Create the cache modified iterator.
-cache_it = cc.CacheModifiedInputIterator(d_input, "stream")
+cache_it = CacheModifiedInputIterator(d_input, "stream")
 
 # Prepare the initial value for the reduction.
 h_init = np.array([0], dtype=np.int32)
@@ -26,7 +30,7 @@ h_init = np.array([0], dtype=np.int32)
 d_output = cp.empty(1, dtype=np.int32)
 
 # Perform the reduction.
-cc.reduce_into(cache_it, d_output, cc.OpKind.PLUS, len(d_input), h_init)
+cuda.compute.reduce_into(cache_it, d_output, OpKind.PLUS, len(d_input), h_init)
 
 # Verify the result.
 expected_output = sum(h_input)  # 1 + 2 + 3 + 4 + 5 = 15

@@ -9,7 +9,12 @@ import numba.cuda
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CacheModifiedInputIterator,
+    OpKind,
+    gpu_struct,
+)
 
 DTYPE_LIST = [
     np.uint8,
@@ -52,7 +57,7 @@ def merge_sort_device(
     d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=None
 ):
     # Use the new single-phase API with automatic temp storage allocation
-    cc.merge_sort(
+    cuda.compute.merge_sort(
         d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=stream
     )
 
@@ -62,7 +67,7 @@ def compare_op(lhs, rhs):
 
 
 merge_sort_params = [
-    (dt, 2**log_size, cc.OpKind.LESS if dt == np.float16 else compare_op)
+    (dt, 2**log_size, OpKind.LESS if dt == np.float16 else compare_op)
     for dt in DTYPE_LIST
     for log_size in type_to_problem_sizes(dt)
 ]
@@ -145,12 +150,12 @@ def test_merge_sort_pairs_copy(dtype, num_items, op):
 
 
 def test_merge_sort_pairs_struct_type():
-    @cc.gpu_struct
+    @gpu_struct
     class key_pair:
         a: np.int16
         b: np.uint64
 
-    @cc.gpu_struct
+    @gpu_struct
     class item_pair:
         a: np.int32
         b: np.float32
@@ -223,7 +228,7 @@ def test_merge_sort_keys_copy_iterator_input(dtype, num_items, op):
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(h_out_keys)
 
-    i_input = cc.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_input = CacheModifiedInputIterator(d_in_keys, modifier="stream")
 
     merge_sort_device(i_input, None, d_out_keys, None, op, num_items)
 
@@ -245,8 +250,8 @@ def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_items = numba.cuda.to_device(h_out_items)
 
-    i_input_keys = cc.CacheModifiedInputIterator(d_in_keys, modifier="stream")
-    i_input_items = cc.CacheModifiedInputIterator(d_in_items, modifier="stream")
+    i_input_keys = CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_input_items = CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     merge_sort_device(
         i_input_keys, i_input_items, d_out_keys, d_out_items, op, num_items
@@ -288,7 +293,9 @@ def test_merge_sort_well_known_less():
     d_in_keys = cp.array([5, 2, 8, 1, 9, 3], dtype=dtype)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    cc.merge_sort(d_in_keys, None, d_out_keys, None, cc.OpKind.LESS, len(d_in_keys))
+    cuda.compute.merge_sort(
+        d_in_keys, None, d_out_keys, None, OpKind.LESS, len(d_in_keys)
+    )
 
     expected = np.array([1, 2, 3, 5, 8, 9])
     np.testing.assert_equal(d_out_keys.get(), expected)
@@ -300,7 +307,9 @@ def test_merge_sort_well_known_greater():
     d_in_keys = cp.array([5, 2, 8, 1, 9, 3], dtype=dtype)
     d_out_keys = cp.empty_like(d_in_keys)
 
-    cc.merge_sort(d_in_keys, None, d_out_keys, None, cc.OpKind.GREATER, len(d_in_keys))
+    cuda.compute.merge_sort(
+        d_in_keys, None, d_out_keys, None, OpKind.GREATER, len(d_in_keys)
+    )
 
     expected = np.array([9, 8, 5, 3, 2, 1])
     np.testing.assert_equal(d_out_keys.get(), expected)
@@ -314,12 +323,12 @@ def test_merge_sort_with_values_well_known():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    cc.merge_sort(
+    cuda.compute.merge_sort(
         d_in_keys,
         d_in_values,
         d_out_keys,
         d_out_values,
-        cc.OpKind.LESS,
+        OpKind.LESS,
         len(d_in_keys),
     )
 

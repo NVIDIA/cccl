@@ -10,7 +10,10 @@ Exclusive scan example demonstrating the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -20,7 +23,7 @@ d_input = cp.asarray(h_input)
 d_output = cp.empty(len(h_input), dtype=dtype)
 
 # Create the scanner object and allocate temporary storage.
-scanner = cc.make_exclusive_scan(d_input, d_output, cc.OpKind.PLUS, h_init)
+scanner = cuda.compute.make_exclusive_scan(d_input, d_output, OpKind.PLUS, h_init)
 temp_storage_size = scanner(None, d_input, d_output, len(h_input), h_init)
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 

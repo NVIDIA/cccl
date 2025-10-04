@@ -7,7 +7,13 @@
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CountingIterator,
+    TransformIterator,
+    ZipIterator,
+    gpu_struct,
+)
 
 # Given input vector u and smoothing parameter 0<alpha<1
 # the exponential moving average sequence ma is defined
@@ -32,7 +38,7 @@ alpha = 0.05
 assert 0.0 < alpha < 1.0
 
 
-@cc.gpu_struct
+@gpu_struct
 class ValueScale:
     value: cp.float64
     scale: cp.int64
@@ -52,16 +58,16 @@ def negative_op(i: cp.int64) -> cp.int64:
     return -i
 
 
-seq_it = cc.CountingIterator(cp.int64(0))
-negative_exponents_it = cc.TransformIterator(seq_it, negative_op)
-d_inp = cc.ZipIterator(u, negative_exponents_it)
+seq_it = CountingIterator(cp.int64(0))
+negative_exponents_it = TransformIterator(seq_it, negative_op)
+d_inp = ZipIterator(u, negative_exponents_it)
 
 d_cumsum = cp.empty(u.shape, dtype=ValueScale.dtype)
 h_init = ValueScale(0.0, 0)
 
-cc.inclusive_scan(d_inp, d_cumsum, add_op, h_init, u.size)
+cuda.compute.inclusive_scan(d_inp, d_cumsum, add_op, h_init, u.size)
 
-it_seq = cc.CountingIterator(cp.int64(0))
+it_seq = CountingIterator(cp.int64(0))
 d_ema = cp.empty_like(u)
 
 
@@ -69,7 +75,7 @@ def combine_op(v: ValueScale, t: cp.int64) -> cp.float64:
     return (1 - alpha) * v.value * alpha ** (t + v.scale)
 
 
-cc.binary_transform(d_cumsum, it_seq, d_ema, combine_op, u.size)
+cuda.compute.binary_transform(d_cumsum, it_seq, d_ema, combine_op, u.size)
 
 d_ema += (alpha ** cp.arange(1, u.size + 1)) * u[0]
 

@@ -2,7 +2,8 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
+from cuda.compute import CountingIterator, gpu_struct
 
 
 def three_way_partition_pointer(
@@ -16,7 +17,7 @@ def three_way_partition_pointer(
     def greater_equal_op(x):
         return x >= 42
 
-    partitioner = parallel.make_three_way_partition(
+    partitioner = cuda.compute.make_three_way_partition(
         inp,
         first_out,
         second_out,
@@ -53,7 +54,7 @@ def three_way_partition_pointer(
 def three_way_partition_iterator(
     size, first_out, second_out, unselected_out, num_selected, build_only
 ):
-    in_it = parallel.CountingIterator(np.int32(0))
+    in_it = CountingIterator(np.int32(0))
 
     def less_than_op(x):
         return x < 42
@@ -61,7 +62,7 @@ def three_way_partition_iterator(
     def greater_equal_op(x):
         return x >= 42
 
-    partitioner = parallel.make_three_way_partition(
+    partitioner = cuda.compute.make_three_way_partition(
         in_it,
         first_out,
         second_out,
@@ -95,7 +96,7 @@ def three_way_partition_iterator(
     cp.cuda.runtime.deviceSynchronize()
 
 
-@parallel.gpu_struct
+@gpu_struct
 class MyStruct:
     x: np.int32
     y: np.int32
@@ -112,7 +113,7 @@ def three_way_partition_struct(
     def greater_equal_op(a: MyStruct):
         return (a.x >= 42) & (a.y >= 42)
 
-    partitioner = parallel.make_three_way_partition(
+    partitioner = cuda.compute.make_three_way_partition(
         inp,
         first_out,
         second_out,
@@ -167,7 +168,7 @@ def bench_three_way_partition_pointer(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_three_way_partition, run)
+        fixture(cuda.compute.make_three_way_partition, run)
     else:
         fixture(run)
 
@@ -192,7 +193,7 @@ def bench_three_way_partition_iterator(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_three_way_partition, run)
+        fixture(cuda.compute.make_three_way_partition, run)
     else:
         fixture(run)
 
@@ -218,7 +219,7 @@ def bench_three_way_partition_struct(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
-        fixture(parallel.make_three_way_partition, run)
+        fixture(cuda.compute.make_three_way_partition, run)
     else:
         fixture(run)
 
@@ -236,7 +237,7 @@ def three_way_partition_pointer_single_phase(inp):
     def greater_equal_op(x):
         return x >= 42
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         inp,
         d_first,
         d_second,
@@ -250,7 +251,7 @@ def three_way_partition_pointer_single_phase(inp):
 
 
 def three_way_partition_iterator_single_phase(size):
-    in_it = parallel.CountingIterator(np.int32(0))
+    in_it = CountingIterator(np.int32(0))
     d_first = cp.empty(size, dtype=np.int32)
     d_second = cp.empty(size, dtype=np.int32)
     d_unselected = cp.empty(size, dtype=np.int32)
@@ -262,7 +263,7 @@ def three_way_partition_iterator_single_phase(size):
     def greater_equal_op(x):
         return x >= 42
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         in_it,
         d_first,
         d_second,
@@ -288,7 +289,7 @@ def three_way_partition_struct_single_phase(size):
     def greater_equal_op(a: MyStruct):
         return (a.x >= 42) & (a.y >= 42)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,

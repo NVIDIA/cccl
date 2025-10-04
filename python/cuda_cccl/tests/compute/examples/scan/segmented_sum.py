@@ -10,7 +10,11 @@ Implement segmented scan using zip iterator and ordinary scan.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    ZipIterator,
+    gpu_struct,
+)
 
 # Prepare the input data and head flags.
 # Segmented inclusive sum on array of values and head-flags
@@ -30,7 +34,7 @@ hflg = cp.asarray([0, 0, 1, 0, 0, 1, 1, 0], dtype=cp.int32)
 # Define the custom data type and binary operation.
 
 
-@cc.gpu_struct
+@gpu_struct
 class ValueFlag:
     value: cp.int64
     flag: cp.int32
@@ -45,12 +49,12 @@ def schwartz_sum(op1: ValueFlag, op2: ValueFlag) -> ValueFlag:
 
 
 # Prepare the output array and initial value.
-zip_it = cc.ZipIterator(data, hflg)
+zip_it = ZipIterator(data, hflg)
 d_output = cp.empty(data.shape, dtype=ValueFlag.dtype)
 h_init = ValueFlag(0, 0)
 
 # Perform the segmented scan.
-cc.inclusive_scan(zip_it, d_output, schwartz_sum, h_init, data.size)
+cuda.compute.inclusive_scan(zip_it, d_output, schwartz_sum, h_init, data.size)
 
 # Verify the result.
 expected_prefix = np.asarray([1, 2, 1, 2, 3, 1, 1, 2], dtype=np.int64)

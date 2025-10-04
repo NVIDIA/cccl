@@ -11,10 +11,14 @@ operation on two arrays.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    ZipIterator,
+    gpu_struct,
+)
 
 
-@cc.gpu_struct
+@gpu_struct
 class Pair:
     first: np.int32
     second: np.float32
@@ -30,7 +34,7 @@ d_input1 = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input2 = cp.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float32)
 
 # Create the zip iterator.
-zip_it = cc.ZipIterator(d_input1, d_input2)
+zip_it = ZipIterator(d_input1, d_input2)
 
 # Prepare the initial value for the reduction.
 h_init = Pair(0, 0.0)
@@ -39,7 +43,7 @@ h_init = Pair(0, 0.0)
 d_output = cp.empty(1, dtype=Pair.dtype)
 
 # Perform the reduction.
-cc.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)
+cuda.compute.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)
 
 # Calculate the expected results.
 expected_first = sum(d_input1.get())

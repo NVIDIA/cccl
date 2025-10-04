@@ -10,7 +10,7 @@ Sum only even values in an array using reduction with custom operation.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -26,7 +26,7 @@ def add_op(a, b):
 
 
 # Perform the reduction.
-cc.reduce_into(d_input, d_output, add_op, len(d_input), h_init)
+cuda.compute.reduce_into(d_input, d_output, add_op, len(d_input), h_init)
 
 # Verify the result.
 expected_output = 6

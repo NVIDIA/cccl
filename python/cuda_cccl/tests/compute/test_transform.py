@@ -6,7 +6,12 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CountingIterator,
+    OpKind,
+    gpu_struct,
+)
 
 
 def unary_transform_host(h_input: np.ndarray, op):
@@ -14,7 +19,7 @@ def unary_transform_host(h_input: np.ndarray, op):
 
 
 def unary_transform_device(d_input, d_output, num_items, op, stream=None):
-    cc.unary_transform(d_input, d_output, op, num_items, stream=stream)
+    cuda.compute.unary_transform(d_input, d_output, op, num_items, stream=stream)
 
 
 def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
@@ -22,7 +27,9 @@ def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
 
 
 def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=None):
-    cc.binary_transform(d_input1, d_input2, d_output, op, num_items, stream=stream)
+    cuda.compute.binary_transform(
+        d_input1, d_input2, d_output, op, num_items, stream=stream
+    )
 
 
 def test_unary_transform(input_array):
@@ -65,7 +72,7 @@ def test_binary_transform(input_array):
 def test_unary_transform_struct_type():
     import numpy as np
 
-    @cc.gpu_struct
+    @gpu_struct
     class MyStruct:
         x: np.int16
         y: np.uint64
@@ -89,7 +96,7 @@ def test_unary_transform_struct_type():
 
     d_out = cp.empty_like(d_in)
 
-    cc.unary_transform(d_in, d_out, op, len(d_in))
+    cuda.compute.unary_transform(d_in, d_out, op, len(d_in))
 
     got = d_out.get()
 
@@ -100,7 +107,7 @@ def test_unary_transform_struct_type():
 def test_binary_transform_struct_type():
     import numpy as np
 
-    @cc.gpu_struct
+    @gpu_struct
     class MyStruct:
         x: np.int16
         y: np.uint64
@@ -136,7 +143,7 @@ def test_binary_transform_struct_type():
 
     d_out = cp.empty_like(d_in1)
 
-    cc.binary_transform(d_in1, d_in2, d_out, op, len(d_in1))
+    cuda.compute.binary_transform(d_in1, d_in2, d_out, op, len(d_in1))
 
     got = d_out.get()
 
@@ -148,7 +155,7 @@ def test_unary_transform_iterator_input():
     def op(a):
         return a + 1
 
-    d_in = cc.CountingIterator(np.int32(0))
+    d_in = CountingIterator(np.int32(0))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
@@ -165,8 +172,8 @@ def test_binary_transform_iterator_input():
     def op(a, b):
         return a + b
 
-    d_in1 = cc.CountingIterator(np.int32(0))
-    d_in2 = cc.CountingIterator(np.int32(1))
+    d_in1 = CountingIterator(np.int32(0))
+    d_in2 = CountingIterator(np.int32(1))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
@@ -224,8 +231,8 @@ def test_transform_reuse_input_iterator():
     def op(a, b):
         return a + b
 
-    d_in1 = cc.CountingIterator(np.int32(0))
-    d_in2 = cc.CountingIterator(np.int32(1))
+    d_in1 = CountingIterator(np.int32(0))
+    d_in2 = CountingIterator(np.int32(1))
 
     num_items = 1024
     d_out = cp.empty(num_items, dtype=np.int32)
@@ -257,7 +264,7 @@ def test_unary_transform_well_known_negate():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known NEGATE operation
-    cc.unary_transform(d_input, d_output, cc.OpKind.NEGATE, len(d_input))
+    cuda.compute.unary_transform(d_input, d_output, OpKind.NEGATE, len(d_input))
 
     # Check the result is correct
     expected = np.array([-1, 2, -3, 4, -5])
@@ -274,7 +281,7 @@ def test_unary_transform_well_known_identity():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known IDENTITY operation
-    cc.unary_transform(d_input, d_output, cc.OpKind.IDENTITY, len(d_input))
+    cuda.compute.unary_transform(d_input, d_output, OpKind.IDENTITY, len(d_input))
 
     # Check the result is correct
     expected = np.array([1, 2, 3, 4, 5])
@@ -289,7 +296,9 @@ def test_binary_transform_well_known_plus(dtype):
     d_output = cp.empty_like(d_input1, dtype=dtype)
 
     # Run binary transform with well-known PLUS operation
-    cc.binary_transform(d_input1, d_input2, d_output, cc.OpKind.PLUS, len(d_input1))
+    cuda.compute.binary_transform(
+        d_input1, d_input2, d_output, OpKind.PLUS, len(d_input1)
+    )
 
     # Check the result is correct
     expected = np.array([11, 22, 33, 44, 55])
@@ -304,8 +313,8 @@ def test_binary_transform_well_known_multiplies():
     d_output = cp.empty_like(d_input1, dtype=dtype)
 
     # Run binary transform with well-known MULTIPLIES operation
-    cc.binary_transform(
-        d_input1, d_input2, d_output, cc.OpKind.MULTIPLIES, len(d_input1)
+    cuda.compute.binary_transform(
+        d_input1, d_input2, d_output, OpKind.MULTIPLIES, len(d_input1)
     )
 
     # Check the result is correct

@@ -10,7 +10,10 @@ Binary transform examples demonstrating the transform object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -21,7 +24,9 @@ d_input2 = cp.asarray(h_input2)
 d_output = cp.empty_like(d_input1)
 
 # Create the binary transform object.
-transformer = cc.make_binary_transform(d_input1, d_input2, d_output, cc.OpKind.PLUS)
+transformer = cuda.compute.make_binary_transform(
+    d_input1, d_input2, d_output, OpKind.PLUS
+)
 
 # Perform the binary transform.
 transformer(d_input1, d_input2, d_output, len(h_input1))

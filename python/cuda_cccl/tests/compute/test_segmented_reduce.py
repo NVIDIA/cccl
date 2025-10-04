@@ -6,7 +6,15 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    ConstantIterator,
+    CountingIterator,
+    OpKind,
+    TransformIterator,
+    TransformOutputIterator,
+    gpu_struct,
+)
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])
@@ -42,12 +50,12 @@ def test_segmented_reduce(input_array, offset_dtype):
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
     if input_array.dtype == np.float16:
-        reduce_op = cc.OpKind.PLUS
+        reduce_op = OpKind.PLUS
     else:
         reduce_op = binary_op
 
     # Call single-phase API directly with num_segments parameter
-    cc.segmented_reduce(
+    cuda.compute.segmented_reduce(
         d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
     )
 
@@ -62,7 +70,7 @@ def test_segmented_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    @cc.gpu_struct
+    @gpu_struct
     class Pixel:
         r: np.int32
         g: np.int32
@@ -87,7 +95,7 @@ def test_segmented_reduce_struct_type():
     h_init = Pixel(0, 0, 0)
 
     # Call single-phase API directly with n_segments parameter
-    cc.segmented_reduce(
+    cuda.compute.segmented_reduce(
         d_rgb, d_out, start_offsets, end_offsets, max_g_value, h_init, n_segments
     )
 
@@ -119,7 +127,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
         return (Fu(idx + 1) - Fu(idx)) % p
 
-    input_it = cc.TransformIterator(cc.CountingIterator(np.int64(0)), make_difference)
+    input_it = TransformIterator(CountingIterator(np.int64(0)), make_difference)
 
     def make_scaler(step):
         def scale(row_id):
@@ -130,7 +138,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     segment_size = 116
     offset0 = np.int64(0)
     row_offset = make_scaler(np.int64(segment_size))
-    start_offsets = cc.TransformIterator(cc.CountingIterator(offset0), row_offset)
+    start_offsets = TransformIterator(CountingIterator(offset0), row_offset)
     end_offsets = start_offsets + 1
 
     num_segments = (2**15 + 2**3) * 2**16
@@ -145,7 +153,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
     h_init = np.zeros(tuple(), dtype=np.uint8)
     # Call single-phase API directly with num_segments parameter
-    cc.segmented_reduce(
+    cuda.compute.segmented_reduce(
         input_it, res, start_offsets, end_offsets, my_add, h_init, num_segments
     )
 
@@ -162,7 +170,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
     # reset the iterator since it has been mutated by being incremented on host
     start_offsets.cvalue = type(start_offsets.cvalue)(offset0)
-    expected = cc.TransformIterator(start_offsets, get_expected_value)
+    expected = TransformIterator(start_offsets, get_expected_value)
 
     def cmp_op(a: np.uint8, b: np.uint8) -> np.uint8:
         return np.uint8(1) if (a == b) else np.uint8(0)
@@ -173,7 +181,9 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        cc.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
+        cuda.compute.binary_transform(
+            res[id:], expected + id, validate, cmp_op, num_items
+        )
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -195,7 +205,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     given by transformed iterator over counting iterator
     transformed by `k -> min + (k % p)` function.
     """
-    input_it = cc.ConstantIterator(np.int16(1))
+    input_it = ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
         def offset_value(n: np.int64) -> np.int64:
@@ -219,8 +229,8 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
         return offset_value
 
     m0, p = np.int64(265), np.int64(163)
-    offsets_it = cc.TransformIterator(
-        cc.CountingIterator(np.int64(-1)), offset_functor(m0, p)
+    offsets_it = TransformIterator(
+        CountingIterator(np.int64(-1)), offset_functor(m0, p)
     )
     start_offsets = offsets_it
     end_offsets = offsets_it + 1
@@ -237,7 +247,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
 
     h_init = np.zeros(tuple(), dtype=np.int16)
     # Call single-phase API directly with num_segments parameter
-    cc.segmented_reduce(
+    cuda.compute.segmented_reduce(
         input_it, res, start_offsets, end_offsets, _plus, h_init, num_segments
     )
 
@@ -246,9 +256,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     def get_expected_value(k: np.int64) -> np.int16:
         return np.int16(m0 + (k % p))
 
-    expected = cc.TransformIterator(
-        cc.CountingIterator(np.int64(0)), get_expected_value
-    )
+    expected = TransformIterator(CountingIterator(np.int64(0)), get_expected_value)
 
     def cmp_op(a: np.int16, b: np.int16) -> np.uint8:
         return np.uint8(1) if (a == b) else np.uint8(0)
@@ -259,7 +267,9 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        cc.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
+        cuda.compute.binary_transform(
+            res[id:], expected + id, validate, cmp_op, num_items
+        )
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -275,7 +285,9 @@ def test_segmented_reduce_well_known_plus():
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    cc.segmented_reduce(d_input, d_output, d_starts, d_ends, cc.OpKind.PLUS, h_init, 3)
+    cuda.compute.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, OpKind.PLUS, h_init, 3
+    )
 
     expected = np.array([6, 9, 30])
     np.testing.assert_equal(d_output.get(), expected)
@@ -292,8 +304,8 @@ def test_segmented_reduce_well_known_maximum():
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    cc.segmented_reduce(
-        d_input, d_output, d_starts, d_ends, cc.OpKind.MAXIMUM, h_init, 3
+    cuda.compute.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, OpKind.MAXIMUM, h_init, 3
     )
 
     expected = np.array([9, 4, 8])  # max of each segment
@@ -317,10 +329,10 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
     def sqrt(x: dtype) -> dtype:
         return x**0.5
 
-    d_out_it = cc.TransformOutputIterator(d_output, sqrt)
+    d_out_it = TransformOutputIterator(d_output, sqrt)
 
-    cc.segmented_reduce(
-        d_input, d_out_it, start_offsets, end_offsets, cc.OpKind.PLUS, h_init, 2
+    cuda.compute.segmented_reduce(
+        d_input, d_out_it, start_offsets, end_offsets, OpKind.PLUS, h_init, 2
     )
 
     expected = cp.sqrt(
@@ -350,7 +362,7 @@ def test_device_segmented_reduce_for_rowwise_sum():
 
     zero = np.int32(0)
     row_offset = make_scaler(np.int32(n_cols))
-    start_offsets = cc.TransformIterator(cc.CountingIterator(zero), row_offset)
+    start_offsets = TransformIterator(CountingIterator(zero), row_offset)
 
     end_offsets = start_offsets + 1
 
@@ -358,7 +370,7 @@ def test_device_segmented_reduce_for_rowwise_sum():
     h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(n_rows, dtype=d_input.dtype)
 
-    cc.segmented_reduce(
+    cuda.compute.segmented_reduce(
         d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
     )
 

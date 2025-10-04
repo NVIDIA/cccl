@@ -5,12 +5,18 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CountingIterator,
+    TransformIterator,
+    ZipIterator,
+    gpu_struct,
+)
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_basic(num_items):
-    @cc.gpu_struct
+    @gpu_struct
     class Pair:
         first: np.int64
         second: np.float32
@@ -21,12 +27,12 @@ def test_zip_iterator_basic(num_items):
     d_input1 = cp.arange(num_items, dtype=np.int64)
     d_input2 = cp.arange(num_items, dtype=np.float32)
 
-    zip_it = cc.ZipIterator(d_input1, d_input2)
+    zip_it = ZipIterator(d_input1, d_input2)
 
     d_output = cp.empty(1, dtype=Pair.dtype)
     h_init = Pair(0, 0.0)
 
-    cc.reduce_into(zip_it, d_output, sum_pairs, num_items, h_init)
+    cuda.compute.reduce_into(zip_it, d_output, sum_pairs, num_items, h_init)
 
     expected_first = d_input1.sum().get()
     expected_second = d_input2.sum().get()
@@ -40,7 +46,7 @@ def test_zip_iterator_basic(num_items):
 def test_zip_iterator_with_counting_iterator(num_items):
     """Test ZipIterator with two counting iterators."""
 
-    @cc.gpu_struct
+    @gpu_struct
     class IndexValuePair:
         index: np.int32
         value: np.int32
@@ -49,15 +55,15 @@ def test_zip_iterator_with_counting_iterator(num_items):
         # Return the pair with the larger value
         return p1 if p1[1] > p2[1] else p2
 
-    counting_it = cc.CountingIterator(np.int32(0))
+    counting_it = CountingIterator(np.int32(0))
     arr = cp.arange(num_items, dtype=np.int32)
 
-    zip_it = cc.ZipIterator(counting_it, arr)
+    zip_it = ZipIterator(counting_it, arr)
 
     d_output = cp.empty(1, dtype=IndexValuePair.dtype)
     h_init = IndexValuePair(-1, -1)
 
-    cc.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+    cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -70,7 +76,7 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_with_counting_iterator_and_transform(num_items):
-    @cc.gpu_struct
+    @gpu_struct
     class IndexValuePair:
         index: np.int32
         value: np.int64
@@ -78,22 +84,22 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
     def max_by_value(p1, p2):
         return p1 if p1[1] > p2[1] else p2
 
-    counting_it = cc.CountingIterator(np.int32(0))
+    counting_it = CountingIterator(np.int32(0))
     arr = cp.arange(num_items, dtype=np.int32)
 
     def double_op(x):
         return x * 2
 
-    transform_it = cc.TransformIterator(arr, double_op)
+    transform_it = TransformIterator(arr, double_op)
 
-    zip_it = cc.ZipIterator(counting_it, transform_it)
+    zip_it = ZipIterator(counting_it, transform_it)
 
     d_output = cp.empty(1, dtype=IndexValuePair.dtype)
 
     result = d_output.get()[0]
     h_init = IndexValuePair(-1, -1)
 
-    cc.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+    cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -108,7 +114,7 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
 def test_zip_iterator_n_iterators(num_items):
     """Test generalized ZipIterator with N iterators (3 in this case)."""
 
-    @cc.gpu_struct
+    @gpu_struct
     class Triple:
         first: np.int64
         second: np.float32
@@ -119,14 +125,14 @@ def test_zip_iterator_n_iterators(num_items):
 
     d_input1 = cp.arange(num_items, dtype=np.int64)
     d_input2 = cp.arange(num_items, dtype=np.float32)
-    counting_it = cc.CountingIterator(np.int64(10))
+    counting_it = CountingIterator(np.int64(10))
 
-    zip_it = cc.ZipIterator(d_input1, d_input2, counting_it)
+    zip_it = ZipIterator(d_input1, d_input2, counting_it)
 
     d_output = cp.empty(1, dtype=Triple.dtype)
     h_init = Triple(0, 0.0, 0)
 
-    cc.reduce_into(zip_it, d_output, sum_triples, num_items, h_init)
+    cuda.compute.reduce_into(zip_it, d_output, sum_triples, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -143,7 +149,7 @@ def test_zip_iterator_n_iterators(num_items):
 def test_zip_iterator_single_iterator(num_items):
     """Test ZipIterator with a single iterator."""
 
-    @cc.gpu_struct
+    @gpu_struct
     class Single:
         value: np.int64
 
@@ -152,12 +158,12 @@ def test_zip_iterator_single_iterator(num_items):
 
     d_input = cp.arange(num_items, dtype=np.int64)
 
-    zip_it = cc.ZipIterator(d_input)
+    zip_it = ZipIterator(d_input)
 
     d_output = cp.empty(1, dtype=Single.dtype)
     h_init = Single(0)
 
-    cc.reduce_into(zip_it, d_output, sum_singles, num_items, h_init)
+    cuda.compute.reduce_into(zip_it, d_output, sum_singles, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -167,7 +173,7 @@ def test_zip_iterator_single_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000])
 def test_zip_iterator_with_transform(num_items):
-    @cc.gpu_struct
+    @gpu_struct
     class TransformedPair:
         sum_indices: np.int32
         product_values: np.int64
@@ -175,17 +181,19 @@ def test_zip_iterator_with_transform(num_items):
     def binary_transform(pair1, pair2):
         return TransformedPair(pair1[0] + pair2[0], pair1[1] * pair2[1])
 
-    counting_it1 = cc.CountingIterator(np.int32(0))
+    counting_it1 = CountingIterator(np.int32(0))
     arr1 = cp.arange(num_items, dtype=np.int32)
-    zip_it1 = cc.ZipIterator(counting_it1, arr1)
+    zip_it1 = ZipIterator(counting_it1, arr1)
 
-    counting_it2 = cc.CountingIterator(np.int32(0))
+    counting_it2 = CountingIterator(np.int32(0))
     arr2 = cp.arange(num_items, dtype=np.int32)
-    zip_it2 = cc.ZipIterator(counting_it2, arr2)
+    zip_it2 = ZipIterator(counting_it2, arr2)
 
     d_output = cp.empty(num_items, dtype=TransformedPair.dtype)
 
-    cc.binary_transform(zip_it1, zip_it2, d_output, binary_transform, num_items)
+    cuda.compute.binary_transform(
+        zip_it1, zip_it2, d_output, binary_transform, num_items
+    )
 
     result = d_output.get()
 
@@ -201,7 +209,7 @@ def test_zip_iterator_with_transform(num_items):
 def test_zip_iterator_with_scan(num_items):
     """Test ZipIterator with scan operations."""
 
-    @cc.gpu_struct
+    @gpu_struct
     class Pair:
         first_min: np.int64
         second_min: np.int64
@@ -215,12 +223,12 @@ def test_zip_iterator_with_scan(num_items):
     arr1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
     arr2 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
 
-    zip_it = cc.ZipIterator(arr1, arr2)
+    zip_it = ZipIterator(arr1, arr2)
 
     d_output = cp.empty(num_items, dtype=Pair.dtype)
     h_init = Pair(cp.iinfo(np.int64).max, cp.iinfo(np.int64).max)
 
-    cc.inclusive_scan(zip_it, d_output, min_pairs, h_init, num_items)
+    cuda.compute.inclusive_scan(zip_it, d_output, min_pairs, h_init, num_items)
 
     result = d_output.get()
 

@@ -10,7 +10,7 @@ Example showing how to use three_way_partition with the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -31,7 +31,7 @@ def greater_than_equal_op(x):
 
 
 # Create the three_way_partition object.
-partitioner = parallel.make_three_way_partition(
+partitioner = cuda.compute.make_three_way_partition(
     d_input,
     d_first_part,
     d_second_part,

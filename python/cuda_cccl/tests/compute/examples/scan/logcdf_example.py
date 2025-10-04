@@ -13,7 +13,7 @@ import cupy as cp
 import cupyx.scipy.special as cp_special
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input data and compute log-probabilities.
 # Use log-add-exp binary operation to sidestep flush-to-zero
@@ -51,10 +51,10 @@ h_init = np.array(-np.inf, dtype=np.float64)
 logcdf2 = cp.empty_like(logpdf)
 
 # Perform the first inclusive scan (log-add-exp).
-cc.inclusive_scan(logpdf, logcdf, logaddexp, h_init, logpdf.size)
+cuda.compute.inclusive_scan(logpdf, logcdf, logaddexp, h_init, logpdf.size)
 
 # Perform the second inclusive scan (maximum).
-cc.inclusive_scan(logcdf, logcdf2, maximum, h_init, logpdf.size)
+cuda.compute.inclusive_scan(logcdf, logcdf2, maximum, h_init, logpdf.size)
 
 # Verify the results and compute quantiles.
 assert cp.all(logcdf2[:-1] <= logcdf2[1:])

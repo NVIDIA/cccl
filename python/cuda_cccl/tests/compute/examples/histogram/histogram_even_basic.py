@@ -10,7 +10,7 @@ Example showing how to use histogram_even to bin a sequence of samples.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input and output arrays.
 num_samples = 10
@@ -24,7 +24,7 @@ lower_level = np.float64(0)
 upper_level = np.float64(12)
 
 # Perform the histogram even.
-cc.histogram_even(
+cuda.compute.histogram_even(
     d_samples,
     d_histogram,
     num_levels,

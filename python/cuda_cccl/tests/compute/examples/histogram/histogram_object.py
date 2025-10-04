@@ -10,7 +10,7 @@ Example showing how to use histogram object API to bin a sequence of samples.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input and output arrays.
 h_samples = np.array(
@@ -29,7 +29,7 @@ h_upper_level = np.array([10.0], dtype=np.float64)
 d_histogram = cp.zeros(num_levels - 1, dtype="int32")
 
 # Create the histogram object.
-histogrammer = cc.make_histogram_even(
+histogrammer = cuda.compute.make_histogram_even(
     d_samples,
     d_histogram,
     h_num_output_levels,

@@ -10,21 +10,25 @@ Example showing how to use reverse_input_iterator.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+    ReverseIterator,
+)
 
 # Prepare the input and output arrays.
 h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input = cp.asarray(h_input)
 
 # Create the reverse input iterator.
-reverse_it = cc.ReverseIterator(d_input)
+reverse_it = ReverseIterator(d_input)
 d_output = cp.empty(len(d_input), dtype=np.int32)
 
 # Prepare the initial value for the reduction.
 h_init = np.array(0, dtype=np.int32)
 
 # Perform the reduction.
-cc.inclusive_scan(reverse_it, d_output, cc.OpKind.PLUS, h_init, len(d_input))
+cuda.compute.inclusive_scan(reverse_it, d_output, OpKind.PLUS, h_init, len(d_input))
 
 # Verify the result.
 expected_output = np.array([5, 9, 12, 14, 15], dtype=np.int32)

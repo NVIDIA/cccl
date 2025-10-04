@@ -9,7 +9,14 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CountingIterator,
+    OpKind,
+    ReverseIterator,
+    TransformOutputIterator,
+    gpu_struct,
+)
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
@@ -28,7 +35,9 @@ def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
 
 
 def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, stream=None):
-    scan_algorithm = cc.inclusive_scan if force_inclusive else cc.exclusive_scan
+    scan_algorithm = (
+        cuda.compute.inclusive_scan if force_inclusive else cuda.compute.exclusive_scan
+    )
     # Call single-phase API directly with all parameters including num_items
     scan_algorithm(d_input, d_output, op, h_init, num_items, stream)
 
@@ -67,7 +76,7 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     dtype = input_array.dtype
 
     if dtype == np.float16:
-        reduce_op = cc.OpKind.PLUS
+        reduce_op = OpKind.PLUS
     else:
         reduce_op = op
 
@@ -79,8 +88,7 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input),
-                reduce_op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
@@ -102,7 +110,7 @@ def test_scan_iterator_input(force_inclusive):
     def op(a, b):
         return a + b
 
-    d_input = cc.CountingIterator(np.int32(1))
+    d_input = CountingIterator(np.int32(1))
     num_items = 1024
     dtype = np.dtype("int32")
     h_init = np.array([42], dtype=dtype)
@@ -127,7 +135,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = cc.ReverseIterator(cc.CountingIterator(np.int32(num_items)))
+    d_input = ReverseIterator(CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -148,7 +156,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
 )
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
-    @cc.gpu_struct
+    @gpu_struct
     class XY:
         x: np.int32
         y: np.int32
@@ -165,12 +173,10 @@ def test_scan_struct_type(force_inclusive):
 
     got = d_output.get()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a +
-        b, np.asarray([h_init.x]), force_inclusive
+        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a +
-        b, np.asarray([h_init.y]), force_inclusive
+        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
@@ -209,7 +215,7 @@ def test_exclusive_scan_well_known_plus():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cc.exclusive_scan(d_input, d_output, cc.OpKind.PLUS, h_init, d_input.size)
+    cuda.compute.exclusive_scan(d_input, d_output, OpKind.PLUS, h_init, d_input.size)
 
     expected = np.array([0, 1, 3, 6, 10])
     np.testing.assert_equal(d_output.get(), expected)
@@ -220,10 +226,10 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.cccl.parallel.experimental._cccl_interop
+        import cuda.cccl.parallel.experimental._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
-            cuda.cccl.parallel.experimental._cccl_interop,
+            cccl_interop,
             "_check_sass",
             False,
         )
@@ -233,7 +239,7 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cc.inclusive_scan(d_input, d_output, cc.OpKind.PLUS, h_init, d_input.size)
+    cuda.compute.inclusive_scan(d_input, d_output, OpKind.PLUS, h_init, d_input.size)
 
     expected = np.array([1, 3, 6, 10, 15])
     np.testing.assert_equal(d_output.get(), expected)
@@ -248,8 +254,7 @@ def test_exclusive_scan_well_known_maximum():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cc.exclusive_scan(d_input, d_output, cc.OpKind.MAXIMUM,
-                      h_init, d_input.size)
+    cuda.compute.exclusive_scan(d_input, d_output, OpKind.MAXIMUM, h_init, d_input.size)
 
     expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
@@ -267,15 +272,14 @@ def test_scan_transform_output_iterator(floating_array):
     def square(x: dtype) -> dtype:
         return x * x
 
-    d_out_it = cc.TransformOutputIterator(d_output, square)
+    d_out_it = TransformOutputIterator(d_output, square)
 
-    cc.inclusive_scan(d_input, d_out_it, cc.OpKind.PLUS, h_init, d_input.size)
+    cuda.compute.inclusive_scan(d_input, d_out_it, OpKind.PLUS, h_init, d_input.size)
 
     expected = cp.cumsum(d_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
     if dtype == np.float32:
-        np.testing.assert_allclose(
-            d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
     else:
         np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
 
@@ -288,7 +292,7 @@ def test_exclusive_scan_max():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    cc.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
+    cuda.compute.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
 
     expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
@@ -302,7 +306,7 @@ def test_inclusive_scan_add():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    cc.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
+    cuda.compute.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
 
     expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
     np.testing.assert_equal(d_output.get(), expected)
@@ -313,10 +317,10 @@ def test_reverse_input_iterator(monkeypatch):
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.cccl.parallel.experimental._cccl_interop
+        import cuda.cccl.parallel.experimental._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
-            cuda.cccl.parallel.experimental._cccl_interop,
+            cccl_interop,
             "_check_sass",
             False,
         )
@@ -327,9 +331,9 @@ def test_reverse_input_iterator(monkeypatch):
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = cc.ReverseIterator(d_input)
+    reverse_it = ReverseIterator(d_input)
 
-    cc.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
+    cuda.compute.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
 
     # Check the result is correct
     expected = np.asarray([8, 10, 9, 9, 13, 15, 12, 14, 14, 9])
@@ -343,9 +347,9 @@ def test_reverse_output_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = cc.ReverseIterator(d_output)
+    reverse_it = ReverseIterator(d_output)
 
-    cc.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
+    cuda.compute.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
 
     expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
     np.testing.assert_equal(d_output.get(), expected)

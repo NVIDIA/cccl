@@ -10,7 +10,7 @@ Computing the minimum value of a sequence using `reduce_into`.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 
 def min_op(a, b):
@@ -25,7 +25,7 @@ d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
-cc.reduce_into(d_input, d_output, min_op, len(d_input), h_init)
+cuda.compute.reduce_into(d_input, d_output, min_op, len(d_input), h_init)
 
 # Verify the result.
 expected_output = 0

@@ -10,7 +10,10 @@ Example showing how to use radix_sort to sort keys and values.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    SortOrder,
+)
 
 # Prepare the input and output arrays.
 h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
@@ -26,12 +29,12 @@ d_out_keys = cp.empty_like(d_in_keys)
 d_out_values = cp.empty_like(d_in_values)
 
 # Perform the radix sort.
-cc.radix_sort(
+cuda.compute.radix_sort(
     d_in_keys,
     d_out_keys,
     d_in_values,
     d_out_values,
-    cc.SortOrder.ASCENDING,
+    SortOrder.ASCENDING,
     d_in_keys.size,
 )
 

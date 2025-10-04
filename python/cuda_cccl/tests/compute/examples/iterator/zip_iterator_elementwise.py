@@ -10,14 +10,17 @@ Example showing how to use zip_iterator to perform elementwise sum of two arrays
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    ZipIterator,
+)
 
 # Prepare the input arrays.
 d_input1 = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input2 = cp.array([10, 20, 30, 40, 50], dtype=np.int32)
 
 # Create the zip iterator.
-zip_it = cc.ZipIterator(d_input1, d_input2)
+zip_it = ZipIterator(d_input1, d_input2)
 
 # Prepare the output array.
 num_items = len(d_input1)
@@ -30,7 +33,7 @@ def sum_paired_values(pair):
 
 
 # Perform the unary transform.
-cc.unary_transform(zip_it, d_output, sum_paired_values, num_items)
+cuda.compute.unary_transform(zip_it, d_output, sum_paired_values, num_items)
 
 # Calculate the expected results.
 expected = d_input1.get() + d_input2.get()

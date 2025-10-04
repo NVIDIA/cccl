@@ -11,10 +11,15 @@ find the index with maximum value in an array.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CountingIterator,
+    ZipIterator,
+    gpu_struct,
+)
 
 
-@cc.gpu_struct
+@gpu_struct
 class IndexValuePair:
     index: np.int32
     value: np.int32
@@ -26,20 +31,20 @@ def max_by_value(p1, p2):
 
 
 # Create the counting iterator.
-counting_it = cc.CountingIterator(np.int32(0))
+counting_it = CountingIterator(np.int32(0))
 
 # Prepare the input array.
 arr = cp.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
 
 # Create the zip iterator.
-zip_it = cc.ZipIterator(counting_it, arr)
+zip_it = ZipIterator(counting_it, arr)
 
 num_items = 8
 h_init = IndexValuePair(-1, -1)
 d_output = cp.empty(1, dtype=IndexValuePair.dtype)
 
 # Perform the reduction.
-cc.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 
 result = d_output.get()[0]
 expected_index = 4

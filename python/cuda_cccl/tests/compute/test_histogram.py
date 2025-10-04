@@ -6,7 +6,11 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    ConstantIterator,
+    CountingIterator,
+)
 
 DTYPE_LIST = [
     np.uint8,
@@ -101,7 +105,7 @@ def test_device_histogram_basic_use(dtype, num_samples):
 
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         d_samples,
         d_histogram,
         num_levels,
@@ -127,7 +131,7 @@ def test_device_histogram_sample_iterator():
     samples_per_bin = 10
     adjusted_total_samples = num_bins * samples_per_bin
 
-    counting_it = cc.CountingIterator(np.int32(0))
+    counting_it = CountingIterator(np.int32(0))
 
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
@@ -135,7 +139,7 @@ def test_device_histogram_sample_iterator():
     lower_level = np.float64(0.0)
     upper_level = np.float64(adjusted_total_samples)
 
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         counting_it,
         d_histogram,
         num_levels,
@@ -161,7 +165,9 @@ def test_device_histogram_single_sample():
 
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
-    cc.histogram_even(d_samples, d_histogram, num_levels, lower_level, upper_level, 1)
+    cuda.compute.histogram_even(
+        d_samples, d_histogram, num_levels, lower_level, upper_level, 1
+    )
 
     # Sample 5.0 should go into bin 2 (bins: [0,2.5), [2.5,5), [5,7.5), [7.5,10))
     h_expected = np.array([0, 0, 1, 0], dtype=np.int32)
@@ -180,7 +186,7 @@ def test_device_histogram_out_of_range():
 
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         d_samples,
         d_histogram,
         num_levels,
@@ -213,7 +219,7 @@ def test_device_histogram_with_stream(cuda_stream):
         d_samples = cp.asarray(h_samples)
         d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         d_samples,
         d_histogram,
         num_levels,
@@ -235,7 +241,7 @@ def test_device_histogram_with_stream(cuda_stream):
 
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_device_histogram_with_constant_iterator():
-    constant_it = cc.ConstantIterator(np.float32(3.0))
+    constant_it = ConstantIterator(np.float32(3.0))
 
     num_samples = 10
     num_levels = 5  # 4 bins: [0,2), [2,4), [4,6), [6,8)
@@ -244,7 +250,7 @@ def test_device_histogram_with_constant_iterator():
 
     d_histogram = cp.zeros(num_levels - 1, dtype=np.int32)
 
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         constant_it,
         d_histogram,
         num_levels,
@@ -265,8 +271,6 @@ def test_histogram_even():
     import cupy as cp
     import numpy as np
 
-    import cuda.compute as cc
-
     num_samples = 10
     h_samples = np.array(
         [2.2, 6.1, 7.1, 2.9, 3.5, 0.3, 2.9, 2.1, 6.1, 999.5], dtype="float32"
@@ -278,7 +282,7 @@ def test_histogram_even():
     upper_level = np.float64(12)
 
     # Run histogram with automatic temp storage allocation
-    cc.histogram_even(
+    cuda.compute.histogram_even(
         d_samples,
         d_histogram,
         num_levels,

@@ -10,7 +10,7 @@ Example showing how to use segmented_reduce to find the minimum in each segment.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 
 def min_op(a, b):
@@ -42,7 +42,9 @@ n_segments = start_o.size
 d_output = cp.empty(n_segments, dtype=dtype)
 
 # Perform the segmented reduce.
-cc.segmented_reduce(d_input, d_output, start_o, end_o, min_op, h_init, n_segments)
+cuda.compute.segmented_reduce(
+    d_input, d_output, start_o, end_o, min_op, h_init, n_segments
+)
 
 # Verify the result.
 expected_output = cp.asarray([0, -4, 1], dtype=d_output.dtype)

@@ -10,7 +10,10 @@ Merge sort example demonstrating the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -22,12 +25,12 @@ d_output_keys = cp.empty_like(d_input_keys)
 d_output_values = cp.empty_like(d_input_values)
 
 # Create the merge sort object.
-sorter = cc.make_merge_sort(
+sorter = cuda.compute.make_merge_sort(
     d_input_keys,
     d_input_values,
     d_output_keys,
     d_output_values,
-    cc.OpKind.LESS,
+    OpKind.LESS,
 )
 
 # Get the temporary storage size.

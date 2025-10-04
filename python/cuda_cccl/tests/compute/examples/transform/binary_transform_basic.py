@@ -10,7 +10,10 @@ Example showing how to use binary_transform to perform elementwise addition.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 input1_data = np.array([1, 2, 3, 4], dtype=np.int32)
@@ -20,7 +23,7 @@ d_in2 = cp.asarray(input2_data)
 d_out = cp.empty_like(d_in1)
 
 # Perform the binary transform.
-cc.binary_transform(d_in1, d_in2, d_out, cc.OpKind.PLUS, len(d_in1))
+cuda.compute.binary_transform(d_in1, d_in2, d_out, OpKind.PLUS, len(d_in1))
 
 # Verify the result.
 result = d_out.get()

@@ -10,7 +10,11 @@ import numba
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    DoubleBuffer,
+    SortOrder,
+)
 
 
 def get_mark(dt, log_size):
@@ -66,7 +70,7 @@ def radix_sort_device(
     stream=None,
 ):
     # Use the new single-phase API with automatic temp storage allocation
-    cc.radix_sort(
+    cuda.compute.radix_sort(
         d_in_keys,
         d_out_keys,
         d_in_values,
@@ -125,7 +129,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     else:
         h_in_keys_copy = h_in_keys
 
-    if order is cc.SortOrder.DESCENDING:
+    if order is SortOrder.DESCENDING:
         # We do this for stability. We need to cast to a signed integer to properly negate the keys.
         signed_dtype = np.dtype(h_in_keys_copy.dtype.name.replace("uint", "int"))
         argsort = np.argsort(-h_in_keys_copy.astype(signed_dtype), stable=True)
@@ -144,7 +148,7 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     DTYPE_SIZE,
 )
 def test_radix_sort_keys(dtype, num_items):
-    order = cc.SortOrder.ASCENDING
+    order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
@@ -165,7 +169,7 @@ def test_radix_sort_keys(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs(dtype, num_items):
-    order = cc.SortOrder.DESCENDING
+    order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -194,14 +198,14 @@ def test_radix_sort_pairs(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items):
-    order = cc.SortOrder.DESCENDING
+    order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(h_out_keys)
 
-    keys_double_buffer = cc.DoubleBuffer(d_in_keys, d_out_keys)
+    keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
 
     radix_sort_device(keys_double_buffer, None, None, None, order, num_items)
 
@@ -217,7 +221,7 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items):
-    order = cc.SortOrder.ASCENDING
+    order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -228,8 +232,8 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_values = numba.cuda.to_device(h_out_values)
 
-    keys_double_buffer = cc.DoubleBuffer(d_in_keys, d_out_keys)
-    values_double_buffer = cc.DoubleBuffer(d_in_values, d_out_values)
+    keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
+    values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
     radix_sort_device(
         keys_double_buffer, None, values_double_buffer, None, order, num_items
@@ -257,7 +261,7 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items):
-    order = cc.SortOrder.ASCENDING
+    order = SortOrder.ASCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
     end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -303,7 +307,7 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
-    order = cc.SortOrder.DESCENDING
+    order = SortOrder.DESCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
     end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -322,8 +326,8 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
         d_out_keys = numba.cuda.to_device(h_out_keys)
         d_out_values = numba.cuda.to_device(h_out_values)
 
-        keys_double_buffer = cc.DoubleBuffer(d_in_keys, d_out_keys)
-        values_double_buffer = cc.DoubleBuffer(d_in_values, d_out_values)
+        keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
+        values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
         radix_sort_device(
             keys_double_buffer,
@@ -356,9 +360,7 @@ def test_radix_sort_with_stream(cuda_stream):
         d_in_keys = cp.asarray(h_in_keys)
         d_out_keys = cp.empty_like(d_in_keys)
 
-    radix_sort_device(
-        d_in_keys, d_out_keys, None, None, cc.SortOrder.ASCENDING, num_items
-    )
+    radix_sort_device(d_in_keys, d_out_keys, None, None, SortOrder.ASCENDING, num_items)
 
     got = d_out_keys.get()
     h_in_keys.sort()
@@ -369,8 +371,6 @@ def test_radix_sort_with_stream(cuda_stream):
 def test_radix_sort():
     import cupy as cp
     import numpy as np
-
-    import cuda.compute as cc
 
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
@@ -384,12 +384,12 @@ def test_radix_sort():
     d_out_values = cp.empty_like(d_in_values)
 
     # Call single-phase API directly with num_items parameter
-    cc.radix_sort(
+    cuda.compute.radix_sort(
         d_in_keys,
         d_out_keys,
         d_in_values,
         d_out_values,
-        cc.SortOrder.ASCENDING,
+        SortOrder.ASCENDING,
         d_in_keys.size,
     )
 
@@ -409,8 +409,6 @@ def test_radix_sort_double_buffer():
     import cupy as cp
     import numpy as np
 
-    import cuda.compute as cc
-
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
@@ -422,16 +420,16 @@ def test_radix_sort_double_buffer():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    keys_double_buffer = cc.DoubleBuffer(d_in_keys, d_out_keys)
-    values_double_buffer = cc.DoubleBuffer(d_in_values, d_out_values)
+    keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
+    values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
     # Call single-phase API directly with num_items parameter
-    cc.radix_sort(
+    cuda.compute.radix_sort(
         keys_double_buffer,
         None,
         values_double_buffer,
         None,
-        cc.SortOrder.ASCENDING,
+        SortOrder.ASCENDING,
         d_in_keys.size,
     )
 

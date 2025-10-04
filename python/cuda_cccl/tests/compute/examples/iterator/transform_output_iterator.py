@@ -9,7 +9,11 @@ TransformOutputIterator example demonstrating reduction with transform output it
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+    TransformIterator,
+)
 
 # Create input and output arrays
 d_input = cp.array([1, 2, 3, 4, 5.0], dtype=np.float32)
@@ -23,14 +27,14 @@ def sqrt(x: np.float32) -> np.float32:
 
 
 # Create transform output iterator
-d_out_it = cc.TransformIterator(d_output, sqrt)
+d_out_it = TransformIterator(d_output, sqrt)
 
 
 # Apply a sum reduction into the transform output iterator
-cc.reduce_into(
+cuda.compute.reduce_into(
     d_input,
     d_out_it,
-    cc.OpKind.PLUS,
+    OpKind.PLUS,
     len(d_input),
     np.asarray([0], dtype=np.float32),
 )

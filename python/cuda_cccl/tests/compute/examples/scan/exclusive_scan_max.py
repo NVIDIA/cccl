@@ -10,7 +10,7 @@ Exclusive scan using custom maximum operation.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Define the binary operation for the scan.
 
@@ -25,7 +25,7 @@ d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
 d_output = cp.empty_like(d_input, dtype="int32")
 
 # Perform the exclusive scan.
-cc.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
+cuda.compute.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
 
 # Verify the result.
 expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])

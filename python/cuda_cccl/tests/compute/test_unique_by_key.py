@@ -8,7 +8,12 @@ import numba.cuda
 import numpy as np
 import pytest
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    CacheModifiedInputIterator,
+    OpKind,
+    gpu_struct,
+)
 
 DTYPE_LIST = [
     np.uint8,
@@ -59,7 +64,7 @@ def unique_by_key_device(
     stream=None,
 ):
     # Call single-phase API directly with all parameters including num_items
-    cc.unique_by_key(
+    cuda.compute.unique_by_key(
         d_in_keys,
         d_in_items,
         d_out_keys,
@@ -104,7 +109,7 @@ unique_by_key_params = [
     pytest.param(
         dt,
         2**log_size,
-        cc.OpKind.EQUAL_TO if dt == np.float16 else compare_op,
+        OpKind.EQUAL_TO if dt == np.float16 else compare_op,
         marks=get_mark(dt, log_size),
     )
     for dt in DTYPE_LIST
@@ -173,8 +178,8 @@ def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-    i_in_keys = cc.CacheModifiedInputIterator(d_in_keys, modifier="stream")
-    i_in_items = cc.CacheModifiedInputIterator(d_in_items, modifier="stream")
+    i_in_keys = CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_in_items = CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     unique_by_key_device(
         i_in_keys,
@@ -242,12 +247,12 @@ def test_unique_by_key_complex():
 
 
 def test_unique_by_key_struct_types():
-    @cc.gpu_struct
+    @gpu_struct
     class key_pair:
         a: np.int16
         b: np.uint64
 
-    @cc.gpu_struct
+    @gpu_struct
     class item_pair:
         a: np.int32
         b: np.float32
@@ -361,13 +366,13 @@ def test_unique_by_key_well_known_equal_to():
     d_num_selected = cp.empty(1, dtype=dtype)
 
     # Run unique by key with well-known EQUAL_TO operation
-    cc.unique_by_key(
+    cuda.compute.unique_by_key(
         d_in_keys,
         d_in_values,
         d_out_keys,
         d_out_values,
         d_num_selected,
-        cc.OpKind.EQUAL_TO,
+        OpKind.EQUAL_TO,
         len(d_in_keys),
     )
 

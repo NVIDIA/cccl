@@ -10,7 +10,10 @@ Reduction example using the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -21,7 +24,7 @@ d_input = cp.asarray(h_input)
 d_output = cp.empty(1, dtype=dtype)
 
 # Create a reducer object.
-reducer = cc.make_reduce_into(d_input, d_output, cc.OpKind.PLUS, h_init)
+reducer = cuda.compute.make_reduce_into(d_input, d_output, OpKind.PLUS, h_init)
 
 # Get the temporary storage size.
 temp_storage_size = reducer(None, d_input, d_output, len(h_input), h_init)

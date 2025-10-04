@@ -11,11 +11,12 @@ with a custom data type.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import gpu_struct
 
 
 # Define a custom data type to store the pixel values.
-@cc.gpu_struct
+@gpu_struct
 class Pixel:
     r: np.int32
     g: np.int32
@@ -35,7 +36,7 @@ d_out = cp.empty(1, Pixel.dtype)
 h_init = Pixel(0, 0, 0)
 
 # Perform the reduction.
-cc.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
 
 # Calculate the expected result.
 h_rgb = d_rgb.get()

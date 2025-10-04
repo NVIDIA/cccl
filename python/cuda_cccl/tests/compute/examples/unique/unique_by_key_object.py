@@ -10,7 +10,10 @@ Example showing how to use unique_by_key with the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Unique by key example demonstrating the object API
 dtype = np.int32
@@ -23,13 +26,13 @@ d_output_values = cp.empty_like(d_input_values)
 d_num_selected = cp.empty(1, dtype=np.int32)
 
 # Create the unique by key object.
-uniquer = cc.make_unique_by_key(
+uniquer = cuda.compute.make_unique_by_key(
     d_input_keys,
     d_input_values,
     d_output_keys,
     d_output_values,
     d_num_selected,
-    cc.OpKind.EQUAL_TO,
+    OpKind.EQUAL_TO,
 )
 
 # Get the temporary storage size.

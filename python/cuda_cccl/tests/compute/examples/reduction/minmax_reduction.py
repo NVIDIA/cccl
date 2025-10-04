@@ -11,11 +11,15 @@ with a custom data type.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    TransformIterator,
+    gpu_struct,
+)
 
 
 # Define a custom data type for the accumulator.
-@cc.gpu_struct
+@gpu_struct
 class MinMax:
     min_val: np.float64
     max_val: np.float64
@@ -37,14 +41,14 @@ def transform_op(v):
 # Prepare the input and output data.
 nelems = 4096
 d_in = cp.random.randn(nelems)
-tr_it = cc.TransformIterator(d_in, transform_op)
+tr_it = TransformIterator(d_in, transform_op)
 
 d_out = cp.empty(tuple(), dtype=MinMax.dtype)
 
 h_init = MinMax(np.inf, -np.inf)
 
 # Perform the reduction.
-cc.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
 
 # Verify the result.
 actual = d_out.get()

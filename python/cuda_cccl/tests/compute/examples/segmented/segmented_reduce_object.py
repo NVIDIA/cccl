@@ -10,7 +10,10 @@ Segmented reduction using the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import (
+    OpKind,
+)
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -23,8 +26,8 @@ start_offsets = cp.array([0, 3], dtype=np.int64)
 end_offsets = cp.array([3, 6], dtype=np.int64)
 
 # Create the segmented reduce object.
-reducer = cc.make_segmented_reduce(
-    d_input, d_output, start_offsets, end_offsets, cc.OpKind.PLUS, h_init
+reducer = cuda.compute.make_segmented_reduce(
+    d_input, d_output, start_offsets, end_offsets, OpKind.PLUS, h_init
 )
 
 # Get the temporary storage size.

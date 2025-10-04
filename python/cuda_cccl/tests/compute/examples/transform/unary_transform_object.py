@@ -10,7 +10,7 @@ Unary transform examples demonstrating the object API and well-known operations.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -25,7 +25,7 @@ def add_one_op(a):
 
 
 # Create the unary transform object.
-transformer = cc.make_unary_transform(d_input, d_output, add_one_op)
+transformer = cuda.compute.make_unary_transform(d_input, d_output, add_one_op)
 
 # Perform the unary transform.
 transformer(d_input, d_output, len(h_input))

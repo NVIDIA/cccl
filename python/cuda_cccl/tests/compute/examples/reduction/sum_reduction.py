@@ -10,7 +10,8 @@ Sum all values in an array using reduction with PLUS operation.
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
+from cuda.compute import OpKind
 
 # Prepare the input and output arrays.
 dtype = np.int32
@@ -19,7 +20,7 @@ d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
-cc.reduce_into(d_input, d_output, cc.OpKind.PLUS, len(d_input), h_init)
+cuda.compute.reduce_into(d_input, d_output, OpKind.PLUS, len(d_input), h_init)
 
 # Verify the result.
 expected_output = 15

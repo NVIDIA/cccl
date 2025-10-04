@@ -10,7 +10,7 @@ Inclusive scan with custom operation (prefix sum of even values).
 import cupy as cp
 import numpy as np
 
-import cuda.compute as cc
+import cuda.compute
 
 # Prepare the input and output arrays.
 h_init = np.array([0], dtype="int32")
@@ -25,7 +25,7 @@ def add_op(a, b):
 
 
 # Perform the inclusive scan.
-cc.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
+cuda.compute.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
 
 # Verify the result.
 expected = np.asarray([0, 2, 2, 6, 6])
