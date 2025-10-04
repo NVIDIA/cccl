@@ -485,6 +485,7 @@ CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
       return CUDA_ERROR_INVALID_VALUE;
     }
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
