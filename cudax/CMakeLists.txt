@@ -24,6 +24,17 @@ option(cudax_ENABLE_CUDASTF "Enable CUDASTF subproject" ON)
 option(cudax_ENABLE_CUDASTF_CODE_GENERATION "Enable code generation using STF's parallel_for or launch with CUDA compiler." ON)
 option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
+option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ${LINUX})
+
+if(CMAKE_VERSION VERSION_LESS "3.25.0" AND cudax_ENABLE_CUFILE)
+  message(WARNING "cuFile is not available before cmake 3.25.0, please, use newer cmake. Disabling cudax_ENABLE_CUFILE..")
+  set(cudax_ENABLE_CUFILE OFF)
+endif()
+
+if (WIN32 AND cudax_ENABLE_CUFILE)
+  message(WARNING "cuFile is not available on Windows. Disabling cudax_ENABLE_CUFILE..")
+  set(cudax_ENABLE_CUFILE OFF)
+endif()
 
 if (cudax_ENABLE_CUDASTF_BOUNDSCHECK AND
     NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND NOT CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
