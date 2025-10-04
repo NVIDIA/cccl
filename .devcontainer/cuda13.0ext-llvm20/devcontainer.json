@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-llvm20-cuda13.0ext",
+  "image": "rapidsai/devcontainers:25.12-cpp-llvm20-cuda13.0ext",
   "runArgs": [
     "--init",
     "--name",

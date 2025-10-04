@@ -48,6 +48,9 @@ class LibcxxTestFormat(object):
                 "FLAKY_TEST.", ParserKind.TAG, initial_value=False
             ),
             IntegratedTestKeywordParser(
+                "FORCE_ALL_WARNINGS.", ParserKind.TAG, initial_value=False
+            ),
+            IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
             ),
             IntegratedTestKeywordParser(
@@ -137,6 +140,11 @@ class LibcxxTestFormat(object):
         if is_fail_test:
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
+
+        force_all_warnings = self._get_parser("FORCE_ALL_WARNINGS.", parsers).getValue()
+
+        if force_all_warnings:
+            test_cxx.useWarnings(True)
 
         extra_compile_definitions = self._get_parser(
             "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
