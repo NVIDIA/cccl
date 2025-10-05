@@ -144,15 +144,14 @@ runs:
 
         $exitCode = 0
         try {
-          Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"
-          Write-Host "In directory: $(Get-Location)"
+          Write-Host ">>>>> Executing command: $env:COMMAND <<<<<" -ForegroundColor Blue
+          Write-Host "In directory: $(Get-Location)" -ForegroundColor Blue
           Invoke-Expression $env:COMMAND
           $exitCode = $LASTEXITCODE
-          Write-Host "::endgroup::"
-          Write-Host "Command finished with exit code $exitCode"
+          Write-Host "Command finished with exit code $exitCode" -ForegroundColor Red
         } catch {
-          Write-Host 'Command failed with error'
-          Write-Host $_
+          Write-Host 'Command failed with error' -ForegroundColor Red
+          Write-Host $_ -ForegroundColor Red
           $exitCode = 1
         } finally {
           Write-Host '::group::Uploading job result artifacts'
@@ -160,7 +159,7 @@ runs:
           Write-Host '::endgroup::'
         }
 
-        Write-Host "Container finished with exit code $exitCode"
+        Write-Host "Container finished with exit code $exitCode" -ForegroundColor Blue
         exit $exitCode
         EOF
 
