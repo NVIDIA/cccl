@@ -70,7 +70,7 @@ int main()
     thrust::counting_iterator<int>(M),
     estimate_pi(),
     0.0f,
-    ::cuda::std::plus<float>());
+    cuda::std::plus<float>());
   estimate /= M;
 
   std::cout << std::setprecision(3);
