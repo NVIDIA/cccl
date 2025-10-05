@@ -12,8 +12,7 @@ int main()
   thrust::device_vector<int> data{3, 7, 2, 5};
 
   // add 10 to all values in data
-  thrust::transform(
-    data.begin(), data.end(), thrust::constant_iterator<int>(10), data.begin(), cuda::std::plus<int>());
+  thrust::transform(data.begin(), data.end(), thrust::constant_iterator<int>(10), data.begin(), cuda::std::plus<int>());
 
   // data is now [13, 17, 12, 15]
 
