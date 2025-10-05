@@ -19,19 +19,15 @@ If($CURRENT_PATH -ne "ci") {
 
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
 
-$PRESET = "thrust-cpp$CXX_STANDARD"
+$PRESET = "packaging"
 $CMAKE_OPTIONS = ""
 
-if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DCCCL_IGNORE_DEPRECATED_COMPILER=ON "
+if ($env:GITHUB_SHA) {
+    $CMAKE_OPTIONS += "-DCCCL_EXAMPLE_CPM_TAG=$env:GITHUB_SHA "
 }
 
-configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
-
-if ($env:GITHUB_ACTIONS) {
-    Write-Host "Packaging test artifacts..."
-    & bash "./upload_thrust_test_artifacts.sh"
-}
+configure_preset "Packaging" $PRESET "$CMAKE_OPTIONS"
+test_preset "Packaging" $PRESET
 
 If($CURRENT_PATH -ne "ci") {
     popd
