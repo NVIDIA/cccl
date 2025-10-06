@@ -109,8 +109,9 @@ struct TransformKernelSource<Offset,
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
+private:
   template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, [[maybe_unused]] int alignment)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
@@ -120,6 +121,14 @@ struct TransformKernelSource<Offset,
     {
       return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
     }
+  }
+
+public:
+  CUB_RUNTIME_FUNCTION constexpr static bool
+  CanVectorize(int vec_size, const RandomAccessIteratorOut& out, const RandomAccessIteratorsIn&... in)
+  {
+    return is_pointer_aligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vec_size)
+        && (is_pointer_aligned(in, sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size) && ...);
   }
 };
 
@@ -378,7 +387,7 @@ struct dispatch_t<StableAddress,
   }                                                                                                        \
                                                                                                            \
   template <typename AgentPolicy, typename = decltype(::cuda::std::declval<AgentPolicy>().runtime_name())> \
-  static constexpr CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                   \
+  static CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int name(AgentPolicy&& policy)                             \
   {                                                                                                        \
     return +policy.runtime_name();                                                                         \
   }
@@ -441,11 +450,8 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      constexpr int vs = vec_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize =
-        (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), sizeof(it_value_t<RandomAccessIteratorsIn>) * vs)
-         && ...)
-        && kernel_source.IsPointerAligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vs);
+      const int vs  = vec_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
     }
 
     int ipt        = 0;
