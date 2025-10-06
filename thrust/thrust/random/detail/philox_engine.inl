@@ -41,15 +41,9 @@ _CCCL_HOST_DEVICE philox_engine<UIntType, w, n, r, consts...>::philox_engine(res
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE void philox_engine<UIntType, w, n, r, consts...>::seed(result_type s)
 {
-  for (size_t j = 0; j < n; ++j)
-  {
-    m_x[j] = 0;
-    m_y[j] = 0;
-  }
-  for (size_t l = 0; l < n / 2; ++l)
-  {
-    m_k[l] = 0;
-  }
+  m_x    = {};
+  m_y    = {};
+  m_k    = {};
   m_k[0] = s & max;
   m_j    = n - 1;
 }
@@ -177,55 +171,42 @@ _CCCL_HOST_DEVICE void philox_engine<UIntType, w, n, r, consts...>::philox()
   const UIntType consts_array[n] = {consts...};
   if constexpr (n == 2)
   {
-    result_type S0 = this->m_x[0];
-    result_type S1 = this->m_x[1];
-    result_type K0 = this->m_k[0];
+    ::cuda::std::array<result_type, n> S     = this->m_x;
+    ::cuda::std::array<result_type, n / 2> K = this->m_k;
     for (size_t j = 0; j < r; ++j)
     {
       result_type hi, lo;
-      this->mulhilo(S0, consts_array[0], hi, lo);
-      S0 = hi ^ K0 ^ S1;
-      S1 = lo;
-      K0 = (K0 + consts_array[1]) & max;
+      this->mulhilo(S[0], consts_array[0], hi, lo);
+      S[0] = hi ^ K[0] ^ S[1];
+      S[1] = lo;
+      K[0] = (K[0] + consts_array[1]) & max;
     }
-    this->m_y[0] = S0;
-    this->m_y[1] = S1;
+    this->m_y = S;
   }
   else if constexpr (n == 4)
   {
-    result_type S0 = this->m_x[0];
-    result_type S1 = this->m_x[1];
-    result_type S2 = this->m_x[2];
-    result_type S3 = this->m_x[3];
-    result_type K0 = this->m_k[0];
-    result_type K1 = this->m_k[1];
+    ::cuda::std::array<result_type, n> S     = this->m_x;
+    ::cuda::std::array<result_type, n / 2> K = this->m_k;
     for (size_t j = 0; j < r; ++j)
     {
-      result_type V0 = S2;
-      result_type V1 = S1;
-      result_type V2 = S0;
-      result_type V3 = S3;
-
+      ::cuda::std::array<result_type, n> V = {S[2], S[1], S[0], S[3]};
       result_type hi0, lo0;
-      this->mulhilo(V0, consts_array[2], hi0, lo0);
+      this->mulhilo(V[0], consts_array[2], hi0, lo0);
       result_type hi2, lo2;
-      this->mulhilo(V2, consts_array[0], hi2, lo2);
+      this->mulhilo(V[2], consts_array[0], hi2, lo2);
 
-      S0 = hi0 ^ K0 ^ V1;
-      S1 = lo0;
+      S[0] = hi0 ^ K[0] ^ V[1];
+      S[1] = lo0;
 
-      S2 = hi2 ^ K1 ^ V3;
+      S[2] = hi2 ^ K[1] ^ V[3];
 
-      S3 = lo2;
+      S[3] = lo2;
 
-      K0 = (K0 + consts_array[1]) & max;
-      K1 = (K1 + consts_array[3]) & max;
+      K[0] = (K[0] + consts_array[1]) & max;
+      K[1] = (K[1] + consts_array[3]) & max;
     }
 
-    this->m_y[0] = S0;
-    this->m_y[1] = S1;
-    this->m_y[2] = S2;
-    this->m_y[3] = S3;
+    this->m_y = S;
   }
 }
 
@@ -247,36 +228,20 @@ template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE bool
 philox_engine<UIntType, w, n, r, consts...>::equal(const philox_engine<UIntType, w, n, r, consts...>& rhs) const
 {
-  // Compare all state: counter (m_x), key (m_k), output buffer (m_y), and position (m_j)
-  for (size_t i = 0; i < n; ++i)
+  if (m_x != rhs.m_x)
   {
-    if (m_x[i] != rhs.m_x[i])
-    {
-      return false;
-    }
+    return false;
   }
-
   // Only check the y buffer if not m_j != n-1
   // If m_j == n-1, then m_y is not valid
-  if (m_j != n - 1)
+  if (m_j != n - 1 && m_y != rhs.m_y)
   {
-    for (size_t i = 0; i < n; ++i)
-    {
-      if (m_y[i] != rhs.m_y[i])
-      {
-        return false;
-      }
-    }
+    return false;
   }
-
-  for (size_t i = 0; i < n / 2; ++i)
+  if (m_k != rhs.m_k)
   {
-    if (m_k[i] != rhs.m_k[i])
-    {
-      return false;
-    }
+    return false;
   }
-
   return m_j == rhs.m_j;
 }
 
