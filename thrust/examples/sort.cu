@@ -139,7 +139,7 @@ int main()
     thrust::device_vector<int> keys(N);
     initialize(keys);
     print(keys);
-    thrust::sort(keys.begin(), keys.end(), ::cuda::std::greater<int>());
+    thrust::sort(keys.begin(), keys.end(), cuda::std::greater<int>());
     print(keys);
   }
 
@@ -186,7 +186,7 @@ int main()
     thrust::device_vector<int> values(N);
     initialize(keys, values);
     print(keys, values);
-    thrust::sort_by_key(keys.begin(), keys.end(), values.begin(), ::cuda::std::greater<int>());
+    thrust::sort_by_key(keys.begin(), keys.end(), values.begin(), cuda::std::greater<int>());
     print(keys, values);
   }
 

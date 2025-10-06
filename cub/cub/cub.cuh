@@ -36,6 +36,13 @@
 // Static configuration
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/cub.cuh> is not supported when compiling with NVRTC. Include the specific device header instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -75,6 +82,7 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/device_topk.cuh>
 #include <cub/device/device_transform.cuh>
 
 // Grid
