@@ -70,21 +70,21 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     using ::cuda::std::is_same_v;
     using ::cuda::std::is_signed_v;
     using ::cuda::std::is_unsigned_v;
-    // special case for -1 / min -> overflow
-    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && sizeof(_Lhs) >= sizeof(_ActualResult))
+    // special case for min / -1 -> overflow
+    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
     {
       constexpr auto __lhs_min = ::cuda::std::numeric_limits<_Lhs>::min();
       if (__lhs == __lhs_min && __rhs == _Rhs{-1})
       {
-        if constexpr (sizeof(_ActualResult) <= sizeof(_Lhs) && (is_signed_v<_ActualResult>)
-                      || sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>)
+        if constexpr ((sizeof(_ActualResult) <= sizeof(_Lhs) && is_signed_v<_ActualResult>)
+                      || (sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>))
         {
           return overflow_result<_ActualResult>{_ActualResult{}, true};
         }
         else
         {
           constexpr auto __result = static_cast<_ActualResult>(::cuda::neg(__lhs_min));
-          return overflow_result<_ActualResult>{__result, false};
+          return overflow_result<_ActualResult>{__lhs_min, false};
         }
       }
     }
