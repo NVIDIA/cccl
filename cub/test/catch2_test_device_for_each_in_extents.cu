@@ -27,7 +27,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  **********************************************************************************************************************/
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
-static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+static void fill_linear_impl(
+  c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
   if constexpr (Rank == ExtentType::rank())
   {
