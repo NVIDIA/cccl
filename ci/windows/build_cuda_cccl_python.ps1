@@ -162,5 +162,19 @@ Write-Host "Built wheel: $BuiltWheel"
 #Get-ChildItem $Wheelhouse -Filter "cuda_cccl-*.whl" | ForEach-Object { Write-Host " - $($_.Name)" }
 
 if ($env:GITHUB_ACTIONS) {
-    Write-Host "GITHUB_ACTIONS detected; ensure workflow picks up artifacts from wheelhouse/"
+    Push-Location $RepoRoot
+    try {
+        Write-Host "GITHUB_ACTIONS detected; uploading wheel artifact"
+        $wheelArtifactName = (& bash -lc "ci/util/workflow/get_wheel_artifact_name.sh").Trim()
+        if (-not $wheelArtifactName) {
+            throw "Failed to resolve wheel artifact name"
+        }
+        Write-Host "Wheel artifact name: $wheelArtifactName"
+        $uploadCmd = "ci/util/artifacts/upload.sh $wheelArtifactName 'wheelhouse/.*'"
+        & bash -lc $uploadCmd
+        if ($LASTEXITCODE -ne 0) { throw "Wheel artifact upload failed" }
+    }
+    finally {
+        Pop-Location
+    }
 }
