@@ -33,23 +33,26 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::size_t;
 
-// We cannot redefine memcpy before CUDA 13.2 because of CUDA Math API nvbug 5452563.
-// More in detail, some CUDA Math API functions call 'memcpy' without namespace qualification, causing name ambiguity.
-#if _CCCL_CTK_AT_LEAST(13, 2)
+// old compilers still trigger the name conflict
+// nvcc 12.0 and 12.1 trigger segmentation fault
+#if _CCCL_COMPILER(GCC, <=, 9) || _CCCL_CUDA_COMPILER(NVCC, <=, 12, 1)
 
+using ::memcpy;
+
+#else // ^^^ _CCCL_COMPILER(GCC, <=, 9) ^^^ / vvv _CCCL_COMPILER(GCC, >, 9) vvv
+
+// The template parameter is used to avoid name ambiguity when external code calls 'memcpy' without namespace
+// qualification. Function templates have lower precedence than non-template functions for overload resolution.
+template <int = 0>
 _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: destination range is invalid");
-  _CCCL_ASSERT(::cuda::__are_ptrs_overlapping(__src, __dest, __count), "memcpy: source and destination overlap");
+  _CCCL_ASSERT(!::cuda::__are_ptrs_overlapping(__src, __dest, __count), "memcpy: source and destination overlap");
   return ::memcpy(__dest, __src, __count);
 }
 
-#else // < CUDA 13.2
-
-using ::memcpy;
-
-#endif // _CCCL_CTK_AT_LEAST(13, 2)
+#endif // ^^^ _CCCL_COMPILER(GCC, <=, 9) ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

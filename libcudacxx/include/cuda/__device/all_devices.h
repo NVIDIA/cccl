@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_ALL_DEVICES_H
 #define _CUDA___DEVICE_ALL_DEVICES_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,8 +22,9 @@
 #endif // no system header
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 #  include <cuda/__device/physical_device.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 #  include <cuda/std/span>
@@ -49,9 +50,9 @@ public:
 
   [[nodiscard]] size_type size() const;
 
-  [[nodiscard]] iterator begin() const noexcept;
+  [[nodiscard]] iterator begin() const;
 
-  [[nodiscard]] iterator end() const noexcept;
+  [[nodiscard]] iterator end() const;
 
   operator ::cuda::std::span<const device_ref>() const;
 
@@ -133,12 +134,12 @@ struct all_devices::__initializer_iterator
   return __devices().size();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::begin() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::begin() const
 {
   return __devices().begin();
 }
 
-[[nodiscard]] inline all_devices::iterator all_devices::end() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::end() const
 {
   return __devices().end();
 }
@@ -151,11 +152,8 @@ inline all_devices::operator ::cuda::std::span<const device_ref>() const
 
 inline const ::std::vector<physical_device>& all_devices::__devices()
 {
-  static const ::std::vector<physical_device> __devices = [] {
-    int __count = 0;
-    _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
-    return ::std::vector<physical_device>{__initializer_iterator{0}, __initializer_iterator{__count}};
-  }();
+  static const ::std::vector<physical_device> __devices{
+    __initializer_iterator{0}, __initializer_iterator{::cuda::__driver::__deviceGetCount()}};
   return __devices;
 }
 } // namespace __detail
@@ -204,31 +202,14 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return devices[get()].arch_traits();
 }
 
-[[nodiscard]] inline ::std::vector<device_ref> device_ref::peer_devices() const
+[[nodiscard]] inline ::cuda::std::string_view device_ref::name() const
 {
-  ::std::vector<device_ref> __result;
-  __result.reserve(devices.size());
+  return devices[get()].__name();
+}
 
-  for (const physical_device& __other_dev : devices)
-  {
-    // Exclude the device this API is called on. The main use case for this API
-    // is enable/disable peer access. While enable peer access can be called on
-    // device on which memory resides, disable peer access will error-out.
-    // Usage of the peer access control is smoother when *this is excluded,
-    // while it can be easily added with .push_back() on the vector if a full
-    // group of peers is needed (for cases other than peer access control)
-    if (__other_dev != *this)
-    {
-      // While in almost all practical applications peer access should be symmetrical,
-      // it is possible to build a system with one directional peer access, check
-      // both ways here just to be safe
-      if (has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(*this))
-      {
-        __result.push_back(__other_dev);
-      }
-    }
-  }
-  return __result;
+[[nodiscard]] inline ::cuda::std::span<const device_ref> device_ref::peers() const
+{
+  return devices[get()].__peers();
 }
 
 _CCCL_END_NAMESPACE_CUDA
