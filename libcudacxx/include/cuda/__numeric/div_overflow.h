@@ -60,6 +60,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
   {
     return overflow_result<_ActualResult>{_ActualResult{}, true};
   }
+  // the result is representable with the actual result type
   if constexpr (__is_div_representable_v<_ActualResult, _Lhs, _Rhs>)
   {
     const auto __div = static_cast<_ActualResult>(__lhs / __rhs);
@@ -70,11 +71,12 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     using ::cuda::std::is_same_v;
     using ::cuda::std::is_signed_v;
     using ::cuda::std::is_unsigned_v;
-    // special case for min / -1 -> overflow
-    if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs>)
+    constexpr bool __both_signed = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
+    // special case for min / -1 -> potential overflow
+    if constexpr (__both_signed)
     {
       constexpr auto __lhs_min = ::cuda::std::numeric_limits<_Lhs>::min();
-      if (__lhs == __lhs_min && __rhs == _Rhs{-1})
+      if (__both_signed && __lhs == __lhs_min && __rhs == _Rhs{-1})
       {
         if constexpr ((sizeof(_ActualResult) <= sizeof(_Lhs) && is_signed_v<_ActualResult>)
                       || (sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>) )
@@ -89,16 +91,35 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
         }
       }
     }
-    // e.g. 7 / -2 = unsigned -> underflow
-    auto __ret = ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
+    // -> the result is always smaller than lhs
+    // unsigned result
+    // - lhs < 0  && rhs >= 0 -> underflow
+    // - lhs >= 0 && rhs < 0  -> underflow
+    // - lhs < 0  && rhs < 0  -> ok, e.g. -7 / -2 = 3
+    // - lhs >= 0 && rhs >= 0 -> ok
     if constexpr (is_unsigned_v<_ActualResult>)
     {
-      bool __lhs_less_than_zero = !is_unsigned_v<_Lhs> && __lhs < _Lhs{0};
-      bool __rhs_less_than_zero = !is_unsigned_v<_Rhs> && __rhs < _Rhs{0};
-      bool __overflow = (__lhs > _Lhs{0} && __rhs_less_than_zero) || (__lhs_less_than_zero && !__rhs_less_than_zero);
-      return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __overflow};
+      if constexpr (__both_signed)
+      {
+        using _CommonAll    = ::cuda::std::common_type_t<_Common, _ActualResult>;
+        using _SignedResult = ::cuda::std::make_signed_t<_CommonAll>;
+        auto __lhs1         = static_cast<_SignedResult>(__lhs);
+        auto __rhs1         = static_cast<_SignedResult>(__rhs);
+        return ::cuda::overflow_cast<_ActualResult>(__lhs1 / __rhs1);
+      }
+      else
+      {
+        bool __lhs_less_than_zero = !is_unsigned_v<_Lhs> && __lhs < _Lhs{0};
+        bool __rhs_less_than_zero = !is_unsigned_v<_Rhs> && __rhs < _Rhs{0};
+        bool __overflow = (__lhs > _Lhs{0} && __rhs_less_than_zero) || (__lhs_less_than_zero && !__rhs_less_than_zero);
+        auto __ret      = ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
+        return overflow_result<_ActualResult>{__ret.value, __ret.overflow || __overflow};
+      }
     }
-    return __ret;
+    else
+    {
+      return ::cuda::overflow_cast<_ActualResult>(__lhs / __rhs);
+    }
   }
 }
 
