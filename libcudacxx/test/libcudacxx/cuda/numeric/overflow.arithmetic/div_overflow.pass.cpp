@@ -69,6 +69,8 @@ __host__ __device__ constexpr void test_type()
   [[maybe_unused]] constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
   using UnsignedLhs                           = cuda::std::make_unsigned_t<Lhs>;
   [[maybe_unused]] constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
+  using Common                                = decltype(Lhs{} / Rhs{});
+  [[maybe_unused]] constexpr auto common_max  = cuda::std::numeric_limits<Common>::max();
   //--------------------------------------------------------------------------------------------------------------------
   //  trivial cases
   //  1. 1 / 0 -> should overflow
@@ -103,7 +105,8 @@ __host__ __device__ constexpr void test_type()
   if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
   {
     // 8. min / -1
-    bool special_case = is_unsigned_v<Result> && sizeof(Result) >= sizeof(Lhs);
+    // when the result type is larger than the common type, min / -1 produces a valid result
+    bool special_case = cuda::std::cmp_greater(result_max, common_max) && sizeof(Result) >= sizeof(Lhs);
     bool overflow     = cuda::std::cmp_greater(neg_lhs_min, result_max);
     test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, special_case, static_cast<Result>(neg_lhs_min));
 
