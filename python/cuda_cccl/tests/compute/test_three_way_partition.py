@@ -6,7 +6,8 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
+from cuda.compute import CacheModifiedInputIterator, gpu_struct
 
 DTYPE_LIST = [
     np.uint8,
@@ -80,7 +81,7 @@ def test_three_way_partition_basic(dtype, num_items):
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int32)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,
@@ -122,7 +123,7 @@ def test_three_way_partition_empty():
     def greater_equal_op(x):
         return x >= 42
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,
@@ -152,14 +153,14 @@ def test_three_way_partition_with_iterators():
     )
 
     d_in = cp.asarray(h_in)
-    in_it = parallel.CacheModifiedInputIterator(d_in, modifier="stream")
+    in_it = CacheModifiedInputIterator(d_in, modifier="stream")
 
     d_first = cp.empty_like(d_in)
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint32)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         in_it,
         d_first,
         d_second,
@@ -183,7 +184,7 @@ def test_three_way_partition_with_iterators():
 
 
 def test_three_way_partition_struct_type():
-    @parallel.gpu_struct
+    @gpu_struct
     class pair_type:
         a: np.int32
         b: np.uint64
@@ -221,7 +222,7 @@ def test_three_way_partition_struct_type():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,
@@ -267,7 +268,7 @@ def test_three_way_partition_with_stream(cuda_stream):
         d_unselected = cp.empty_like(d_in)
         d_num_selected = cp.empty(2, dtype=np.int64)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,
@@ -309,7 +310,7 @@ def test_three_way_partition_no_selection():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int64)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,
@@ -349,7 +350,7 @@ def test_three_way_partition_all_selected_first():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int64)
 
-    parallel.three_way_partition(
+    cuda.compute.three_way_partition(
         d_in,
         d_first,
         d_second,

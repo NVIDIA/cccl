@@ -226,7 +226,7 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.cccl.parallel.experimental._cccl_interop as cccl_interop
+        import cuda.compute._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
             cccl_interop,
@@ -317,7 +317,7 @@ def test_reverse_input_iterator(monkeypatch):
     # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.cccl.parallel.experimental._cccl_interop as cccl_interop
+        import cuda.compute._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
             cccl_interop,
