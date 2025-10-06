@@ -14,7 +14,7 @@
 template <typename OffsetT>
 static void compare_complex(nvbench::state& state, nvbench::type_list<OffsetT>)
 {
-  const auto n                      = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n                      = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<complex> in = generate(n);
   thrust::device_vector<bool> out(n - 1);
 
