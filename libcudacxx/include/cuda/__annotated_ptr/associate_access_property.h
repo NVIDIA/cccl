@@ -57,8 +57,8 @@ inline constexpr bool __is_global_access_property_v =
 #if _CCCL_CUDA_COMPILATION()
 
 template <typename _Property>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
-__associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
+[[nodiscard]] _CCCL_HIDE_FROM_ABI
+_CCCL_DEVICE void* __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
   if constexpr (::cuda::std::is_same_v<_Property, access_property::shared>)
   {

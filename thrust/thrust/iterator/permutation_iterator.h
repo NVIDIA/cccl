@@ -124,8 +124,8 @@ struct make_permutation_iterator_base
 //!
 //! \see make_permutation_iterator
 template <typename ElementIterator, typename IndexIterator>
-class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
-    : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type
+class _CCCL_DECLSPEC_EMPTY_BASES
+permutation_iterator : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type
 {
   //! \cond
 

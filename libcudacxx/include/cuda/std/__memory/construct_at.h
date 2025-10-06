@@ -53,7 +53,7 @@ namespace std
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+          class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
 #    if defined(_CCCL_BUILTIN_ADDRESSOF)
@@ -111,7 +111,7 @@ _CCCL_CONCEPT __can_optimize_construct_at = _CCCL_REQUIRES_EXPR((_Tp, variadic _
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+          class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");

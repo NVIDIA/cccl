@@ -170,16 +170,16 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr auto operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <=> 0;
   }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
