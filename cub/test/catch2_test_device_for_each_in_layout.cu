@@ -140,6 +140,8 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   using dims          = c2h::get<1, TestType>;
   using layout_t      = c2h::get<2, TestType>;
   auto ext            = build_static_extents(index_type{}, dims{});
+  using ext_t         = decltype(ext);
+  using mapping_t     = typename layout_t::mapping<ext_t>;
   constexpr auto rank = ext.rank();
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
@@ -148,7 +150,7 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
-  device_for_each_in_layout(typename layout_t::mapping{ext}, store_op_t{d_output_raw});
+  device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
@@ -164,18 +166,20 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   constexpr int rank = 3;
   using index_type   = c2h::get<0, TestType>;
   using layout_t     = c2h::get<1, TestType>;
+  using ext_t        = cuda::std::dextents<index_type, 3>;
+  using mapping_t    = typename layout_t::mapping<ext_t>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
   auto X             = GENERATE_COPY(take(3, random(2, 10)));
   auto Y             = GENERATE_COPY(take(3, random(2, 10)));
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
   c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
-  device_for_each_in_layout(typename layout_t::mapping{ext}, store_op_t{d_output_raw});
+  device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
@@ -205,6 +209,7 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
   constexpr int max_items = 5000000;
   using layout_t          = c2h::get<0, TestType>;
   using ext_t             = cuda::std::dextents<int, 1>;
+  using mapping_t         = typename layout_t::mapping<ext_t>;
   const int num_items     = GENERATE_COPY(
     take(3, random(min_items, max_items)),
     values({
@@ -213,7 +218,7 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
     }));
   c2h::device_vector<int> counts(num_items, 0);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
-  device_for_each_in_layout(typename layout_t::mapping{ext_t{num_items}}, incrementer_t{d_counts});
+  device_for_each_in_layout(mapping_t{ext_t{num_items}}, incrementer_t{d_counts});
 
   auto num_of_once_marked_items = thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1);
   REQUIRE(num_of_once_marked_items == num_items);
