@@ -106,7 +106,7 @@ try {
                 '--env', "GITHUB_RUN_ID=$($env:GITHUB_RUN_ID)",
                 '--env', "JOB_ID=$($env:JOB_ID)",
                 $Cuda13Image,
-                'pwsh', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '/workspace/ci/windows/build_cuda_cccl_python.ps1',
+                'PowerShell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '/workspace/ci/windows/build_cuda_cccl_python.ps1',
                 '-py-version', $PyVersion,
                 '-OnlyCudaMajor', '13',
                 '-UseNinja',
