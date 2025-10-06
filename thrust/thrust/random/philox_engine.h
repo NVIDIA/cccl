@@ -31,6 +31,7 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
 
@@ -74,44 +75,19 @@ namespace random
  *  {
  *    // create a philox4x64 object, which is an instance of philox_engine
  *    thrust::philox4x64 rng1;
+ *    thrust::philox4x64 rng2;
+ *    // Create two different streams of random numbers
+ *    // The counter is set as a big integer with the least significant word last.
+ *    // Each counter increment produces 4 new values
+ *    rng1.set_counter({0, 0, 0, 0});
+ *    rng2.set_counter({0, 0, 1, 0}); // rng2 is now 4*2^w values ahead of rng1
  *
- *    // output some random values to cout
- *    std::cout << rng1() << std::endl;
- *
- *    // a random value is printed
- *
- *    // create a new philox4x64 from a seed
- *    thrust::philox4x64 rng2(13);
- *
- *    // discard some random values
- *    rng2.discard(13);
- *
- *    // stream the object to an iostream
- *    std::cout << rng2 << std::endl;
- *
- *    // rng2's current state is printed
- *
- *    // print the minimum and maximum values that minstd_rand can produce
- *    std::cout << thrust::philox4x64::min << std::endl;
- *    std::cout << thrust::philox4x64::max << std::endl;
- *
- *    // the range of philox4x64 is printed
- *
- *    // save the state of rng2 to a different object
- *    thrust::philox4x64 rng3 = rng2;
- *
- *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
- *
- *    // 1 is printed
- *
- *    // re-seed rng2 with a different seed
- *    rng2.seed(7);
- *
- *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
- *
- *    // 0 is printed
+ *    // Relation between discard and set_counter
+ *    thrust::philox4x64 rng3;
+ *    rng3.set_counter({0, 0, 0, 100});
+ *    const int n = 4;
+ *    rng1.discard(100*n); // rng1 is now at the same position as rng3
+ *    std::cout << (rng1() == rng3()) << std::endl; // 1
  *
  *    return 0;
  *  }
@@ -158,11 +134,26 @@ public:
    */
   _CCCL_HOST_DEVICE void seed(result_type s = default_seed);
 
-  /*! This method sets the internal counter.
+  /*! This method sets the internal counter. Each increment of the counter produces n new values. The array \p counter
+   * can be thought of as a big integer. The n-1'th counter value is the least significant and the 0'th counter value is
+   * the most significant. set_counter is related but distinct from discard:
+   * - set_counter sets the engine's absolute position, while discard increments the engine.
+   * - Each increment of the counter always produces n new values, while discard can increment by any number of values
+   * equivalent to calling operator(). i.e. The sub-counter j is always set to n-1 after calling set_counter.
+   * - set_counter exposes the full period of the engine as a big integer, while discard is limited by its word size
+   * argument.
+   *
+   * set_counter is commonly used to initialize different streams of random numbers in parallel applications.
+   * \code
+   * Engine e1; // some philox_engine
+   * Engine e2;
+   * e1.set_counter({0, 0, 0, 100});
+   * e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
+   * \endcode
    *
    *  \param counter The counter.
    */
-  _CCCL_HOST_DEVICE void set_counter(const std::array<result_type, n>& counter);
+  _CCCL_HOST_DEVICE void set_counter(const ::cuda::std::array<result_type, n>& counter);
 
   // generating functions
 
@@ -200,12 +191,12 @@ private:
 
   // The counter X, a big integer stored as n w-bit words.
   // The least significant word is m_x[0].
-  UIntType m_x[n];
+  ::cuda::std::array<UIntType, n> m_x = {};
   // K is the "Key", storing the seed
-  UIntType m_k[n / 2];
+  ::cuda::std::array<UIntType, n / 2> m_k = {};
   // The output buffer Y
   // Each time m_j reaches n, we generate n new values and store them in m_y.
-  UIntType m_y[n];
+  ::cuda::std::array<UIntType, n> m_y = {};
   // Each generation produces n random numbers, which are returned one at a time.
   // m_j cycles through [0, n-1].
   unsigned long long m_j = 0;

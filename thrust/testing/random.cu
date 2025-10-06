@@ -18,7 +18,41 @@ struct ValidateEngine
     e.discard(9999);
 
     // get the 10Kth result
-    return e() == m_value_10000;
+    if (e() != m_value_10000)
+    {
+      return false;
+    }
+
+    // Check the discard operator
+    int seeds[]    = {23232, 1, 2, 3};
+    int discards[] = {0, 1, 11, 35, 194};
+    for (auto seed : seeds)
+    {
+      for (auto discard : discards)
+      {
+        Engine e1(seed);
+        Engine e2(seed);
+
+        e1.discard(discard);
+        for (int i = 0; i < discard; i++)
+        {
+          e2();
+        }
+
+        if (e1 != e2)
+        {
+          return false;
+        }
+
+        e1.discard(1);
+        e2();
+        if (e1 != e2)
+        {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   const typename Engine::result_type m_value_10000;
@@ -323,25 +357,6 @@ void TestEngineUnequal()
   thrust::generate(d.begin(), d.end(), f);
 
   ASSERT_EQUAL(true, d[0]);
-}
-
-template <typename Engine>
-void TestEngineSetCounter()
-{
-  std::int64_t seed = 12345;
-  Engine e0(seed);
-  e0.discard(345);
-
-  Engine e1(seed);
-  e1.set_counter(345);
-
-  // Expect outputs to be the same, but the standard says nothing about internal state
-  // So they may not be equal
-  ASSERT_EQUAL(e0(), e1());
-
-  e1.set_counter(345, 1);
-
-  ASSERT_NOT_EQUAL(e0(), e1());
 }
 
 void TestRanlux24BaseValidation()
@@ -740,9 +755,26 @@ DECLARE_UNITTEST(TestPhilox4x32Unequal);
 void TestPhilox4x32SetCounter()
 {
   using Engine = thrust::random::philox4x32;
+  Engine e1(7);
+  Engine e2(7);
+  e1.discard(100);
+  e2.set_counter({0, 0, 0, 100 / 4});
+  ASSERT_EQUAL(e1, e2);
 
-  TestEngineSetCounter<Engine>();
+  // Set counter can go "back" to where it was before
+  e1 = Engine(7);
+  e2.set_counter({0, 0, 0, 0});
+  ASSERT_EQUAL(e1, e2);
+
+  // Overflow the counter
+  e1 = Engine(7);
+  e2 = Engine(7);
+  e1.set_counter({0, 0, 1, 0});
+  e2.set_counter({0, 0, 0, std::numeric_limits<std::uint32_t>::max()});
+  e2.discard(4);
+  ASSERT_EQUAL(e1, e2);
 }
+DECLARE_UNITTEST(TestPhilox4x32SetCounter);
 
 void TestPhilox4x64Validation()
 {
@@ -796,9 +828,26 @@ DECLARE_UNITTEST(TestPhilox4x64Unequal);
 void TestPhilox4x64SetCounter()
 {
   using Engine = thrust::random::philox4x64;
+  Engine e1(7);
+  Engine e2(7);
+  e1.discard(100);
+  e2.set_counter({0, 0, 0, 100 / 4});
+  ASSERT_EQUAL(e1, e2);
 
-  TestEngineSetCounter<Engine>();
+  // Set counter can go "back" to where it was before
+  e1 = Engine(7);
+  e2.set_counter({0, 0, 0, 0});
+  ASSERT_EQUAL(e1, e2);
+
+  // Overflow the counter
+  e1 = Engine(7);
+  e2 = Engine(7);
+  e1.set_counter({0, 0, 1, 0});
+  e2.set_counter({0, 0, 0, std::numeric_limits<std::uint64_t>::max()});
+  e2.discard(4);
+  ASSERT_EQUAL(e1, e2);
 }
+DECLARE_UNITTEST(TestPhilox4x64SetCounter);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation warning

@@ -56,7 +56,7 @@ _CCCL_HOST_DEVICE void philox_engine<UIntType, w, n, r, consts...>::seed(result_
 
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE void
-philox_engine<UIntType, w, n, r, consts...>::set_counter(const std::array<result_type, n>& counter)
+philox_engine<UIntType, w, n, r, consts...>::set_counter(const ::cuda::std::array<result_type, n>& counter)
 {
   for (size_t j = 0; j < n; ++j)
   {
@@ -80,7 +80,38 @@ _CCCL_HOST_DEVICE void philox_engine<UIntType, w, n, r, consts...>::increment_co
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE void philox_engine<UIntType, w, n, r, consts...>::discard(unsigned long long z)
 {
-  for (unsigned long long i = 0; i < z; ++i)
+  // Advance m_j until we are at n - 1
+  while (m_j != n - 1 && z > 0)
+  {
+    (*this)();
+    z--;
+  }
+
+  // Increment the big integer counter, handling overflow
+  auto increment    = z / n;
+  std::size_t carry = 0;
+  for (std::size_t j = 0; j < n; ++j)
+  {
+    if (increment == 0 && carry == 0)
+    {
+      break;
+    }
+    UIntType new_m_x_j = (m_x[j] + (increment & max) + carry) & max;
+    carry              = (new_m_x_j < m_x[j]) ? 1 : 0;
+    m_x[j]             = new_m_x_j;
+    if constexpr (w < 64)
+    {
+      increment >>= w;
+    }
+    else
+    {
+      increment = 0;
+    }
+  }
+
+  // Advance the output buffer position by the remainder
+  const auto remainder = z % n;
+  for (std::size_t j = 0; j < remainder; ++j)
   {
     (*this)();
   }
@@ -90,34 +121,52 @@ template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE inline void philox_engine<UIntType, w, n, r, consts...>::mulhilo(
   result_type a, result_type b, result_type& hi, result_type& lo) const
 {
-  static_assert(w == 32 || w == 64, "Only w=32 or w=64 are supported in philox_engine");
   if constexpr (w == 32)
   {
-    using upgraded_type = std::uint_fast64_t;
-
-    const upgraded_type ab = static_cast<upgraded_type>(a) * static_cast<upgraded_type>(b);
-    hi                     = static_cast<result_type>(ab >> w);
-    lo                     = static_cast<result_type>(ab) & this->max;
+    // 32 bit is easy - just use 64 bit multiplication and extract the hi/lo parts
+    const auto ab = static_cast<std::uint_fast64_t>(a) * static_cast<std::uint_fast64_t>(b);
+    hi            = static_cast<UIntType>(ab >> w);
+    lo            = static_cast<UIntType>(ab) & max;
   }
   else
   {
-    std::uint_fast64_t u1 = (a & 0xffffffff);
-    std::uint_fast64_t v1 = (b & 0xffffffff);
-    std::uint_fast64_t t  = (u1 * v1);
-    std::uint_fast64_t w3 = (t & 0xffffffff);
-    std::uint_fast64_t k  = (t >> 32);
+    // 64 bit multiplication is more difficult. The generic implementation is slow, so try to use platform specific
+    if constexpr (w == 64)
+    {
+      // CUDA
+#ifdef __CUDA_ARCH__
+      hi = static_cast<UIntType>(__umul64hi(a, b));
+      lo = static_cast<UIntType>(a * b);
+#elif defined(_MSC_VER)
+      // MSVC x64
+      lo = static_cast<UIntType>(a * b);
+      hi = static_cast<UIntType>(__umulh(a, b));
+#elif defined(__GNUC__)
+      // GCC
+      lo = static_cast<UIntType>(a * b);
+      hi = static_cast<UIntType>(__uint128_t(a) * __uint128_t(b) >> 64);
+#endif
+    }
+    else
+    {
+      // Generic slow implementation
+      constexpr UIntType w_half  = w / 2;
+      constexpr UIntType lo_mask = (((UIntType) 1) << w_half) - 1;
 
-    a >>= 32;
-    t                     = (a * v1) + k;
-    k                     = (t & 0xffffffff);
-    std::uint_fast64_t w1 = (t >> 32);
+      lo           = a * b;
+      UIntType ahi = a >> w_half;
+      UIntType alo = a & lo_mask;
+      UIntType bhi = b >> w_half;
+      UIntType blo = b & lo_mask;
 
-    b >>= 32;
-    t = (u1 * b) + k;
-    k = (t >> 32);
+      UIntType ahbl = ahi * blo;
+      UIntType albh = alo * bhi;
 
-    hi = static_cast<result_type>((a * b) + w1 + k);
-    lo = static_cast<result_type>((t << 32) + w3) & this->max;
+      UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
+      hi                 = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
+      hi += ahbl_albh >> w_half;
+      hi += ((lo >> w_half) < (ahbl_albh & lo_mask));
+    }
   }
 }
 
@@ -201,9 +250,22 @@ philox_engine<UIntType, w, n, r, consts...>::equal(const philox_engine<UIntType,
   // Compare all state: counter (m_x), key (m_k), output buffer (m_y), and position (m_j)
   for (size_t i = 0; i < n; ++i)
   {
-    if (m_x[i] != rhs.m_x[i] || m_y[i] != rhs.m_y[i])
+    if (m_x[i] != rhs.m_x[i])
     {
       return false;
+    }
+  }
+
+  // Only check the y buffer if not m_j != n-1
+  // If m_j == n-1, then m_y is not valid
+  if (m_j != n - 1)
+  {
+    for (size_t i = 0; i < n; ++i)
+    {
+      if (m_y[i] != rhs.m_y[i])
+      {
+        return false;
+      }
     }
   }
 
