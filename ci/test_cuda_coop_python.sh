@@ -25,7 +25,6 @@ fi
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
 
-# Run tests for parallel module
+# Run tests for coop module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n 6 -v parallel/ -m "not large"
-python -m pytest -n 0 -v parallel/ -m "large"
+python -m pytest -n auto -v coop/
