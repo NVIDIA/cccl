@@ -13,8 +13,8 @@ $ErrorActionPreference = "Stop"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
-$script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+$script:HOST_COMPILER = (Get-Command "cl").source -replace '\\', '/'
+$script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
 
 # Extract the CL version for export to build scripts:
 $script:CL_VERSION_STRING = & cl.exe /?
@@ -36,7 +36,7 @@ if (-not $env:CCCL_BUILD_INFIX) {
 # Presets will be configured in this directory:
 $BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
 
-If(!(test-path -PathType container "../build")) {
+If (!(test-path -PathType container "../build")) {
     New-Item -ItemType Directory -Path "../build"
 }
 
@@ -279,9 +279,9 @@ function Ensure-CudaCcclWheel {
     $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $wheel) {
         $buildScript = Join-Path $PSScriptRoot "build_cuda_cccl_python.ps1"
-        $args = @('-File', $buildScript, '-py-version', $PyVersion)
-        if ($UseNinja) { $args += '-UseNinja' }
-        & pwsh @args | Write-Host
+        $psArgs = ('-File', $buildScript, '-py-version', $PyVersion)
+        if ($UseNinja) { $psArgs += '-UseNinja' }
+        & powershell @psArgs | Write-Host
         $wheel = Get-ChildItem $wheelhouse -Filter "cuda_cccl-*.whl" | Select-Object -First 1
     }
     if (-not $wheel) { throw "cuda_cccl wheel not found in $wheelhouse" }

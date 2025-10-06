@@ -8,7 +8,14 @@ Param(
     [Alias('ctk', 'cuda')]
     [string]$CudaVersion,
     [Parameter(Mandatory = $false)]
-    [switch]$UseNinja
+    [switch]$UseNinja,
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('12', '13')]
+    [string]$OnlyCudaMajor,
+    [Parameter(Mandatory = $false)]
+    [string]$Cuda13Image,
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipUpload
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,7 +40,6 @@ Write-Host "Found cl.exe at: $clPath"
 
 function Resolve-CudaPathForMajor {
     Param([Parameter(Mandatory = $true)][ValidateSet('12', '13')][string]$Major)
-    # Prefer explicit versioned CUDA_PATH_V<MAJOR>_<MINOR> env vars (pick highest minor)
     $candidates = @()
     Get-ChildItem Env: | Where-Object { $_.Name -match "^CUDA_PATH_V${Major}_(\d+)$" } | ForEach-Object {
         $minor = [int]([regex]::Match($_.Name, "^CUDA_PATH_V${Major}_(\d+)$").Groups[1].Value)
@@ -42,10 +48,9 @@ function Resolve-CudaPathForMajor {
     if ($candidates.Count -gt 0) {
         return ($candidates | Sort-Object -Property Minor -Descending | Select-Object -First 1).Path
     }
-    # Fallback: use CUDA_PATH if it matches the major
     if ($env:CUDA_PATH) {
         $maybe = $env:CUDA_PATH
-        $nvcc = Join-Path $maybe "bin/nvcc.exe"
+        $nvcc = Join-Path $maybe 'bin/nvcc.exe'
         if (Test-Path $nvcc) {
             $out = & $nvcc --version 2>&1
             $text = ($out -join "`n")
@@ -55,12 +60,17 @@ function Resolve-CudaPathForMajor {
     return $null
 }
 
-# We'll build both CUDA 12 and 13 wheels, then merge into a single wheel.
-$CudaMajorsToBuild = @('12', '13')
+# Determine which CTKs to build
+if ($OnlyCudaMajor) { $CudaMajorsToBuild = @($OnlyCudaMajor) } else { $CudaMajorsToBuild = @('12', '13') }
+$DoMerge = -not [bool]$OnlyCudaMajor
 
+# Fallback to env-provided nested image if parameter not supplied
+if (-not $Cuda13Image -and $env:CUDA13_IMAGE) { $Cuda13Image = $env:CUDA13_IMAGE }
+
+# Base pip/CMake options
 $pipBaseConfigArgs = @(
-    '-C', "cmake.define.CMAKE_C_COMPILER=cl.exe",
-    '-C', "cmake.define.CMAKE_CXX_COMPILER=cl.exe"
+    '-C', 'cmake.define.CMAKE_C_COMPILER=cl.exe',
+    '-C', 'cmake.define.CMAKE_CXX_COMPILER=cl.exe'
 )
 
 # Prefer Ninja if requested and available
@@ -77,31 +87,47 @@ if ($UseNinja) {
 # Ensure wheelhouse exists at repo root for CI artifact collection
 $Wheelhouse = Join-Path $RepoRoot "wheelhouse"
 New-Item -ItemType Directory -Path $Wheelhouse -Force | Out-Null
-$Wheelhouse12 = Join-Path $RepoRoot "wheelhouse_cu12"
-$Wheelhouse13 = Join-Path $RepoRoot "wheelhouse_cu13"
-New-Item -ItemType Directory -Path $Wheelhouse12 -Force | Out-Null
-New-Item -ItemType Directory -Path $Wheelhouse13 -Force | Out-Null
+${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Force
+${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Force
 
-Push-Location (Join-Path $RepoRoot "python/cuda_cccl")
+Push-Location (Join-Path $RepoRoot 'python/cuda_cccl')
 try {
     foreach ($major in $CudaMajorsToBuild) {
+        if (-not $OnlyCudaMajor -and $major -eq '13' -and $Cuda13Image) {
+            if (-not $env:HOST_WORKSPACE) { throw 'HOST_WORKSPACE env var is not set; required for DooD nested docker mounts on Windows.' }
+            $hostWorkspace = $env:HOST_WORKSPACE
+            Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
+            $dockerCmd = @(
+                'docker', 'run', '--rm', '-i',
+                '--workdir', '/workspace/',
+                '--mount', "type=bind,source=$hostWorkspace,target=/workspace/",
+                '--env', "py_version=$PyVersion",
+                '--env', "GITHUB_ACTIONS=$($env:GITHUB_ACTIONS)",
+                '--env', "GITHUB_RUN_ID=$($env:GITHUB_RUN_ID)",
+                '--env', "JOB_ID=$($env:JOB_ID)",
+                $Cuda13Image,
+                'pwsh', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '/workspace/ci/windows/build_cuda_cccl_python.ps1',
+                '-py-version', $PyVersion,
+                '-OnlyCudaMajor', '13',
+                '-UseNinja',
+                '-SkipUpload'
+            )
+            Write-Host ($dockerCmd -join ' ')
+            & $dockerCmd
+            if ($LASTEXITCODE -ne 0) { throw 'Nested CUDA 13 wheel build failed' }
+            continue
+        }
+
         $CudaPathForMajor = Resolve-CudaPathForMajor -Major $major
-        if (-not $CudaPathForMajor) {
-            throw "CUDA Toolkit $major not found. Ensure CUDA_PATH_V${major}_* is set or matching toolkit is installed."
-        }
-        $NvccForMajor = Join-Path $CudaPathForMajor "bin/nvcc.exe"
-        if (-not (Test-Path $NvccForMajor)) {
-            throw "nvcc not found at $NvccForMajor"
-        }
+        if (-not $CudaPathForMajor) { throw "CUDA Toolkit $major not found. Ensure CUDA_PATH_V${major}_* is set or matching toolkit is installed." }
+        $NvccForMajor = Join-Path $CudaPathForMajor 'bin/nvcc.exe'
+        if (-not (Test-Path $NvccForMajor)) { throw "nvcc not found at $NvccForMajor" }
         $NvccUnix = Convert-ToUnixPath $NvccForMajor
         $CudaPathUnix = Convert-ToUnixPath $CudaPathForMajor
-        $pipConfigArgs = $pipBaseConfigArgs + @(
-            '-C', "cmake.define.CMAKE_CUDA_COMPILER=$NvccUnix",
-            '-C', "cmake.define.CUDAToolkit_ROOT=$CudaPathUnix"
-        )
+        $pipConfigArgs = $pipBaseConfigArgs + @('-C', "cmake.define.CMAKE_CUDA_COMPILER=$NvccUnix", '-C', "cmake.define.CUDAToolkit_ROOT=$CudaPathUnix")
 
         $extra = "cu$major"
-        $outDir = if ($major -eq '12') { $Wheelhouse12 } else { $Wheelhouse13 }
+        $outDir = if ($major -eq '12') { (Join-Path $RepoRoot 'wheelhouse_cu12') } else { (Join-Path $RepoRoot 'wheelhouse_cu13') }
         Write-Host "Building cuda-cccl wheel for CUDA $major at $CudaPathForMajor..."
         $PythonArgs = @('-m', 'pip', 'wheel', '-w', $outDir, ".[${extra}]", '-v') + $pipConfigArgs
         Write-Host ("python " + ($PythonArgs -join ' '))
@@ -109,37 +135,33 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Wheel build failed for CUDA $major" }
     }
 }
-finally {
-    Pop-Location
+finally { Pop-Location }
+
+if ($DoMerge) {
+    $Cu12Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Pattern '^cuda_cccl-.*\.whl' -File
+    $Cu13Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Pattern '^cuda_cccl-.*\.whl' -File
+    Write-Host "Found CUDA 12 wheel: $Cu12Wheel"
+    Write-Host "Found CUDA 13 wheel: $Cu13Wheel"
+
+    Write-Host 'Merging CUDA wheels...'
+    & $PythonExe -m pip install wheel | Write-Host
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to install wheel for merging' }
+
+    $WheelhouseMerged = Join-Path $RepoRoot 'wheelhouse_merged'
+    ${null} = New-Item -ItemType Directory -Path $WheelhouseMerged -Force
+    & $PythonExe (Join-Path $RepoRoot 'python/cuda_cccl/merge_cuda_wheels.py') $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged
+    if ($LASTEXITCODE -ne 0) { throw 'Merging wheels failed' }
+
+    Get-ChildItem $Wheelhouse -Filter '*.whl' | ForEach-Object { Remove-Item -Force $_.FullName }
+    $MergedWheel = Get-OnePathMatch -Path $WheelhouseMerged -Pattern '^cuda_cccl-.*\.whl' -File
+    Move-Item -Force $MergedWheel $Wheelhouse
+    Remove-Item $WheelhouseMerged -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $RepoRoot 'wheelhouse_cu12') -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $RepoRoot 'wheelhouse_cu13') -Recurse -Force -ErrorAction SilentlyContinue
+
+    Write-Host 'Final wheels in wheelhouse:'
+    Get-ChildItem $Wheelhouse -Filter '*.whl' | ForEach-Object { Write-Host " - $($_.Name)" }
 }
-
-# Validate both wheels exist (filenames may not include cu tag, so look in separate dirs)
-$Cu12Wheel = Get-OnePathMatch -Path $Wheelhouse12 -Pattern '^cuda_cccl-.*\.whl' -File
-$Cu13Wheel = Get-OnePathMatch -Path $Wheelhouse13 -Pattern '^cuda_cccl-.*\.whl' -File
-Write-Host "Found CUDA 12 wheel: $Cu12Wheel"
-Write-Host "Found CUDA 13 wheel: $Cu13Wheel"
-
-# Merge wheels into a single final wheel
-Write-Host "Merging CUDA wheels..."
-& $PythonExe -m pip install wheel | Write-Host
-if ($LASTEXITCODE -ne 0) { throw "Failed to install wheel for merging" }
-
-$WheelhouseMerged = Join-Path $RepoRoot "wheelhouse_merged"
-New-Item -ItemType Directory -Path $WheelhouseMerged -Force | Out-Null
-
-& $PythonExe (Join-Path $RepoRoot "python/cuda_cccl/merge_cuda_wheels.py") $Cu12Wheel $Cu13Wheel --output-dir $WheelhouseMerged
-if ($LASTEXITCODE -ne 0) { throw "Merging wheels failed" }
-
-# Replace original wheels with merged one
-Get-ChildItem $Wheelhouse -Filter "*.whl" | ForEach-Object { Remove-Item -Force $_.FullName }
-$MergedWheel = Get-OnePathMatch -Path $WheelhouseMerged -Pattern '^cuda_cccl-.*\.whl' -File
-Move-Item -Force $MergedWheel $Wheelhouse
-Remove-Item $WheelhouseMerged -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item $Wheelhouse12 -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item $Wheelhouse13 -Recurse -Force -ErrorAction SilentlyContinue
-
-Write-Host "Final wheels in wheelhouse:"
-Get-ChildItem $Wheelhouse -Filter "*.whl" | ForEach-Object { Write-Host " - $($_.Name)" }
 
 # I don't think any of this delvewheel stuff is needed.
 
@@ -206,20 +228,16 @@ Get-ChildItem $Wheelhouse -Filter "*.whl" | ForEach-Object { Write-Host " - $($_
 #Write-Host "Final repaired wheel in ${Wheelhouse}:" -ForegroundColor Green
 #Get-ChildItem $Wheelhouse -Filter "cuda_cccl-*.whl" | ForEach-Object { Write-Host " - $($_.Name)" }
 
-if ($env:GITHUB_ACTIONS) {
+if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {
     Push-Location $RepoRoot
     try {
-        Write-Host "GITHUB_ACTIONS detected; uploading wheel artifact"
+        Write-Host 'GITHUB_ACTIONS detected; uploading wheel artifact'
         $wheelArtifactName = (& bash -lc "ci/util/workflow/get_wheel_artifact_name.sh").Trim()
-        if (-not $wheelArtifactName) {
-            throw "Failed to resolve wheel artifact name"
-        }
+        if (-not $wheelArtifactName) { throw 'Failed to resolve wheel artifact name' }
         Write-Host "Wheel artifact name: $wheelArtifactName"
         $uploadCmd = "ci/util/artifacts/upload.sh $wheelArtifactName 'wheelhouse/.*'"
         & bash -lc $uploadCmd
-        if ($LASTEXITCODE -ne 0) { throw "Wheel artifact upload failed" }
+        if ($LASTEXITCODE -ne 0) { throw 'Wheel artifact upload failed' }
     }
-    finally {
-        Pop-Location
-    }
+    finally { Pop-Location }
 }

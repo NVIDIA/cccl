@@ -187,6 +187,8 @@ runs:
           --env ARTIFACT_UPLOAD_REGISTERY='${{ env.ARTIFACT_UPLOAD_REGISTERY }}' \
           --env WORKFLOW_ARTIFACT='${{ env.WORKFLOW_ARTIFACT }}' \
           --env WORKFLOW_DIR='${{ env.WORKFLOW_DIR }}' \
+          --env HOST_WORKSPACE='${{steps.paths.outputs.HOST_REPO}}' \
+          --env CUDA13_IMAGE='rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022' \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
