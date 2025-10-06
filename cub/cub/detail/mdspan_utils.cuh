@@ -44,9 +44,9 @@ size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, in
 
 _CCCL_DIAG_POP // MSVC(4702)
 
-template <typename IndexType, size_t... Extents>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
-size(const ::cuda::std::extents<IndexType, Extents...>& ext)
+  template <typename IndexType, size_t... Extents>
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+  size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
   return cub::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
 }

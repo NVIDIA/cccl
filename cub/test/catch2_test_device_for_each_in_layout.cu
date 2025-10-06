@@ -141,7 +141,7 @@ C2H_TEST("DeviceFor::ForEachInLayout static", "[ForEachInLayout][static][device]
   using layout_t      = c2h::get<2, TestType>;
   auto ext            = build_static_extents(index_type{}, dims{});
   using ext_t         = decltype(ext);
-  using mapping_t     = typename layout_t::mapping<ext_t>;
+  using mapping_t     = layout_t::template mapping<ext_t>;
   constexpr auto rank = ext.rank();
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
@@ -167,7 +167,7 @@ C2H_TEST("DeviceFor::ForEachInLayout 3D dynamic", "[ForEachInLayout][dynamic][de
   using index_type   = c2h::get<0, TestType>;
   using layout_t     = c2h::get<1, TestType>;
   using ext_t        = cuda::std::dextents<index_type, 3>;
-  using mapping_t    = typename layout_t::mapping<ext_t>;
+  using mapping_t    = layout_t::template mapping<ext_t>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
   auto X             = GENERATE_COPY(take(3, random(2, 10)));
@@ -209,7 +209,7 @@ C2H_TEST("DeviceFor::ForEachInLayout no duplicates", "[ForEachInLayout][no_dupli
   constexpr int max_items = 5000000;
   using layout_t          = c2h::get<0, TestType>;
   using ext_t             = cuda::std::dextents<int, 1>;
-  using mapping_t         = typename layout_t::mapping<ext_t>;
+  using mapping_t         = layout_t::template mapping<ext_t>;
   const int num_items     = GENERATE_COPY(
     take(3, random(min_items, max_items)),
     values({
