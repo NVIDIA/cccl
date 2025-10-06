@@ -126,19 +126,19 @@ template <class _Tp>
       overflow_result<_Tp> __result;
       if constexpr (sizeof(_Tp) == 1)
       {
-        __result.overflow = ::_sub_overflow_i8(0, __lhs, __rhs, &__result.value);
+        __result.overflow = ::_sub_overflow_i8(0, __lhs, __rhs, reinterpret_cast<char*>(&__result.value));
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
-        __result.overflow = ::_sub_overflow_i16(0, __lhs, __rhs, &__result.value);
+        __result.overflow = ::_sub_overflow_i16(0, __lhs, __rhs, reinterpret_cast<short*>(&__result.value));
       }
       else if constexpr (sizeof(_Tp) == 4)
       {
-        __result.overflow = ::_sub_overflow_i32(0, __lhs, __rhs, static_cast<int*>(&__result.value));
+        __result.overflow = ::_sub_overflow_i32(0, __lhs, __rhs, reinterpret_cast<int*>(&__result.value));
       }
       else if constexpr (sizeof(_Tp) == 8)
       {
-        __result.overflow = ::_sub_overflow_i64(0, __lhs, __rhs, &__result.value);
+        __result.overflow = ::_sub_overflow_i64(0, __lhs, __rhs, reinterpret_cast<long long*>(&__result.value));
       }
       return __result;
     }
@@ -149,19 +149,19 @@ template <class _Tp>
         overflow_result<_Tp> __result;
         if constexpr (sizeof(_Tp) == 1)
         {
-          __result.overflow = ::_subborrow_u8(0, __lhs, __rhs, &__result.value);
+          __result.overflow = ::_subborrow_u8(0, __lhs, __rhs, reinterpret_cast<unsigned char*>(&__result.value));
         }
         else if constexpr (sizeof(_Tp) == 2)
         {
-          __result.overflow = ::_subborrow_u16(0, __lhs, __rhs, &__result.value);
+          __result.overflow = ::_subborrow_u16(0, __lhs, __rhs, reinterpret_cast<unsigned short*>(&__result.value));
         }
         else if constexpr (sizeof(_Tp) == 4)
         {
-          __result.overflow = ::_subborrow_u32(0, __lhs, __rhs, &__result.value);
+          __result.overflow = ::_subborrow_u32(0, __lhs, __rhs, reinterpret_cast<unsigned int*>(&__result.value));
         }
         else if constexpr (sizeof(_Tp) == 8)
         {
-          __result.overflow = ::_subborrow_u64(0, __lhs, __rhs, &__result.value);
+          __result.overflow = ::_subborrow_u64(0, __lhs, __rhs, reinterpret_cast<unsigned long long*>(&__result.value));
         }
         return __result;
       }
