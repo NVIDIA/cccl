@@ -64,11 +64,11 @@ __host__ __device__ constexpr void test_type()
   using cuda::std::is_signed_v;
   using cuda::std::is_unsigned_v;
   static_assert(is_same_v<decltype(cuda::div_overflow<Result>(Lhs{}, Rhs{})), cuda::overflow_result<Result>>);
-  constexpr auto lhs_min     = cuda::std::numeric_limits<Lhs>::min();
-  constexpr auto lhs_max     = cuda::std::numeric_limits<Lhs>::max();
-  constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
-  using UnsignedLhs          = cuda::std::make_unsigned_t<Lhs>;
-  constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
+  [[maybe_unused]] constexpr auto lhs_min     = cuda::std::numeric_limits<Lhs>::min();
+  [[maybe_unused]] constexpr auto lhs_max     = cuda::std::numeric_limits<Lhs>::max();
+  [[maybe_unused]] constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
+  using UnsignedLhs                           = cuda::std::make_unsigned_t<Lhs>;
+  [[maybe_unused]] constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
   //--------------------------------------------------------------------------------------------------------------------
   //  trivial cases
   //  1. 1 / 0 -> should overflow
