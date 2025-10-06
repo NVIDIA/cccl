@@ -77,14 +77,15 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
       if (__lhs == __lhs_min && __rhs == _Rhs{-1})
       {
         if constexpr ((sizeof(_ActualResult) <= sizeof(_Lhs) && is_signed_v<_ActualResult>)
-                      || (sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>))
+                      || (sizeof(_ActualResult) < sizeof(_Lhs) && is_unsigned_v<_ActualResult>) )
         {
           return overflow_result<_ActualResult>{_ActualResult{}, true};
         }
         else
         {
-          constexpr auto __result = static_cast<_ActualResult>(::cuda::neg(__lhs_min));
-          return overflow_result<_ActualResult>{__lhs_min, false};
+          using _UnsignedLhs      = cuda::std::make_unsigned_t<_Lhs>;
+          constexpr auto __result = static_cast<_ActualResult>(static_cast<_UnsignedLhs>(::cuda::neg(__lhs_min)));
+          return overflow_result<_ActualResult>{__result, false};
         }
       }
     }
