@@ -134,7 +134,7 @@ function build_preset {
     echo "$step complete"
 
     If ($test_result -ne 0) {
-         throw "$step Failed"
+        throw "$step Failed"
     }
 
     popd
@@ -165,7 +165,7 @@ function test_preset {
     echo "$step complete"
 
     If ($test_result -ne 0) {
-         throw "$step Failed"
+        throw "$step Failed"
     }
 
     popd
@@ -192,35 +192,37 @@ function sccache_stats {
     Param (
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet('Start','Stop')]
+        [ValidateSet('Start', 'Stop')]
         [string]$MODE
     )
 
     $sccache_stats = sccache -s
-    If($MODE -eq 'Start') {
+    If ($MODE -eq 'Start') {
         [int]$script:sccache_compile_requests = ($sccache_stats[0] -replace '[^\d]+')
-        [int]$script:sccache_cache_hits_cpp   = ($sccache_stats[2] -replace '[^\d]+')
-        [int]$script:sccache_cache_hits_cuda  = ($sccache_stats[3] -replace '[^\d]+')
-        [int]$script:sccache_cache_miss_cpp   = ($sccache_stats[5] -replace '[^\d]+')
-        [int]$script:sccache_cache_miss_cuda  = ($sccache_stats[6] -replace '[^\d]+')
-    } else {
+        [int]$script:sccache_cache_hits_cpp = ($sccache_stats[2] -replace '[^\d]+')
+        [int]$script:sccache_cache_hits_cuda = ($sccache_stats[3] -replace '[^\d]+')
+        [int]$script:sccache_cache_miss_cpp = ($sccache_stats[5] -replace '[^\d]+')
+        [int]$script:sccache_cache_miss_cuda = ($sccache_stats[6] -replace '[^\d]+')
+    }
+    else {
         [int]$final_sccache_compile_requests = ($sccache_stats[0] -replace '[^\d]+')
-        [int]$final_sccache_cache_hits_cpp   = ($sccache_stats[2] -replace '[^\d]+')
-        [int]$final_sccache_cache_hits_cuda  = ($sccache_stats[3] -replace '[^\d]+')
-        [int]$final_sccache_cache_miss_cpp   = ($sccache_stats[5] -replace '[^\d]+')
-        [int]$final_sccache_cache_miss_cuda  = ($sccache_stats[6] -replace '[^\d]+')
+        [int]$final_sccache_cache_hits_cpp = ($sccache_stats[2] -replace '[^\d]+')
+        [int]$final_sccache_cache_hits_cuda = ($sccache_stats[3] -replace '[^\d]+')
+        [int]$final_sccache_cache_miss_cpp = ($sccache_stats[5] -replace '[^\d]+')
+        [int]$final_sccache_cache_miss_cuda = ($sccache_stats[6] -replace '[^\d]+')
 
-        [int]$total_requests  = $final_sccache_compile_requests - $script:sccache_compile_requests
-        [int]$total_hits_cpp  = $final_sccache_cache_hits_cpp   - $script:sccache_cache_hits_cpp
-        [int]$total_hits_cuda = $final_sccache_cache_hits_cuda  - $script:sccache_cache_hits_cuda
-        [int]$total_miss_cpp  = $final_sccache_cache_miss_cpp   - $script:sccache_cache_miss_cpp
-        [int]$total_miss_cuda = $final_sccache_cache_miss_cuda  - $script:sccache_cache_miss_cuda
+        [int]$total_requests = $final_sccache_compile_requests - $script:sccache_compile_requests
+        [int]$total_hits_cpp = $final_sccache_cache_hits_cpp - $script:sccache_cache_hits_cpp
+        [int]$total_hits_cuda = $final_sccache_cache_hits_cuda - $script:sccache_cache_hits_cuda
+        [int]$total_miss_cpp = $final_sccache_cache_miss_cpp - $script:sccache_cache_miss_cpp
+        [int]$total_miss_cuda = $final_sccache_cache_miss_cuda - $script:sccache_cache_miss_cuda
         If ( $total_requests -gt 0 ) {
-            [int]$hit_rate_cpp  = $total_hits_cpp  / $total_requests * 100;
+            [int]$hit_rate_cpp = $total_hits_cpp / $total_requests * 100;
             [int]$hit_rate_cuda = $total_hits_cuda / $total_requests * 100;
             echo "sccache hits cpp:  $total_hits_cpp  `t| misses: $total_miss_cpp  `t| hit rate: $hit_rate_cpp%"
             echo "sccache hits cuda: $total_hits_cuda `t| misses: $total_miss_cuda `t| hit rate: $hit_rate_cuda%"
-        } else {
+        }
+        else {
             echo "sccache stats: N/A No new compilation requests"
         }
     }
