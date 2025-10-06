@@ -8,7 +8,7 @@ CUDA Core Compute Libraries (CCCL).
 The CCCL Python libraries consist of two main components:
 
 :doc:`cuda.compute <compute>`
-  Compute primitives for operations on entire arrays or data ranges.
+  Parallel computing primitives for operations on entire arrays or data ranges.
 
 :doc:`cuda.coop <coop>`
   Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba.

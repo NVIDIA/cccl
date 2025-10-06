@@ -1,9 +1,9 @@
 .. _cccl-python-compute:
 
-``cuda.compute``: Compute Primitives
-====================================
+``cuda.compute``: Parallel Computing Primitives
+===============================================
 
-The ``cuda.compute`` library provides compute primitives that operate
+The ``cuda.compute`` library provides parallel computing primitives that operate
 on entire arrays or ranges of data. These algorithms are designed to be easy to use from Python
 while delivering the performance of hand-optimized CUDA kernels, portable across different
 GPU architectures.

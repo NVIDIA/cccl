@@ -4,5 +4,5 @@ API Reference
 .. toctree::
    :maxdepth: 1
 
-   par_api
+   compute_api
    coop_api
