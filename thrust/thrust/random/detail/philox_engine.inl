@@ -20,8 +20,6 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/philox_engine.h>
 
-#include <cuda/cmath>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -126,10 +124,22 @@ _CCCL_HOST_DEVICE inline void philox_engine<UIntType, w, n, r, consts...>::mulhi
   }
   else
   {
+    // 64 bit multiplication is more difficult. The generic implementation is slow, so try to use platform specific
     if constexpr (w == 64)
     {
-      hi = ::cuda::__multiply_extract_higher_bits(a, b);
+      // CUDA
+#ifdef __CUDA_ARCH__
+      hi = static_cast<UIntType>(__umul64hi(a, b));
       lo = static_cast<UIntType>(a * b);
+#elif defined(_MSC_VER)
+      // MSVC x64
+      lo = static_cast<UIntType>(a * b);
+      hi = static_cast<UIntType>(__umulh(a, b));
+#elif defined(__GNUC__)
+      // GCC
+      lo = static_cast<UIntType>(a * b);
+      hi = static_cast<UIntType>(__uint128_t(a) * __uint128_t(b) >> 64);
+#endif
     }
     else
     {
