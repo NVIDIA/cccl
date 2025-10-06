@@ -377,8 +377,8 @@ struct __type_info
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_HIDE_FROM_ABI friend constexpr bool operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

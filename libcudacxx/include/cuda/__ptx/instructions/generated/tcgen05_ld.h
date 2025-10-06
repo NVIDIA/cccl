@@ -39,8 +39,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
@@ -99,8 +99,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
@@ -162,8 +162,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
@@ -232,8 +232,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
@@ -318,8 +318,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
@@ -430,8 +430,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
@@ -593,8 +593,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
@@ -857,8 +857,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
@@ -1054,8 +1054,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
@@ -1117,8 +1117,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
@@ -1187,8 +1187,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
@@ -1273,8 +1273,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
@@ -1385,8 +1385,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
@@ -1548,8 +1548,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
@@ -1812,8 +1812,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
@@ -2009,8 +2009,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
@@ -2079,8 +2079,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
@@ -2165,8 +2165,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
@@ -2277,8 +2277,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
@@ -2440,8 +2440,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
@@ -2704,8 +2704,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
@@ -2898,8 +2898,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
@@ -2958,8 +2958,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
@@ -3021,8 +3021,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
@@ -3091,8 +3091,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
@@ -3177,8 +3177,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
@@ -3289,8 +3289,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
@@ -3452,8 +3452,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
@@ -3716,8 +3716,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
@@ -3916,8 +3916,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -3983,8 +3983,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4050,8 +4050,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4124,8 +4124,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4214,8 +4214,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4330,8 +4330,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4497,8 +4497,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
@@ -4765,8 +4765,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)

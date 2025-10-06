@@ -123,16 +123,16 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API friend constexpr auto
-    operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
+    [[nodiscard]]
+    _CCCL_API friend constexpr auto operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x == __y.__end_ || !::cuda::std::invoke(*__y.__pred_, *__x);
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API friend constexpr auto
-    operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
+    [[nodiscard]]
+    _CCCL_API friend constexpr auto operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y == __x.__end_ || !::cuda::std::invoke(*__x.__pred_, *__y);

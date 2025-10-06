@@ -588,8 +588,7 @@ private:
 public:
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  In(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
     if constexpr (IS_DESCENDING)
@@ -601,8 +600,7 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  Out(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
     if constexpr (IS_DESCENDING)
     {
@@ -614,8 +612,7 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-  bit_ordered_type
-  DefaultKey(DecomposerT decomposer = {})
+  bit_ordered_type DefaultKey(DecomposerT decomposer = {})
   {
     return IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
   }

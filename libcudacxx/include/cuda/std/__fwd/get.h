@@ -101,12 +101,11 @@ _CCCL_API constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires(_Index < 2)
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <
-  size_t _Index,
-  class _Iter,
-  class _Sent,
-  subrange_kind _Kind,
-  enable_if_t<_Index<2, int> = 0>
+template <size_t _Index,
+          class _Iter,
+          class _Sent,
+          subrange_kind _Kind,
+          enable_if_t<_Index<2, int> = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 _CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange);
 

@@ -249,8 +249,8 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVFP16()
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
-    MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE bool MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
     {
       return false;
     }

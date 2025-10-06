@@ -13,8 +13,7 @@ template <typename Iterator1, typename Iterator2>
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 __global__
 #endif
-  void
-  simple_copy_on_device(Iterator1 first1, Iterator1 last1, Iterator2 first2)
+  void simple_copy_on_device(Iterator1 first1, Iterator1 last1, Iterator2 first2)
 {
   while (first1 != last1)
   {

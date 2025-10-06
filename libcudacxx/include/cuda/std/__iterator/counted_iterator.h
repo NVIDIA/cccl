@@ -319,8 +319,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }

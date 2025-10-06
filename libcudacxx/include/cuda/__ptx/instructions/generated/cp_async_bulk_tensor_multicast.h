@@ -146,8 +146,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -276,8 +276,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -409,8 +409,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
@@ -545,8 +545,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,

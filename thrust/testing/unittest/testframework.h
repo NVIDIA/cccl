@@ -146,11 +146,11 @@ public:
 
 #define CONCAT(X, Y) X##Y
 
-#define DEFINE_OPERATOR(op)                                                              \
-  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
-  {                                                                                      \
-    fill(value[0] op other.value[0]);                                                    \
-    return *this;                                                                        \
+#define DEFINE_OPERATOR(op)                                                             \
+  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
+  {                                                                                     \
+    fill(value[0] op other.value[0]);                                                   \
+    return *this;                                                                       \
   }
 
   DEFINE_OPERATOR(+)

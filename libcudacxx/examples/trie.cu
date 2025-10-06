@@ -112,8 +112,7 @@ __host__ __device__ void make_trie(
 }
 
 __global__ // __launch_bounds__(1024, 1)
-  void
-  call_make_trie(trie* t, cuda::std::atomic<trie*>* bump, const char* begin, const char* end)
+  void call_make_trie(trie* t, cuda::std::atomic<trie*>* bump, const char* begin, const char* end)
 {
   auto const index  = blockDim.x * blockIdx.x + threadIdx.x;
   auto const domain = gridDim.x * blockDim.x;

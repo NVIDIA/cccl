@@ -136,8 +136,8 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class Type>
-_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
-trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
+_CCCL_HOST_API
+_CCCL_FORCEINLINE cudaError_t trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
   cudaError status = cudaSuccess;
   if (count == 0)

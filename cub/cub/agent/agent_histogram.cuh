@@ -636,7 +636,7 @@ struct AgentHistogram
 
     // Set valid flags
     MarkValid<IS_FULL_TILE>(
-      is_valid, valid_samples, bool_constant_v < AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED >);
+      is_valid, valid_samples, bool_constant_v<AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>);
 
     // Accumulate samples
     if (prefer_smem)
