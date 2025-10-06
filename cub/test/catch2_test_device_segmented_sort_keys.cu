@@ -39,22 +39,27 @@
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 // %PARAM% TEST_LAUNCH lid 0:1
+// %PARAM% TEST_TYPES types 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 
+#if TEST_TYPES == 0
+using key_types = c2h::type_list<bool, std::uint8_t>;
+#elif TEST_TYPES == 1
 using key_types =
-  c2h::type_list<bool,
-                 std::uint8_t,
-                 std::uint64_t
-#if TEST_HALF_T()
+  c2h::type_list<std::uint64_t
+#  if TEST_HALF_T()
                  ,
                  half_t
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
                  ,
                  bfloat16_t
-#endif // TEST_BF_T()
+#  endif // TEST_BF_T()
                  >;
+#endif
+
+#if TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device]")
 {
@@ -126,6 +131,8 @@ C2H_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   REQUIRE(values_buffer.selector == 1);
 }
 
+#endif // TEST_TYPES == 0
+
 C2H_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
          "[keys][segmented][sort][device][skip-cs-racecheck]",
          key_types)
@@ -190,6 +197,8 @@ C2H_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
   using KeyT = c2h::get<0, TestType>;
   test_unspecified_segments_random<KeyT>(C2H_SEED(4));
 }
+
+#if TEST_TYPES == 0
 
 C2H_TEST("DeviceSegmentedSortKeys: very large number of segments",
          "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
@@ -278,3 +287,5 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
+
+#endif // TEST_TYPES == 0

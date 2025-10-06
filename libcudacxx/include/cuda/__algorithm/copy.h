@@ -11,7 +11,7 @@
 #ifndef __CUDA___ALGORITHM_COPY_H
 #define __CUDA___ALGORITHM_COPY_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -38,11 +38,11 @@ enum class source_access_order
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Access source in stream order
-  stream = cudaMemcpySrcAccessOrderStream,
+  stream = ::cudaMemcpySrcAccessOrderStream,
   //! @brief Access source during the copy call, source can be destroyed after the API returns
-  during_api_call = cudaMemcpySrcAccessOrderDuringApiCall,
+  during_api_call = ::cudaMemcpySrcAccessOrderDuringApiCall,
   //! @brief Access source in any order, the order can change across CUDA releases
-  any = cudaMemcpySrcAccessOrderAny,
+  any = ::cudaMemcpySrcAccessOrderAny,
 #  else
   any = 0x3,
 #  endif // _CCCL_CTK_BELOW(13, 0)
