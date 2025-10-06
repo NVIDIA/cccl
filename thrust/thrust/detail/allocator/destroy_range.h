@@ -74,7 +74,8 @@ struct gozer
 };
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE void destroy_range(Allocator& a, Pointer p, Size n) noexcept
+_CCCL_HOST_DEVICE void
+destroy_range([[maybe_unused]] Allocator& a, [[maybe_unused]] Pointer p, [[maybe_unused]] Size n) noexcept
 {
   using pe_t = typename pointer_element<Pointer>::type;
 
