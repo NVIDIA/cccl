@@ -218,13 +218,13 @@ Requirements:
 ### Usage Examples
 
 ```python
-import cuda.compute as parallel
-result = parallel.reduce_into(input_array, output_scalar, init_val, binary_op)
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.coop as cooperative
+from cuda import coop
 @cuda.jit
 def kernel(data):
-    cooperative.block.reduce(data, binary_op)
+    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()

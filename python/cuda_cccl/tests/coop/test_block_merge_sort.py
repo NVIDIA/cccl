@@ -11,7 +11,7 @@ import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 
-import cuda.coop as coop
+from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 

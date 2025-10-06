@@ -10,7 +10,7 @@ import numba
 import numpy as np
 from numba import cuda
 
-import cuda.coop as coop
+from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 

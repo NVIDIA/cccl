@@ -23,7 +23,7 @@ from helpers import (
 )
 from numba import cuda, types
 
-import cuda.coop as coop
+from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 

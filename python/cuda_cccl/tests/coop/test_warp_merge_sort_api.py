@@ -6,7 +6,7 @@ import numba
 import numpy as np
 from numba import cuda
 
-import cuda.coop as coop
+from cuda import coop
 
 
 def test_warp_merge_sort():

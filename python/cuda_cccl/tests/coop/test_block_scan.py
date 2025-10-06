@@ -35,7 +35,7 @@ from numba.core.extending import (
     typeof_impl,
 )
 
-import cuda.coop as coop
+from cuda import coop
 from cuda.coop.block._block_scan import (
     ScanOp,
 )
