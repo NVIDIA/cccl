@@ -49,7 +49,7 @@ The function ``cuda::div_overflow`` performs integer division of ``lhs`` by ``rh
 
 - No overflow checking if ``Lhs / Rhs`` is always  representable with the ``Result`` type.
 - The computation with unsigned types is faster than signed types.
-  
+
 Example
 -------
 
