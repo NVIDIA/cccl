@@ -126,7 +126,7 @@ template <class _Tp>
       overflow_result<_Tp> __result;
       if constexpr (sizeof(_Tp) == 1)
       {
-        __result.overflow = ::_sub_overflow_i8(0, __lhs, __rhs, reinterpret_cast<char*>(&__result.value));
+        __result.overflow = ::_sub_overflow_i8(0, __lhs, __rhs, reinterpret_cast<signed char*>(&__result.value));
       }
       else if constexpr (sizeof(_Tp) == 2)
       {
