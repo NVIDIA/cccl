@@ -500,35 +500,26 @@ struct AgentHistogram
   // Tile loading
   //---------------------------------------------------------------------
 
-  // Load full, aligned tile using pixel iterator (multi-channel)
+  // Load full, aligned tile using pixel iterator
   template <int _NUM_ACTIVE_CHANNELS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadFullAlignedTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
-    constant_t<_NUM_ACTIVE_CHANNELS> num_active_channels)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS])
   {
-    using AliasedPixels = PixelT[PIXELS_PER_THREAD];
-
-    WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-
-    // Load using a wrapped pixel iterator
-    BlockLoadPixelT(temp_storage.aliasable.pixel_load).Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
-  }
-
-  // Load full, aligned tile using vec iterator (single-channel)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadFullAlignedTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
-    constant_t<1> num_active_channels)
-  {
-    using AliasedVecs = VecT[VECS_PER_THREAD];
-
-    WrappedVecsIteratorT d_wrapped_vecs((VecT*) (d_native_samples + block_offset));
-
-    // Load using a wrapped vec iterator
-    BlockLoadVecT(temp_storage.aliasable.vec_load).Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
+    if constexpr (_NUM_ACTIVE_CHANNELS == 1)
+    {
+      using AliasedVecs = VecT[VECS_PER_THREAD];
+      WrappedVecsIteratorT d_wrapped_vecs((VecT*) (d_native_samples + block_offset));
+      // Load using a wrapped vec iterator
+      BlockLoadVecT(temp_storage.aliasable.vec_load).Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
+    }
+    else
+    {
+      using AliasedPixels = PixelT[PIXELS_PER_THREAD];
+      WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
+      // Load using a wrapped pixel iterator
+      BlockLoadPixelT(temp_storage.aliasable.pixel_load)
+        .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
+    }
   }
 
   // Load full, aligned tile
@@ -539,7 +530,7 @@ struct AgentHistogram
     ::cuda::std::true_type is_full_tile,
     ::cuda::std::true_type is_aligned)
   {
-    LoadFullAlignedTile(block_offset, valid_samples, samples, constant_v<NUM_ACTIVE_CHANNELS>);
+    LoadFullAlignedTile<NUM_ACTIVE_CHANNELS>(block_offset, samples);
   }
 
   // Load full, mis-aligned tile using sample iterator
