@@ -119,7 +119,7 @@ template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures();
+_CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
@@ -193,7 +193,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_detached_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_allocator_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_stop_token_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_scheduler_t;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT get_previous_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_delegation_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_forward_progress_guarantee_t;
 template <class _Tag>
@@ -211,7 +210,13 @@ template <class _Env>
 using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
 
 template <class _Env>
-using __previous_scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_previous_scheduler_t, _Env>>;
+using __domain_of_t _CCCL_NODEBUG_ALIAS = decay_t<::cuda::std::__type_call<
+  ::cuda::std::__type_try_catch<::cuda::std::__type_bind_front_quote<__call_result_t, get_domain_t>,
+                                ::cuda::std::__type_always<default_domain>>,
+  _Env>>;
+
+template <class _Tag, class _Sndr, class... _Env>
+using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee
@@ -226,7 +231,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_NODEBUG_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
+  _CCCL_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
@@ -237,6 +242,7 @@ extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
 template <class _Sndr>
+  requires __is_sender<_Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class... _Tag>

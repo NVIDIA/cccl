@@ -59,7 +59,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
     return __query_or(__env, *this, ::cuda::std::allocator<void>{});
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -78,7 +78,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
     return __query_or(__env, *this, never_stop_token{});
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -99,32 +99,11 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
 } get_scheduler{};
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// get_previous_scheduler
-_CCCL_GLOBAL_CONSTANT struct get_previous_scheduler_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Env, get_previous_scheduler_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-    -> __query_result_t<_Env, get_previous_scheduler_t>
-  {
-    static_assert(noexcept(__env.query(*this)));
-    static_assert(__is_scheduler<__query_result_t<_Env, get_previous_scheduler_t>>);
-    return __env.query(*this);
-  }
-
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
-  {
-    return true;
-  }
-} get_previous_scheduler{};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_delegation_scheduler
@@ -141,7 +120,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -286,7 +265,7 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -317,7 +296,7 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
     return __query_or(__sch, *this, forward_progress_guarantee::weakly_parallel);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -349,7 +328,7 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     return __query_or(__env, *this, __single_threaded_config_t{});
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }

@@ -178,13 +178,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_NODEBUG_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
     if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
@@ -197,7 +197,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
+  _CCCL_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
@@ -360,12 +360,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   // sender adaptor, like `then` or `let_value`. A stream sender adaptor is an
   // implementation detail that is not visible to the user. It should be as transparent as
   // possible.
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-    -> __query_result_t<env_of_t<_Sndr>, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
-    return execution::get_env(__sndr_.__sndr_).query(_Query{});
+    return execution::get_env(__sndr_.__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   const __sndr_t<_Sndr, _GetStream>& __sndr_;

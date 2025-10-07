@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -105,9 +106,6 @@ struct stream_domain
   struct __apply_adapt_t
   {
     // This is the default apply function that adapts a sender to a stream sender.
-    // The constraint prevents this function from applying an adaptor to a sender
-    // that has already been adapted. The __stream::__adapted_t query is present
-    // only on receivers that come from an adapted sender.
     template <class _Sndr>
     _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_decay_copyable<_Sndr>)
@@ -167,7 +165,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sndr, class _Env)
   _CCCL_REQUIRES(__callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-  _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
+  _CCCL_API static constexpr auto transform_sender(set_value_t, _Sndr&& __sndr, const _Env& __env) noexcept(
     __nothrow_callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
     -> __call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
   {
