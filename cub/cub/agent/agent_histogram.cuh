@@ -615,6 +615,7 @@ struct AgentHistogram
   {
     const int blockId = (blockIdx.y * gridDim.x) + blockIdx.x;
 
+    // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
     // Initialize the locations of this block's privatized histograms
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
