@@ -81,6 +81,20 @@ if ($UseNinja) {
     }
     else {
         Write-Host "Ninja not found; proceeding with default generator" -ForegroundColor Yellow
+        $UseNinja = $false
+        if ($env:CMAKE_GENERATOR -eq 'Ninja') {
+            Remove-Item Env:CMAKE_GENERATOR -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# If we're *not* using Ninja, make sure we wipe the CUDAHOSTCXX and
+# CMAKE_CUDA_HOST_COMPILER env vars, as Visual Studio doesn't like them.
+if (-not $UseNinja) {
+    Remove-Item Env:CUDAHOSTCXX -ErrorAction SilentlyContinue
+    Remove-Item Env:CMAKE_CUDA_HOST_COMPILER -ErrorAction SilentlyContinue
+    if ($env:CMAKE_GENERATOR -eq 'Ninja') {
+        Remove-Item Env:CMAKE_GENERATOR -ErrorAction SilentlyContinue
     }
 }
 
@@ -90,11 +104,17 @@ New-Item -ItemType Directory -Path $Wheelhouse -Force | Out-Null
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Force
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Force
 
+
 Push-Location (Join-Path $RepoRoot 'python/cuda_cccl')
 try {
     foreach ($major in $CudaMajorsToBuild) {
+
         if (-not $OnlyCudaMajor -and $major -eq '13' -and $Cuda13Image) {
             if (-not $env:HOST_WORKSPACE) { throw 'HOST_WORKSPACE env var is not set; required for DooD nested docker mounts on Windows.' }
+            $hostWorkspace = $env:HOST_WORKSPACE
+
+            if (-not $env:CONTAINER_WORKSPACE) { throw 'CONTAINER_WORKSPACE env var is not set; required for DooD nested docker mounts on Windows.' }
+            $containerWorkspace = $env:CONTAINER_WORKSPACE
 
             if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
               throw "docker CLI not found in the devcontainer image (required for DooD)."
@@ -103,25 +123,41 @@ try {
             Write-Host "Checking DooD connectivity..."
             docker version | Out-Host
 
-            $hostWorkspace = $env:HOST_WORKSPACE
+            # Detect outer container resources
+            $os = Get-WmiObject -Class Win32_OperatingSystem
+            $totalGB = [math]::Floor($os.TotalVisibleMemorySize / 1MB)  # KB -> GB
+            $procCount = [Environment]::ProcessorCount
+
+            # Leave a little headroom so the outer container doesn't starve
+            $memLimitGB = [math]::Max(2, [int]([math]::Floor($totalGB * 0.9)))
+            $cpuCount   = [math]::Max(2, $procCount)
+
             Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
-            $dockerCmd = @(
-                'docker', 'run', '--rm', '-i',
-                '--workdir', '/workspace/',
-                '--mount', "type=bind,source=$hostWorkspace,target=/workspace/",
+            $dockerArgs = @(
+                'run', '--rm', '-i',
+                # Give the nested container resources roughly matching the outer one
+                '--cpu-count', "$cpuCount",
+                '--memory',    "${memLimitGB}g",
+                '--workdir', $containerWorkspace,
+                '--mount', "type=bind,source=$hostWorkspace,target=$containerWorkspace",
                 '--env', "py_version=$PyVersion",
                 '--env', "GITHUB_ACTIONS=$($env:GITHUB_ACTIONS)",
                 '--env', "GITHUB_RUN_ID=$($env:GITHUB_RUN_ID)",
                 '--env', "JOB_ID=$($env:JOB_ID)",
+                '--env', "CMAKE_BUILD_PARALLEL_LEVEL=$($env:CMAKE_BUILD_PARALLEL_LEVEL)",
                 $Cuda13Image,
-                'PowerShell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', '/workspace/ci/windows/build_cuda_cccl_python.ps1',
+                'PowerShell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $containerWorkspace 'ci\windows\build_cuda_cccl_python.ps1'),
                 '-py-version', $PyVersion,
                 '-OnlyCudaMajor', '13',
-                '-UseNinja',
                 '-SkipUpload'
             )
-            Write-Host ($dockerCmd -join ' ')
-            & $dockerCmd
+
+            # Append -UseNinja only if requested
+            if ($UseNinja) {
+                $dockerArgs += '-UseNinja'
+            }
+            Write-Host ("docker " + ($dockerArgs -join ' '))
+            & docker @dockerArgs
             if ($LASTEXITCODE -ne 0) { throw 'Nested CUDA 13 wheel build failed' }
             continue
         }

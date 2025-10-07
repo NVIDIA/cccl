@@ -16,6 +16,12 @@ $ErrorActionPreference = "Stop"
 $script:HOST_COMPILER = (Get-Command "cl").source -replace '\\', '/'
 $script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
 
+Write-Host "=== Docker Container Resource Info ==="
+Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
+Get-WmiObject Win32_OperatingSystem | ForEach-Object {
+    Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize/1MB), ($_.FreePhysicalMemory/1MB))
+}
+
 # Extract the CL version for export to build scripts:
 $script:CL_VERSION_STRING = & cl.exe /?
 if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
@@ -47,7 +53,10 @@ New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 
 # Prepare environment for CMake:
-$env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
+if (-not $env:CMAKE_BUILD_PARALLEL_LEVEL -or [string]::IsNullOrWhiteSpace($env:CMAKE_BUILD_PARALLEL_LEVEL)) {
+    # Only set CMAKE_BUILD_PARALLEL_LEVEL if it's not already defined.
+    $env:CMAKE_BUILD_PARALLEL_LEVEL = $script:PARALLEL_LEVEL
+}
 $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
