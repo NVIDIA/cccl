@@ -49,6 +49,16 @@ __host__ __device__ void test_variants()
   delete[] arrayC;
 }
 
+
+template <typename T>
+__host__ __device__ void test_void_variants()
+{
+  T arrayA[6] = {};
+  T* firstA   = arrayA + 1;
+  T* lastA    = arrayA + 5;
+  test_in_range(static_cast<void*>(firstA), static_cast<void*>(lastA));
+}
+
 __host__ __device__ bool test()
 {
   constexpr auto nullptr_int = static_cast<int*>(nullptr);
