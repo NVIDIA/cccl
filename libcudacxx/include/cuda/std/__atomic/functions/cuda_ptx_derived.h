@@ -153,7 +153,7 @@ struct __cuda_atomic_op_bind
 {
   _Type __val;
 
-  _CCCL_DEVICE _Type operator()(_Type __old) const
+  [[nodiscard]] _CCCL_DEVICE _Type operator()(_Type __old) const
   {
     return _Op<_Type>{}(__val, __old);
   }
@@ -163,7 +163,7 @@ template <class _Type>
 struct __cuda_atomic_op_store
 {
   // Just return first value
-  _CCCL_DEVICE _Type operator()(_Type __val, _Type) const
+  [[nodiscard]] _CCCL_DEVICE _Type operator()(_Type __val, _Type) const
   {
     return __val;
   }
@@ -172,7 +172,7 @@ struct __cuda_atomic_op_store
 template <class _Type>
 struct __cuda_atomic_op_fetch_min
 {
-  _CCCL_DEVICE _Type operator()(_Type __op, _Type __old) const
+  [[nodiscard]] _CCCL_DEVICE _Type operator()(_Type __op, _Type __old) const
   {
     return __op < __old ? __op : __old;
   }
@@ -181,7 +181,7 @@ struct __cuda_atomic_op_fetch_min
 template <class _Type>
 struct __cuda_atomic_op_fetch_max
 {
-  _CCCL_DEVICE _Type operator()(_Type __op, _Type __old) const
+  [[nodiscard]] _CCCL_DEVICE _Type operator()(_Type __op, _Type __old) const
   {
     return __old < __op ? __op : __old;
   }
