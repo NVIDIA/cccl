@@ -134,9 +134,7 @@ struct AgentRlePolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace rle
+namespace detail::rle
 {
 
 /**
@@ -1121,7 +1119,6 @@ struct AgentRle
   }
 };
 
-} // namespace rle
-} // namespace detail
+} // namespace detail::rle
 
 CUB_NAMESPACE_END

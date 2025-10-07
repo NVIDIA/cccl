@@ -45,7 +45,7 @@ static void fibonacci(nvbench::state& state, nvbench::type_list<OffsetT>)
 {
   using index_t                     = int64_t;
   using output_t                    = uint32_t;
-  const auto n                      = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n                      = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<index_t> in = generate(n, bit_entropy::_1_000, index_t{0}, index_t{42});
   thrust::device_vector<output_t> out(n);
 

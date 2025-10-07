@@ -52,6 +52,7 @@ set(stf_test_sources
   places/non_current_device.cu
   places/place_partition.cu
   places/recursion.cu
+  places/execution_policy_kernel_launch_test.cu
   reclaiming/graph.cu
   reclaiming/graph_2.cu
   reclaiming/graph_real_oom.cu
