@@ -114,11 +114,11 @@ template <typename _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    return ::__clz(static_cast<int>(::__brev(__v)));
+    return static_cast<int>(::__clz(static_cast<int>(::__brev(__v))));
   }
   else
   {
-    return ::__clzll(static_cast<long long>(::__brevll(__v)));
+    return static_cast<int>(::__clzll(static_cast<long long>(::__brevll(__v))));
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
