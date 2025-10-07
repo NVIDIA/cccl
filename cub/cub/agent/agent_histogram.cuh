@@ -418,15 +418,15 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[pixels_per_thread], int valid_samples)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int PIXEL = 0; PIXEL < pixels_per_thread; ++PIXEL)
+    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
     {
       if constexpr (IsStriped)
       {
-        is_valid[PIXEL] = IsFullTile || (((threadIdx.x + block_threads * PIXEL) * NumChannels) < valid_samples);
+        is_valid[pixel] = IsFullTile || (((threadIdx.x + block_threads * pixel) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[PIXEL] = IsFullTile || (((threadIdx.x * pixels_per_thread + PIXEL) * NumChannels) < valid_samples);
+        is_valid[pixel] = IsFullTile || (((threadIdx.x * pixels_per_thread + pixel) * NumChannels) < valid_samples);
       }
     }
   }
