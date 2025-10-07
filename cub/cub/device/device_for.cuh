@@ -960,7 +960,7 @@ public:
   //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each element, passing
   //!
   //! - a single linear index that represents the current iteration
-  //! - list of indices containing the coordinates for each extent dimension
+  //! - a list of indices containing the coordinates for each extent dimension
   //!
   //! The iteration order depends on the layout type:
   //!
