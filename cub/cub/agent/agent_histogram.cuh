@@ -26,11 +26,9 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * cub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide
- * histogram .
- */
+//! \file
+//! cub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide
+//! histogram.
 
 #pragma once
 
@@ -462,21 +460,19 @@ struct AgentHistogram
     }
   }
 
-  /**
-   * @brief Consume row tiles. Specialized for work-stealing from queue
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param tiles_per_row
-   *   Number of image tiles per row
-   */
+  //! @brief Consume row tiles. Specialized for work-stealing from queue
+  //!
+  //! @param num_row_pixels
+  //!   The number of multi-channel pixels per row in the region of interest
+  //!
+  //! @param num_rows
+  //!   The number of rows in the region of interest
+  //!
+  //! @param row_stride_samples
+  //!   The number of samples between starts of consecutive rows in the region of interest
+  //!
+  //! @param tiles_per_row
+  //!   Number of image tiles per row
   template <bool IS_ALIGNED>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels,
