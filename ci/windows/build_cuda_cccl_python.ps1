@@ -117,7 +117,7 @@ try {
             $containerWorkspace = $env:CONTAINER_WORKSPACE
 
             if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-              throw "docker CLI not found in the devcontainer image (required for DooD)."
+                throw "docker CLI not found in the devcontainer image (required for DooD)."
             }
 
             Write-Host "Checking DooD connectivity..."
@@ -130,14 +130,14 @@ try {
 
             # Leave a little headroom so the outer container doesn't starve
             $memLimitGB = [math]::Max(2, [int]([math]::Floor($totalGB * 0.9)))
-            $cpuCount   = [math]::Max(2, $procCount)
+            $cpuCount = [math]::Max(2, $procCount)
 
             Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
             $dockerArgs = @(
                 'run', '--rm', '-i',
                 # Give the nested container resources roughly matching the outer one
                 '--cpu-count', "$cpuCount",
-                '--memory',    "${memLimitGB}g",
+                '--memory', "${memLimitGB}g",
                 '--workdir', $containerWorkspace,
                 '--mount', "type=bind,source=$hostWorkspace,target=$containerWorkspace",
                 '--env', "py_version=$PyVersion",
@@ -177,6 +177,16 @@ try {
         Write-Host ("python " + ($PythonArgs -join ' '))
         & $PythonExe @PythonArgs
         if ($LASTEXITCODE -ne 0) { throw "Wheel build failed for CUDA $major" }
+
+        # Rename the built wheel to include the CUDA major suffix (e.g., .cu12/.cu13)
+        $BuiltWheel = Get-OnePathMatch -Path $outDir -Pattern '^cuda_cccl-.*\.whl' -File
+        if (-not $BuiltWheel) { throw "Failed to find built wheel in $outDir for CUDA $major" }
+        $BuiltWheelName = [System.IO.Path]::GetFileName($BuiltWheel)
+        if ($BuiltWheelName -notmatch ".cu$major\.whl$") {
+            $NewWheelName = ([System.IO.Path]::GetFileNameWithoutExtension($BuiltWheelName)) + ".cu$major.whl"
+            Write-Host "Renaming wheel to: $NewWheelName"
+            Rename-Item -Path $BuiltWheel -NewName $NewWheelName -Force
+        }
     }
 }
 finally { Pop-Location }
