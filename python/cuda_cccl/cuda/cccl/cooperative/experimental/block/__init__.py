@@ -6,6 +6,10 @@ from cuda.cccl.cooperative.experimental.block._block_exchange import (
     BlockExchangeType,
     exchange,
 )
+from cuda.cccl.cooperative.experimental.block._block_histogram import (
+    BlockHistogramAlgorithm,
+    histogram,
+)
 from cuda.cccl.cooperative.experimental.block._block_load_store import load, store
 from cuda.cccl.cooperative.experimental.block._block_merge_sort import merge_sort_keys
 from cuda.cccl.cooperative.experimental.block._block_radix_sort import (
@@ -23,9 +27,11 @@ from cuda.cccl.cooperative.experimental.block._block_scan import (
 
 __all__ = [
     "BlockExchangeType",
+    "BlockHistogramAlgorithm",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
