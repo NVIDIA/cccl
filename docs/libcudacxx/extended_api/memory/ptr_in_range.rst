@@ -25,7 +25,7 @@ Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``.
 
 - ``ptr``: The pointer being tested.
 - ``start``: Pointer to the first element in the range.
-- ``end``: Pointer one past the last element in the range.
+- ``end``: Pointer to one past the last element in the range.
 
 **Return value**
 
