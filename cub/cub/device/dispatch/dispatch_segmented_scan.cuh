@@ -18,7 +18,6 @@
 #include <cub/agent/agent_segmented_scan.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
@@ -211,17 +210,6 @@ struct DispatchSegmentedScan
       const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
-      // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
-      // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
-      // indirect_arg_t as the iterator type, which does not support the + operator.
-      if (num_invocations > 1
-          && !(detail::all_iterators_support_add_assign_operator(
-                 ::cuda::std::int64_t{}, d_input_begin_offsets, d_input_end_offsets, d_output_begin_offsets)
-               && sizeof(OffsetT) == 8))
-      {
-        return cudaErrorInvalidValue;
-      }
-
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
         const auto current_seg_offset = invocation_index * num_segments_per_invocation;
@@ -250,9 +238,9 @@ struct DispatchSegmentedScan
 
         if (invocation_index + 1 < num_invocations)
         {
-          detail::advance_iterators_inplace_if_supported(d_input_begin_offsets, num_current_segments);
-          detail::advance_iterators_inplace_if_supported(d_input_end_offsets, num_current_segments);
-          detail::advance_iterators_inplace_if_supported(d_output_begin_offsets, num_current_segments);
+          d_input_begin_offsets += num_current_segments;
+          d_input_end_offsets += num_current_segments;
+          d_output_begin_offsets += num_current_segments;
         }
 
         // Sync the stream if specified to flush runtime errors
