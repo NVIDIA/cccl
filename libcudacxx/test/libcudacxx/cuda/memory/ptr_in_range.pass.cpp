@@ -49,7 +49,6 @@ __host__ __device__ void test_variants()
   delete[] arrayC;
 }
 
-
 template <typename T>
 __host__ __device__ void test_void_variants()
 {
