@@ -17,6 +17,7 @@ Math
    math/neg
    math/uabs
    math/fast_mod_div
+   math/multiply_half_high
 
 .. list-table::
    :widths: 25 45 30 30
@@ -91,3 +92,9 @@ Math
      - Fast Modulo/Division
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`multiply_half_high <libcudacxx-extended-api-math-multiply-half-high>`
+     - Half high of the product
+     - CCCL 3.2.0
+     - CUDA 13.2
+     
