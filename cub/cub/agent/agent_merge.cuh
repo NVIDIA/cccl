@@ -53,14 +53,8 @@ struct agent_t
   using policy = Policy;
 
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
-  using key_type  = it_value_t<KeysIt1>;
-  using item_type = it_value_t<ItemsIt1>;
-
-  using keys_load_it1  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt1>;
-  using keys_load_it2  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt2>;
-  using items_load_it1 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt1>;
-  using items_load_it2 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt2>;
-
+  using key_type          = it_value_t<KeysIt1>;
+  using item_type         = it_value_t<ItemsIt1>;
   using block_store_keys  = typename BlockStoreType<Policy, KeysOutputIt, key_type>::type;
   using block_store_items = typename BlockStoreType<Policy, ItemsOutputIt, item_type>::type;
 
@@ -84,11 +78,11 @@ struct agent_t
 
   // Per thread data
   temp_storages& storage;
-  keys_load_it1 keys1_in;
-  items_load_it1 items1_in;
+  KeysIt1 keys1_in;
+  ItemsIt1 items1_in;
   Offset keys1_count;
-  keys_load_it2 keys2_in;
-  items_load_it2 items2_in;
+  KeysIt2 keys2_in;
+  ItemsIt2 items2_in;
   Offset keys2_count;
   KeysOutputIt keys_out;
   ItemsOutputIt items_out;
@@ -128,10 +122,14 @@ struct agent_t
     }
 
     key_type keys_loc[items_per_thread];
-    merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
-      keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, keys1_count_tile, keys2_count_tile);
-    merge_sort::reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
-    __syncthreads();
+    {
+      auto keys1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys1_in);
+      auto keys2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys2_in);
+      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
+        keys_loc, keys1_in_cm + keys1_beg, keys2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
+      merge_sort::reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
+      __syncthreads();
+    }
 
     // now find the merge path for each of thread.
     // we can use int type here, because the number of items in shared memory is limited
@@ -186,11 +184,15 @@ struct agent_t
     if constexpr (have_items)
     {
       item_type items_loc[items_per_thread];
-      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
-        items_loc, items1_in + keys1_beg, items2_in + keys2_beg, keys1_count_tile, keys2_count_tile);
-      __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
-      merge_sort::reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
-      __syncthreads();
+      {
+        auto items1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items1_in);
+        auto items2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items2_in);
+        merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
+          items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
+        __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
+        merge_sort::reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
+        __syncthreads();
+      }
 
       // gather items from shared mem
       _CCCL_PRAGMA_UNROLL_FULL()
