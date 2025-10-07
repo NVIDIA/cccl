@@ -957,7 +957,8 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each element, passing
+  //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
+  //! element, passing
   //!
   //! - a single linear index that represents the current iteration
   //! - a list of indices containing the coordinates for each extent dimension
@@ -1036,6 +1037,8 @@ public:
       op, extents, sub_sizes_div_array, extents_div_array};
     return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Overview
@@ -1125,6 +1128,8 @@ public:
     }
     return ForEachInLayout(layout_mapping, op, stream);
   }
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END
