@@ -62,6 +62,9 @@ public:
 class stackable_ctx
 {
 public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::stackable_logical_data<T>;
+
   //! Store metadata about task dependencies to automatically push data before
   //! the task is started.
   //!

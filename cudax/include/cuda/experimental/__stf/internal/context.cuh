@@ -75,6 +75,11 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
  */
 class context
 {
+public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
+private:
   template <typename T1, typename T2>
   class unified_scope
   {

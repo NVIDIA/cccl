@@ -49,6 +49,7 @@ set(stf_test_sources
 
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/logical_data_t_template.cu
   local_stf/stackable.cu
   local_stf/stackable2.cu
   local_stf/stackable_add_deps.cu
