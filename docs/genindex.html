@@ -1467,16 +1467,13 @@
 <li class="toctree-l2"><a class="reference internal" href="cccl/license.html">License</a></li>
 </ul>
 </details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="python/setup.html">Setup and Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="python/parallel.html"><code class="docutils literal notranslate"><span class="pre">parallel</span></code>: Device-Level Parallel Algorithms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="python/cooperative.html"><code class="docutils literal notranslate"><span class="pre">cooperative</span></code>: Cooperative Algorithms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="python/resources.html">Resources</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l3"><a class="reference internal" href="python/parallel_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.cccl.parallel</span></code> API Reference</a></li>
-<li class="toctree-l3"><a class="reference internal" href="python/cooperative_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.cccl.cooperative</span></code> API Reference</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1"><a class="reference internal" href="python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/resources.html">Resources</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
 </ul>
 </details></li>
 </ul>
@@ -1535,7 +1532,7 @@
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.DoubleBuffer.__init__">__init__() (cuda.cccl.parallel.experimental.algorithms.DoubleBuffer method)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.DoubleBuffer.__init__">__init__() (cuda.compute.algorithms.DoubleBuffer method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1781,7 +1778,7 @@
 </li>
       <li><a href="cub/api/structcub_1_1AgentWarpReducePolicy.html#_CPPv4N3cub21AgentWarpReducePolicy12WARP_THREADSE">AgentWarpReducePolicy::WARP_THREADS (C++ member)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.DoubleBuffer.alternate">alternate() (cuda.cccl.parallel.experimental.algorithms.DoubleBuffer method)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.DoubleBuffer.alternate">alternate() (cuda.compute.algorithms.DoubleBuffer method)</a>
 </li>
       <li><a href="cub/api/classcub_1_1ArgIndexInputIterator.html#_CPPv4I000EN3cub21ArgIndexInputIteratorE">ArgIndexInputIterator (C++ class)</a>
 </li>
@@ -1831,7 +1828,7 @@
 </li>
       <li><a href="cub/api/structcub_1_1ArgMin.html#_CPPv4I00ENK3cub6ArgMinclE12KeyValuePairI7OffsetT1TERK12KeyValuePairI7OffsetT1TERK12KeyValuePairI7OffsetT1TE">ArgMin::operator() (C++ function)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.SortOrder.ASCENDING">ASCENDING (cuda.cccl.parallel.experimental.algorithms.SortOrder attribute)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.SortOrder.ASCENDING">ASCENDING (cuda.compute.algorithms.SortOrder attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1873,7 +1870,15 @@
 </li>
       <li><a href="cub/api/structcub_1_1BFEDigitExtractor.html#_CPPv4N3cub17BFEDigitExtractor12UnsignedBitsE">BFEDigitExtractor::UnsignedBits (C++ type)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.binary_transform">binary_transform() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.binary_transform">binary_transform() (in module cuda.compute.algorithms)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.BIT_AND">BIT_AND (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.BIT_NOT">BIT_NOT (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.BIT_OR">BIT_OR (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.BIT_XOR">BIT_XOR (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
 </li>
       <li><a href="cub/api/classcub_1_1BlockAdjacentDifference.html#_CPPv4I0_i_i_iEN3cub23BlockAdjacentDifferenceE">BlockAdjacentDifference (C++ class)</a>
 </li>
@@ -1923,7 +1928,7 @@
 </li>
       <li><a href="cub/api/classcub_1_1BlockExchange.html#_CPPv4I0EN3cub13BlockExchange20WarpStripedToBlockedEvRA16ITEMS_PER_THREAD_K1TRA16ITEMS_PER_THREAD_7OutputT">BlockExchange::WarpStripedToBlocked (C++ function)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.BlockExchangeType">BlockExchangeType (class in cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.BlockExchangeType">BlockExchangeType (class in cuda.coop.block)</a>
 </li>
       <li><a href="cub/api/classcub_1_1BlockHistogram.html#_CPPv4I0_i_i_i_23BlockHistogramAlgorithm_i_iEN3cub14BlockHistogramE">BlockHistogram (C++ class)</a>
 </li>
@@ -2037,12 +2042,12 @@
 </li>
       <li><a href="cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html#_CPPv4N3cub30BlockRadixRankMatchEarlyCountsUt2_3723BINS_TRACKED_PER_THREADE">BlockRadixRankMatchEarlyCounts::[anonymous]::BINS_TRACKED_PER_THREAD (C++ enumerator)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html#_CPPv4N3cub30BlockRadixRankMatchEarlyCountsUt2_3713BLOCK_THREADSE">BlockRadixRankMatchEarlyCounts::[anonymous]::BLOCK_THREADS (C++ enumerator)</a>
 </li>
       <li><a href="cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html#_CPPv4N3cub30BlockRadixRankMatchEarlyCountsUt2_3711BLOCK_WARPSE">BlockRadixRankMatchEarlyCounts::[anonymous]::BLOCK_WARPS (C++ enumerator)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html#_CPPv4N3cub30BlockRadixRankMatchEarlyCountsUt2_379FULL_BINSE">BlockRadixRankMatchEarlyCounts::[anonymous]::FULL_BINS (C++ enumerator)</a>
 </li>
       <li><a href="cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html#_CPPv4N3cub30BlockRadixRankMatchEarlyCountsUt2_3715NUM_MATCH_MASKSE">BlockRadixRankMatchEarlyCounts::[anonymous]::NUM_MATCH_MASKS (C++ enumerator)</a>
@@ -2271,7 +2276,7 @@
 </li>
       <li><a href="cub/api/classcub_1_1CacheModifiedInputIterator.html#_CPPv4I_17CacheLoadModifier00EN3cub26CacheModifiedInputIteratorE">CacheModifiedInputIterator (C++ class)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.CacheModifiedInputIterator">CacheModifiedInputIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.CacheModifiedInputIterator">CacheModifiedInputIterator() (in module cuda.compute.iterators)</a>
 </li>
       <li><a href="cub/api/classcub_1_1CacheModifiedInputIterator.html#_CPPv4I0EN3cub26CacheModifiedInputIterator26CacheModifiedInputIteratorEP18QualifiedValueType">CacheModifiedInputIterator::CacheModifiedInputIterator (C++ function)</a>
 </li>
@@ -2435,7 +2440,7 @@
 </li>
       <li><a href="libcudacxx/api/classconstant__iterator.html#_CPPv4N17constant_iterator10value_typeE">constant_iterator::value_type (C++ type)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.ConstantIterator">ConstantIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.ConstantIterator">ConstantIterator() (in module cuda.compute.iterators)</a>
 </li>
       <li><a href="cub/api/namespacecub_1af09e9a2e82556cb3f7cd6afbf8c3df9a.html#_CPPv4N3cub7CopyAlgE">CopyAlg (C++ enum)</a>
 </li>
@@ -2485,48 +2490,43 @@
 </li>
       <li><a href="libcudacxx/api/classcounting__iterator.html#_CPPv4N17counting_iterator10value_typeE">counting_iterator::value_type (C++ type)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.CountingIterator">CountingIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.CountingIterator">CountingIterator() (in module cuda.compute.iterators)</a>
 </li>
       <li>
-    cuda.cccl.cooperative.experimental.block
+    cuda.compute.algorithms
 
       <ul>
-        <li><a href="python/cooperative_api.html#module-cuda.cccl.cooperative.experimental.block">module</a>
-</li>
-      </ul></li>
-      <li>
-    cuda.cccl.cooperative.experimental.warp
-
-      <ul>
-        <li><a href="python/cooperative_api.html#module-cuda.cccl.cooperative.experimental.warp">module</a>
+        <li><a href="python/compute_api.html#module-cuda.compute.algorithms">module</a>
 </li>
       </ul></li>
       <li>
-    cuda.cccl.parallel.experimental.algorithms
+    cuda.compute.iterators
 
       <ul>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.algorithms">module</a>
+        <li><a href="python/compute_api.html#module-cuda.compute.iterators">module</a>
+</li>
+      </ul></li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind">cuda.compute.op.OpKind (class in cuda.compute.iterators)</a>
+</li>
+      <li>
+    cuda.compute.struct
+
+      <ul>
+        <li><a href="python/compute_api.html#module-cuda.compute.struct">module</a>
 </li>
       </ul></li>
       <li>
-    cuda.cccl.parallel.experimental.iterators
+    cuda.coop.block
 
       <ul>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.iterators">module</a>
+        <li><a href="python/coop_api.html#module-cuda.coop.block">module</a>
 </li>
       </ul></li>
       <li>
-    cuda.cccl.parallel.experimental.op
+    cuda.coop.warp
 
       <ul>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.op">module</a>
-</li>
-      </ul></li>
-      <li>
-    cuda.cccl.parallel.experimental.struct
-
-      <ul>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.struct">module</a>
+        <li><a href="python/coop_api.html#module-cuda.coop.warp">module</a>
 </li>
       </ul></li>
       <li><a href="cudax/api/structcuda_1_1experimental_1_1allowed__levels.html#_CPPv4IDpEN4cuda12experimental14allowed_levelsE">cuda::experimental::allowed_levels (C++ struct)</a>
@@ -7109,7 +7109,7 @@
 </li>
       <li><a href="cudax/api/namespacecuda_1_1experimental_1ac2bd49a968880629779df2659e34459e.html#_CPPv4I0EN4cuda12experimental14work_submitterE">cuda::experimental::work_submitter (C++ member)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.DoubleBuffer.current">current() (cuda.cccl.parallel.experimental.algorithms.DoubleBuffer method)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.DoubleBuffer.current">current() (cuda.compute.algorithms.DoubleBuffer method)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a85689ccce38dd4ad9213842690d9fbf9.html#_CPPv4N3cub13CurrentDeviceEv">CurrentDevice (C++ function)</a>
 </li>
@@ -7121,7 +7121,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/namespacecub_1a5c28713a19b9cecbe5491a11ba26b100.html#_CPPv4N3cub5DebugE11cudaError_tPKci">Debug (C++ function)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.SortOrder.DESCENDING">DESCENDING (cuda.cccl.parallel.experimental.algorithms.SortOrder attribute)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.SortOrder.DESCENDING">DESCENDING (cuda.compute.algorithms.SortOrder attribute)</a>
 </li>
       <li><a href="cub/api/structcub_1_1DeviceAdjacentDifference.html#_CPPv4N3cub24DeviceAdjacentDifferenceE">DeviceAdjacentDifference (C++ struct)</a>
 </li>
@@ -7539,10 +7539,10 @@
 </li>
       <li><a href="cub/api/structcub_1_1DispatchRadixSort.html#_CPPv4N3cub17DispatchRadixSort10PassConfig10radix_bitsE">DispatchRadixSort::PassConfig::radix_bits (C++ member)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/structcub_1_1DispatchRadixSort.html#_CPPv4N3cub17DispatchRadixSort10PassConfig12radix_digitsE">DispatchRadixSort::PassConfig::radix_digits (C++ member)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/structcub_1_1DispatchRadixSort.html#_CPPv4N3cub17DispatchRadixSort10PassConfig11scan_configE">DispatchRadixSort::PassConfig::scan_config (C++ member)</a>
 </li>
       <li><a href="cub/api/structcub_1_1DispatchRadixSort.html#_CPPv4N3cub17DispatchRadixSort10PassConfig11scan_kernelE">DispatchRadixSort::PassConfig::scan_kernel (C++ member)</a>
@@ -7961,7 +7961,9 @@
 </li>
       <li><a href="cub/api/structcub_1_1DispatchUniqueByKey.html#_CPPv4N3cub19DispatchUniqueByKey18temp_storage_bytesE">DispatchUniqueByKey::temp_storage_bytes (C++ member)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.DoubleBuffer">DoubleBuffer (class in cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.DIVIDES">DIVIDES (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.DoubleBuffer">DoubleBuffer (class in cuda.compute.algorithms)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -7969,20 +7971,22 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.exchange">exchange() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.EQUAL_TO">EQUAL_TO (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.exclusive_scan">exclusive_scan() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.exchange">exchange() (in module cuda.coop.block)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.exclusive_scan">exclusive_scan() (in module cuda.compute.algorithms)</a>
 
       <ul>
-        <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.exclusive_scan">(in module cuda.cccl.parallel.experimental.algorithms)</a>
+        <li><a href="python/coop_api.html#cuda.coop.block.exclusive_scan">(in module cuda.coop.block)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.exclusive_sum">exclusive_sum() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.exclusive_sum">exclusive_sum() (in module cuda.coop.block)</a>
 
       <ul>
-        <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.warp.exclusive_sum">(in module cuda.cccl.cooperative.experimental.warp)</a>
+        <li><a href="python/coop_api.html#cuda.coop.warp.exclusive_sum">(in module cuda.coop.warp)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -8007,11 +8011,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/namespacecub_1a52c685e4755c10f3ec27da259f2f0220.html#_CPPv4I0EN3cub26GetPerDeviceAttributeCacheER23PerDeviceAttributeCachev">GetPerDeviceAttributeCache (C++ function)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.struct.gpu_struct">gpu_struct() (in module cuda.cccl.parallel.experimental.struct)</a>
+      <li><a href="python/compute_api.html#cuda.compute.struct.gpu_struct">gpu_struct() (in module cuda.compute.struct)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.struct.gpu_struct_from_numba_types">gpu_struct_from_numba_types() (in module cuda.cccl.parallel.experimental.struct)</a>
+      <li><a href="python/compute_api.html#cuda.compute.struct.gpu_struct_from_numba_types">gpu_struct_from_numba_types() (in module cuda.compute.struct)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.struct.gpu_struct_from_numpy_dtype">gpu_struct_from_numpy_dtype() (in module cuda.cccl.parallel.experimental.struct)</a>
+      <li><a href="python/compute_api.html#cuda.compute.struct.gpu_struct_from_numpy_dtype">gpu_struct_from_numpy_dtype() (in module cuda.compute.struct)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.GREATER">GREATER (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.GREATER_EQUAL">GREATER_EQUAL (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
 </li>
       <li><a href="cub/api/structcub_1_1GridEvenShare.html#_CPPv4I0EN3cub13GridEvenShareE">GridEvenShare (C++ struct)</a>
 </li>
@@ -8029,10 +8037,10 @@
 </li>
       <li><a href="cub/api/structcub_1_1GridEvenShare.html#_CPPv4N3cub13GridEvenShare13GridEvenShareEv">GridEvenShare::GridEvenShare (C++ function)</a>
 </li>
-      <li><a href="cub/api/structcub_1_1GridEvenShare.html#_CPPv4N3cub13GridEvenShare9num_itemsE">GridEvenShare::num_items (C++ member)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="cub/api/structcub_1_1GridEvenShare.html#_CPPv4N3cub13GridEvenShare9num_itemsE">GridEvenShare::num_items (C++ member)</a>
+</li>
       <li><a href="cub/api/namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97.html#_CPPv4N3cub19GridMappingStrategyE">GridMappingStrategy (C++ enum)</a>
 </li>
       <li><a href="cub/api/namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97.html#_CPPv4N3cub19GridMappingStrategy20GRID_MAPPING_DYNAMICE">GridMappingStrategy::GRID_MAPPING_DYNAMIC (C++ enumerator)</a>
@@ -8065,7 +8073,7 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.histogram_even">histogram_even() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.histogram_even">histogram_even() (in module cuda.compute.algorithms)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -8073,13 +8081,13 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.inclusive_scan">inclusive_scan() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.inclusive_scan">inclusive_scan() (in module cuda.compute.algorithms)</a>
 
       <ul>
-        <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.inclusive_scan">(in module cuda.cccl.parallel.experimental.algorithms)</a>
+        <li><a href="python/coop_api.html#cuda.coop.block.inclusive_scan">(in module cuda.coop.block)</a>
 </li>
       </ul></li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.inclusive_sum">inclusive_sum() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.inclusive_sum">inclusive_sum() (in module cuda.coop.block)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -8097,11 +8105,21 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.load">load() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.LESS">LESS (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.LESS_EQUAL">LESS_EQUAL (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/coop_api.html#cuda.coop.block.load">load() (in module cuda.coop.block)</a>
+</li>
+      <li><a href="cub/api/namespacecub_1a0d29b747a801255a57f3f0355569934d.html#_CPPv4I0_iEN3cub27LoadDirectBlockedVectorizedEviP1TRA16ITEMS_PER_THREAD_1T">LoadDirectBlockedVectorized (C++ function)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cub/api/namespacecub_1a0d29b747a801255a57f3f0355569934d.html#_CPPv4I0_iEN3cub27LoadDirectBlockedVectorizedEviP1TRA16ITEMS_PER_THREAD_1T">LoadDirectBlockedVectorized (C++ function)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.LOGICAL_AND">LOGICAL_AND (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.LOGICAL_NOT">LOGICAL_NOT (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.LOGICAL_OR">LOGICAL_OR (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce.html#_CPPv4I000EN3cub10LowerBoundE7OffsetT14InputIteratorT7OffsetT1T">LowerBound (C++ function)</a>
 </li>
@@ -8111,27 +8129,27 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_binary_transform">make_binary_transform() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_binary_transform">make_binary_transform() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_exclusive_scan">make_exclusive_scan() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_exclusive_scan">make_exclusive_scan() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_histogram_even">make_histogram_even() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_histogram_even">make_histogram_even() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_inclusive_scan">make_inclusive_scan() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_inclusive_scan">make_inclusive_scan() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_merge_sort">make_merge_sort() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_merge_sort">make_merge_sort() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_radix_sort">make_radix_sort() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_radix_sort">make_radix_sort() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_reduce_into">make_reduce_into() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_reduce_into">make_reduce_into() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_segmented_reduce">make_segmented_reduce() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_segmented_reduce">make_segmented_reduce() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_three_way_partition">make_three_way_partition() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_three_way_partition">make_three_way_partition() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_unary_transform">make_unary_transform() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_unary_transform">make_unary_transform() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.make_unique_by_key">make_unique_by_key() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.make_unique_by_key">make_unique_by_key() (in module cuda.compute.algorithms)</a>
 </li>
       <li><a href="cub/api/namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3.html#_CPPv4I_i_iEN3cub8MatchAnyEjj">MatchAny (C++ function)</a>
 </li>
@@ -8143,20 +8161,20 @@
 </li>
       <li><a href="cub/api/namespacecub_1a9d9f7888422ba494507b798eead3ab71.html#_CPPv4N3cub8MayAlias3YesE">MayAlias::Yes (C++ enumerator)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/namespacecub_1a277fe03e36404e7290a94a13e382b369.html#_CPPv4N3cub11MemoryOrderE">MemoryOrder (C++ enum)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/namespacecub_1a277fe03e36404e7290a94a13e382b369.html#_CPPv4N3cub11MemoryOrder15acquire_releaseE">MemoryOrder::acquire_release (C++ enumerator)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a277fe03e36404e7290a94a13e382b369.html#_CPPv4N3cub11MemoryOrder7relaxedE">MemoryOrder::relaxed (C++ enumerator)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.merge_sort">merge_sort() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.merge_sort">merge_sort() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.merge_sort_keys">merge_sort_keys() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.merge_sort_keys">merge_sort_keys() (in module cuda.coop.block)</a>
 
       <ul>
-        <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.warp.merge_sort_keys">(in module cuda.cccl.cooperative.experimental.warp)</a>
+        <li><a href="python/coop_api.html#cuda.coop.warp.merge_sort_keys">(in module cuda.coop.warp)</a>
 </li>
       </ul></li>
       <li><a href="cub/api/namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3.html#_CPPv4I0000EN3cub9MergePathE7OffsetT6KeyIt16KeyIt27OffsetT7OffsetT7OffsetT10BinaryPred">MergePath (C++ function)</a>
@@ -8165,29 +8183,35 @@
 </li>
       <li><a href="cub/api/namespacecub_1a19c9696ebd3b66c361dd9abcafae2f3a.html#_CPPv4I0EN3cub8MidPointE1T1T1T">MidPoint (C++ function)</a>
 </li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.MINUS">MINUS (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
       <li>
     module
 
       <ul>
-        <li><a href="python/cooperative_api.html#module-cuda.cccl.cooperative.experimental.block">cuda.cccl.cooperative.experimental.block</a>
+        <li><a href="python/compute_api.html#module-cuda.compute.algorithms">cuda.compute.algorithms</a>
 </li>
-        <li><a href="python/cooperative_api.html#module-cuda.cccl.cooperative.experimental.warp">cuda.cccl.cooperative.experimental.warp</a>
+        <li><a href="python/compute_api.html#module-cuda.compute.iterators">cuda.compute.iterators</a>
 </li>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.algorithms">cuda.cccl.parallel.experimental.algorithms</a>
+        <li><a href="python/compute_api.html#module-cuda.compute.struct">cuda.compute.struct</a>
 </li>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.iterators">cuda.cccl.parallel.experimental.iterators</a>
+        <li><a href="python/coop_api.html#module-cuda.coop.block">cuda.coop.block</a>
 </li>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.op">cuda.cccl.parallel.experimental.op</a>
-</li>
-        <li><a href="python/parallel_api.html#module-cuda.cccl.parallel.experimental.struct">cuda.cccl.parallel.experimental.struct</a>
+        <li><a href="python/coop_api.html#module-cuda.coop.warp">cuda.coop.warp</a>
 </li>
       </ul></li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.MODULUS">MODULUS (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.MULTIPLIES">MULTIPLIES (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.NEGATE">NEGATE (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
       <li><a href="cub/api/namespacecub_1a92146627fb9025cf631ce6894da54068.html#_CPPv4I0EN3cub21Nominal4BItemsToItemsEii">Nominal4BItemsToItems (C++ function)</a>
 </li>
   </ul></td>
@@ -8195,6 +8219,8 @@
       <li><a href="cub/api/namespacecub_1a91f7ed12997a1c479e6c40039816e94c.html#_CPPv4N3cub29Nominal4BItemsToItemsCombinedEii">Nominal4BItemsToItemsCombined (C++ function)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a0152e6fc2c5fb16bcc72078fc97dc4c2.html#_CPPv4I0EN3cub21Nominal8BItemsToItemsEii">Nominal8BItemsToItems (C++ function)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.NOT_EQUAL_TO">NOT_EQUAL_TO (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -8250,6 +8276,8 @@
 </li>
       <li><a href="libcudacxx/api/classpermutation__iterator.html#_CPPv4N20permutation_iterator10value_typeE">permutation_iterator::value_type (C++ type)</a>
 </li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.PLUS">PLUS (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
       <li><a href="cub/api/structcub_1_1PtxVersionCacheTag.html#_CPPv4N3cub18PtxVersionCacheTagE">PtxVersionCacheTag (C++ struct)</a>
 </li>
   </ul></td>
@@ -8258,11 +8286,11 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.radix_sort">radix_sort() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.radix_sort">radix_sort() (in module cuda.compute.algorithms)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.radix_sort_keys">radix_sort_keys() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.radix_sort_keys">radix_sort_keys() (in module cuda.coop.block)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.radix_sort_keys_descending">radix_sort_keys_descending() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.radix_sort_keys_descending">radix_sort_keys_descending() (in module cuda.coop.block)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a2c368203492792b87069aa553cddcc1f.html#_CPPv4N3cub18RadixRankAlgorithmE">RadixRankAlgorithm (C++ enum)</a>
 </li>
@@ -8298,13 +8326,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cub/api/namespacecub_1abb27bd14e08948ee1505e33d2f5dbc91.html#_CPPv4N3cub10ReadOption5RightE">ReadOption::Right (C++ enumerator)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.reduce">reduce() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.reduce">reduce() (in module cuda.coop.block)</a>
 
       <ul>
-        <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.warp.reduce">(in module cuda.cccl.cooperative.experimental.warp)</a>
+        <li><a href="python/coop_api.html#cuda.coop.warp.reduce">(in module cuda.coop.warp)</a>
 </li>
       </ul></li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.reduce_into">reduce_into() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.reduce_into">reduce_into() (in module cuda.compute.algorithms)</a>
 </li>
       <li><a href="cub/api/structcub_1_1ReduceByKeyOp.html#_CPPv4I0EN3cub13ReduceByKeyOpE">ReduceByKeyOp (C++ struct)</a>
 </li>
@@ -8330,7 +8358,7 @@
 </li>
       <li><a href="cub/api/structcub_1_1ReduceBySegmentOp.html#_CPPv4N3cub17ReduceBySegmentOp17ReduceBySegmentOpE12ReductionOpT">ReduceBySegmentOp::ReduceBySegmentOp (C++ function)</a>, <a href="cub/api/structcub_1_1ReduceBySegmentOp.html#_CPPv4N3cub17ReduceBySegmentOp17ReduceBySegmentOpEv">[1]</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.ReverseIterator">ReverseIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.ReverseIterator">ReverseIterator() (in module cuda.compute.iterators)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a767f6bb0f696ac8264755e2c5549ba52.html#_CPPv4N3cub11RowMajorTidEiii">RowMajorTid (C++ function)</a>
 </li>
@@ -8340,7 +8368,7 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.scan">scan() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.scan">scan() (in module cuda.coop.block)</a>
 </li>
       <li><a href="cub/api/structcub_1_1ScanTileState.html#_CPPv4I0_bEN3cub13ScanTileStateE">ScanTileState (C++ struct)</a>
 </li>
@@ -8390,7 +8418,7 @@
 </li>
       <li><a href="cub/api/namespacecub_1ad9cb0a0fd604c5e0a58016174d767b56.html#_CPPv4N3cub14ScanTileStatus17SCAN_TILE_PARTIALE">ScanTileStatus::SCAN_TILE_PARTIAL (C++ enumerator)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.segmented_reduce">segmented_reduce() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.segmented_reduce">segmented_reduce() (in module cuda.compute.algorithms)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a4181c84c1a10177951320eaa930fb04e.html#_CPPv4N3cub10SelectImplE">SelectImpl (C++ enum)</a>
 </li>
@@ -8444,10 +8472,10 @@
 </li>
       <li><a href="libcudacxx/api/classshuffle__iterator.html#_CPPv4N16shuffle_iteratorleERK16shuffle_iteratorRK16shuffle_iterator">shuffle_iterator::operator&lt;= (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="libcudacxx/api/classshuffle__iterator.html#_CPPv4N16shuffle_iteratoreqERK16shuffle_iteratorRK16shuffle_iterator">shuffle_iterator::operator== (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="libcudacxx/api/classshuffle__iterator.html#_CPPv4N16shuffle_iteratorgtERK16shuffle_iteratorRK16shuffle_iterator">shuffle_iterator::operator&gt; (C++ function)</a>
 </li>
       <li><a href="libcudacxx/api/classshuffle__iterator.html#_CPPv4N16shuffle_iteratorgeERK16shuffle_iteratorRK16shuffle_iterator">shuffle_iterator::operator&gt;= (C++ function)</a>
@@ -8477,7 +8505,7 @@
       <li><a href="cub/api/namespacecub_1aea28b743fef88186fe3f6674cdce07ff.html#_CPPv4N3cub9SortOrderE">SortOrder (C++ enum)</a>
 
       <ul>
-        <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.SortOrder">(class in cuda.cccl.parallel.experimental.algorithms)</a>
+        <li><a href="python/compute_api.html#cuda.compute.algorithms.SortOrder">(class in cuda.compute.algorithms)</a>
 </li>
       </ul></li>
       <li><a href="cub/api/namespacecub_1aea28b743fef88186fe3f6674cdce07ff.html#_CPPv4N3cub9SortOrder9AscendingE">SortOrder::Ascending (C++ enumerator)</a>
@@ -8486,7 +8514,11 @@
 </li>
       <li><a href="cub/api/namespacecub_1a7fbefdee9a2b826e71ea84be34d81c95.html#_CPPv4I000_iEN3cub17StableOddEvenSortEvRA16ITEMS_PER_THREAD_4KeyTRA16ITEMS_PER_THREAD_6ValueT9CompareOp">StableOddEvenSort (C++ function)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.store">store() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.STATEFUL">STATEFUL (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.cuda.compute.op.OpKind.STATELESS">STATELESS (cuda.compute.iterators.cuda.compute.op.OpKind attribute)</a>
+</li>
+      <li><a href="python/coop_api.html#cuda.coop.block.store">store() (in module cuda.coop.block)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a31990743e30594516193a8adf77710ae.html#_CPPv4I0_iEN3cub28StoreDirectBlockedVectorizedEviP1TRA16ITEMS_PER_THREAD_1T">StoreDirectBlockedVectorized (C++ function)</a>
 </li>
@@ -8538,12 +8570,12 @@
 </li>
       <li><a href="libcudacxx/api/classstrided__iterator.html#_CPPv4N16strided_iterator10value_typeE">strided_iterator::value_type (C++ type)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.BlockExchangeType.StripedToBlocked">StripedToBlocked (cuda.cccl.cooperative.experimental.block.BlockExchangeType attribute)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.BlockExchangeType.StripedToBlocked">StripedToBlocked (cuda.coop.block.BlockExchangeType attribute)</a>
 </li>
-      <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.block.sum">sum() (in module cuda.cccl.cooperative.experimental.block)</a>
+      <li><a href="python/coop_api.html#cuda.coop.block.sum">sum() (in module cuda.coop.block)</a>
 
       <ul>
-        <li><a href="python/cooperative_api.html#cuda.cccl.cooperative.experimental.warp.sum">(in module cuda.cccl.cooperative.experimental.warp)</a>
+        <li><a href="python/coop_api.html#cuda.coop.warp.sum">(in module cuda.coop.warp)</a>
 </li>
       </ul></li>
       <li><a href="cub/api/classcub_1_1SwizzleScanOp.html#_CPPv4I0EN3cub13SwizzleScanOpE">SwizzleScanOp (C++ class)</a>
@@ -8656,7 +8688,7 @@
 </li>
       <li><a href="cub/api/namespacecub_1a553633b74da5b2b77992aa60c1f278f3.html#_CPPv4I_18CacheStoreModifier00EN3cub11ThreadStoreEv15OutputIteratorT1T">ThreadStore (C++ function)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.three_way_partition">three_way_partition() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.three_way_partition">three_way_partition() (in module cuda.compute.algorithms)</a>
 </li>
       <li><a href="thrust/api/group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html#_CPPv4I0EN6thrust3absE1TRK7complexI1TE">thrust::abs (C++ function)</a>
 </li>
@@ -10690,9 +10722,9 @@
 </li>
       <li><a href="libcudacxx/api/classtransform__output__iterator.html#_CPPv4N25transform_output_iterator10value_typeE">transform_output_iterator::value_type (C++ type)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.TransformIterator">TransformIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.TransformIterator">TransformIterator() (in module cuda.compute.iterators)</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.TransformOutputIterator">TransformOutputIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.TransformOutputIterator">TransformOutputIterator() (in module cuda.compute.iterators)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -10700,11 +10732,11 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.unary_transform">unary_transform() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.unary_transform">unary_transform() (in module cuda.compute.algorithms)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.algorithms.unique_by_key">unique_by_key() (in module cuda.cccl.parallel.experimental.algorithms)</a>
+      <li><a href="python/compute_api.html#cuda.compute.algorithms.unique_by_key">unique_by_key() (in module cuda.compute.algorithms)</a>
 </li>
       <li><a href="cub/api/namespacecub_1a9ce53dad7978b7158b23949f6cc959ee.html#_CPPv4I000EN3cub10UpperBoundE7OffsetT14InputIteratorT7OffsetT1T">UpperBound (C++ function)</a>
 </li>
@@ -10930,7 +10962,7 @@
 </li>
       <li><a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I0_N4cudaSt11enable_if_tIXaaN4cudaSt21default_initializableI4_Fn2EEN22__zip_iter_constraintsIDp10_IteratorsE27__all_default_initializableEEiEEEN22zip_transform_iterator22zip_transform_iteratorEv">zip_transform_iterator::zip_transform_iterator (C++ function)</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4I_6size_t_N4cudaSt11enable_if_tIXeq13_NumIteratorsL2EEiEEEN22zip_transform_iterator22zip_transform_iteratorE3_FnN4cudaSt5tupleIDp10_IteratorsEE">[1]</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator22zip_transform_iteratorE3_Fn15__tuple_or_pairIDp10_IteratorsE">[2]</a>, <a href="libcudacxx/api/classzip__transform__iterator.html#_CPPv4N22zip_transform_iterator22zip_transform_iteratorE3_FnDp10_Iterators">[3]</a>
 </li>
-      <li><a href="python/parallel_api.html#cuda.cccl.parallel.experimental.iterators.ZipIterator">ZipIterator() (in module cuda.cccl.parallel.experimental.iterators)</a>
+      <li><a href="python/compute_api.html#cuda.compute.iterators.ZipIterator">ZipIterator() (in module cuda.compute.iterators)</a>
 </li>
   </ul></td>
 </tr></table>
