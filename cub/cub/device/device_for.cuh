@@ -967,8 +967,6 @@ public:
   //! - ``layout_right``: Iterates in row-major order (rightmost index varies fastest)
   //! - ``layout_left``: Iterates in column-major order (leftmost index varies fastest)
   //!
-  //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
-  //!
   //! - The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
