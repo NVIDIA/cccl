@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
@@ -127,7 +128,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
         const auto __rhs1               = ::cuda::uabs(__rhs);
         const auto __result             = __lhs1 / __rhs1;
         const auto __is_overflow        = ::cuda::std::cmp_greater(__result, __neg_result_min);
-        return overflow_result<_ActualResult>{static_cast<_ActualResult>(-__result), __is_overflow};
+        return overflow_result<_ActualResult>{static_cast<_ActualResult>(::cuda::neg(__result)), __is_overflow};
       }
     }
   }
