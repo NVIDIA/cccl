@@ -83,7 +83,11 @@ void simpleDoWhileGraph(void)
   cParams.conditional.handle = handle;
   cParams.conditional.type   = cudaGraphCondTypeWhile;
   cParams.conditional.size   = 1;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, NULL, NULL, 0, &cParams));
+#  else
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, NULL, 0, &cParams));
+#  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
 
@@ -186,7 +190,11 @@ void capturedWhileGraph(void)
   cuda_safe_call(cudaStreamBeginCapture(captureStream, cudaStreamCaptureModeGlobal));
 
   // Obtain the handle of the graph
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cuda_safe_call(cudaStreamGetCaptureInfo(captureStream, &status, NULL, &graph, &dependencies, NULL, &numDependencies));
+#  else
+  cuda_safe_call(cudaStreamGetCaptureInfo(captureStream, &status, NULL, &graph, &dependencies, &numDependencies));
+#  endif
 
   // Create the conditional handle
   cudaGraphConditionalHandle handle;
@@ -196,7 +204,11 @@ void capturedWhileGraph(void)
   capturedWhileKernel<<<1, 1, 0, captureStream>>>(dPtr, handle);
 
   // Obtain the handle for node A
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cuda_safe_call(cudaStreamGetCaptureInfo(captureStream, &status, NULL, &graph, &dependencies, NULL, &numDependencies));
+#  else
+  cuda_safe_call(cudaStreamGetCaptureInfo(captureStream, &status, NULL, &graph, &dependencies, &numDependencies));
+#  endif
 
   // Insert conditional node B
   cudaGraphNode_t conditionalNode;
@@ -205,13 +217,22 @@ void capturedWhileGraph(void)
   cParams.conditional.handle = handle;
   cParams.conditional.type   = cudaGraphCondTypeWhile;
   cParams.conditional.size   = 1;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, dependencies, NULL, numDependencies, &cParams));
+#  else
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, dependencies, numDependencies, &cParams));
+#  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
 
   // Update stream capture dependencies to account for the node we manually added
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cuda_safe_call(
     cudaStreamUpdateCaptureDependencies(captureStream, &conditionalNode, NULL, 1, cudaStreamSetCaptureDependencies));
+#  else
+  cuda_safe_call(
+    cudaStreamUpdateCaptureDependencies(captureStream, &conditionalNode, 1, cudaStreamSetCaptureDependencies));
+#  endif
 
   // Insert kernel node D
   capturedWhileEmptyKernel<<<1, 1, 0, captureStream>>>();
