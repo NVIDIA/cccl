@@ -19,7 +19,7 @@ $script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalP
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
 Get-WmiObject Win32_OperatingSystem | ForEach-Object {
-    Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize/1MB), ($_.FreePhysicalMemory/1MB))
+    Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize / 1MB), ($_.FreePhysicalMemory / 1MB))
 }
 
 # Extract the CL version for export to build scripts:
@@ -277,6 +277,27 @@ function Get-RepoRoot {
     return (Resolve-Path "$PSScriptRoot/../..")
 }
 
+function Get-CudaCcclWheel {
+    Param()
+
+    $repoRoot = Get-RepoRoot
+    if ($env:GITHUB_ACTIONS) {
+        Push-Location $repoRoot
+        try {
+            $wheelArtifactName = (& bash -lc "ci/util/workflow/get_wheel_artifact_name.sh").Trim()
+            if (-not $wheelArtifactName) { throw 'Failed to resolve wheel artifact name' }
+            $repoRootPosix = Convert-ToUnixPath $repoRoot
+            & bash -lc "ci/util/artifacts/download.sh $wheelArtifactName $repoRootPosix"
+            if ($LASTEXITCODE -ne 0) { throw "Failed to download wheel artifact '$wheelArtifactName'" }
+        }
+        finally { Pop-Location }
+    }
+
+    $wheelhouse = Join-Path $repoRoot 'wheelhouse'
+    $wheelPath = Get-OnePathMatch -Path $wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
+    return $wheelPath
+}
+
 function Ensure-CudaCcclWheel {
     Param(
         [Parameter(Mandatory = $true)][string]$PyVersion,
@@ -361,4 +382,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Ensure-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Ensure-CudaCcclWheel, Get-OnePathMatch
