@@ -156,6 +156,7 @@ runs:
         docker_exit=0
         set +e
         docker run \
+          -v \\.\pipe\docker_engine:\\.\pipe\docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
           --mount type=bind,source="${{ env.ARTIFACT_ARCHIVES_WIN }}",target="${{ env.ARTIFACT_ARCHIVES_WIN }}" \
@@ -165,6 +166,7 @@ runs:
           ${{ env.ENABLE_GPU }} \
           --env COMMAND='& ${{inputs.command}}' \
           --env JOB_ID='${{inputs.id}}' \
+          --env DOCKER_HOST='npipe:////./pipe/docker_engine' \
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
           --env GH_TOKEN="$GH_TOKEN" \
           --env "GITHUB_SHA=$GITHUB_SHA" \
