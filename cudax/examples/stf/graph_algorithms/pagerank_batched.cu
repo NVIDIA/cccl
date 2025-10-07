@@ -21,6 +21,7 @@
 
 using namespace cuda::experimental::stf;
 
+#if _CCCL_CTK_BELOW(12, 4)
 /**
  * @brief Calculates the PageRank for a given vertex.
  *
@@ -119,6 +120,7 @@ void compute_pagerank(
     };
   }
 }
+#endif // !_CCCL_CTK_BELOW(12, 4)
 
 int main()
 {
