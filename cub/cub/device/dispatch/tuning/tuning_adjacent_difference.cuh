@@ -43,9 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace adjacent_difference
+namespace detail::adjacent_difference
 {
 template <typename InputIteratorT, bool MayAlias>
 struct policy_hub
@@ -64,7 +62,6 @@ struct policy_hub
 
   using MaxPolicy = Policy500;
 };
-} // namespace adjacent_difference
-} // namespace detail
+} // namespace detail::adjacent_difference
 
 CUB_NAMESPACE_END

@@ -151,7 +151,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(get != current_default_pool);
 
     // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, 0));
+    CHECK(ensure_release_threshold(get, cuda::std::numeric_limits<size_t>::max()));
 
     // Ensure that we disable reuse with unsupported drivers
     CHECK(ensure_disable_reuse(get, driver_version));
@@ -163,8 +163,8 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with release threshold")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
+      42,
     };
     cudax::device_memory_pool pool{current_device, props};
     test_resource with_threshold{pool};
@@ -186,9 +186,9 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with allocation handle")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
-      cudax::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
+      42,
+      ::cudaMemHandleTypePosixFileDescriptor,
     };
     cudax::device_memory_pool pool{current_device, props};
     test_resource with_allocation_handle{pool};
@@ -203,7 +203,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ensure_disable_reuse(get, driver_version));
 
     // Ensure that we disable export
-    CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
+    CHECK(ensure_export_handle(get, props.allocation_handle_type));
   }
 }
 
