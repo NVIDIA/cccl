@@ -187,13 +187,19 @@ try {
             Write-Host "Renaming wheel to: $NewWheelName"
             Rename-Item -Path $BuiltWheel -NewName $NewWheelName -Force
         }
+
+        # Clean up any duplicate unsuffixed cuda_cccl wheel left in the output directory
+        Get-ChildItem -Path $outDir -Filter 'cuda_cccl-*.whl' | Where-Object { $_.Name -notmatch "\.cu$major\.whl$" } | ForEach-Object {
+            Write-Host "Removing duplicate wheel: $($_.FullName)"
+            Remove-Item -Force $_.FullName
+        }
     }
 }
 finally { Pop-Location }
 
 if ($DoMerge) {
-    $Cu12Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Pattern '^cuda_cccl-.*\.whl' -File
-    $Cu13Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Pattern '^cuda_cccl-.*\.whl' -File
+    $Cu12Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Pattern '^cuda_cccl-.*\.cu12\.whl' -File
+    $Cu13Wheel = Get-OnePathMatch -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Pattern '^cuda_cccl-.*\.cu13\.whl' -File
     Write-Host "Found CUDA 12 wheel: $Cu12Wheel"
     Write-Host "Found CUDA 13 wheel: $Cu13Wheel"
 
