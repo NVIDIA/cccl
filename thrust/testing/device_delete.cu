@@ -21,24 +21,39 @@ struct Foo
   bool* set_me_upon_destruction;
 };
 
-#if !defined(__QNX__)
 void TestDeviceDeleteDestructorInvocation()
 {
-  KNOWN_FAILURE;
-  //
-  //  thrust::device_vector<bool> destructor_flag(1, false);
-  //
-  //  thrust::device_ptr<Foo> foo_ptr  = thrust::device_new<Foo>();
-  //
-  //  Foo exemplar;
-  //  exemplar.set_me_upon_destruction = thrust::raw_pointer_cast(&destructor_flag[0]);
-  //  *foo_ptr = exemplar;
-  //
-  //  ASSERT_EQUAL(false, destructor_flag[0]);
-  //
-  //  thrust::device_delete(foo_ptr);
-  //
-  //  ASSERT_EQUAL(true, destructor_flag[0]);
+  thrust::device_vector<bool> destructor_flag(1, false);
+
+  thrust::device_ptr<Foo> foo_ptr = thrust::device_new<Foo>();
+
+  Foo exemplar;
+  exemplar.set_me_upon_destruction = thrust::raw_pointer_cast(&destructor_flag[0]);
+  *foo_ptr                         = exemplar;
+
+  ASSERT_EQUAL(false, destructor_flag[0]);
+
+  thrust::device_delete(foo_ptr);
+
+  ASSERT_EQUAL(true, destructor_flag[0]);
 }
 DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
-#endif
+
+// based on: https://github.com/NVIDIA/cccl/issues/6132
+struct base
+{
+  __host__ __device__ virtual void f() = 0;
+  __host__ __device__ virtual ~base() {}
+};
+
+struct derived : public base
+{
+  __host__ __device__ void f() override {}
+};
+
+void TestDeviceDeleteVirtualDestructorInvocation()
+{
+  thrust::device_ptr<base> ptr = thrust::device_new<derived>();
+  thrust::device_delete(ptr);
+}
+DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);
