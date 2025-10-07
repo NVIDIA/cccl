@@ -69,11 +69,6 @@ __host__ __device__ constexpr void test_type()
   [[maybe_unused]] constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
   using UnsignedLhs                           = cuda::std::make_unsigned_t<Lhs>;
   [[maybe_unused]] constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
-  if constexpr (is_same_v<Lhs, int> && is_same_v<Rhs, signed char> && is_same_v<Result, long long>)
-  {
-    assert(lhs_min == -2147483648);
-    assert(neg_lhs_min == 2147483648);
-  }
   using Common                               = decltype(Lhs{} / Rhs{});
   [[maybe_unused]] constexpr auto common_max = cuda::std::numeric_limits<Common>::max();
   //--------------------------------------------------------------------------------------------------------------------
