@@ -52,8 +52,8 @@ Example
 
    __global__ void multiply_high_kernel()
    {
-       uint32_t lhs = 0xABCD1234;
-       uint32_t rhs = 1 << 16;
+       uint32_t lhs       = 0xABCD1234;
+       uint32_t rhs       = 1 << 16; // 2^16
        uint32_t high_half = cuda::multiply_half_high(lhs, rhs);
        assert(high_half == 0xAB);
    }

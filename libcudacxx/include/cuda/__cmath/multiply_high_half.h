@@ -42,29 +42,28 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  **********************************************************************************************************************/
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp __multiply_half_high_fallback(_Tp __lhs, _Tp __rhs)
+[[nodiscard]] _CCCL_API constexpr _Tp __multiply_half_high_fallback(_Tp __lhs, _Tp __rhs) noexcept
 {
-  constexpr int __shift = ::cuda::std::__num_bits_v<_Tp> / 2;
-  auto __x_high         = __lhs >> __shift;
-  auto __x_low          = __lhs;
-  auto __y_high         = __rhs >> __shift;
-  auto __y_low          = __rhs;
-  auto __p0             = __x_low * __y_low;
-  auto __p1             = __x_low * __y_high;
-  auto __p2             = __x_high * __y_low;
-  auto __p3             = __x_high * __y_high;
-  auto __mid            = __p1 + __p2;
-  auto __carry          = static_cast<_Tp>(__mid < __p1);
-  auto __po_half        = __p0 >> __shift;
-  __mid                 = __mid + __po_half;
-  __carry += (__mid < __po_half);
-  return __p3 + (__mid >> __shift) + (__carry << __shift);
+  constexpr int __half_bits = ::cuda::std::__num_bits_v<_Tp> / 2;
+  using __half_bits_t       = ::cuda::std::__make_nbit_uint_t<__half_bits>;
+  auto __lhs_low            = static_cast<__half_bits_t>(__lhs); // 32-bit
+  auto __lhs_high           = static_cast<__half_bits_t>(__lhs >> __half_bits); // 32-bit
+  auto __rhs_low            = static_cast<__half_bits_t>(__rhs); // 32-bit
+  auto __rhs_high           = static_cast<__half_bits_t>(__rhs >> __half_bits); // 32-bit
+  auto __po_half            = (static_cast<_Tp>(__lhs_low) * __rhs_low) >> __half_bits;
+  auto __p1                 = static_cast<_Tp>(__lhs_low) * __rhs_high; // 64-bit
+  auto __p2                 = static_cast<_Tp>(__lhs_high) * __rhs_low; // 64-bit
+  auto __p3                 = static_cast<_Tp>(__lhs_high) * __rhs_high; // 64-bit
+  auto __p1_half            = static_cast<__half_bits_t>(__p1); // 32-bit
+  auto __p2_half            = static_cast<__half_bits_t>(__p2); // 32-bit
+  auto __carry              = (__po_half + __p1_half + __p2_half) >> __half_bits; // 64-bit
+  return __p3 + (__p1 >> __half_bits) + (__p2 >> __half_bits) + __carry;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]]
-_CCCL_API constexpr _Tp multiply_half_high(_Tp __lhs, _Tp __rhs)
+_CCCL_API constexpr _Tp multiply_half_high(_Tp __lhs, _Tp __rhs) noexcept
 {
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
@@ -78,7 +77,7 @@ _CCCL_API constexpr _Tp multiply_half_high(_Tp __lhs, _Tp __rhs)
   const auto __rhs1 = static_cast<_Up>(__rhs);
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs1, __rhs1);));
     }
