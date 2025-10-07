@@ -50,7 +50,8 @@ static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext,
 }
 
 template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
-static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
+static void fill_linear(c2h::host_vector<T>& vector,
+                        [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
   [[maybe_unused]] size_t pos = 0;
   if constexpr (sizeof...(Extents) == 0)
