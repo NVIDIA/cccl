@@ -957,7 +957,7 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents using a specific mdspan layout, producing
+  //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each element, passing
   //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
