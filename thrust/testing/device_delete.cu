@@ -42,13 +42,13 @@ DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
 // based on: https://github.com/NVIDIA/cccl/issues/6132
 struct base
 {
-  __host__ __device__ virtual void f() = 0;
-  __host__ __device__ virtual ~base() {}
+  _CCCL_HOST_DEVICE virtual void f() = 0;
+  _CCCL_HOST_DEVICE virtual ~base() {}
 };
 
 struct derived : public base
 {
-  __host__ __device__ void f() override {}
+  _CCCL_HOST_DEVICE void f() override {}
 };
 
 void TestDeviceDeleteVirtualDestructorInvocation()
