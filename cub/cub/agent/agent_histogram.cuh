@@ -353,25 +353,6 @@ struct AgentHistogram
     }
   }
 
-  // Accumulate pixel, specialized for smem privatized histogram
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  AccumulateSmemPixels(SampleT samples[pixels_per_thread][NumChannels], bool is_valid[pixels_per_thread])
-  {
-    CounterT* privatized_histograms[NumActiveChannels];
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
-    {
-      privatized_histograms[ch] = temp_storage.histograms[ch];
-    }
-    AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
-  }
-
-  // Accumulate pixel, specialized for gmem privatized histogram
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  AccumulateGmemPixels(SampleT samples[pixels_per_thread][NumChannels], bool is_valid[pixels_per_thread])
-  {
-    AccumulatePixels(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
-  }
-
   // Load full, aligned tile using pixel iterator
   template <int _NUM_ACTIVE_CHANNELS>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -468,11 +449,16 @@ struct AgentHistogram
 
     if (prefer_smem)
     {
-      AccumulateSmemPixels(samples, is_valid);
+      CounterT* privatized_histograms[NumActiveChannels];
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        privatized_histograms[ch] = temp_storage.histograms[ch];
+      }
+      AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
     else
     {
-      AccumulateGmemPixels(samples, is_valid);
+      AccumulatePixels(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
   }
 
