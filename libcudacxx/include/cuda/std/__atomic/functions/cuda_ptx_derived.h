@@ -219,7 +219,7 @@ __cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_
   // Store requires cas on 8/16b types
   __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::__cuda_atomic_op_store>{__val},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::__cuda_atomic_op_store>{__val},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -230,7 +230,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __d
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::plus>{__op},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::plus>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -241,7 +241,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(_Type* __ptr, _Type& __d
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::bit_and>{__op},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_and>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -252,7 +252,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(_Type* __ptr, _Type& __d
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::bit_xor>{__op},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_xor>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -263,7 +263,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(_Type* __ptr, _Type& __ds
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::bit_or>{__op},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_or>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -296,7 +296,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(_Type* __ptr, _Type& __ds
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    __cuda_atomic_op_bind<_Type, _CUDA_VSTD::__cuda_atomic_op_store>{__op},
+    __cuda_atomic_op_bind<_Type, ::cuda::std::__cuda_atomic_op_store>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
@@ -369,45 +369,45 @@ _CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_arithmetic<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_add_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::plus>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::plus>{__val}, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_arithmetic<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_add_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::plus>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::plus>{__val}, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_and_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_and>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_and>{__val}, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_and_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_and>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_and>{__val}, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_or_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_or>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_or>{__val}, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_or_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_or>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_or>{__val}, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_xor_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_xor>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_xor>{__val}, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_xor_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, _CUDA_VSTD::bit_xor>{__val}, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_xor>{__val}, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
