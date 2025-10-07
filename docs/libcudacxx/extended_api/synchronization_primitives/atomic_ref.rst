@@ -38,17 +38,17 @@ with the following additional operations. This class additionally deviates from 
 Limitations
 -----------
 
-``cuda::atomic_ref<T>`` and ``cuda::std::atomic_ref<T>`` may only be instantiated when ``T`` satisfies ``sizeof(T) <= 16``.
+``cuda::atomic_ref<T>`` and ``cuda::std::atomic_ref<T>`` may only be instantiated when ``T`` satisfies ``sizeof(T) <= 8`` or ``sizeof(T) <= 16`` when requirements are met.
 
 The operations available to ``T`` when ``sizeof(T) == 16`` depend on the architecture:
   - On SM70 and later: ``load`` and ``store`` are supported.
-  - On SM90 and later: ``fetch_*`` and synchronization operations are supported, implemented via CAS.
+  - On SM90 and later: ``fetch_*`` and synchronization operations are supported, implemented via atomic compare-and-swap (CAS).
 
 No object or subobject of an object referenced by an ``atomic_­ref`` shall be concurrently referenced by any other
 ``atomic_­ref`` that has a different ``Scope``.
 
 For ``cuda::atomic_ref<T>`` and ``cuda::std::atomic_ref<T>`` the type ``T`` must satisfy the following:
-  - ``sizeof(T) <= 8 // (16 for SM70+)``.
+  - ``sizeof(T) <= 16``.
   - ``T`` must not have “padding bits”, i.e., T's `object representation <https://en.cppreference.com/w/cpp/language/object#Object_representation_and_value_representation>`_
     must not have bits that do not participate in it's value representation.
 
