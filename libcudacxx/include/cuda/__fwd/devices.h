@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_DEVICES
-#define _CUDA_DEVICES
+#ifndef _CUDA___FWD_DEVICES_H
+#define _CUDA___FWD_DEVICES_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
-#include <cuda/__device/arch_traits.h>
-#include <cuda/__device/attributes.h>
-#include <cuda/__device/device_ref.h>
-#include <cuda/__device/physical_device.h>
+#include <cuda/std/__fwd/span.h>
 
-#endif // _CUDA_DEVICES
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+class __physical_device;
+class device_ref;
+template <::cudaDeviceAttr _Attr>
+struct __dev_attr;
+
+namespace arch
+{
+struct traits_t;
+} // namespace arch
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___FWD_DEVICES_H

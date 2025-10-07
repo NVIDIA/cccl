@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/devices>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -29,6 +30,13 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
   return result;
 }
 } // namespace
+
+C2H_CCCLRT_TEST("init", "[device]")
+{
+  cuda::device_ref dev{0};
+  dev.init();
+  CCCLRT_REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
+}
 
 C2H_CCCLRT_TEST("Smoke", "[device]")
 {
@@ -319,7 +327,7 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
 #if _CCCL_HAS_EXCEPTIONS()
   try
   {
-    [[maybe_unused]] const cuda::physical_device& dev = cuda::devices[cuda::devices.size()];
+    [[maybe_unused]] const cuda::device_ref& dev = cuda::devices[cuda::devices.size()];
     CCCLRT_REQUIRE(false); // should not get here
   }
   catch (const std::out_of_range&)
