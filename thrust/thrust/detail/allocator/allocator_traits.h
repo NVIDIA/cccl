@@ -284,7 +284,7 @@ struct has_member_constructN : has_member_constructN_impl<Alloc, void(T*, Args..
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T, typename... Args>
-inline _CCCL_HOST_DEVICE void construct(Alloc& a, T* p, Args&&... args)
+inline _CCCL_HOST_DEVICE void construct([[maybe_unused]] Alloc& a, T* p, Args&&... args)
 {
   if constexpr (has_member_constructN<Alloc, T, Args...>::value)
   {
@@ -304,7 +304,7 @@ struct has_member_destroy : has_member_destroy_impl<Alloc, void(T*)>
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T>
-_CCCL_HOST_DEVICE void destroy(Alloc& a, T* p)
+_CCCL_HOST_DEVICE void destroy([[maybe_unused]] Alloc& a, T* p)
 {
   if constexpr (has_member_destroy<Alloc, T>::value)
   {
@@ -329,7 +329,7 @@ public:
 };
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE typename allocator_traits<Alloc>::size_type max_size(const Alloc& a)
+_CCCL_HOST_DEVICE typename allocator_traits<Alloc>::size_type max_size([[maybe_unused]] const Alloc& a)
 {
   if constexpr (has_member_max_size<Alloc>::value)
   {
