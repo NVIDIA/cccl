@@ -33,7 +33,7 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
       }
       else
       {
-        assert(result.value == static_cast<Result>(lhs / rhs));
+        assert(result.value == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
       }
     }
     assert(result.overflow == overflow);
@@ -69,8 +69,13 @@ __host__ __device__ constexpr void test_type()
   [[maybe_unused]] constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
   using UnsignedLhs                           = cuda::std::make_unsigned_t<Lhs>;
   [[maybe_unused]] constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
-  using Common                                = decltype(Lhs{} / Rhs{});
-  [[maybe_unused]] constexpr auto common_max  = cuda::std::numeric_limits<Common>::max();
+  if constexpr (is_same_v<Lhs, int> && is_same_v<Rhs, signed char> && is_same_v<Result, long long>)
+  {
+    assert(lhs_min == -2147483648);
+    assert(neg_lhs_min == 2147483648);
+  }
+  using Common                               = decltype(Lhs{} / Rhs{});
+  [[maybe_unused]] constexpr auto common_max = cuda::std::numeric_limits<Common>::max();
   //--------------------------------------------------------------------------------------------------------------------
   //  trivial cases
   //  1. 1 / 0 -> should overflow
@@ -88,7 +93,14 @@ __host__ __device__ constexpr void test_type()
   // 5. 1 / -1 -> should overflow if the destination type is unsigned
   if constexpr (is_signed_v<Rhs>)
   {
-    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, is_unsigned_v<Result>);
+    if constexpr (is_unsigned_v<Result>)
+    {
+      test_div_overflow<Result>(Lhs{1}, Rhs{-1}, true);
+    }
+    else
+    {
+      test_div_overflow<Result>(Lhs{1}, Rhs{-1}, false, true, Result{-1});
+    }
   }
 
   // 6. 0 / -1
@@ -106,12 +118,12 @@ __host__ __device__ constexpr void test_type()
   {
     // 8. min / -1
     // when the result type is larger than the common type, min / -1 produces a valid result
-    bool special_case = cuda::std::cmp_greater(result_max, common_max) && sizeof(Result) >= sizeof(Lhs);
-    bool overflow     = cuda::std::cmp_greater(neg_lhs_min, result_max);
-    test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, special_case, static_cast<Result>(neg_lhs_min));
+    bool overflow = cuda::std::cmp_greater(neg_lhs_min, result_max);
+    test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, !overflow, static_cast<Result>(neg_lhs_min));
 
     // 9. min / -2
-    test_div_overflow<Result>(lhs_min, Rhs{-2}, cuda::std::cmp_greater(neg_lhs_min / 2, result_max));
+    bool overflow2 = cuda::std::cmp_greater(neg_lhs_min / 2, result_max);
+    test_div_overflow<Result>(lhs_min, Rhs{-2}, overflow2, !overflow2, static_cast<Result>(neg_lhs_min / 2));
   }
 }
 
