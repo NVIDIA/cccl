@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
@@ -32,8 +31,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -82,36 +81,39 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
   }
   else
   {
-    using ::cuda::std::is_same_v;
     using ::cuda::std::is_signed_v;
     using ::cuda::std::is_unsigned_v;
+    using ::cuda::std::make_unsigned_t;
+    using ::cuda::std::numeric_limits;
     constexpr bool __both_signed = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
     const bool __lhs_ge_zero     = is_unsigned_v<_Lhs> || __lhs >= _Lhs{0};
     const bool __rhs_ge_zero     = is_unsigned_v<_Rhs> || __rhs >= _Rhs{0};
     if constexpr (__both_signed)
     {
-      constexpr auto __lhs_min = ::cuda::std::numeric_limits<_Lhs>::min();
+      constexpr auto __lhs_min = numeric_limits<_Lhs>::min();
       // special case for min / -1 -> potential overflow
-      if (__both_signed && __lhs == __lhs_min && __rhs == _Rhs{-1})
+      if (__lhs == __lhs_min && __rhs == _Rhs{-1})
       {
-        using _UnsignedLhs           = ::cuda::std::make_unsigned_t<_Lhs>;
-        constexpr auto __neg_lhs_min = static_cast<_UnsignedLhs>(::cuda::neg(__lhs_min));
-        constexpr auto __result_max  = ::cuda::std::numeric_limits<_ActualResult>::max();
+        constexpr auto __neg_lhs_min = ::cuda::uabs(__lhs_min);
+        constexpr auto __result_max  = numeric_limits<_ActualResult>::max();
         const bool __overflow        = ::cuda::std::cmp_greater(__neg_lhs_min, __result_max);
         return overflow_result<_ActualResult>{static_cast<_ActualResult>(__neg_lhs_min), __overflow};
       }
-      auto __lhs1 = static_cast<_Common>(__lhs);
-      auto __rhs1 = static_cast<_Common>(__rhs);
+      const auto __lhs1 = static_cast<_Common>(__lhs);
+      const auto __rhs1 = static_cast<_Common>(__rhs);
       return ::cuda::overflow_cast<_ActualResult>(__lhs1 / __rhs1);
     }
     else if (__lhs_ge_zero && __rhs_ge_zero) // lhs and rhs are both >= 0
     {
-      using _UnsignedCommon = ::cuda::std::make_unsigned_t<_Common>;
-      auto __lhs1           = static_cast<_UnsignedCommon>(__lhs);
-      auto __rhs1           = static_cast<_UnsignedCommon>(__rhs);
-      return ::cuda::overflow_cast<_ActualResult>(__lhs1 / __rhs1);
+      constexpr auto __result_max = numeric_limits<_ActualResult>::max();
+      using _UnsignedCommon       = make_unsigned_t<_Common>;
+      const auto __lhs1           = static_cast<_UnsignedCommon>(__lhs);
+      const auto __rhs1           = static_cast<_UnsignedCommon>(__rhs);
+      const auto __result         = __lhs1 / __rhs1;
+      const auto __is_overflow    = ::cuda::std::cmp_greater(__result, __result_max);
+      return overflow_result<_ActualResult>{static_cast<_ActualResult>(__result), __is_overflow};
     }
-    else // lhs and rhs are mixed positive/negative
+    else // lhs and rhs are mixed positive/negative -> negative result
     {
       if constexpr (is_unsigned_v<_ActualResult>)
       {
@@ -119,10 +121,13 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
       }
       else
       {
-        auto __lhs1 = ::cuda::uabs(__lhs);
-        auto __rhs1 = ::cuda::uabs(__rhs);
-        auto __ret  = ::cuda::overflow_cast<_ActualResult>(__lhs1 / __rhs1);
-        return overflow_result<_ActualResult>{static_cast<_ActualResult>(-__ret.value), __ret.overflow};
+        constexpr auto __result_min     = numeric_limits<_ActualResult>::min();
+        constexpr auto __neg_result_min = ::cuda::uabs(__result_min);
+        const auto __lhs1               = ::cuda::uabs(__lhs);
+        const auto __rhs1               = ::cuda::uabs(__rhs);
+        const auto __result             = __lhs1 / __rhs1;
+        const auto __is_overflow        = ::cuda::std::cmp_greater(__result, __neg_result_min);
+        return overflow_result<_ActualResult>{static_cast<_ActualResult>(-__result), __is_overflow};
       }
     }
   }

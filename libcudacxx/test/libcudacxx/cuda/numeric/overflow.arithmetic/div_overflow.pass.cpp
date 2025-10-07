@@ -50,7 +50,7 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
       }
       else
       {
-        assert(result == static_cast<Result>(lhs / rhs));
+        assert(result == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
       }
     }
     assert(has_overflow == overflow);
@@ -67,10 +67,8 @@ __host__ __device__ constexpr void test_type()
   [[maybe_unused]] constexpr auto lhs_min     = cuda::std::numeric_limits<Lhs>::min();
   [[maybe_unused]] constexpr auto lhs_max     = cuda::std::numeric_limits<Lhs>::max();
   [[maybe_unused]] constexpr auto result_max  = cuda::std::numeric_limits<Result>::max();
-  using UnsignedLhs                           = cuda::std::make_unsigned_t<Lhs>;
-  [[maybe_unused]] constexpr auto neg_lhs_min = static_cast<UnsignedLhs>(cuda::neg(lhs_min));
-  using Common                               = decltype(Lhs{} / Rhs{});
-  [[maybe_unused]] constexpr auto common_max = cuda::std::numeric_limits<Common>::max();
+  [[maybe_unused]] constexpr auto result_min  = cuda::std::numeric_limits<Result>::min();
+  [[maybe_unused]] constexpr auto neg_lhs_min = cuda::uabs(lhs_min);
   //--------------------------------------------------------------------------------------------------------------------
   //  trivial cases
   //  1. 1 / 0 -> should overflow
@@ -109,9 +107,12 @@ __host__ __device__ constexpr void test_type()
   // 7. max / 1 -> max >= result_max?
   test_div_overflow<Result>(lhs_max, Rhs{1}, cuda::std::cmp_greater(lhs_max, result_max));
 
+  // 8. min / 1 -> min < result_min?
+  test_div_overflow<Result>(lhs_min, Rhs{1}, cuda::std::cmp_less(lhs_min, result_min));
+
   if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
   {
-    // 8. min / -1
+    // 9. min / -1
     // when the result type is larger than the common type, min / -1 produces a valid result
     bool overflow = cuda::std::cmp_greater(neg_lhs_min, result_max);
     test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, !overflow, static_cast<Result>(neg_lhs_min));
