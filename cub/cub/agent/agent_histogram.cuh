@@ -135,19 +135,19 @@ namespace detail
 {
 namespace histogram
 {
-// // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
-// template <CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
-// _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
-// {
-//   return itr.ptr;
-// }
-//
-// // Return a native pixel pointer (specialized for other types)
-// template <typename IteratorT>
-// _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
-// {
-//   return nullptr;
-// }
+// Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
+template <CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
+{
+  return itr.ptr;
+}
+
+// Return a native pixel pointer (specialized for other types)
+template <typename IteratorT>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
+{
+  return nullptr;
+}
 
 /**
  * @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
@@ -626,42 +626,20 @@ struct AgentHistogram
       .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
   }
 
-  // template <bool IsFullTile, bool IsStriped>
-  // _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples)
-  // {
-  //   _CCCL_PRAGMA_UNROLL_FULL()
-  //   for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
-  //   {
-  //     if constexpr (IsStriped)
-  //     {
-  //       is_valid[PIXEL] = IsFullTile || (((threadIdx.x + BLOCK_THREADS * PIXEL) * NumChannels) < valid_samples);
-  //     }
-  //     else
-  //     {
-  //       is_valid[PIXEL] = IsFullTile || (((threadIdx.x * PIXELS_PER_THREAD + PIXEL) * NumChannels) < valid_samples);
-  //     }
-  //   }
-  // }
-
-  template <bool IS_FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples, ::cuda::std::false_type /* is_striped = false */)
+  template <bool IsFullTile, bool IsStriped>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
     {
-      is_valid[PIXEL] = IS_FULL_TILE || (((threadIdx.x * PIXELS_PER_THREAD + PIXEL) * NumChannels) < valid_samples);
-    }
-  }
-
-  template <bool IS_FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples, ::cuda::std::true_type /* is_striped = true */)
-  {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
-    {
-      is_valid[PIXEL] = IS_FULL_TILE || (((threadIdx.x + BLOCK_THREADS * PIXEL) * NumChannels) < valid_samples);
+      if constexpr (IsStriped)
+      {
+        is_valid[PIXEL] = IsFullTile || (((threadIdx.x + BLOCK_THREADS * PIXEL) * NumChannels) < valid_samples);
+      }
+      else
+      {
+        is_valid[PIXEL] = IsFullTile || (((threadIdx.x * PIXELS_PER_THREAD + PIXEL) * NumChannels) < valid_samples);
+      }
     }
   }
 
@@ -683,14 +661,12 @@ struct AgentHistogram
     bool is_valid[PIXELS_PER_THREAD];
 
     // LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-    // MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     // Load tile
     LoadTile(block_offset, valid_samples, samples, bool_constant_v<IsFullTile>, bool_constant_v<IsAligned>);
 
     // Set valid flags
-    MarkValid<IsFullTile>(
-      is_valid, valid_samples, bool_constant_v < AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED >);
+    MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     if (prefer_smem)
     {
@@ -805,20 +781,6 @@ struct AgentHistogram
   //---------------------------------------------------------------------
   // Parameter extraction
   //---------------------------------------------------------------------
-
-  // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
-  template <CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
-  {
-    return itr.ptr;
-  }
-
-  // Return a native pixel pointer (specialized for other types)
-  template <typename IteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(IteratorT itr)
-  {
-    return nullptr;
-  }
 
   //! @brief Constructor
   //!
