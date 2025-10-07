@@ -87,13 +87,13 @@ struct starts_on_t
 {
 private:
   template <class _Sch, class... _Env>
-  using __env2_t = __join_env_t<__call_result_t<__mk_sch_env_t, _Sch, _Env...>, _Env...>;
-
-  template <class _Sch, class... _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Sch __sch, _Env&&... __env)
   {
     return __join_env(__mk_sch_env(__sch, __env...), static_cast<_Env&&>(__env)...);
   }
+
+  template <class _Sch, class... _Env>
+  using __env2_t = decltype(__mk_env2(declval<_Sch>(), declval<_Env>()...));
 
 public:
   template <class _Sch, class _Sndr>
@@ -107,7 +107,7 @@ public:
   }
 
   template <class _Sch, class _Sndr>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Query>
@@ -129,7 +129,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     // If the sender has a _SetTag completion, then the completion scheduler for _SetTag
-    // is the sender's if it has one.
+    // is the sender's.
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
@@ -138,33 +138,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
         execution::get_env(__self_->__sndr_), __mk_env2(__self_->__sch_, static_cast<_Env&&>(__env))...);
     }
 
-    // If the sender does not have a _SetTag completion (and _SetTag is not set_value_t),
-    // then the completion scheduler for _SetTag is the scheduler sender's if it has one.
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(
-      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env>...>().count(_SetTag{}) == 0))
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
-    {
-      return get_completion_scheduler<_SetTag>(__self_->__sch_, __fwd_env(static_cast<_Env&&>(__env))...);
-    }
-
     // If the sender has a _SetTag completion, then the completion scheduler for _SetTag
-    // is the sender's if it has one.
+    // is the sender's.
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
-    {
-      return {};
-    }
-
-    // If the sender does not have a _SetTag completion (and _SetTag is not set_value_t),
-    // then the completion scheduler for _SetTag is the scheduler sender's if it has one.
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(
-      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env>...>().count(_SetTag{}) == 0))
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&...) const noexcept
-      -> __call_result_t<get_completion_domain_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
     {
       return {};
     }
@@ -176,7 +154,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
                                execution::get_completion_behavior<_Sndr, __env2_t<_Sch, _Env>...>());
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_starts_on_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -218,7 +196,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_NODEBUG_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+[[nodiscard]] _CCCL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
   return __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)};
 }

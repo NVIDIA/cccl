@@ -93,10 +93,10 @@ inline constexpr size_t structured_binding_size<_Sndr const&> = structured_bindi
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class _CvSndr, class _Context>
     requires(static_cast<int>(structured_binding_size<_CvSndr>) >= 2)
-  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
+  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
     auto&& [__tag, __data, ... __children] = static_cast<_CvSndr&&>(__sndr);
@@ -146,8 +146,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_TEMPLATE(class _Visitor, class _Sndr, class _Context)
   _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_Sndr>) >= 2))
-  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const
-    -> decltype(auto)
+  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const -> decltype(auto)
   {
     // This `if constexpr` shouldn't be needed given the `requires` clause above. It is
     // here because nvcc 12.0 has a bug where the full signature of the function template

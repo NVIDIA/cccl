@@ -63,6 +63,14 @@ namespace cuda::experimental
 template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
 
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
+template <typename _Tp, bool _IsHostOnly>
+_CCCL_HIDE_FROM_ABI void
+__fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, const _Tp& __value);
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
+
 //! @rst
 //! .. _cudax-containers-async-vector:
 //!
@@ -204,7 +212,7 @@ public:
       : __buf_(__resource, __stream, 0)
   {}
 
-  //! @brief Constructs a async_buffer of size \p __size using a memory and leaves all elements uninitialized
+  //! @brief Constructs a async_buffer of size \p __size using a memory resource and leaves all elements uninitialized
   //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the async_buffer.
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
@@ -219,6 +227,27 @@ public:
     [[maybe_unused]] const _Env& __env = {})
       : __buf_(__resource, __stream, __size)
   {}
+
+  //! @brief Constructs a async_buffer of size \p __size using a memory resource and initializes all elements to
+  //! \p __initial_value.
+  //! @param __env The environment used to query the memory resource.
+  //! @param __size The size of the async_buffer.
+  //! @param __value The initial value for all elements in the async_buffer.
+  //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
+  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
+  //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
+  template <class _Env = ::cuda::std::execution::env<>>
+  _CCCL_HIDE_FROM_ABI explicit async_buffer(
+    ::cuda::stream_ref __stream,
+    __resource_t __resource,
+    const size_type __size,
+    const value_type __value,
+    [[maybe_unused]] const _Env& __env = {})
+      : __buf_(__resource, __stream, __size)
+  {
+    ::cuda::experimental::__fill_n<_Tp, !::cuda::mr::__is_device_accessible<_Properties...>>(
+      __stream, data(), __size, __value);
+  }
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from the forward range
   //! ``[__first, __last)``

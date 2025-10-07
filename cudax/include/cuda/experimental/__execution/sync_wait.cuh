@@ -62,10 +62,11 @@ struct sync_wait_t
     basic_run_loop<_Env> __loop_;
   };
 
-  template <class _Env>
+public:
+  template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -74,7 +75,7 @@ struct sync_wait_t
       return get_env(__state_->__loop_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_scheduler_t>)
@@ -88,7 +89,7 @@ struct sync_wait_t
       _CCCL_UNREACHABLE();
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_API constexpr auto query(get_delegation_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_delegation_scheduler_t>)
@@ -108,6 +109,7 @@ struct sync_wait_t
   template <class... _Ts>
   using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 
+  _CUDAX_SEMI_PRIVATE :
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
@@ -177,7 +179,15 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error __err) const
+    [[noreturn]]
+    _CCCL_API void operator()(_Error __err) const
+    {
+      NV_IF_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
+    }
+
+    template <class _Error>
+    [[noreturn]]
+    _CCCL_HOST_API static void __do_throw(_Error __err)
     {
       if constexpr (__same_as<_Error, ::std::exception_ptr>)
       {

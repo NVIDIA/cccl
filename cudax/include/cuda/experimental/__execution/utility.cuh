@@ -92,7 +92,7 @@ _CCCL_API constexpr auto __index_of() noexcept -> size_t
   return execution::__find_pos(__map, __map + sizeof...(_Ts));
 }
 
-_CCCL_EXEC_CHECK_DISABLE
+// _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty, class _Uy = _Ty>
 _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
@@ -106,7 +106,7 @@ _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _
   return old_value;
 }
 
-_CCCL_EXEC_CHECK_DISABLE
+// _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
@@ -120,7 +120,7 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
   __right   = static_cast<_Ty&&>(__tmp);
 }
 
-_CCCL_EXEC_CHECK_DISABLE
+// _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 [[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>
 {
@@ -133,6 +133,8 @@ template <class _Ty>
   _CCCL_TRY_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
   return __attrs;
 }
+
+#define __debug_printf(...) (printf(__VA_ARGS__), [] NV_IF_TARGET(NV_IS_HOST, (fflush(stdout);), (void(0);))())
 
 // This function can only be called from a catch handler.
 [[nodiscard]] _CCCL_HOST_API inline auto __get_cuda_error_from_active_exception() -> ::cudaError_t
@@ -208,7 +210,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 private:
   //! @brief Returns the first function that is callable with a given set of arguments.
   template <class... _Args, class _Self>
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
+  [[nodiscard]] _CCCL_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__callable<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
@@ -225,9 +227,9 @@ private:
 
 public:
   //! @brief Calls the first function that is callable with a given set of arguments.
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr auto
+  _CCCL_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
@@ -236,9 +238,9 @@ public:
   }
 
   //! @overload
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+  _CCCL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
   {
@@ -255,10 +257,11 @@ _CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
 // __call_or
 namespace __detail
 {
-// query an environment, or return a default value if the query is not supported
+// call a function with a set of arguments or return a default value if the function is
+// not callable.
 struct __call_or_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn, class _Default, class... _Args)
   _CCCL_REQUIRES(__callable<_Fn, _Args...>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
@@ -267,7 +270,7 @@ struct __call_or_t
     return static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Default, class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
     noexcept(__nothrow_movable<_Default>) -> _Default
@@ -280,8 +283,7 @@ struct __call_or_t
 _CCCL_GLOBAL_CONSTANT __detail::__call_or_t __call_or{};
 
 template <class _Fn, class _Default, class... _Args>
-using __call_result_or_t _CCCL_NODEBUG_ALIAS =
-  decltype(__call_or(::cuda::std::declval<_Fn>(), ::cuda::std::declval<_Default>(), ::cuda::std::declval<_Args>()...));
+using __call_result_or_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__call_or_t, _Fn, _Default, _Args...>;
 
 //! @brief A callable that always return a value of type _Ty, regardless of the arguments
 //! passed to it.
@@ -289,13 +291,13 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
   {
     return static_cast<_Ty&&>(__value);
   }
 
   template <class... _Args>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
   {
     return __value;
   }

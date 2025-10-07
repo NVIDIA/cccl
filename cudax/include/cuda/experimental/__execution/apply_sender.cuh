@@ -61,9 +61,9 @@ public:
   //! @note This function is `constexpr` and `noexcept` if the underlying domain's
   //! `apply_sender` is `noexcept`.
   //! @throws Any exception thrown by the underlying domain's `apply_sender`.
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Domain, class _Tag, class _Sndr, class... _Args>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Domain, _Tag, _Sndr&& __sndr, _Args&&... __args) const
+  _CCCL_API constexpr auto operator()(_Domain, _Tag, _Sndr&& __sndr, _Args&&... __args) const
     noexcept(noexcept(__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>{}.apply_sender(
       _Tag{}, static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...)))
       -> __apply_sender_result_t<__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>, _Tag, _Sndr, _Args...>

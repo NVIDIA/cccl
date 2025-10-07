@@ -70,13 +70,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   template <class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __complete_fn
   {
-    _Rcvr& __rcvr_;
-
     template <class... _Ts>
-    _CCCL_API auto operator()(_Ts&&... __ts) const noexcept
+    _CCCL_API void operator()(_Ts&&... __ts) const noexcept
     {
       _SetTag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
+
+    _Rcvr& __rcvr_;
   };
 
   template <class _Rcvr, class _Fn>
@@ -99,7 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 
 public:
   template <class _Fn>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const noexcept;
+  _CCCL_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct just_from_t : __just_from_t<just_from_t, set_value_t>
@@ -148,7 +148,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
 
   [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
   {
-    return __inln_attrs_t<_SetTag>{};
+    return __inln_attrs_t{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_from_tag_t __tag_;
@@ -171,7 +171,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_from_t::__sndr_t
 
 template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-_CCCL_NODEBUG_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
+_CCCL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
   using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
   using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;

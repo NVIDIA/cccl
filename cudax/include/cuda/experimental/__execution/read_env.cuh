@@ -60,7 +60,7 @@ private:
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
@@ -102,7 +102,7 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CCCL_NODEBUG_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CCCL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
@@ -152,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 };
 
 template <class _Query>
-_CCCL_NODEBUG_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
+_CCCL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }

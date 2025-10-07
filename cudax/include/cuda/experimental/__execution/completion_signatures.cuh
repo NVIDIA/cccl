@@ -189,7 +189,7 @@ using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   decltype(execution::__make_unique(execution::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
   -> __make_completion_signatures_t<_ExplicitSigs..., _DeducedSigs...>
 {
   return {};
@@ -206,7 +206,7 @@ using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
 struct __concat_completion_signatures_fn
 {
   template <class... _Sigs>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
     -> __concat_completion_signatures_t<_Sigs...>
   {
     return {};
@@ -217,13 +217,13 @@ extern const completion_signatures<>& __empty_completion_signatures;
 
 struct __concat_completion_signatures_impl
 {
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
+  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
   {
     return nullptr;
   }
 
   template <class... _Sigs>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
     -> __make_completion_signatures_t<_Sigs...> (*)()
   {
     return nullptr;
@@ -235,7 +235,7 @@ struct __concat_completion_signatures_impl
             class... _Cs,
             class... _Ds,
             class... _Rest>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(
     const completion_signatures<_As...>&,
     const completion_signatures<_Bs...>&,
     const completion_signatures<_Cs...>& = __empty_completion_signatures,
@@ -252,7 +252,7 @@ struct __concat_completion_signatures_impl
             class _Cp = ::cuda::std::__ignore_t,
             class _Dp = ::cuda::std::__ignore_t,
             class... _Rest>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto
+  _CCCL_API _CCCL_CONSTEVAL auto
   operator()(const _Ap&, const _Bp& = {}, const _Cp& = {}, const _Dp& = {}, const _Rest&...) const noexcept
   {
     if constexpr (!__valid_completion_signatures<_Ap>)
@@ -410,7 +410,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @tparam _Fn The callable to apply.
   //! @param __fn The callable instance.
   //! @return The result of calling __fn with all signatures as arguments.
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
   {
@@ -423,7 +423,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @param The predicate instance.
   //! @return A new completion_signatures set with only the signatures for which the
   //! predicate returns true.
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto filter(_Fn)
@@ -462,7 +462,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @param __transform The transform instance.
   //! @param __reduce The reduce instance.
   //! @return The result of reducing the transformed signatures.
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)
@@ -645,7 +645,7 @@ template <class... _What, class... _Values>
 #else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 
 template <class... _What, class... _Values>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
 {
   return _ERROR<_What...>{};
 }

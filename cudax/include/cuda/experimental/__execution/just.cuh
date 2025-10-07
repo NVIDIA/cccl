@@ -80,9 +80,9 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
 public:
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class... _Ts>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Ts... __ts) const;
+  _CCCL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 struct just_t : __just_t<just_t, set_value_t>
@@ -132,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __inln_attrs_t<__set_tag_t>{};
+    return __inln_attrs_t{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
@@ -156,10 +156,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
   static_assert(sizeof...(_Ts) == 0, "just_stopped_t must not be called with any types.");
 };
 
-_CCCL_EXEC_CHECK_DISABLE
+// _CCCL_EXEC_CHECK_DISABLE
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
-_CCCL_NODEBUG_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
+_CCCL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
 {
   using __sndr_t = typename _JustTag::template __sndr_t<_Ts...>;
   return __sndr_t{{{}, {static_cast<_Ts&&>(__ts)...}}};

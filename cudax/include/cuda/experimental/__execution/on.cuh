@@ -50,7 +50,8 @@ namespace cuda::experimental::execution
 //! resource where the `on` sender was started.
 //!
 //! @code
-//! auto result = on(gpu_scheduler, some_computation) | sync_wait();
+//! auto sndr = on(gpu_scheduler, some_computation);
+//! auto [result] = sync_wait(std::move(sndr)).value();
 //! @endcode
 //!
 //! ## Form 2: `on(sender, scheduler, closure)` or `sender | on(scheduler, closure)`
@@ -60,7 +61,8 @@ namespace cuda::experimental::execution
 //! execution back to where the original sender completed.
 //!
 //! @code
-//! auto result = some_computation | on(gpu_scheduler, then([](auto value) { return process(value); }));
+//! auto sndr = some_computation | on(gpu_scheduler, then([](auto value) { /*...*/ }));
+//! auto [result] = sync_wait(std::move(sndr)).value();
 //! @endcode
 //!
 //! ## Behavior
@@ -138,16 +140,16 @@ struct on_t
     }
   };
 
-  // Helper alias for the environment of the receiver used to connect the child sender
-  // in the on(sch, sndr) case.
-  template <class _Sch, class _Env>
-  using __env2_t = __join_env_t<__call_result_t<__mk_sch_env_t, _Sch, _Env>, _Env>;
-
   template <class _Sch, class _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Sch __sch, _Env&& __env)
   {
     return __join_env(__mk_sch_env(__sch, __env), static_cast<_Env&&>(__env));
   }
+
+  // Helper alias for the environment of the receiver used to connect the child sender
+  // in the on(sch, sndr) case.
+  template <class _Sch, class _Env>
+  using __env2_t = decltype(__mk_env2(declval<_Sch>(), declval<_Env>()));
 
 public:
   template <class _Sch, class _Sndr, class... _Closure>
@@ -157,19 +159,19 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) &&
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) &&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, static_cast<_Closure&&>(__closure_));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const&
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) const&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, __closure_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __self.__sch_, static_cast<_Closure&&>(__self.__closure_));
     }
@@ -180,20 +182,20 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Sndr)
   _CCCL_REQUIRES(__is_sender<_Sndr>)
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
   }
 
   _CCCL_TEMPLATE(class _Sch, class _Closure)
   _CCCL_REQUIRES((!__is_sender<_Closure>) )
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
+  _CCCL_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
   {
     return __closure_t<_Sch, _Closure>{__sch, static_cast<_Closure&&>(__closure)};
   }
 
   template <class _Sndr, class _Sch, class _Closure>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
   {
     using __sndr_t = on_t::__sndr_t<_Sch, _Sndr, _Closure>;
     return __sndr_t{{}, {__sch, static_cast<_Closure&&>(__closure)}, static_cast<_Sndr&&>(__sndr)};
@@ -214,7 +216,7 @@ public:
   }
 
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(start_t, _Sndr&& __sndr, const _Env& __env)
+  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(set_value_t, _Sndr&& __sndr, const _Env& __env)
   {
     auto&& [__ign, __data, __child] = __sndr;
     if constexpr (__is_scheduler<decltype(__data)>)
@@ -222,6 +224,7 @@ public:
       // The on(sch, sndr) case:
       auto __old_sch = __call_or(get_scheduler, __not_a_scheduler{}, __env);
       using __sndr_t = __lowered_sndr_t<decltype(__child), decltype(__data), decltype(__old_sch)>;
+      static_assert(sender_for<__sndr_t, continues_on_t>);
       return __sndr_t{::cuda::std::forward_like<_Sndr>(__child), __data, __old_sch};
     }
     else
@@ -263,7 +266,7 @@ private:
     {
       // When it completes successfully, the on(sch, sndr) sender completes where it
       // starts.
-      return get_completion_scheduler<set_value_t>(__inln_attrs_t<set_value_t>{}, __env);
+      return get_scheduler(__env);
     }
     else
     {
@@ -312,7 +315,7 @@ private:
     {
       // When it completes successfully, the on(sch, sndr) sender completes where it
       // starts.
-      return __call_or(execution::get_completion_domain<_SetTag>, default_domain{}, execution::get_scheduler(__env));
+      return __call_or(execution::get_domain, default_domain{}, __env);
     }
     else
     {
@@ -369,7 +372,7 @@ private:
 
     template <class _SetTag, class _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&) const noexcept
-      -> __completion_domain_for_t<get_completion_domain_t<_SetTag>, _Env>
+      -> __completion_domain_for_t<_SetTag, _Env>
     {
       return {};
     }
@@ -392,7 +395,7 @@ private:
                                execution::get_completion_behavior<schedule_result_t<__old_sch_t>, __fwd_env_t<_Env>>());
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -408,7 +411,7 @@ private:
 public:
   using sender_concept = sender_t;
 
-  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __attrs_t
+  _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
   {
     return {__sndr_};
   }
@@ -424,7 +427,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
 {
   using sender_concept = sender_t;
 
-  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }
@@ -442,8 +445,8 @@ inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr>> = 3
 template <class _Sch, class _Sndr, class _Closure>
 inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr, _Closure>> = 3;
 
-template <class _Sndr, class _NewSch, class _Env, class... _Closure>
-inline constexpr size_t structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env, _Closure...>> = 3;
+template <class _Sndr, class _NewSch, class _OldSch, class... _Closure>
+inline constexpr size_t structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _OldSch, _Closure...>> = 3;
 
 } // namespace cuda::experimental::execution
 

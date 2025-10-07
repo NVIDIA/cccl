@@ -62,7 +62,7 @@ public:
     _CCCL_ASSERT(false, "cannot visit a stateless variant");
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr size_t __index() noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t __index() noexcept
   {
     return __npos;
   }
@@ -112,12 +112,12 @@ public:
     __destroy();
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_API size_t __index() const noexcept
   {
     return __index_;
   }
@@ -128,7 +128,7 @@ public:
     return __emplace<decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
   _CCCL_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
@@ -141,7 +141,7 @@ public:
     return *::cuda::std::launder(__value);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <size_t _Ny, class... _As>
   _CCCL_API auto __emplace_at(_As&&... __as) noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
@@ -153,7 +153,7 @@ public:
     return *::cuda::std::launder(__value);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class... _As>
   _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&

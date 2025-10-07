@@ -45,6 +45,27 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
+//! The customization of continues_on, when transferring back to the CPU, involves
+//! adapting the sender and receiver types.
+//!
+//! A continues_on sender such as continues_on(sndr, sch), where sndr completes on the GPU,
+//! needs to synchronize the CUDA stream to ensure that all queued GPU work is finished.
+//! Only then can the schedule operation be safely invoked -- from the CPU.
+//!
+//! To effect this, continues_on(sndr, sch) is transformed into
+//! continues_on(SYNC-STREAM-ADAPTOR(STREAM-SENDER-ADAPTOR(sndr)), sch), where
+//! STREAM-SENDER-ADAPTOR wraps sndr for stream execution (see __stream/adaptor.cuh), and
+//! SYNC-STREAM-ADAPTOR(X) is a sender that does the following:
+//!
+//! 1. In connect (called on host): Connects X with a sink receiver that ignores values
+//!    passed to it and simply returns. The sink receiver's completion operations are
+//!    executed on device when the child sender completes.
+//!
+//! 2. In start (called on host): Starts the child sender, which launches kernels for the
+//!    predecessor operations, and then synchronizes the CUDA stream to ensure all queued
+//!    GPU work is finished. Then, it pulls the results from X's operation state and
+//!    passes them to the receiver on the host. (Recall that X is the result of adapting
+//!    sndr for stream execution, so the type of its operation state is known.)
 struct __continues_on_t
 {
   // Transition from the GPU to the CPU domain
@@ -92,9 +113,18 @@ struct __continues_on_t
 
     _CCCL_IMMOVABLE(__opstate_t);
 
-    _CCCL_HOST_API void start() noexcept
+    _CCCL_API void start() noexcept
     {
+      NV_IF_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
+    }
+
+    _CCCL_HOST_API void __host_start() noexcept
+    {
+      // This launches all predecessor kernels on the given stream
       execution::start(__opstate_);
+
+      // Synchronize the CUDA stream to make sure all predecessor work has completed, and
+      // the results are available in __opstate_.
       if (auto __status = ::cudaStreamSynchronize(__stream_.get()); __status != ::cudaSuccess)
       {
         execution::set_error(static_cast<_Rcvr&&>(__rcvr_), cudaError_t(__status));
@@ -102,7 +132,19 @@ struct __continues_on_t
       else
       {
         // __opstate_ is an instance of __stream::__opstate_t, and it has a __set_results
-        // member function that will pass the results to the receiver on the host.
+        // member function that will pass the results to the receiver on the host. __rcvr_
+        // is the receiver of the parent default continues_on operation. That receiver
+        // will then start the schedule operation on the host.
+        __opstate_.__set_results(__rcvr_);
+      }
+    }
+
+    _CCCL_DEVICE_API void __device_start() noexcept
+    {
+      // _CCCL_ASSERT(false, "stream::continues_on opstate started on device");
+      if (false)
+      {
+        execution::start(__opstate_);
         __opstate_.__set_results(__rcvr_);
       }
     }
@@ -111,9 +153,6 @@ struct __continues_on_t
     stream_ref __stream_;
     connect_result_t<_Sndr, __rcvr_t<_Rcvr>> __opstate_;
   };
-
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __thunk_t
-  {};
 
   template <class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
@@ -143,24 +182,36 @@ struct __continues_on_t
       return execution::get_env(__sndr_);
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS __thunk_t __tag_;
+    // The use of __tag_t here instructs the stream_domain not to apply any further
+    // transformations to this sender. See stream/domain.cuh.
+    _CCCL_NO_UNIQUE_ADDRESS __tag_t<continues_on_t> __tag_;
     _CCCL_NO_UNIQUE_ADDRESS ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 
-  // If the child sender has not already been adapted to be a stream sender, we adapt it
-  // now.
-  _CCCL_TEMPLATE(class _Sndr)
-  _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<decay_t<__child_of_t<_Sndr>>, __stream::__sndr_t>) )
+  template <class _Sndr>
+  _CCCL_API static constexpr auto __mk_sndr(_Sndr&& __sndr)
+  {
+    return __sndr_t<_Sndr>{{}, {}, static_cast<_Sndr&&>(__sndr)};
+  }
+
+  // This function is called when a continues_on sender, with a predecessor that completes
+  // on the stream scheduler, is being connected. It wraps the child sender in a stream
+  // sender adaptor if it isn't already wrapped.
+  template <class _Sndr>
   [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     auto& [__tag, __sched, __child] = __sndr;
     using __child_t                 = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
-    auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
-    using __adapted_sndr_t = decltype(__adapted_sndr);
-    return execution::continues_on(
-      __sched, __sndr_t<__adapted_sndr_t>{{}, {}, static_cast<__adapted_sndr_t&&>(__adapted_sndr)});
+    if constexpr (::cuda::__is_specialization_of_v<decltype(__child), __sndr_t>)
+    {
+      return static_cast<_Sndr&&>(__sndr);
+    }
+    else
+    {
+      return execution::continues_on(__mk_sndr(__stream::__adapt(static_cast<__child_t&&>(__child))), __sched);
+    }
   }
 };
 } // namespace __stream

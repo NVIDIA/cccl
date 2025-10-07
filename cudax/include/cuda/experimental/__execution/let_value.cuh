@@ -106,7 +106,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   {
     using __base_t = __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>;
 
-    _CCCL_NODEBUG_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
+    _CCCL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
         : __base_t(__ref_rcvr(__rcvr))
     {}
   };
@@ -341,13 +341,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
                                                   // extended (host/device) lambda
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag{}(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
+    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
       -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
@@ -365,10 +365,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t : __let_t
   //! @tparam _Fn The function to be called when the predecessor sender
   //! completes.
   template <class _Sndr, class _Fn>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const noexcept;
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct let_value_t : __let_base_t<let_value_t>
@@ -489,7 +489,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
       }
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_let_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -541,7 +541,7 @@ using __all_non_dependent_t = ::cuda::std::__fold_and<(!dependent_sender<_Sndr>)
 
 template <class _LetTag>
 template <class _Sndr, class _Fn>
-[[nodiscard]] _CCCL_NODEBUG_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+[[nodiscard]] _CCCL_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
   using __sndr_t = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
 
@@ -571,7 +571,7 @@ template <class _Sndr, class _Fn>
 
 template <class _LetTag>
 template <class _Fn>
-[[nodiscard]] _CCCL_NODEBUG_API constexpr auto __let_base_t<_LetTag>::operator()(_Fn __fn) const noexcept
+[[nodiscard]] _CCCL_API constexpr auto __let_base_t<_LetTag>::operator()(_Fn __fn) const noexcept
 {
   using __closure_t = typename _LetTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};

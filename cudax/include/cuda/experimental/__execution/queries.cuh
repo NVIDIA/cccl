@@ -59,7 +59,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
     return __query_or(__env, *this, ::cuda::std::allocator<void>{});
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -78,7 +78,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
     return __query_or(__env, *this, never_stop_token{});
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -88,7 +88,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 // get_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
@@ -99,38 +99,17 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
 } get_scheduler{};
 
 //////////////////////////////////////////////////////////////////////////////////////////
-// get_previous_scheduler
-_CCCL_GLOBAL_CONSTANT struct get_previous_scheduler_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Env, get_previous_scheduler_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-    -> __query_result_t<_Env, get_previous_scheduler_t>
-  {
-    static_assert(noexcept(__env.query(*this)));
-    static_assert(__is_scheduler<__query_result_t<_Env, get_previous_scheduler_t>>);
-    return __env.query(*this);
-  }
-
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
-  {
-    return true;
-  }
-} get_previous_scheduler{};
-
-//////////////////////////////////////////////////////////////////////////////////////////
 // get_delegation_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
+  // _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
@@ -141,7 +120,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -162,7 +141,7 @@ struct get_completion_scheduler_t
   // accept an environment.
   struct __read_query_t
   {
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
@@ -174,7 +153,7 @@ struct get_completion_scheduler_t
       return __attrs.query(_GetComplSch{});
     }
 
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch, const _Env&>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
@@ -194,7 +173,7 @@ private:
   // completion scheduler is equal to itself (or it doesn't have one).
   struct __recurse_query_t
   {
-    _CCCL_EXEC_CHECK_DISABLE
+    // _CCCL_EXEC_CHECK_DISABLE
     template <class _Self = __recurse_query_t, class _Sch, class... _Env>
     [[nodiscard]]
     _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
@@ -221,11 +200,14 @@ private:
           return _Self{}(__read_query_t{}(__sch, __env...), __env...);
         }
       }
-      else if constexpr (__callable<__read_query_t, env_of_t<schedule_result_t<_Sch>>, const _Env&...>)
+      else
       {
-        _CCCL_ASSERT(__sch == __read_query_t{}(get_env(__sch.schedule()), __env...),
-                     "the scheduler's sender must have a completion scheduler attribute equal to the scheduler that "
-                     "provided it.");
+        if constexpr (__callable<__read_query_t, env_of_t<schedule_result_t<_Sch>>, const _Env&...>)
+        {
+          _CCCL_ASSERT(__sch == __read_query_t{}(get_env(__sch.schedule()), __env...),
+                       "the scheduler's sender must have a completion scheduler attribute equal to the scheduler that "
+                       "provided it.");
+        }
         return __sch;
       }
     }
@@ -286,7 +268,7 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -317,7 +299,7 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
     return __query_or(__sch, *this, forward_progress_guarantee::weakly_parallel);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -335,21 +317,23 @@ struct __single_threaded_config_t : __single_threaded_config_base_t
   {}
 };
 
+_CCCL_GLOBAL_CONSTANT __single_threaded_config_t __single_threaded_config{};
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_launch_config: A sender can define this attribute to control the launch configuration
 // of the kernel it will launch when executed on a CUDA stream scheduler.
 _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_HOST_API constexpr auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
     -> __query_result_or_t<_Env, get_launch_config_t, __single_threaded_config_t>
   {
     static_assert(__nothrow_queryable_with_or<_Env, get_launch_config_t, true>,
                   "The get_launch_config query must be noexcept.");
-    return __query_or(__env, *this, __single_threaded_config_t{});
+    return __query_or(__env, *this, __single_threaded_config);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
