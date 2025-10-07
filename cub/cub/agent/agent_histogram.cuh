@@ -527,103 +527,44 @@ struct AgentHistogram
     }
   }
 
-  // template <bool IsFullTile, bool IsAligned>
-  // _CCCL_DEVICE _CCCL_FORCEINLINE void
-  // LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[PIXELS_PER_THREAD][NumChannels])
-  // {
-  //   if constexpr (IsFullTile)
-  //   {
-  //     if constexpr (IsAligned)
-  //     {
-  //       LoadFullAlignedTile<NumActiveChannels>(block_offset, samples);
-  //     }
-  //     else
-  //     {
-  //       // Load using sample iterator
-  //       using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
-  //       BlockLoadSampleT(temp_storage.aliasable.sample_load)
-  //         .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
-  //     }
-  //   }
-  //   else
-  //   {
-  //     if constexpr (IsAligned)
-  //     {
-  //       // Load partially-full, aligned tile using the pixel iterator
-  //       using AliasedPixels = PixelT[PIXELS_PER_THREAD];
-  //       WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-  //       int valid_pixels = valid_samples / NumChannels;
-  //
-  //       // Load using a wrapped pixel iterator
-  //       BlockLoadPixelT(temp_storage.aliasable.pixel_load)
-  //         .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
-  //     }
-  //     else
-  //     {
-  //       using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
-  //       BlockLoadSampleT(temp_storage.aliasable.sample_load)
-  //         .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
-  //     }
-  //   }
-  // }
-
-  // Load full, aligned tile
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NumChannels],
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::true_type is_aligned)
+  template <bool IsFullTile, bool IsAligned>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[PIXELS_PER_THREAD][NumChannels])
   {
-    LoadFullAlignedTile<NumActiveChannels>(block_offset, samples);
-  }
+    if constexpr (IsFullTile)
+    {
+      if constexpr (IsAligned)
+      {
+        LoadFullAlignedTile<NumActiveChannels>(block_offset, samples);
+      }
+      else
+      {
+        // Load using sample iterator
+        using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
+        BlockLoadSampleT(temp_storage.aliasable.sample_load)
+          .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
+      }
+    }
+    else
+    {
+      if constexpr (IsAligned)
+      {
+        // Load partially-full, aligned tile using the pixel iterator
+        using AliasedPixels = PixelT[PIXELS_PER_THREAD];
+        WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
+        int valid_pixels = valid_samples / NumChannels;
 
-  // Load full, mis-aligned tile using sample iterator
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NumChannels],
-    ::cuda::std::true_type is_full_tile,
-    ::cuda::std::false_type is_aligned)
-  {
-    using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
-
-    // Load using sample iterator
-    BlockLoadSampleT(temp_storage.aliasable.sample_load)
-      .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
-  }
-
-  // Load partially-full, aligned tile using the pixel iterator
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NumChannels],
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::true_type is_aligned)
-  {
-    using AliasedPixels = PixelT[PIXELS_PER_THREAD];
-
-    WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-
-    int valid_pixels = valid_samples / NumChannels;
-
-    // Load using a wrapped pixel iterator
-    BlockLoadPixelT(temp_storage.aliasable.pixel_load)
-      .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
-  }
-
-  // Load partially-full, mis-aligned tile using sample iterator
-  _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
-    OffsetT block_offset,
-    int valid_samples,
-    SampleT (&samples)[PIXELS_PER_THREAD][NumChannels],
-    ::cuda::std::false_type is_full_tile,
-    ::cuda::std::false_type is_aligned)
-  {
-    using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
-
-    BlockLoadSampleT(temp_storage.aliasable.sample_load)
-      .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
+        // Load using a wrapped pixel iterator
+        BlockLoadPixelT(temp_storage.aliasable.pixel_load)
+          .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
+      }
+      else
+      {
+        using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
+        BlockLoadSampleT(temp_storage.aliasable.sample_load)
+          .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
+      }
+    }
   }
 
   template <bool IsFullTile, bool IsStriped>
@@ -660,12 +601,7 @@ struct AgentHistogram
     SampleT samples[PIXELS_PER_THREAD][NumChannels];
     bool is_valid[PIXELS_PER_THREAD];
 
-    // LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-
-    // Load tile
-    LoadTile(block_offset, valid_samples, samples, bool_constant_v<IsFullTile>, bool_constant_v<IsAligned>);
-
-    // Set valid flags
+    LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
     MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     if (prefer_smem)
