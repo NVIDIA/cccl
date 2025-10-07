@@ -83,20 +83,22 @@ __host__ __device__ constexpr void test_type()
   // 4. 1 / 1 -> should not overflow
   test_div_overflow<Result>(Lhs{1}, Rhs{1}, false);
 
+  // nvcc 12.0 doesn't support this case in a constexpr context
+#if _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   // 5. 1 / -1 -> should overflow if the destination type is unsigned
   if constexpr (is_signed_v<Rhs>)
   {
-    if constexpr (is_unsigned_v<Result>)
-    {
-      test_div_overflow<Result>(Lhs{1}, Rhs{-1}, true);
-    }
-    else
-    {
-      test_div_overflow<Result>(Lhs{1}, Rhs{-1}, false, true, Result{-1});
-    }
+    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, is_unsigned_v<Result>);
   }
+  // 6. -1 / 1 -> should overflow if the destination type is unsigned
 
-  // 6. 0 / -1
+  if constexpr (is_signed_v<Lhs>)
+  {
+    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, is_unsigned_v<Result>);
+  }
+#endif // _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
+
+  // 7. 0 / -1
   if constexpr (is_signed_v<Rhs>)
   {
     test_div_overflow<Result>(Lhs{0}, Rhs{-1}, false);
@@ -104,23 +106,26 @@ __host__ __device__ constexpr void test_type()
   //--------------------------------------------------------------------------------------------------------------------
   // min, max cases
 
-  // 7. max / 1 -> max >= result_max?
+  // 8. max / 1 -> max >= result_max?
   test_div_overflow<Result>(lhs_max, Rhs{1}, cuda::std::cmp_greater(lhs_max, result_max));
 
-  // 8. min / 1 -> min < result_min?
+  // nvcc 12.0 doesn't support this case in a constexpr context
+#if _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
+  // 9. min / 1 -> min < result_min?
   test_div_overflow<Result>(lhs_min, Rhs{1}, cuda::std::cmp_less(lhs_min, result_min));
 
   if constexpr (is_signed_v<Lhs> && is_signed_v<Rhs>)
   {
-    // 9. min / -1
+    // 10. min / -1
     // when the result type is larger than the common type, min / -1 produces a valid result
     bool overflow = cuda::std::cmp_greater(neg_lhs_min, result_max);
     test_div_overflow<Result>(lhs_min, Rhs{-1}, overflow, !overflow, static_cast<Result>(neg_lhs_min));
 
-    // 9. min / -2
+    // 11. min / -2
     bool overflow2 = cuda::std::cmp_greater(neg_lhs_min / 2, result_max);
     test_div_overflow<Result>(lhs_min, Rhs{-2}, overflow2, !overflow2, static_cast<Result>(neg_lhs_min / 2));
   }
+#endif // _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
 }
 
 template <typename Lhs, typename Rhs>
