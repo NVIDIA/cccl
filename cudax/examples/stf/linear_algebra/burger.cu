@@ -15,6 +15,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <chrono>
+#include <iostream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -163,7 +165,6 @@ void initialize_solution_file(const char* filename, size_t N, double h)
             "# Use in gnuplot: plot for [i=0:*] 'solution.dat' index i with lines title sprintf('step %%d', i*10)\n");
     fprintf(fp, "#\n");
     fclose(fp);
-    printf("Initialized solution file: %s (block format)\n", filename);
   }
   else
   {
@@ -243,7 +244,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     fprintf(stderr, "output_freq %ld\n", output_freq);
   }
 
-  int use_while = 1;
+  // use_while = 0 => no while; 1 => while in CG, 2 => while in Newton and CG
+  int use_while = 2;
   if (argc > 5)
   {
     use_while = atoi(argv[5]);
@@ -308,59 +310,62 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   // Initialize solution output file
   initialize_solution_file("solution.dat", N, h);
 
+  auto start = std::chrono::high_resolution_clock::now();
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
+
   // Parameters are now set above with auto-scaling
-  size_t substeps         = (output_freq > 0)?output_freq:nsteps;
+  size_t substeps         = (output_freq > 0) ? output_freq : nsteps;
   size_t outer_iterations = nsteps / substeps;
 
-  if (use_while) {
-      for (size_t outer = 0; outer < outer_iterations; outer++)
+  if (use_while == 2)
+  {
+    for (size_t outer = 0; outer < outer_iterations; outer++)
+    {
+      auto g = ctx.graph_scope();
+
+      // Repeat substeps inner iterations using STF repeat block
       {
-        auto g = ctx.graph_scope();
+        auto repeat_guard = ctx.repeat_graph_scope(substeps);
 
-        // Repeat substeps inner iterations using STF repeat block
-        {
-          auto repeat_guard = ctx.repeat_graph_scope(substeps);
+        // Create callback function objects for Burger's equation
+        BurgerResidualCallback residual_callback{N, h, dt, nu};
+        BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
-          // Create callback function objects for Burger's equation
-          BurgerResidualCallback residual_callback{N, h, dt, nu};
-          BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+        // Solve the nonlinear system using generic Newton solver
+        newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
+      } // repeat_guard automatically manages the loop condition
 
-          // Solve the nonlinear system using generic Newton solver
-          newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
-        } // repeat_guard automatically manages the loop condition
-
-        // Dump solution after each substep block
-        size_t current_timestep = (outer + 1) * substeps;
-        dump_solution(ctx, U, current_timestep, N, h, dt);
-       }
+      // Dump solution after each substep block
+      size_t current_timestep = (outer + 1) * substeps;
+      dump_solution(ctx, U, current_timestep, N, h, dt);
+    }
   }
-  else {
-      for (size_t outer = 0; outer < outer_iterations; outer++)
+  else
+  {
+    for (size_t outer = 0; outer < outer_iterations; outer++)
+    {
+      // Repeat substeps inner iterations using STF repeat block
+      for (size_t substep = 0; substep < substeps; substep++)
       {
-        // Repeat substeps inner iterations using STF repeat block
-        for (size_t substep = 0; substep < substeps; substep++)
-        {
-          // Create callback function objects for Burger's equation
-          BurgerResidualCallback residual_callback{N, h, dt, nu};
-          BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+        // Create callback function objects for Burger's equation
+        BurgerResidualCallback residual_callback{N, h, dt, nu};
+        BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
-          // Solve the nonlinear system using generic Newton solver
-          newton_solver_no_while(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
-        } // repeat_guard automatically manages the loop condition
+        // Solve the nonlinear system using generic Newton solver
+        newton_solver_no_while(
+          ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback, use_while == 1);
+      } // repeat_guard automatically manages the loop condition
 
-        // Dump solution after each substep block
-        size_t current_timestep = (outer + 1) * substeps;
-        dump_solution(ctx, U, current_timestep, N, h, dt);
-      }
+      // Dump solution after each substep block
+      size_t current_timestep = (outer + 1) * substeps;
+      dump_solution(ctx, U, current_timestep, N, h, dt);
+    }
   }
 
-  // Final solution information
-  printf("\n=== Simulation complete ===\n");
-  printf("Solution file: solution.dat (block format)\n");
-  printf("  - Each timestep is a separate data block\n");
-  printf("  - Blocks separated by blank lines\n");
-  printf("  - Format: x_coordinate  u(x,t)\n");
-  printf("Now you can run the animation commands shown at the beginning!\n");
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
+  auto end      = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  std::cout << "Duration: " << duration << " milliseconds" << std::endl;
 
   ctx.finalize();
 #endif

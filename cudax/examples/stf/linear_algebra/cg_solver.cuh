@@ -110,7 +110,8 @@ void cg_solver(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, dou
 }
 
 template <typename ctx_t, typename T>
-void cg_solver_no_while(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, double cg_tol = 1e-10, size_t max_cg = 1000)
+void cg_solver_no_while(
+  ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T>& B, double cg_tol = 1e-10, size_t max_cg = 1000)
 {
   // Initial guess X = 0 (better for Newton corrections)
   ctx.parallel_for(X.shape(), X.write()).set_symbol("init_guess")->*[] _CCCL_DEVICE(size_t i, auto dX) {
@@ -141,7 +142,7 @@ void cg_solver_no_while(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T
   DOT(ctx, R, R, rsold);
 
   size_t iter = 0;
-  auto rsnew = ctx.logical_data(shape_of<scalar_view<T>>()).set_symbol("rsnew");
+  auto rsnew  = ctx.logical_data(shape_of<scalar_view<T>>()).set_symbol("rsnew");
 
   do
   {
@@ -182,8 +183,7 @@ void cg_solver_no_while(ctx_t& ctx, csr_matrix<T>& A, vector_t<T>& X, vector_t<T
         ->*[] _CCCL_DEVICE(size_t i, auto drsold, auto drsnew) {
               *drsold = *drsnew;
             };
-  }
-  while ((++iter < max_cg) && (ctx.wait(rsnew) > cg_tol * cg_tol));
+  } while ((++iter < max_cg) && (ctx.wait(rsnew) > cg_tol * cg_tol));
 }
 
 #endif

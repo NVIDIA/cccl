@@ -111,6 +111,7 @@ void newton_solver_no_while(
   const vector_t<size_t>& csr_col_ind,
   ResidualCallback compute_residual_fn,
   JacobianCallback assemble_jacobian_fn,
+  bool cg_use_while = false,
   size_t max_newton = 20,
   double newton_tol = 1e-10,
   size_t max_cg     = 100)
@@ -151,13 +152,21 @@ void newton_solver_no_while(
 
     // Solve linear system: J * delta = -F(U)
     double cg_tol = 1e-8;
-    cg_solver_no_while(ctx, A, delta, rhs, cg_tol, max_cg);
+    if (cg_use_while)
+    {
+      //      fprintf(stderr, "NEWTON NO WHILE, CG WHILE.\n");
+      cg_solver(ctx, A, delta, rhs, cg_tol, max_cg);
+    }
+    else
+    {
+      //      fprintf(stderr, "NEWTON NO WHILE, CG NO WHILE.\n");
+      cg_solver_no_while(ctx, A, delta, rhs, cg_tol, max_cg);
+    }
 
     // Newton update: U = U + delta (no special boundary handling needed)
     ctx.parallel_for(U.shape(), U.rw(), delta.read()).set_symbol("newton_update")
         ->*[] __device__(size_t i, auto dU, auto ddelta) {
               dU(i) += ddelta(i);
             };
-  }
-  while((++iter < max_newton) && ctx.wait(newton_norm2) > newton_tol * newton_tol);
+  } while ((++iter < max_newton) && ctx.wait(newton_norm2) > newton_tol * newton_tol);
 }

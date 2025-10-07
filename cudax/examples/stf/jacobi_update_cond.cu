@@ -93,10 +93,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   ctx.finalize();
 
-  float elapsedTime;
-  cudaEventElapsedTime(&elapsedTime, start, stop);
-  printf("Elapsed time: %f ms\n", elapsedTime);
-
   EXPECT(final_residual <= tol);
   EXPECT(final_iterations < max_iter);
 
