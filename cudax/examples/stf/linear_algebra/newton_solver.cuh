@@ -16,8 +16,8 @@
 #include <cuda/experimental/stf.cuh>
 
 #include "cg_solver.cuh"
-#include "dot.cuh" 
-  
+#include "dot.cuh"
+
 using namespace cuda::experimental::stf;
 
 /**
@@ -102,4 +102,62 @@ void newton_solver(
   }
 }
 
+template <typename ctx_t, typename ResidualCallback, typename JacobianCallback>
+void newton_solver_no_while(
+  ctx_t& ctx,
+  vector_t<double>& U,
+  vector_t<double>& csr_values,
+  const vector_t<size_t>& csr_row_offsets,
+  const vector_t<size_t>& csr_col_ind,
+  ResidualCallback compute_residual_fn,
+  JacobianCallback assemble_jacobian_fn,
+  size_t max_newton = 20,
+  double newton_tol = 1e-10,
+  size_t max_cg     = 100)
+{
+  auto U_prev = ctx.logical_data(U.shape()).set_symbol("U_prev");
 
+  ctx.parallel_for(U.shape(), U_prev.write(), U.read()).set_symbol("init_guess")
+      ->*[] __device__(size_t i, auto dU_prev, auto dU) {
+            dU_prev(i) = dU(i);
+          };
+
+  auto newton_norm2 = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("newton_norm2");
+
+  size_t iter = 0;
+  do
+  {
+    auto residual = ctx.logical_data(U.shape()).set_symbol("residual");
+    auto delta    = ctx.logical_data(U.shape()).set_symbol("delta");
+
+    // Compute residual F(U)
+    compute_residual_fn(ctx, U, U_prev, residual);
+
+    // Compute Newton residual norm for convergence check
+    DOT(ctx, residual, residual, newton_norm2);
+
+    // Assemble Jacobian J = ∂F/∂U
+    assemble_jacobian_fn(ctx, U, csr_values);
+
+    auto rhs = ctx.logical_data(U.shape()).set_symbol("rhs");
+
+    // Set up RHS: rhs = -F(U)
+    ctx.parallel_for(rhs.shape(), rhs.write(), residual.read()).set_symbol("rhs = -residual")
+        ->*[] __device__(size_t i, auto drhs, auto dresidual) {
+              drhs(i) = -dresidual(i);
+            };
+
+    csr_matrix<double> A(csr_values, csr_row_offsets, csr_col_ind);
+
+    // Solve linear system: J * delta = -F(U)
+    double cg_tol = 1e-8;
+    cg_solver_no_while(ctx, A, delta, rhs, cg_tol, max_cg);
+
+    // Newton update: U = U + delta (no special boundary handling needed)
+    ctx.parallel_for(U.shape(), U.rw(), delta.read()).set_symbol("newton_update")
+        ->*[] __device__(size_t i, auto dU, auto ddelta) {
+              dU(i) += ddelta(i);
+            };
+  }
+  while((++iter < max_newton) && ctx.wait(newton_norm2) > newton_tol * newton_tol);
+}

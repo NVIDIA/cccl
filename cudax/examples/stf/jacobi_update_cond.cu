@@ -60,13 +60,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       Anew(i, j) = A(i, j);
     };
 
-  cudaEvent_t start, stop;
-
-  cuda_safe_call(cudaEventCreate(&start));
-  cuda_safe_call(cudaEventCreate(&stop));
-
-  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
-
   // Initialize iteration counter
   ctx.parallel_for(box(1), liter.write())->*[] __device__(size_t, auto iter) {
     *iter = 0;
@@ -92,8 +85,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       return !converged && !max_reached; // Continue if not converged and under limit
     };
   }
-
-  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   int final_iterations  = ctx.wait(liter);
   double final_residual = ctx.wait(lresidual);

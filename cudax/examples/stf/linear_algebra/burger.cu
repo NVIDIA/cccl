@@ -19,13 +19,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "newton_solver.cuh"
 #include "dot.cuh"
+#include "newton_solver.cuh"
 
 using namespace cuda::experimental::stf;
 
 #if !_CCCL_CTK_BELOW(12, 4)
-
 
 void build_full_csr_structure(size_t* row_offsets, size_t* col_indices, size_t N)
 {
@@ -213,17 +212,21 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   // nsteps = Time steps (default: 10000)
   // nu     = Viscosity (default: 0.05, try 0.001 for shocks)
 
-  size_t N = 100000; // Large system - auto-scaled parameters maintain stability
-
   stackable_ctx ctx;
 
+  size_t N = 100000; // Large system - auto-scaled parameters maintain stability
   if (argc > 1)
   {
     N = atoi(argv[1]);
     fprintf(stderr, "N = %zu\n", N);
   }
 
-  double h = 1.0 / (N - 1);
+  size_t nsteps = 10000;
+  if (argc > 2)
+  {
+    nsteps = atol(argv[2]);
+    fprintf(stderr, "nsteps = %ld\n", nsteps);
+  }
 
   // Set reasonable parameters - implicit method allows larger time steps
   double nu = 0.05; // Default viscosity
@@ -232,6 +235,22 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     nu = atof(argv[3]);
     fprintf(stderr, "nu = %e\n", nu);
   }
+
+  ssize_t output_freq = -1;
+  if (argc > 4)
+  {
+    output_freq = atoi(argv[4]);
+    fprintf(stderr, "output_freq %ld\n", output_freq);
+  }
+
+  int use_while = 1;
+  if (argc > 5)
+  {
+    use_while = atoi(argv[5]);
+    fprintf(stderr, "use_while = %d\n", use_while);
+  }
+
+  double h = 1.0 / (N - 1);
 
   double dt_diffusion = 0.5 * h * h / nu; // Diffusion-limited time step
   double dt_fixed     = 0.001; // Fixed reasonable time step
@@ -243,13 +262,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     dt = std::min(dt, 0.01); // Cap at 0.01 for large grids
   }
 
-  size_t nsteps = 10000;
-  if (argc > 2)
-  {
-    nsteps = atol(argv[2]);
-    fprintf(stderr, "nsteps = %ld\n", nsteps);
-  }
-
   double total_time = nsteps * dt;
 
   fprintf(stderr, "=== Simulation Parameters ===\n");
@@ -257,11 +269,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   fprintf(stderr, "Time: dt=%e, nsteps=%zu, total_time=%e\n", dt, nsteps, total_time);
   fprintf(stderr, "Physics: nu=%e (viscosity)\n", nu);
   fprintf(stderr, "Diffusion number: nu*dt/h^2 = %e\n", nu * dt / (h * h));
-  fprintf(stderr, "System size: %zu unknowns, %zu non-zeros (full N×N system with BCs)\n", N, 3 * N - 4);
-  if (N > 1000000)
-  {
-    fprintf(stderr, "WARNING: Very large system! Consider using iterative preconditioners for N > 1M\n");
-  }
   fprintf(stderr, "=============================\n");
 
   // Full N×N system: boundary rows have 1 entry each, interior rows have 3 entries each
@@ -302,28 +309,49 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   initialize_solution_file("solution.dat", N, h);
 
   // Parameters are now set above with auto-scaling
-  size_t substeps         = 100;
+  size_t substeps         = (output_freq > 0)?output_freq:nsteps;
   size_t outer_iterations = nsteps / substeps;
 
-  for (size_t outer = 0; outer < outer_iterations; outer++)
-  {
-    auto g = ctx.graph_scope();
+  if (use_while) {
+      for (size_t outer = 0; outer < outer_iterations; outer++)
+      {
+        auto g = ctx.graph_scope();
 
-    // Repeat substeps inner iterations using STF repeat block
-    {
-      auto repeat_guard = ctx.repeat_graph_scope(substeps);
+        // Repeat substeps inner iterations using STF repeat block
+        {
+          auto repeat_guard = ctx.repeat_graph_scope(substeps);
 
-      // Create callback function objects for Burger's equation
-      BurgerResidualCallback residual_callback{N, h, dt, nu};
-      BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+          // Create callback function objects for Burger's equation
+          BurgerResidualCallback residual_callback{N, h, dt, nu};
+          BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
 
-      // Solve the nonlinear system using generic Newton solver
-      newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
-    } // repeat_guard automatically manages the loop condition
+          // Solve the nonlinear system using generic Newton solver
+          newton_solver(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
+        } // repeat_guard automatically manages the loop condition
 
-    // Dump solution after each substep block
-    size_t current_timestep = (outer + 1) * substeps;
-    dump_solution(ctx, U, current_timestep, N, h, dt);
+        // Dump solution after each substep block
+        size_t current_timestep = (outer + 1) * substeps;
+        dump_solution(ctx, U, current_timestep, N, h, dt);
+       }
+  }
+  else {
+      for (size_t outer = 0; outer < outer_iterations; outer++)
+      {
+        // Repeat substeps inner iterations using STF repeat block
+        for (size_t substep = 0; substep < substeps; substep++)
+        {
+          // Create callback function objects for Burger's equation
+          BurgerResidualCallback residual_callback{N, h, dt, nu};
+          BurgerJacobianCallback jacobian_callback{N, h, dt, nu};
+
+          // Solve the nonlinear system using generic Newton solver
+          newton_solver_no_while(ctx, U, csr_values, csr_row_offsets, csr_col_ind, residual_callback, jacobian_callback);
+        } // repeat_guard automatically manages the loop condition
+
+        // Dump solution after each substep block
+        size_t current_timestep = (outer + 1) * substeps;
+        dump_solution(ctx, U, current_timestep, N, h, dt);
+      }
   }
 
   // Final solution information

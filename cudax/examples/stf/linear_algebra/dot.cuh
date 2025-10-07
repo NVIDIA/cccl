@@ -40,14 +40,9 @@ struct csr_matrix
   mutable stackable_logical_data<slice<size_t>> col_handle;
 };
 
-
-
 // Note that a and b might be the same logical data
 template <typename ctx_t, typename T>
-void DOT(ctx_t& ctx,
-         vector_t<T>& a,
-         vector_t<T>& b,
-         scalar_t<T>& res)
+void DOT(ctx_t& ctx, vector_t<T>& a, vector_t<T>& b, scalar_t<T>& res)
 {
   ctx.parallel_for(a.shape(), a.read(), b.read(), res.reduce(reducer::sum<T>{})).set_symbol("DOT")->*
     [] __device__(size_t i, auto da, auto db, T& dres) {
@@ -73,4 +68,3 @@ void SPMV(ctx_t& ctx, csr_matrix<T>& a, vector_t<T>& x, vector_t<T>& y)
             dy(row) = sum;
           };
 }
-

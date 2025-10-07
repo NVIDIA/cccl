@@ -16,6 +16,7 @@
  */
 
 #include <cuda/experimental/stf.cuh>
+
 #include <vector>
 
 using namespace cuda::experimental::stf;
@@ -63,7 +64,7 @@ __device__ void calculating_pagerank(
 void compute_pagerank(
   stackable_ctx& ctx,
   stackable_logical_data<slice<int>>& loffsets,
-  stackable_logical_data<slice<int>>& lnonzeros, 
+  stackable_logical_data<slice<int>>& lnonzeros,
   stackable_logical_data<slice<float>>& lpage_rank,
   stackable_logical_data<slice<float>>& lpersonalization,
   int num_vertices,
@@ -72,8 +73,8 @@ void compute_pagerank(
 {
   // Create local temporary buffer and convergence tracking
   auto lnew_page_rank = ctx.logical_data(lpage_rank.shape());
-  auto lmax_diff = ctx.logical_data(shape_of<scalar_view<float>>());
-  auto liter     = ctx.logical_data(shape_of<scalar_view<int>>());
+  auto lmax_diff      = ctx.logical_data(shape_of<scalar_view<float>>());
+  auto liter          = ctx.logical_data(shape_of<scalar_view<int>>());
 
   // Initialize iteration counter
   ctx.parallel_for(box(1), liter.write())->*[] __device__(size_t, auto iter) {
@@ -92,11 +93,18 @@ void compute_pagerank(
       lnew_page_rank.write(),
       lpersonalization.read(),
       lmax_diff.reduce(reducer::maxval<float>{}))
-        ->*[] __device__(
-             size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank, auto lpersonalization, auto& max_diff) {
-              calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, lpersonalization);
-              max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
-            };
+        ->*
+      [] __device__(
+        size_t idx,
+        auto loffsets,
+        auto lnonzeros,
+        auto lpage_rank,
+        auto lnew_page_rank,
+        auto lpersonalization,
+        auto& max_diff) {
+        calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, lpersonalization);
+        max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
+      };
 
     // Update PageRank Values
     ctx.parallel_for(lpage_rank.shape(), lpage_rank.write(), lnew_page_rank.read())
@@ -125,51 +133,57 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
-  int num_vertices = offsets.size() - 1;
-  float init_rank  = 1.0f / num_vertices;
-  float tolerance  = 1e-6f;
-  int NITER        = 100;
+  int num_vertices        = offsets.size() - 1;
+  float init_rank         = 1.0f / num_vertices;
+  float tolerance         = 1e-6f;
+  int NITER               = 100;
   int num_personalization = 4;
 
   ::std::vector<stackable_logical_data<slice<float>>> lpage_rank_slices;
   for (int i = 0; i < num_personalization; i++)
+  {
     lpage_rank_slices.push_back(ctx.logical_data(shape_of<slice<float>>(num_vertices)));
+  }
 
-  auto loffsets       = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros      = ctx.logical_data(&nonzeros[0], nonzeros.size());
+  auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());
+  auto lnonzeros = ctx.logical_data(&nonzeros[0], nonzeros.size());
 
   loffsets.set_read_only();
   lnonzeros.set_read_only();
-  
+
   {
-  auto scope = ctx.graph_scope();
-  for (int p = 0; p  < num_personalization; p++)
-  {
-    // Initialize PageRank values to uniform distribution
-    ctx.parallel_for(lpage_rank_slices[p].shape(), lpage_rank_slices[p].write())->*[init_rank] __device__(size_t i, auto page_rank) {
-      page_rank(i) = init_rank;
-    };
-    
-    // Create personalization vector (uniform for this example)
-    auto lpersonalization = ctx.logical_data(shape_of<slice<float>>(num_vertices));
-    ctx.parallel_for(lpersonalization.shape(), lpersonalization.write())->*[init_rank] __device__(size_t i, auto lpersonalization) {
-      lpersonalization(i) = init_rank;
-    };
-    
-    compute_pagerank(ctx, loffsets, lnonzeros, lpage_rank_slices[p], lpersonalization, num_vertices, NITER, tolerance);
-  }
+    auto scope = ctx.graph_scope();
+    for (int p = 0; p < num_personalization; p++)
+    {
+      // Initialize PageRank values to uniform distribution
+      ctx.parallel_for(lpage_rank_slices[p].shape(), lpage_rank_slices[p].write())
+          ->*[init_rank] __device__(size_t i, auto page_rank) {
+                page_rank(i) = init_rank;
+              };
+
+      // Create personalization vector (uniform for this example)
+      auto lpersonalization = ctx.logical_data(shape_of<slice<float>>(num_vertices));
+      ctx.parallel_for(lpersonalization.shape(), lpersonalization.write())
+          ->*[init_rank] __device__(size_t i, auto lpersonalization) {
+                lpersonalization(i) = init_rank;
+              };
+
+      compute_pagerank(ctx, loffsets, lnonzeros, lpage_rank_slices[p], lpersonalization, num_vertices, NITER, tolerance);
+    }
   }
 
   for (int p = 0; p < num_personalization; p++)
   {
-    ctx.host_launch(lpage_rank_slices[p].read())->*[p, num_vertices] __host__(slice<const float> page_rank) { 
+    ctx.host_launch(lpage_rank_slices[p].read())->*[p, num_vertices] __host__(slice<const float> page_rank) {
       double sum_pageranks = 0.0;
       for (int64_t i = 0; i < num_vertices; i++)
       {
         sum_pageranks += page_rank[i];
       }
-      printf("Page rank answer for personalization %d is %s.\n", p, abs(sum_pageranks - 1.0) < 0.001 ? "correct" : "not correct");
-      
+      printf("Page rank answer for personalization %d is %s.\n",
+             p,
+             abs(sum_pageranks - 1.0) < 0.001 ? "correct" : "not correct");
+
       // Print first few results for verification
       printf("Personalization %d - First 5 vertices: ", p);
       for (size_t i = 0; i < std::min(5UL, page_rank.size()); ++i)

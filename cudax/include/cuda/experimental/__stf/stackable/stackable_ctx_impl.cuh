@@ -550,8 +550,6 @@ public:
 
         ctx.to_graph_ctx().finalize_as_graph();
 
-
-
         auto& parent_ctx = parent_ctx_node->ctx;
 
         // This was either a new graph (with a stream_ctx parent) or a nested
