@@ -89,9 +89,7 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 
 /**
@@ -608,7 +606,6 @@ struct AgentUniqueByKey
   }
 };
 
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END
