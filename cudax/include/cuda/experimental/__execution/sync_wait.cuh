@@ -62,7 +62,8 @@ struct sync_wait_t
     basic_run_loop<_Env> __loop_;
   };
 
-  template <class _Env>
+public:
+  template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     _CCCL_EXEC_CHECK_DISABLE
@@ -105,6 +106,7 @@ struct sync_wait_t
     __state_base_t<_Env>* __state_;
   };
 
+  _CUDAX_SEMI_PRIVATE :
   template <class... _Ts>
   using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 

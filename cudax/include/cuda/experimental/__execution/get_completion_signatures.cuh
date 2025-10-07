@@ -94,7 +94,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure //
 private:
   friend struct __compile_time_error<__sender_type_check_failure>;
 
-  _CCCL_NODEBUG_API constexpr auto __what() const noexcept -> const char*
+  _CCCL_API constexpr auto __what() const noexcept -> const char*
   {
     return "This sender is not well-formed. It does not meet the requirements of a sender type.";
   }
@@ -111,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error : __compile_time_err
 private:
   friend struct __compile_time_error<dependent_sender_error>;
 
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto __what() const noexcept -> char const*
+  [[nodiscard]] _CCCL_API constexpr auto __what() const noexcept -> char const*
   {
     return __what_;
   }
@@ -122,7 +122,7 @@ private:
 template <class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender_error
 {
-  _CCCL_NODEBUG_API constexpr __dependent_sender_error() noexcept
+  _CCCL_API constexpr __dependent_sender_error() noexcept
       : dependent_sender_error{"This sender needs to know its execution " //
                                "environment before it can know how it will complete."}
   {}
@@ -192,7 +192,7 @@ template <class... _Sndr>
     else
 
 template <class... _Sndr>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
 {
   return __dependent_sender_error<_Sndr...>{};
 }
@@ -216,7 +216,7 @@ struct _A_GET_COMPLETION_SIGNATURES_CUSTOMIZATION_RETURNED_A_TYPE_THAT_IS_NOT_A_
 {};
 
 template <class _Completions>
-_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __checked_complsigs()
+_CCCL_API _CCCL_CONSTEVAL auto __checked_complsigs()
 {
   _CUDAX_LET_COMPLETIONS(auto(__cs) = _Completions())
   {
@@ -260,7 +260,7 @@ struct _COULD_NOT_DETERMINE_COMPLETION_SIGNATURES_FOR_THIS_SENDER
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr, class... _Env>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
 {
   if constexpr (__has_get_completion_signatures<_Sndr, _Env...>)
   {
@@ -288,7 +288,7 @@ template <class _Sndr, class... _Env>
 }
 
 template <class _Sndr, class... _Env>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures()
 {
   static_assert(sizeof...(_Env) <= 1, "At most one environment is allowed.");
   if constexpr (0 == sizeof...(_Env))
@@ -304,7 +304,7 @@ template <class _Sndr, class... _Env>
 }
 
 template <class _Parent, class _Child, class... _Env>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
 {
   return get_completion_signatures<::cuda::std::__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
 }

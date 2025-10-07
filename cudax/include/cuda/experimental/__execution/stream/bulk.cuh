@@ -190,7 +190,7 @@ struct __bulk_t : execution::__bulk_t<__bulk_t>
   {
     // This converts a bulk sender into a bulk_chunked sender, which will then be
     // further transformed by __bulk_chunked_t above.
-    return bulk.transform_sender(static_cast<_Sndr&&>(__sndr), env{});
+    return bulk.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), env{});
   }
 };
 

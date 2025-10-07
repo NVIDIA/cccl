@@ -108,8 +108,26 @@ struct stream_ref : ::cuda::stream_ref
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_domain_t&) const noexcept
-    -> execution::stream_domain;
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_completion_behavior_t&) const noexcept
+  {
+    return execution::completion_behavior::asynchronous;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> execution::__scheduler_of_t<const _Env&>;
+
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept -> execution::stream_domain;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> __call_result_t<execution::get_domain_t, const _Env&>;
 };
 
 } // namespace cuda::experimental

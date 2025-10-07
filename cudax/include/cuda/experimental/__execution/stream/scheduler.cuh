@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&& __env) const noexcept
       -> __call_result_t<get_domain_t, _Env&>
     {
-      return execution::get_domain(__env);
+      return {};
     }
 
     [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_completion_behavior_t) const noexcept
@@ -170,7 +170,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   {};
 
 public:
-  _CCCL_API explicit constexpr stream_scheduler(stream_ref __stream) noexcept
+  _CCCL_API constexpr stream_scheduler(stream_ref __stream) noexcept
       : __stream_{__stream}
   {}
 
@@ -261,8 +261,31 @@ _CCCL_HOST_API inline auto stream_ref::schedule() const noexcept
   return execution::schedule(execution::stream_scheduler{*this});
 }
 
-[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(const execution::get_domain_t&) const noexcept
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref
+{
+  return *this;
+}
+
+template <class _Env>
+[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(
+  const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
+  -> execution::__scheduler_of_t<const _Env&>
+{
+  return execution::get_scheduler(__env);
+}
+
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept
   -> execution::stream_domain
+{
+  return {};
+}
+
+template <class _Env>
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
+  -> __call_result_t<execution::get_domain_t, const _Env&>
 {
   return {};
 }
