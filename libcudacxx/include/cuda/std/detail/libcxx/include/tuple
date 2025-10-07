@@ -226,7 +226,7 @@ class __tuple_leaf;
 _CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _CCCL_API inline void swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x,
-                           __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
+                           __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
 {
   swap(__x.get(), __y.get());
 }
@@ -312,7 +312,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -398,7 +398,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -488,7 +488,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<__tuple_leaf>)
   {
     ::cuda::std::swap(*this, __t);
     return 0;
@@ -603,7 +603,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
   {
     ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
   }
@@ -957,7 +957,7 @@ public:
     return *this;
   }
 
-  _CCCL_API inline void swap(tuple& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+  _CCCL_API inline void swap(tuple& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
   {
     __base_.swap(__t.__base_);
   }
@@ -995,8 +995,8 @@ template <class _Alloc, class... _Tp>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
 
 template <class... _Tp>
-_CCCL_API inline enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
-swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
+_CCCL_API inline enable_if_t<__all<is_nothrow_swappable_v<_Tp>...>::value, void>
+swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
 {
   __t.swap(__u);
 }
@@ -1046,7 +1046,7 @@ _CCCL_API constexpr size_t __find_idx(size_t __i, const bool (&__matches)[_Nx])
 template <class _T1, class... _Args>
 struct __find_exactly_one_checked
 {
-  static constexpr bool __matches[sizeof...(_Args)] = {is_same<_T1, _Args>::value...};
+  static constexpr bool __matches[sizeof...(_Args)] = {is_same_v<_T1, _Args>...};
   static constexpr size_t value                     = __find_detail::__find_idx(0, __matches);
   static_assert(value != __not_found, "type not found in type list");
   static_assert(value != __ambiguous, "type occurs more than once in type list");
@@ -1055,7 +1055,7 @@ struct __find_exactly_one_checked
 template <class _T1>
 struct __find_exactly_one_checked<_T1>
 {
-  static_assert(!is_same<_T1, _T1>::value, "type not in empty type list");
+  static_assert(!is_same_v<_T1, _T1>, "type not in empty type list");
 };
 
 } // namespace __find_detail
@@ -1223,7 +1223,7 @@ template <class... _Types, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_1<
         typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type,
-        __tuple_like_impl<remove_reference_t<_Tuple1>>::value,
+        __tuple_like_impl<remove_reference_t<_Tuple1>>,
         _Tuple1,
         _Tuples...>
 {};
@@ -1233,7 +1233,7 @@ struct __tuple_cat_return;
 
 template <class _Tuple0, class... _Tuples>
 struct __tuple_cat_return<_Tuple0, _Tuples...>
-    : public __tuple_cat_return_1<tuple<>, __tuple_like_impl<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
+    : public __tuple_cat_return_1<tuple<>, __tuple_like_impl<remove_reference_t<_Tuple0>>, _Tuple0, _Tuples...>
 {};
 
 template <>

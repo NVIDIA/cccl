@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_PHYSICAL_DEVICE_H
 #define _CUDA___DEVICE_PHYSICAL_DEVICE_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,6 +27,8 @@
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/std/span>
+#  include <cuda/std/string_view>
 
 #  include <cassert>
 #  include <mutex>
@@ -106,8 +108,47 @@ public:
   {
     if (__primary_ctx)
     {
-      ::cuda::__driver::__primaryCtxRelease(__device);
+      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device);
     }
+  }
+
+  [[nodiscard]] ::cuda::std::string_view __name() const
+  {
+    ::std::call_once(__init_once_name_, [this]() {
+      ::cuda::__driver::__deviceGetName(__name_, __max_name_length, get());
+      __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
+    });
+    return ::cuda::std::string_view{__name_, __name_length_};
+  }
+
+  [[nodiscard]] ::cuda::std::span<const device_ref> __peers() const
+  {
+    ::std::call_once(__init_once_peers_, [this]() {
+      const auto __count = ::cuda::__driver::__deviceGetCount();
+      __peers_.reserve(__count);
+      for (int __other_id = 0; __other_id < __count; ++__other_id)
+      {
+        // Exclude the device this API is called on. The main use case for this API
+        // is enable/disable peer access. While enable peer access can be called on
+        // device on which memory resides, disable peer access will error-out.
+        // Usage of the peer access control is smoother when *this is excluded,
+        // while it can be easily added with .push_back() on the vector if a full
+        // group of peers is needed (for cases other than peer access control)
+        if (__other_id != __id_)
+        {
+          device_ref __other_dev{__other_id};
+
+          // While in almost all practical applications peer access should be symmetrical,
+          // it is possible to build a system with one directional peer access, check
+          // both ways here just to be safe
+          if (has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(*this))
+          {
+            __peers_.push_back(__other_dev);
+          }
+        }
+      }
+    });
+    return ::cuda::std::span<const device_ref>{__peers_};
   }
 
 private:
@@ -120,6 +161,14 @@ private:
   mutable ::CUcontext __primary_ctx = nullptr;
   mutable ::CUdevice __device{};
   mutable ::std::once_flag __init_once;
+
+  static constexpr ::cuda::std::size_t __max_name_length{256};
+  mutable ::std::once_flag __init_once_name_{};
+  mutable char __name_[__max_name_length]{};
+  mutable ::cuda::std::size_t __name_length_{};
+
+  mutable ::std::once_flag __init_once_peers_{};
+  mutable ::std::vector<device_ref> __peers_{};
 
   // TODO should this be a reference/pointer to the constexpr traits instances?
   //  Do we care about lazy init?

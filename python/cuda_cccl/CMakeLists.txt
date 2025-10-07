@@ -62,11 +62,17 @@ install(
 )
 
 # ensure the destination directory exists
-file(MAKE_DIRECTORY "cuda/cccl/experimental/stf/${CUDA_VERSION_DIR}/cccl")
+file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")
+file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 
 install(
     TARGETS cccl.c.experimental.stf
-    DESTINATION cuda/cccl/experimental/stf/${CUDA_VERSION_DIR}/cccl
+    DESTINATION cuda/stf/${CUDA_VERSION_DIR}/cccl
+)
+
+install(
+    TARGETS cccl.c.parallel
+    DESTINATION cuda/compute/${CUDA_VERSION_DIR}/cccl
 )
 
 # Build and install Cython extension
@@ -105,6 +111,11 @@ set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_cccl_SOURCE_DIR}\"")
 string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 # Only building STF bindings - parallel bindings not needed
+message(STATUS "Using Cython ${CYTHON_VERSION}")
+set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
+
+set(_generated_extension_src "${cuda_cccl_BINARY_DIR}/_bindings_impl.c")
+set(_depfile "${cuda_cccl_BINARY_DIR}/_bindings_impl.c.dep")
 
 message(STATUS "STF Using Cython ${CYTHON_VERSION}")
 set(stf_pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/cccl/experimental/stf/_stf_bindings_impl.pyx")
@@ -128,4 +139,5 @@ add_dependencies(_stf_bindings_impl cythonize_stf_bindings_impl)
 target_link_libraries(_stf_bindings_impl PRIVATE cccl.c.experimental.stf CUDA::cuda_driver)
 set_target_properties(_stf_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
-install(TARGETS _stf_bindings_impl DESTINATION cuda/cccl/experimental/stf/${CUDA_VERSION_DIR})
+install(TARGETS _stf_bindings_impl DESTINATION cuda/stf/${CUDA_VERSION_DIR})
+install(TARGETS _bindings_impl DESTINATION cuda/compute/${CUDA_VERSION_DIR})

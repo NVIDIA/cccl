@@ -41,8 +41,8 @@ public:
   constexpr pos4() = default;
 
   /// Create a pos4 from its coordinates
-  template <typename Integral>
-  _CCCL_HOST_DEVICE constexpr explicit pos4(Integral x, Integral y = 0, Integral z = 0, Integral t = 0)
+  template <typename IntegralX, typename IntegralY = ssize_t, typename IntegralZ = ssize_t, typename IntegralT = ssize_t>
+  _CCCL_HOST_DEVICE constexpr explicit pos4(IntegralX x, IntegralY y = 0, IntegralZ z = 0, IntegralT t = 0)
       : x(static_cast<ssize_t>(x))
       , y(static_cast<ssize_t>(y))
       , z(static_cast<ssize_t>(z))
@@ -118,8 +118,8 @@ public:
   dim4() = default;
 
   /// Create a dim4 from its extents
-  template <typename Integral>
-  _CCCL_HOST_DEVICE constexpr explicit dim4(Integral x, Integral y = 1, Integral z = 1, Integral t = 1)
+  template <typename IntegralX, typename IntegralY = size_t, typename IntegralZ = size_t, typename IntegralT = size_t>
+  _CCCL_HOST_DEVICE constexpr explicit dim4(IntegralX x, IntegralY y = 1, IntegralZ z = 1, IntegralT t = 1)
       : x(static_cast<size_t>(x))
       , y(static_cast<size_t>(y))
       , z(static_cast<size_t>(z))

@@ -22,8 +22,7 @@ dependencies = [
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
-  "numba-cuda @ git+https://github.com/caugonnet/numba-cuda.git@cuda_graph_future_memory",
-  "llvmlite==0.44",                                                                        # TODO: remove this once numba-cuda 0.19.2 is released
+  "numba-cuda @ git+https://github.com/caugonnet/numba-cuda.git@cuda_graph_future_memory",                                                                     # TODO: remove this once numba-cuda 0.19.2 is released
 ]
 
 dynamic = ["version"]
@@ -86,7 +85,6 @@ git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
-"cuda/cccl" = "cuda/cccl"
 
 [tool.mypy]
 python_version = "3.10"
@@ -111,8 +109,8 @@ extend = "../../pyproject.toml"
 known-first-party = [
   "cuda.cccl",
   "cuda.cccl.headers",
-  "cuda.cccl.parallel",
-  "cuda.cccl.cooperative",
+  "cuda.compute",
+  "cuda.coop",
 ]
 
 [tool.pytest.ini_options]

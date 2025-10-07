@@ -38,8 +38,8 @@ body:
         - CUB
         - libcu++
         - CUDA Experimental (cudax)
-        - cuda.cccl.cooperative (Python)
-        - cuda.cccl.parallel (Python)
+        - cuda.coop (Python)
+        - cuda.compute (Python)
         - General CCCL
         - Infrastructure
         - Not sure

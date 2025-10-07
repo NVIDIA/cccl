@@ -75,7 +75,7 @@ struct __unwrap_iter_impl<_Iter, true>
   }
 };
 
-template <class _Iter, class _Impl = __unwrap_iter_impl<_Iter>, enable_if_t<is_copy_constructible<_Iter>::value, int> = 0>
+template <class _Iter, class _Impl = __unwrap_iter_impl<_Iter>, enable_if_t<is_copy_constructible_v<_Iter>, int> = 0>
 _CCCL_API constexpr decltype(_Impl::__unwrap(::cuda::std::declval<_Iter>())) __unwrap_iter(_Iter __i) noexcept
 {
   return _Impl::__unwrap(__i);

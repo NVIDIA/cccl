@@ -23,10 +23,10 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__event/event_ref.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/utility>
 
@@ -43,11 +43,11 @@ class event : public event_ref
 
 public:
   //! @brief Flags to use when creating the event.
-  enum class flags : unsigned int
+  enum class flags : unsigned
   {
     none          = cudaEventDefault,
     blocking_sync = cudaEventBlockingSync,
-    interprocess  = cudaEventInterprocess
+    interprocess  = cudaEventInterprocess,
   };
 
   //! @brief Construct a new `event` object with timing disabled, and record
@@ -141,7 +141,7 @@ public:
 
   [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
-    return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
+    return static_cast<flags>(static_cast<unsigned>(__lhs) | static_cast<unsigned>(__rhs));
   }
 
 private:
@@ -151,14 +151,13 @@ private:
       : event_ref(__evnt)
   {}
 
-  explicit event(stream_ref __stream, unsigned int __flags);
+  explicit event(stream_ref __stream, unsigned __flags);
 
-  explicit event(device_ref __device, unsigned int __flags)
+  explicit event(device_ref __device, unsigned __flags)
       : event_ref(::cudaEvent_t{})
   {
     [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
-    _CCCL_TRY_CUDA_API(
-      ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
+    __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
   }
 };
 

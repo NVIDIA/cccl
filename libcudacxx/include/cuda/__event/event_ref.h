@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/utility>
@@ -80,7 +79,7 @@ public:
   _CCCL_HOST_API void sync() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
+    ::cuda::__driver::__eventSynchronize(__event_);
   }
 
   //! @brief Checks if all the work in the stream prior to the record of the event has completed.
@@ -91,12 +90,12 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    cudaError_t __status = ::cudaEventQuery(__event_);
-    if (__status == cudaSuccess)
+    ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
+    if (__status == ::cudaSuccess)
     {
       return true;
     }
-    else if (__status == cudaErrorNotReady)
+    else if (__status == ::cudaErrorNotReady)
     {
       return false;
     }
