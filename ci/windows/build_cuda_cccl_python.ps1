@@ -95,6 +95,14 @@ try {
     foreach ($major in $CudaMajorsToBuild) {
         if (-not $OnlyCudaMajor -and $major -eq '13' -and $Cuda13Image) {
             if (-not $env:HOST_WORKSPACE) { throw 'HOST_WORKSPACE env var is not set; required for DooD nested docker mounts on Windows.' }
+
+            if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+              throw "docker CLI not found in the devcontainer image (required for DooD)."
+            }
+
+            Write-Host "Checking DooD connectivity..."
+            docker version | Out-Host
+
             $hostWorkspace = $env:HOST_WORKSPACE
             Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
             $dockerCmd = @(
