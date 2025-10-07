@@ -42,32 +42,26 @@ void test_compile_time_logical_data_t_exists()
   // Test that logical_data_t is defined for stream_ctx
   using stream_logical_data_int    = stream_ctx::logical_data_t<slice<int>>;
   using stream_logical_data_double = stream_ctx::logical_data_t<slice<double>>;
-  static_assert(
-    ::std::is_same_v<stream_logical_data_int, logical_data<slice<int>>>,
-    "stream_ctx::logical_data_t<slice<int>> should be logical_data<slice<int>>");
-  static_assert(
-    ::std::is_same_v<stream_logical_data_double, logical_data<slice<double>>>,
-    "stream_ctx::logical_data_t<slice<double>> should be logical_data<slice<double>>");
+  static_assert(::std::is_same_v<stream_logical_data_int, logical_data<slice<int>>>,
+                "stream_ctx::logical_data_t<slice<int>> should be logical_data<slice<int>>");
+  static_assert(::std::is_same_v<stream_logical_data_double, logical_data<slice<double>>>,
+                "stream_ctx::logical_data_t<slice<double>> should be logical_data<slice<double>>");
 
   // Test that logical_data_t is defined for graph_ctx
   using graph_logical_data_int    = graph_ctx::logical_data_t<slice<int>>;
   using graph_logical_data_double = graph_ctx::logical_data_t<slice<double>>;
-  static_assert(
-    ::std::is_same_v<graph_logical_data_int, logical_data<slice<int>>>,
-    "graph_ctx::logical_data_t<slice<int>> should be logical_data<slice<int>>");
-  static_assert(
-    ::std::is_same_v<graph_logical_data_double, logical_data<slice<double>>>,
-    "graph_ctx::logical_data_t<slice<double>> should be logical_data<slice<double>>");
+  static_assert(::std::is_same_v<graph_logical_data_int, logical_data<slice<int>>>,
+                "graph_ctx::logical_data_t<slice<int>> should be logical_data<slice<int>>");
+  static_assert(::std::is_same_v<graph_logical_data_double, logical_data<slice<double>>>,
+                "graph_ctx::logical_data_t<slice<double>> should be logical_data<slice<double>>");
 
   // Test that logical_data_t is defined for stackable_ctx
   using stackable_logical_data_int    = stackable_ctx::logical_data_t<slice<int>>;
   using stackable_logical_data_double = stackable_ctx::logical_data_t<slice<double>>;
-  static_assert(
-    ::std::is_same_v<stackable_logical_data_int, stackable_logical_data<slice<int>>>,
-    "stackable_ctx::logical_data_t<slice<int>> should be stackable_logical_data<slice<int>>");
-  static_assert(
-    ::std::is_same_v<stackable_logical_data_double, stackable_logical_data<slice<double>>>,
-    "stackable_ctx::logical_data_t<slice<double>> should be stackable_logical_data<slice<double>>");
+  static_assert(::std::is_same_v<stackable_logical_data_int, stackable_logical_data<slice<int>>>,
+                "stackable_ctx::logical_data_t<slice<int>> should be stackable_logical_data<slice<int>>");
+  static_assert(::std::is_same_v<stackable_logical_data_double, stackable_logical_data<slice<double>>>,
+                "stackable_ctx::logical_data_t<slice<double>> should be stackable_logical_data<slice<double>>");
 }
 
 // Test 2: Generic function that uses ctx_t::logical_data_t as a template parameter
@@ -137,9 +131,8 @@ void test_auto_deduction(Ctx& ctx)
 
   // Verify the type is correct
   using expected_type = typename Ctx::template logical_data_t<slice<int>>;
-  static_assert(
-    ::std::is_same_v<decltype(data), expected_type>,
-    "Auto-deduced type should match ctx_t::logical_data_t<slice<int>>");
+  static_assert(::std::is_same_v<decltype(data), expected_type>,
+                "Auto-deduced type should match ctx_t::logical_data_t<slice<int>>");
 
   // Use the data
   ctx.host_launch(data.read())->*[](auto d) {
@@ -192,9 +185,9 @@ void run_tests()
 
     // Initialize double data
     ctx.parallel_for(holder.get_double_data().shape(), holder.get_double_data().write())
-      ->*[] __device__(size_t i, auto d) {
-        d(i) = static_cast<double>(i) * 1.5;
-      };
+        ->*[] __device__(size_t i, auto d) {
+              d(i) = static_cast<double>(i) * 1.5;
+            };
 
     // Verify int data
     ctx.host_launch(holder.get_int_data().read())->*[](auto d) {
@@ -325,4 +318,3 @@ int main()
 
   return 0;
 }
-
