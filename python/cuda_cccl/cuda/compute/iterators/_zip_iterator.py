@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import ctypes
+import uuid
 
 import numba
 from llvmlite import ir  # noqa: F401
@@ -55,7 +56,9 @@ def _get_zip_iterator_metadata(iterators):
     return cvalue, state_type, value_type
 
 
-def _get_advance_and_dereference_functions(iterators):
+def _get_advance_and_dereference_functions(
+    iterators, state_field_types, value_field_types
+):
     # Generate the advance and dereference functions for the zip iterator
     # composed of the input iterators
     # Put simply, the advance method invokes the advance method of each input
@@ -64,17 +67,24 @@ def _get_advance_and_dereference_functions(iterators):
 
     n_iterators = len(iterators)
 
+    # Generate a unique ID for this zip iterator to avoid name collisions
+    # when nesting zip iterators
+    unique_id = uuid.uuid4().hex[:8]
+
     # Within the advance and dereference methods of this iterator, we need a way
     # to get pointers to the fields of the state struct (advance and dereference),
     # and the value struct (dereference). This needs `n` custom intrinsics, one
-    # for each field. The loop below defines those intrinsics:
-    for field_idx in range(n_iterators):
-        func_name = f"get_field_ptr_{field_idx}"
+    # for each field. We create separate intrinsics for state and value fields.
 
-        # Create the intrinsic function
-        intrinsic_code = f"""
+    # Create intrinsics for state field pointers
+    for field_idx in range(n_iterators):
+        func_name_state = f"get_state_field_ptr_{field_idx}_{unique_id}"
+        func_name_value = f"get_value_field_ptr_{field_idx}_{unique_id}"
+
+        # Create the intrinsic function for state fields
+        intrinsic_code_state = f"""
 @intrinsic
-def {func_name}(context, struct_ptr_type):
+def {func_name_state}(context, struct_ptr_type):
     def codegen(context, builder, sig, args):
         struct_ptr = args[0]
         # Use GEP to get pointer to field at index {field_idx}
@@ -84,19 +94,47 @@ def {func_name}(context, struct_ptr_type):
         )
         return field_ptr
 
-    struct_model = default_manager.lookup(struct_ptr_type.dtype)
-    field_type = struct_model._members[{field_idx}]
+    # Use the pre-computed field type
+    field_type = state_field_types[{field_idx}]
     return types.CPointer(field_type)(struct_ptr_type), codegen
 """
-        # Execute the code to create the intrinsic function in global namespace
-        exec(intrinsic_code, globals())
+
+        # Create the intrinsic function for value fields
+        intrinsic_code_value = f"""
+@intrinsic
+def {func_name_value}(context, struct_ptr_type):
+    def codegen(context, builder, sig, args):
+        struct_ptr = args[0]
+        # Use GEP to get pointer to field at index {field_idx}
+        field_ptr = builder.gep(
+            struct_ptr,
+            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), {field_idx})],
+        )
+        return field_ptr
+
+    # Use the pre-computed field type
+    field_type = value_field_types[{field_idx}]
+    return types.CPointer(field_type)(struct_ptr_type), codegen
+"""
+        # Make field types available in the exec context
+        exec_globals = globals().copy()
+        exec_globals["state_field_types"] = state_field_types
+        exec_globals["value_field_types"] = value_field_types
+
+        # Execute the code to create the intrinsic functions
+        exec(intrinsic_code_state, exec_globals)
+        exec(intrinsic_code_value, exec_globals)
+
+        # Copy back to globals
+        globals()[func_name_state] = exec_globals[func_name_state]
+        globals()[func_name_value] = exec_globals[func_name_value]
 
     # Now we can define the advance and dereference methods of this iterator,
     # which also need to be defined dynamically because they will use the
     # intrinsics defined above.
     for i, it in enumerate(iterators):
-        globals()[f"advance_{i}"] = cuda.jit(it.advance, device=True)
-        globals()[f"dereference_{i}"] = cuda.jit(
+        globals()[f"advance_{i}_{unique_id}"] = cuda.jit(it.advance, device=True)
+        globals()[f"dereference_{i}_{unique_id}"] = cuda.jit(
             it.input_dereference, device=True
         )  # only input_dereference for now
 
@@ -105,23 +143,23 @@ def {func_name}(context, struct_ptr_type):
     dereference_lines = []  # lines of code for the dereference method
     for i in range(n_iterators):
         advance_lines.append(
-            f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
-            f"    advance_{i}(state_ptr_{i}, distance)"
+            f"    state_ptr_{i} = get_state_field_ptr_{i}_{unique_id}(state)\n"
+            f"    advance_{i}_{unique_id}(state_ptr_{i}, distance)"
         )
         dereference_lines.append(
-            f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
-            f"    result_ptr_{i} = get_field_ptr_{i}(result)\n"
-            f"    dereference_{i}(state_ptr_{i}, result_ptr_{i})"
+            f"    state_ptr_{i} = get_state_field_ptr_{i}_{unique_id}(state)\n"
+            f"    result_ptr_{i} = get_value_field_ptr_{i}_{unique_id}(result)\n"
+            f"    dereference_{i}_{unique_id}(state_ptr_{i}, result_ptr_{i})"
         )
 
     advance_method_code = f"""
-def input_advance(state, distance):
+def input_advance_{unique_id}(state, distance):
     # Advance each iterator using dynamically created field pointer functions
 {chr(10).join(advance_lines)}
 """  # chr(10) is '\n'
 
     dereference_method_code = f"""
-def input_dereference(state, result):
+def input_dereference_{unique_id}(state, result):
     # Dereference each iterator using dynamically created field pointer functions
 {chr(10).join(dereference_lines)}
 """  # chr(10) is '\n'
@@ -130,8 +168,8 @@ def input_dereference(state, result):
     exec(advance_method_code, globals())
     exec(dereference_method_code, globals())
 
-    advance_func = globals()["input_advance"]
-    dereference_func = globals()["input_dereference"]
+    advance_func = globals()[f"input_advance_{unique_id}"]
+    dereference_func = globals()[f"input_dereference_{unique_id}"]
 
     return advance_func, dereference_func
 
@@ -163,8 +201,12 @@ def make_zip_iterator(*iterators):
 
     cvalue, state_type, value_type = _get_zip_iterator_metadata(processed_iterators)
 
+    # Extract field types for the intrinsics
+    state_field_types = tuple(it.state_type for it in processed_iterators)
+    value_field_types = tuple(it.value_type for it in processed_iterators)
+
     advance_func, dereference_func = _get_advance_and_dereference_functions(
-        processed_iterators
+        processed_iterators, state_field_types, value_field_types
     )
 
     class ZipIterator(IteratorBase):
