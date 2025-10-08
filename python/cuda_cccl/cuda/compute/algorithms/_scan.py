@@ -141,7 +141,7 @@ def make_exclusive_scan(
     Example:
         Below, ``make_exclusive_scan`` is used to create an exclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/scan/exclusive_scan_object.py
           :language: python
           :start-after: # example-begin
 
@@ -174,7 +174,7 @@ def exclusive_scan(
     Example:
         Below, ``exclusive_scan`` is used to compute an exclusive scan with max operation.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan_max.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/scan/exclusive_scan_max.py
             :language: python
             :start-after: # example-begin
 
@@ -207,7 +207,7 @@ def make_inclusive_scan(
     Example:
         Below, ``make_inclusive_scan`` is used to create an inclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/scan/inclusive_scan_object.py
           :language: python
           :start-after: # example-begin
 
@@ -240,7 +240,7 @@ def inclusive_scan(
     Example:
         Below, ``inclusive_scan`` is used to compute an inclusive scan (prefix sum).
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan_custom.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/scan/inclusive_scan_custom.py
             :language: python
             :start-after: # example-begin
 

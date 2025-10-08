@@ -166,7 +166,7 @@ def make_merge_sort(
     Example:
         Below, ``make_merge_sort`` is used to create a merge sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/merge_sort_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/merge_sort_object.py
           :language: python
           :start-after: # example-begin
 
@@ -201,7 +201,7 @@ def merge_sort(
     Example:
         Below, ``merge_sort`` is used to sort a sequence of keys inplace. It also rearranges the items according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/merge_sort_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/merge_sort_basic.py
             :language: python
             :start-after: # example-begin
 

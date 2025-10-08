@@ -26,7 +26,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/cache_modified_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/cache_modified_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -55,7 +55,7 @@ def ConstantIterator(value):
         The code snippet below demonstrates the usage of a ``ConstantIterator``
         representing a sequence of constant values:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/constant_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/constant_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -78,7 +78,7 @@ def CountingIterator(offset):
         The code snippet below demonstrates the usage of a ``CountingIterator``
         representing the sequence ``[10, 11, 12]``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -100,13 +100,13 @@ def ReverseIterator(sequence):
     Examples:
         The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_input_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/reverse_input_iterator.py
             :language: python
             :start-after: # example-begin
 
         The code snippet below demonstrates the usage of a ``ReverseIterator`` as an output iterator:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_output_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/reverse_output_iterator.py
             :language: python
             :start-after: # example-begin
 
@@ -129,7 +129,7 @@ def TransformIterator(it, op):
         The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
         to transform the input before performing a reduction.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
             :language: python
             :start-after: # example-begin
     Args:
@@ -151,7 +151,7 @@ def TransformOutputIterator(it, op):
         The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
         of a reduction before writing to an output array.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
             :language: python
             :start-after: # example-begin
 
@@ -178,7 +178,7 @@ def ZipIterator(*iterators):
         The code snippet below demonstrates the usage of a ``ZipIterator``
         combining two device arrays:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator_elementwise.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
             :language: python
             :start-after: # example-begin
 

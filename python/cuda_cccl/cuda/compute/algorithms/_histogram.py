@@ -148,7 +148,7 @@ def make_histogram_even(
     Example:
         Below, ``make_histogram_even`` is used to create a histogram object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/histogram/histogram_object.py
           :language: python
           :start-after: # example-begin
 
@@ -190,7 +190,7 @@ def histogram_even(
     Example:
         Below, ``histogram_even`` is used to compute a histogram with evenly-spaced bins.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_even_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/histogram/histogram_even_basic.py
             :language: python
             :start-after: # example-begin
             :caption: Basic histogram example.
