@@ -22,7 +22,9 @@
 #endif // no system header
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 #  include <cuda/__device/attributes.h>
+#  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/limits>
 
@@ -58,76 +60,76 @@ enum class id : int
   sm_120a = 120 * __arch_specific_id_multiplier,
 };
 
-// @brief Architecture traits
-// This type contains information about an architecture that is constant across devices of that architecture.
+//! @brief Architecture traits
+//! This type contains information about an architecture that is constant across devices of that architecture.
 struct traits_t
 {
   // Maximum number of threads per block
-  const int max_threads_per_block = 1024;
+  int max_threads_per_block = 1024;
 
   // Maximum x-dimension of a block
-  const int max_block_dim_x = 1024;
+  int max_block_dim_x = 1024;
 
   // Maximum y-dimension of a block
-  const int max_block_dim_y = 1024;
+  int max_block_dim_y = 1024;
 
   // Maximum z-dimension of a block
-  const int max_block_dim_z = 64;
+  int max_block_dim_z = 64;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = cuda::std::numeric_limits<int32_t>::max();
+  int max_grid_dim_x = ::cuda::std::numeric_limits<int32_t>::max();
 
   // Maximum y-dimension of a grid
-  const int max_grid_dim_y = 64 * 1024 - 1;
+  int max_grid_dim_y = 64 * 1024 - 1;
 
   // Maximum z-dimension of a grid
-  const int max_grid_dim_z = 64 * 1024 - 1;
+  int max_grid_dim_z = 64 * 1024 - 1;
 
   // Maximum amount of shared memory available to a thread block in bytes
-  const int max_shared_memory_per_block = 48 * 1024;
+  int max_shared_memory_per_block = 48 * 1024;
 
   // Memory available on device for __constant__ variables in a CUDA C kernel in bytes
-  const int total_constant_memory = 64 * 1024;
+  int total_constant_memory = 64 * 1024;
 
   // Warp size in threads
-  const int warp_size = 32;
+  int warp_size = 32;
 
   // Maximum number of concurrent grids on the device
-  const int max_resident_grids = 128;
+  int max_resident_grids = 128;
 
   // true if the device can concurrently copy memory between host and device
   // while executing a kernel, or false if not
-  const bool gpu_overlap = true;
+  bool gpu_overlap = true;
 
   // true if the device can map host memory into CUDA address space
-  const bool can_map_host_memory = true;
+  bool can_map_host_memory = true;
 
   // true if the device supports executing multiple kernels within the same
   // context simultaneously, or false if not. It is not guaranteed that multiple
   // kernels will be resident on the device concurrently so this feature should
   // not be relied upon for correctness.
-  const bool concurrent_kernels = true;
+  bool concurrent_kernels = true;
 
   // true if the device supports stream priorities, or false if not
-  const bool stream_priorities_supported = true;
+  bool stream_priorities_supported = true;
 
   // true if device supports caching globals in L1 cache, false if not
-  const bool global_l1_cache_supported = true;
+  bool global_l1_cache_supported = true;
 
   // true if device supports caching locals in L1 cache, false if not
-  const bool local_l1_cache_supported = true;
+  bool local_l1_cache_supported = true;
 
   // TODO: We might want to have these per-arch
   // Maximum number of 32-bit registers available to a thread block
-  const int max_registers_per_block = 64 * 1024;
+  int max_registers_per_block = 64 * 1024;
 
   // Maximum number of 32-bit registers available to a multiprocessor; this
   // number is shared by all thread blocks simultaneously resident on a
   // multiprocessor
-  const int max_registers_per_multiprocessor = 64 * 1024;
+  int max_registers_per_multiprocessor = 64 * 1024;
 
   // Maximum number of 32-bit registers available to a thread
-  const int max_registers_per_thread = 255;
+  int max_registers_per_thread = 255;
 
   // Identifier for the architecture
   id arch_id;
@@ -182,10 +184,10 @@ struct traits_t
 // @brief Architecture traits
 // Template function that returns the traits for an architecture with a given id.
 template <id _Id>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr traits_t traits();
+[[nodiscard]] _CCCL_API constexpr traits_t traits();
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_60>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_60>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_60;
@@ -208,7 +210,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_61>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_61>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_61;
@@ -231,7 +233,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_70>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_70>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_70;
@@ -255,7 +257,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_75>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_75>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_75;
@@ -279,7 +281,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_80>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_80>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_80;
@@ -303,7 +305,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_86>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_86>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_86;
@@ -327,7 +329,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_89>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_89>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_89;
@@ -351,7 +353,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_90>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_90;
@@ -376,13 +378,13 @@ template <>
 
 // No sm_90a specific fields for now.
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90a>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_90a>()
 {
   return ::cuda::arch::traits<id::sm_90>();
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_100>()
 {
   traits_t __traits{};
   __traits.arch_id                              = id::sm_100;
@@ -406,13 +408,13 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100a>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_100a>()
 {
   return ::cuda::arch::traits<id::sm_100>();
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_103>()
 {
   traits_t __traits                 = ::cuda::arch::traits<id::sm_100>();
   __traits.arch_id                  = id::sm_103;
@@ -423,13 +425,13 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103a>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_103a>()
 {
   return ::cuda::arch::traits<id::sm_103>();
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_110>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_110>()
 {
   traits_t __traits                       = ::cuda::arch::traits<id::sm_100>();
   __traits.arch_id                        = id::sm_110;
@@ -443,7 +445,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_110a>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_110a>()
 {
   return ::cuda::arch::traits<id::sm_110>();
 };
@@ -473,7 +475,7 @@ template <>
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120a>()
+[[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_120a>()
 {
   return ::cuda::arch::traits<id::sm_120>();
 };
@@ -538,7 +540,7 @@ inline constexpr int __highest_known_arch = 120;
   return ::cuda::arch::traits_for_id(::cuda::arch::id_for_compute_capability(compute_capability));
 }
 
-_CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
+[[nodiscard]] _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
 {
   switch (value)
   {
@@ -559,7 +561,7 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
 }
 
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-[[nodiscard]] _CCCL_DEVICE inline constexpr arch::traits_t current_traits()
+[[nodiscard]] _CCCL_DEVICE_API inline constexpr arch::traits_t current_traits()
 {
   // fixme: this doesn't work with nvc++ -cuda
 #  ifdef __CUDA_ARCH__
@@ -574,7 +576,7 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
 #  endif // __CUDA_ARCH__
 }
 
-[[nodiscard]] inline constexpr arch::traits_t
+[[nodiscard]] _CCCL_HOST_API inline constexpr arch::traits_t
 __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 {
   if (__compute_capability <= arch::__highest_known_arch)
