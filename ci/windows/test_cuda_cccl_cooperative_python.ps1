@@ -14,6 +14,7 @@ $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor
 
 ${wheelPath} = Get-CudaCcclWheel
+& $python -m pip install -U pip pytest pytest-xdist
 & $python -m pip install "${wheelPath}[test-cu$cudaMajor]"
 
 Push-Location (Join-Path (Get-RepoRoot) "python/cuda_cccl/tests")

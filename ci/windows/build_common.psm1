@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER = (Get-Command "cl").source -replace '\\', '/'
-$script:PARALLEL_LEVEL = (Get-WmiObject -class Win32_processor).NumberOfLogicalProcessors
+$script:PARALLEL_LEVEL = (Get-WmiObject -Class Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum
 
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
@@ -287,7 +287,8 @@ function Get-CudaCcclWheel {
             $wheelArtifactName = (& bash -lc "ci/util/workflow/get_wheel_artifact_name.sh").Trim()
             if (-not $wheelArtifactName) { throw 'Failed to resolve wheel artifact name' }
             $repoRootPosix = Convert-ToUnixPath $repoRoot
-            & bash -lc "ci/util/artifacts/download.sh $wheelArtifactName $repoRootPosix"
+            # Ensure output from downloader goes to console, not function return pipeline
+            $null = (& bash -lc "ci/util/artifacts/download.sh $wheelArtifactName $repoRootPosix" 2>&1 | Out-Host)
             if ($LASTEXITCODE -ne 0) { throw "Failed to download wheel artifact '$wheelArtifactName'" }
         }
         finally { Pop-Location }
