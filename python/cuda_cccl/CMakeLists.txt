@@ -65,6 +65,7 @@ install(
 file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")
 file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 
+# Install version-specific binaries
 install(
     TARGETS cccl.c.experimental.stf
     DESTINATION cuda/stf/${CUDA_VERSION_DIR}/cccl
@@ -117,8 +118,24 @@ set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
 set(_generated_extension_src "${cuda_cccl_BINARY_DIR}/_bindings_impl.c")
 set(_depfile "${cuda_cccl_BINARY_DIR}/_bindings_impl.c.dep")
 
+# Custom Cython compilation command for version-specific target
+add_custom_command(
+    OUTPUT "${_generated_extension_src}"
+    COMMAND "${Python3_EXECUTABLE}" -m cython
+    ARGS ${CYTHON_FLAGS_LIST} "${pyx_source_file}" --output-file "${_generated_extension_src}"
+    DEPENDS "${pyx_source_file}"
+    DEPFILE "${_depfile}"
+    COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
+)
+
+set_source_files_properties("${_generated_extension_src}" PROPERTIES GENERATED TRUE)
+add_custom_target(cythonize_bindings_impl ALL
+    DEPENDS "${_generated_extension_src}"
+)
+
+
 message(STATUS "STF Using Cython ${CYTHON_VERSION}")
-set(stf_pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/cccl/experimental/stf/_stf_bindings_impl.pyx")
+set(stf_pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/stf/_stf_bindings_impl.pyx")
 set(_stf_generated_extension_src "${cuda_cccl_BINARY_DIR}/_stf_bindings_impl.c")
 set(_stf_depfile "${cuda_cccl_BINARY_DIR}/_stf_bindings_impl.c.dep")
 add_custom_command(
@@ -133,6 +150,11 @@ set_source_files_properties("${_stf_generated_extension_src}" PROPERTIES GENERAT
 add_custom_target(cythonize_stf_bindings_impl ALL
     DEPENDS "${_stf_generated_extension_src}"
 )
+
+Python3_add_library(_bindings_impl MODULE WITH_SOABI "${_generated_extension_src}")
+add_dependencies(_bindings_impl cythonize_bindings_impl)
+target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
+set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
 Python3_add_library(_stf_bindings_impl MODULE WITH_SOABI "${_stf_generated_extension_src}")
 add_dependencies(_stf_bindings_impl cythonize_stf_bindings_impl)
