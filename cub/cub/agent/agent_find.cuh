@@ -1,41 +1,15 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
-
-/**
- * @file cub::AgentFind implements a stateful abstraction of CUDA thread
- *       blocks for participating in device-wide search.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 #include <cub/config.cuh>
 
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -45,21 +19,21 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * Parameterizable tuning policy type for AgentFind
- * @tparam NOMINAL_BLOCK_THREADS_4B Threads per thread block
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
  * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
  */
-template <int NOMINAL_BLOCK_THREADS_4B,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
           typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
+          int VectorLoadLength,
           CacheLoadModifier _LOAD_MODIFIER,
-          typename ScalingType = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+          typename ScalingType = cub::detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentFindPolicy : ScalingType
 {
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
@@ -72,12 +46,8 @@ template <typename AgentFindPolicy,
           typename ScanOpT> // @giannis OutputiteratorT not needed
 struct AgentFind
 {
-  //---------------------------------------------------------------------
-  // Types and constants
-  //---------------------------------------------------------------------
-
   /// The input value type
-  using InputT = cub::detail::value_t<InputIteratorT>;
+  using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentFindPolicy::VECTOR_LOAD_LENGTH>::Type;
@@ -94,13 +64,13 @@ struct AgentFind
   static constexpr int BLOCK_THREADS      = AgentFindPolicy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = AgentFindPolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = CUB_MIN(ITEMS_PER_THREAD, AgentFindPolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentFindPolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer<InputIteratorT>::value) && Traits<InputT>::PRIMITIVE;
+    && (::cuda::std::is_pointer<InputIteratorT>::value) && detail::is_primitive<InputT>::value;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentFindPolicy::LOAD_MODIFIER;
 
@@ -108,12 +78,7 @@ struct AgentFind
   using _TempStorage = OffsetT;
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  //---------------------------------------------------------------------
-  // Per-thread fields
-  //---------------------------------------------------------------------
+  using TempStorage = Uninitialized<_TempStorage>;
 
   _TempStorage& sresult; ///< Reference to temp_storage
   InputIteratorT d_in; ///< Input data to find
@@ -123,13 +88,13 @@ struct AgentFind
   // WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to find
   ScanOpT scan_op; ///< Binary reduction operator
 
-  //---------------------------------------------------------------------
-  // Utility
-  //---------------------------------------------------------------------
-
   template <typename T>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
-  IsAlignedAndFullTile(T* d_in, int tile_offset, int tile_size, OffsetT num_items, Int2Type<true> /*CAN_VECTORIZE*/)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAlignedAndFullTile(
+    T* d_in,
+    int tile_offset,
+    int tile_size,
+    OffsetT num_items,
+    ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
     /// Create an AgentFindIf and extract these two as type member in the encapsulating struct
     using InputT  = T;
@@ -146,14 +111,10 @@ struct AgentFind
     int /*tile_offset*/,
     int /*tile_size*/,
     std::size_t /*num_items*/,
-    Int2Type<false> /*CAN_VECTORIZE*/)
+    ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
   {
     return false;
   }
-
-  //---------------------------------------------------------------------
-  // Constructor
-  //---------------------------------------------------------------------
 
   /**
    * @brief Constructor
@@ -167,15 +128,15 @@ struct AgentFind
       , scan_op(scan_op)
   {}
 
-  //---------------------------------------------------------------------
-  // Tile consumption
-  //---------------------------------------------------------------------
-
   template <typename Pred>
-  __device__ void
-  ConsumeTile(int tile_offset, Pred pred, OffsetT* result, OffsetT num_items, Int2Type<true> /*CAN_VECTORIZE*/)
+  __device__ void ConsumeTile(
+    int tile_offset,
+    Pred pred,
+    OffsetT* result,
+    OffsetT num_items,
+    ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
-    using InputT  = cub::detail::value_t<InputIteratorT>;
+    using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
     using VectorT = typename CubVector<InputT, VECTOR_LOAD_LENGTH>::Type;
 
     __shared__ OffsetT block_result;
@@ -239,8 +200,12 @@ struct AgentFind
   }
 
   template <typename Pred>
-  __device__ void
-  ConsumeTile(int tile_offset, Pred pred, OffsetT* result, OffsetT num_items, Int2Type<false> /*CAN_VECTORIZE*/)
+  __device__ void ConsumeTile(
+    int tile_offset,
+    Pred pred,
+    OffsetT* result,
+    OffsetT num_items,
+    ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
   {
     __shared__ int block_result;
 
@@ -296,9 +261,15 @@ struct AgentFind
         return;
       }
 
-      IsAlignedAndFullTile(d_in, tile_offset, TILE_ITEMS, num_items, Int2Type<ATTEMPT_VECTORIZATION>())
-        ? ConsumeTile(tile_offset, scan_op, value_temp_storage, num_items, Int2Type<ATTEMPT_VECTORIZATION>())
-        : ConsumeTile(tile_offset, scan_op, value_temp_storage, num_items, Int2Type<false>());
+      IsAlignedAndFullTile(
+        d_in, tile_offset, TILE_ITEMS, num_items, ::cuda::std::integral_constant<bool, ATTEMPT_VECTORIZATION>())
+        ? ConsumeTile(tile_offset,
+                      scan_op,
+                      value_temp_storage,
+                      num_items,
+                      ::cuda::std::integral_constant<bool, ATTEMPT_VECTORIZATION>())
+        : ConsumeTile(
+            tile_offset, scan_op, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
     }
   }
 };
