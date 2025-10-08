@@ -1556,6 +1556,32 @@ The API is subject to change without notice.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">reduce_into</span></code> is used to compute the sum of a sequence of integers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Sum all values in an array using reduction with PLUS operation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpKind</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sum reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1576,6 +1602,45 @@ The API is subject to change without notice.</p>
 <dd><p>Computes a device-wide reduction using the specified binary <code class="docutils literal notranslate"><span class="pre">op</span></code> and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_reduce_into</span></code> is used to create a reduction object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Reduction example using the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">init_value</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">init_value</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Create a reducer object.</span>
+<span class="n">reducer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Allocate temporary storage using any user-defined allocator.</span>
+<span class="c1"># The result must be an object exposing `__cuda_array_interface__`.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span> <span class="o">+</span> <span class="n">init_value</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">actual_result</span> <span class="o">==</span> <span class="n">expected_result</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduce object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1599,6 +1664,37 @@ The API is subject to change without notice.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">inclusive_scan</span></code> is used to compute an inclusive scan (prefix sum).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Inclusive scan with custom operation (prefix sum of even values).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+
+<span class="c1"># Define the binary operation for the scan.</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span> <span class="k">if</span> <span class="n">b</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="c1"># Perform the inclusive scan.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">inclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_op</span><span class="p">,</span> <span class="n">h_init</span><span class="p">,</span> <span class="n">d_input</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">expected</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inclusive scan custom result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1619,6 +1715,40 @@ The API is subject to change without notice.</p>
 <dd><p>Computes a device-wide scan using the specified binary <code class="docutils literal notranslate"><span class="pre">op</span></code> and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_inclusive_scan</span></code> is used to create an inclusive scan object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Inclusive scan example demonstrating the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Create the scanner object and allocate temporary storage.</span>
+<span class="n">scanner</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_inclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the inclusive scan.</span>
+<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_result</span><span class="p">,</span> <span class="n">expected_result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Inclusive scan object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1642,6 +1772,38 @@ The API is subject to change without notice.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">exclusive_scan</span></code> is used to compute an exclusive scan with max operation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exclusive scan using custom maximum operation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Define the binary operation for the scan.</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">max_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+
+<span class="c1"># Perform the exclusive scan.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">exclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">max_op</span><span class="p">,</span> <span class="n">h_init</span><span class="p">,</span> <span class="n">d_input</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exclusive scan max result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1662,6 +1824,40 @@ The API is subject to change without notice.</p>
 <dd><p>Computes a device-wide scan using the specified binary <code class="docutils literal notranslate"><span class="pre">op</span></code> and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_exclusive_scan</span></code> is used to create an exclusive scan object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exclusive scan example demonstrating the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Create the scanner object and allocate temporary storage.</span>
+<span class="n">scanner</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_exclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the exclusive scan.</span>
+<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_result</span><span class="p">,</span> <span class="n">expected_result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Exclusive scan object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1685,6 +1881,37 @@ The API is subject to change without notice.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">unary_transform</span></code> is used to apply a transformation to each element of the input.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use unary_transform to apply a unary operation to each element.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_in</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in</span><span class="p">)</span>
+
+
+<span class="c1"># Define the unary operation.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">op</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<span class="c1"># Perform the unary transform.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">unary_transform</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">input_data</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unary transform result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1706,6 +1933,40 @@ to each element of the input according to the unary operation <code class="docut
 <p>This is the object-oriented API that allows explicit control over temporary
 storage allocation. For simpler usage, consider using <a class="reference internal" href="#cuda.compute.algorithms.unary_transform" title="cuda.compute.algorithms.unary_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">unary_transform()</span></code></a>.</p>
 <p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Unary transform examples demonstrating the object API and well-known operations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+
+
+<span class="c1"># Define the unary operation.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_one_op</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<span class="c1"># Create the unary transform object.</span>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_unary_transform</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_one_op</span><span class="p">)</span>
+
+<span class="c1"># Perform the unary transform.</span>
+<span class="n">transformer</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_result</span><span class="p">,</span> <span class="n">expected_result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unary transform object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1727,6 +1988,36 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">binary_transform</span></code> is used to apply a transformation to pairs of elements from two input sequences.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use binary_transform to perform elementwise addition.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">input1_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">input2_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_in1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input1_data</span><span class="p">)</span>
+<span class="n">d_in2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">input2_data</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in1</span><span class="p">)</span>
+
+<span class="c1"># Perform the binary transform.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">binary_transform</span><span class="p">(</span><span class="n">d_in1</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in1</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">input1_data</span> <span class="o">+</span> <span class="n">input2_data</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Binary transform result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1749,6 +2040,41 @@ to the given pair of input sequences according to the binary operation <code cla
 <p>This is the object-oriented API that allows explicit control over temporary
 storage allocation. For simpler usage, consider using <a class="reference internal" href="#cuda.compute.algorithms.binary_transform" title="cuda.compute.algorithms.binary_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">binary_transform()</span></code></a>.</p>
 <p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Binary transform examples demonstrating the transform object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input1</span><span class="p">)</span>
+<span class="n">d_input2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input2</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input1</span><span class="p">)</span>
+
+<span class="c1"># Create the binary transform object.</span>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_binary_transform</span><span class="p">(</span>
+    <span class="n">d_input1</span><span class="p">,</span> <span class="n">d_input2</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span>
+<span class="p">)</span>
+
+<span class="c1"># Perform the binary transform.</span>
+<span class="n">transformer</span><span class="p">(</span><span class="n">d_input1</span><span class="p">,</span> <span class="n">d_input2</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input1</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">11</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">44</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_result</span><span class="p">,</span> <span class="n">expected_result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Binary transform object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1783,6 +2109,50 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">histogram_even</span></code> is used to compute a histogram with evenly-spaced bins.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Basic histogram example.</span><a class="headerlink" href="#id3" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use histogram_even to bin a sequence of samples.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">h_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="mf">2.2</span><span class="p">,</span> <span class="mf">6.1</span><span class="p">,</span> <span class="mf">7.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">,</span> <span class="mf">2.1</span><span class="p">,</span> <span class="mf">6.1</span><span class="p">,</span> <span class="mf">999.5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span>
+<span class="p">)</span>
+<span class="n">d_samples</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_samples</span><span class="p">)</span>
+<span class="n">num_levels</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">d_histogram</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_levels</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">lower_level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">upper_level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="c1"># Perform the histogram even.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">histogram_even</span><span class="p">(</span>
+    <span class="n">d_samples</span><span class="p">,</span>
+    <span class="n">d_histogram</span><span class="p">,</span>
+    <span class="n">num_levels</span><span class="p">,</span>
+    <span class="n">lower_level</span><span class="p">,</span>
+    <span class="n">upper_level</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">h_actual_histogram</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_histogram</span><span class="p">)</span>
+<span class="n">h_expected_histogram</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
+    <span class="n">h_samples</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_levels</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="n">lower_level</span><span class="p">,</span> <span class="n">upper_level</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">h_expected_histogram</span> <span class="o">=</span> <span class="n">h_expected_histogram</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">h_actual_histogram</span><span class="p">,</span> <span class="n">h_expected_histogram</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Histogram even basic result: </span><span class="si">{</span><span class="n">h_actual_histogram</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1815,6 +2185,74 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Implements a device-wide histogram that places <code class="docutils literal notranslate"><span class="pre">d_samples</span></code> into evenly-spaced bins.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_histogram_even</span></code> is used to create a histogram object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use histogram object API to bin a sequence of samples.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">,</span> <span class="mf">4.7</span><span class="p">,</span> <span class="mf">6.2</span><span class="p">,</span> <span class="mf">7.8</span><span class="p">,</span> <span class="mf">3.1</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">,</span> <span class="mf">8.9</span><span class="p">,</span> <span class="mf">2.7</span><span class="p">,</span> <span class="mf">6.4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span>
+<span class="p">)</span>
+<span class="n">d_samples</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_samples</span><span class="p">)</span>
+
+<span class="n">num_levels</span> <span class="o">=</span> <span class="mi">6</span>
+
+<span class="c1"># note that the object API requires passing numpy arrays</span>
+<span class="c1"># rather than scalars:</span>
+<span class="n">h_num_output_levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">num_levels</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_lower_level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">h_upper_level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">10.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+<span class="n">d_histogram</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_levels</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create the histogram object.</span>
+<span class="n">histogrammer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_histogram_even</span><span class="p">(</span>
+    <span class="n">d_samples</span><span class="p">,</span>
+    <span class="n">d_histogram</span><span class="p">,</span>
+    <span class="n">h_num_output_levels</span><span class="p">,</span>
+    <span class="n">h_lower_level</span><span class="p">,</span>
+    <span class="n">h_upper_level</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_samples</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">histogrammer</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">d_samples</span><span class="p">,</span>
+    <span class="n">d_histogram</span><span class="p">,</span>
+    <span class="n">h_num_output_levels</span><span class="p">,</span>
+    <span class="n">h_lower_level</span><span class="p">,</span>
+    <span class="n">h_upper_level</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_samples</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Allocate the temporary storage.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the histogram.</span>
+<span class="n">histogrammer</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_samples</span><span class="p">,</span>
+    <span class="n">d_histogram</span><span class="p">,</span>
+    <span class="n">h_num_output_levels</span><span class="p">,</span>
+    <span class="n">h_lower_level</span><span class="p">,</span>
+    <span class="n">h_upper_level</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_samples</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">h_result</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_histogram</span><span class="p">)</span>
+<span class="n">expected_histogram</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">h_result</span><span class="p">,</span> <span class="n">expected_histogram</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Histogram object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1851,6 +2289,50 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">merge_sort</span></code> is used to sort a sequence of keys inplace. It also rearranges the items according to the keys’ order.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Demonstrate basic merge sort with keys and values.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_in_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">h_in_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="o">-</span><span class="mf">3.2</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">1.9</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.9</span><span class="p">,</span> <span class="mf">2.7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">8.3</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">,</span> <span class="mf">5.4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span>
+<span class="p">)</span>
+
+<span class="n">d_in_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)</span>
+<span class="n">d_in_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)</span>
+
+<span class="c1"># Perform the merge sort.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">merge_sort</span><span class="p">(</span>
+    <span class="n">d_in_keys</span><span class="p">,</span>
+    <span class="n">d_in_values</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="p">,</span>
+    <span class="n">d_in_values</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">LESS</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">h_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">)</span>
+<span class="n">h_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_in_values</span><span class="p">)</span>
+
+<span class="n">argsort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">,</span> <span class="n">stable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Merge sort basic result - keys: </span><span class="si">{</span><span class="n">h_out_keys</span><span class="si">}</span><span class="s2">, values: </span><span class="si">{</span><span class="n">h_out_values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1872,6 +2354,69 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Implements a device-wide merge sort using <code class="docutils literal notranslate"><span class="pre">d_in_keys</span></code> and the comparison operator <code class="docutils literal notranslate"><span class="pre">op</span></code>.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_merge_sort</span></code> is used to create a merge sort object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Merge sort example demonstrating the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">)</span>
+<span class="n">d_input_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_values</span><span class="p">)</span>
+<span class="n">d_output_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_keys</span><span class="p">)</span>
+<span class="n">d_output_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_values</span><span class="p">)</span>
+
+<span class="c1"># Create the merge sort object.</span>
+<span class="n">sorter</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_merge_sort</span><span class="p">(</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">LESS</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">sorter</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Allocate the temporary storage.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the merge sort.</span>
+<span class="n">sorter</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_keys</span> <span class="o">=</span> <span class="n">d_output_keys</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">actual_values</span> <span class="o">=</span> <span class="n">d_output_values</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Merge sort object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1909,7 +2454,107 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">radix_sort</span></code> is used to sort a sequence of keys. It also rearranges the values according to the keys’ order.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use radix_sort to sort keys and values.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SortOrder</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_in_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">h_in_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="o">-</span><span class="mf">3.2</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">1.9</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.9</span><span class="p">,</span> <span class="mf">2.7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">8.3</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">,</span> <span class="mf">5.4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span>
+<span class="p">)</span>
+
+<span class="n">d_in_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)</span>
+<span class="n">d_in_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output arrays.</span>
+<span class="n">d_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">)</span>
+<span class="n">d_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_values</span><span class="p">)</span>
+
+<span class="c1"># Perform the radix sort.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">radix_sort</span><span class="p">(</span>
+    <span class="n">d_in_keys</span><span class="p">,</span>
+    <span class="n">d_out_keys</span><span class="p">,</span>
+    <span class="n">d_in_values</span><span class="p">,</span>
+    <span class="n">d_out_values</span><span class="p">,</span>
+    <span class="n">SortOrder</span><span class="o">.</span><span class="n">ASCENDING</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">h_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_keys</span><span class="p">)</span>
+<span class="n">h_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_values</span><span class="p">)</span>
+
+<span class="n">argsort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">,</span> <span class="n">stable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Radix sort basic result - keys: </span><span class="si">{</span><span class="n">h_out_keys</span><span class="si">}</span><span class="s2">, values: </span><span class="si">{</span><span class="n">h_out_values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>In the following example, <code class="docutils literal notranslate"><span class="pre">radix_sort</span></code> is used to sort a sequence of keys with a <a href="#id1"><span class="problematic" id="id2">``</span></a>DoubleBuffer` for reduced temporary storage.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use radix_sort with DoubleBuffer for reduced temporary storage.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DoubleBuffer</span><span class="p">,</span>
+    <span class="n">SortOrder</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_in_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">h_in_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="o">-</span><span class="mf">3.2</span><span class="p">,</span> <span class="mf">2.2</span><span class="p">,</span> <span class="mf">1.9</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.9</span><span class="p">,</span> <span class="mf">2.7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">8.3</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">,</span> <span class="mf">5.4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span>
+<span class="p">)</span>
+
+<span class="n">d_in_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)</span>
+<span class="n">d_in_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)</span>
+
+<span class="n">d_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">)</span>
+<span class="n">d_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_values</span><span class="p">)</span>
+
+<span class="c1"># Create the double buffer.</span>
+<span class="n">keys_double_buffer</span> <span class="o">=</span> <span class="n">DoubleBuffer</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">,</span> <span class="n">d_out_keys</span><span class="p">)</span>
+<span class="n">values_double_buffer</span> <span class="o">=</span> <span class="n">DoubleBuffer</span><span class="p">(</span><span class="n">d_in_values</span><span class="p">,</span> <span class="n">d_out_values</span><span class="p">)</span>
+
+<span class="c1"># Perform the radix sort.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">radix_sort</span><span class="p">(</span>
+    <span class="n">keys_double_buffer</span><span class="p">,</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">values_double_buffer</span><span class="p">,</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">SortOrder</span><span class="o">.</span><span class="n">ASCENDING</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">h_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">keys_double_buffer</span><span class="o">.</span><span class="n">current</span><span class="p">())</span>
+<span class="n">h_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">values_double_buffer</span><span class="o">.</span><span class="n">current</span><span class="p">())</span>
+
+<span class="n">argsort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">,</span> <span class="n">stable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">h_expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+<span class="n">h_expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)[</span><span class="n">argsort</span><span class="p">]</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_keys</span><span class="p">,</span> <span class="n">h_expected_keys</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_values</span><span class="p">,</span> <span class="n">h_expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Radix sort buffer result - keys: </span><span class="si">{</span><span class="n">h_out_keys</span><span class="si">}</span><span class="s2">, values: </span><span class="si">{</span><span class="n">h_out_values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1943,6 +2588,67 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Implements a device-wide radix sort using <code class="docutils literal notranslate"><span class="pre">d_in_keys</span></code> in the requested order.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_radix_sort</span></code> is used to create a radix sort object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use radix_sort with the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SortOrder</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">)</span>
+<span class="n">d_input_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_values</span><span class="p">)</span>
+<span class="n">d_output_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_keys</span><span class="p">)</span>
+<span class="n">d_output_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_values</span><span class="p">)</span>
+
+<span class="c1"># Create the radix sort object.</span>
+<span class="n">sorter</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_radix_sort</span><span class="p">(</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">SortOrder</span><span class="o">.</span><span class="n">ASCENDING</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">sorter</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the radix sort.</span>
+<span class="n">sorter</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_keys</span> <span class="o">=</span> <span class="n">d_output_keys</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">actual_values</span> <span class="o">=</span> <span class="n">d_output_values</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Radix sort object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1980,6 +2686,55 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">segmented_reduce</span></code> is used to compute the minimum value of segments in a sequence of integers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use segmented_reduce to find the minimum in each segment.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">min_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span> <span class="k">else</span> <span class="n">b</span>
+
+
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">max_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">iinfo</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">max</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">max_val</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Prepare the offsets.</span>
+<span class="n">offsets</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">16</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<span class="n">first_segment</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="n">second_segment</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">third_segment</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="c1"># Prepare the input array.</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="o">*</span><span class="n">first_segment</span><span class="p">,</span> <span class="o">*</span><span class="n">second_segment</span><span class="p">,</span> <span class="o">*</span><span class="n">third_segment</span><span class="p">],</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the start and end offsets.</span>
+<span class="n">start_o</span> <span class="o">=</span> <span class="n">offsets</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">end_o</span> <span class="o">=</span> <span class="n">offsets</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">n_segments</span> <span class="o">=</span> <span class="n">start_o</span><span class="o">.</span><span class="n">size</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_segments</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Perform the segmented reduce.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">segmented_reduce</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">start_o</span><span class="p">,</span> <span class="n">end_o</span><span class="p">,</span> <span class="n">min_op</span><span class="p">,</span> <span class="n">h_init</span><span class="p">,</span> <span class="n">n_segments</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">d_output</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Segmented reduce basic result: </span><span class="si">{</span><span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2013,6 +2768,51 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Computes a device-wide segmented reduction using the specified binary <code class="docutils literal notranslate"><span class="pre">op</span></code> and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_segmented_reduce</span></code> is used to create a segmented reduction object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Segmented reduction using the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="n">start_offsets</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<span class="n">end_offsets</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+<span class="c1"># Create the segmented reduce object.</span>
+<span class="n">reducer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_segmented_reduce</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">h_init</span>
+<span class="p">)</span>
+
+<span class="c1"># Allocate the temporary storage.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the segmented reduce.</span>
+<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_result</span><span class="p">,</span> <span class="n">expected_result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Segmented reduce object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2051,6 +2851,55 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">unique_by_key</span></code> is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use unique_by_key to remove all</span>
+<span class="sd">but the first value for each group of consecutive keys.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_in_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">h_in_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+
+<span class="n">d_in_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)</span>
+<span class="n">d_in_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_values</span><span class="p">)</span>
+<span class="n">d_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">)</span>
+<span class="n">d_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_values</span><span class="p">)</span>
+<span class="n">d_out_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the unique by key operation.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">unique_by_key</span><span class="p">(</span>
+    <span class="n">d_in_keys</span><span class="p">,</span>
+    <span class="n">d_in_values</span><span class="p">,</span>
+    <span class="n">d_out_keys</span><span class="p">,</span>
+    <span class="n">d_out_values</span><span class="p">,</span>
+    <span class="n">d_out_num_selected</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">EQUAL_TO</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_num_selected</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">h_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_keys</span><span class="p">)[:</span><span class="n">num_selected</span><span class="p">]</span>
+<span class="n">h_out_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_values</span><span class="p">)[:</span><span class="n">num_selected</span><span class="p">]</span>
+
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Unique by key basic result - keys: </span><span class="si">{</span><span class="n">h_out_keys</span><span class="si">}</span><span class="s2">, values: </span><span class="si">{</span><span class="n">h_out_values</span><span class="si">}</span><span class="s2">, count: </span><span class="si">{</span><span class="n">num_selected</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2084,6 +2933,74 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Implements a device-wide unique by key operation using <code class="docutils literal notranslate"><span class="pre">d_in_keys</span></code> and the comparison operator <code class="docutils literal notranslate"><span class="pre">op</span></code>. Only the first key and its value from each run is selected and the total number of items selected is also reported.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_unique_by_key</span></code> is used to create a unique by key object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use unique_by_key with the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Unique by key example demonstrating the object API</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">)</span>
+<span class="n">d_input_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input_values</span><span class="p">)</span>
+<span class="n">d_output_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_keys</span><span class="p">)</span>
+<span class="n">d_output_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input_values</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Create the unique by key object.</span>
+<span class="n">uniquer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_unique_by_key</span><span class="p">(</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">EQUAL_TO</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">uniquer</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Allocate the temporary storage.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the unique by key operation.</span>
+<span class="n">uniquer</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_input_keys</span><span class="p">,</span>
+    <span class="n">d_input_values</span><span class="p">,</span>
+    <span class="n">d_output_keys</span><span class="p">,</span>
+    <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="n">d_num_selected</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">actual_keys</span> <span class="o">=</span> <span class="n">d_output_keys</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected</span><span class="p">]</span>
+<span class="n">actual_values</span> <span class="o">=</span> <span class="n">d_output_values</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected</span><span class="p">]</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_values</span><span class="p">,</span> <span class="n">expected_values</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unique by key object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2253,6 +3170,41 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>Currently the only supported modifier is “stream” (LOAD_CS).</p>
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">CacheModifiedInputIterator</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use cache_modified_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CacheModifiedInputIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input array.</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+
+<span class="c1"># Create the cache modified iterator.</span>
+<span class="n">cache_it</span> <span class="o">=</span> <span class="n">CacheModifiedInputIterator</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="s2">&quot;stream&quot;</span><span class="p">)</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">cache_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>  <span class="c1"># 1 + 2 + 3 + 4 + 5 = 15</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache modified iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2274,6 +3226,41 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">ConstantIterator</span></code>
 representing a sequence of constant values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use constant_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConstantIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">constant_value</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1"># Create the constant iterator.</span>
+<span class="n">constant_it</span> <span class="o">=</span> <span class="n">ConstantIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">constant_value</span><span class="p">))</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">constant_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">constant_value</span> <span class="o">*</span> <span class="n">num_items</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Constant iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>value</strong> – The value of every item in the sequence</p>
@@ -2292,6 +3279,45 @@ representing a sequence of constant values:</p>
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">CountingIterator</span></code>
 representing the sequence <code class="docutils literal notranslate"><span class="pre">[10,</span> <span class="pre">11,</span> <span class="pre">12]</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use counting_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">first_item</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="c1"># Create the counting iterator.</span>
+<span class="n">first_it</span> <span class="o">=</span> <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">first_item</span><span class="p">))</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">first_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counting iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>offset</strong> – The initial value of the sequence</p>
@@ -2309,7 +3335,81 @@ representing the sequence <code class="docutils literal notranslate"><span class
 <p>Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator).</p>
 <p class="rubric">Examples</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">ReverseIterator</span></code> as an input iterator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use reverse_input_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">ReverseIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+
+<span class="c1"># Create the reverse input iterator.</span>
+<span class="n">reverse_it</span> <span class="o">=</span> <span class="n">ReverseIterator</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">inclusive_scan</span><span class="p">(</span><span class="n">reverse_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected_output</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Original input: </span><span class="si">{</span><span class="n">h_input</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reverse scan result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected result: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">ReverseIterator</span></code> as an output iterator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use reverse_output_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">ReverseIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Create the reverse output iterator.</span>
+<span class="n">reverse_out_it</span> <span class="o">=</span> <span class="n">ReverseIterator</span><span class="p">(</span><span class="n">d_output</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">inclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">reverse_out_it</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">))</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected_output</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Original input: </span><span class="si">{</span><span class="n">h_input</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reverse output result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected result: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>sequence</strong> – The iterator or array to be reversed</p>
@@ -2328,6 +3428,52 @@ representing the sequence <code class="docutils literal notranslate"><span class
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">TransformIterator</span></code> composed with a <code class="docutils literal notranslate"><span class="pre">CountingIterator</span></code>
 to transform the input before performing a reduction.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Demonstrate reduction with transform iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">TransformIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_op</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">a</span>
+
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">first_item</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="n">transform_it</span> <span class="o">=</span> <span class="n">TransformIterator</span><span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">first_item</span><span class="p">)),</span> <span class="n">transform_op</span>
+<span class="p">)</span>  <span class="c1"># Input sequence</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># Initial value for the reduction</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># Storage for output</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">transform_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span>
+    <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)],</span>
+<span class="p">)</span>
+
+<span class="c1"># Test assertions</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transform iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_output</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2373,6 +3519,51 @@ as field_0, field_1, …, field_N-1.</p>
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">ZipIterator</span></code>
 combining two device arrays:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use zip_iterator to perform elementwise sum of two arrays.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ZipIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input arrays.</span>
+<span class="n">d_input1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_input2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Create the zip iterator.</span>
+<span class="n">zip_it</span> <span class="o">=</span> <span class="n">ZipIterator</span><span class="p">(</span><span class="n">d_input1</span><span class="p">,</span> <span class="n">d_input2</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input1</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_paired_values</span><span class="p">(</span><span class="n">pair</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract values from the zip iterator pair and sum them.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="c1"># Perform the unary transform.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">unary_transform</span><span class="p">(</span><span class="n">zip_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">sum_paired_values</span><span class="p">,</span> <span class="n">num_items</span><span class="p">)</span>
+
+<span class="c1"># Calculate the expected results.</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">d_input1</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="n">d_input2</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input array 1: </span><span class="si">{</span><span class="n">d_input1</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input array 2: </span><span class="si">{</span><span class="n">d_input2</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elementwise sum result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected result: </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>*iterators</strong> – Variable number of iterators to zip (at least 1)</p>
@@ -2538,6 +3729,62 @@ algorithms.</p>
 a <cite>MinMax</cite> type (composed of <cite>min_val</cite>, <cite>max_val</cite> values), and perform
 a reduction on an input array of floating point values to compute its
 the smallest and the largest absolute values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Simultaneously computing the minimum and maximum values of a sequence using `reduce_into`</span>
+<span class="sd">with a custom data type.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TransformIterator</span><span class="p">,</span>
+    <span class="n">gpu_struct</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="c1"># Define a custom data type for the accumulator.</span>
+<span class="nd">@gpu_struct</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MinMax</span><span class="p">:</span>
+    <span class="n">min_val</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+    <span class="n">max_val</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+
+
+<span class="c1"># Define the binary operation for the reduction.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">minmax_op</span><span class="p">(</span><span class="n">v1</span><span class="p">:</span> <span class="n">MinMax</span><span class="p">,</span> <span class="n">v2</span><span class="p">:</span> <span class="n">MinMax</span><span class="p">):</span>
+    <span class="n">c_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">v1</span><span class="o">.</span><span class="n">min_val</span><span class="p">,</span> <span class="n">v2</span><span class="o">.</span><span class="n">min_val</span><span class="p">)</span>
+    <span class="n">c_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">v1</span><span class="o">.</span><span class="n">max_val</span><span class="p">,</span> <span class="n">v2</span><span class="o">.</span><span class="n">max_val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">MinMax</span><span class="p">(</span><span class="n">c_min</span><span class="p">,</span> <span class="n">c_max</span><span class="p">)</span>
+
+
+<span class="c1"># Define a transform operation to convert a value `x` to MinMax(abs(x), abs(x)).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_op</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">av</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">MinMax</span><span class="p">(</span><span class="n">av</span><span class="p">,</span> <span class="n">av</span><span class="p">)</span>
+
+
+<span class="c1"># Prepare the input and output data.</span>
+<span class="n">nelems</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">d_in</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">nelems</span><span class="p">)</span>
+<span class="n">tr_it</span> <span class="o">=</span> <span class="n">TransformIterator</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">transform_op</span><span class="p">)</span>
+
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">MinMax</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">MinMax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">tr_it</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">minmax_op</span><span class="p">,</span> <span class="n">nelems</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">actual</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">d_in</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([(</span><span class="n">h</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">h</span><span class="o">.</span><span class="n">max</span><span class="p">())],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">MinMax</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">actual</span> <span class="o">==</span> <span class="n">expected</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MinMax reduction result: </span><span class="si">{</span><span class="n">actual</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>this</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a>)</p>

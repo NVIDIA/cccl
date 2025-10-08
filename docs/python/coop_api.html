@@ -1553,7 +1553,21 @@ The API is subject to change without notice.</p>
 The value of 0 is applied as the initial value, and is assigned to the output in <em>lane</em><sub>0</sub>.</p>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates an exclusive prefix sum of 32 integer items:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">exclusive_sum</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specialize exclusive sum for a warp of threads</span>
+<span class="n">warp_exclusive_sum</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">warp</span><span class="o">.</span><span class="n">exclusive_sum</span><span class="p">(</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Link the exclusive sum to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">warp_exclusive_sum</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># Collectively compute the warp-wide exclusive prefix sum</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">warp_exclusive_sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the warp of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1],</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1],</span> <span class="pre">...,</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
@@ -1583,7 +1597,21 @@ Each thread contributes one input element.</p>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a max reduction of 32 integer items that
 are partitioned across a warp of threads.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">reduce</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">warp_reduce</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">warp</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">warp_reduce</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">warp_output</span> <span class="o">=</span> <span class="n">warp_reduce</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">warp_output</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of inputs across the warp of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">...,</span> <span class="pre">31</span> <span class="pre">}</span></code>.
 The corresponding output in the threads lane<sub>0</sub> will be <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">31</span> <span class="pre">}</span></code>.</p>
@@ -1613,7 +1641,21 @@ Each thread contributes one input element.</p>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a reduction of 32 integer items that
 are partitioned across a warp of threads.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">reduce</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">warp_sum</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">warp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">warp_sum</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">warp_output</span> <span class="o">=</span> <span class="n">warp_sum</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">warp_output</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of inputs across the warp of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">1</span> <span class="pre">}</span></code>.
 The corresponding output in the threads lane<sub>0</sub> will be <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">32</span> <span class="pre">}</span></code>.</p>
@@ -1649,6 +1691,34 @@ The corresponding output in the threads lane<sub>0</sub> will be <code class="do
 are partitioned in a <a class="reference internal" href="../cub/index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across a warp of 32 threads
 where each thread owns 4 consecutive keys. We start by importing necessary modules:</p>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">merge_sort_keys</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define comparison operator</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compare_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span>
+
+<span class="c1"># Specialize merge sort for a warp of threads owning 4 integer items each</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">warp_merge_sort</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">warp</span><span class="o">.</span><span class="n">merge_sort_keys</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="n">compare_op</span>
+<span class="p">)</span>
+
+<span class="c1"># Link the merge sort to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">warp_merge_sort</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+    <span class="c1"># Obtain a segment of consecutive items that are blocked across threads</span>
+    <span class="n">thread_keys</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Collectively sort the keys</span>
+    <span class="n">warp_merge_sort</span><span class="p">(</span><span class="n">thread_keys</span><span class="p">)</span>
+
+    <span class="c1"># Copy the sorted keys back to the output</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> across the warp of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3],</span> <span class="pre">[4,</span> <span class="pre">5,</span> <span class="pre">6,</span> <span class="pre">7],</span> <span class="pre">...,</span> <span class="pre">[124,</span> <span class="pre">125,</span> <span class="pre">126,</span> <span class="pre">127]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> in those threads will be
@@ -1844,8 +1914,36 @@ assigned to the first output element in the first thread.</p>
 integer items that are partitioned in a
 <a class="reference internal" href="../cub/index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128
 threads where each thread owns 4 consecutive items.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the
 <code class="docutils literal notranslate"><span class="pre">exclusive_sum</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+
+<span class="c1"># Specialize exclusive sum for a 1D block of 128 threads owning 4 integer items each</span>
+<span class="n">block_exclusive_sum</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">exclusive_sum</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span>
+<span class="p">)</span>
+
+<span class="c1"># Link the exclusive sum to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_exclusive_sum</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1"># Obtain a segment of consecutive items that are blocked across threads</span>
+    <span class="n">thread_data</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">thread_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Collectively compute the block-wide exclusive prefix sum</span>
+    <span class="n">block_exclusive_sum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span> <span class="n">thread_data</span><span class="p">)</span>
+
+    <span class="c1"># Copy the scanned keys back to the output</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1],</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1],</span> <span class="pre">...,</span> <span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1]</span> <span class="pre">}</span></code>.</p>
 <p>The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
@@ -2054,6 +2152,31 @@ invoked with the following signatures:</p>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
 each thread handling 4 integers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numba</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">block_load</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="s2">&quot;striped&quot;</span>
+<span class="p">)</span>
+<span class="n">block_store</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">store</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="s2">&quot;striped&quot;</span>
+<span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_load</span><span class="o">.</span><span class="n">files</span> <span class="o">+</span> <span class="n">block_store</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">block_load</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+    <span class="n">block_store</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -2074,7 +2197,39 @@ each thread handling 4 integers.</p>
 <p>The code snippet below illustrates a sort of 512 integer keys that
 are partitioned in a <a class="reference internal" href="../cub/index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads
 where each thread owns 4 consecutive keys. We start by importing necessary modules:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">merge_sort_keys</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define comparison operator</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">compare_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span>
+
+<span class="c1"># Specialize merge sort for a 1D block of 128 threads owning 4 integer items each</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">block_merge_sort</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">merge_sort_keys</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="n">compare_op</span>
+<span class="p">)</span>
+
+<span class="c1"># Link the merge sort to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_merge_sort</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+    <span class="c1"># Obtain a segment of consecutive items that are blocked across threads</span>
+    <span class="n">thread_keys</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Collectively sort the keys</span>
+    <span class="n">block_merge_sort</span><span class="p">(</span><span class="n">thread_keys</span><span class="p">)</span>
+
+    <span class="c1"># Copy the sorted keys back to the output</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3],</span> <span class="pre">[4,</span> <span class="pre">5,</span> <span class="pre">6,</span> <span class="pre">7],</span> <span class="pre">...,</span> <span class="pre">[508,</span> <span class="pre">509,</span> <span class="pre">510,</span> <span class="pre">511]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> in those threads will be
@@ -2105,7 +2260,35 @@ argument is ordered before the second one</p></li>
 <p>The code snippet below illustrates a sort of 512 integer keys that
 are partitioned in a <a class="reference internal" href="../cub/index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads
 where each thread owns 4 consecutive keys. We start by importing necessary modules:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">radix_sort_keys</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specialize radix sort for a 1D block of 128 threads owning 4 integer items each</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">block_radix_sort</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">radix_sort_keys</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span>
+<span class="p">)</span>
+
+<span class="c1"># Link the radix sort to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_radix_sort</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+    <span class="c1"># Obtain a segment of consecutive items that are blocked across threads</span>
+    <span class="n">thread_keys</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Collectively sort the keys</span>
+    <span class="n">block_radix_sort</span><span class="p">(</span><span class="n">thread_keys</span><span class="p">)</span>
+
+    <span class="c1"># Copy the sorted keys back to the output</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[511,</span> <span class="pre">510,</span> <span class="pre">509,</span> <span class="pre">508],</span> <span class="pre">[507,</span> <span class="pre">506,</span> <span class="pre">505,</span> <span class="pre">504],</span> <span class="pre">...,</span> <span class="pre">[3,</span> <span class="pre">2,</span> <span class="pre">1,</span> <span class="pre">0]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> in those threads will be
@@ -2133,7 +2316,35 @@ or a tuple of 2 or 3 integers</p></li>
 <p>The code snippet below illustrates a sort of 512 integer keys that
 are partitioned in a <a class="reference internal" href="../cub/index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads
 where each thread owns 4 consecutive keys. We start by importing necessary modules:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
 <p>Below is the code snippet that demonstrates the usage of the <code class="docutils literal notranslate"><span class="pre">radix_sort_keys</span></code> API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specialize radix sort for a 1D block of 128 threads owning 4 integer items each</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">block_radix_sort</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">radix_sort_keys_descending</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span>
+<span class="p">)</span>
+
+<span class="c1"># Link the radix sort to a CUDA kernel</span>
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_radix_sort</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+    <span class="c1"># Obtain a segment of consecutive items that are blocked across threads</span>
+    <span class="n">thread_keys</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Collectively sort the keys</span>
+    <span class="n">block_radix_sort</span><span class="p">(</span><span class="n">thread_keys</span><span class="p">)</span>
+
+    <span class="c1"># Copy the sorted keys back to the output</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">):</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">items_per_thread</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread_keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3],</span> <span class="pre">[4,</span> <span class="pre">5,</span> <span class="pre">6,</span> <span class="pre">7],</span> <span class="pre">...,</span> <span class="pre">[508,</span> <span class="pre">509,</span> <span class="pre">510,</span> <span class="pre">511]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_keys</span></code> in those threads will be
@@ -2206,6 +2417,31 @@ or a tuple of 2 or 3 integers</p></li>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a max reduction of 128 integer items that are
 partitioned across 128 threads.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numba</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+<span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span> <span class="k">else</span> <span class="n">b</span>
+
+<span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">block_reduce</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_reduce</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">block_output</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">block_output</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of inputs across the block of threads is <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">...,</span> <span class="pre">127</span> <span class="pre">}</span></code>.
 The corresponding output in the threads thread <sub>0</sub> will be <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">127</span> <span class="pre">}</span></code>.</p>
 </dd></dl>
@@ -2338,6 +2574,31 @@ invoked with the following signatures:</p>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
 each thread handling 4 integers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numba</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">items_per_thread</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">block_load</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="s2">&quot;striped&quot;</span>
+<span class="p">)</span>
+<span class="n">block_store</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">store</span><span class="p">(</span>
+    <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">,</span> <span class="n">items_per_thread</span><span class="p">,</span> <span class="s2">&quot;striped&quot;</span>
+<span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_load</span><span class="o">.</span><span class="n">files</span> <span class="o">+</span> <span class="n">block_store</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">items_per_thread</span><span class="p">,</span> <span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">block_load</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+    <span class="n">block_store</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -2391,6 +2652,28 @@ or a tuple of 2 or 3 integers</p></li>
 <p class="rubric">Example</p>
 <p>The code snippet below illustrates a sum of 128 integer items that are partitioned
 across 128 threads.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numba</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="kn">import</span> <span class="n">coop</span>
+
+<span class="n">numba</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">CUDA_LOW_OCCUPANCY_WARNINGS</span> <span class="o">=</span> <span class="mi">0</span>
+
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">threads_per_block</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">block_sum</span> <span class="o">=</span> <span class="n">coop</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numba</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">threads_per_block</span><span class="p">)</span>
+
+<span class="nd">@cuda</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">block_sum</span><span class="o">.</span><span class="n">files</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kernel</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="n">block_output</span> <span class="o">=</span> <span class="n">block_sum</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">cuda</span><span class="o">.</span><span class="n">threadIdx</span><span class="o">.</span><span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">block_output</span>
+
+</pre></div>
+</div>
 <p>Suppose the set of inputs across the block of threads is <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">1</span> <span class="pre">}</span></code>.
 The corresponding output in the threads thread <sub>0</sub> will be <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">128</span> <span class="pre">}</span></code>.</p>
 </dd></dl>

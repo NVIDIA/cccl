@@ -1549,9 +1549,80 @@ GPU architectures.</p>
 as reductions, scans, sorts, and transforms.</p>
 <p>Here’s a simple example showing how to use the <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a> algorithm to
 reduce an array of integers.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Basic reduction example.</span><a class="headerlink" href="#id1" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Sum all values in an array using reduction with PLUS operation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpKind</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sum reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <p>Many algorithms, including reduction, require a temporary memory buffer.
 The library will allocate this buffer for you, but you can also use the
 object-based API for greater control.</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Reduction with object-based API.</span><a class="headerlink" href="#id2" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Reduction example using the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">init_value</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">init_value</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Create a reducer object.</span>
+<span class="n">reducer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Allocate temporary storage using any user-defined allocator.</span>
+<span class="c1"># The result must be an object exposing `__cuda_array_interface__`.</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span> <span class="o">+</span> <span class="n">init_value</span>
+<span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">actual_result</span> <span class="o">==</span> <span class="n">expected_result</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reduce object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </section>
 <section id="iterators">
 <h2>Iterators<a class="headerlink" href="#iterators" title="Link to this heading">#</a></h2>
@@ -1560,9 +1631,100 @@ provide a way to represent sequences of data without needing to allocate memory
 for them.</p>
 <p>Here’s an example showing how to use reduction with a <a class="reference internal" href="compute_api.html#cuda.compute.iterators.CountingIterator" title="cuda.compute.iterators.CountingIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">CountingIterator</span></code></a> that
 generates a sequence of numbers starting from a specified value.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Counting iterator example.</span><a class="headerlink" href="#id3" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use counting_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">first_item</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="c1"># Create the counting iterator.</span>
+<span class="n">first_it</span> <span class="o">=</span> <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">first_item</span><span class="p">))</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">first_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counting iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <p>Iterators also provide a way to compose operations. Here’s an example showing
 how to use <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a> with a <a class="reference internal" href="compute_api.html#cuda.compute.iterators.TransformIterator" title="cuda.compute.iterators.TransformIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">TransformIterator</span></code></a> to compute the sum of squares
 of a sequence of numbers.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Transform iterator example.</span><a class="headerlink" href="#id4" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Demonstrate reduction with transform iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">TransformIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_op</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">a</span>
+
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">first_item</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="n">transform_it</span> <span class="o">=</span> <span class="n">TransformIterator</span><span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">first_item</span><span class="p">)),</span> <span class="n">transform_op</span>
+<span class="p">)</span>  <span class="c1"># Input sequence</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># Initial value for the reduction</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># Storage for output</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">transform_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span>
+    <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)],</span>
+<span class="p">)</span>
+
+<span class="c1"># Test assertions</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transform iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_output</span>
+</pre></div>
+</div>
+</div>
 <p>Iterators that wrap an array (or another output iterator) may be used as both input and output iterators.
 Here’s an example showing how to use a
 <a class="reference internal" href="compute_api.html#cuda.compute.iterators.TransformIterator" title="cuda.compute.iterators.TransformIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">TransformIterator</span></code></a> to transform the output
@@ -1573,11 +1735,59 @@ of a reduction before writing to the underlying array.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> library supports defining custom data types,
 using the <a class="reference internal" href="compute_api.html#cuda.compute.struct.gpu_struct" title="cuda.compute.struct.gpu_struct"><code class="xref py py-func docutils literal notranslate"><span class="pre">gpu_struct</span></code></a> decorator.
 Here are some examples showing how to define and use custom types:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Custom type reduction example.</span><a class="headerlink" href="#id5" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Finding the maximum green value in a sequence of pixels using `reduce_into`</span>
+<span class="sd">with a custom data type.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
+
+
+<span class="c1"># Define a custom data type to store the pixel values.</span>
+<span class="nd">@gpu_struct</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pixel</span><span class="p">:</span>
+    <span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="n">g</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+
+
+<span class="c1"># Define a reduction operation that returns the pixel with the maximum green value.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">max_g_value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">g</span> <span class="o">&gt;</span> <span class="n">y</span><span class="o">.</span><span class="n">g</span> <span class="k">else</span> <span class="n">y</span>
+
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">d_rgb</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">Pixel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_rgb</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">max_g_value</span><span class="p">,</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Calculate the expected result.</span>
+<span class="n">h_rgb</span> <span class="o">=</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">h_rgb</span><span class="p">[</span><span class="n">h_rgb</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="k">assert</span> <span class="n">expected</span><span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pixel reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </section>
 <section id="example-collections">
 <h2>Example Collections<a class="headerlink" href="#example-collections" title="Link to this heading">#</a></h2>
 <p>For complete runnable examples and more advanced usage patterns, see our
-full collection of <a class="reference external" href="https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/parallel/examples">examples</a>.</p>
+full collection of <a class="reference external" href="https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples">examples</a>.</p>
 </section>
 <section id="external-api-references">
 <h2>External API References<a class="headerlink" href="#external-api-references" title="Link to this heading">#</a></h2>

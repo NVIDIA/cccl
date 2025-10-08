@@ -18,7 +18,7 @@ Here's a simple example showing how to use the :func:`reduce_into <cuda.compute.
 reduce an array of integers.
 
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/sum_reduction.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Basic reduction example.
@@ -27,7 +27,7 @@ Many algorithms, including reduction, require a temporary memory buffer.
 The library will allocate this buffer for you, but you can also use the
 object-based API for greater control.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/reduce_object.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/reduce_object.py
    :language: python
    :start-after: # example-begin
    :caption: Reduction with object-based API.
@@ -43,7 +43,7 @@ for them.
 Here's an example showing how to use reduction with a :func:`CountingIterator <cuda.compute.iterators.CountingIterator>` that
 generates a sequence of numbers starting from a specified value.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator_basic.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Counting iterator example.
@@ -52,7 +52,7 @@ Iterators also provide a way to compose operations. Here's an example showing
 how to use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a :func:`TransformIterator <cuda.compute.iterators.TransformIterator>` to compute the sum of squares
 of a sequence of numbers.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Transform iterator example.
@@ -62,7 +62,7 @@ Here's an example showing how to use a
 :func:`TransformIterator <cuda.compute.iterators.TransformIterator>` to transform the output
 of a reduction before writing to the underlying array.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
    :language: python
    :start-after: # example-begin
    :caption: Transform output iterator example.
@@ -74,7 +74,7 @@ The ``cuda.compute`` library supports defining custom data types,
 using the :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator.
 Here are some examples showing how to define and use custom types:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/pixel_reduction.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/pixel_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Custom type reduction example.
@@ -84,7 +84,7 @@ Example Collections
 -------------------
 
 For complete runnable examples and more advanced usage patterns, see our
-full collection of `examples <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/parallel/examples>`_.
+full collection of `examples <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples>`_.
 
 External API References
 ------------------------
