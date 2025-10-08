@@ -168,7 +168,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     device_exclusive_segmented_scan(
       d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, d_offsets_it, op_t{}, output_t{});
 
-    c2h::host_vector<output_t> h_output = output_vec;
+    h_output = output_vec;
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
@@ -250,7 +250,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
       scan_op,
       init_value);
 
-    c2h::host_vector<output_t> h_output = output_vec;
+    h_output = output_vec;
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
