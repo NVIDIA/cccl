@@ -86,10 +86,10 @@ struct traits_t
   int max_grid_dim_z = 64 * 1024 - 1;
 
   // Maximum amount of shared memory available to a thread block in bytes
-  int max_shared_memory_per_block = 48 * 1024;
+  ::cuda::std::size_t max_shared_memory_per_block = 48 * 1024;
 
   // Memory available on device for __constant__ variables in a CUDA C kernel in bytes
-  int total_constant_memory = 64 * 1024;
+  ::cuda::std::size_t total_constant_memory = 64 * 1024;
 
   // Warp size in threads
   int warp_size = 32;
@@ -146,7 +146,7 @@ struct traits_t
   // Maximum amount of shared memory available to a multiprocessor in bytes;
   // this amount is shared by all thread blocks simultaneously resident on a
   // multiprocessor
-  int max_shared_memory_per_multiprocessor;
+  ::cuda::std::size_t max_shared_memory_per_multiprocessor;
 
   // Maximum number of thread blocks that can reside on a multiprocessor
   int max_blocks_per_multiprocessor;
@@ -158,11 +158,11 @@ struct traits_t
   int max_warps_per_multiprocessor;
 
   // Shared memory reserved by CUDA driver per block in bytes
-  int reserved_shared_memory_per_block;
+  ::cuda::std::size_t reserved_shared_memory_per_block;
 
   // Maximum per block shared memory size on the device. This value can be opted
   // into when using dynamic_shared_memory with NonPortableSize set to true
-  int max_shared_memory_per_block_optin;
+  ::cuda::std::size_t max_shared_memory_per_block_optin;
 
   // TODO: Do we want these?:
   // true if architecture supports clusters
