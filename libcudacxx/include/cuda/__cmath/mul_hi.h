@@ -23,9 +23,9 @@
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
@@ -42,10 +42,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  **********************************************************************************************************************/
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp __multiply_half_high_fallback(_Tp __lhs, _Tp __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __mul_hi_fallback(_Tp __lhs, _Tp __rhs) noexcept
 {
+  using ::cuda::std::is_signed_v;
   constexpr int __half_bits = ::cuda::std::__num_bits_v<_Tp> / 2;
-  using __half_bits_t       = ::cuda::std::__make_nbit_uint_t<__half_bits>;
+  using __half_bits_t       = ::cuda::std::__make_nbit_int_t<__half_bits, is_signed_v<_Tp>>;
   auto __lhs_low            = static_cast<__half_bits_t>(__lhs); // 32-bit
   auto __lhs_high           = static_cast<__half_bits_t>(__lhs >> __half_bits); // 32-bit
   auto __rhs_low            = static_cast<__half_bits_t>(__rhs); // 32-bit
@@ -63,42 +64,68 @@ template <typename _Tp>
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]]
-_CCCL_API constexpr _Tp multiply_half_high(_Tp __lhs, _Tp __rhs) noexcept
+_CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if constexpr (::cuda::std::is_signed_v<_Tp>)
-  {
-    _CCCL_ASSERT(__lhs >= 0, "__lhs must be non-negative");
-    _CCCL_ASSERT(__rhs >= 0, "__rhs must be non-negative");
-  }
+  using ::cuda::std::int32_t;
+  using ::cuda::std::int64_t;
+  using ::cuda::std::is_same_v;
+  using ::cuda::std::is_signed_v;
   using ::cuda::std::uint32_t;
   using ::cuda::std::uint64_t;
-  using _Up         = ::cuda::std::make_unsigned_t<_Tp>;
-  const auto __lhs1 = static_cast<_Up>(__lhs);
-  const auto __rhs1 = static_cast<_Up>(__rhs);
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    if constexpr (is_same_v<_Tp, int32_t>)
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs1, __rhs1);));
+      NV_IF_TARGET(NV_IS_DEVICE, (return ::__mulhi(__lhs, __rhs);));
     }
-    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+    else if constexpr (is_same_v<_Tp, uint32_t>)
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs1, __rhs1);));
+      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs, __rhs);));
+    }
+    else if constexpr (is_same_v<_Tp, int64_t>)
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (return ::__mul64hi(__lhs, __rhs);));
 #if _CCCL_COMPILER(MSVC)
-      NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs1, __rhs1);));
+      NV_IF_TARGET(NV_IS_HOST, (return ::__mulh(__lhs, __rhs);));
+#endif // _CCCL_COMPILER(MSVC)
+    }
+    else if constexpr (is_same_v<_Tp, uint64_t>)
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs, __rhs);));
+#if _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs, __rhs);));
 #endif // _CCCL_COMPILER(MSVC)
     }
   }
   if constexpr (sizeof(_Tp) < sizeof(uint64_t) || (sizeof(_Tp) == sizeof(uint64_t) && _CCCL_HAS_INT128()))
   {
-    using __larger_t      = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp> * 2>;
     constexpr auto __bits = ::cuda::std::__num_bits_v<_Tp>;
-    auto __ret            = (static_cast<__larger_t>(__lhs1) * __rhs1) >> __bits;
+    using __larger_t      = ::cuda::std::__make_nbit_int_t<__bits * 2, is_signed_v<_Tp>>;
+    auto __ret            = (static_cast<__larger_t>(__lhs) * __rhs) >> __bits;
     return static_cast<_Tp>(__ret);
   }
   else // sizeof(_Tp) >= sizeof(uint64_t) && !_CCCL_HAS_INT128()
   {
-    return ::cuda::__multiply_half_high_fallback(__lhs1, __rhs1);
+    if constexpr (is_signed_v<_Tp>)
+    {
+      using _Up         = ::cuda::std::make_unsigned_t<_Tp>;
+      const auto __lhs1 = static_cast<_Up>(__lhs);
+      const auto __rhs1 = static_cast<_Up>(__rhs);
+      auto __hi         = ::cuda::__mul_hi_fallback(__lhs1, __rhs1);
+      if (__lhs < 0)
+      {
+        __hi -= __rhs1;
+      }
+      if (__rhs < 0)
+      {
+        __hi -= __lhs1;
+      }
+      return static_cast<_Tp>(__hi);
+    }
+    else
+    {
+      return ::cuda::__mul_hi_fallback(__lhs, __rhs);
+    }
   }
 }
 

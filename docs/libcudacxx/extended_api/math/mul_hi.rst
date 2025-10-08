@@ -1,7 +1,7 @@
-.. _libcudacxx-extended-api-math-multiply-high-half:
+.. _libcudacxx-extended-api-math-mul-hi:
 
-``cuda::multiply_half_high``
-============================
+``cuda::mul_hi``
+================
 
 Defined in ``<cuda/cmath>`` header.
 
@@ -10,8 +10,8 @@ Defined in ``<cuda/cmath>`` header.
    namespace cuda {
 
    template <typename T>
-   [[nodiscard]] constexpr
-   T multiply_half_high(T lhs, T rhs) noexcept;
+   [[nodiscard]] __host__ __device__ constexpr
+   T mul_hi(T lhs, T rhs) noexcept;
 
    } // namespace cuda
 
@@ -24,22 +24,18 @@ Computes the most significant half of the bits of the product of two non-negativ
 
 **Return value**
 
-Upper half of ``lhs * rhs`` returned as ``T``.
+- The most significant half of ``lhs * rhs`` returned as ``T``.
 
 **Constraints**
 
 - ``T`` is an integer type.
 
-**Preconditions**
-
-- ``lhs >= 0`` when ``T`` is signed.
-- ``rhs >= 0`` when ``T`` is signed.
-
 **Remarks**
 
-- Uses ``__umulhi`` or ``__umul64hi`` instructions on device when available.
+- Uses ``__mulhi``, ``__umulhi``, ``__mul64hi``, ``__umul64hi`` instructions on device when available.
+- Uses ``__mulh``, ``__umulh`` instructions on Windows host code when available.
 - Uses a double-width intermediate type when possible.
-- Relies on a manual decomposition fallback when 128-bit intermediates are unavailable.
+- Relies on a manual decomposition fallback when 128-bit intermediates are unavailable for 64-bit integers.
 
 Example
 -------
@@ -50,19 +46,19 @@ Example
    #include <cuda/std/cassert>
    #include <cuda/std/cstdint>
 
-   __global__ void multiply_high_kernel()
+   __global__ void mul_hi_kernel()
    {
        uint32_t lhs       = 0xABCD1234;
        uint32_t rhs       = 1 << 16; // 2^16
-       uint32_t high_half = cuda::multiply_half_high(lhs, rhs);
+       uint32_t high_half = cuda::mul_hi(lhs, rhs);
        assert(high_half == 0xAB);
    }
 
    int main()
    {
-       multiply_high_kernel<<<1, 1>>>();
+       mul_hi_kernel<<<1, 1>>>();
        cudaDeviceSynchronize();
        return 0;
    }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/dPPzsEaGM>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/rfb4s76nK>`_

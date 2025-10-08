@@ -20,53 +20,60 @@
 template <typename T>
 __host__ __device__ constexpr void test_type()
 {
-  static_assert(cuda::std::is_same_v<T, decltype(cuda::multiply_half_high(T{}, T{}))>);
-  static_assert(noexcept(cuda::multiply_half_high(T{}, T{})));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::mul_hi(T{}, T{}))>);
+  static_assert(noexcept(cuda::mul_hi(T{}, T{})));
   constexpr int bits       = static_cast<int>(sizeof(T) * CHAR_BIT);
   constexpr auto max_value = cuda::std::numeric_limits<T>::max();
   using U                  = cuda::std::make_unsigned_t<T>;
 
   // trivial cases
-  assert(cuda::multiply_half_high(T{0}, T{0}) == T{0});
-  assert(cuda::multiply_half_high(max_value, T{0}) == T{0});
-  assert(cuda::multiply_half_high(max_value, T{1}) == T{0});
-  assert(cuda::multiply_half_high(T{0}, max_value) == T{0});
-  assert(cuda::multiply_half_high(T{1}, max_value) == T{0});
+  assert(cuda::mul_hi(T{0}, T{0}) == T{0});
+  assert(cuda::mul_hi(max_value, T{0}) == T{0});
+  assert(cuda::mul_hi(max_value, T{1}) == T{0});
+  assert(cuda::mul_hi(T{0}, max_value) == T{0});
+  assert(cuda::mul_hi(T{1}, max_value) == T{0});
+  if constexpr (cuda::std::is_signed_v<T>)
+  {
+    assert(cuda::mul_hi(T{-1}, T{0}) == T{0});
+    assert(cuda::mul_hi(T{-1}, T{-1}) == T{0});
+    assert(cuda::mul_hi(T{-1}, T{1}) == T{-1});
+    assert(cuda::mul_hi(T{1}, T{-1}) == T{-1});
+  }
 
   // non-trivial cases
   constexpr auto mask1 = T{T{0x7B} << (bits - 8)};
-  assert(cuda::multiply_half_high(mask1, T{16}) == T{0x7});
-  assert(cuda::multiply_half_high(T{16}, mask1) == T{0x7});
+  assert(cuda::mul_hi(mask1, T{16}) == T{0x7});
+  assert(cuda::mul_hi(T{16}, mask1) == T{0x7});
 
   constexpr auto mask2 = static_cast<U>(-1);
-  assert(cuda::multiply_half_high(mask2, U{64}) == mask2 >> (bits - 6));
-  assert(cuda::multiply_half_high(U{64}, mask2) == mask2 >> (bits - 6));
+  assert(cuda::mul_hi(mask2, U{64}) == mask2 >> (bits - 6));
+  assert(cuda::mul_hi(U{64}, mask2) == mask2 >> (bits - 6));
 
   if constexpr (sizeof(T) >= 2)
   {
     constexpr auto mask3 = static_cast<T>(0x7BCD);
-    assert(cuda::multiply_half_high(mask3, T{4096}) == (mask3 >> (bits - 12)));
-    assert(cuda::multiply_half_high(T{4096}, mask3) == (mask3 >> (bits - 12)));
+    assert(cuda::mul_hi(mask3, T{4096}) == (mask3 >> (bits - 12)));
+    assert(cuda::mul_hi(T{4096}, mask3) == (mask3 >> (bits - 12)));
   }
   if constexpr (sizeof(T) >= 4)
   {
     constexpr auto mask3 = static_cast<T>(0x7ABCABCD);
-    assert(cuda::multiply_half_high(mask3, T{1 << 24}) == mask3 >> (bits - 24));
-    assert(cuda::multiply_half_high(T{1 << 24}, mask3) == mask3 >> (bits - 24));
+    assert(cuda::mul_hi(mask3, T{1 << 24}) == mask3 >> (bits - 24));
+    assert(cuda::mul_hi(T{1 << 24}, mask3) == mask3 >> (bits - 24));
   }
   if constexpr (sizeof(T) >= 8)
   {
     constexpr auto mask3 = static_cast<T>(0x7ABCABCD12345678);
-    assert(cuda::multiply_half_high(mask3, T{1} << 48) == mask3 >> (bits - 48));
-    assert(cuda::multiply_half_high(T{1} << 48, mask3) == mask3 >> (bits - 48));
+    assert(cuda::mul_hi(mask3, T{1} << 48) == mask3 >> (bits - 48));
+    assert(cuda::mul_hi(T{1} << 48, mask3) == mask3 >> (bits - 48));
   }
 #if _CCCL_HAS_INT128()
   if constexpr (sizeof(T) == 16)
   {
     using namespace test_integer_literals;
     constexpr auto mask4 = T{0x7ABCABCD12345678_i128};
-    assert(cuda::multiply_half_high(mask4, T{1} << 96) == mask4 >> (bits - 96));
-    assert(cuda::multiply_half_high(T{1} << 96, mask4) == mask4 >> (bits - 96));
+    assert(cuda::mul_hi(mask4, T{1} << 96) == mask4 >> (bits - 96));
+    assert(cuda::mul_hi(T{1} << 96, mask4) == mask4 >> (bits - 96));
   }
 #endif // _CCCL_HAS_INT128()
 }
