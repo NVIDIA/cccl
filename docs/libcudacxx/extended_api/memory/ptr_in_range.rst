@@ -9,18 +9,23 @@ Defined in ``<cuda/memory>`` header.
 
    namespace cuda {
 
+   template <typename T>
    [[nodiscard]] __host__ __device__ constexpr
-   bool ptr_in_range(const void* ptr, const void* start, const void* end) noexcept
+   bool ptr_in_range(T* ptr, T* start, T* end) noexcept
 
    } // namespace cuda
 
 Checks whether ``ptr`` lies inside the half-open interval ``[start, end)``.
 
+**Template parameters**
+
+- ``T``: The type of the pointer.
+
 **Parameters**
 
 - ``ptr``: The pointer being tested.
 - ``start``: Pointer to the first element in the range.
-- ``end``: Pointer one past the last element in the range.
+- ``end``: Pointer to one past the last element in the range.
 
 **Return value**
 
