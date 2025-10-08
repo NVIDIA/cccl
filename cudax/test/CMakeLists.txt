@@ -158,6 +158,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
+  cudax_add_catch2_test(test_target accessor ${cn_target}
+    mdspan/accessor_with_properties.cu
+  )
+
 endforeach()
 
 # FIXME: Enable MSVC
