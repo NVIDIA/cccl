@@ -85,188 +85,57 @@ def stf_kernel(pyfunc):
 
 
 def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
-    # Process STF dependencies and extract arrays for wp.launch
-    processed_inputs = []
-    stf_dependencies = []
-
-    # Process inputs to separate STF dependencies from regular arguments
-    if inputs:
-        for i, inp in enumerate(inputs):
-            # Check if input is STF dependency wrapper
-            if isinstance(inp, STFDependency):
-                # Extract STF dependency information
-                stf_dependencies.append(
-                    {
-                        "index": i,
-                        "array": inp.array,
-                        "mode": inp.mode,
-                        "data_place": inp.data_place,
-                    }
-                )
-                # Add unwrapped array to processed inputs
-                processed_inputs.append(inp.array)
-            else:
-                processed_inputs.append(inp)
-
-    # STF launch REQUIRES STF dependencies - otherwise use regular wp.launch
-    if not stf_dependencies:
-        raise ValueError(
-            "wp.stf.launch() requires STF dependencies (wp.stf.read/write/rw). "
-            f"Found {len(inputs)} inputs but none are STF dependencies. "
-            "Either use regular wp.launch() or wrap arrays with wp.stf.read/write/rw(array)."
-        )
-
-    # Print tracing information (controlled by STF_TRACE_ENABLED)
-    _trace_stf_launch(kernel, dim, stream, inputs, kwargs, stf_dependencies)
-
-    # Extract the STF context from the first dependency
-    first_dep = stf_dependencies[0]
-    stf_ctx = first_dep["array"]._stf_ld.borrow_ctx_handle()
-
-    # Create STF dependency objects for the task
-    stf_task_deps = []
-    for dep in stf_dependencies:
-        stf_ld = dep["array"]._stf_ld
-        if dep["mode"] == "read":
-            stf_task_deps.append(stf_ld.read())
-        elif dep["mode"] == "write":
-            stf_task_deps.append(stf_ld.write())
-        elif dep["mode"] == "rw":
-            stf_task_deps.append(stf_ld.rw())
-
-    # Create and execute STF task
-    with stf_ctx.task(*stf_task_deps) as stf_task:
-        # Get raw CUDA stream pointer from STF task
-        stf_stream_ptr = stf_task.stream_ptr()
-
-        # Import PyTorch for stream conversion
-        import torch
-
-        # Get the current CUDA device for PyTorch
-        warp_device = wp.get_device()
-        device_id = warp_device.ordinal  # Get device number (e.g., 0 for cuda:0)
-        torch_device = torch.device(f"cuda:{device_id}")
-
-        # Create PyTorch ExternalStream from STF stream pointer with explicit device
-        torch_stream = torch.cuda.ExternalStream(stf_stream_ptr, device=torch_device)
-
-        # Convert PyTorch stream to Warp stream
-        warp_stream = wp.stream_from_torch(torch_stream)
-
-        # Launch with properly wrapped STF stream
-        return wp.launch(
-            kernel,
-            dim=dim,
-            inputs=processed_inputs,
-            stream=warp_stream,
-            **kwargs,
-        )
-
-
-# STF tracing configuration
-STF_TRACE_ENABLED = True  # Set to False to disable STF tracing
-
-
-def set_stf_trace(enabled: bool):
-    """Enable or disable STF tracing output.
-
-    Args:
-        enabled: True to enable tracing, False to disable
-    """
-    global STF_TRACE_ENABLED
-    STF_TRACE_ENABLED = enabled
-
-
-def get_stf_trace() -> bool:
-    """Get current STF tracing state.
-
-    Returns:
-        True if tracing is enabled, False otherwise
-    """
-    return STF_TRACE_ENABLED
-
-
-def _trace_stf_launch(kernel, dim, stream, inputs, kwargs, stf_dependencies):
-    """Print STF launch tracing information if enabled."""
-    if not STF_TRACE_ENABLED:
-        return
-
     print(f"[STF TRACE] launching kernel: {getattr(kernel, '__name__', kernel)}")
     print(f"  dim     = {dim}")
     print(f"  stream  = {stream}")
 
-    # Enhanced input display with STF dependency detection
+    # Enhanced input display with logical data detection
     if inputs:
         print("  inputs  = [")
         for i, inp in enumerate(inputs):
-            # Check if input is STF dependency wrapper
-            if isinstance(inp, STFDependency):
-                # Get symbol for display (STF deps ALWAYS have _stf_ld)
-                symbol = None
-                if hasattr(inp.array._stf_ld, "symbol") and inp.array._stf_ld.symbol:
-                    symbol = inp.array._stf_ld.symbol
-                elif hasattr(inp.array, "_name") and inp.array._name:
-                    symbol = inp.array._name
+            # Detect if input is or contains STF logical data
+            is_logical_data = False
+            symbol = None
 
+            # Check if inp is directly STF logical data
+            if hasattr(inp, "__class__") and "logical_data" in str(type(inp)):
+                is_logical_data = True
+                if hasattr(inp, "symbol") and inp.symbol:
+                    symbol = inp.symbol
+            # Check if inp has attached STF logical data (Warp array)
+            elif hasattr(inp, "_stf_ld"):
+                is_logical_data = True
+                if hasattr(inp._stf_ld, "symbol") and inp._stf_ld.symbol:
+                    symbol = inp._stf_ld.symbol
+            # Fallback to _name for Warp arrays
+            elif hasattr(inp, "_name") and inp._name:
+                symbol = inp._name
+
+            if is_logical_data:
                 if symbol:
-                    print(f"    [{i}]: '{symbol}' [{inp.mode}] [stf_dep]")
+                    print(f"    [{i}]: '{symbol}' [logical_data]")
                 else:
-                    print(f"    [{i}]: logical_data [{inp.mode}] [stf_dep]")
-
+                    print(f"    [{i}]: logical_data")
             else:
-                # Regular input - detect logical data for display
-                is_logical_data = False
-                symbol = None
-
-                # Check if inp is directly STF logical data
-                if hasattr(inp, "__class__") and "logical_data" in str(type(inp)):
-                    is_logical_data = True
-                    if hasattr(inp, "symbol") and inp.symbol:
-                        symbol = inp.symbol
-                # Check if inp has attached STF logical data (Warp array)
-                elif hasattr(inp, "_stf_ld"):
-                    is_logical_data = True
-                    if hasattr(inp._stf_ld, "symbol") and inp._stf_ld.symbol:
-                        symbol = inp._stf_ld.symbol
-                # Fallback to _name for Warp arrays
-                elif hasattr(inp, "_name") and inp._name:
-                    symbol = inp._name
-
-                if is_logical_data:
-                    if symbol:
-                        print(f"    [{i}]: '{symbol}' [logical_data]")
-                    else:
-                        print(f"    [{i}]: logical_data")
-                else:
-                    # Regular arguments (scalars, etc.)
-                    if hasattr(inp, "shape"):  # Array-like but not logical data
-                        print(f"    [{i}]: {type(inp).__name__}")
-                    else:  # Scalar value
-                        print(f"    [{i}]: {inp}")
-
+                # Regular arguments (scalars, etc.)
+                if hasattr(inp, "shape"):  # Array-like but not logical data
+                    print(f"    [{i}]: {type(inp).__name__}")
+                else:  # Scalar value
+                    print(f"    [{i}]: {inp}")
         print("  ]")
     else:
         print(f"  inputs  = {inputs}")
 
-    # Show STF dependency summary
-    if stf_dependencies:
-        print("  stf_deps = [")
-        for dep in stf_dependencies:
-            # All STF dependencies are guaranteed to have _stf_ld
-            symbol = None
-            if hasattr(dep["array"]._stf_ld, "symbol") and dep["array"]._stf_ld.symbol:
-                symbol = dep["array"]._stf_ld.symbol
-            elif hasattr(dep["array"], "_name") and dep["array"]._name:
-                symbol = dep["array"]._name
-
-            if symbol:
-                print(f"    {dep['mode'].upper()}: '{symbol}'")
-            else:
-                print(f"    {dep['mode'].upper()}: logical_data")
-        print("  ]")
-
     print(f"  kwargs  = {kwargs}")
-    print("  → Creating STF task with dependencies")
+
+    # just forward to warp for now
+    return wp.launch(
+        kernel,
+        dim=dim,
+        inputs=inputs,
+        stream=stream,
+        **kwargs,
+    )
 
 
 # put it under wp.stf
@@ -278,72 +147,11 @@ if not hasattr(wp, "stf"):
     wp.stf = _stf()
 
 
-# STF dependency wrapper class
-class STFDependency:
-    """Wrapper for STF task dependencies with access mode specification."""
-
-    def __init__(self, array, mode, data_place=None):
-        # CRITICAL: STF dependencies MUST have logical data attached
-        if not hasattr(array, "_stf_ld"):
-            raise ValueError(
-                f"STF dependency requires array with logical data (_stf_ld). "
-                f"Array {type(array).__name__} does not have STF logical data. "
-                f"Create logical data first: array._stf_ld = ctx.logical_data(array, data_place)"
-            )
-
-        self.array = array
-        self.mode = mode  # 'read', 'write', 'rw'
-        self.data_place = data_place
-
-    def __repr__(self):
-        symbol = None
-        if hasattr(self.array._stf_ld, "symbol"):
-            symbol = self.array._stf_ld.symbol
-        elif hasattr(self.array, "_name"):
-            symbol = self.array._name
-
-        if symbol:
-            return f"STFDependency('{symbol}', {self.mode})"
-        else:
-            return f"STFDependency({type(self.array).__name__}, {self.mode})"
-
-
-def stf_read(array, data_place=None):
-    """Mark array as read-only dependency for STF task.
-
-    REQUIRES: array must have _stf_ld (STF logical data) attached.
-    """
-    return STFDependency(array, "read", data_place)
-
-
-def stf_write(array, data_place=None):
-    """Mark array as write-only dependency for STF task.
-
-    REQUIRES: array must have _stf_ld (STF logical data) attached.
-    """
-    return STFDependency(array, "write", data_place)
-
-
-def stf_rw(array, data_place=None):
-    """Mark array as read-write dependency for STF task.
-
-    REQUIRES: array must have _stf_ld (STF logical data) attached.
-    """
-    return STFDependency(array, "rw", data_place)
-
-
 wp.stf.kernel = stf_kernel
 wp.stf.launch = stf_launch
-wp.stf.read = stf_read
-wp.stf.write = stf_write
-wp.stf.rw = stf_rw
 
-# STF tracing control functions
-wp.stf.set_trace = set_stf_trace
-wp.stf.get_trace = get_stf_trace
-
-grid_width = wp.constant(256 * 4)
-grid_height = wp.constant(128 * 4)
+grid_width = wp.constant(256)
+grid_height = wp.constant(128)
 
 
 @wp.func
@@ -498,17 +306,12 @@ class Example:
     def __init__(self):
         fps = 60
         self.frame_dt = 1.0 / fps
-        self.sim_substeps = 10
+        self.sim_substeps = 2
         self.iterations = 100  # Number of pressure iterations
         self.sim_dt = self.frame_dt / self.sim_substeps
         self.sim_time = 0.0
 
-        # Create STF context for task-based scheduling
-        # This enables automatic dependency management and stream orchestration
-        import torch
-
-        torch.cuda.init()
-        self._stf_ctx = cudastf.context()  # use_graph=True)
+        self._stf_ctx = cudastf.context()
 
         shape = (grid_width, grid_height)
 
@@ -534,6 +337,8 @@ class Example:
         self.p1._stf_ld = self._stf_ctx.logical_data(self.p1, device_place)
         self.div._stf_ld = self._stf_ctx.logical_data(self.div, device_place)
 
+        # vec2 arrays - STF now automatically handles vector type flattening
+        # Store STF logical data consistently with other arrays
         self.u0._stf_ld = self._stf_ctx.logical_data(self.u0, device_place)
         self.u1._stf_ld = self._stf_ctx.logical_data(self.u1, device_place)
         print(
@@ -562,7 +367,7 @@ class Example:
         self.div._name = "div"
 
         # capture pressure solve as a CUDA graph
-        self.use_cuda_graph = False  # wp.get_device().is_cuda
+        self.use_cuda_graph = wp.get_device().is_cuda
         if self.use_cuda_graph:
             with wp.ScopedCapture() as capture:
                 self.pressure_iterations()
@@ -579,67 +384,30 @@ class Example:
                 vel = wp.vec2(math.cos(angle) * speed, math.sin(angle) * speed)
 
                 # update emitters
-                wp.stf.launch(
-                    init,
-                    dim=shape,
-                    inputs=[
-                        wp.stf.write(self.rho0),
-                        wp.stf.write(self.u0),
-                        5,
-                        vel,
-                    ],
-                )
+                wp.stf.launch(init, dim=shape, inputs=[self.rho0, self.u0, 5, vel])
 
                 # force integrate
-                wp.stf.launch(
-                    integrate,
-                    dim=shape,
-                    inputs=[
-                        wp.stf.rw(self.u0),
-                        wp.stf.rw(self.rho0),
-                        dt,
-                    ],
-                )
-                wp.stf.launch(
-                    divergence,
-                    dim=shape,
-                    inputs=[
-                        wp.stf.read(self.u0),
-                        wp.stf.write(self.div),
-                    ],
-                )
+                wp.stf.launch(integrate, dim=shape, inputs=[self.u0, self.rho0, dt])
+                wp.stf.launch(divergence, dim=shape, inputs=[self.u0, self.div])
 
                 # pressure solve
-                # TODO tasks ?
                 self.p0.zero_()
                 self.p1.zero_()
 
-                if self.use_cuda_graph:
-                    wp.capture_launch(self.graph)
-                else:
-                    self.pressure_iterations()
+                # if self.use_cuda_graph:
+                #     wp.capture_launch(self.graph)
+                # else:
+                #     self.pressure_iterations()
+                self.pressure_iterations()
 
                 # velocity update
-                wp.stf.launch(
-                    pressure_apply,
-                    dim=shape,
-                    inputs=[
-                        wp.stf.read(self.p0),
-                        wp.stf.rw(self.u0),
-                    ],
-                )
+                wp.stf.launch(pressure_apply, dim=shape, inputs=[self.p0, self.u0])
 
                 # semi-Lagrangian advection
                 wp.stf.launch(
                     advect,
                     dim=shape,
-                    inputs=[
-                        wp.stf.read(self.u0),
-                        wp.stf.write(self.u1),
-                        wp.stf.read(self.rho0),
-                        wp.stf.write(self.rho1),
-                        dt,
-                    ],
+                    inputs=[self.u0, self.u1, self.rho0, self.rho1, dt],
                 )
 
                 # swap buffers
@@ -651,13 +419,7 @@ class Example:
     def pressure_iterations(self):
         for _ in range(self.iterations):
             wp.stf.launch(
-                pressure_solve,
-                dim=self.p0.shape,
-                inputs=[
-                    wp.stf.read(self.p0),
-                    wp.stf.write(self.p1),
-                    wp.stf.read(self.div),
-                ],
+                pressure_solve, dim=self.p0.shape, inputs=[self.p0, self.p1, self.div]
             )
 
             # swap pressure fields
