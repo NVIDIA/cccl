@@ -57,7 +57,7 @@
 #include <cuda/std/version>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
+#  include <string_view>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
@@ -727,14 +727,21 @@ _CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::
 
 // operator <<
 
-#if 0 // todo: we need to implement char_traits stream types & functions
+#if !_CCCL_COMPILER(NVRTC)
+template <class _CharT>
+_CCCL_HOST_API ::std::basic_ostream<_CharT>&
+operator<<(::std::basic_ostream<_CharT>& __os, basic_string_view<_CharT> __str)
+{
+  return __os << ::std::basic_string_view<_CharT>{__str.data(), __str.size()};
+}
+
 template <class _CharT, class _Traits>
-_CCCL_API inline ::std::basic_ostream<_CharT, _Traits>&
+_CCCL_HOST_API ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT, _Traits> __str)
 {
-  return __os.write(__str.data(), static_cast<::std::streamsize>(__str.size()));
+  return __os << ::std::basic_string_view<_CharT, _Traits>{__str.data(), __str.size()};
 }
-#endif // 0
+#endif // !_CCCL_COMPILER(NVRTC)
 
 // literals
 
