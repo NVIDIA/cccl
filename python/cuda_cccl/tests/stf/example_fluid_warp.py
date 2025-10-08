@@ -341,13 +341,7 @@ class Example:
         # Store STF logical data consistently with other arrays
         self.u0._stf_ld = self._stf_ctx.logical_data(self.u0, device_place)
         self.u1._stf_ld = self._stf_ctx.logical_data(self.u1, device_place)
-        print(
-            "✅ Successfully created vec2 STF logical data (automatically flattened by STF)!"
-        )
 
-        print("✅ All arrays created with explicit data place specification!")
-
-        # Set descriptive symbols for STF logical data (for enhanced tracing)
         self.rho0._stf_ld.set_symbol("density_current")
         self.rho1._stf_ld.set_symbol("density_next")
         self.p0._stf_ld.set_symbol("pressure_current")
@@ -355,7 +349,6 @@ class Example:
         self.div._stf_ld.set_symbol("velocity_divergence")
         self.u0._stf_ld.set_symbol("velocity_current")
         self.u1._stf_ld.set_symbol("velocity_next")
-        print("✅ Set descriptive symbols for STF logical data!")
 
         # Set Warp array names (for Warp tracing)
         self.u0._name = "u0"
