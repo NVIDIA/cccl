@@ -15,7 +15,7 @@ Defined in ``<cuda/cmath>`` header.
 
    } // namespace cuda
 
-Computes the high half of the product of two non-negative integers ``lhs`` and ``rhs``.
+Computes the most significant half of the bits of the product of two non-negative integers ``lhs`` and ``rhs``.
 
 **Parameters**
 
