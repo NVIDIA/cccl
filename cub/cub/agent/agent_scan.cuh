@@ -52,7 +52,7 @@
 #include <cub/util_device.cuh>
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/agent/unique_by_key.cuh> // for UniqueByKeyAgentPolicy
+#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
 #endif
 
 #include <cuda/std/__type_traits/conditional.h>
