@@ -22,6 +22,18 @@ else
     echo "Not building with NVCC, disabling RDC and benchmarks."
 fi
 
+# Building for all arches will exceed available memory on CI systems.
+# Reduce build parallelism:
+# if [[ "${CUDA_ARCHS:-}" == "all" ]]; then
+#     if [[ -n "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
+#         if [[ "$CMAKE_BUILD_PARALLEL_LEVEL" -gt 1 ]]; then
+#             CMAKE_BUILD_PARALLEL_LEVEL=$((CMAKE_BUILD_PARALLEL_LEVEL / 2))
+#             echo "Reducing CMAKE_BUILD_PARALLEL_LEVEL to $CMAKE_BUILD_PARALLEL_LEVEL for CUB build with '-arch all'."
+#             export CMAKE_BUILD_PARALLEL_LEVEL
+#         fi
+#     fi
+# fi
+
 if [[ "$HOST_COMPILER" == *icpc* || "$HOST_COMPILER" == *nvhpc* ]]; then
     ENABLE_CCCL_BENCHMARKS="false"
 fi
