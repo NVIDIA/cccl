@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_PHYSICAL_DEVICE_H
 #define _CUDA___DEVICE_PHYSICAL_DEVICE_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -106,7 +106,7 @@ public:
   {
     if (__primary_ctx)
     {
-      _CUDA_DRIVER::__primaryCtxRelease(__device);
+      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device);
     }
   }
 

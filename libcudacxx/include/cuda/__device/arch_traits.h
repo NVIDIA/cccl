@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_ARCH_TRAITS_H
 #define _CUDA___DEVICE_ARCH_TRAITS_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
