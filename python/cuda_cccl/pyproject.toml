@@ -22,7 +22,7 @@ dependencies = [
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
-  "numba-cuda @ git+https://github.com/caugonnet/numba-cuda.git@cuda_graph_future_memory",                                                                     # TODO: remove this once numba-cuda 0.19.2 is released
+  "numba-cuda @ git+https://github.com/caugonnet/numba-cuda.git@cuda_graph_future_memory",
 ]
 
 dynamic = ["version"]
