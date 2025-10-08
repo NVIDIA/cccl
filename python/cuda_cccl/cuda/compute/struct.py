@@ -5,8 +5,7 @@
 
 import functools
 import operator
-from dataclasses import make_dataclass
-from typing import Any, Dict, Type
+from typing import Dict, Type
 
 import numba
 import numpy as np
@@ -78,6 +77,36 @@ def _setup_numba_struct(struct_class: Type, field_types: Dict[str, types.Type]):
         if not isinstance(struct_val, StructType):
             return
 
+        # Check if idx is a literal (compile-time constant)
+        if isinstance(idx, (types.IntegerLiteral, types.Literal)):
+            if hasattr(idx, "literal_value"):
+                idx_val = idx.literal_value
+            else:
+                # For types.Literal
+                idx_val = idx.value if hasattr(idx, "value") else None
+
+            if idx_val is not None and 0 <= idx_val < len(field_names_list):
+                field_name = field_names_list[idx_val]
+
+                # Return a function that accesses the specific field
+                # Use exec to create a function with the field name baked in
+                impl_code = f"""
+def struct_getitem_literal_impl(struct_val, idx):
+    return struct_val.{field_name}
+"""
+                local_vars = {}
+                exec(impl_code, {}, local_vars)
+                return local_vars["struct_getitem_literal_impl"]
+            elif idx_val is not None:
+
+                def struct_getitem_error_impl(struct_val, idx):
+                    raise IndexError(
+                        f"Index {idx_val} out of range for struct with {len(field_names_list)} fields"
+                    )
+
+                return struct_getitem_error_impl
+
+        # Fallback for non-literal indices (runtime indexing)
         # Build the if-elif chain dynamically
         impl_lines = []
         for i, field_name in enumerate(field_names_list):
@@ -95,7 +124,6 @@ def _setup_numba_struct(struct_class: Type, field_types: Dict[str, types.Type]):
 def struct_getitem_impl(struct_val, idx):
 {chr(10).join(impl_lines)}
 """
-
         # Execute the generated code to create the implementation
         local_vars = {}
         exec(impl_code, {}, local_vars)
@@ -107,7 +135,8 @@ def struct_getitem_impl(struct_val, idx):
         key = struct_class
         cases = [nb_signature(struct_numba_type, *list(field_types.values()))]
 
-    cuda_registry.register_global(struct_class, numba.types.Function(StructConstructor))
+    cuda_registry.register_global(
+        struct_class, numba.types.Function(StructConstructor))
 
     # Lowering for constructor
     def struct_constructor(context, builder, sig, args):
@@ -117,10 +146,14 @@ def struct_getitem_impl(struct_val, idx):
             setattr(retval, field_name, val)
         return retval._getvalue()
 
-    lower_builtin(struct_class, *list(field_types.values()))(struct_constructor)
+    lower_builtin(struct_class, *list(field_types.values())
+                  )(struct_constructor)
 
     # Store the struct type on the class for later use
     struct_class._numba_type = struct_numba_type
+
+    # Store field_types on the struct class for use in overload
+    struct_class._field_types = field_types
 
 
 @functools.lru_cache(maxsize=None)
@@ -139,7 +172,8 @@ def gpu_struct_from_numba_types(
         A dynamically created struct class with the specified fields
     """
     if len(field_names) != len(field_types):
-        raise ValueError("field_names and field_types must have the same length")
+        raise ValueError(
+            "field_names and field_types must have the same length")
 
     # Create a dict mapping field names to types
     field_dict = dict(zip(field_names, field_types))
@@ -156,108 +190,254 @@ def gpu_struct_from_numba_types(
 
     StructClass.__name__ = name
 
-    # Generate indexing methods dynamically for Python execution
-    # Generate __getitem__ method
-    getitem_lines = []
-    for i, field_name in enumerate(field_names):
-        if i == 0:
-            getitem_lines.append(f"    if idx == {i}:")
-        else:
-            getitem_lines.append(f"    elif idx == {i}:")
-        getitem_lines.append(f"        return self.{field_name}")
-
-    getitem_lines.append("    else:")
-    getitem_lines.append(
-        f"        raise IndexError(f'Index {{idx}} out of range for struct with {len(field_names)} fields')"
-    )
-
-    getitem_code = f"""
-def __getitem__(self, idx):
-    '''Get field by index.'''
-{chr(10).join(getitem_lines)}
-"""
-
-    # Generate __len__ method
-    len_code = f"""
-def __len__(self):
-    '''Return the number of fields.'''
-    return {len(field_names)}
-"""
-
-    # Execute the generated code and add methods to the class
-    namespace: Dict[str, Any] = {}
-    exec(getitem_code, namespace)
-    exec(len_code, namespace)
-
-    StructClass.__getitem__ = namespace["__getitem__"]  # type: ignore
-    StructClass.__len__ = namespace["__len__"]  # type: ignore
-
     # Set up the class for use with numba
     _setup_numba_struct(StructClass, field_dict)
 
     return StructClass
 
 
-def gpu_struct(this: type) -> Type[GpuStruct]:
+def gpu_struct(field_dict: dict, name: str = "AnonymousStruct") -> Type[GpuStruct]:
     """
-    Decorate a class as a GPU struct.
+    Create a GPU struct from a dictionary mapping field names to types.
 
     A GpuStruct represents a value composed of one or more other
-    values, and is defined as a class with annotated fields (similar
-    to a dataclass). The type of each field must be a subclass of
-    `np.number`, like `np.int32` or `np.float64`.
+    values, defined as a dictionary mapping field names to types.
+
+    The type of each field must be either:
+    - A subclass of `np.number`, like `np.int32` or `np.float64`
+    - Another GPU struct (for nested structs)
+    - A dictionary defining a nested struct inline
 
     Arrays of GPUStruct objects can be used as inputs to cuda.compute
     algorithms.
 
-    Example:
-        The code snippet below shows how to use `gpu_struct` to define
-        a `MinMax` type (composed of `min_val`, `max_val` values), and perform
-        a reduction on an input array of floating point values to compute its
-        the smallest and the largest absolute values:
+    Args:
+        field_dict: Dictionary mapping field names to types. Values can be numpy dtypes,
+                   existing GPU structs, or nested dictionaries.
+        name: Optional name for the struct class (default: "AnonymousStruct")
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/minmax_reduction.py
-            :language: python
-            :start-after: # example-begin
+    Returns:
+        A GPU struct class that can be instantiated and used in CUDA computations.
+
+    Example:
+        Basic struct definition:
+
+        .. code-block:: python
+
+            MinMax = gpu_struct({"min_val": np.float32, "max_val": np.float32})
+
+        Using the struct:
+
+        .. code-block:: python
+
+            result = MinMax(1.0, 10.0)
+            print(result.min_val)  # Access field
+
+        Creating nested structs:
+
+        .. code-block:: python
+
+            # Define inner struct first
+            Inner = gpu_struct({"a": np.int32, "b": np.float32})
+
+            # Use it in outer struct
+            Outer = gpu_struct({"x": np.int64, "inner": Inner})
+
+            # Or define inline
+            Outer = gpu_struct({
+                "x": np.int64,
+                "inner": {"a": np.int32, "b": np.float32}
+            })
 
     """
-    anns = getattr(this, "__annotations__", {})
+    if not isinstance(field_dict, dict):
+        raise TypeError(
+            "gpu_struct() requires a dictionary argument mapping field names to types. "
+            "The @gpu_struct decorator syntax is no longer supported. "
+            "Please use: MyStruct = gpu_struct({...})"
+        )
 
-    # Convert numpy types to numba types and preserve field names
-    field_names = tuple(anns.keys())
-    field_types = tuple(numba.from_dtype(typ) for typ in anns.values())
+    return _gpu_struct_from_dict(field_dict, name=name)
+
+
+def _gpu_struct_from_dict(
+    field_dict: dict, name: str = "AnonymousStruct"
+) -> Type[GpuStruct]:
+    """
+    Helper function to create a GPU struct from a dictionary.
+
+    Recursively processes nested dictionaries to create nested structs.
+
+    Args:
+        field_dict: Dictionary mapping field names to types (numpy dtypes,
+                   GPU structs, or nested dictionaries)
+        name: Name for the struct class
+
+    Returns:
+        A GPU struct class
+    """
+    processed_fields = {}
+    dtype_fields = []
+
+    for field_name, field_type in field_dict.items():
+        # Handle nested dictionary - recursively create a struct
+        if isinstance(field_type, dict):
+            nested_struct = _gpu_struct_from_dict(
+                field_type, name=f"{name}_{field_name}"
+            )
+            processed_fields[field_name] = nested_struct
+            dtype_fields.append((field_name, nested_struct.dtype))
+        # Handle existing GPU struct
+        elif hasattr(field_type, "_numba_type"):
+            processed_fields[field_name] = field_type
+            dtype_fields.append((field_name, field_type.dtype))
+        # Handle numpy dtype
+        else:
+            processed_fields[field_name] = field_type
+            dtype_fields.append((field_name, field_type))
+
+    # Convert to numba types
+    field_names = tuple(processed_fields.keys())
+    field_types = []
+    for typ in processed_fields.values():
+        if hasattr(typ, "_numba_type"):
+            field_types.append(typ._numba_type)
+        else:
+            field_types.append(numba.from_dtype(typ))
 
     # Create the struct using gpu_struct_from_numba_types
-    StructClass = gpu_struct_from_numba_types(this.__name__, field_names, field_types)
+    StructClass = gpu_struct_from_numba_types(
+        name, field_names, tuple(field_types))
 
-    # Set a .dtype attribute on the class that returns the
-    # corresponding numpy structure dtype. This makes it convenient to
-    # create CuPy/NumPy arrays of this type.
-    setattr(StructClass, "dtype", np.dtype(list(anns.items()), align=True))
+    # Set the dtype
+    setattr(StructClass, "dtype", np.dtype(dtype_fields, align=True))
 
     # Store the original __init__ method
     original_init = StructClass.__init__
 
-    # Define __post_init__ to create a numpy struct from the fields,
-    # and keep a reference to it in the `._data` attribute. The data
-    # underlying this array is what is ultimately passed to the C
-    # library, and we need to keep a reference to it for the lifetime
-    # of the object.
+    # Store processed_fields for use in __init__ and __post_init__
+    processed_fields_tuple = tuple(processed_fields.items())
+
     def __post_init__(self):
-        self._data = np.array(
-            [tuple(getattr(self, name) for name in anns.keys())], dtype=self.dtype
+        def extract_value(val, typ):
+            if hasattr(typ, "_numba_type"):
+                if hasattr(val, "_data"):
+                    return val._data[0]
+                else:
+                    # For nested structs without _data, extract field by field
+                    nested_tuple = tuple(
+                        extract_value(getattr(val, field_name), field_typ)
+                        for field_name, field_typ in typ.__annotations__.items()
+                        if hasattr(typ, "__annotations__")
+                    )
+                    if not nested_tuple and hasattr(val, "__len__"):
+                        # If no annotations but has __len__, try to extract as sequence
+                        nested_tuple = tuple(
+                            extract_value(val[i], list(
+                                processed_fields_tuple)[i][1])
+                            for i in range(len(val))
+                        )
+                    return nested_tuple
+            else:
+                return val
+
+        values = tuple(
+            extract_value(getattr(self, name), typ)
+            for name, typ in processed_fields_tuple
         )
+        self._data = np.array([values], dtype=self.dtype)
 
     def __array_interface__(self):
         return self._data.__array_interface__
 
-    # Create a new __init__ that calls the original and then __post_init__
+    # Create a new __init__ that handles nested struct construction
     def new_init(self, *args, **kwargs):
-        original_init(self, *args, **kwargs)
+        # Handle single dictionary initialization (all fields from dict)
+        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
+            data_dict = args[0]
+            args = tuple(
+                data_dict.get(field_name) for field_name, _ in processed_fields_tuple
+            )
+
+        # Convert tuple/list/dict arguments to nested struct instances
+        processed_args = []
+        for i, (arg, (field_name, field_type)) in enumerate(
+            zip(args, processed_fields_tuple)
+        ):
+            # If this field is a nested struct and arg is a tuple/list/dict, construct the struct
+            if hasattr(field_type, "_numba_type"):
+                if isinstance(arg, dict):
+                    # Recursively construct from dict
+                    processed_args.append(field_type(arg))
+                elif isinstance(arg, (tuple, list)):
+                    # Construct from tuple/list
+                    processed_args.append(field_type(*arg))
+                else:
+                    # Already a struct instance or primitive
+                    processed_args.append(arg)
+            else:
+                processed_args.append(arg)
+
+        original_init(self, *processed_args, **kwargs)
         __post_init__(self)
 
     setattr(StructClass, "__init__", new_init)
     setattr(StructClass, "__array_interface__", property(__array_interface__))
+
+    # Add overload to handle tuple construction for nested structs in device functions
+    # This allows syntax like: Outer(x, (a, b)) instead of Outer(x, Inner(a, b))
+    @overload(StructClass)
+    def struct_constructor_with_tuples(*args):
+        # Check if any arguments are tuples and need conversion to structs
+        if len(args) != len(processed_fields_tuple):
+            return  # Wrong number of args, let the normal path handle the error
+
+        # Check which fields need tuple-to-struct conversion
+        conversions = []
+        needs_conversion = False
+
+        for i, (arg_type, (field_name, field_struct_class)) in enumerate(
+            zip(args, processed_fields_tuple)
+        ):
+            # Check if this argument is a tuple and the field expects a struct
+            if isinstance(arg_type, (types.Tuple, types.UniTuple)) and hasattr(
+                field_struct_class, "_numba_type"
+            ):
+                conversions.append((i, field_struct_class))
+                needs_conversion = True
+
+        if not needs_conversion:
+            return  # No tuples to convert, use the standard constructor
+
+        # Generate implementation code that converts tuples to structs
+        impl_lines = ["def impl(*args):"]
+
+        # Build the converted arguments list
+        for i, (field_name, field_struct_class) in enumerate(processed_fields_tuple):
+            # Check if this index needs conversion
+            needs_conv = any(conv_i == i for conv_i, _ in conversions)
+            if needs_conv:
+                impl_lines.append(
+                    f"    arg{i} = field_struct_class_{i}(*args[{i}])")
+            else:
+                impl_lines.append(f"    arg{i} = args[{i}]")
+
+        # Build the constructor call with all converted arguments
+        arg_list = ", ".join(f"arg{i}" for i in range(
+            len(processed_fields_tuple)))
+        impl_lines.append(f"    return struct_class({arg_list})")
+
+        impl_code = "\n".join(impl_lines)
+
+        # Create namespace with necessary references
+        namespace = {"struct_class": StructClass}
+        for i, (field_name, field_struct_class) in enumerate(processed_fields_tuple):
+            if hasattr(field_struct_class, "_numba_type"):
+                namespace[f"field_struct_class_{i}"] = field_struct_class
+
+        # Execute the generated code to create the implementation function
+        exec(impl_code, namespace)
+        return namespace["impl"]
 
     return StructClass
 
@@ -266,7 +446,7 @@ def gpu_struct_from_numpy_dtype(name, np_dtype):
     """
     Create a GPU struct from a numpy record dtype.
     """
-    ret = make_dataclass(
-        name, [(name, dtype) for name, (dtype, _) in np_dtype.fields.items()]
-    )
-    return gpu_struct(ret)
+    field_dict = {
+        field_name: dtype for field_name, (dtype, _) in np_dtype.fields.items()
+    }
+    return gpu_struct(field_dict, name=name)
