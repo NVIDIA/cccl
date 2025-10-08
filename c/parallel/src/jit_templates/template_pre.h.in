@@ -1,2 +1,7 @@
 const char * jit_template_header_contents = R"unlikelystring(
 #include <cuda/std/type_traits>
+/// include this to use _CCCL_HAS_NVFP16()
+#include <cuda/std/__cccl/extended_data_types.h>
+#if _CCCL_HAS_NVFP16()
+#include <cuda_fp16.h>
+#endif
