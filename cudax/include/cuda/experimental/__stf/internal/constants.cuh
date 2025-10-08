@@ -65,6 +65,21 @@ inline access_mode& operator|=(access_mode& lhs, access_mode rhs)
 }
 
 /**
+ * @brief Ensure an access is compatible with an existing access mode (eg. read
+ * only after rw is valid, but write after read-only is not)
+ */
+inline bool access_mode_is_compatible(access_mode previous, access_mode mode)
+{
+  // It is not possible to modify a read-only variable
+  if (mode == access_mode::rw || mode == access_mode::write)
+  {
+    return previous == access_mode::rw || previous == access_mode::write;
+  }
+
+  return true;
+}
+
+/**
  * @brief Convert an access mode into a C string
  */
 inline const char* access_mode_string(access_mode mode)

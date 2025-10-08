@@ -231,7 +231,10 @@ public:
           cuda_safe_call(cudaStreamSynchronize(stream));
           stream_was_synchronized = true;
         }
-        cuda_safe_call(cudaFreeHost(b.ptr));
+// Commented out as a temporary work-around !
+#if 0
+                  cuda_safe_call(cudaFreeHost(b.ptr));
+#endif
       }
       else if (b.memory_node.is_managed())
       {

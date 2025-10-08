@@ -131,6 +131,39 @@ public:
     resources_released = true;
   }
 
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current set will be left empty after this operation
+  ctx_resource_set export_resources()
+  {
+    _CCCL_ASSERT(!resources_released, "Cannot export resources that have already been released");
+
+    ctx_resource_set exported;
+    exported.resources          = mv(resources);
+    exported.resources_released = resources_released;
+
+    // Reset current state
+    resources.clear();
+    resources_released = false;
+
+    return exported;
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    _CCCL_ASSERT(!resources_released, "Cannot import resources to a set that has already been released");
+    _CCCL_ASSERT(!other.resources_released, "Cannot import resources that have already been released");
+
+    // Move all resources from the other set to this set
+    resources.insert(resources.end(),
+                     ::std::make_move_iterator(other.resources.begin()),
+                     ::std::make_move_iterator(other.resources.end()));
+
+    // Clear the other set
+    other.resources.clear();
+  }
+
 private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release

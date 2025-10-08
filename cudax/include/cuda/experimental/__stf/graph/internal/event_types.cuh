@@ -69,7 +69,7 @@ protected:
     ::std::swap(nodes, result);
   }
 
-  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped& bctx, reserved::event_vector& events) override
   {
     _CCCL_ASSERT(events.size() >= 2, "invalid value");
 

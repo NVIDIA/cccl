@@ -188,9 +188,23 @@ class graph_ctx : public backend_ctx<graph_ctx>
     }
 
     // Note that graph contexts with an explicit graph passed by the user cannot use stages
-    impl(cudaGraph_t g)
-        : _graph(wrap_cuda_graph(g))
+    impl(cudaGraph_t g, async_resources_handle _async_resources = async_resources_handle(nullptr))
+        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        , _graph(wrap_cuda_graph(g))
         , explicit_graph(true)
+    {
+      reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
+    }
+
+    // Constructor with explicit graph, user stream, and async resources
+    impl(cudaGraph_t g,
+         cudaStream_t user_stream,
+         async_resources_handle _async_resources = async_resources_handle(nullptr))
+        : backend_ctx<graph_ctx>::impl(mv(_async_resources))
+        , submitted_stream(user_stream)
+        , _graph(wrap_cuda_graph(g))
+        , explicit_graph(true)
+        , blocking_finalize(false)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_graph_allocator>(*this);
     }
@@ -212,6 +226,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
     {
       assert(_graph.get());
       return *_graph;
+    }
+
+    bool is_graph_ctx() const override
+    {
+      return true;
     }
 
     executable_graph_cache_stat* graph_get_cache_stat() override
@@ -281,8 +300,13 @@ public:
   }
 
   /// @brief Constructor taking a user-provided graph. User code is not supposed to destroy the graph later.
-  graph_ctx(cudaGraph_t g)
-      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g))
+  graph_ctx(cudaGraph_t g, async_resources_handle handle = async_resources_handle(nullptr))
+      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, mv(handle)))
+  {}
+
+  /// @brief Constructor with explicit graph, support stream, and async resources
+  graph_ctx(cudaGraph_t g, cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
+      : backend_ctx<graph_ctx>(::std::make_shared<impl>(g, user_stream, mv(handle)))
   {}
   ///@}
 
@@ -461,7 +485,7 @@ public:
     {
       /* This will lookup in the cache (if any) and update an existing entry, or
        * instantiate a graph if none is found. */
-      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, g);
+      auto query_result = async_resources().cached_graphs_query(nnodes, nedges, *g);
       state.exec_graph  = query_result.first;
 
       hit = query_result.second; // indicate if this was a hit or miss in the cache

@@ -29,5 +29,6 @@
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/places/inner_shape.cuh>
+#include <cuda/experimental/__stf/stackable/stackable_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/__stf/utility/run_once.cuh>
