@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/cstdint>
 #if _CCCL_HOST_COMPILATION()
 #  include <functional>
 #endif // _CCCL_HOST_COMPILATION()
@@ -59,6 +60,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API bool __ptr_in_range_device(_Tp* __ptr, _Tp* __start, _Tp* __end) noexcept
 {
+  using uintptr_t  = ::cuda::std::uintptr_t;
   auto __end_ptr   = reinterpret_cast<uintptr_t>(__end);
   auto __start_ptr = reinterpret_cast<uintptr_t>(__start);
   auto __ptr_ptr   = reinterpret_cast<uintptr_t>(__ptr);
