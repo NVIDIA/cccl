@@ -3,7 +3,7 @@ from numba import cuda
 
 from cuda.stf import context, dep, exec_place
 
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
+numba.cuda.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 
 class stf_kernel_decorator:
@@ -59,7 +59,7 @@ class stf_kernel_decorator:
         for i, a in enumerate(args):
             # print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
             if isinstance(a, dep):
-                if ctx == None:
+                if ctx is None:
                     ld = a.get_ld()
                     # This context will be used in the __call__ method itself
                     # so we can create a temporary object from the handle

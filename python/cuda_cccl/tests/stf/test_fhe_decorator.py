@@ -7,10 +7,10 @@
 import numba
 from numba import cuda
 
+import cuda.stf as cudastf
+
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-import cuda.stf as cudastf
 
 
 class Plaintext:
@@ -37,6 +37,7 @@ class Plaintext:
             cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
+            nb_stream.synchronize()
             hvalues = t.numba_arguments()
             print([v for v in hvalues])
 

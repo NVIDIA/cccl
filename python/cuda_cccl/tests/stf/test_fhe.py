@@ -7,10 +7,10 @@
 import numba
 from numba import cuda
 
+import cuda.stf as stf
+
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-import cuda.stf as cudastf
 
 
 class Plaintext:
@@ -34,9 +34,10 @@ class Plaintext:
 
     def print_values(self):
         with ctx.task(
-            cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
+            stf.exec_place.host(), self.l.read(stf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
+            nb_stream.synchronize()
             hvalues = t.numba_arguments()
             print([v for v in hvalues])
 
@@ -145,7 +146,7 @@ def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
 def test_fhe():
     """Test Fully Homomorphic Encryption (FHE) example with logical operations."""
     global ctx  # Make ctx accessible to the classes
-    ctx = cudastf.context(use_graph=False)
+    ctx = stf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
     pA = Plaintext(ctx, vA)
