@@ -790,7 +790,7 @@ struct DispatchSegmentedReduce
    *   Function type of cub::DeviceSegmentedReduceKernel
    *
    * @param[in] segmented_reduce_kernel
-   *   Kernel function pointer to parameterization of
+   *   Kernel function pointer to instantiation of
    *   cub::DeviceSegmentedReduceKernel
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
@@ -809,15 +809,6 @@ struct DispatchSegmentedReduce
         return cudaSuccess;
       }
 
-      // Init kernel configuration
-      [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
-      error =
-        CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
       const auto num_segments_per_invocation =
         static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
@@ -830,6 +821,17 @@ struct DispatchSegmentedReduce
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
+        // Init kernel configuration
+        detail::KernelConfig segmented_reduce_config;
+        if (invocation_index == 0)
+        {
+          error =
+            CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
+          if (cudaSuccess != error)
+          {
+            break;
+          }
+        }
         _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
                 "%d items per thread, %d SM occupancy\n",
                 num_current_segments,
@@ -839,7 +841,7 @@ struct DispatchSegmentedReduce
                 segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-        // Invoke DeviceReduceKernel
+        // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
           .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
