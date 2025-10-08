@@ -121,7 +121,7 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   compare_static_and_dynamic<120>();
 
   // Compare arch traits with attributes
-  for (const cuda::physical_device& dev : cuda::devices)
+  for (const cuda::device_ref& dev : cuda::devices)
   {
     auto traits = dev.arch_traits();
 
