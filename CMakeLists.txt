@@ -91,6 +91,7 @@ endif()
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory(test)
+  add_subdirectory(ci/test)
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)

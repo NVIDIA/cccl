@@ -10,6 +10,13 @@
 
 #include "common.cuh"
 
+// Intentional error:
+int foo()
+{
+  int i;
+  return i;
+}
+
 C2H_TEST("1d Copy", "[data_manipulation]")
 {
   cudax::stream _stream{cuda::device_ref{0}};
@@ -17,7 +24,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
   SECTION("Device resource")
   {
     cudax::device_memory_resource device_resource{cuda::device_ref{0}};
-    std::vector<int> host_vector(buffer_size);
+    std::vector<int> host_vector(foo());
 
     {
       cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> buffer(device_resource, _stream, buffer_size);

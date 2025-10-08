@@ -1,0 +1,12 @@
+a.cpp: In function ‘int main()’:
+a.cpp:3:1: error: expected ‘,’ or ‘;’ before ‘}’ token
+    3 | }
+      | ^
+b.cpp: In function ‘int main()’:
+b.cpp:3:1: error: expected ‘,’ or ‘;’ before ‘}’ token
+    3 | }
+      | ^
+c.cpp: In function ‘int main()’:
+c.cpp:2:12: error: ‘y’ was not declared in this scope
+    2 |     return y;
+      |            ^

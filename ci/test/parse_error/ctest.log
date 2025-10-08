@@ -1,0 +1,26 @@
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/ctest_multi/build
+Test project /tmp/ctest_multi/build
+    Start 1: fail1
+1/3 Test #1: fail1 ............................***Failed    0.01 sec
+fail1.cpp:10: error: first
+
+    Start 2: fail2
+2/3 Test #2: fail2 ............................***Failed    0.01 sec
+fail2.cpp:20: error: second
+
+    Start 3: fail1_dup
+3/3 Test #3: fail1_dup ........................***Failed    0.01 sec
+fail1.cpp:10: error: first
+
+
+0% tests passed, 3 tests failed out of 3
+
+Total Test time (real) =   0.03 sec
+
+The following tests FAILED:
+	  1 - fail1 (Failed)
+	  2 - fail2 (Failed)
+	  3 - fail1_dup (Failed)
+Errors while running CTest

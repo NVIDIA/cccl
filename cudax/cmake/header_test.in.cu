@@ -1,3 +1,15 @@
+// Intentionally breaking to test error reporting.
+int brambllll()
+{
+  int i;
+  return i;
+}
+
+int foobar()
+{
+  return brambllll();
+}
+
 // This source file checks that:
 // 1) Header <@header@> compiles without error.
 // 2) Common macro collisions with platform/system headers are avoided.

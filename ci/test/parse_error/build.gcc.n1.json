@@ -1,0 +1,14 @@
+[
+  {
+    "error_short": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "pattern_type": "build",
+    "pattern_name": "gcc/clang error",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "error_line": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "error_context": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "line": "3",
+    "location": "a.cpp:3",
+    "summary": "`a.cpp:3`: `error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token`"
+  }
+]
