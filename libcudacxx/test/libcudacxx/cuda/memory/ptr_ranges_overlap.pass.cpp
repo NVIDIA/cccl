@@ -74,6 +74,10 @@ __host__ __device__ constexpr bool constexpr_test()
 int main(int, char**)
 {
   assert(test());
+  // clang < 20 has a defect with constexpr evaluation of pointer ranges
+  // https://releases.llvm.org/20.1.0/tools/clang/docs/ReleaseNotes.html#resolutions-to-c-defect-reports
+#if !_CCCL_COMPILER(CLANG, <, 20)
   static_assert(constexpr_test());
+#endif // !_CCCL_COMPILER(CLANG, <, 20)
   return 0;
 }
