@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MEMORY
-#define _CUDA_MEMORY
+#ifndef _CUDA___MEMORY_PTR_RANGES_OVERLAP_H
+#define _CUDA___MEMORY_PTR_RANGES_OVERLAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/__memory/align_down.h>
-#include <cuda/__memory/align_up.h>
-#include <cuda/__memory/aligned_size.h>
-#include <cuda/__memory/discard_memory.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory/ptr_in_range.h>
-#include <cuda/__memory/ptr_ranges_overlap.h>
-#include <cuda/__memory/ptr_rebind.h>
-#include <cuda/std/memory>
 
-#endif // _CUDA_MEMORY
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+[[nodiscard]] _CCCL_API constexpr bool ptr_ranges_overlap(
+  const void* __ptr_lhs_start,
+  const void* __ptr_lhs_end,
+  const void* __ptr_rhs_start,
+  const void* __ptr_rhs_end) noexcept
+{
+  return ::cuda::ptr_in_range(__ptr_lhs_start, __ptr_rhs_start, __ptr_rhs_end)
+      || ::cuda::ptr_in_range(__ptr_rhs_start, __ptr_lhs_start, __ptr_lhs_end);
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMORY_PTR_RANGES_OVERLAP_H
