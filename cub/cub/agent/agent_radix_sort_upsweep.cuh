@@ -103,9 +103,7 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 /**
@@ -552,7 +550,6 @@ struct AgentRadixSortUpsweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

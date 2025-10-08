@@ -109,9 +109,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 
 /**
@@ -628,7 +626,6 @@ struct AgentUniqueByKey
   }
 };
 
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

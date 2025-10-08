@@ -328,11 +328,6 @@ struct DispatchReduceDeterministic
     // Alias the allocation for the privatized per-block reductions
     deterministic_accum_t* d_block_reductions = (deterministic_accum_t*) allocations[0];
 
-    if (num_chunks > 1 && !detail::all_iterators_support_add_assign_operator(::cuda::std::int32_t{}, d_in))
-    {
-      return cudaErrorInvalidValue;
-    }
-
     auto d_chunk_block_reductions = d_block_reductions;
     for (int chunk_index = 0; chunk_index < num_chunks; chunk_index++)
     {
@@ -372,7 +367,7 @@ struct DispatchReduceDeterministic
 
       if (chunk_index + 1 < num_chunks)
       {
-        detail::advance_iterators_inplace_if_supported(d_in, num_current_items);
+        d_in += num_current_items;
         d_chunk_block_reductions += current_grid_size;
       }
 

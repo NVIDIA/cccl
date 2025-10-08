@@ -52,9 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace rle
+namespace detail::rle
 {
 enum class primitive_key
 {
@@ -670,7 +668,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace non_trivial_runs
-} // namespace rle
-} // namespace detail
+} // namespace detail::rle
 
 CUB_NAMESPACE_END

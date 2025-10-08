@@ -1,4 +1,4 @@
-Param(
+﻿Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -27,6 +27,11 @@ if ($CL_VERSION -lt [version]"19.20") {
 }
 
 configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
+
+if ($env:GITHUB_ACTIONS) {
+    Write-Host "Packaging test artifacts..."
+    & bash "./upload_thrust_test_artifacts.sh"
+}
 
 If($CURRENT_PATH -ne "ci") {
     popd

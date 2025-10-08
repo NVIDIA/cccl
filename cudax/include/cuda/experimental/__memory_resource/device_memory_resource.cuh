@@ -77,7 +77,7 @@ private:
 public:
   //! @brief Constructs a device_memory_resource using the default \c cudaMemPool_t of a given device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  explicit device_memory_resource(::cuda::device_ref __device)
+  _CCCL_HOST_API explicit device_memory_resource(::cuda::device_ref __device)
       : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
   {}
 
@@ -86,19 +86,19 @@ public:
 
   //! @brief  Constructs the device_memory_resource from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  explicit device_memory_resource(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit device_memory_resource(::cudaMemPool_t __pool) noexcept
       : __memory_resource_base(__pool)
   {}
 
   //! @brief  Constructs the device_memory_resource from a \c device_memory_pool by calling get().
   //! @param __pool The \c device_memory_pool used to allocate memory.
-  explicit device_memory_resource(device_memory_pool& __pool) noexcept
+  _CCCL_HOST_API explicit device_memory_resource(device_memory_pool& __pool) noexcept
       : __memory_resource_base(__pool.get())
   {}
 
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
-  friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
 
   using default_queries = properties_list<device_accessible>;
 };

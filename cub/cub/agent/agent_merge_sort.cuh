@@ -66,9 +66,7 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
-{
-namespace merge_sort
+namespace detail::merge_sort
 {
 
 template <typename Policy,
@@ -724,7 +722,6 @@ struct AgentMerge
   }
 };
 
-} // namespace merge_sort
-} // namespace detail
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

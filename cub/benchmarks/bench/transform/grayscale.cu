@@ -33,7 +33,7 @@ template <typename T, typename OffsetT>
 static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using pixel_t = rgb_t<T>;
-  const auto n  = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n  = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
 
   // Generate random RGB data by creating separate R, G, B vectors and combining them
   thrust::device_vector<T> r_data = generate(n);

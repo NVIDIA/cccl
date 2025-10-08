@@ -47,9 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 
 template <typename PolicyT, typename = void>
@@ -437,7 +435,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END
