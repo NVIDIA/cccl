@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /**
  * @file cub::DeviceFind provides device-wide, parallel operations for
@@ -68,10 +44,6 @@ __global__ void cuda_mem_set_async_dtemp_storage(ValueType* d_temp_storage, NumI
   *d_temp_storage = num_items;
 }
 
-/******************************************************************************
- * Kernel entry points
- *****************************************************************************/
-
 /** ENTER DOCUMENTATION */
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
@@ -93,10 +65,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
 template <typename InputIt>
 struct DeviceFindPolicy
 {
-  //---------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //---------------------------------------------------------------------------
-
   /// SM30
   struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
   {
@@ -106,7 +74,11 @@ struct DeviceFindPolicy
 
     // FindPolicy (GTX670: 154.0 @ 48M 4B items)
     using FindPolicy =
-      AgentFindPolicy<threads_per_block, items_per_thread, cub::detail::value_t<InputIt>, items_per_vec_load, LOAD_LDG>;
+      AgentFindPolicy<threads_per_block,
+                      items_per_thread,
+                      typename ::cuda::std::iterator_traits<InputIt>::value_type,
+                      items_per_vec_load,
+                      LOAD_LDG>;
 
     // // SingleTilePolicy
     // using SingleTilePolicy = FindPolicy;
@@ -122,10 +94,6 @@ template <typename InputIteratorT,
           typename SelectedPolicy = DeviceFindPolicy<InputIteratorT>>
 struct DispatchFind : SelectedPolicy
 {
-  //---------------------------------------------------------------------------
-  // Problem state
-  //---------------------------------------------------------------------------
-
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
   /// is done.
@@ -151,10 +119,6 @@ struct DispatchFind : SelectedPolicy
 
   int ptx_version;
 
-  //---------------------------------------------------------------------------
-  // Constructor
-  //---------------------------------------------------------------------------
-
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchFind(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -173,14 +137,6 @@ struct DispatchFind : SelectedPolicy
       , stream(stream)
       , ptx_version(ptx_version)
   {}
-
-  //---------------------------------------------------------------------------
-  // Normal problem size invocation
-  //---------------------------------------------------------------------------
-
-  //---------------------------------------------------------------------------
-  // Chained policy invocation
-  //---------------------------------------------------------------------------
 
   /// Invocation
   template <typename ActivePolicyT, typename FindKernel>
@@ -220,14 +176,14 @@ struct DispatchFind : SelectedPolicy
 
       int findif_device_occupancy = find_if_sm_occupancy * sm_count;
       int max_blocks       = findif_device_occupancy; // no * CUB_SUBSCRIPTION_FACTOR(0) because max_blocks gets too big
-      int findif_grid_size = CUB_MIN(num_tiles, max_blocks);
+      int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
 
       // Temporary storage allocation requirements
       void* allocations[1]       = {};
       size_t allocation_sizes[1] = {sizeof(int)};
       // Alias the temporary allocations from the single storage blob (or
       // compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -248,7 +204,7 @@ struct DispatchFind : SelectedPolicy
       cuda_mem_set_async_dtemp_storage<<<1, 1>>>(value_temp_storage, num_items);
 
       // Invoke FindIfKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
         .doit(find_kernel, d_in, d_out, num_items, value_temp_storage, scan_op);
 
@@ -281,10 +237,6 @@ struct DispatchFind : SelectedPolicy
                                                                                         // init and write back kernels
                                                                                         // here.
   }
-
-  //---------------------------------------------------------------------------
-  // Dispatch entrypoints
-  //---------------------------------------------------------------------------
 
   /**
    * @brief @giannis ENTER NO DOCUMENTATION. DISPATCH LAYER IN NEW ALGOS NOT EXPOSED
