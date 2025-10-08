@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from cuda.cccl.experimental.stf._stf_bindings import context, read, rw
+from cuda.stf._stf_bindings import context, read, rw
 
 
 def test_ctx():

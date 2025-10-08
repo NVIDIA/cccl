@@ -26,7 +26,7 @@ import math
 import warp as wp
 import warp.render
 
-import cuda.cccl.experimental.stf as cudastf
+import cuda.stf as cudastf
 
 
 def stf_kernel(pyfunc):

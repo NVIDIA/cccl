@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from cuda.cccl.experimental.stf._stf_bindings import (
+from cuda.stf._stf_bindings import (
     context,
 )
 

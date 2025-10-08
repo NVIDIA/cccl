@@ -502,7 +502,7 @@ cdef class task:
     def get_arg_numba(self, index):
         cai = self.get_arg_cai(index)
         try:
-            from cuda.cccl.experimental.stf._adapters.numba_bridge import cai_to_numba
+            from cuda.stf._adapters.numba_bridge import cai_to_numba
         except Exception as e:
             raise RuntimeError("numba support is not available") from e
         return cai_to_numba(cai)
@@ -516,7 +516,7 @@ cdef class task:
     def get_arg_as_tensor(self, index):
         cai = self.get_arg_cai(index)
         try:
-            from cuda.cccl.experimental.stf._adapters.torch_bridge import cai_to_torch
+            from cuda.stf._adapters.torch_bridge import cai_to_torch
         except Exception as e:
             raise RuntimeError("PyTorch support is not available") from e
         return cai_to_torch(cai)
@@ -755,7 +755,7 @@ cdef class context:
         # Initialize with the specified value using NUMBA
         # The numba code already handles None properly by calling ld.write() without data place
         try:
-            from cuda.cccl.experimental.stf._adapters.numba_utils import init_logical_data
+            from cuda.stf._adapters.numba_utils import init_logical_data
             init_logical_data(self, ld, fill_value, where, exec_place)
         except ImportError as e:
             raise RuntimeError("NUMBA support is not available for logical_data_full") from e

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.cuda as tc
 
-from cuda.cccl.experimental.stf._stf_bindings import (
+from cuda.stf._stf_bindings import (
     context,
 )
 

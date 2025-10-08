@@ -10,7 +10,7 @@ from numba import cuda
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-import cuda.cccl.experimental.stf as cudastf
+import cuda.stf as cudastf
 
 
 class Plaintext:

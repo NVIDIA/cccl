@@ -1,7 +1,7 @@
 import numba
 from numba import cuda
 
-from cuda.cccl.experimental.stf import context, dep, exec_place
+from cuda.stf import context, dep, exec_place
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
