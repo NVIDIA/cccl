@@ -9,16 +9,8 @@ from cuda.compute import (
     gpu_struct,
 )
 
-
-@gpu_struct
-class Single:
-    value: np.int32
-
-
-@gpu_struct
-class Pair:
-    first: np.int32
-    second: np.int32
+Single = gpu_struct({"value": np.int32})
+Pair = gpu_struct({"first": np.int32, "second": np.int32})
 
 
 def reduce_zip_array(input_array, build_only):

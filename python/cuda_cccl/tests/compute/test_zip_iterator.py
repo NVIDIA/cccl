@@ -16,10 +16,7 @@ from cuda.compute import (
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_basic(num_items):
-    @gpu_struct
-    class Pair:
-        first: np.int64
-        second: np.float32
+    Pair = gpu_struct({"first": np.int64, "second": np.float32})
 
     def sum_pairs(p1, p2):
         return Pair(p1[0] + p2[0], p1[1] + p2[1])
@@ -46,10 +43,7 @@ def test_zip_iterator_basic(num_items):
 def test_zip_iterator_with_counting_iterator(num_items):
     """Test ZipIterator with two counting iterators."""
 
-    @gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int32
+    IndexValuePair = gpu_struct({"index": np.int32, "value": np.int32})
 
     def max_by_value(p1, p2):
         # Return the pair with the larger value
@@ -76,10 +70,7 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_with_counting_iterator_and_transform(num_items):
-    @gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int64
+    IndexValuePair = gpu_struct({"index": np.int32, "value": np.int64})
 
     def max_by_value(p1, p2):
         return p1 if p1[1] > p2[1] else p2
@@ -114,11 +105,7 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
 def test_zip_iterator_n_iterators(num_items):
     """Test generalized ZipIterator with N iterators (3 in this case)."""
 
-    @gpu_struct
-    class Triple:
-        first: np.int64
-        second: np.float32
-        third: np.int64
+    Triple = gpu_struct({"first": np.int64, "second": np.float32, "third": np.int64})
 
     def sum_triples(t1, t2):
         return Triple(t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
@@ -149,9 +136,7 @@ def test_zip_iterator_n_iterators(num_items):
 def test_zip_iterator_single_iterator(num_items):
     """Test ZipIterator with a single iterator."""
 
-    @gpu_struct
-    class Single:
-        value: np.int64
+    Single = gpu_struct({"value": np.int64})
 
     def sum_singles(s1, s2):
         return Single(s1[0] + s2[0])
@@ -173,10 +158,7 @@ def test_zip_iterator_single_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000])
 def test_zip_iterator_with_transform(num_items):
-    @gpu_struct
-    class TransformedPair:
-        sum_indices: np.int32
-        product_values: np.int64
+    TransformedPair = gpu_struct({"sum_indices": np.int32, "product_values": np.int64})
 
     def binary_transform(pair1, pair2):
         return TransformedPair(pair1[0] + pair2[0], pair1[1] * pair2[1])
@@ -209,10 +191,7 @@ def test_zip_iterator_with_transform(num_items):
 def test_zip_iterator_with_scan(num_items):
     """Test ZipIterator with scan operations."""
 
-    @gpu_struct
-    class Pair:
-        first_min: np.int64
-        second_min: np.int64
+    Pair = gpu_struct({"first_min": np.int64, "second_min": np.int64})
 
     def min_pairs(p1, p2):
         # p1 is the accumulated result, p2 is the current input

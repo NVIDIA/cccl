@@ -38,10 +38,7 @@ alpha = 0.05
 assert 0.0 < alpha < 1.0
 
 
-@gpu_struct
-class ValueScale:
-    value: cp.float64
-    scale: cp.int64
+ValueScale = gpu_struct({"value": cp.float64, "scale": cp.int64})
 
 
 def add_op(v1: ValueScale, v2: ValueScale) -> ValueScale:

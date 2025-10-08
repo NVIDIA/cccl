@@ -728,11 +728,7 @@ def test_transform_iterator():
 
 
 def test_reduce_struct_type():
-    @gpu_struct
-    class Pixel:
-        r: np.int32
-        g: np.int32
-        b: np.int32
+    Pixel = gpu_struct({"r": np.int32, "g": np.int32, "b": np.int32})
 
     def max_g_value(x, y):
         return x if x.g > y.g else y
@@ -752,10 +748,7 @@ def test_reduce_struct_type():
 
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_reduce_struct_type_minmax():
-    @gpu_struct
-    class MinMax:
-        min_val: np.float64
-        max_val: np.float64
+    MinMax = gpu_struct({"min_val": np.float64, "max_val": np.float64})
 
     def minmax_op(v1: MinMax, v2: MinMax):
         c_min = min(v1.min_val, v2.min_val)

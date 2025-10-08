@@ -17,12 +17,8 @@ from cuda.compute import (
     gpu_struct,
 )
 
-
 # Define a custom data type for the accumulator.
-@gpu_struct
-class MinMax:
-    min_val: np.float64
-    max_val: np.float64
+MinMax = gpu_struct({"min_val": np.float64, "max_val": np.float64})
 
 
 # Define the binary operation for the reduction.

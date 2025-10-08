@@ -96,10 +96,7 @@ def three_way_partition_iterator(
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
+MyStruct = gpu_struct({"x": np.int32, "y": np.int32})
 
 
 def three_way_partition_struct(

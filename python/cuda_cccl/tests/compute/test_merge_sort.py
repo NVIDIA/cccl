@@ -150,15 +150,8 @@ def test_merge_sort_pairs_copy(dtype, num_items, op):
 
 
 def test_merge_sort_pairs_struct_type():
-    @gpu_struct
-    class key_pair:
-        a: np.int16
-        b: np.uint64
-
-    @gpu_struct
-    class item_pair:
-        a: np.int32
-        b: np.float32
+    key_pair = gpu_struct({"a": np.int16, "b": np.uint64})
+    item_pair = gpu_struct({"a": np.int32, "b": np.float32})
 
     def struct_compare_op(lhs, rhs):
         return np.uint8(lhs.b < rhs.b) if lhs.a == rhs.a else np.uint8(lhs.a < rhs.a)

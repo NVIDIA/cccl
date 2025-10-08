@@ -34,10 +34,7 @@ hflg = cp.asarray([0, 0, 1, 0, 0, 1, 1, 0], dtype=cp.int32)
 # Define the custom data type and binary operation.
 
 
-@gpu_struct
-class ValueFlag:
-    value: cp.int64
-    flag: cp.int32
+ValueFlag = gpu_struct({"value": cp.int64, "flag": cp.int32})
 
 
 def schwartz_sum(op1: ValueFlag, op2: ValueFlag) -> ValueFlag:

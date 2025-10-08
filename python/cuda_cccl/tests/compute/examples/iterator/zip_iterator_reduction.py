@@ -17,11 +17,7 @@ from cuda.compute import (
     gpu_struct,
 )
 
-
-@gpu_struct
-class Pair:
-    first: np.int32
-    second: np.float32
+Pair = gpu_struct({"first": np.int32, "second": np.float32})
 
 
 def sum_pairs(p1, p2):

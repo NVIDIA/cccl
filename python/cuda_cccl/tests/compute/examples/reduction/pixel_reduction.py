@@ -14,13 +14,8 @@ import numpy as np
 import cuda.compute
 from cuda.compute import gpu_struct
 
-
 # Define a custom data type to store the pixel values.
-@gpu_struct
-class Pixel:
-    r: np.int32
-    g: np.int32
-    b: np.int32
+Pixel = gpu_struct({"r": np.int32, "g": np.int32, "b": np.int32})
 
 
 # Define a reduction operation that returns the pixel with the maximum green value.
