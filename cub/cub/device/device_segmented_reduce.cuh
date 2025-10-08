@@ -156,14 +156,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
@@ -372,15 +372,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments`, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and
-  //!   ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
@@ -578,14 +577,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
@@ -792,14 +791,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
@@ -1037,14 +1036,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
@@ -1249,14 +1248,14 @@ struct DeviceSegmentedReduce
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length `num_segments`, such that ``d_begin_offsets[i]`` is the first
-  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
   //!   @endrst
   //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
   //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
-  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
   //!   @endrst
   //!
