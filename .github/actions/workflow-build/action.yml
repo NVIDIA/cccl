@@ -75,24 +75,26 @@ runs:
         echo "Running inspect-changes script..."
         mkdir workflow
         ${{ inputs.inspect_changes_script }} ${base_ref} ${GITHUB_SHA} workflow/changes.md
-        echo "Exporting summary..."
 
     - name: Parse matrix file into a workflow
       id: build-workflow
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
-        dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
-        dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
+        full_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--full-build-projects' || ''}}
+        full_build_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.FULL_BUILD || ''}}
+        lite_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--lite-build-projects' || ''}}
+        lite_build_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.LITE_BUILD || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
       run: |
         echo "Parsing matrix file into a workflow..."
 
         echo "::group::Generating GHA workflow from matrix.yaml"
-        ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
-            --workflows ${{ inputs.workflows }}                      \
-            ${{ env.allow_override }}                                \
-            ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
+        ${{ env.matrix_parser }} ${{ inputs.matrix_file }}                     \
+            --workflows ${{ inputs.workflows }}                                \
+            ${{ env.allow_override }}                                          \
+            ${{ env.full_build_projects_flag }} ${{ env.full_build_projects }} \
+            ${{ env.lite_build_projects_flag }} ${{ env.lite_build_projects }}
         echo "::endgroup::"
 
         if [[ -f workflow/override.json ]]; then
