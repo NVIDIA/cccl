@@ -119,6 +119,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_logical_data_destroy(stf_logical_data_handle ld)
     void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle *to)
 
+    void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
+
     ctypedef struct stf_task_handle_t
     ctypedef stf_task_handle_t* stf_task_handle
     void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
@@ -170,6 +172,7 @@ cdef class logical_data:
     cdef int    _ndim
     cdef size_t _len
     cdef str    _symbol  # Store symbol for display purposes
+    cdef readonly bint _is_token  # readonly makes it accessible from Python
 
     def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None):
         if ctx is None or buf is None:
@@ -181,10 +184,12 @@ cdef class logical_data:
             self._shape = ()
             self._ndim = 0
             self._symbol = None
+            self._is_token = False
             return
 
         self._ctx = ctx._ctx
         self._symbol = None  # Initialize symbol
+        self._is_token = False  # Initialize token flag
 
         # Default to host data place if not specified (matches C++ API)
         if dplace is None:
@@ -270,6 +275,12 @@ cdef class logical_data:
             stf_logical_data_destroy(self._ld)
             self._ld = NULL
 
+    def __repr__(self):
+        """Return a detailed string representation of the logical_data object."""
+        return (f"logical_data(shape={self._shape}, dtype={self._dtype}, "
+                f"is_token={self._is_token}, symbol={self._symbol!r}, "
+                f"len={self._len}, ndim={self._ndim})")
+
     @property
     def dtype(self):
         """Return the dtype of the logical data."""
@@ -305,6 +316,21 @@ cdef class logical_data:
         out._ndim  = self._ndim
         out._len   = self._len
         out._symbol = None  # New object has no symbol initially
+        out._is_token = False
+
+        return out
+
+    @staticmethod
+    def token(context ctx):
+        cdef logical_data out = logical_data.__new__(logical_data)
+        out._ctx   = ctx._ctx
+        out._dtype = None
+        out._shape = None
+        out._ndim  = 0
+        out._len   = 0
+        out._symbol = None  # New object has no symbol initially
+        out._is_token = True
+        stf_token(ctx._ctx, &out._ld)
 
         return out
 
@@ -320,6 +346,7 @@ cdef class logical_data:
         out._ndim  = len(shape)
         out._len   = math.prod(shape) * out._dtype.itemsize
         out._symbol = None  # New object has no symbol initially
+        out._is_token = False
         stf_logical_data_empty(ctx._ctx, out._len, &out._ld)
 
         return out
@@ -492,6 +519,9 @@ cdef class task:
         return <uintptr_t> s         # cast pointer -> Py int
 
     def get_arg(self, index) -> int:
+        if self._lds_args[index]._is_token:
+           raise RuntimeError("cannot materialize a token argument")
+
         cdef void *ptr = stf_task_get(self._t, index)
         return <uintptr_t>ptr
 
@@ -508,10 +538,15 @@ cdef class task:
         return cai_to_numba(cai)
 
     def numba_arguments(self):
-        arg_cnt=len(self._lds_args)
-        if arg_cnt == 1:
-            return self.get_arg_numba(0)
-        return tuple(self.get_arg_numba(i) for i in range(arg_cnt))
+        # Only include non-token arguments in the tuple
+        non_token_args = [self.get_arg_numba(i) for i in range(len(self._lds_args))
+                          if not self._lds_args[i]._is_token]
+
+        if len(non_token_args) == 0:
+            return None
+        elif len(non_token_args) == 1:
+            return non_token_args[0]
+        return tuple(non_token_args)
 
     def get_arg_as_tensor(self, index):
         cai = self.get_arg_cai(index)
@@ -522,10 +557,15 @@ cdef class task:
         return cai_to_torch(cai)
 
     def tensor_arguments(self):
-        arg_cnt=len(self._lds_args)
-        if arg_cnt == 1:
-            return self.get_arg_as_tensor(0)
-        return tuple(self.get_arg_as_tensor(i) for i in range(arg_cnt))
+        # Only include non-token arguments in the tuple
+        non_token_args = [self.get_arg_as_tensor(i) for i in range(len(self._lds_args))
+                          if not self._lds_args[i]._is_token]
+
+        if len(non_token_args) == 0:
+            return None
+        elif len(non_token_args) == 1:
+            return non_token_args[0]
+        return tuple(non_token_args)
 
     # ---- context‑manager helpers -------------------------------
     def __enter__(self):
@@ -829,6 +869,9 @@ cdef class context:
         if dtype is None:
             dtype = np.float64
         return self.logical_data_full(shape, 1.0, dtype, where, exec_place)
+
+    def token(self):
+        return logical_data.token(self)
 
     def task(self, *args):
         """
