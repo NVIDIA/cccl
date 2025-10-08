@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___FLOATING_POINT_FP_H
 #define _LIBCUDACXX___FLOATING_POINT_FP_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

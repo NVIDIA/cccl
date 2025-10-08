@@ -137,11 +137,10 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   return __result;
 }
 
-_CCCL_HOST_API inline void __primaryCtxRelease(::CUdevice __dev)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __primaryCtxReleaseNoThrow(::CUdevice __dev)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRelease);
-  // TODO we might need to ignore failure here
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to release context for a device", __dev);
+  return static_cast<::cudaError_t>(__driver_fn(__dev));
 }
 
 [[nodiscard]] _CCCL_HOST_API inline bool __isPrimaryCtxActive(::CUdevice __dev)
