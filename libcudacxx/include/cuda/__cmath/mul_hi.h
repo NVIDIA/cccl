@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
@@ -44,9 +45,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __mul_hi_fallback(_Tp __lhs, _Tp __rhs) noexcept
 {
-  using ::cuda::std::is_signed_v;
+  static_assert(::cuda::std::is_unsigned_v<_Tp>, "__mul_hi_fallback: T is required to be a unsigned integer type");
   constexpr int __half_bits = ::cuda::std::__num_bits_v<_Tp> / 2;
-  using __half_bits_t       = ::cuda::std::__make_nbit_int_t<__half_bits, is_signed_v<_Tp>>;
+  using __half_bits_t       = ::cuda::std::__make_nbit_uint_t<__half_bits>;
   auto __lhs_low            = static_cast<__half_bits_t>(__lhs); // 32-bit
   auto __lhs_high           = static_cast<__half_bits_t>(__lhs >> __half_bits); // 32-bit
   auto __rhs_low            = static_cast<__half_bits_t>(__rhs); // 32-bit
