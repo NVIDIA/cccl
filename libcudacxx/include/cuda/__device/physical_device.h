@@ -32,7 +32,6 @@
 #  include <cuda/std/string_view>
 
 #  include <cassert>
-#  include <memory>
 #  include <mutex>
 #  include <vector>
 
@@ -48,8 +47,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief An immovable "owning" representation of a CUDA device.
 class __physical_device
 {
-  friend _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
-  __make_physical_devices(::cuda::std::size_t __device_count);
+  friend struct __physical_devices_container;
 
   ::CUdevice __device_{};
 
@@ -148,22 +146,44 @@ public:
   }
 };
 
-[[nodiscard]] _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
-__make_physical_devices(::cuda::std::size_t __device_count)
+struct __physical_devices_container
 {
-  ::std::unique_ptr<__physical_device[]> __devices{::new __physical_device[__device_count]};
-  for (::cuda::std::size_t __i = 0; __i < __device_count; ++__i)
+  __physical_device* __data_{};
+  ::cuda::std::size_t __size_{};
+
+  _CCCL_HOST_API __physical_devices_container()
+      : __size_{static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount())}
   {
-    __devices[__i].__device_ = static_cast<int>(__i);
+    try
+    {
+      __data_ = new __physical_device[__size_];
+      for (::cuda::std::size_t __i = 0; __i < __size_; ++__i)
+      {
+        __data_[__i].__device_ = ::cuda::__driver::__deviceGet(static_cast<int>(__i));
+      }
+    }
+    catch (...)
+    {
+      delete[] __data_;
+      throw;
+    }
   }
-  return __devices;
-}
+
+  __physical_devices_container(const __physical_devices_container&)            = delete;
+  __physical_devices_container(__physical_devices_container&&)                 = delete;
+  __physical_devices_container& operator=(const __physical_devices_container&) = delete;
+  __physical_devices_container& operator=(__physical_devices_container&&)      = delete;
+
+  _CCCL_HOST_API ~__physical_devices_container()
+  {
+    delete[] __data_;
+  }
+};
 
 [[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
 {
-  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
-  static const auto __devices      = ::cuda::__make_physical_devices(__device_count);
-  return ::cuda::std::span<__physical_device>{__devices.get(), __device_count};
+  static __physical_devices_container __devices{};
+  return ::cuda::std::span<__physical_device>{__devices.__data_, __devices.__size_};
 }
 
 // device_ref methods dependent on __physical_device
