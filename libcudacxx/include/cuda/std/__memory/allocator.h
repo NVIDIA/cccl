@@ -35,7 +35,7 @@
 #include <cuda/std/cstddef>
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !_CCCL_COMPILER(NVRTC)
-#  include <memory>
+#  include <cuda/std/__cccl/memory_wrapper.h>
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
