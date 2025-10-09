@@ -113,6 +113,13 @@ CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}"
 
 if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
     NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    # Verify that we have an X.Y.Z version in case the output format changes:
+    if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
+        echo "$CUDA_COMPILER --version" >&2 || :
+        $CUDA_COMPILER --version >&2 || :
+        exit 1
+    fi
 fi
 
 
