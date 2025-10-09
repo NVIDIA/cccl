@@ -1,5 +1,4 @@
 CCCL Python Libraries
-
 ======================
 
 Welcome to the CCCL Python libraries! This collection provides Pythonic interfaces to
