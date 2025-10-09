@@ -139,11 +139,25 @@ class AgentSubWarpSort
       // Need to explicitly cast to float for SM <= 52.
       if constexpr (IS_DESCENDING)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
+        if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
+        {
+          return __hgt(lhs, rhs);
+        }
+        else
+        {
+          return __half2float(lhs) > __half2float(rhs);
+        }
       }
       else
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
+        if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
+        {
+          return __hlt(lhs, rhs);
+        }
+        else
+        {
+          return __half2float(lhs) < __half2float(rhs);
+        }
       }
       _CCCL_UNREACHABLE();
     }
@@ -154,7 +168,14 @@ class AgentSubWarpSort
   _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
+    if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
+    {
+      return __heq(lhs, rhs);
+    }
+    else
+    {
+      return __half2float(lhs) == __half2float(rhs);
+    }
   }
 #endif // _CCCL_HAS_NVFP16()
 
