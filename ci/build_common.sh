@@ -198,6 +198,12 @@ print_environment_details() {
     echo "nvidia-smi not found"
   fi
 
+  if command -v sccache &> /dev/null; then
+    sccache --version
+  else
+    echo "sccache not found"
+  fi
+
   if command -v cmake &> /dev/null; then
     cmake --version
   else
