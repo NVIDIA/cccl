@@ -38,6 +38,7 @@
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/stream_context.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
+#include <cuda/experimental/__execution/task_scheduler.cuh>
 #include <cuda/experimental/__execution/then.cuh>
 #include <cuda/experimental/__execution/thread_context.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
