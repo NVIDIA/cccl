@@ -16,8 +16,8 @@ $ErrorActionPreference = "Stop"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
-$script:HOST_COMPILER = (Get-Command "cl").source -replace '\\', '/'
-$script:PARALLEL_LEVEL = (Get-WmiObject -Class Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum
+$script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
+$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
 
 Write-Host "=== Docker Container Resource Info ==="
 Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
@@ -56,10 +56,7 @@ New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 
 # Prepare environment for CMake:
-if (-not $env:CMAKE_BUILD_PARALLEL_LEVEL -or [string]::IsNullOrWhiteSpace($env:CMAKE_BUILD_PARALLEL_LEVEL)) {
-    # Only set CMAKE_BUILD_PARALLEL_LEVEL if it's not already defined.
-    $env:CMAKE_BUILD_PARALLEL_LEVEL = $script:PARALLEL_LEVEL
-}
+$env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
 $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
