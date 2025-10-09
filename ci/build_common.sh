@@ -111,6 +111,11 @@ function validate_and_resolve_compiler() {
 HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
 CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
+if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
+    NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+fi
+
+
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
