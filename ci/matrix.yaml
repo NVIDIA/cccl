@@ -80,30 +80,6 @@ workflows:
     # - arm64 for now as it's closest to android.
     - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
 
-  # Used when an upstream project changes to reduce time spent smoke testing dependencies.
-  pull_request_lite:
-    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'libcudacxx', jobs: ['nvrtc'],std: 'max', gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'libcudacxx', jobs: ['verify_codegen']}
-    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090', sm: 'gpu'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'cudax', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'clang-cuda', cudacxx: 'clang', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'stdpar', jobs: ['build'], std: 'max', cxx: ['gcc', 'clang']}
-    - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: 'gcc13', sm: 'gpu'}
-    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
-    - {project: 'cccl_c_stf', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
-    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'packaging', jobs: ['install']}
-
   nightly:
     # CTK 12.0 full matrix build: default projects
     - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
