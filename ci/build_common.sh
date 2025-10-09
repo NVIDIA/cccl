@@ -111,6 +111,18 @@ function validate_and_resolve_compiler() {
 HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
 CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
+if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
+    NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    # Verify that we have an X.Y.Z version in case the output format changes:
+    if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
+        echo "$CUDA_COMPILER --version" >&2 || :
+        $CUDA_COMPILER --version >&2 || :
+        exit 1
+    fi
+fi
+
+
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
@@ -196,6 +208,12 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v sccache &> /dev/null; then
+    sccache --version
+  else
+    echo "sccache not found"
   fi
 
   if command -v cmake &> /dev/null; then
