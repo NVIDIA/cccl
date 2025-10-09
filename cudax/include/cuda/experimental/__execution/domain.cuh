@@ -345,6 +345,35 @@ _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_stopped_t> get_completion_doma
 template <class _Tag, class _Sndr, class... _Env>
 using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, const _Env&...>;
 
+// Used by the schedule_from and continues_on senders
+struct get_domain_override_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Attrs)
+  _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, ::cuda::std::__ignore_t = {}) const noexcept
+    -> decay_t<__query_result_t<_Attrs, get_domain_override_t>>
+  {
+    return {};
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Attrs, class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t, const _Env&>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, const _Env&) const noexcept
+    -> decay_t<__query_result_t<_Attrs, get_domain_override_t, const _Env&>>
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
+
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

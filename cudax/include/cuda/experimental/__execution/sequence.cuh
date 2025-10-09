@@ -308,6 +308,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
                                execution::get_completion_behavior<_Sndr2, __join_env_t<__env2_t, _Env...>>());
     }
 
+    // The following overload will not be considered when _Query is get_domain_override_t
+    // because get_domain_override_t is not a forwarding query.
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr2>, _Query, _Args...>)

@@ -311,6 +311,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
       return {};
     }
 
+    // continues_on has a special rule for the domain used to transform the sender.
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_override_t, _Env&&...) const noexcept
+      -> __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, _Env...>
+    {
+      return {};
+    }
+
     // The completion behavior of continues_on/continues_on is the weaker of the
     // completion behaviors of the predecessor sender and the scheduler's sender.
     template <class... _Env>
