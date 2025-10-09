@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 
 # Import shared helpers
 Import-Module "$PSScriptRoot/build_common.psm1"
+Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 $python = Get-Python -Version $PyVersion
 $cudaMajor = Get-CudaMajor

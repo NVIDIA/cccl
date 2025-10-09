@@ -25,7 +25,8 @@ $RepoRoot = Resolve-Path "$PSScriptRoot/../.."
 Write-Host "Repo root: $RepoRoot"
 
 # Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1" -Verbose
+Import-Module "$PSScriptRoot/build_common.psm1"
+Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 $PythonExe = Get-Python -Version $PyVersion
 Write-Host "Using Python: $PythonExe"
