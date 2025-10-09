@@ -49,6 +49,7 @@ __host__ __device__ constexpr void test_type()
   assert(cuda::mul_hi(mask2, U{64}) == mask2 >> (bits - 6));
   assert(cuda::mul_hi(U{64}, mask2) == mask2 >> (bits - 6));
 
+  // power of two cases
   if constexpr (sizeof(T) >= 2)
   {
     constexpr auto mask3 = static_cast<T>(0x7BCD);
@@ -76,6 +77,38 @@ __host__ __device__ constexpr void test_type()
     assert(cuda::mul_hi(T{1} << 96, mask4) == mask4 >> (bits - 96));
   }
 #endif // _CCCL_HAS_INT128()
+
+  // random numbers cases
+  if constexpr (sizeof(T) == 2)
+  {
+    assert(cuda::mul_hi(T{23058}, T{31852}) == T{0x2BC6});
+    if constexpr (cuda::std::is_same_v<T, short>)
+    {
+      assert(cuda::mul_hi(T{-23058}, T{-31852}) == T{0x2BC6});
+      assert(cuda::mul_hi(T{23058}, T{-31852}) == T{-0x2BC7});
+      assert(cuda::mul_hi(T{-23058}, T{31852}) == T{-0x2BC7});
+    }
+  }
+  else if constexpr (sizeof(T) == 4)
+  {
+    assert(cuda::mul_hi(T{2305878}, T{31852876}) == T{0x42CD});
+    if constexpr (cuda::std::is_same_v<T, int>)
+    {
+      assert(cuda::mul_hi(T{-2305878}, T{-31852876}) == T{0x42CD});
+      assert(cuda::mul_hi(T{-2305878}, T{31852876}) == T{-0x42CE});
+      assert(cuda::mul_hi(T{2305878}, T{-31852876}) == T{-0x42CE});
+    }
+  }
+  else if constexpr (sizeof(T) == 8)
+  {
+    assert(cuda::mul_hi(T{2'305'878'454'534}, T{31'852'876'355'863}) == T{0x3CC166});
+    if constexpr (cuda::std::is_same_v<T, int64_t>)
+    {
+      assert(cuda::mul_hi(T{-2'305'878'454'534}, T{-31'852'876'355'863}) == T{0x3CC166});
+      assert(cuda::mul_hi(T{-2'305'878'454'534}, T{31'852'876'355'863}) == T{-0x3CC167});
+      assert(cuda::mul_hi(T{2'305'878'454'534}, T{-31'852'876'355'863}) == T{-0x3CC167});
+    }
+  }
 }
 
 __host__ __device__ constexpr bool test()
