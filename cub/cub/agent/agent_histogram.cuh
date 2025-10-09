@@ -62,68 +62,68 @@ enum BlockHistogramMemoryPreference
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!
-//! @tparam _BLOCK_THREADS
+//! @tparam BlockThreads
 //!   Threads per thread block
 //!
-//! @tparam _PIXELS_PER_THREAD
+//! @tparam PixelsPerThread
 //!   Pixels per thread (per tile of input)
 //!
-//! @tparam _LOAD_ALGORITHM
+//! @tparam LoadAlgorithm
 //!   The BlockLoad algorithm to use
 //!
-//! @tparam _LOAD_MODIFIER
+//! @tparam LoadModifier
 //!   Cache load modifier for reading input elements
 //!
-//! @tparam _RLE_COMPRESS
+//! @tparam RleCompress
 //!   Whether to perform localized RLE to compress samples before histogramming
 //!
-//! @tparam _MEM_PREFERENCE
+//! @tparam MemoryPreference
 //!   Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
 //!
-//! @tparam _WORK_STEALING
+//! @tparam WorkStealing
 //!   Whether to dequeue tiles from a global work queue
 //!
-//! @tparam _VEC_SIZE
+//! @tparam VecSize
 //!   Vector size for samples loading (1, 2, 4)
-template <int _BLOCK_THREADS,
-          int _PIXELS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          bool _RLE_COMPRESS,
-          BlockHistogramMemoryPreference _MEM_PREFERENCE,
-          bool _WORK_STEALING,
-          int _VEC_SIZE = 4>
+template <int BlockThreads,
+          int PixelsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          bool RleCompress,
+          BlockHistogramMemoryPreference MemoryPreference,
+          bool WorkStealing,
+          int VecSize = 4>
 struct AgentHistogramPolicy
 {
   /// Threads per thread block
-  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = BlockThreads;
   /// Pixels per thread (per tile of input)
-  static constexpr int PIXELS_PER_THREAD = _PIXELS_PER_THREAD;
+  static constexpr int PIXELS_PER_THREAD = PixelsPerThread;
 
   /// Whether to perform localized RLE to compress samples before histogramming
-  static constexpr bool IS_RLE_COMPRESS = _RLE_COMPRESS;
+  static constexpr bool IS_RLE_COMPRESS = RleCompress;
 
   /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = _MEM_PREFERENCE;
+  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
 
   /// Whether to dequeue tiles from a global work queue
-  static constexpr bool IS_WORK_STEALING = _WORK_STEALING;
+  static constexpr bool IS_WORK_STEALING = WorkStealing;
 
   /// Vector size for samples loading (1, 2, 4)
-  static constexpr int VEC_SIZE = _VEC_SIZE;
+  static constexpr int VEC_SIZE = VecSize;
 
   ///< The BlockLoad algorithm to use
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
 
   ///< Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
 namespace detail::histogram
 {
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
-template <CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
+template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
 {
   return itr.ptr;
 }
@@ -352,21 +352,21 @@ struct AgentHistogram
   }
 
   // Load full, aligned tile using pixel iterator
-  template <int _NUM_ACTIVE_CHANNELS>
+  template <int NumActiveChannels>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
   {
-    if constexpr (_NUM_ACTIVE_CHANNELS == 1)
+    if constexpr (NumActiveChannels == 1)
     {
       using AliasedVecs = VecT[vecs_per_thread];
-      WrappedVecsIteratorT d_wrapped_vecs((VecT*) (d_native_samples + block_offset));
+      WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
       // Load using a wrapped vec iterator
       BlockLoadVecT(temp_storage.vec_load).Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
     }
     else
     {
       using AliasedPixels = PixelT[pixels_per_thread];
-      WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
+      WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
       // Load using a wrapped pixel iterator
       BlockLoadPixelT(temp_storage.pixel_load).Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
     }
@@ -473,7 +473,7 @@ struct AgentHistogram
   //!
   //! @param tiles_per_row
   //!   Number of image tiles per row
-  template <bool IS_ALIGNED>
+  template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels,
     OffsetT num_rows,
@@ -498,12 +498,12 @@ struct AgentHistogram
       {
         // Consume a partially-full tile at the end of the row
         OffsetT num_remaining = (num_row_pixels * NumChannels) - col_offset;
-        ConsumeTile<IS_ALIGNED, false>(tile_offset, num_remaining);
+        ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
       }
       else
       {
         // Consume full tile
-        ConsumeTile<IS_ALIGNED, true>(tile_offset, tile_samples);
+        ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
       }
 
       __syncthreads();
@@ -530,7 +530,7 @@ struct AgentHistogram
   //!
   //! @param row_stride_samples
   //!   The number of samples between starts of consecutive rows in the region of interest
-  template <bool IS_ALIGNED>
+  template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
@@ -547,12 +547,12 @@ struct AgentHistogram
         if (num_remaining < tile_samples)
         {
           // Consume partial tile
-          ConsumeTile<IS_ALIGNED, false>(tile_offset, num_remaining);
+          ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
           break;
         }
 
         // Consume full tile
-        ConsumeTile<IS_ALIGNED, true>(tile_offset, tile_samples);
+        ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
         tile_offset += gridDim.x * tile_samples;
       }
     }
