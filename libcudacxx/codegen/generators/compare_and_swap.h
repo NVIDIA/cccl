@@ -20,7 +20,7 @@ inline void FormatCompareAndSwap(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch(_Fn& __cuda_cas, int __success_memorder, int __failure_memorder, _Sco) {
+static inline _CCCL_DEVICE_API bool __cuda_atomic_compare_swap_memory_order_dispatch(_Fn& __cuda_cas, int __success_memorder, int __failure_memorder, _Sco) {
   bool __res = false;
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
@@ -60,7 +60,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
   // 6 - Scope function tag
   const std::string asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
+static inline _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange(
   _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
@@ -81,7 +81,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
 
   const std::string asm_intrinsic_format = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
+static inline _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange(
   _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{ asm volatile("atom.cas{3}{5}.{0}{1} %0,[%1],%2,%3;" : "={2}"(__dst) : "l"(__ptr), "{2}"(__cmp), "{2}"(__op) : "memory"); return __dst == __cmp; }})XXX";
 
@@ -149,12 +149,12 @@ struct __cuda_atomic_bind_compare_exchange {
   _Type* __des;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE bool operator()(_Atomic_Memorder) {
+  inline _CCCL_DEVICE_API bool operator()(_Atomic_Memorder) {
     return __cuda_atomic_compare_exchange(__ptr, *__exp, *__exp, *__des, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
+static inline _CCCL_DEVICE_API bool __atomic_compare_exchange_cuda(_Type* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
@@ -167,7 +167,7 @@ static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type* __ptr, _Ty
   return __cuda_atomic_compare_swap_memory_order_dispatch(__bound_compare_swap, __success_memorder, __failure_memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type volatile* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
+static inline _CCCL_DEVICE_API bool __atomic_compare_exchange_cuda(_Type volatile* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
