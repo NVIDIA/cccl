@@ -64,9 +64,6 @@ function Resolve-CudaPathForMajor {
 if ($OnlyCudaMajor) { $CudaMajorsToBuild = @($OnlyCudaMajor) } else { $CudaMajorsToBuild = @('12', '13') }
 $DoMerge = -not [bool]$OnlyCudaMajor
 
-# Fallback to env-provided nested image if parameter not supplied
-if (-not $Cuda13Image -and $env:CUDA13_IMAGE) { $Cuda13Image = $env:CUDA13_IMAGE }
-
 # Base pip/CMake options
 $pipBaseConfigArgs = @(
     '-C', 'cmake.define.CMAKE_C_COMPILER=cl.exe',
@@ -104,6 +101,11 @@ New-Item -ItemType Directory -Path $Wheelhouse -Force | Out-Null
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu12') -Force
 ${null} = New-Item -ItemType Directory -Path (Join-Path $RepoRoot 'wheelhouse_cu13') -Force
 
+# Cuda13Image is used when launching a nested docker container with 13 when
+# we're running from the (default) 12.9 container.  (Context: there's a single
+# builder image that defaults to 12.9, so we know if our CUDA env is 12.9, we
+# also need to dispatch a 13.0 build.)
+$Cuda13Image = "rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022"
 
 Push-Location (Join-Path $RepoRoot 'python/cuda_cccl')
 try {
