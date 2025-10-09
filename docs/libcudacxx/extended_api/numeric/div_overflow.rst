@@ -35,15 +35,17 @@ The function ``cuda::div_overflow`` performs integer division of ``lhs`` by ``rh
 1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object containing the computed quotient and a boolean flag indicating whether an overflow or underflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
 2. Returns ``true`` if an overflow or underflow occurred. When ``false`` is returned, the computed quotient is stored in ``result``.
 
+**Preconditions**
+
+- ``rhs != 0``
+
 **Constraints**
 
 - ``Result``, ``Lhs``, and ``Rhs`` must be integer types.
 
 **Notes**
 
-- When ``Result`` is a wider signed type than both operands, the quotient is always representable unless ``rhs`` is zero.
 - For signed types, ``-1`` divided by ``numeric_limits<Rhs>::min()`` triggers overflow when ``Result`` matches the operand types.
-- Division by zero is always reported as overflow and yields a default-initialized result value.
 
 **Performance considerations**
 
@@ -74,8 +76,6 @@ Example
         assert(!wide.overflow);
         assert(wide.value == 0);
 
-        assert(cuda::div_overflow(3, 0));
-
         unsigned quotient{};
         // cuda::div_overflow(result, lhs, rhs) with bool return type
         bool overflow = cuda::div_overflow(quotient, 10u, 2u);
@@ -89,4 +89,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/GhEqWGeb4>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/dYG3dWss5>`_

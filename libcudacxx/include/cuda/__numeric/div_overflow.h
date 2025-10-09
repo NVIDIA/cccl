@@ -68,10 +68,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-  if (__rhs == _Rhs{0})
-  {
-    return overflow_result<_ActualResult>{_ActualResult{}, true};
-  }
+  _CCCL_ASSERT(__rhs != _Rhs{0}, "division by zero");
   // the result is representable with the actual result type
   if constexpr (__is_div_representable_v<_ActualResult, _Lhs, _Rhs>)
   {
