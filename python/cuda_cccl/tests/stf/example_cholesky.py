@@ -71,6 +71,28 @@ def cai_to_numpy(cai_dict):
     return arr
 
 
+class BlockRef:
+    """Reference to a specific block in a tiled matrix."""
+
+    def __init__(self, matrix, row, col):
+        self.matrix = matrix
+        self.row = row
+        self.col = col
+        self._handle = matrix.handle(row, col)
+        self._devid = matrix.get_preferred_devid(row, col)
+
+    def handle(self):
+        """Get the STF logical data handle for this block."""
+        return self._handle
+
+    def devid(self):
+        """Get the preferred device ID for this block."""
+        return self._devid
+
+    def __repr__(self):
+        return f"BlockRef({self.matrix.symbol}[{self.row},{self.col}])"
+
+
 class TiledMatrix:
     """
     Tiled matrix class that splits a matrix into blocks for parallel processing.
@@ -165,6 +187,10 @@ class TiledMatrix:
         """Get the logical data handle for block (row, col)"""
         return self.handles[(row, col)]
 
+    def block(self, row, col):
+        """Get a BlockRef for block (row, col)"""
+        return BlockRef(self, row, col)
+
     def _get_index(self, row, col):
         """Convert (row, col) to linear index in tiled storage"""
         # Find which tile contains this element
@@ -213,37 +239,19 @@ class TiledMatrix:
 # BLAS/LAPACK operations wrapped in STF tasks
 
 
-def DPOTRF(ctx, A, row, col):
-    """Cholesky factorization of block (row, col) using CUSOLVER"""
-    handle = A.handle(row, col)
-    devid = A.get_preferred_devid(row, col)
-
-    with ctx.task(stf.exec_place.device(devid), handle.rw()) as t:
+def DPOTRF(ctx, a):
+    """Cholesky factorization of a diagonal block: A = L*L^T (lower triangular)"""
+    with ctx.task(stf.exec_place.device(a.devid()), a.handle().rw()) as t:
         d_block = get_cupy_arrays(t)
         with cp.cuda.ExternalStream(t.stream_ptr()):
             d_block[:] = cp.linalg.cholesky(d_block)
 
 
-def DTRSM(
-    ctx,
-    A,
-    a_row,
-    a_col,
-    B,
-    b_row,
-    b_col,
-    side="L",
-    uplo="L",
-    transa="T",
-    diag="N",
-    alpha=1.0,
-):
+def DTRSM(ctx, a, b, side="L", uplo="L", transa="T", diag="N", alpha=1.0):
     """Triangular solve: B = alpha * op(A)^{-1} @ B or B = alpha * B @ op(A)^{-1}"""
-    handle_a = A.handle(a_row, a_col)
-    handle_b = B.handle(b_row, b_col)
-    devid = B.get_preferred_devid(b_row, b_col)
-
-    with ctx.task(stf.exec_place.device(devid), handle_a.read(), handle_b.rw()) as t:
+    with ctx.task(
+        stf.exec_place.device(b.devid()), a.handle().read(), b.handle().rw()
+    ) as t:
         d_a, d_b = get_cupy_arrays(t)
         with cp.cuda.ExternalStream(t.stream_ptr()):
             if side == "L":
@@ -266,30 +274,13 @@ def DTRSM(
                     d_b *= alpha
 
 
-def DGEMM(
-    ctx,
-    A,
-    a_row,
-    a_col,
-    B,
-    b_row,
-    b_col,
-    C,
-    c_row,
-    c_col,
-    transa="N",
-    transb="N",
-    alpha=1.0,
-    beta=1.0,
-):
+def DGEMM(ctx, a, b, c, transa="N", transb="N", alpha=1.0, beta=1.0):
     """Matrix multiplication: C = alpha * op(A) @ op(B) + beta * C"""
-    handle_a = A.handle(a_row, a_col)
-    handle_b = B.handle(b_row, b_col)
-    handle_c = C.handle(c_row, c_col)
-    devid = C.get_preferred_devid(c_row, c_col)
-
     with ctx.task(
-        stf.exec_place.device(devid), handle_a.read(), handle_b.read(), handle_c.rw()
+        stf.exec_place.device(c.devid()),
+        a.handle().read(),
+        b.handle().read(),
+        c.handle().rw(),
     ) as t:
         d_a, d_b, d_c = get_cupy_arrays(t)
         with cp.cuda.ExternalStream(t.stream_ptr()):
@@ -304,15 +295,11 @@ def DGEMM(
                 d_c[:] = alpha * (op_a @ op_b) + beta * d_c
 
 
-def DSYRK(
-    ctx, A, a_row, a_col, C, c_row, c_col, uplo="L", trans="N", alpha=1.0, beta=1.0
-):
+def DSYRK(ctx, a, c, uplo="L", trans="N", alpha=1.0, beta=1.0):
     """Symmetric rank-k update: C = alpha * op(A) @ op(A).T + beta * C"""
-    handle_a = A.handle(a_row, a_col)
-    handle_c = C.handle(c_row, c_col)
-    devid = C.get_preferred_devid(c_row, c_col)
-
-    with ctx.task(stf.exec_place.device(devid), handle_a.read(), handle_c.rw()) as t:
+    with ctx.task(
+        stf.exec_place.device(c.devid()), a.handle().read(), c.handle().rw()
+    ) as t:
         d_a, d_c = get_cupy_arrays(t)
         with cp.cuda.ExternalStream(t.stream_ptr()):
             op_a = d_a.T if trans != "N" else d_a
@@ -340,18 +327,14 @@ def PDPOTRF(ctx, A):
 
     for k in range(nblocks):
         # Factor diagonal block
-        DPOTRF(ctx, A, k, k)
+        DPOTRF(ctx, A.block(k, k))
 
         # Solve triangular systems for blocks in column k
         for row in range(k + 1, nblocks):
             DTRSM(
                 ctx,
-                A,
-                k,
-                k,
-                A,
-                row,
-                k,
+                A.block(k, k),
+                A.block(row, k),
                 side="R",
                 uplo="L",
                 transa="T",
@@ -363,15 +346,9 @@ def PDPOTRF(ctx, A):
             for col in range(k + 1, row):
                 DGEMM(
                     ctx,
-                    A,
-                    row,
-                    k,
-                    A,
-                    col,
-                    k,
-                    A,
-                    row,
-                    col,
+                    A.block(row, k),
+                    A.block(col, k),
+                    A.block(row, col),
                     transa="N",
                     transb="T",
                     alpha=-1.0,
@@ -380,7 +357,13 @@ def PDPOTRF(ctx, A):
 
             # Symmetric rank-k update of diagonal block
             DSYRK(
-                ctx, A, row, k, A, row, row, uplo="L", trans="N", alpha=-1.0, beta=1.0
+                ctx,
+                A.block(row, k),
+                A.block(row, row),
+                uplo="L",
+                trans="N",
+                alpha=-1.0,
+                beta=1.0,
             )
 
     print("[PDPOTRF] Completed")
@@ -399,12 +382,8 @@ def PDTRSM(ctx, A, B, side="L", uplo="L", trans="N", diag="N", alpha=1.0):
                     for n in range(B.nt):
                         DTRSM(
                             ctx,
-                            A,
-                            k,
-                            k,
-                            B,
-                            k,
-                            n,
+                            A.block(k, k),
+                            B.block(k, n),
                             side="L",
                             uplo="L",
                             transa="N",
@@ -415,15 +394,9 @@ def PDTRSM(ctx, A, B, side="L", uplo="L", trans="N", diag="N", alpha=1.0):
                         for n in range(B.nt):
                             DGEMM(
                                 ctx,
-                                A,
-                                m,
-                                k,
-                                B,
-                                k,
-                                n,
-                                B,
-                                m,
-                                n,
+                                A.block(m, k),
+                                B.block(k, n),
+                                B.block(m, n),
                                 transa="N",
                                 transb="N",
                                 alpha=-1.0,
@@ -433,15 +406,12 @@ def PDTRSM(ctx, A, B, side="L", uplo="L", trans="N", diag="N", alpha=1.0):
                 # Backward substitution
                 for k in range(B.mt):
                     lalpha = alpha if k == 0 else 1.0
+                    row_idx = B.mt - k - 1
                     for n in range(B.nt):
                         DTRSM(
                             ctx,
-                            A,
-                            B.mt - k - 1,
-                            B.mt - k - 1,
-                            B,
-                            B.mt - k - 1,
-                            n,
+                            A.block(row_idx, row_idx),
+                            B.block(row_idx, n),
                             side="L",
                             uplo="L",
                             transa="T",
@@ -449,18 +419,13 @@ def PDTRSM(ctx, A, B, side="L", uplo="L", trans="N", diag="N", alpha=1.0):
                             alpha=lalpha,
                         )
                     for m in range(k + 1, B.mt):
+                        m_idx = B.mt - 1 - m
                         for n in range(B.nt):
                             DGEMM(
                                 ctx,
-                                A,
-                                B.mt - k - 1,
-                                B.mt - 1 - m,
-                                B,
-                                B.mt - k - 1,
-                                n,
-                                B,
-                                B.mt - 1 - m,
-                                n,
+                                A.block(row_idx, m_idx),
+                                B.block(row_idx, n),
+                                B.block(m_idx, n),
                                 transa="T",
                                 transb="N",
                                 alpha=-1.0,
@@ -513,15 +478,9 @@ def PDGEMM(ctx, A, B, C, transa="N", transb="N", alpha=1.0, beta=1.0):
                 # Just scale C
                 DGEMM(
                     ctx,
-                    A,
-                    0,
-                    0,
-                    B,
-                    0,
-                    0,
-                    C,
-                    m,
-                    n,
+                    A.block(0, 0),
+                    B.block(0, 0),
+                    C.block(m, n),
                     transa=transa,
                     transb=transb,
                     alpha=0.0,
@@ -533,15 +492,9 @@ def PDGEMM(ctx, A, B, C, transa="N", transb="N", alpha=1.0, beta=1.0):
                         zbeta = beta if k == 0 else 1.0
                         DGEMM(
                             ctx,
-                            A,
-                            m,
-                            k,
-                            B,
-                            k,
-                            n,
-                            C,
-                            m,
-                            n,
+                            A.block(m, k),
+                            B.block(k, n),
+                            C.block(m, n),
                             transa="N",
                             transb="N",
                             alpha=alpha,
@@ -552,15 +505,9 @@ def PDGEMM(ctx, A, B, C, transa="N", transb="N", alpha=1.0, beta=1.0):
                         zbeta = beta if k == 0 else 1.0
                         DGEMM(
                             ctx,
-                            A,
-                            m,
-                            k,
-                            B,
-                            n,
-                            k,
-                            C,
-                            m,
-                            n,
+                            A.block(m, k),
+                            B.block(n, k),
+                            C.block(m, n),
                             transa="N",
                             transb="T",
                             alpha=alpha,
@@ -572,15 +519,9 @@ def PDGEMM(ctx, A, B, C, transa="N", transb="N", alpha=1.0, beta=1.0):
                         zbeta = beta if k == 0 else 1.0
                         DGEMM(
                             ctx,
-                            A,
-                            k,
-                            m,
-                            B,
-                            k,
-                            n,
-                            C,
-                            m,
-                            n,
+                            A.block(k, m),
+                            B.block(k, n),
+                            C.block(m, n),
                             transa="T",
                             transb="N",
                             alpha=alpha,
@@ -591,15 +532,9 @@ def PDGEMM(ctx, A, B, C, transa="N", transb="N", alpha=1.0, beta=1.0):
                         zbeta = beta if k == 0 else 1.0
                         DGEMM(
                             ctx,
-                            A,
-                            k,
-                            m,
-                            B,
-                            n,
-                            k,
-                            C,
-                            m,
-                            n,
+                            A.block(k, m),
+                            B.block(n, k),
+                            C.block(m, n),
                             transa="T",
                             transb="T",
                             alpha=alpha,
