@@ -196,7 +196,7 @@ def make_unary_transform(
     storage allocation. For simpler usage, consider using :func:`unary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/unary_transform_object.py
            :language: python
            :start-after: # example-begin
 
@@ -227,7 +227,7 @@ def make_binary_transform(
     storage allocation. For simpler usage, consider using :func:`binary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_object.py
            :language: python
            :start-after: # example-begin
 
@@ -259,7 +259,7 @@ def unary_transform(
     Example:
         Below, ``unary_transform`` is used to apply a transformation to each element of the input.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/unary_transform_basic.py
            :language: python
            :start-after: # example-begin
 
@@ -291,7 +291,7 @@ def binary_transform(
     Example:
         Below, ``binary_transform`` is used to apply a transformation to pairs of elements from two input sequences.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_basic.py
            :language: python
            :start-after: # example-begin
 

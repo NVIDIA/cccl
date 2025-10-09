@@ -171,7 +171,7 @@ def make_unique_by_key(
     Example:
         Below, ``make_unique_by_key`` is used to create a unique by key object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/unique/unique_by_key_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/unique/unique_by_key_object.py
           :language: python
           :start-after: # example-begin
 
@@ -211,7 +211,7 @@ def unique_by_key(
     Example:
         Below, ``unique_by_key`` is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/unique/unique_by_key_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/unique/unique_by_key_basic.py
             :language: python
             :start-after: # example-begin
 

@@ -222,7 +222,7 @@ def make_radix_sort(
     Example:
         Below, ``make_radix_sort`` is used to create a radix sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/radix_sort_object.py
           :language: python
           :start-after: # example-begin
 
@@ -259,14 +259,14 @@ def radix_sort(
     Example:
         Below, ``radix_sort`` is used to sort a sequence of keys. It also rearranges the values according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/radix_sort_basic.py
             :language: python
             :start-after: # example-begin
 
 
         In the following example, ``radix_sort`` is used to sort a sequence of keys with a ``DoubleBuffer` for reduced temporary storage.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_buffer.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/radix_sort_buffer.py
             :language: python
             :start-after: # example-begin
 

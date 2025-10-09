@@ -26,6 +26,7 @@
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/std/__cstddef/types.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -51,11 +52,34 @@ struct __dev_attr_impl
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr : __dev_attr_impl<_Attr, int>
 {};
-
+template <>
+struct __dev_attr<::cudaDevAttrMaxSharedMemoryPerBlock> //
+    : __dev_attr_impl<::cudaDevAttrMaxSharedMemoryPerBlock, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrTotalConstantMemory> //
+    : __dev_attr_impl<::cudaDevAttrTotalConstantMemory, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxPitch> //
+    : __dev_attr_impl<::cudaDevAttrMaxPitch, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxTexture2DLinearPitch> //
+    : __dev_attr_impl<::cudaDevAttrMaxTexture2DLinearPitch, ::cuda::std::size_t>
+{};
 // TODO: give this a strong type for kilohertz
 template <>
 struct __dev_attr<::cudaDevAttrClockRate> //
     : __dev_attr_impl<::cudaDevAttrClockRate, int>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrTextureAlignment> //
+    : __dev_attr_impl<::cudaDevAttrTextureAlignment, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrTexturePitchAlignment> //
+    : __dev_attr_impl<::cudaDevAttrTexturePitchAlignment, ::cuda::std::size_t>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrGpuOverlap> //
@@ -103,10 +127,9 @@ template <>
 struct __dev_attr<::cudaDevAttrGlobalMemoryBusWidth> //
     : __dev_attr_impl<::cudaDevAttrGlobalMemoryBusWidth, int>
 {};
-// TODO: give this a strong type for bytes
 template <>
 struct __dev_attr<::cudaDevAttrL2CacheSize> //
-    : __dev_attr_impl<::cudaDevAttrL2CacheSize, int>
+    : __dev_attr_impl<::cudaDevAttrL2CacheSize, ::cuda::std::size_t>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrUnifiedAddressing> //
@@ -123,6 +146,10 @@ struct __dev_attr<::cudaDevAttrGlobalL1CacheSupported> //
 template <>
 struct __dev_attr<::cudaDevAttrLocalL1CacheSupported> //
     : __dev_attr_impl<::cudaDevAttrLocalL1CacheSupported, bool>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxSharedMemoryPerMultiprocessor> //
+    : __dev_attr_impl<::cudaDevAttrMaxSharedMemoryPerMultiprocessor, ::cuda::std::size_t>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrManagedMemory> //
@@ -167,6 +194,22 @@ struct __dev_attr<::cudaDevAttrHostRegisterSupported> //
 template <>
 struct __dev_attr<::cudaDevAttrDirectManagedMemAccessFromHost> //
     : __dev_attr_impl<::cudaDevAttrDirectManagedMemAccessFromHost, bool>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxSharedMemoryPerBlockOptin> //
+    : __dev_attr_impl<::cudaDevAttrMaxSharedMemoryPerBlockOptin, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxPersistingL2CacheSize> //
+    : __dev_attr_impl<::cudaDevAttrMaxPersistingL2CacheSize, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrMaxAccessPolicyWindowSize> //
+    : __dev_attr_impl<::cudaDevAttrMaxAccessPolicyWindowSize, ::cuda::std::size_t>
+{};
+template <>
+struct __dev_attr<::cudaDevAttrReservedSharedMemoryPerBlock> //
+    : __dev_attr_impl<::cudaDevAttrReservedSharedMemoryPerBlock, ::cuda::std::size_t>
 {};
 template <>
 struct __dev_attr<::cudaDevAttrSparseCudaArraySupported> //
