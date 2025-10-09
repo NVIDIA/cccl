@@ -55,7 +55,7 @@ class __physical_device
 
   // TODO We should have some of the attributes just return from the arch traits
   ::std::once_flag __traits_once_flag_{};
-  arch::traits_t __traits_{};
+  arch_traits_t __traits_{};
 
   ::std::once_flag __primary_ctx_once_flag_{};
   ::CUcontext __primary_ctx_{};
@@ -96,11 +96,11 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  [[nodiscard]] _CCCL_HOST_API const arch::traits_t& __arch_traits()
+  [[nodiscard]] _CCCL_HOST_API const arch_traits_t& __arch_traits()
   {
     ::std::call_once(__traits_once_flag_, [this]() {
       const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
-      __traits_       = ::cuda::arch::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id));
+      __traits_       = ::cuda::__arch_traits_might_be_unknown(__id);
     });
     return __traits_;
   }
@@ -178,7 +178,7 @@ _CCCL_HOST_API inline void device_ref::init() const
   return ::cuda::__physical_devices()[__id_].__name();
 }
 
-[[nodiscard]] _CCCL_HOST_API inline const arch::traits_t& device_ref::arch_traits() const
+[[nodiscard]] _CCCL_HOST_API inline const arch_traits_t& device_ref::arch_traits() const
 {
   return ::cuda::__physical_devices()[__id_].__arch_traits();
 }
@@ -186,6 +186,13 @@ _CCCL_HOST_API inline void device_ref::init() const
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> device_ref::peers() const
 {
   return ::cuda::__physical_devices()[__id_].__peers();
+}
+
+// arch_traits functions dependent on __physical_device
+
+[[nodiscard]] _CCCL_HOST_API inline const arch_traits_t& arch_traits_for(device_ref __device)
+{
+  return ::cuda::__physical_devices()[__device.get()].__arch_traits();
 }
 
 _CCCL_END_NAMESPACE_CUDA

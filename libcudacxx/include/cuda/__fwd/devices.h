@@ -31,11 +31,9 @@ class __physical_device;
 class device_ref;
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
-
-namespace arch
-{
-struct traits_t;
-} // namespace arch
+struct arch_traits_t;
+class compute_capability;
+enum class arch_id : int;
 
 _CCCL_END_NAMESPACE_CUDA
 

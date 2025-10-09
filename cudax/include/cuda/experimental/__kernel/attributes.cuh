@@ -72,11 +72,11 @@ struct __kernel_attr<::CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES> //
 {};
 template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_PTX_VERSION> //
-    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_PTX_VERSION, ::cuda::arch::id>
+    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_PTX_VERSION, ::cuda::arch_id>
 {};
 template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_BINARY_VERSION> //
-    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_BINARY_VERSION, ::cuda::arch::id>
+    : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_BINARY_VERSION, ::cuda::arch_id>
 {};
 template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_CACHE_MODE_CA> //
