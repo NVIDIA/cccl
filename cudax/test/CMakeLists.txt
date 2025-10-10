@@ -2,6 +2,10 @@ cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
 
+if (cudax_ENABLE_CUFILE)
+  find_package(CUDAToolkit REQUIRED)
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -158,6 +162,16 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
+  if (cudax_ENABLE_CUFILE)
+    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
+      cufile/driver.cu
+    )
+
+    set(cufile_test_targets ${cufile_driver_target})
+    foreach(cufile_test_target IN LISTS cufile_test_targets)
+      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
+    endforeach()
+  endif()
 endforeach()
 
 # FIXME: Enable MSVC
