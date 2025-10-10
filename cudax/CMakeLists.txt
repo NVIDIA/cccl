@@ -35,11 +35,12 @@ if (cudax_ENABLE_CUFILE)
     message(FATAL_ERROR "cuFile is not available before cmake 3.25.0, please, use newer cmake.")
   endif()
 
+  find_package(CUDAToolkit REQUIRED)
+
   if (CUDAToolkit_VERSION VERSION_LESS "12.9.0")
     message(FATAL_ERROR "cuFile support requires at least CUDA 12.9.")
   endif()
 
-  find_package(CUDAToolkit REQUIRED)
   if (NOT TARGET CUDA::cuFile)
     message(FATAL_ERROR "CUDA::cuFile target required for requested cuFile support was not found.")
   endif()
