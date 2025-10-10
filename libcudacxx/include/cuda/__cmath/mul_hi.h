@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CMATH_MULTIPLY_HIGH_HALF_H
-#define _CUDA___CMATH_MULTIPLY_HIGH_HALF_H
+#ifndef _CUDA___CMATH_MUL_HI_H
+#define _CUDA___CMATH_MUL_HI_H
 
 #include <cuda/std/detail/__config>
 
