@@ -139,9 +139,9 @@ public:
   //! that are shared by all devices belonging to given architecture.
   //!
   //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  [[nodiscard]] _CCCL_HOST_API const arch::traits_t& arch_traits() const; // implemented in
-                                                                          // <cuda/__device/physical_device.h> to avoid
-                                                                          // circular dependency
+  [[nodiscard]] _CCCL_HOST_API const arch_traits_t& arch_traits() const; // implemented in
+                                                                         // <cuda/__device/physical_device.h> to avoid
+                                                                         // circular dependency
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
