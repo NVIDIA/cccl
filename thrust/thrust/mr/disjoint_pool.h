@@ -44,6 +44,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/ilog.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -123,7 +124,7 @@ public:
       : m_upstream(upstream)
       , m_bookkeeper(bookkeeper)
       , m_options(options)
-      , m_smallest_block_log2(detail::log2_ri(m_options.smallest_block_size))
+      , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
       , m_pools(m_bookkeeper)
       , m_allocated(m_bookkeeper)
       , m_cached_oversized(m_bookkeeper)
@@ -133,7 +134,7 @@ public:
 
     pointer_vector free(m_bookkeeper);
     pool p(free);
-    m_pools.resize(detail::log2_ri(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
+    m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
   // TODO: C++11: use delegating constructors
@@ -146,7 +147,7 @@ public:
       : m_upstream(get_global_resource<Upstream>())
       , m_bookkeeper(get_global_resource<Bookkeeper>())
       , m_options(options)
-      , m_smallest_block_log2(detail::log2_ri(m_options.smallest_block_size))
+      , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
       , m_pools(m_bookkeeper)
       , m_allocated(m_bookkeeper)
       , m_cached_oversized(m_bookkeeper)
@@ -156,7 +157,7 @@ public:
 
     pointer_vector free(m_bookkeeper);
     pool p(free);
-    m_pools.resize(detail::log2_ri(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
+    m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
   /*! Destructor. Releases all held memory to upstream.
@@ -370,10 +371,10 @@ public:
   [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
-    assert(detail::is_power_of_2(alignment));
+    assert(::cuda::ceil_ilog2(alignment))
 
-    // an oversized and/or overaligned allocation requested; needs to be allocated separately
-    if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
+      // an oversized and/or overaligned allocation requested; needs to be allocated separately
+      if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
     {
       oversized_block_descriptor oversized;
       oversized.size      = bytes;
@@ -430,7 +431,7 @@ public:
 
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
-    std::size_t bytes_log2 = thrust::detail::log2_ri(bytes);
+    std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
     std::size_t pool_idx   = bytes_log2 - m_smallest_block_log2;
     pool& bucket           = m_pools[pool_idx];
 
@@ -511,7 +512,7 @@ public:
     }
 
     // push the block to the front of the appropriate bucket's free list
-    std::size_t n_log2   = thrust::detail::log2_ri(n);
+    std::size_t n_log2   = ::cuda::ceil_ilog2(n);
     std::size_t pool_idx = n_log2 - m_smallest_block_log2;
     pool& bucket         = m_pools[pool_idx];
 

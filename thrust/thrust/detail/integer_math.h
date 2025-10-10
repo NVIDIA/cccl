@@ -71,20 +71,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
   return num_bits_minus_one - ::cuda::std::countl_zero(::cuda::std::__to_unsigned_like(x));
 }
 
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2_ri(Integer x)
-{
-  Integer result = log2(x);
-
-  // This is where we round up to the nearest log.
-  if (!is_power_of_2(x))
-  {
-    ++result;
-  }
-
-  return result;
-}
-
 // x/y rounding towards +infinity for integers
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
