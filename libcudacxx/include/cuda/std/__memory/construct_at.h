@@ -44,7 +44,7 @@
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
 #  if !_CCCL_COMPILER(NVRTC)
-#    include <memory>
+#    include <cuda/std/__cccl/memory_wrapper.h>
 #  endif // _CCCL_COMPILER(NVRTC)
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc

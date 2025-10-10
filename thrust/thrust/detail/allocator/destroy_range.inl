@@ -28,9 +28,10 @@
 
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/allocator/destroy_range.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
+
+#include <cuda/std/__cccl/memory_wrapper.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

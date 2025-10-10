@@ -30,12 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_member_function.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 
+#include <cuda/std/__cccl/memory_wrapper.h>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
