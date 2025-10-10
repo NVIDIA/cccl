@@ -270,6 +270,13 @@ def unary_transform(
            :language: python
            :start-after: # example-begin
 
+        When working with custom struct types, you need to provide type annotations
+        to help with type inference. See the binary transform struct example for reference:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
+           :language: python
+           :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items.
@@ -299,6 +306,13 @@ def binary_transform(
         Below, ``binary_transform`` is used to apply a transformation to pairs of elements from two input sequences.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_basic.py
+           :language: python
+           :start-after: # example-begin
+
+        When working with custom struct types, you need to provide type annotations
+        to help with type inference. See the following example:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
            :language: python
            :start-after: # example-begin
 
