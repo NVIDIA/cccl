@@ -48,8 +48,8 @@
 #include <thrust/detail/integer_math.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__cmath/ilog.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 

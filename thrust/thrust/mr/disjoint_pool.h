@@ -42,9 +42,9 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cmath/ilog.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
