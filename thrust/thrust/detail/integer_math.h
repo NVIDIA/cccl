@@ -66,11 +66,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 // FIXME: Should use common_type.
 auto ::cuda::ceil_div(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
 
-  // x/y rounding towards zero for integers.
-  // Used to determine # of blocks/warps etc.
-  template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto(x / y) THRUST_DECLTYPE_RETURNS(x / y)
-
   // Round x towards infinity to the next multiple of y.
   template <typename Integer0, typename Integer1>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto ::cuda::round_up(Integer0 const x, Integer1 const y)
