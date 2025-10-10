@@ -42,23 +42,7 @@ namespace cuda::experimental
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 
-[[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
-{
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-  static ::cudaMemPool_t __default_pool = []() {
-    ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
-      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-    // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
-    ::cuda::experimental::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
-    return __pool;
-  }();
-
-  return __default_pool;
-#  else // _CCCL_CTK_BELOW(13, 0)
-  static pinned_memory_resource __default_pool(0);
-  return __default_pool.get();
-#  endif // _CCCL_CTK_BELOW(13, 0)
-}
+static ::cudaMemPool_t __get_default_host_pinned_pool();
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -173,6 +157,24 @@ static_assert(::cuda::mr::resource_with<pinned_memory_resource, host_accessible>
 
 static_assert(::cuda::mr::resource_with<pinned_memory_pool, device_accessible>, "");
 static_assert(::cuda::mr::resource_with<pinned_memory_pool, host_accessible>, "");
+
+[[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
+{
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  static ::cudaMemPool_t __default_pool = []() {
+    ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
+      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
+    ::cuda::experimental::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    return __pool;
+  }();
+
+  return __default_pool;
+#  else // _CCCL_CTK_BELOW(13, 0)
+  static pinned_memory_pool __default_pool(0);
+  return __default_pool.get();
+#  endif // _CCCL_CTK_BELOW(13, 0)
+}
 
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
