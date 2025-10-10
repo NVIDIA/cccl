@@ -94,11 +94,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return execution::get_domain(__env);
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
-    {
-      return {};
-    }
-
     [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_completion_behavior_t) const noexcept
     {
       return completion_behavior::asynchronous;

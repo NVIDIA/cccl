@@ -181,7 +181,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t;

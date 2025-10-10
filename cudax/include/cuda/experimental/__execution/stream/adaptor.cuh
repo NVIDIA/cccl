@@ -341,13 +341,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 template <class _Sndr, class _GetStream>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
-  // This makes sure that when `connect` calls `transform_sender`, it will use the stream
-  // domain to find a customization.
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
-  {
-    return {};
-  }
-
   // If the child sender knows how to provide a stream, make it available via the stream
   // adapter's attributes.
   _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
