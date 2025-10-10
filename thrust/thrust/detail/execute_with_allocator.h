@@ -33,6 +33,8 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/pair.h>
 
+#include <cuda/__cmath/ceil_div.h>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -50,7 +52,7 @@ get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSyste
 
   // How many elements of type value_type do we need to accommodate n elements
   // of type T?
-  size_type num_elements = divide_ri(sizeof(T) * n, sizeof(value_type));
+  size_type num_elements = ::cuda::ceil_div(sizeof(T) * n, sizeof(value_type));
 
   void_pointer ptr = alloc_traits::allocate(system.get_allocator(), num_elements);
 
@@ -69,7 +71,7 @@ _CCCL_HOST void return_temporary_buffer(
   using value_type      = typename alloc_traits::value_type;
   using T               = typename thrust::detail::pointer_traits<Pointer>::element_type;
 
-  size_type num_elements = divide_ri(sizeof(T) * n, sizeof(value_type));
+  size_type num_elements = ::cuda::ceil_div(sizeof(T) * n, sizeof(value_type));
 
   pointer to_ptr = thrust::reinterpret_pointer_cast<pointer>(p);
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);

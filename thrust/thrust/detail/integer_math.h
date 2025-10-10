@@ -27,6 +27,9 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_down.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
@@ -37,12 +40,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_power_of_2(Integer x)
-{
-  return 0 == (x & (x - 1));
-}
 
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_signed<T>::value, bool>::type is_negative(T x)
@@ -62,37 +59,27 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_odd(Integer x)
   return 1 & x;
 }
 
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
-{
-  Integer num_bits           = 8 * sizeof(Integer);
-  Integer num_bits_minus_one = num_bits - 1;
-
-  return num_bits_minus_one - ::cuda::std::countl_zero(::cuda::std::__to_unsigned_like(x));
-}
-
 // x/y rounding towards +infinity for integers
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  // FIXME: Should use common_type.
-  auto
-  divide_ri(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
+// FIXME: Should use common_type.
+auto ::cuda::ceil_div(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
 
   // x/y rounding towards zero for integers.
   // Used to determine # of blocks/warps etc.
   template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto divide_rz(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS(x / y)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto(x / y) THRUST_DECLTYPE_RETURNS(x / y)
 
   // Round x towards infinity to the next multiple of y.
   template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_i(Integer0 const x, Integer1 const y)
-    THRUST_DECLTYPE_RETURNS(y* divide_ri(x, y))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto ::cuda::round_up(Integer0 const x, Integer1 const y)
+    THRUST_DECLTYPE_RETURNS(y* ::cuda::ceil_div(x, y))
 
   // Round x towards 0 to the next multiple of y.
   template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_z(Integer0 const x, Integer1 const y)
-    THRUST_DECLTYPE_RETURNS(y* divide_rz(x, y))
+  _CCCL_HOST_DEVICE
+  _CCCL_FORCEINLINE auto ::cuda::round_down(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS(y*(x / y))
 
 } // namespace detail
 

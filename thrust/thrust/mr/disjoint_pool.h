@@ -43,6 +43,7 @@
 #include <thrust/mr/pool_options.h>
 
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cassert>
@@ -483,7 +484,7 @@ public:
   virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
-    assert(detail::is_power_of_2(alignment));
+    assert(::cuda::is_power_of_two(alignment));
 
     // verify that the pointer is at least as aligned as claimed
     assert(reinterpret_cast<::cuda::std::intmax_t>(detail::pointer_traits<void_ptr>::get(p)) % alignment == 0);
