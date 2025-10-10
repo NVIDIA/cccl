@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -18,7 +18,10 @@
     [switch]$LID1_SWITCH = $false,
     [Parameter(Mandatory = $false)]
     [Alias("lid2")]
-    [switch]$LID2_SWITCH = $false
+    [switch]$LID2_SWITCH = $false,
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,31 +32,33 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-$artifactTags = @()
-if ($NO_LID_SWITCH) { $artifactTags += "no_lid" }
-if ($LID0_SWITCH) { $artifactTags += "lid_0" }
-if ($LID1_SWITCH) { $artifactTags += "lid_1" }
-if ($LID2_SWITCH) { $artifactTags += "lid_2" }
-
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
 $PRESET = "cub-cpp$CXX_STANDARD"
-if ($NO_LID_SWITCH) { $PRESET = "cub-nolid-cpp$CXX_STANDARD" }
-elseif ($LID0_SWITCH) { $PRESET = "cub-lid0-cpp$CXX_STANDARD" }
-elseif ($LID1_SWITCH) { $PRESET = "cub-lid1-cpp$CXX_STANDARD" }
-elseif ($LID2_SWITCH) { $PRESET = "cub-lid2-cpp$CXX_STANDARD" }
+$artifactTag = ""
+if ($NO_LID_SWITCH) {
+    $artifactTag = "no_lid"
+    $PRESET = "cub-nolid-cpp$CXX_STANDARD"
+} elseif ($LID0_SWITCH) {
+    $artifactTag = "lid_0"
+    $PRESET = "cub-lid0-cpp$CXX_STANDARD"
+} elseif ($LID1_SWITCH) {
+    $artifactTag = "lid_1"
+    $PRESET = "cub-lid1-cpp$CXX_STANDARD"
+} elseif ($LID2_SWITCH) {
+    $artifactTag = "lid_2"
+    $PRESET = "cub-lid2-cpp$CXX_STANDARD"
+}
 
-if ($env:GITHUB_ACTIONS -and $artifactTags.Count -gt 0) {
+if ($env:GITHUB_ACTIONS -and $artifactTag) {
     $producerId = (& bash "./util/workflow/get_producer_id.sh").Trim()
-    foreach ($tag in $artifactTags) {
-        $artifactName = "z_cub-test-artifacts-$env:DEVCONTAINER_NAME-$producerId-$tag"
-        Write-Host "Unpacking artifact '$artifactName'"
-        & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
-    }
+    $artifactName = "z_cub-test-artifacts-$env:DEVCONTAINER_NAME-$producerId-$artifactTag"
+    Write-Host "Unpacking artifact '$artifactName'"
+    & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $build_command = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch `"$CUDA_ARCH`""
-    Write-Host "Executing: $build_command"
-    Invoke-Expression $build_command
+    $buildCmd = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+    Write-Host "Running: $buildCmd"
+    Invoke-Expression $buildCmd
 }
 
 test_preset "CUB ($PRESET)" "$PRESET"

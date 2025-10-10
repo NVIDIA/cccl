@@ -6,7 +6,10 @@
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
-    [string]$CUDA_ARCH = ""
+    [string]$CUDA_ARCH = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,10 +26,9 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
     Write-Host "Detected cl.exe version: $CL_VERSION"
 }
 
-$script:GLOBAL_CMAKE_OPTIONS = ""
-if ($CUDA_ARCH -ne "") {
-    # Quote the value to ensure it's treated as a single argument, even with semicolons
-    $script:GLOBAL_CMAKE_OPTIONS += "`"-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH`" "
+$script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
+if ($CUDA_ARCH) {
+    $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
 }
 
 if (-not $env:CCCL_BUILD_INFIX) {
@@ -81,9 +83,8 @@ function configure_preset {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$PRESET,
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string]$CMAKE_OPTIONS
+        [Parameter(Mandatory = $false)]
+        [string]$LOCAL_CMAKE_OPTIONS = ""
     )
 
     $step = "$BUILD_NAME (configure)"
@@ -92,7 +93,14 @@ function configure_preset {
     pushd ".."
 
     # Echo and execute command to stdout:
-    $configure_command = "cmake --preset $PRESET $script:GLOBAL_CMAKE_OPTIONS $CMAKE_OPTIONS --log-level VERBOSE"
+    $configure_command = "cmake --preset $PRESET --log-level VERBOSE"
+    if ($LOCAL_CMAKE_OPTIONS) {
+        $configure_command += " $LOCAL_CMAKE_OPTIONS"
+    }
+    if ($script:GLOBAL_CMAKE_OPTIONS) {
+        $configure_command += " $script:GLOBAL_CMAKE_OPTIONS"
+    }
+
     Write-Host $configure_command
     Invoke-Expression $configure_command
     $test_result = $LastExitCode
@@ -179,13 +187,12 @@ function configure_and_build_preset {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$PRESET,
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string]$CMAKE_OPTIONS
+        [Parameter(Mandatory = $false)]
+        [string]$LOCAL_CMAKE_OPTIONS = ""
     )
 
-    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
-    build_preset "$BUILD_NAME" "$PRESET"
+    configure_preset $BUILD_NAME $PRESET $LOCAL_CMAKE_OPTIONS
+    build_preset $BUILD_NAME $PRESET
 }
 
 function sccache_stats {
