@@ -1915,6 +1915,63 @@ The API is subject to change without notice.</p>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unary transform result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>When working with custom struct types, you need to provide type annotations
+to help with type inference. See the binary transform struct example for reference:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example demonstrating binary_transform with custom struct types.</span>
+
+<span class="sd">When working with struct inputs in transform operations, you need to provide</span>
+<span class="sd">type annotations to help Numba infer the correct types. Unlike reduce_into</span>
+<span class="sd">which can infer types from h_init, transform operations require explicit</span>
+<span class="sd">annotations when using struct inputs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
+
+
+<span class="nd">@gpu_struct</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Point2D</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_points</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="n">Point2D</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="n">Point2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point2D</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Point2D</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">p2</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p1</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">p2</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+
+
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">1000</span>
+
+<span class="n">h_in1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Point2D</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">h_in2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Point2D</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">d_in1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">h_in1</span><span class="p">)</span>
+<span class="n">d_in1</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">h_in1</span><span class="p">)</span>
+
+<span class="n">d_in2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">h_in2</span><span class="p">)</span>
+<span class="n">d_in2</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">h_in2</span><span class="p">)</span>
+
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in1</span><span class="p">)</span>
+
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">binary_transform</span><span class="p">(</span><span class="n">d_in1</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">add_points</span><span class="p">,</span> <span class="n">num_items</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">],</span> <span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Binary transform with structs completed successfully&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First result point: x=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2019,6 +2076,63 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 
 <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Binary transform result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When working with custom struct types, you need to provide type annotations
+to help with type inference. See the following example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example demonstrating binary_transform with custom struct types.</span>
+
+<span class="sd">When working with struct inputs in transform operations, you need to provide</span>
+<span class="sd">type annotations to help Numba infer the correct types. Unlike reduce_into</span>
+<span class="sd">which can infer types from h_init, transform operations require explicit</span>
+<span class="sd">annotations when using struct inputs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
+
+
+<span class="nd">@gpu_struct</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Point2D</span><span class="p">:</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_points</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="n">Point2D</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="n">Point2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point2D</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Point2D</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">p2</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p1</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">p2</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+
+
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">1000</span>
+
+<span class="n">h_in1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Point2D</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">h_in2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_items</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Point2D</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">num_items</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">d_in1</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">h_in1</span><span class="p">)</span>
+<span class="n">d_in1</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">h_in1</span><span class="p">)</span>
+
+<span class="n">d_in2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">h_in2</span><span class="p">)</span>
+<span class="n">d_in2</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">h_in2</span><span class="p">)</span>
+
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in1</span><span class="p">)</span>
+
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">binary_transform</span><span class="p">(</span><span class="n">d_in1</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">add_points</span><span class="p">,</span> <span class="n">num_items</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">],</span> <span class="n">h_in1</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">h_in2</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Binary transform with structs completed successfully&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First result point: x=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, y=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
