@@ -1,6 +1,11 @@
 
-# Additional shared helpers for Windows Python/CI scripts
+
 function Get-Python {
+    <#
+    .SYNOPSIS
+        Returns the path of the Python interpreter satisfying the supplied
+        version, otherwise, throws an error.
+    #>
     Param([Parameter(Mandatory = $true)][string]$Version)
     $exe = $null
     try { $exe = (& py -$Version -c "import sys; print(sys.executable)" 2>$null) } catch {}
@@ -13,6 +18,11 @@ function Get-Python {
 }
 
 function Get-CudaMajor {
+    <#
+    .SYNOPSIS
+        Gets the CUDA major version for this container instance (e.g. '12' or
+        '13').  Defaults to '13' if no match can be found.
+    #>
     if ($env:CUDA_PATH) {
         $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
         if (Test-Path $nvcc) {
@@ -32,11 +42,12 @@ function Convert-ToUnixPath {
     return ($p -replace "\\", "/")
 }
 
-function Get-RepoRoot {
-    return (Resolve-Path "$PSScriptRoot/../..")
-}
-
 function Get-CudaCcclWheel {
+    <#
+    .SYNOPSIS
+        Returns the path of the cuda-cccl wheel artifact to use in the context
+        of a GitHub Actions CI test script.
+    #>
     Param()
 
     $repoRoot = Get-RepoRoot
@@ -59,6 +70,11 @@ function Get-CudaCcclWheel {
 }
 
 function Get-OnePathMatch {
+    <#
+    .SYNOPSIS
+        Returns a single path (file or directory) match for a given pattern,
+        throwing an error if there were no matches or more than one match.
+    #>
     [CmdletBinding(DefaultParameterSetName = 'FileSet')]
     param(
         [Parameter(Mandatory)]
