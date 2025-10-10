@@ -12,7 +12,10 @@ function Get-Python {
     if (-not $exe) {
         $exe = (Get-Command python).Source
         $ver = & $exe -c "import sys; print('%d.%d'%sys.version_info[:2])"
-        if ($ver -ne $Version) { throw "Requested Python $Version not found" }
+        if ($ver -ne $Version) {
+            throw "Requested Python $Version not found; wanted: " +
+                  "$Version, got: $ver."
+        }
     }
     return $exe
 }
