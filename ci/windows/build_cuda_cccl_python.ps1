@@ -436,6 +436,18 @@ if ($DoMerge) {
         }
 }
 
+# If it turns out we need delvewheel, we'd handle it here, after the merging
+# of wheels.  The two DLLs that seem like they might be problematic are
+# msvc140p.dll, and dbghelp.dll.  The former comes from llvmlite, upon which
+# we depend.  Dbghelp.dll ships in C:\Windows\System32, but that will often
+# be a much older version compared to the one used by Visual Studio.  We only
+# use one symbol from Dbghelp.dll: UnDecorateSymbolName, which is used by
+# nvrtc.  If we encounter weird issues with c.parallel jit compilation and
+# nvrtc in the wild on Windows, an out-of-date Dbghelp.dll could possibly be
+# the culprit.
+#
+# For now, though, it doesn't appear to be necessary.
+
 # Optionally upload the wheel artifact.
 if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {
     Push-Location $RepoRoot
