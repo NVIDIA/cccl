@@ -37,9 +37,9 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
-#include <cuda/std/__cccl/algorithm_wrapper.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__cccl/algorithm_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
