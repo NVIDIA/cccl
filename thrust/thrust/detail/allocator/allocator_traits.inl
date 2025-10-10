@@ -26,10 +26,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/is_call_possible.h>
 
+#include <cuda/std/__cccl/memory_wrapper.h>
 #include <cuda/std/limits>
 
 #include <new>

@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -12,7 +12,10 @@
     [switch]$CPU_ONLY = $false,
     [Parameter(Mandatory = $false)]
     [Alias("gpu-only")]
-    [switch]$GPU_ONLY = $false
+    [switch]$GPU_ONLY = $false,
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,13 +27,13 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 if ($CPU_ONLY) {
-    $PRESETS = @("thrust-cpu-cpp$CXX_STANDARD")
+    $PRESET = "thrust-cpu-cpp$CXX_STANDARD"
     $artifactTag = "test_cpu"
 } elseif ($GPU_ONLY) {
-    $PRESETS = @("thrust-gpu-cpp$CXX_STANDARD")
+    $PRESET = "thrust-gpu-cpp$CXX_STANDARD"
     $artifactTag = "test_gpu"
 } else {
-    $PRESETS = @("thrust-cpp$CXX_STANDARD")
+    $PRESET = "thrust-cpp$CXX_STANDARD"
     $artifactTag = ""
 }
 
@@ -40,16 +43,14 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $build_command = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch `"$CUDA_ARCH`""
-    Write-Host "Executing: $build_command"
-    Invoke-Expression $build_command
+    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+    Write-Host "Running: $cmd"
+    Invoke-Expression $cmd
 }
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-foreach ($PRESET in $PRESETS) {
-    test_preset "Thrust ($PRESET)" "$PRESET"
-}
+test_preset "Thrust ($PRESET)" "$PRESET"
 
 If($CURRENT_PATH -ne "ci") {
     popd

@@ -34,7 +34,6 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/binary_search.h>
-#include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/detail/seq.h>
 #include <thrust/find.h>
 #include <thrust/host_vector.h>
@@ -46,6 +45,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cccl/algorithm_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
