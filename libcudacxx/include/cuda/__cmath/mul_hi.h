@@ -23,9 +23,7 @@
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
@@ -68,45 +66,55 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]]
 _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
 {
-  using ::cuda::std::int32_t;
   using ::cuda::std::int64_t;
-  using ::cuda::std::is_same_v;
   using ::cuda::std::is_signed_v;
-  using ::cuda::std::uint32_t;
-  using ::cuda::std::uint64_t;
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    if constexpr (is_same_v<_Tp, int32_t>)
+    if constexpr (sizeof(_Tp) == sizeof(int))
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__mulhi(__lhs, __rhs);));
+      if constexpr (is_signed_v<_Tp>)
+      {
+        const auto __lhs1 = static_cast<int>(__lhs);
+        const auto __rhs1 = static_cast<int>(__rhs);
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__mulhi(__lhs1, __rhs1);));
+      }
+      else // is_unsigned_v<_Tp>
+      {
+        const auto __lhs1 = static_cast<unsigned>(__lhs);
+        const auto __rhs1 = static_cast<unsigned>(__rhs);
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs1, __rhs1);));
+      }
     }
-    else if constexpr (is_same_v<_Tp, uint32_t>)
+    else if constexpr (sizeof(_Tp) == sizeof(int64_t))
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs, __rhs);));
-    }
-    else if constexpr (is_same_v<_Tp, int64_t>)
-    {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__mul64hi(__lhs, __rhs);));
+      if constexpr (is_signed_v<_Tp>)
+      {
+        const auto __lhs1 = static_cast<long long>(__lhs);
+        const auto __rhs1 = static_cast<long long>(__rhs);
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__mul64hi(__lhs1, __rhs1);));
 #if _CCCL_COMPILER(MSVC)
-      NV_IF_TARGET(NV_IS_HOST, (return ::__mulh(__lhs, __rhs);));
+        NV_IF_TARGET(NV_IS_HOST, (return ::__mulh(__lhs1, __rhs1);));
 #endif // _CCCL_COMPILER(MSVC)
-    }
-    else if constexpr (is_same_v<_Tp, uint64_t>)
-    {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs, __rhs);));
+      }
+      else // is_unsigned_v<_Tp>
+      {
+        const auto __lhs1 = static_cast<unsigned long long>(__lhs);
+        const auto __rhs1 = static_cast<unsigned long long>(__rhs);
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs1, __rhs1);));
 #if _CCCL_COMPILER(MSVC)
-      NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs, __rhs);));
+        NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs1, __rhs1);));
 #endif // _CCCL_COMPILER(MSVC)
+      }
     }
   }
-  if constexpr (sizeof(_Tp) < sizeof(uint64_t) || (sizeof(_Tp) == sizeof(uint64_t) && _CCCL_HAS_INT128()))
+  if constexpr (sizeof(_Tp) < sizeof(int64_t) || (sizeof(_Tp) == sizeof(int64_t) && _CCCL_HAS_INT128()))
   {
     constexpr auto __bits = ::cuda::std::__num_bits_v<_Tp>;
     using __larger_t      = ::cuda::std::__make_nbit_int_t<__bits * 2, is_signed_v<_Tp>>;
     auto __ret            = (static_cast<__larger_t>(__lhs) * __rhs) >> __bits;
     return static_cast<_Tp>(__ret);
   }
-  else // sizeof(_Tp) >= sizeof(uint64_t) && !_CCCL_HAS_INT128()
+  else // sizeof(_Tp) >= sizeof(int64_t) && !_CCCL_HAS_INT128()
   {
     if constexpr (is_signed_v<_Tp>)
     {
