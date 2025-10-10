@@ -32,7 +32,6 @@
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
-#include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 #include <cuda/experimental/__stream/internal_streams.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
