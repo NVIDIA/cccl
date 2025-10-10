@@ -27,6 +27,9 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_down.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
@@ -55,5 +58,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_odd(Integer x)
 {
   return 1 & x;
 }
+} // namespace detail
 
 THRUST_NAMESPACE_END
