@@ -26,5 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits scan_by_key
-#include <thrust/system/cpp/detail/scan_by_key.h>
+// Ensure TBB scan is available before using generic scan_by_key
+#include <thrust/system/tbb/detail/scan.h>
+
+// use generic parallel implementation
+#include <thrust/system/detail/generic/scan_by_key.h>
