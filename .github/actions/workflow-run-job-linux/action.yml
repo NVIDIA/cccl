@@ -208,7 +208,6 @@ runs:
             ${aws_arn:-} \
             --env "CI=true" \
             --env "COMMAND=$COMMAND" \
-            --env "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST=1" \
             --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
