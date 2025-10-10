@@ -20,6 +20,8 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/philox_engine.h>
 
+#include <cuda/std/cmath>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -117,50 +119,36 @@ _CCCL_HOST_DEVICE inline void philox_engine<UIntType, w, n, r, consts...>::mulhi
 {
   if constexpr (w == 32)
   {
-    // 32 bit is easy - just use 64 bit multiplication and extract the hi/lo parts
-    const auto ab = static_cast<std::uint_fast64_t>(a) * static_cast<std::uint_fast64_t>(b);
-    hi            = static_cast<UIntType>(ab >> w);
-    lo            = static_cast<UIntType>(ab) & max;
+    // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
+    hi = static_cast<UIntType>(
+      ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(b)));
+    lo = (a * b) & max;
+  }
+  else if constexpr (w == 64)
+  {
+    hi = static_cast<UIntType>(
+      ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(a), static_cast<std::uint64_t>(b)));
+    lo = (a * b) & max;
   }
   else
   {
-    // 64 bit multiplication is more difficult. The generic implementation is slow, so try to use platform specific
-    if constexpr (w == 64)
-    {
-      // CUDA
-#ifdef __CUDA_ARCH__
-      hi = static_cast<UIntType>(__umul64hi(a, b));
-      lo = static_cast<UIntType>(a * b);
-#elif defined(_MSC_VER)
-      // MSVC x64
-      lo = static_cast<UIntType>(a * b);
-      hi = static_cast<UIntType>(__umulh(a, b));
-#elif defined(__GNUC__)
-      // GCC
-      lo = static_cast<UIntType>(a * b);
-      hi = static_cast<UIntType>(__uint128_t(a) * __uint128_t(b) >> 64);
-#endif
-    }
-    else
-    {
-      // Generic slow implementation
-      constexpr UIntType w_half  = w / 2;
-      constexpr UIntType lo_mask = (((UIntType) 1) << w_half) - 1;
+    // Generic slow implementation
+    constexpr UIntType w_half  = w / 2;
+    constexpr UIntType lo_mask = (((UIntType) 1) << w_half) - 1;
 
-      lo           = a * b;
-      UIntType ahi = a >> w_half;
-      UIntType alo = a & lo_mask;
-      UIntType bhi = b >> w_half;
-      UIntType blo = b & lo_mask;
+    lo           = a * b;
+    UIntType ahi = a >> w_half;
+    UIntType alo = a & lo_mask;
+    UIntType bhi = b >> w_half;
+    UIntType blo = b & lo_mask;
 
-      UIntType ahbl = ahi * blo;
-      UIntType albh = alo * bhi;
+    UIntType ahbl = ahi * blo;
+    UIntType albh = alo * bhi;
 
-      UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
-      hi                 = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
-      hi += ahbl_albh >> w_half;
-      hi += ((lo >> w_half) < (ahbl_albh & lo_mask));
-    }
+    UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
+    hi                 = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
+    hi += ahbl_albh >> w_half;
+    hi += ((lo >> w_half) < (ahbl_albh & lo_mask));
   }
 }
 
