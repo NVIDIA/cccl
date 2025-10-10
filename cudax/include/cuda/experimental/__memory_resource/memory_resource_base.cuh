@@ -170,15 +170,16 @@ using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
 static constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
-//! @brief  Checks whether the current device supports \c cudaMallocAsync.
+//! @brief  Checks whether the current device supports stream-ordered allocations.
 //! @param __device_id The id of the device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
 inline void __verify_device_supports_stream_ordered_allocations(const int __device_id)
 {
-  if (!::cuda::devices[__device_id].attribute(::cuda::device_attributes::memory_pools_supported))
+  if (!::cuda::device_attributes::memory_pools_supported(__device_id))
   {
-    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "cudaMallocAsync is not supported on the given device");
+    ::cuda::__throw_cuda_error(
+      ::cudaErrorNotSupported, "stream-ordered allocations are not supported on the given device");
   }
 }
 
@@ -253,7 +254,7 @@ struct memory_pool_properties
 {
   size_t initial_pool_size                           = 0;
   size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
-  cudaMemAllocationHandleType allocation_handle_type = cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
