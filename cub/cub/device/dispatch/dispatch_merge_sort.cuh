@@ -49,6 +49,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cmath/ilog.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -282,7 +283,7 @@ struct DispatchMergeSort
         break;
       }
 
-      const int num_passes = static_cast<int>(THRUST_NS_QUALIFIER::detail::log2_ri(num_tiles));
+      const int num_passes = static_cast<int>(::cuda::ceil_ilog2(num_tiles));
 
       /*
        * The algorithm consists of stages. At each stage, there are input and output arrays. There are two pairs of
