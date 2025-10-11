@@ -119,11 +119,11 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
-#  define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
 // Enable bypassing automatic storage checks in atomics when using CTK 12.2 and below and if NDEBUG is defined.
-// #  if _CCCL_CUDACC_BELOW(12, 2) && !defined(NDEBUG)
-// #    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
-// #  endif // _CCCL_CUDACC_BELOW(12, 2)
+// A compiler bug prevents the safe use of `__is_local` and PTX spacep until after 13.0.
+#  if _CCCL_CUDACC_BELOW(13, 1) && !defined(NDEBUG)
+#    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
+#  endif // _CCCL_CUDACC_BELOW(13, 1)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
 #  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)

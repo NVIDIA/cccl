@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_scalar.h>
@@ -50,7 +51,7 @@ template <class _Operand>
 using __cuda_atomic_enable_native_ld_st = enable_if_t<_Operand::__size >= 16, bool>;
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
-static inline _CCCL_DEVICE void
+static inline _CCCL_DEVICE_API void
 __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
   constexpr uint64_t __alignmask = (sizeof(uint16_t) - 1);
@@ -64,7 +65,7 @@ __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __a
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-static inline _CCCL_DEVICE bool
+static inline _CCCL_DEVICE_API bool
 __cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Order, _Operand, _Sco)
 {
   constexpr uint64_t __alignmask = (sizeof(uint32_t) - 1);
@@ -110,7 +111,7 @@ template <class _Type,
           class _Operand,
           class _Sco,
           __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-_CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Order, _Operand, _Sco)
+_CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Order, _Operand, _Sco)
 {
   constexpr uint64_t __alignmask = (sizeof(uint32_t) - 1);
   constexpr uint32_t __sizemask  = (1 << (sizeof(_Type) * 8)) - 1;
@@ -147,6 +148,45 @@ _CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Or
   }
 }
 
+template <class _Type, template <class> class _Op>
+struct __cuda_atomic_op_bind
+{
+  _Type __val;
+
+  [[nodiscard]] _CCCL_DEVICE_API _Type operator()(_Type __old) const
+  {
+    return _Op<_Type>{}(__val, __old);
+  }
+};
+
+template <class _Type>
+struct __cuda_atomic_op_store
+{
+  // Just return first value
+  [[nodiscard]] _CCCL_DEVICE_API _Type operator()(_Type __val, _Type) const
+  {
+    return __val;
+  }
+};
+
+template <class _Type>
+struct __cuda_atomic_op_fetch_min
+{
+  [[nodiscard]] _CCCL_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  {
+    return __op < __old ? __op : __old;
+  }
+};
+
+template <class _Type>
+struct __cuda_atomic_op_fetch_max
+{
+  [[nodiscard]] _CCCL_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  {
+    return __old < __op ? __op : __old;
+  }
+};
+
 // Optimized fetch_update CAS loop with op determined after first load reducing waste.
 template <class _Type,
           class _Fn,
@@ -154,7 +194,7 @@ template <class _Type,
           class _Operand,
           class _Sco,
           __cuda_atomic_enable_native_bitwise<_Operand> = 0>
-_CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Order, _Operand, _Sco)
+_CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Order, _Operand, _Sco)
 {
   _Type __expected = 0;
   NV_IF_TARGET(
@@ -173,112 +213,105 @@ _CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Or
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
-static inline _CCCL_DEVICE void
+static inline _CCCL_DEVICE_API void
 __cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
   // Store requires cas on 8/16b types
   __cuda_atomic_fetch_update(
     __ptr,
-    [__val](_Type __old) {
-      return __val;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::__cuda_atomic_op_store>{__val},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_add(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __old + __op;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::plus>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_and(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __old & __op;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_and>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_xor(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __old ^ __op;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_xor>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_or(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __old | __op;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::bit_or>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_min(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __op < __old ? __op : __old;
-    },
+    __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_min>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
+
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_fetch_max(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __old < __op ? __op : __old;
-    },
+    __cuda_atomic_op_bind<_Type, __cuda_atomic_op_fetch_max>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+static inline _CCCL_DEVICE_API void
+__cuda_atomic_exchange(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
   __dst = __cuda_atomic_fetch_update(
     __ptr,
-    [__op](_Type __old) {
-      return __op;
-    },
+    __cuda_atomic_op_bind<_Type, ::cuda::std::__cuda_atomic_op_store>{__op},
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
 
 template <typename _Tp, typename _Fn, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_fetch_update_cuda(_Tp* __ptr, const _Fn& __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_update_cuda(_Tp* __ptr, const _Fn& __op, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __op(__expected);
@@ -289,7 +322,8 @@ _CCCL_DEVICE _Tp __atomic_fetch_update_cuda(_Tp* __ptr, const _Fn& __op, int __m
   return __expected;
 }
 template <typename _Tp, typename _Fn, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_fetch_update_cuda(_Tp volatile* __ptr, const _Fn& __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_update_cuda(_Tp volatile* __ptr, const _Fn& __op, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __op(__expected);
@@ -301,14 +335,14 @@ _CCCL_DEVICE _Tp __atomic_fetch_update_cuda(_Tp volatile* __ptr, const _Fn& __op
 }
 
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_load_n_cuda(const _Tp* __ptr, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_load_n_cuda(const _Tp* __ptr, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_load_cuda(__ptr, __ret, __memorder, _Sco{});
   return __ret;
 }
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_load_cuda(__ptr, __ret, __memorder, _Sco{});
@@ -316,78 +350,109 @@ _CCCL_DEVICE _Tp __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder,
 }
 
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE void __atomic_store_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_store_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
 {
   __atomic_store_cuda(__ptr, __val, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE void __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
+_CCCL_DEVICE_API void __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
   __atomic_store_cuda(__ptr, __val, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_exchange_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
   return __ret;
 }
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
   return __ret;
 }
 
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
-_CCCL_DEVICE _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_arithmetic<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_add_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(
-    __ptr,
-    [__val](_Tp __old) {
-      return __val < __old ? __val : __old;
-    },
-    __memorder,
-    _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::plus>{__val}, __memorder, _Sco{});
 }
-template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
-_CCCL_DEVICE _Tp __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_arithmetic<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_add_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(
-    __ptr,
-    [__val](_Tp __old) {
-      return __val < __old ? __val : __old;
-    },
-    __memorder,
-    _Sco{});
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::plus>{__val}, __memorder, _Sco{});
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_and_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_and>{__val}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_and_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_and>{__val}, __memorder, _Sco{});
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_or_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_or>{__val}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_or_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_or>{__val}, __memorder, _Sco{});
+}
+
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_xor_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_xor>{__val}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_bitwise<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_xor_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(__ptr, __cuda_atomic_op_bind<_Tp, ::cuda::std::bit_xor>{__val}, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
-_CCCL_DEVICE _Tp __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
-    __ptr,
-    [__val](_Tp __old) {
-      return __old < __val ? __val : __old;
-    },
-    __memorder,
-    _Sco{});
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{__val}, __memorder, _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
-_CCCL_DEVICE _Tp __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
   return __atomic_fetch_update_cuda(
-    __ptr,
-    [__val](_Tp __old) {
-      return __old < __val ? __val : __old;
-    },
-    __memorder,
-    _Sco{});
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_min>{__val}, __memorder, _Sco{});
 }
 
-_CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_max>{__val}, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
+[[nodiscard]] static inline _CCCL_DEVICE_API _Tp
+__atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
+{
+  return __atomic_fetch_update_cuda(
+    __ptr, __cuda_atomic_op_bind<_Tp, __cuda_atomic_op_fetch_max>{__val}, __memorder, _Sco{});
+}
+
+_CCCL_DEVICE_API static inline void __atomic_signal_fence_cuda(int)
 {
   asm volatile("" ::: "memory");
 }
