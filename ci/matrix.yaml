@@ -21,6 +21,8 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtxa6000',
+        args: '--preset cudax-cpp20 --build-targets "cudax.cpp20.test.execution"  --ctest-targets "cudax.cpp20.test.execution"' }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

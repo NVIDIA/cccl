@@ -99,10 +99,18 @@ private:
     }
   };
 
+  template <class _Env>
+  using __starting_domain = __call_result_or_t<get_domain_t, default_domain, const _Env&>;
+
   template <class _Sndr, class _Env>
-  using __impl_fn_t =
-    __compose<__detail::__transform_sender_t<__call_result_or_t<get_domain_t, default_domain, const _Env&>, start_t>,
-              __detail::__transform_sender_t<__completion_domain_of_t<set_value_t, _Sndr, const _Env&>, set_value_t>>;
+  using __completing_domain =
+    __call_result_t<__first_callable<get_domain_override_t, get_completion_domain_t<set_value_t>>,
+                    env_of_t<_Sndr>,
+                    const _Env&>;
+
+  template <class _Sndr, class _Env>
+  using __impl_fn_t = __compose<__detail::__transform_sender_t<__starting_domain<const _Env&>, start_t>,
+                                __detail::__transform_sender_t<__completing_domain<_Sndr, const _Env&>, set_value_t>>;
 
 public:
   template <class _Sndr, class _Env, class _ImplFn = __impl_fn_t<_Sndr, _Env>>

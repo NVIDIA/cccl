@@ -15,6 +15,7 @@
 #include <thrust/equal.h>
 
 #include <cuda/experimental/container.cuh>
+#include <cuda/experimental/memory_resource.cuh>
 
 #include <nv/target>
 
@@ -135,8 +136,10 @@ void bulk_on_stream_scheduler()
   auto sch = sctx.get_scheduler();
 
   using _env_t = cudax::env_t<cuda::mr::device_accessible>;
-  _env_t env{cudax::device_memory_resource{_dev}, cuda::get_stream(sch), ex::par_unseq};
-  cudax::async_device_buffer<int> buf{env, 10, 40}; // a device buffer of 10 integers, initialized to 40
+  auto mr      = cudax::device_memory_resource{_dev};
+  auto mr2     = cudax::any_resource<cudax::device_accessible>(mr);
+  _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
+  cudax::async_device_buffer<int> buf{sctx, mr2, 10, 40, env}; // a device buffer of 10 integers, initialized to 40
   cuda::std::span data{buf};
 
   auto start = //
@@ -153,7 +156,7 @@ void bulk_on_stream_scheduler()
         data[i] += 2;
       });
 
-  cudax::async_device_buffer<int> expected{env, 10, 42}; // a device buffer of 10 integers, initialized to 42
+  cudax::async_device_buffer<int> expected{sctx, mr2, 10, 42, env}; // a device buffer of 10 integers, initialized to 42
 
   // start the sender and wait for it to finish
   auto [span] = ex::sync_wait(std::move(start)).value();
