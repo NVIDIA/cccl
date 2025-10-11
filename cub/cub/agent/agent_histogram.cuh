@@ -360,14 +360,14 @@ struct AgentHistogram
       using AliasedVecs = VecT[vecs_per_thread];
       WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
       // Load using a wrapped vec iterator
-      BlockLoadVecT(temp_storage.vec_load).Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
+      BlockLoadVecT{temp_storage.vec_load}.Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
     }
     else
     {
       using AliasedPixels = PixelT[pixels_per_thread];
       WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
       // Load using a wrapped pixel iterator
-      BlockLoadPixelT(temp_storage.pixel_load).Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
+      BlockLoadPixelT{temp_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
     }
   }
 
@@ -385,7 +385,7 @@ struct AgentHistogram
       {
         // Load using sample iterator
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT(temp_storage.sample_load)
+        BlockLoadSampleT{temp_storage.sample_load}
           .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
       }
     }
@@ -399,13 +399,13 @@ struct AgentHistogram
         int valid_pixels = valid_samples / NumChannels;
 
         // Load using a wrapped pixel iterator
-        BlockLoadPixelT(temp_storage.pixel_load)
+        BlockLoadPixelT{temp_storage.pixel_load}
           .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
       }
       else
       {
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT(temp_storage.sample_load)
+        BlockLoadSampleT{temp_storage.sample_load}
           .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
       }
     }
