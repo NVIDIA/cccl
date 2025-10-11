@@ -1218,7 +1218,7 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine())
+  task_dep_untyped read(data_place dp = data_place::affine()) const
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }

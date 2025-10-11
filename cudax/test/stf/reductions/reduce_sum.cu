@@ -19,9 +19,10 @@
 
 using namespace cuda::experimental::stf;
 
-int main()
+template <typename context_t>
+void run()
 {
-  context ctx;
+  context_t ctx;
   auto lsum = ctx.logical_data(shape_of<scalar_view<size_t>>());
 
   size_t N = 100000;
@@ -35,4 +36,10 @@ int main()
   ctx.finalize();
 
   _CCCL_ASSERT(res_sum == N, "Invalid result");
+}
+
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

@@ -192,6 +192,11 @@ protected:
       return nullptr;
     }
 
+    virtual bool is_graph_ctx() const
+    {
+      return false;
+    }
+
     void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);
@@ -621,6 +626,18 @@ protected:
     {
       ctx_resources.add(mv(resource));
     }
+
+    // Export all resources by moving them to a new ctx_resource_set
+    ctx_resource_set export_ctx_resources()
+    {
+      return ctx_resources.export_resources();
+    }
+
+    // Import all resources from another ctx_resource_set
+    void import_ctx_resources(ctx_resource_set&& other)
+    {
+      ctx_resources.import_resources(mv(other));
+    }
   };
 
 public:
@@ -709,6 +726,20 @@ public:
     pimpl->add_resource(mv(resource));
   }
 
+  //! Export all resources by moving them to a new ctx_resource_set
+  //! The current context will have no resources after this operation
+  ctx_resource_set export_resources()
+  {
+    return pimpl->export_ctx_resources();
+  }
+
+  //! Import all resources from another ctx_resource_set
+  //! The other set will be left empty after this operation
+  void import_resources(ctx_resource_set&& other)
+  {
+    pimpl->import_ctx_resources(mv(other));
+  }
+
   /* Customize the allocator used by all logical data */
   void set_allocator(block_allocator_untyped custom)
   {
@@ -776,6 +807,11 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  bool is_graph_ctx() const
+  {
+    return pimpl->is_graph_ctx();
   }
 
   void set_graph_cache_policy(::std::function<bool()> policy)
@@ -935,6 +971,9 @@ template <typename Engine>
 class backend_ctx : public backend_ctx_untyped
 {
 public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
   backend_ctx(::std::shared_ptr<impl> impl)
       : backend_ctx_untyped(mv(impl))
   {
@@ -942,6 +981,21 @@ public:
   }
 
   ~backend_ctx() = default;
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    return static_cast<backend_ctx_untyped&>(*this);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    return static_cast<const backend_ctx_untyped&>(*this);
+  }
 
   /**
    * @brief Returns a `logical_data` object with the given shape, tied to this graph. Initial data place is invalid.
