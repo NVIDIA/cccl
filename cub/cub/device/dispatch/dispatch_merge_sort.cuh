@@ -45,8 +45,6 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/detail/integer_math.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/max.h>

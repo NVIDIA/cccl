@@ -32,7 +32,6 @@
 #endif // no system header
 
 #include <thrust/detail/config/memory_resource.h>
-#include <thrust/detail/integer_math.h>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/cstddef>
