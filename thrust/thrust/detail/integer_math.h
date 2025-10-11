@@ -38,12 +38,6 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_power_of_2(Integer x)
-{
-  return 0 == (x & (x - 1));
-}
-
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_signed<T>::value, bool>::type is_negative(T x)
 {
@@ -61,53 +55,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_odd(Integer x)
 {
   return 1 & x;
 }
-
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
-{
-  Integer num_bits           = 8 * sizeof(Integer);
-  Integer num_bits_minus_one = num_bits - 1;
-
-  return num_bits_minus_one - ::cuda::std::countl_zero(::cuda::std::__to_unsigned_like(x));
-}
-
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2_ri(Integer x)
-{
-  Integer result = log2(x);
-
-  // This is where we round up to the nearest log.
-  if (!is_power_of_2(x))
-  {
-    ++result;
-  }
-
-  return result;
-}
-
-// x/y rounding towards +infinity for integers
-// Used to determine # of blocks/warps etc.
-template <typename Integer0, typename Integer1>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  // FIXME: Should use common_type.
-  auto
-  divide_ri(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
-
-  // x/y rounding towards zero for integers.
-  // Used to determine # of blocks/warps etc.
-  template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto divide_rz(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS(x / y)
-
-  // Round x towards infinity to the next multiple of y.
-  template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_i(Integer0 const x, Integer1 const y)
-    THRUST_DECLTYPE_RETURNS(y* divide_ri(x, y))
-
-  // Round x towards 0 to the next multiple of y.
-  template <typename Integer0, typename Integer1>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_z(Integer0 const x, Integer1 const y)
-    THRUST_DECLTYPE_RETURNS(y* divide_rz(x, y))
-
 } // namespace detail
 
 THRUST_NAMESPACE_END
