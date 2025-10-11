@@ -10,6 +10,6 @@ CMAKE_OPTIONS=""
 
 configure_and_build_preset "libcudacxx NVRTC" "$PRESET" "$CMAKE_OPTIONS"
 
-source "./sccache_stats.sh" "start" || :
+sccache -z > /dev/null || :
 test_preset "libcudacxx NVRTC" "${PRESET}"
-source "./sccache_stats.sh" "end" || :
+sccache --show-adv-stats || :

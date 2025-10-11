@@ -30,21 +30,18 @@
 
 #include <cub/config.cuh>
 
-// MSVC doesn't support __device__ lambdas
-#if !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/detail/raw_pointer_cast.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/fill.h>
-#  include <thrust/host_vector.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
-#  include <cuda/std/span>
-
-#  include <c2h/catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -66,19 +63,21 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;
   cuda::std::extents<int, 3, 2, 2> extents{};
-  c2h::device_vector<data_t>    d_output(cub::detail::size(extents));
-  c2h::host_vector<data_t>      h_output(cub::detail::size(extents));
+  c2h::device_vector<data_t>       d_output(cub::detail::size(extents));
+  c2h::host_vector<data_t>         h_output(cub::detail::size(extents));
   auto                             d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()),
                                                                           3 * 2 * 2};
   c2h::host_vector<data_t> expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
-                                          {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
-                                          {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
+                                       {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
+                                       {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 
+#if __CUDACC_EXTENDED_LAMBDA__
   cub::DeviceFor::ForEachInExtents(extents, [=] __device__ (int idx, int x, int y, int z) {
     d_output_raw[idx] = {x, y, z};
   });
   h_output = d_output;
   REQUIRE(h_output == expected);
+#endif // __CUDACC_EXTENDED_LAMBDA__
 
   thrust::fill(d_output.begin(), d_output.end(), data_t{});
   cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output_raw});
@@ -88,5 +87,3 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-end for-each-in-extents-example
 }
 // clang-format on
-
-#endif // !_CCCL_COMPILER(MSVC)
