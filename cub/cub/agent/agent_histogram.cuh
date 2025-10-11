@@ -352,7 +352,6 @@ struct AgentHistogram
   }
 
   // Load full, aligned tile using pixel iterator
-  template <int NumActiveChannels>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
   {
@@ -380,7 +379,7 @@ struct AgentHistogram
     {
       if constexpr (IsAligned)
       {
-        LoadFullAlignedTile<NumActiveChannels>(block_offset, samples);
+        LoadFullAlignedTile(block_offset, samples);
       }
       else
       {
