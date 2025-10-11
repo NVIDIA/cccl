@@ -372,7 +372,7 @@ public:
   [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
-    assert(::cuda::ceil_ilog2(alignment));
+    assert(::cuda::is_power_of_two(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
     if (bytes > m_options.largest_block_size || alignment > m_options.alignment)

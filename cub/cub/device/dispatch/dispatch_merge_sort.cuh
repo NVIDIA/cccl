@@ -281,7 +281,7 @@ struct DispatchMergeSort
         break;
       }
 
-      const int num_passes = static_cast<int>(::cuda::ceil_ilog2(num_tiles));
+      const int num_passes = ::cuda::ceil_ilog2(num_tiles);
 
       /*
        * The algorithm consists of stages. At each stage, there are input and output arrays. There are two pairs of

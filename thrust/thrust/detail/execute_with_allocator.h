@@ -52,7 +52,7 @@ get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSyste
 
   // How many elements of type value_type do we need to accommodate n elements
   // of type T?
-  size_type num_elements = ::cuda::ceil_div(sizeof(T) * n, sizeof(value_type));
+  const size_type num_elements = static_cast<size_type>(::cuda::ceil_div(sizeof(T) * n, sizeof(value_type)));
 
   void_pointer ptr = alloc_traits::allocate(system.get_allocator(), num_elements);
 
