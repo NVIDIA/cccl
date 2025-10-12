@@ -924,7 +924,7 @@ struct BlockRadixRankMatchEarlyCounts
       int warp_histograms[BLOCK_WARPS][RADIX_DIGITS][NUM_PARTS];
     };
 
-    int match_masks[MATCH_MASKS_ALLOC_SIZE][RADIX_DIGITS];
+    uint32_t match_masks[MATCH_MASKS_ALLOC_SIZE][RADIX_DIGITS];
 
     typename BlockScan::TempStorage prefix_tmp;
   };
@@ -970,7 +970,7 @@ struct BlockRadixRankMatchEarlyCounts
       }
       if (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
       {
-        int* match_masks = &s.match_masks[warp][0];
+        uint32_t* match_masks = &s.match_masks[warp][0];
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int bin = lane; bin < RADIX_DIGITS; bin += WARP_THREADS)
@@ -1061,21 +1061,21 @@ struct BlockRadixRankMatchEarlyCounts
       UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
-      int lane_mask     = 1 << lane;
-      int* warp_offsets = &s.warp_offsets[warp][0];
-      int* match_masks  = &s.match_masks[warp][0];
+      uint32_t lane_mask    = 1 << lane;
+      int* warp_offsets     = &s.warp_offsets[warp][0];
+      uint32_t* match_masks = &s.match_masks[warp][0];
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
-        int* p_match_mask         = &match_masks[bin];
+        uint32_t* p_match_mask    = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
         __syncwarp(WARP_MASK);
-        int bin_mask    = *p_match_mask;
-        int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
-        int warp_offset = 0;
-        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        uint32_t bin_mask = *p_match_mask;
+        int leader        = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
+        int warp_offset   = 0;
+        int popc          = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1101,7 +1101,7 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
-        int bin_mask =
+        uint32_t bin_mask =
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
