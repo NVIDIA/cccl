@@ -385,8 +385,8 @@ struct AgentHistogram
       {
         // Load using sample iterator
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}
-          .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
+        BlockLoadSampleT{temp_storage.sample_load}.Load(
+          d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
       }
     }
     else
@@ -399,14 +399,14 @@ struct AgentHistogram
         int valid_pixels = valid_samples / NumChannels;
 
         // Load using a wrapped pixel iterator
-        BlockLoadPixelT{temp_storage.pixel_load}
-          .Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
+        BlockLoadPixelT{temp_storage.pixel_load}.Load(
+          d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
       }
       else
       {
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}
-          .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
+        BlockLoadSampleT{temp_storage.sample_load}.Load(
+          d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
       }
     }
   }
