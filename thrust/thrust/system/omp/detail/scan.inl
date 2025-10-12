@@ -35,16 +35,20 @@
 #include <thrust/system/omp/detail/scan.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__numeric/exclusive_scan.h>
+#include <cuda/std/__numeric/inclusive_scan.h>
+#include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/cmath>
 
 #include <omp.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp::detail
 {
-namespace omp
-{
-namespace detail
-{
+
+// Threshold below which serial scan is faster than parallel
+// Benchmarking shows parallel overhead dominates for small arrays
+inline constexpr size_t parallel_scan_threshold = 1024;
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 OutputIterator inclusive_scan(
@@ -68,63 +72,63 @@ OutputIterator inclusive_scan(
 
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
-  int num_threads = 1;
-  THRUST_PRAGMA_OMP(parallel)
+  // Use serial scan for small arrays where parallel overhead dominates
+  if (static_cast<size_t>(n) < parallel_scan_threshold)
   {
-    THRUST_PRAGMA_OMP(single)
+    if (n > 0)
     {
-      num_threads = omp_get_num_threads();
-    }
-  }
-
-  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
-
-  // Step 1 & 2: Scan each block and compute block sum
-  THRUST_PRAGMA_OMP(parallel)
-  {
-    int tid         = omp_get_thread_num();
-    Size block_size = (n + num_threads - 1) / num_threads;
-    Size start      = tid * block_size;
-    Size end        = (start + block_size < n) ? start + block_size : n;
-
-    if (start < n)
-    {
-      ValueType sum = first[start];
-      result[start] = sum;
-
-      for (Size i = start + 1; i < end; ++i)
+      ValueType sum = first[0];
+      result[0]     = sum;
+      for (Size i = 1; i < n; ++i)
       {
         sum       = wrapped_binary_op(sum, first[i]);
         result[i] = sum;
       }
+    }
+    ::cuda::std::advance(result, n);
+    return result;
+  }
 
-      block_sums[tid] = sum;
+  const int num_threads = omp_get_max_threads();
+
+  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
+
+  // Step 1: Reduce each block (N reads)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
+  {
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
+
+    if (start < n)
+    {
+      // Use cuda::std::reduce to compute block sum
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, ValueType{}, binary_op);
     }
   }
 
-  // Step 3: Sequential scan of block sums
-  for (int i = 1; i < num_threads; ++i)
+  // Step 2: Scan block sums using cuda::std::exclusive_scan
+  if (num_threads > 1)
   {
-    block_sums[i] = wrapped_binary_op(block_sums[i - 1], block_sums[i]);
+    ::cuda::std::exclusive_scan(
+      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
   }
 
-  // Step 4: Add scanned block sums to each block (except first)
-  THRUST_PRAGMA_OMP(parallel)
+  // Step 3: Scan each block with offset (N reads/writes)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
   {
-    int tid = omp_get_thread_num();
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
 
-    if (tid > 0)
+    if (start < n)
     {
-      Size block_size = (n + num_threads - 1) / num_threads;
-      Size start      = tid * block_size;
-      Size end        = (start + block_size < n) ? start + block_size : n;
+      const ValueType offset = block_sums[tid];
 
-      ValueType offset = block_sums[tid - 1];
-
-      for (Size i = start; i < end; ++i)
-      {
-        result[i] = wrapped_binary_op(offset, result[i]);
-      }
+      // Use cuda::std::inclusive_scan with init = offset
+      ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
     }
   }
 
@@ -160,75 +164,71 @@ OutputIterator inclusive_scan(
 
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
-  int num_threads = 1;
-  THRUST_PRAGMA_OMP(parallel)
+  // Use serial scan for small arrays where parallel overhead dominates
+  if (static_cast<size_t>(n) < parallel_scan_threshold)
   {
-    THRUST_PRAGMA_OMP(single)
+    if (n > 0)
     {
-      num_threads = omp_get_num_threads();
-    }
-  }
-
-  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
-
-  // Step 1 & 2: Scan each block with init applied to first element
-  THRUST_PRAGMA_OMP(parallel)
-  {
-    int tid         = omp_get_thread_num();
-    Size block_size = (n + num_threads - 1) / num_threads;
-    Size start      = tid * block_size;
-    Size end        = (start + block_size < n) ? start + block_size : n;
-
-    if (start < n)
-    {
-      ValueType sum;
-      if (tid == 0)
-      {
-        sum           = wrapped_binary_op(init, first[start]);
-        result[start] = sum;
-      }
-      else
-      {
-        sum           = first[start];
-        result[start] = sum;
-      }
-
-      for (Size i = start + 1; i < end; ++i)
+      ValueType sum = wrapped_binary_op(init, first[0]);
+      result[0]     = sum;
+      for (Size i = 1; i < n; ++i)
       {
         sum       = wrapped_binary_op(sum, first[i]);
         result[i] = sum;
       }
-
-      block_sums[tid] = sum;
     }
+    ::cuda::std::advance(result, n);
+    return result;
   }
 
-  // Step 3: Sequential scan of block sums (with init for first block)
-  if (num_threads > 0)
+  const int num_threads = omp_get_max_threads();
+
+  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
+
+  // Step 1: Reduce each block (N reads)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
   {
-    for (int i = 1; i < num_threads; ++i)
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
+
+    if (start < n)
     {
-      block_sums[i] = wrapped_binary_op(block_sums[i - 1], block_sums[i]);
-    }
-  }
-
-  // Step 4: Add scanned block sums to each block (except first)
-  THRUST_PRAGMA_OMP(parallel)
-  {
-    int tid = omp_get_thread_num();
-
-    if (tid > 0)
-    {
-      Size block_size = (n + num_threads - 1) / num_threads;
-      Size start      = tid * block_size;
-      Size end        = (start + block_size < n) ? start + block_size : n;
-
-      ValueType offset = block_sums[tid - 1];
-
-      for (Size i = start; i < end; ++i)
+      if (tid == 0)
       {
-        result[i] = wrapped_binary_op(offset, result[i]);
+        // First block: reduce with init
+        block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, binary_op);
       }
+      else
+      {
+        // Other blocks: regular reduce
+        block_sums[tid] = ::cuda::std::reduce(first + start, first + end, ValueType{}, binary_op);
+      }
+    }
+  }
+
+  // Step 2: Scan block sums using cuda::std::exclusive_scan
+  if (num_threads > 1)
+  {
+    ::cuda::std::exclusive_scan(
+      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
+  }
+
+  // Step 3: Scan each block with offset (N reads/writes)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
+  {
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
+
+    if (start < n)
+    {
+      const ValueType offset = block_sums[tid];
+
+      // Use cuda::std::inclusive_scan with offset
+      ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
     }
   }
 
@@ -263,63 +263,60 @@ OutputIterator exclusive_scan(
 
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
-  int num_threads = 1;
-  THRUST_PRAGMA_OMP(parallel)
+  // Use serial scan for small arrays where parallel overhead dominates
+  if (static_cast<size_t>(n) < parallel_scan_threshold)
   {
-    THRUST_PRAGMA_OMP(single)
+    ValueType sum = init;
+    for (Size i = 0; i < n; ++i)
     {
-      num_threads = omp_get_num_threads();
+      ValueType temp = first[i];
+      result[i]      = sum;
+      sum            = wrapped_binary_op(sum, temp);
     }
+    ::cuda::std::advance(result, n);
+    return result;
   }
+
+  const int num_threads = omp_get_max_threads();
 
   thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
 
-  // Step 1 & 2: Exclusive scan each block and compute block sum
-  THRUST_PRAGMA_OMP(parallel)
+  // Step 1: Reduce each block (N reads)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
   {
-    int tid         = omp_get_thread_num();
-    Size block_size = (n + num_threads - 1) / num_threads;
-    Size start      = tid * block_size;
-    Size end        = (start + block_size < n) ? start + block_size : n;
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
 
     if (start < n)
     {
-      ValueType sum = init;
-
-      for (Size i = start; i < end; ++i)
-      {
-        ValueType temp = first[i];
-        result[i]      = sum;
-        sum            = wrapped_binary_op(sum, temp);
-      }
-
-      block_sums[tid] = sum;
+      // Reduce each block with init
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, binary_op);
     }
   }
 
-  // Step 3: Sequential scan of block sums
-  for (int i = 1; i < num_threads; ++i)
+  // Step 2: Scan block sums using cuda::std::exclusive_scan
+  if (num_threads > 1)
   {
-    block_sums[i] = wrapped_binary_op(block_sums[i - 1], block_sums[i]);
+    ::cuda::std::exclusive_scan(
+      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
   }
 
-  // Step 4: Add scanned block sums to each block (except first)
-  THRUST_PRAGMA_OMP(parallel)
+  // Step 3: Exclusive scan each block with offset (N reads/writes)
+  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
   {
-    int tid = omp_get_thread_num();
+    const int tid         = omp_get_thread_num();
+    const Size block_size = ::cuda::ceil_div(n, num_threads);
+    const Size start      = tid * block_size;
+    const Size end        = ::cuda::std::min(start + block_size, n);
 
-    if (tid > 0)
+    if (start < n)
     {
-      Size block_size = (n + num_threads - 1) / num_threads;
-      Size start      = tid * block_size;
-      Size end        = (start + block_size < n) ? start + block_size : n;
+      const ValueType offset = block_sums[tid];
 
-      ValueType offset = block_sums[tid - 1];
-
-      for (Size i = start; i < end; ++i)
-      {
-        result[i] = wrapped_binary_op(offset, result[i]);
-      }
+      // Use cuda::std::exclusive_scan with offset
+      ::cuda::std::exclusive_scan(first + start, first + end, result + start, offset, binary_op);
     }
   }
 
@@ -327,7 +324,5 @@ OutputIterator exclusive_scan(
   return result;
 }
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // namespace system::omp::detail
 THRUST_NAMESPACE_END

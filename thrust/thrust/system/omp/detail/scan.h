@@ -30,11 +30,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
@@ -71,9 +67,7 @@ OutputIterator exclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op);
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // namespace system::omp::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/scan.inl>
