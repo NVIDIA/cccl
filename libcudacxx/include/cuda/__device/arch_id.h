@@ -24,6 +24,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
