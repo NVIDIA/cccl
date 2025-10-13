@@ -34,8 +34,8 @@ __host__ __device__ constexpr void test()
     assert(cuda::in_range(T{5}, T{-1}, T{10}));
     assert(cuda::in_range(T{0}, T{-1}, T{1}));
   }
-  assert(!cuda::in_range(T{5}, T{cuda::std::numeric_limits<T>::max() - 1}, cuda::std::numeric_limits<T>::max()));
-  assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), T{cuda::std::numeric_limits<T>::min() + 1}));
+  assert(!cuda::in_range(T{5}, T{cuda::std::numeric_limits<T>::max() - T{1}}, cuda::std::numeric_limits<T>::max()));
+  assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), T{cuda::std::numeric_limits<T>::min() + T{1}}));
   assert(cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max()));
 }
 
@@ -57,12 +57,30 @@ __host__ __device__ constexpr bool test()
   test<__int128_t>();
   test<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
+  test<float>();
+  test<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
+  return true;
+}
+
+__host__ __device__ constexpr bool runtime_test()
+{
+#if _CCCL_HAS_NVFP16()
+  test<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
   return true;
 }
 
 int main(int, char**)
 {
   static_assert(test());
-  test();
+  assert(test());
+  assert(runtime_test());
   return 0;
 }
