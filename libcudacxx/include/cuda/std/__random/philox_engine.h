@@ -20,66 +20,66 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
+#include <cuda/__cmath/fast_modulo_division.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
 
-#include <array>
-#include <iostream>
-#include <limits>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <iostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-/*! \class philox_engine
- *  \brief A \p philox_engine random number engine produces unsigned integer
- *         random numbers using a Philox counter-based random number generation algorithm
- *         as described in: Salmon, John K., et al. "Parallel random numbers: as easy as 1, 2, 3." Proceedings of 2011
- * international conference for high performance computing, networking, storage and analysis. 2011.
- *
- *
- *  \tparam UIntType The type of unsigned integer to produce.
- *  \tparam w The word size
- *  \tparam n The buffer size
- *  \tparam r The number of rounds
- *  \tparam consts The constants used in the generation algorithm.
- *
- *  \note Inexperienced users should not use this class template directly.  Instead, use
- *  \p philox4x32 or \p philox4x64 .
- *
- *  The following code snippet shows examples of use of a \p philox_engine instance:
- *
- *  \code
- *  #include <cuda/std/random>
- *  #include <iostream>
- *
- *  int main()
- *  {
- *    // create a philox4x64 object, which is an instance of philox_engine
- *    cuda::std::philox4x64 rng1;
- *    cuda::std::philox4x64 rng2;
- *    // Create two different streams of random numbers
- *    // The counter is set as a big integer with the least significant word last.
- *    // Each counter increment produces 4 new values
- *    rng1.set_counter({0, 0, 0, 0});
- *    rng2.set_counter({0, 0, 1, 0}); // rng2 is now 4*2^w values ahead of rng1
- *
- *    // Relation between discard and set_counter
- *    cuda::std::philox4x64 rng3;
- *    rng3.set_counter({0, 0, 0, 100});
- *    const int n = 4;
- *    rng1.discard(100*n); // rng1 is now at the same position as rng3
- *    std::cout << (rng1() == rng3()) << std::endl; // 1
- *
- *    return 0;
- *  }
- *
- *  \endcode
- *
- *  \see cuda::std::philox4x32
- *  \see cuda::std::philox4x64
- */
+//! @class philox_engine
+//! @brief A philox_engine random number engine produces unsigned integer
+//!        random numbers using a Philox counter-based random number generation algorithm
+//!        as described in: Salmon, John K., et al. "Parallel random numbers: as easy as 1, 2, 3." Proceedings of 2011
+//!        international conference for high performance computing, networking, storage and analysis. 2011.
+//!
+//!
+//! @tparam UIntType The type of unsigned integer to produce.
+//! @tparam w The word size
+//! @tparam n The buffer size
+//! @tparam r The number of rounds
+//! @tparam consts The constants used in the generation algorithm.
+//!
+//! @note Inexperienced users should not use this class template directly.  Instead, use
+//!       philox4x32 or philox4x64 .
+//!
+//! The following code snippet shows examples of use of a philox_engine instance:
+//!
+//! .. code-block:: c++
+//!
+//!    #include <cuda/std/random>
+//!    #include <iostream>
+//!
+//!    int main()
+//!    {
+//!      // create a philox4x64 object, which is an instance of philox_engine
+//!      cuda::std::philox4x64 rng1;
+//!      cuda::std::philox4x64 rng2;
+//!      // Create two different streams of random numbers
+//!      // The counter is set as a big integer with the least significant word last.
+//!      // Each counter increment produces 4 new values
+//!      rng1.set_counter({0, 0, 0, 0});
+//!      rng2.set_counter({0, 0, 1, 0}); // rng2 is now 4*2^w values ahead of rng1
+//!
+//!      // Relation between discard and set_counter
+//!      cuda::std::philox4x64 rng3;
+//!      rng3.set_counter({0, 0, 0, 100});
+//!      const int n = 4;
+//!      rng1.discard(100*n); // rng1 is now at the same position as rng3
+//!      std::cout << (rng1() == rng3()) << std::endl; // 1
+//!
+//!      return 0;
+//!    }
+//!
+//!
+//! @see cuda::std::philox4x32
+//! @see cuda::std::philox4x64
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 class philox_engine
 {
@@ -92,32 +92,27 @@ class philox_engine
 public:
   using result_type = UIntType;
 
-  /*! The smallest value this engine may potentially produce.
-   */
+  //! The smallest value this engine may potentially produce.
   static const result_type min = 0;
-  /*! The largest value this engine may potentially produce.
-   */
+  //! The largest value this engine may potentially produce.
   static const result_type max = ((1ull << (w - 1)) | ((1ull << (w - 1)) - 1));
 
-  /*! The default seed.
-   */
+  //! The default seed.
   static constexpr result_type default_seed = 20111115u;
 
-  /*! This constructor, which optionally accepts a seed, initializes a new
-   *  \p philox_engine.
-   *
-   *  \param s The seed used to initialize this \p philox_engine's state.
-   */
+  //! This constructor, which optionally accepts a seed, initializes a new
+  //! philox_engine.
+  //!
+  //! @param s The seed used to initialize this philox_engine's state.
   _CCCL_HOST_DEVICE explicit philox_engine(result_type s = default_seed)
   {
     seed(s);
   }
 
-  /*! This method initializes this \p philox_engine's state, and optionally accepts
-   *  a seed value.
-   *
-   *  \param s The seed used to initializes this \p philox_engine's state.
-   */
+  //! This method initializes this philox_engine's state, and optionally accepts
+  //! a seed value.
+  //!
+  //! @param s The seed used to initializes this philox_engine's state.
   _CCCL_HOST_DEVICE void seed(result_type s = default_seed)
   {
     m_x    = {};
@@ -127,25 +122,25 @@ public:
     m_j    = n - 1;
   }
 
-  /*! This method sets the internal counter. Each increment of the counter produces n new values. The array \p counter
-   * can be thought of as a big integer. The n-1'th counter value is the least significant and the 0'th counter value is
-   * the most significant. set_counter is related but distinct from discard:
-   * - set_counter sets the engine's absolute position, while discard increments the engine.
-   * - Each increment of the counter always produces n new values, while discard can increment by any number of values
-   * equivalent to calling operator(). i.e. The sub-counter j is always set to n-1 after calling set_counter.
-   * - set_counter exposes the full period of the engine as a big integer, while discard is limited by its word size
-   * argument.
-   *
-   * set_counter is commonly used to initialize different streams of random numbers in parallel applications.
-   * \code
-   * Engine e1; // some philox_engine
-   * Engine e2;
-   * e1.set_counter({0, 0, 0, 100});
-   * e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
-   * \endcode
-   *
-   *  \param counter The counter.
-   */
+  //! This method sets the internal counter. Each increment of the counter produces n new values. The array counter
+  //! can be thought of as a big integer. The n-1'th counter value is the least significant and the 0'th counter value
+  //! is the most significant. set_counter is related but distinct from discard:
+  //! - set_counter sets the engine's absolute position, while discard increments the engine.
+  //! - Each increment of the counter always produces n new values, while discard can increment by any number of values
+  //! equivalent to calling operator(). i.e. The sub-counter j is always set to n-1 after calling set_counter.
+  //! - set_counter exposes the full period of the engine as a big integer, while discard is limited by its word size
+  //! argument.
+  //!
+  //! set_counter is commonly used to initialize different streams of random numbers in parallel applications.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    Engine e1; // some philox_engine
+  //!    Engine e2;
+  //!    e1.set_counter({0, 0, 0, 100});
+  //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
+  //!
+  //! @param counter The counter.
   _CCCL_HOST_DEVICE void set_counter(const ::cuda::std::array<result_type, n>& counter)
   {
     for (size_t j = 0; j < n; ++j)
@@ -157,9 +152,8 @@ public:
 
   // generating functions
 
-  /*! This member function produces a new random value and updates this \p philox_engine's state.
-   *  \return A new random number.
-   */
+  //! This member function produces a new random value and updates this philox_engine's state.
+  //! @return A new random number.
   _CCCL_HOST_DEVICE result_type operator()(void)
   {
     m_j++;
@@ -172,11 +166,10 @@ public:
     return m_y[m_j];
   }
 
-  /*! This member function advances this \p philox_engine's state a given number of times
-   *  and discards the results. \p philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
-   *
-   *  \param z The number of random values to discard.
-   */
+  //! This member function advances this philox_engine's state a given number of times
+  //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
+  //!
+  //! @param z The number of random values to discard.
   _CCCL_HOST_DEVICE void discard(unsigned long long z)
   {
     // Advance m_j until we are at n - 1
@@ -215,9 +208,6 @@ public:
       (*this)();
     }
   }
-
-  /*! \cond
-   */
 
 private:
   template <typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
@@ -338,11 +328,10 @@ private:
 
 }; // end philox_engine
 
-/*! This function checks two \p philox_engines for equality.
- *  \param lhs The first \p philox_engine to test.
- *  \param rhs The second \p philox_engine to test.
- *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
- */
+//! This function checks two philox_engines for equality.
+//! @param lhs The first philox_engine to test.
+//! @param rhs The second philox_engine to test.
+//! @return true if lhs is equal to rhs; false, otherwise.
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType, w, n, r, consts...>& lhs,
                                   const philox_engine<UIntType, w, n, r, consts...>& rhs)
@@ -364,11 +353,10 @@ _CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType, w, n, r, consts.
   return lhs.m_j == rhs.m_j;
 }
 
-/*! This function checks two \p philox_engines for inequality.
- *  \param lhs The first \p philox_engine to test.
- *  \param rhs The second \p philox_engine to test.
- *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
- */
+//! This function checks two philox_engines for inequality.
+//! @param lhs The first philox_engine to test.
+//! @param rhs The second philox_engine to test.
+//! @return true if lhs is not equal to rhs; false, otherwise.
 template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 _CCCL_HOST_DEVICE bool operator!=(const philox_engine<UIntType, w, n, r, consts...>& lhs,
                                   const philox_engine<UIntType, w, n, r, consts...>& rhs)
@@ -376,11 +364,10 @@ _CCCL_HOST_DEVICE bool operator!=(const philox_engine<UIntType, w, n, r, consts.
   return !(lhs == rhs);
 }
 
-/*! This function streams a philox_engine to a \p std::basic_ostream.
- *  \param os The \p basic_ostream to stream out to.
- *  \param e The \p philox_engine to stream out.
- *  \return \p os
- */
+//! This function streams a philox_engine to a std::basic_ostream.
+//! @param os The basic_ostream to stream out to.
+//! @param e The philox_engine to stream out.
+//! @return os
 template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 ::std::basic_ostream<CharT, Traits>&
 operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType, w, n, r, consts...>& e)
@@ -438,11 +425,10 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
   return os;
 }
 
-/*! This function streams a philox_engine in from a std::basic_istream.
- *  \param is The \p basic_istream to stream from.
- *  \param e The \p philox_engine to stream in.
- *  \return \p is
- */
+//! This function streams a philox_engine in from a std::basic_istream.
+//! @param is The basic_istream to stream from.
+//! @param e The philox_engine to stream in.
+//! @return is
 template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 ::std::basic_istream<CharT, Traits>&
 operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n, r, consts...>& e)
@@ -482,20 +468,18 @@ operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n
   return is;
 }
 
-/*! \typedef philox4x32
- *  \brief A random number engine with predefined parameters which implements the
- *         Philox counter based random number generation algorithm.
- *  \note The 10000th consecutive invocation of a default-constructed object of type \p philox4x32
- *        shall produce the value \c 1955073260.
- */
+//! @typedef philox4x32
+//! @brief A random number engine with predefined parameters which implements the
+//!        Philox counter based random number generation algorithm.
+//! @note The 10000th consecutive invocation of a default-constructed object of type philox4x32
+//!       shall produce the value 1955073260.
 using philox4x32 = philox_engine<std::uint_fast32_t, 32, 4, 10, 0xD2511F53, 0x9E3779B9, 0xCD9E8D57, 0xBB67AE85>;
 
-/*! \typedef philox4x64
- *  \brief A random number engine with predefined parameters which implements the
- *         Philox counter based random number generation algorithm.
- *  \note The 10000th consecutive invocation of a default-constructed object of type \p philox4x64
- *        shall produce the value \c 3409172418970261260.
- */
+//! @typedef philox4x64
+//! @brief A random number engine with predefined parameters which implements the
+//!        Philox counter based random number generation algorithm.
+//! @note The 10000th consecutive invocation of a default-constructed object of type philox4x64
+//!       shall produce the value 3409172418970261260.
 using philox4x64 =
   philox_engine<std::uint_fast64_t, 64, 4, 10, 0xD2E7470EE14C6C93, 0x9E3779B97F4A7C15, 0xCA5A826395121157, 0xBB67AE8584CAA73B>;
 
