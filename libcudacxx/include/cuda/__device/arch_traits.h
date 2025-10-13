@@ -296,8 +296,11 @@ template <>
 template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_88>() noexcept
 {
-  auto __traits    = ::cuda::arch_traits<arch_id::sm_86>();
-  __traits.arch_id = arch_id::sm_88;
+  auto __traits                     = ::cuda::arch_traits<arch_id::sm_86>();
+  __traits.arch_id                  = arch_id::sm_88;
+  __traits.compute_capability_major = 8;
+  __traits.compute_capability_minor = 8;
+  __traits.compute_capability       = compute_capability{88};
   return __traits;
 };
 
