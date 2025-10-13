@@ -13,6 +13,9 @@ struct Foo
       : set_me_upon_destruction{nullptr}
   {}
 
+  Foo(const Foo&)            = delete;
+  Foo& operator=(const Foo&) = delete;
+
   _CCCL_DEVICE ~Foo()
   {
     if (set_me_upon_destruction != nullptr)
