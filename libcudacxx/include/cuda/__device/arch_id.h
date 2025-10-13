@@ -42,6 +42,7 @@ enum class arch_id : int
   sm_80   = 80,
   sm_86   = 86,
   sm_87   = 87,
+  sm_88   = 88,
   sm_89   = 89,
   sm_90   = 90,
   sm_100  = 100,
@@ -68,6 +69,7 @@ enum class arch_id : int
     case ::cuda::std::to_underlying(arch_id::sm_80):
     case ::cuda::std::to_underlying(arch_id::sm_86):
     case ::cuda::std::to_underlying(arch_id::sm_87):
+    case ::cuda::std::to_underlying(arch_id::sm_88):
     case ::cuda::std::to_underlying(arch_id::sm_89):
     case ::cuda::std::to_underlying(arch_id::sm_90):
     case ::cuda::std::to_underlying(arch_id::sm_100):

@@ -34,6 +34,7 @@ C2H_CCCLRT_TEST("Architecture id", "[device]")
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_80) == 80);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_86) == 86);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_87) == 87);
+  STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_88) == 88);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_89) == 89);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_90) == 90);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_100) == 100);
