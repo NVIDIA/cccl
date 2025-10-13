@@ -378,24 +378,16 @@ struct DispatchTopK
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size            = ::cuda::std::min(main_kernel_max_occupancy, num_tiles);
 
-// Log topk_kernel configuration @todo check the kernel launch
+// Log topk_kernel configuration
 #ifdef CUB_DEBUG_LOG
     {
-      // Get SM occupancy for select_if_kernel
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-
-      _CubLog("Invoking topk_kernel<<<{%d,%d,%d}, %d, 0, "
+      _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              topk_grid_size.x,
-              topk_grid_size.y,
-              topk_grid_size.z,
+              topk_grid_size,
               block_threads,
               (long long) stream,
               items_per_thread,
-              topk_blocks_per_sm);
+              main_kernel_blocks_per_sm);
     }
 #endif // CUB_DEBUG_LOG
 
