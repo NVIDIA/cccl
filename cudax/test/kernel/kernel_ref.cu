@@ -279,7 +279,7 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
                           cuda::std::size_t>(kernel_ref, device);
     test_kernel_attribute<cudax::kernel_attributes::num_regs, CU_FUNC_ATTRIBUTE_NUM_REGS, int>(kernel_ref, device);
     test_kernel_attribute<cudax::kernel_attributes::virtual_arch, CU_FUNC_ATTRIBUTE_PTX_VERSION, cuda::arch_id>(
-      kernel_ref, device, cuda::to_arch_id(cc));
+      kernel_ref, device, cuda::arch_id::sm_75);
     test_kernel_attribute<cudax::kernel_attributes::binary_arch, CU_FUNC_ATTRIBUTE_BINARY_VERSION, cuda::arch_id>(
       kernel_ref, device, cuda::to_arch_id(cc));
     test_kernel_attribute<cudax::kernel_attributes::cache_mode_ca, CU_FUNC_ATTRIBUTE_CACHE_MODE_CA, bool>(
