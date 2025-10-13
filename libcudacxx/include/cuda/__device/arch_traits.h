@@ -433,11 +433,14 @@ template <>
 template <>
 [[nodiscard]] _CCCL_API inline constexpr traits_t traits<id::sm_110>()
 {
-  traits_t __traits                 = ::cuda::arch::traits<id::sm_100>();
-  __traits.arch_id                  = id::sm_110;
-  __traits.compute_capability_major = 11;
-  __traits.compute_capability_minor = 0;
-  __traits.compute_capability       = 110;
+  traits_t __traits                       = ::cuda::arch::traits<id::sm_100>();
+  __traits.arch_id                        = id::sm_110;
+  __traits.compute_capability_major       = 11;
+  __traits.compute_capability_minor       = 0;
+  __traits.compute_capability             = 110;
+  __traits.max_blocks_per_multiprocessor  = 24;
+  __traits.max_threads_per_multiprocessor = 1536;
+  __traits.max_warps_per_multiprocessor   = __traits.max_threads_per_multiprocessor / __traits.warp_size;
   return __traits;
 };
 
@@ -456,7 +459,7 @@ template <>
   __traits.compute_capability_minor             = 0;
   __traits.compute_capability                   = 120;
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_blocks_per_multiprocessor        = 24;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
   __traits.reserved_shared_memory_per_block     = 1024;
