@@ -61,10 +61,9 @@ Example
         constexpr auto int_min = cuda::std::numeric_limits<int>::min();
 
         // cuda::sub_overflow(lhs, rhs) returning the common type of lhs and rhs
-        if (auto result = cuda::sub_overflow(3, 1))
-        {
-            assert(result.value == 2);
-        }
+        auto result = cuda::sub_overflow(3, 1))
+        assert(result.value == 2);
+
 
         // cuda::sub_overflow<Result>(lhs, rhs) with an explicit result type
         auto result2 = cuda::sub_overflow<long long>(int_min, 1);
