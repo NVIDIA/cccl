@@ -130,7 +130,7 @@ static_assert(test());
 #  endif // __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG) && !(_CCCL_COMPILER(GCC, ==, 12) &&
          // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0))
 
-#endif // #if __cpp_lib_string_view >= 201606L
+#endif // __cpp_lib_string_view >= 201606L
 
 int main(int, char**)
 {
