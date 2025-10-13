@@ -40,11 +40,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!        international conference for high performance computing, networking, storage and analysis. 2011.
 //!
 //!
-//! @tparam UIntType The type of unsigned integer to produce.
-//! @tparam w The word size
-//! @tparam n The buffer size
-//! @tparam r The number of rounds
-//! @tparam consts The constants used in the generation algorithm.
+//! @tparam _UIntType The type of unsigned integer to produce.
+//! @tparam _WordSize The word size
+//! @tparam _BufferSize The buffer size
+//! @tparam _NumRounds The number of rounds
+//! @tparam _Constants The constants used in the generation algorithm.
 //!
 //! @note Inexperienced users should not use this class template directly.  Instead, use
 //!       philox4x32 or philox4x64 .
@@ -80,22 +80,28 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!
 //! @see cuda::std::philox4x32
 //! @see cuda::std::philox4x64
-template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
+template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(n == 2 || n == 4, "N argument must be either 2 or 4");
-  static_assert(sizeof...(consts) == n, "consts array must be of length N");
-  static_assert(0 < r, "rounds must be a natural number");
-  static_assert((0 < w && w <= std::numeric_limits<UIntType>::digits),
-                "Word size w must satisfy 0 < w <= numeric_limits<UIntType>::digits");
+  static_assert(_BufferSize == 2 || _BufferSize == 4, "N argument must be either 2 or 4");
+  static_assert(sizeof...(_Constants) == _BufferSize, "consts array must be of length N");
+  static_assert(0 < _NumRounds, "rounds must be a natural number");
+  static_assert((0 < _WordSize && _WordSize <= std::numeric_limits<_UIntType>::digits),
+                "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
 
 public:
-  using result_type = UIntType;
+  using result_type = _UIntType;
 
   //! The smallest value this engine may potentially produce.
-  static const result_type min = 0;
+  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  {
+    return 0;
+  }
   //! The largest value this engine may potentially produce.
-  static const result_type max = ((1ull << (w - 1)) | ((1ull << (w - 1)) - 1));
+  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  {
+    return ((1ull << (_WordSize - 1)) | ((1ull << (_WordSize - 1)) - 1));
+  }
 
   //! The default seed.
   static constexpr result_type default_seed = 20111115u;
@@ -104,22 +110,26 @@ public:
   //! philox_engine.
   //!
   //! @param s The seed used to initialize this philox_engine's state.
-  _CCCL_HOST_DEVICE explicit philox_engine(result_type s = default_seed)
+  _CCCL_API philox_engine() noexcept
   {
-    seed(s);
+    seed(default_seed);
+  }
+  _CCCL_API explicit philox_engine(const result_type __seed) noexcept
+  {
+    seed(__seed);
   }
 
   //! This method initializes this philox_engine's state, and optionally accepts
   //! a seed value.
   //!
   //! @param s The seed used to initializes this philox_engine's state.
-  _CCCL_HOST_DEVICE void seed(result_type s = default_seed)
+  _CCCL_API void seed(result_type s = default_seed)
   {
     m_x    = {};
     m_y    = {};
     m_k    = {};
-    m_k[0] = s & max;
-    m_j    = n - 1;
+    m_k[0] = s & max();
+    m_j    = _BufferSize - 1;
   }
 
   //! This method sets the internal counter. Each increment of the counter produces n new values. The array counter
@@ -141,26 +151,26 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param counter The counter.
-  _CCCL_HOST_DEVICE void set_counter(const ::cuda::std::array<result_type, n>& counter)
+  _CCCL_API void set_counter(const ::cuda::std::array<result_type, _BufferSize>& counter)
   {
-    for (size_t j = 0; j < n; ++j)
+    for (size_t j = 0; j < _BufferSize; ++j)
     {
-      m_x[j] = counter[n - 1 - j] & max;
+      m_x[j] = counter[_BufferSize - 1 - j] & max();
     }
-    m_j = n - 1;
+    m_j = _BufferSize - 1;
   }
 
   // generating functions
 
   //! This member function produces a new random value and updates this philox_engine's state.
   //! @return A new random number.
-  _CCCL_HOST_DEVICE result_type operator()(void)
+  _CCCL_API result_type operator()()
   {
     m_j++;
-    if (m_j == n)
+    if (m_j == _BufferSize)
     {
-      this->philox();
-      this->increment_counter();
+      this->__philox();
+      this->__increment_counter();
       m_j = 0;
     }
     return m_y[m_j];
@@ -170,30 +180,30 @@ public:
   //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
   //!
   //! @param z The number of random values to discard.
-  _CCCL_HOST_DEVICE void discard(unsigned long long z)
+  _CCCL_API void discard(unsigned long long z)
   {
     // Advance m_j until we are at n - 1
-    while (m_j != n - 1 && z > 0)
+    while (m_j != _BufferSize - 1 && z > 0)
     {
       (*this)();
       z--;
     }
 
     // Increment the big integer counter, handling overflow
-    auto increment    = z / n;
+    auto increment    = z / _BufferSize;
     std::size_t carry = 0;
-    for (std::size_t j = 0; j < n; ++j)
+    for (std::size_t j = 0; j < _BufferSize; ++j)
     {
       if (increment == 0 && carry == 0)
       {
         break;
       }
-      UIntType new_m_x_j = (m_x[j] + (increment & max) + carry) & max;
-      carry              = (new_m_x_j < m_x[j]) ? 1 : 0;
-      m_x[j]             = new_m_x_j;
-      if constexpr (w < 64)
+      _UIntType new_m_x_j = (m_x[j] + (increment & max()) + carry) & max();
+      carry               = (new_m_x_j < m_x[j]) ? 1 : 0;
+      m_x[j]              = new_m_x_j;
+      if constexpr (_WordSize < 64)
       {
-        increment >>= w;
+        increment >>= _WordSize;
       }
       else
       {
@@ -202,7 +212,7 @@ public:
     }
 
     // Advance the output buffer position by the remainder
-    const auto remainder = z % n;
+    const auto remainder = z % _BufferSize;
     for (std::size_t j = 0; j < remainder; ++j)
     {
       (*this)();
@@ -210,94 +220,109 @@ public:
   }
 
 private:
-  template <typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
-  friend _CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType_, w_, n_, r_, consts_...>& lhs,
-                                           const philox_engine<UIntType_, w_, n_, r_, consts_...>& rhs);
-  template <typename CharT, typename Traits, typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
+  template <typename _UIntType_, size_t _WordSize_, size_t _BufferSize_, size_t _NumRounds_, _UIntType_... _Constants_>
+  friend _CCCL_API bool
+  operator==(const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& lhs,
+             const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& rhs);
+  template <typename CharT,
+            typename Traits,
+            typename _UIntType_,
+            size_t _WordSize_,
+            size_t _BufferSize_,
+            size_t _NumRounds_,
+            _UIntType_... _Constants_>
   friend ::std::basic_istream<CharT, Traits>&
-  operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType_, w_, n_, r_, consts_...>& e);
+  operator>>(::std::basic_istream<CharT, Traits>& is,
+             philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& e);
 
-  template <typename CharT, typename Traits, typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
+  template <typename CharT,
+            typename Traits,
+            typename _UIntType_,
+            size_t _WordSize_,
+            size_t _BufferSize_,
+            size_t _NumRounds_,
+            _UIntType_... _Constants_>
   friend ::std::basic_ostream<CharT, Traits>&
-  operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType_, w_, n_, r_, consts_...>& e);
+  operator<<(::std::basic_ostream<CharT, Traits>& os,
+             const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& e);
 
-  _CCCL_HOST_DEVICE void increment_counter()
+  _CCCL_API void __increment_counter()
   {
     // Increment the big integer m_x by 1, handling overflow.
     std::size_t i = 0;
     do
     {
-      m_x[i] = (m_x[i] + 1) & max;
+      m_x[i] = (m_x[i] + 1) & max();
       ++i;
-    } while (i < n && !m_x[i - 1]);
+    } while (i < _BufferSize && !m_x[i - 1]);
   }
 
-  _CCCL_HOST_DEVICE void mulhilo(result_type a, result_type b, result_type& hi, result_type& lo) const
+  _CCCL_API void __mulhilo(result_type a, result_type b, result_type& hi, result_type& lo) const
   {
-    if constexpr (w == 32)
+    if constexpr (_WordSize == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      hi = static_cast<UIntType>(
+      hi = static_cast<_UIntType>(
         ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(b)));
-      lo = (a * b) & max;
+      lo = (a * b) & max();
     }
-    else if constexpr (w == 64)
+    else if constexpr (_WordSize == 64)
     {
-      hi = static_cast<UIntType>(
+      hi = static_cast<_UIntType>(
         ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(a), static_cast<std::uint64_t>(b)));
-      lo = (a * b) & max;
+      lo = (a * b) & max();
     }
     else
     {
       // Generic slow implementation
-      constexpr UIntType w_half  = w / 2;
-      constexpr UIntType lo_mask = (((UIntType) 1) << w_half) - 1;
+      constexpr _UIntType w_half  = _WordSize / 2;
+      constexpr _UIntType lo_mask = (((_UIntType) 1) << w_half) - 1;
 
-      lo           = a * b;
-      UIntType ahi = a >> w_half;
-      UIntType alo = a & lo_mask;
-      UIntType bhi = b >> w_half;
-      UIntType blo = b & lo_mask;
+      lo            = a * b;
+      _UIntType ahi = a >> w_half;
+      _UIntType alo = a & lo_mask;
+      _UIntType bhi = b >> w_half;
+      _UIntType blo = b & lo_mask;
 
-      UIntType ahbl = ahi * blo;
-      UIntType albh = alo * bhi;
+      _UIntType ahbl = ahi * blo;
+      _UIntType albh = alo * bhi;
 
-      UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
-      hi                 = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
+      _UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
+      hi                  = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
       hi += ahbl_albh >> w_half;
       hi += ((lo >> w_half) < (ahbl_albh & lo_mask));
     }
   }
 
-  _CCCL_HOST_DEVICE void philox()
+  _CCCL_API void __philox()
   {
     // Only two variants are allowed, n=2 or n=4
-    const UIntType consts_array[n] = {consts...};
-    if constexpr (n == 2)
+    const _UIntType consts_array[_BufferSize] = {_Constants...};
+    if constexpr (_BufferSize == 2)
     {
-      ::cuda::std::array<result_type, n> S     = this->m_x;
-      ::cuda::std::array<result_type, n / 2> K = this->m_k;
-      for (size_t j = 0; j < r; ++j)
+      ::cuda::std::array<result_type, _BufferSize> S     = this->m_x;
+      ::cuda::std::array<result_type, _BufferSize / 2> K = this->m_k;
+      for (size_t j = 0; j < _NumRounds; ++j)
       {
         result_type hi, lo;
-        this->mulhilo(S[0], consts_array[0], hi, lo);
+        this->__mulhilo(S[0], consts_array[0], hi, lo);
         S[0] = hi ^ K[0] ^ S[1];
         S[1] = lo;
-        K[0] = (K[0] + consts_array[1]) & max;
+        K[0] = (K[0] + consts_array[1]) & max();
       }
       this->m_y = S;
     }
-    else if constexpr (n == 4)
+    else if constexpr (_BufferSize == 4)
     {
-      ::cuda::std::array<result_type, n> S     = this->m_x;
-      ::cuda::std::array<result_type, n / 2> K = this->m_k;
-      for (size_t j = 0; j < r; ++j)
+      ::cuda::std::array<result_type, _BufferSize> S     = this->m_x;
+      ::cuda::std::array<result_type, _BufferSize / 2> K = this->m_k;
+      for (size_t j = 0; j < _NumRounds; ++j)
       {
-        ::cuda::std::array<result_type, n> V = {S[2], S[1], S[0], S[3]};
+        ::cuda::std::array<result_type, _BufferSize> V = {S[2], S[1], S[0], S[3]};
         result_type hi0, lo0;
-        this->mulhilo(V[0], consts_array[2], hi0, lo0);
+        this->__mulhilo(V[0], consts_array[2], hi0, lo0);
         result_type hi2, lo2;
-        this->mulhilo(V[2], consts_array[0], hi2, lo2);
+        this->__mulhilo(V[2], consts_array[0], hi2, lo2);
 
         S[0] = hi0 ^ K[0] ^ V[1];
         S[1] = lo0;
@@ -306,22 +331,22 @@ private:
 
         S[3] = lo2;
 
-        K[0] = (K[0] + consts_array[1]) & max;
-        K[1] = (K[1] + consts_array[3]) & max;
+        K[0] = (K[0] + consts_array[1]) & max();
+        K[1] = (K[1] + consts_array[3]) & max();
       }
 
       this->m_y = S;
     }
   }
 
-  // The counter X, a big integer stored as n w-bit words.
+  // The counter X, a big integer stored as _BufferSize w-bit words.
   // The least significant word is m_x[0].
-  ::cuda::std::array<UIntType, n> m_x = {};
+  ::cuda::std::array<_UIntType, _BufferSize> m_x = {};
   // K is the "Key", storing the seed
-  ::cuda::std::array<UIntType, n / 2> m_k = {};
+  ::cuda::std::array<_UIntType, _BufferSize / 2> m_k = {};
   // The output buffer Y
-  // Each time m_j reaches n, we generate n new values and store them in m_y.
-  ::cuda::std::array<UIntType, n> m_y = {};
+  // Each time m_j reaches _BufferSize, we generate _BufferSize new values and store them in m_y.
+  ::cuda::std::array<_UIntType, _BufferSize> m_y = {};
   // Each generation produces n random numbers, which are returned one at a time.
   // m_j cycles through [0, n-1].
   unsigned long long m_j = 0;
@@ -332,17 +357,17 @@ private:
 //! @param lhs The first philox_engine to test.
 //! @param rhs The second philox_engine to test.
 //! @return true if lhs is equal to rhs; false, otherwise.
-template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
-_CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType, w, n, r, consts...>& lhs,
-                                  const philox_engine<UIntType, w, n, r, consts...>& rhs)
+template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
+_CCCL_API bool operator==(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& lhs,
+                          const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& rhs)
 {
   if (lhs.m_x != rhs.m_x)
   {
     return false;
   }
-  // Only check the y buffer if not m_j != n-1
-  // If m_j == n-1, then m_y is not valid
-  if (lhs.m_j != n - 1 && lhs.m_y != rhs.m_y)
+  // Only check the y buffer if not m_j != _BufferSize-1
+  // If m_j == _BufferSize-1, then m_y is not valid
+  if (lhs.m_j != _BufferSize - 1 && lhs.m_y != rhs.m_y)
   {
     return false;
   }
@@ -357,9 +382,9 @@ _CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType, w, n, r, consts.
 //! @param lhs The first philox_engine to test.
 //! @param rhs The second philox_engine to test.
 //! @return true if lhs is not equal to rhs; false, otherwise.
-template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
-_CCCL_HOST_DEVICE bool operator!=(const philox_engine<UIntType, w, n, r, consts...>& lhs,
-                                  const philox_engine<UIntType, w, n, r, consts...>& rhs)
+template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
+_CCCL_API bool operator!=(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& lhs,
+                          const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& rhs)
 {
   return !(lhs == rhs);
 }
@@ -368,9 +393,16 @@ _CCCL_HOST_DEVICE bool operator!=(const philox_engine<UIntType, w, n, r, consts.
 //! @param os The basic_ostream to stream out to.
 //! @param e The philox_engine to stream out.
 //! @return os
-template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
+template <typename CharT,
+          typename Traits,
+          typename _UIntType,
+          size_t _WordSize,
+          size_t _BufferSize,
+          size_t _NumRounds,
+          _UIntType... _Constants>
 ::std::basic_ostream<CharT, Traits>&
-operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType, w, n, r, consts...>& e)
+operator<<(::std::basic_ostream<CharT, Traits>& os,
+           const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& e)
 {
   using ostream_type = ::std::basic_ostream<CharT, Traits>;
   using ios_base     = typename ostream_type::ios_base;
@@ -383,10 +415,10 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
   os.fill(os.widen(' '));
 
   // output counter array (m_x)
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < _BufferSize; ++i)
   {
     os << e.m_x[i];
-    if (i < n - 1)
+    if (i < _BufferSize - 1)
     {
       os << os.widen(' ');
     }
@@ -394,10 +426,10 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
   os << os.widen(' ');
 
   // output key array (m_k)
-  for (size_t i = 0; i < n / 2; ++i)
+  for (size_t i = 0; i < _BufferSize / 2; ++i)
   {
     os << e.m_k[i];
-    if (i < n / 2 - 1)
+    if (i < _BufferSize / 2 - 1)
     {
       os << os.widen(' ');
     }
@@ -405,10 +437,10 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
   os << os.widen(' ');
 
   // output output buffer (m_y)
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < _BufferSize; ++i)
   {
     os << e.m_y[i];
-    if (i < n - 1)
+    if (i < _BufferSize - 1)
     {
       os << os.widen(' ');
     }
@@ -429,9 +461,16 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
 //! @param is The basic_istream to stream from.
 //! @param e The philox_engine to stream in.
 //! @return is
-template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
+template <typename CharT,
+          typename Traits,
+          typename _UIntType,
+          size_t _WordSize,
+          size_t _BufferSize,
+          size_t _NumRounds,
+          _UIntType... _Constants>
 ::std::basic_istream<CharT, Traits>&
-operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n, r, consts...>& e)
+operator>>(::std::basic_istream<CharT, Traits>& is,
+           philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& e)
 {
   using istream_type = ::std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -442,19 +481,19 @@ operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n
   is.flags(ios_base::dec);
 
   // input counter array (m_x)
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < _BufferSize; ++i)
   {
     is >> e.m_x[i];
   }
 
   // input key array (m_k)
-  for (size_t i = 0; i < n / 2; ++i)
+  for (size_t i = 0; i < _BufferSize / 2; ++i)
   {
     is >> e.m_k[i];
   }
 
   // input output buffer (m_y)
-  for (size_t i = 0; i < n; ++i)
+  for (size_t i = 0; i < _BufferSize; ++i)
   {
     is >> e.m_y[i];
   }

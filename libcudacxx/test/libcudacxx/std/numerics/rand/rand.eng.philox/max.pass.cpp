@@ -18,7 +18,7 @@ __host__ __device__ void test()
   Engine e;
   for (int i = 0; i < 10000; ++i)
   {
-    assert(e() <= Engine::max);
+    assert(e() <= Engine::max());
   }
 }
 
