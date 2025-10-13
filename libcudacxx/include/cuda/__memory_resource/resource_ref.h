@@ -161,7 +161,7 @@ struct _Resource_vtable_builder
   template <class _Resource>
   static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
-    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
+    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate_sync(__ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate_sync(__ptr, __bytes, __alignment);
   }
 
@@ -173,8 +173,9 @@ struct _Resource_vtable_builder
 
   template <class _Resource>
   static void
-  _Dealloc_async(void* __object, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _Dealloc_async(void* __object, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream) noexcept
   {
+    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__stream, __ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate(__stream, __ptr, __bytes, __alignment);
   }
 
