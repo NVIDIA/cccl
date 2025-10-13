@@ -54,7 +54,8 @@ __host__ __device__ constexpr bool test()
     assert(iter2 - iter1 == -3);
 
     static_assert(noexcept(iter1 - iter2));
-    static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<int*>>);
+    static_assert(
+      cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<forward_sized_iterator<int*>>>);
   }
 
   return true;
