@@ -521,7 +521,7 @@ C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 {
   if (cuda::devices.size() > 1)
   {
-    auto peers = cuda::devices[0].peer_devices();
+    auto peers = cuda::devices[0].peers();
     if (peers.size() > 0)
     {
       cudax::device_memory_pool pool{cuda::devices[0]};
