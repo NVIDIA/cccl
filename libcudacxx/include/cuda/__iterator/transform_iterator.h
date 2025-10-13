@@ -391,7 +391,7 @@ public:
 
   template <class _Iter2>
   static constexpr bool __can_difference =
-    ::cuda::std::__has_random_access_traversal<_Iter2> || ::cuda::std::sized_sentinel_for<_Iter2, _Iter2>;
+    (::cuda::std::__has_random_access_traversal<_Iter2> || ::cuda::std::sized_sentinel_for<_Iter2, _Iter2>);
 
   template <class _Iter2>
   static constexpr bool __noexcept_difference =
