@@ -25,30 +25,29 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_deduction.h>
 
-#include <cuda/std/__bit/countl.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/limits>
-#include <cuda/std/type_traits>
-
-#include <nv/target>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_signed<T>::value, bool>::type is_negative(T x)
+_CCCL_TEMPLATE(typename T)
+_CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_negative(const T x) noexcept
 {
-  return x < 0;
+  if constexpr (::cuda::std::is_unsigned_v<T>)
+  {
+    return false;
+  }
+  else
+  {
+    return x < 0;
+  }
 }
 
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_unsigned<T>::value, bool>::type is_negative(T)
-{
-  return false;
-}
 } // namespace detail
 
 THRUST_NAMESPACE_END
