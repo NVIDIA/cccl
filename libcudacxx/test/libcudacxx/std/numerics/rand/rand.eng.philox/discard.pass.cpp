@@ -10,20 +10,29 @@
 
 // <random>
 
-#include <cuda/std/__random_>
+#include <cuda/std/random>
 
+template <typename Engine, Engine::result_type value_10000>
 __host__ __device__ void test()
 {
-  using E = cuda::std::philox4x64;
-  E e;
+  Engine e;
   for (int i = 0; i < 100; ++i)
   {
+    Engine e2;
+    e2.discard(i);
+    assert(e == e2);
     e();
   }
+
+  e = Engine();
+  e.discard(9999);
+  assert(e() == value_10000);
 }
 
 int main(int, char**)
 {
-  test();
+  test<cuda::std::philox4x32, 1955073260u>();
+  test<cuda::std::philox4x64, 3409172418970261260ull>();
+
   return 0;
 }

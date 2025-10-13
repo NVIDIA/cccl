@@ -220,15 +220,16 @@ public:
    */
 
 private:
-  friend bool operator==(const philox_engine<UIntType, w, n, r, consts...>& lhs,
-                         const philox_engine<UIntType, w, n, r, consts...>& rhs);
-  template <typename CharT, typename Traits>
+  template <typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
+  friend _CCCL_HOST_DEVICE bool operator==(const philox_engine<UIntType_, w_, n_, r_, consts_...>& lhs,
+                                           const philox_engine<UIntType_, w_, n_, r_, consts_...>& rhs);
+  template <typename CharT, typename Traits, typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
   friend ::std::basic_istream<CharT, Traits>&
-  operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n, r, consts...>& e);
+  operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType_, w_, n_, r_, consts_...>& e);
 
-  template <typename CharT, typename Traits>
+  template <typename CharT, typename Traits, typename UIntType_, size_t w_, size_t n_, size_t r_, UIntType_... consts_>
   friend ::std::basic_ostream<CharT, Traits>&
-  operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType, w, n, r, consts...>& e);
+  operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType_, w_, n_, r_, consts_...>& e);
 
   _CCCL_HOST_DEVICE void increment_counter()
   {
@@ -380,7 +381,7 @@ _CCCL_HOST_DEVICE bool operator!=(const philox_engine<UIntType, w, n, r, consts.
  *  \param e The \p philox_engine to stream out.
  *  \return \p os
  */
-template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts, typename CharT, typename Traits>
+template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 ::std::basic_ostream<CharT, Traits>&
 operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType, w, n, r, consts...>& e)
 {
@@ -442,7 +443,7 @@ operator<<(::std::basic_ostream<CharT, Traits>& os, const philox_engine<UIntType
  *  \param e The \p philox_engine to stream in.
  *  \return \p is
  */
-template <typename UIntType, size_t w, size_t n, size_t r, UIntType... consts, typename CharT, typename Traits>
+template <typename CharT, typename Traits, typename UIntType, size_t w, size_t n, size_t r, UIntType... consts>
 ::std::basic_istream<CharT, Traits>&
 operator>>(::std::basic_istream<CharT, Traits>& is, philox_engine<UIntType, w, n, r, consts...>& e)
 {

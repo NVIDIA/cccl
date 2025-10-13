@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___RANDOM_
-#define _CUDA_STD___RANDOM_
+#ifndef _CUDA_STD_RANDOM
+#define _CUDA_STD_RANDOM
 
 #include <cuda/std/detail/__config>
 
@@ -25,6 +25,11 @@
 #include <cuda/std/__random/philox_engine.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/version>
 
-#endif // _CUDA_STD___RANDOM_
+// Mandated by the Standard.
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  include <cuda/std/detail/libcxx/include/compare>
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/concepts>
+
+#endif // _CUDA_STD_RANDOM
