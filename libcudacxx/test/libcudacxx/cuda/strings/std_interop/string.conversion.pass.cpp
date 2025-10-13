@@ -122,9 +122,10 @@ constexpr bool test()
   return true;
 }
 
-#  if __cpp_lib_constexpr_string >= 201907L
+// clang fails due to assignment to member of a union with no active member inside libstdc++
+#  if __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG)
 static_assert(test());
-#  endif // __cpp_lib_constexpr_string >= 201907L
+#  endif // __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG)
 
 #endif // #if __cpp_lib_string_view >= 201606L
 
