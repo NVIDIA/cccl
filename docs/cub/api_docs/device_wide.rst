@@ -11,6 +11,47 @@ Device-Wide Primitives
    ../api/device
 
 
+Determining Temporary Storage Requirements
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+**Two-Phase API** (Traditional)
+
+Most CUB device-wide algorithms follow a two-phase usage pattern:
+
+1. **Query Phase**: Call the algorithm with ``d_temp_storage = nullptr`` to determine required temporary storage size
+2. **Execution Phase**: Allocate storage and call the algorithm again to perform the actual operation
+
+**What arguments are needed during the query phase?**
+
+* **Required**: Data types (via template parameters and iterator types) and problem size (``num_items``)
+* **Can be nullptr/uninitialized**: All input/output pointers (``d_in``, ``d_out``, etc.)
+* **Note**: The algorithm does not access input data during the query phase
+
+Example pattern:
+
+.. code-block:: c++
+
+   // Determine temporary storage requirements
+   void* d_temp_storage = nullptr;
+   size_t temp_storage_bytes = 0;
+
+   cub::DeviceReduce::Sum(
+     d_temp_storage, temp_storage_bytes,
+     nullptr, nullptr, num_items);  // Input/output pointers can be null
+
+   // Allocate temporary storage
+   cudaMalloc(&d_temp_storage, temp_storage_bytes);
+
+   // Run the actual algorithm with real pointers
+   cub::DeviceReduce::Sum(
+     d_temp_storage, temp_storage_bytes,
+     d_in, d_out, num_items);
+
+**Single-Phase API** (Environment-Based)
+
+Some algorithms provide environment-based overloads that eliminate the two-phase call pattern.
+These APIs accept an execution environment parameter. See the individual algorithm documentation for availability.
+
 CUB device-level single-problem parallel algorithms:
 
 * :cpp:struct:`cub::DeviceAdjacentDifference` computes the difference between adjacent elements residing within device-accessible memory
