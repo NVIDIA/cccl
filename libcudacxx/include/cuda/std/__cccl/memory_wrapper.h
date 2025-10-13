@@ -27,8 +27,10 @@
 // is defined only when CCCL is including an algorithms-related header, giving
 // the compiler a chance to detect and break the cycle of includes.
 
-#define THRUST_INCLUDING_ALGORITHMS_HEADER
-#include <memory>
-#undef THRUST_INCLUDING_ALGORITHMS_HEADER
+#if !_CCCL_COMPILER(NVRTC)
+#  define THRUST_INCLUDING_ALGORITHMS_HEADER
+#  include <memory>
+#  undef THRUST_INCLUDING_ALGORITHMS_HEADER
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA_STD__CCCL_MEMORY_WRAPPER_H

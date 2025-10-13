@@ -34,9 +34,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !_CCCL_COMPILER(NVRTC)
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
 #  include <cuda/std/__cccl/memory_wrapper.h>
-#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -207,8 +207,8 @@ public:
 };
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-allocator<const _Tp> : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
+    : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
 {
   static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
