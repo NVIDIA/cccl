@@ -27,11 +27,12 @@
 #endif // no system header
 
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <cuda/std/__cccl/memory_wrapper.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
+
+#include <cuda/std/__cccl/memory_wrapper.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
