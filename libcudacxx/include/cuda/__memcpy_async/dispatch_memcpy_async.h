@@ -83,7 +83,7 @@ template <::cuda::std::size_t _Align, typename _Group>
            && ::cuda::device::is_address_from(__bar_handle, ::cuda::device::address_space::shared))
        {
          ::cuda::__cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
-         return __completion_mechanism::__mbarrier_complete_tx;
+         return __completion_mechanism::__mbarrier_complete_tx_skip;
        }
      }
      // Fallthrough to SM 80..
