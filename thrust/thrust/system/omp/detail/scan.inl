@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -58,82 +45,8 @@ OutputIterator inclusive_scan(
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using namespace thrust::detail;
-
   using ValueType = thrust::detail::it_value_t<InputIterator>;
-  using Size      = thrust::detail::it_difference_t<InputIterator>;
-
-  const Size n = ::cuda::std::distance(first, last);
-
-  if (n == 0)
-  {
-    return result;
-  }
-
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-
-  // Use serial scan for small arrays where parallel overhead dominates
-  if (static_cast<size_t>(n) < parallel_scan_threshold)
-  {
-    if (n > 0)
-    {
-      ValueType sum = first[0];
-      result[0]     = sum;
-      for (Size i = 1; i < n; ++i)
-      {
-        sum       = wrapped_binary_op(sum, first[i]);
-        result[i] = sum;
-      }
-    }
-    ::cuda::std::advance(result, n);
-    return result;
-  }
-
-  const int num_threads = omp_get_max_threads();
-
-  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
-
-  // Step 1: Reduce each block (N reads)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
-  {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
-
-    if (start < n)
-    {
-      // Use cuda::std::reduce to compute block sum
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, ValueType{}, binary_op);
-    }
-  }
-
-  // Step 2: Scan block sums using cuda::std::exclusive_scan
-  if (num_threads > 1)
-  {
-    ::cuda::std::exclusive_scan(
-      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
-  }
-
-  // Step 3: Scan each block with offset (N reads/writes)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
-  {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
-
-    if (start < n)
-    {
-      const ValueType offset = block_sums[tid];
-
-      // Use cuda::std::inclusive_scan with init = offset
-      ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
-    }
-  }
-
-  ::cuda::std::advance(result, n);
-  return result;
+  return inclusive_scan(exec, first, last, result, ValueType{}, binary_op);
 }
 
 template <typename DerivedPolicy,
@@ -167,17 +80,7 @@ OutputIterator inclusive_scan(
   // Use serial scan for small arrays where parallel overhead dominates
   if (static_cast<size_t>(n) < parallel_scan_threshold)
   {
-    if (n > 0)
-    {
-      ValueType sum = wrapped_binary_op(init, first[0]);
-      result[0]     = sum;
-      for (Size i = 1; i < n; ++i)
-      {
-        sum       = wrapped_binary_op(sum, first[i]);
-        result[i] = sum;
-      }
-    }
-    ::cuda::std::advance(result, n);
+    ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
     return result;
   }
 
@@ -195,16 +98,7 @@ OutputIterator inclusive_scan(
 
     if (start < n)
     {
-      if (tid == 0)
-      {
-        // First block: reduce with init
-        block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, binary_op);
-      }
-      else
-      {
-        // Other blocks: regular reduce
-        block_sums[tid] = ::cuda::std::reduce(first + start, first + end, ValueType{}, binary_op);
-      }
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, tid == 0 ? init : ValueType{}, binary_op);
     }
   }
 
@@ -212,7 +106,7 @@ OutputIterator inclusive_scan(
   if (num_threads > 1)
   {
     ::cuda::std::exclusive_scan(
-      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
+      block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
@@ -226,8 +120,6 @@ OutputIterator inclusive_scan(
     if (start < n)
     {
       const ValueType offset = block_sums[tid];
-
-      // Use cuda::std::inclusive_scan with offset
       ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
     }
   }
@@ -266,14 +158,7 @@ OutputIterator exclusive_scan(
   // Use serial scan for small arrays where parallel overhead dominates
   if (static_cast<size_t>(n) < parallel_scan_threshold)
   {
-    ValueType sum = init;
-    for (Size i = 0; i < n; ++i)
-    {
-      ValueType temp = first[i];
-      result[i]      = sum;
-      sum            = wrapped_binary_op(sum, temp);
-    }
-    ::cuda::std::advance(result, n);
+    ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
     return result;
   }
 
@@ -291,8 +176,7 @@ OutputIterator exclusive_scan(
 
     if (start < n)
     {
-      // Reduce each block with init
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, binary_op);
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, tid == 0 ? init : ValueType{}, binary_op);
     }
   }
 
@@ -300,7 +184,7 @@ OutputIterator exclusive_scan(
   if (num_threads > 1)
   {
     ::cuda::std::exclusive_scan(
-      block_sums.begin(), block_sums.begin() + num_threads, block_sums.begin(), ValueType{}, binary_op);
+      block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
   }
 
   // Step 3: Exclusive scan each block with offset (N reads/writes)
@@ -314,8 +198,6 @@ OutputIterator exclusive_scan(
     if (start < n)
     {
       const ValueType offset = block_sums[tid];
-
-      // Use cuda::std::exclusive_scan with offset
       ::cuda::std::exclusive_scan(first + start, first + end, result + start, offset, binary_op);
     }
   }
