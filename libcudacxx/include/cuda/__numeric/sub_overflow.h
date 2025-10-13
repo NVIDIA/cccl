@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 // subtraction with unsigned types to avoid UB, return an unsigned type
 template <typename _Result, typename _Lhs, typename _Rhs>
-[[nodiscard]] _CCCL_API constexpr _Result __safe_sub(_Lhs __lhs, _Rhs __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr _Result __sub_as_unsigned(_Lhs __lhs, _Rhs __rhs) noexcept
 {
   using _UnsignedResult = ::cuda::std::make_unsigned_t<_Result>;
   const auto __lhs1     = static_cast<_UnsignedResult>(__lhs);
@@ -67,7 +67,7 @@ template <typename _Result, typename _Lhs, typename _Rhs>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __sub_overflow_generic_impl(_Tp __lhs, _Tp __rhs) noexcept
 {
-  const auto __sub = ::cuda::__safe_sub<_Tp>(__lhs, __rhs);
+  const auto __sub = ::cuda::__sub_as_unsigned<_Tp>(__lhs, __rhs);
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     return overflow_result<_Tp>{__sub, (__sub > __lhs) == (__rhs >= _Tp{0})};
@@ -254,7 +254,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
       // perform the subtraction as signed (negative result) and check if the result is out of range
       // Then, there are two cases depending on the sign of the rhs
       using _SignedCommonAll          = make_signed_t<common_type_t<_Common, _ActualResult>>;
-      const auto __sub                = ::cuda::__safe_sub<_SignedCommonAll>(__lhs, __rhs);
+      const auto __sub                = ::cuda::__sub_as_unsigned<_SignedCommonAll>(__lhs, __rhs);
       constexpr auto __result_min     = numeric_limits<_ActualResult>::min();
       const auto __is_out_of_range    = ::cuda::std::cmp_less(__sub, __result_min);
       const auto __sub_ret            = static_cast<_ActualResult>(__sub);
@@ -297,7 +297,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
     // perform the subtraction as unsigned (positive result) and check if the result is out of range
     // Then, there are two cases depending on the sign of the rhs
     using _UnsignedCommonAll     = make_unsigned_t<common_type_t<_Common, _ActualResult>>;
-    const auto __sub             = ::cuda::__safe_sub<_UnsignedCommonAll>(__lhs, __rhs);
+    const auto __sub             = ::cuda::__sub_as_unsigned<_UnsignedCommonAll>(__lhs, __rhs);
     const auto __sub_ret         = static_cast<_ActualResult>(__sub);
     constexpr auto __result_max  = numeric_limits<_ActualResult>::max();
     const auto __is_out_of_range = ::cuda::std::cmp_greater(__sub, __result_max);
