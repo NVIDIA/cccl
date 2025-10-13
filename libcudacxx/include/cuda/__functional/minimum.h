@@ -36,7 +36,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
     if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Tp>
                   || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
@@ -59,7 +58,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
   operator()(const _Tp& __lhs, const _Up& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
     using _Common = ::cuda::std::common_type_t<_Tp, _Up>;
-    // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
     if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Common>
                   || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {

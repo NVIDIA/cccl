@@ -37,7 +37,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
     noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
     using _Up = _CUDA_VSTD::remove_cv_t<_Tp>;
-    // don't use cuda::is_floating_point_v here to prevent fmax specialization for custom types
     if constexpr (_CUDA_VSTD::is_floating_point_v<_Up> || _CUDA_VSTD::__is_extended_floating_point_v<_Up>)
     {
       return _CUDA_VSTD::fmax(__lhs, __rhs);
@@ -59,7 +58,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
     using _Common = _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::common_type_t<_T1, _T2>>;
-    // don't use cuda::is_floating_point_v here to prevent fmin specialization for custom types
     if constexpr (_CUDA_VSTD::is_floating_point_v<_Common> || _CUDA_VSTD::__is_extended_floating_point_v<_Common>)
     {
       return _CUDA_VSTD::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
