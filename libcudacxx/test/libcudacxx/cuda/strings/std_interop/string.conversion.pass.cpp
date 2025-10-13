@@ -123,9 +123,12 @@ constexpr bool test()
 }
 
 // clang fails due to assignment to member of a union with no active member inside libstdc++
-#  if __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG)
+// gcc-12 + nvcc 12.0 warns about accessing expired storage
+#  if __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG) \
+    && !(_CCCL_COMPILER(GCC, ==, 12) && _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0))
 static_assert(test());
-#  endif // __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG)
+#  endif // __cpp_lib_constexpr_string >= 201907L && !_CCCL_COMPILER(CLANG) && !(_CCCL_COMPILER(GCC, ==, 12) &&
+         // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0))
 
 #endif // #if __cpp_lib_string_view >= 201606L
 
