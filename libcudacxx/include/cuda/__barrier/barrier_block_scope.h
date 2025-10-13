@@ -113,7 +113,7 @@ public:
 
   _CCCL_API inline friend void init(barrier* __b,
                                     ::cuda::std::ptrdiff_t __expected,
-                                    ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
+                                    ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
@@ -126,7 +126,7 @@ public:
       (_CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
                     "barrier must not be in cluster shared memory");))
 
-    new (&__b->__barrier) __barrier_base(__expected);
+    new (&__b->__barrier) __barrier_base(__expected, __completion);
   }
 
 private:
@@ -169,7 +169,7 @@ private:
     unsigned int __active  = __activeA & __activeB;
     int __inc              = ::cuda::std::popcount(__active) * __update;
 
-    int __leader = ::__ffs(__active) - 1;
+    int __leader = ::cuda::ffs(__active) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};
