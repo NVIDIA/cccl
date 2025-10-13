@@ -105,8 +105,7 @@ OutputIterator inclusive_scan(
   // Step 2: Scan block sums using cuda::std::exclusive_scan
   if (num_threads > 1)
   {
-    ::cuda::std::exclusive_scan(
-      block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
@@ -183,8 +182,7 @@ OutputIterator exclusive_scan(
   // Step 2: Scan block sums using cuda::std::exclusive_scan
   if (num_threads > 1)
   {
-    ::cuda::std::exclusive_scan(
-      block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
   }
 
   // Step 3: Exclusive scan each block with offset (N reads/writes)
