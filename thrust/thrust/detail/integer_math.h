@@ -49,12 +49,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_unsigned<T>:
 {
   return false;
 }
-
-template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_odd(Integer x)
-{
-  return 1 & x;
-}
 } // namespace detail
 
 THRUST_NAMESPACE_END
