@@ -25,6 +25,7 @@
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.9-gcc14",
+    "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
     "CCCL_CUDA_VERSION": "12.9",
     "CCCL_HOST_COMPILER": "gcc",
     "CCCL_HOST_COMPILER_VERSION": "14",

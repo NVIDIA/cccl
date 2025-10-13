@@ -29,7 +29,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/detail/malloc_and_free.h>
+#include <thrust/device_free.h>
 #include <thrust/device_ptr.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -62,11 +67,19 @@ THRUST_NAMESPACE_BEGIN
  *  \see device_ptr
  *  \see device_malloc
  */
-inline void device_free(thrust::device_ptr<void> ptr);
+inline void device_free(thrust::device_ptr<void> ptr)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using system = thrust::iterator_system<thrust::device_ptr<void>>::type;
+
+  // XXX lower to select_system(system) here
+  system s;
+
+  thrust::free(s, ptr);
+}
 
 /*! \} // memory_management
  */
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/device_free.inl>
