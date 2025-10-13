@@ -109,6 +109,19 @@ _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
     (__d.operator ::cuda::std::basic_string_view<_CharT, _Traits>()));
 
+template <class _Range, class _CharT, class _Traits>
+_CCCL_CONCEPT __cccl_basic_sv_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits)) //
+  ( //
+    requires(::cuda::std::ranges::contiguous_range<_Range>), //
+    requires(::cuda::std::ranges::sized_range<_Range>), //
+    requires(is_same_v<::cuda::std::ranges::range_value_t<_Range>, _CharT>), //
+    requires(!is_same_v<remove_cvref_t<_Range>, basic_string_view<_CharT, _Traits>>), //
+    requires(!is_convertible_v<_Range, const _CharT*>), //
+    requires(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>), //
+    requires(!__cccl_is_std_string_v<_Range>), //
+    requires(!__cccl_is_std_string_view_v<_Range>) //
+  );
+
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view
 {
@@ -206,12 +219,7 @@ public:
 #endif // __cpp_lib_string_view >= 201606L
 
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(
-    (!is_same_v<remove_cvref_t<_Range>, basic_string_view>) _CCCL_AND ::cuda::std::ranges::contiguous_range<_Range>
-      _CCCL_AND ::cuda::std::ranges::sized_range<_Range> _CCCL_AND
-        is_same_v<::cuda::std::ranges::range_value_t<_Range>, _CharT> _CCCL_AND(!is_convertible_v<_Range, const _CharT*>)
-          _CCCL_AND(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>)
-            _CCCL_AND(!__cccl_is_std_string_v<_Range>) _CCCL_AND(!__cccl_is_std_string_view_v<_Range>))
+  _CCCL_REQUIRES(__cccl_basic_sv_compatible_range<_Range, _CharT, _Traits>)
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
       : __data_{::cuda::std::ranges::data(__r)}
       , __size_{::cuda::std::ranges::size(__r)}
