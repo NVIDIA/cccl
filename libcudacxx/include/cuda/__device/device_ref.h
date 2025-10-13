@@ -22,10 +22,12 @@
 #endif // no system header
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/span>
+#  include <cuda/std/string_view>
 
-#  include <string>
 #  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -115,18 +117,10 @@ public:
     return attribute(__detail::__dev_attr<_Attr>());
   }
 
-  //! @brief Retrieve string with the name of this device.
+  //! @brief Retrieve the name of this device.
   //!
-  //! @return String containing the name of this device.
-  [[nodiscard]] ::std::string name() const
-  {
-    constexpr int __max_name_length = 256;
-    ::std::string __name(256, 0);
-
-    // For some reason there is no separate name query in CUDA runtime
-    _CUDA_DRIVER::__deviceGetName(__name.data(), __max_name_length, get());
-    return __name;
-  }
+  //! @return String view containing the name of this device.
+  [[nodiscard]] ::cuda::std::string_view name() const;
 
   //! @brief Queries if its possible for this device to directly access specified device's memory.
   //!
@@ -160,13 +154,12 @@ public:
   // TODO we might want to include the calling device, depends on what we decide
   // peer access APIs
 
-  //! @brief Retrieve a vector of `device_ref`s that are peers of this device
+  //! @brief Retrieve `device_ref`s that are peers of this device
   //!
-  //! The device on which this API is called is not included in the vector,
-  //! if a full group of peer devices is needed, it needs to be pushed_back separately.
+  //! The device on which this API is called is not included in the vector.
   //!
   //! @throws cuda_error if any peer access query fails
-  ::std::vector<device_ref> peer_devices() const;
+  [[nodiscard]] ::cuda::std::span<const device_ref> peers() const;
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
