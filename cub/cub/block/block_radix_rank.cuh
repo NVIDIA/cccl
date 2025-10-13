@@ -51,6 +51,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -742,10 +743,10 @@ public:
       __syncwarp(0xFFFFFFFF);
 
       // Number of peers having same digit as me
-      int32_t digit_count = __popc(peer_mask);
+      int32_t digit_count = ::cuda::std::popcount(peer_mask);
 
       // Number of lower-ranked peers having same digit seen so far
-      int32_t peer_digit_prefix = __popc(peer_mask & lane_mask_lt);
+      int32_t peer_digit_prefix = ::cuda::std::popcount(peer_mask & lane_mask_lt);
 
       if (peer_digit_prefix == 0)
       {
@@ -1075,7 +1076,7 @@ struct BlockRadixRankMatchEarlyCounts
         int bin_mask    = *p_match_mask;
         int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1105,7 +1106,7 @@ struct BlockRadixRankMatchEarlyCounts
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster

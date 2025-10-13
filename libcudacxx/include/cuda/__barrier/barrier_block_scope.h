@@ -34,6 +34,7 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
@@ -165,7 +166,7 @@ public:
         unsigned int __activeA = ::__match_any_sync(__mask, __update);
         unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
         unsigned int __active  = __activeA & __activeB;
-        int __inc              = ::__popc(__active) * __update;
+        int __inc              = ::cuda::std::popcount(__active) * __update;
 
         int __leader = ::__ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
