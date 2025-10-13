@@ -21,6 +21,7 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['compute_init_lid0'], project: 'cub', std: 'max', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo', gpu: 'rtxa6000', sm: 'gpu'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
