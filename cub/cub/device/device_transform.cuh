@@ -91,7 +91,7 @@ private:
   template <typename Env>
   CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
   {
-    return _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
+    return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
   }
 
   CUB_RUNTIME_FUNCTION static auto get_stream(cudaStream_t stream) -> cudaStream_t
