@@ -235,7 +235,8 @@ struct AgentHistogram
   PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
   bool prefer_smem; // for privatized counterss
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(CounterT* privatized_histograms[NumActiveChannels])
+  template <typename TwoDimSubscriptableCounterT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -252,7 +253,8 @@ struct AgentHistogram
   }
 
   // Update final output histograms from privatized histograms
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NumActiveChannels])
+  template <typename TwoDimSubscriptableCounterT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     // Barrier to make sure all threads are done updating counters
     __syncthreads();
@@ -278,10 +280,11 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for RLE compression.
+  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    CounterT* privatized_histograms[NumActiveChannels],
+    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -327,10 +330,11 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for individual accumulation of each pixel.
+  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    CounterT* privatized_histograms[NumActiveChannels],
+    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::false_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -446,12 +450,7 @@ struct AgentHistogram
 
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
     else
     {
@@ -673,12 +672,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      ZeroBinCounters(privatized_histograms);
+      ZeroBinCounters(temp_storage.histograms);
     }
     else
     {
@@ -691,12 +685,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      StoreOutput(privatized_histograms);
+      StoreOutput(temp_storage.histograms);
     }
     else
     {
