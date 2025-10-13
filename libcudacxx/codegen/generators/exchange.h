@@ -20,7 +20,7 @@ inline void FormatExchange(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
-static inline _CCCL_DEVICE_API void __cuda_atomic_exchange_memory_order_dispatch(_Fn& __cuda_exch, int __memorder, _Sco) {
+static inline _CCCL_DEVICE void __cuda_atomic_exchange_memory_order_dispatch(_Fn& __cuda_exch, int __memorder, _Sco) {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
@@ -58,7 +58,7 @@ static inline _CCCL_DEVICE_API void __cuda_atomic_exchange_memory_order_dispatch
   // 6 - Scope function tag
   const std::string asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE_API void __cuda_atomic_exchange(
+static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{
   static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
@@ -79,7 +79,7 @@ static inline _CCCL_DEVICE_API void __cuda_atomic_exchange(
 
   const std::string asm_intrinsic_format = R"XXX(
 template <class _Type>
-static inline _CCCL_DEVICE_API void __cuda_atomic_exchange(
+static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{ asm volatile("atom.exch{3}{5}.{0}{1} %0,[%1],%2;" : "={2}"(__old) : "l"(__ptr), "{2}"(__new) : "memory"); }})XXX";
 
@@ -147,12 +147,12 @@ struct __cuda_atomic_bind_exchange {
   _Type* __new;
 
   template <typename _Atomic_Memorder>
-  inline _CCCL_DEVICE_API void operator()(_Atomic_Memorder) {
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
     __cuda_atomic_exchange(__ptr, *__old, *__new, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE_API void __atomic_exchange_cuda(_Type* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
@@ -164,7 +164,7 @@ static inline _CCCL_DEVICE_API void __atomic_exchange_cuda(_Type* __ptr, _Type& 
   __cuda_atomic_exchange_memory_order_dispatch(__bound_swap, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE_API void __atomic_exchange_cuda(_Type volatile* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type volatile* __ptr, _Type& __old, _Type __new, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
