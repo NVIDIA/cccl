@@ -29,8 +29,8 @@ Type Definitions
 * :doc:`zip_iterator::difference_type <group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334>`
 * :doc:`zip_iterator::iterator_concept <group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744>`
 * :doc:`zip_iterator::pointer <group__iterators_1ga3a57fccd85438fe6ac517f59802807b5>`
-* :doc:`zip_iterator::reference <group__iterators_1ga843f5392a85c60af68ceedbd62d71d7f>`
-* :doc:`zip_iterator::value_type <group__iterators_1ga64c3e03435ec5e5dc3b9eaad6349c1c2>`
+* :doc:`zip_iterator::reference <group__iterators_1ga3d65c0bac93cd905b59b6b7cb0c04f08>`
+* :doc:`zip_iterator::value_type <group__iterators_1gaebe2d9c8478b11e187372e211ab26711>`
 
 .. toctree::
    :hidden:
@@ -52,6 +52,6 @@ Type Definitions
    group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334
    group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744
    group__iterators_1ga3a57fccd85438fe6ac517f59802807b5
-   group__iterators_1ga843f5392a85c60af68ceedbd62d71d7f
-   group__iterators_1ga64c3e03435ec5e5dc3b9eaad6349c1c2
+   group__iterators_1ga3d65c0bac93cd905b59b6b7cb0c04f08
+   group__iterators_1gaebe2d9c8478b11e187372e211ab26711
    group__iterators
