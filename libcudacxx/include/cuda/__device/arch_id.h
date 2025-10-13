@@ -40,17 +40,20 @@ enum class arch_id : int
   sm_75   = 75,
   sm_80   = 80,
   sm_86   = 86,
+  sm_87   = 87,
   sm_89   = 89,
   sm_90   = 90,
   sm_100  = 100,
   sm_103  = 103,
   sm_110  = 110,
   sm_120  = 120,
+  sm_121  = 121,
   sm_90a  = 90 * __arch_specific_id_multiplier,
   sm_100a = 100 * __arch_specific_id_multiplier,
   sm_103a = 103 * __arch_specific_id_multiplier,
   sm_110a = 110 * __arch_specific_id_multiplier,
   sm_120a = 120 * __arch_specific_id_multiplier,
+  sm_121a = 121 * __arch_specific_id_multiplier,
 };
 
 [[nodiscard]] _CCCL_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
@@ -63,12 +66,14 @@ enum class arch_id : int
     case ::cuda::std::to_underlying(arch_id::sm_75):
     case ::cuda::std::to_underlying(arch_id::sm_80):
     case ::cuda::std::to_underlying(arch_id::sm_86):
+    case ::cuda::std::to_underlying(arch_id::sm_87):
     case ::cuda::std::to_underlying(arch_id::sm_89):
     case ::cuda::std::to_underlying(arch_id::sm_90):
     case ::cuda::std::to_underlying(arch_id::sm_100):
     case ::cuda::std::to_underlying(arch_id::sm_103):
     case ::cuda::std::to_underlying(arch_id::sm_110):
     case ::cuda::std::to_underlying(arch_id::sm_120):
+    case ::cuda::std::to_underlying(arch_id::sm_121):
       return true;
     default:
       return false;
@@ -84,6 +89,7 @@ enum class arch_id : int
     case ::cuda::std::to_underlying(arch_id::sm_103a):
     case ::cuda::std::to_underlying(arch_id::sm_110a):
     case ::cuda::std::to_underlying(arch_id::sm_120a):
+    case ::cuda::std::to_underlying(arch_id::sm_121a):
       return true;
     default:
       return false;

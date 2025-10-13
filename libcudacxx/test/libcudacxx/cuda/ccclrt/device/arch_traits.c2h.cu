@@ -57,17 +57,20 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_75>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_80>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_86>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_87>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_89>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121a>();
 
 template <int ComputeCapability>
 void constexpr compare_static_and_dynamic()

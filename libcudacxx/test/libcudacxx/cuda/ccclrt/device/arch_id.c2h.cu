@@ -33,17 +33,20 @@ C2H_CCCLRT_TEST("Architecture id", "[device]")
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_75) == 75);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_80) == 80);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_86) == 86);
+  STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_87) == 87);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_89) == 89);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_90) == 90);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_100) == 100);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_103) == 103);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_110) == 110);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_120) == 120);
+  STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_121) == 121);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_90a) == 90 * 100000);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_100a) == 100 * 100000);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_103a) == 103 * 100000);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_110a) == 110 * 100000);
   STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_120a) == 120 * 100000);
+  STATIC_REQUIRE(cuda::std::to_underlying(cuda::arch_id::sm_121a) == 121 * 100000);
 
   // cuda::to_arch_id(cuda::compute_capability)
   {

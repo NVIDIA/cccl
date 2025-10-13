@@ -283,6 +283,19 @@ template <>
 };
 
 template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_87>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_87);
+  __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 16;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  return __traits;
+};
+
+template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_89>() noexcept
 {
   auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_89);
@@ -400,6 +413,25 @@ template <>
   return __traits;
 };
 
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121>() noexcept
+{
+  auto __traits                     = ::cuda::arch_traits<arch_id::sm_120>();
+  __traits.arch_id                  = arch_id::sm_121;
+  __traits.compute_capability_major = 12;
+  __traits.compute_capability_minor = 1;
+  __traits.compute_capability       = compute_capability{121};
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121a>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_121>();
+  __traits.arch_id = arch_id::sm_121a;
+  return __traits;
+};
+
 //! @brief Gets the architecture traits for the given architecture id \c __id.
 //!
 //! @throws \c cuda::cuda_error if the \c __id is not a known architecture.
@@ -419,6 +451,8 @@ template <>
       return ::cuda::arch_traits<arch_id::sm_80>();
     case arch_id::sm_86:
       return ::cuda::arch_traits<arch_id::sm_86>();
+    case arch_id::sm_87:
+      return ::cuda::arch_traits<arch_id::sm_87>();
     case arch_id::sm_89:
       return ::cuda::arch_traits<arch_id::sm_89>();
     case arch_id::sm_90:
@@ -441,6 +475,10 @@ template <>
       return ::cuda::arch_traits<arch_id::sm_120>();
     case arch_id::sm_120a:
       return ::cuda::arch_traits<arch_id::sm_120a>();
+    case arch_id::sm_121:
+      return ::cuda::arch_traits<arch_id::sm_121>();
+    case arch_id::sm_121a:
+      return ::cuda::arch_traits<arch_id::sm_121a>();
     default:
       ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
