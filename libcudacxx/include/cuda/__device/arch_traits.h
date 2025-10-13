@@ -360,11 +360,11 @@ template <>
 template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_110>() noexcept
 {
-  auto __traits                     = ::cuda::arch_traits<arch_id::sm_100>();
-  __traits.arch_id                  = arch_id::sm_110;
-  __traits.compute_capability_major = 11;
-  __traits.compute_capability_minor = 0;
-  __traits.compute_capability       = compute_capability{110};
+  auto __traits                           = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id                        = arch_id::sm_110;
+  __traits.compute_capability_major       = 11;
+  __traits.compute_capability_minor       = 0;
+  __traits.compute_capability             = compute_capability{110};
   __traits.max_blocks_per_multiprocessor  = 24;
   __traits.max_threads_per_multiprocessor = 1536;
   __traits.max_warps_per_multiprocessor   = __traits.max_threads_per_multiprocessor / __traits.warp_size;
