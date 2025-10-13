@@ -296,17 +296,8 @@ template <>
 template <>
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_88>() noexcept
 {
-  auto __traits = ::cuda::__common_arch_traits(arch_id::sm_88);
-
-  // todo: return valid values
-  {
-    __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
-    __traits.max_blocks_per_multiprocessor        = 16;
-    __traits.max_threads_per_multiprocessor       = 1536;
-    __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-  }
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_86>();
+  __traits.arch_id = arch_id::sm_88;
   return __traits;
 };
 
