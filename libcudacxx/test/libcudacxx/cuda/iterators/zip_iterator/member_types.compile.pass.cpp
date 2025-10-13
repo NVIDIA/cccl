@@ -63,7 +63,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::pair<int, Foo>>);
+    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo>>);
     static_assert(HasIterCategory<Iter>);
     static_assert(cuda::std::random_access_iterator<Iter>);
   }
@@ -112,7 +112,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::pair<int, cuda::std::pair<Foo, int>>>);
+    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, cuda::std::tuple<Foo, int>>>);
     static_assert(HasIterCategory<Iter>);
     static_assert(cuda::std::random_access_iterator<Iter>);
   }
