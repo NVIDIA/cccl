@@ -641,15 +641,13 @@ struct AgentHistogram
     int pixel_mask   = AlignBytes<PixelT>::ALIGN_BYTES - 1;
     size_t row_bytes = sizeof(SampleT) * row_stride_samples;
 
-    // FIXME(bgruber): const changes SASS
-    /*const*/ bool vec_aligned_rows =
+    const bool vec_aligned_rows =
       (NumChannels == 1) && (samples_per_thread % vec_size == 0) && // Single channel
       ((size_t(d_native_samples) & vec_mask) == 0) && // ptr is quad-aligned
       ((num_rows == 1) || ((row_bytes & vec_mask) == 0)); // number of row-samples is a multiple of the alignment of the
                                                           // quad
 
-    // FIXME(bgruber): const changes SASS
-    /*const*/ bool pixel_aligned_rows =
+    const bool pixel_aligned_rows =
       (NumChannels > 1) && // Multi channel
       ((size_t(d_native_samples) & pixel_mask) == 0) && // ptr is pixel-aligned
       ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
