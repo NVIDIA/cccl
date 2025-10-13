@@ -30,9 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/allocator/value_initialize_range.h>
+#include <thrust/device_allocator.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_new.h>
 #include <thrust/device_ptr.h>
+#include <thrust/execution_policy.h>
 #include <thrust/uninitialized_fill.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -57,10 +60,12 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
 {
-  // XXX TODO dispatch n null device constructors at p here
-  // in the meantime, dispatch 1 null host constructor here
-  // and dispatch n copy constructors
-  return device_new<T>(p, T(), n);
+  auto* dev_ptr = static_cast<T*>(p.get());
+  // TODO(bgruber): ideally, we would have an thrust::uninitialized_default_construct. Until then, use vector's
+  // infrastructure
+  device_allocator<T> alloc; // not needed for allocation, just for construct() called in value_initialize_range()
+  detail::value_initialize_range(alloc, dev_ptr, n);
+  return device_ptr<T>{dev_ptr};
 }
 
 /*! \p device_new implements the placement new operator for types
@@ -83,7 +88,7 @@ device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n =
   device_ptr<T> result(static_cast<T*>(p.get()));
 
   // run copy constructors at p here
-  thrust::uninitialized_fill(result, result + n, exemplar);
+  thrust::uninitialized_fill(device, result, result + n, exemplar);
 
   return result;
 }

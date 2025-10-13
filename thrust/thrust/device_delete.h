@@ -34,6 +34,7 @@
 #include <thrust/device_delete.h>
 #include <thrust/device_free.h>
 #include <thrust/device_ptr.h>
+#include <thrust/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -62,9 +63,8 @@ struct device_delete_allocator
 template <typename T>
 inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
 {
-  // we can use device_allocator to destroy the range
-  thrust::detail::device_delete_allocator a;
-  thrust::detail::destroy_range(a, ptr, n);
+  // we don't have an allocator, so there is no need to go through thrust::detail::destroy_range
+  thrust::for_each_n(device, ptr, n, detail::gozer{});
   thrust::device_free(ptr);
 }
 
