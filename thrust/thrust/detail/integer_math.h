@@ -36,7 +36,7 @@ namespace detail
 
 _CCCL_TEMPLATE(typename T)
 _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_negative(const T x) noexcept
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_negative([[maybe_unused]] const T x) noexcept
 {
   if constexpr (::cuda::std::is_unsigned_v<T>)
   {
