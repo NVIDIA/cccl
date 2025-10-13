@@ -33,7 +33,7 @@ Checks whether a value ``value`` is within the range ``[start, end]``, inclusive
 
 **Constraints**
 
-- ``T`` must be an integer type.
+- ``T`` must be an arithmetic type.
 
 **Preconditions**
 

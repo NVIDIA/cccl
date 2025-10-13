@@ -23,7 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -31,7 +31,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::is_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool in_range(_Tp __v, _Tp __start, _Tp __end) noexcept
 {
   _CCCL_ASSERT(__end >= __start, "in_range: __end must be greater than or equal to __start");
