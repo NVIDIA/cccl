@@ -47,17 +47,17 @@ template <typename _Tp>
   static_assert(::cuda::std::is_unsigned_v<_Tp>, "__mul_hi_fallback: T is required to be a unsigned integer type");
   constexpr int __half_bits = ::cuda::std::__num_bits_v<_Tp> / 2;
   using __half_bits_t       = ::cuda::std::__make_nbit_uint_t<__half_bits>;
-  auto __lhs_low            = static_cast<__half_bits_t>(__lhs); // 32-bit
-  auto __lhs_high           = static_cast<__half_bits_t>(__lhs >> __half_bits); // 32-bit
-  auto __rhs_low            = static_cast<__half_bits_t>(__rhs); // 32-bit
-  auto __rhs_high           = static_cast<__half_bits_t>(__rhs >> __half_bits); // 32-bit
-  auto __po_half            = (static_cast<_Tp>(__lhs_low) * __rhs_low) >> __half_bits;
-  auto __p1                 = static_cast<_Tp>(__lhs_low) * __rhs_high; // 64-bit
-  auto __p2                 = static_cast<_Tp>(__lhs_high) * __rhs_low; // 64-bit
-  auto __p3                 = static_cast<_Tp>(__lhs_high) * __rhs_high; // 64-bit
-  auto __p1_half            = static_cast<__half_bits_t>(__p1); // 32-bit
-  auto __p2_half            = static_cast<__half_bits_t>(__p2); // 32-bit
-  auto __carry              = (__po_half + __p1_half + __p2_half) >> __half_bits; // 64-bit
+  const auto __lhs_low      = static_cast<__half_bits_t>(__lhs); // 32-bit
+  const auto __lhs_high     = static_cast<__half_bits_t>(__lhs >> __half_bits); // 32-bit
+  const auto __rhs_low      = static_cast<__half_bits_t>(__rhs); // 32-bit
+  const auto __rhs_high     = static_cast<__half_bits_t>(__rhs >> __half_bits); // 32-bit
+  const auto __po_half      = (static_cast<_Tp>(__lhs_low) * __rhs_low) >> __half_bits;
+  const auto __p1           = static_cast<_Tp>(__lhs_low) * __rhs_high; // 64-bit
+  const auto __p2           = static_cast<_Tp>(__lhs_high) * __rhs_low; // 64-bit
+  const auto __p3           = static_cast<_Tp>(__lhs_high) * __rhs_high; // 64-bit
+  const auto __p1_half      = static_cast<__half_bits_t>(__p1); // 32-bit
+  const auto __p2_half      = static_cast<__half_bits_t>(__p2); // 32-bit
+  const auto __carry        = (__po_half + __p1_half + __p2_half) >> __half_bits; // 64-bit
   return __p3 + (__p1 >> __half_bits) + (__p2 >> __half_bits) + __carry;
 }
 
@@ -74,14 +74,14 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
     {
       if constexpr (is_signed_v<_Tp>)
       {
-        const auto __lhs1 = static_cast<int>(__lhs);
-        const auto __rhs1 = static_cast<int>(__rhs);
+        [[maybe_unused]] const auto __lhs1 = static_cast<int>(__lhs);
+        [[maybe_unused]] const auto __rhs1 = static_cast<int>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__mulhi(__lhs1, __rhs1);));
       }
       else // is_unsigned_v<_Tp>
       {
-        const auto __lhs1 = static_cast<unsigned>(__lhs);
-        const auto __rhs1 = static_cast<unsigned>(__rhs);
+        [[maybe_unused]] const auto __lhs1 = static_cast<unsigned>(__lhs);
+        [[maybe_unused]] const auto __rhs1 = static_cast<unsigned>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(__lhs1, __rhs1);));
       }
     }
@@ -89,8 +89,8 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
     {
       if constexpr (is_signed_v<_Tp>)
       {
-        const auto __lhs1 = static_cast<long long>(__lhs);
-        const auto __rhs1 = static_cast<long long>(__rhs);
+        [[maybe_unused]] const auto __lhs1 = static_cast<long long>(__lhs);
+        [[maybe_unused]] const auto __rhs1 = static_cast<long long>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__mul64hi(__lhs1, __rhs1);));
 #if _CCCL_COMPILER(MSVC)
         NV_IF_TARGET(NV_IS_HOST, (return ::__mulh(__lhs1, __rhs1);));
@@ -98,8 +98,8 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
       }
       else // is_unsigned_v<_Tp>
       {
-        const auto __lhs1 = static_cast<unsigned long long>(__lhs);
-        const auto __rhs1 = static_cast<unsigned long long>(__rhs);
+        [[maybe_unused]] const auto __lhs1 = static_cast<unsigned long long>(__lhs);
+        [[maybe_unused]] const auto __rhs1 = static_cast<unsigned long long>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs1, __rhs1);));
 #if _CCCL_COMPILER(MSVC)
         NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs1, __rhs1);));
@@ -111,7 +111,7 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
   {
     constexpr auto __bits = ::cuda::std::__num_bits_v<_Tp>;
     using __larger_t      = ::cuda::std::__make_nbit_int_t<__bits * 2, is_signed_v<_Tp>>;
-    auto __ret            = (static_cast<__larger_t>(__lhs) * __rhs) >> __bits;
+    const auto __ret      = (static_cast<__larger_t>(__lhs) * __rhs) >> __bits;
     return static_cast<_Tp>(__ret);
   }
   else // sizeof(_Tp) >= sizeof(int64_t) && !_CCCL_HAS_INT128()
