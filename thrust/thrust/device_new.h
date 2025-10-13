@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/device_allocator.h>
 #include <thrust/device_malloc.h>
 #include <thrust/device_new.h>
