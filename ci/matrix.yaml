@@ -21,7 +21,6 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: ['msvc'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
