@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/cassert>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/utility>
@@ -57,7 +56,7 @@ public:
   //!
   //! @note: It is the callers responsibility to ensure the `event_ref` does not
   //! outlive the event denoted by the `cudaEvent_t` handle.
-  constexpr event_ref(::cudaEvent_t __evnt) noexcept
+  _CCCL_HOST_API constexpr event_ref(::cudaEvent_t __evnt) noexcept
       : __event_(__evnt)
   {}
 
@@ -80,7 +79,7 @@ public:
   _CCCL_HOST_API void sync() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
+    ::cuda::__driver::__eventSynchronize(__event_);
   }
 
   //! @brief Checks if all the work in the stream prior to the record of the event has completed.
@@ -91,12 +90,12 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    cudaError_t __status = ::cudaEventQuery(__event_);
-    if (__status == cudaSuccess)
+    ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
+    if (__status == ::cudaSuccess)
     {
       return true;
     }
-    else if (__status == cudaErrorNotReady)
+    else if (__status == ::cudaErrorNotReady)
     {
       return false;
     }
@@ -109,7 +108,7 @@ public:
   //! @brief Retrieve the native `cudaEvent_t` handle.
   //!
   //! @return cudaEvent_t The native handle being held by the event_ref object.
-  [[nodiscard]] constexpr ::cudaEvent_t get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cudaEvent_t get() const noexcept
   {
     return __event_;
   }
@@ -117,7 +116,7 @@ public:
   //! @brief Checks if the `event_ref` is valid
   //!
   //! @return true if the `event_ref` is valid, false otherwise.
-  [[nodiscard]] explicit constexpr operator bool() const noexcept
+  [[nodiscard]] _CCCL_HOST_API explicit constexpr operator bool() const noexcept
   {
     return __event_ != nullptr;
   }
@@ -130,7 +129,7 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
-  [[nodiscard]] friend constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ == __rhs.__event_;
   }
@@ -143,7 +142,7 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
-  [[nodiscard]] friend constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ != __rhs.__event_;
   }

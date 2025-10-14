@@ -50,9 +50,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce_by_key
+namespace detail::reduce_by_key
 {
 enum class primitive_key
 {
@@ -939,7 +937,6 @@ struct policy_hub
   };
   using MaxPolicy = Policy1000;
 };
-} // namespace reduce_by_key
-} // namespace detail
+} // namespace detail::reduce_by_key
 
 CUB_NAMESPACE_END

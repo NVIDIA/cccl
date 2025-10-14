@@ -788,6 +788,16 @@ struct UniqueByKeyPolicyWrapper<StaticPolicyT,
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"UniqueByKeyPolicyT">() = UniqueByKey().EncodedPolicy(),
+                  key<"DelayConstructor">() =
+                    StaticPolicyT::UniqueByKeyPolicyT::detail::delay_constructor_t::EncodedConstructor()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
