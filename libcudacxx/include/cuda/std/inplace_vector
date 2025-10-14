@@ -1525,8 +1525,8 @@ public:
   _CCCL_API constexpr iterator
   erase(const_iterator __cfirst, const_iterator __clast) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
-    const iterator __first = (iterator) __cfirst;
-    const iterator __last  = (iterator) __clast;
+    const iterator __first = this->begin() + (__cfirst - this->begin());
+    const iterator __last  = this->begin() + (__clast - this->begin());
     const iterator __end   = this->end();
     if (__first == __last)
     {
