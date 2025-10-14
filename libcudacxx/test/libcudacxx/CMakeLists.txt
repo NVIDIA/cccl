@@ -6,6 +6,8 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
+cccl_get_dlpack()
+
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
