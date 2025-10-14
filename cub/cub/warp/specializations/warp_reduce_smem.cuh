@@ -48,7 +48,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -213,7 +215,7 @@ struct WarpReduceSmem
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
   {
     // Get the start flags for each thread in the warp.
-    int warp_flags = __ballot_sync(member_mask, flag);
+    unsigned warp_flags = __ballot_sync(member_mask, flag);
 
     if (!HEAD_SEGMENTED)
     {
@@ -230,7 +232,7 @@ struct WarpReduceSmem
     }
 
     // Find next flag
-    int next_flag = __clz(__brev(warp_flags));
+    int next_flag = ::cuda::std::countr_zero(warp_flags);
 
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
