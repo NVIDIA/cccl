@@ -107,7 +107,7 @@ struct arch_traits_t
   int max_registers_per_thread;
 
   // Identifier for the architecture
-  arch_id arch_id;
+  ::cuda::arch_id arch_id;
 
   // Major compute capability version number
   int compute_capability_major;
@@ -116,7 +116,7 @@ struct arch_traits_t
   int compute_capability_minor;
 
   // Compute capability version number in 100 * major + 10 * minor format
-  compute_capability compute_capability;
+  ::cuda::compute_capability compute_capability;
 
   // Maximum amount of shared memory available to a multiprocessor in bytes;
   // this amount is shared by all thread blocks simultaneously resident on a
