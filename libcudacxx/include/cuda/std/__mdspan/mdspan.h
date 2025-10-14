@@ -122,8 +122,8 @@ public:
 
   template <class _Extents2>
   static constexpr bool __can_default_construct =
-    (_Extents2::rank_dynamic() > 0) && is_default_constructible_v<data_handle_type>
-    && is_default_constructible_v<mapping_type> && is_default_constructible_v<accessor_type>;
+    ((_Extents2::rank_dynamic() > 0) && is_default_constructible_v<data_handle_type>
+     && is_default_constructible_v<mapping_type> && is_default_constructible_v<accessor_type>);
 
   _CCCL_TEMPLATE(class _Extents2 = _Extents)
   _CCCL_REQUIRES(__can_default_construct<_Extents2>)
@@ -138,10 +138,10 @@ public:
 
   template <class... _OtherIndexTypes>
   static constexpr bool __can_construct_from_handle_and_variadic =
-    (__mdspan_detail::__matches_dynamic_rank<extents_type, sizeof...(_OtherIndexTypes)>
-     || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>)
-    && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
-    && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
+    ((__mdspan_detail::__matches_dynamic_rank<extents_type, sizeof...(_OtherIndexTypes)>
+      || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>)
+     && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
+     && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>);
 
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES(__can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
@@ -151,9 +151,9 @@ public:
 
   template <class _OtherIndexType>
   static constexpr bool __is_constructible_from_index_type =
-    is_convertible_v<const _OtherIndexType&, index_type>
-    && is_nothrow_constructible_v<index_type, const _OtherIndexType&> && is_constructible_v<mapping_type, extents_type>
-    && is_default_constructible_v<accessor_type>;
+    (is_convertible_v<const _OtherIndexType&, index_type>
+     && is_nothrow_constructible_v<index_type, const _OtherIndexType&> && is_constructible_v<mapping_type, extents_type>
+     && is_default_constructible_v<accessor_type>);
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
@@ -202,13 +202,13 @@ public:
 
   template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
   static constexpr bool __is_convertible_from =
-    is_constructible_v<mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&>
-    && is_constructible_v<accessor_type, const _OtherAccessor&>;
+    (is_constructible_v<mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&>
+     && is_constructible_v<accessor_type, const _OtherAccessor&>);
 
   template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
   static constexpr bool __is_implicit_convertible_from =
-    is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>
-    && is_convertible_v<const _OtherAccessor&, accessor_type>;
+    (is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>
+     && is_convertible_v<const _OtherAccessor&, accessor_type>);
 
   _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
   _CCCL_REQUIRES(__is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> //
