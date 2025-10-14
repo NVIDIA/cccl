@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __
 
 _CCCL_DIAG_PUSH
 #if _CCCL_COMPILER(GCC, >=, 8)
-  _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
+_CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #endif
 
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>

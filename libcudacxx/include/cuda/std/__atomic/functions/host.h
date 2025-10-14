@@ -42,11 +42,11 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 #    define _LIBCUDACXX_INT128_WARN(TYPE)
 // The compiler supports 128b via libatomic or another API.
 #  elif _CCCL_HOST_128_ATOMICS_MAYBE()
-#    define _LIBCUDACXX_INT128_WARN(TYPE)                                                                            \
-      static_assert(                                                                                                 \
-        sizeof(TYPE) < 16,                                                                                           \
-        "CCCL has detected possible support for 128 bit atomics. However this feature is experimental. You can "     \
-        "define CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B to ignore and acknowledge that runtime corruption " \
+#    define _LIBCUDACXX_INT128_WARN(TYPE)                                                                        \
+      static_assert(                                                                                             \
+        sizeof(TYPE) < 16,                                                                                       \
+        "CCCL has detected possible support for 128 bit atomics. However this feature is experimental. You can " \
+        "define CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B to ignore and acknowledge that runtime corruption "   \
         "may occur if you link with libatomic and use locked atomics.");
 // The compiler does not provide support or proof of support. eg. msvc
 #  else
