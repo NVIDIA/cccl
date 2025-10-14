@@ -67,8 +67,8 @@ public:
 
   // invoke
   template <class... _ArgTypes>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
-  operator()(_ArgTypes&&... __args) const noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 invoke_result_t<type&, _ArgTypes...> operator()(_ArgTypes&&... __args) const
+    noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
     return ::cuda::std::invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
