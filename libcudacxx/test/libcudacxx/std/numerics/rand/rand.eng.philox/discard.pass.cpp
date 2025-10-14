@@ -12,7 +12,7 @@
 
 #include <cuda/std/random>
 
-template <typename Engine, Engine::result_type value_10000>
+template <typename Engine, typename Engine::result_type value_10000>
 __host__ __device__ void test()
 {
   Engine e;
