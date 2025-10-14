@@ -213,11 +213,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __is_invocable<_Fn, _Args...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : bool_constant<__is_invocable<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __is_invocable_r<_Ret, _Fn, _Args...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : bool_constant<__is_invocable_r<_Ret, _Fn, _Args...>>
 {};
 
 template <class _Fn, class... _Args>
@@ -252,13 +252,12 @@ inline constexpr bool is_nothrow_invocable_r_v =
   __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fp, _Args...>, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
-    : integral_constant<bool, is_nothrow_invocable_v<_Fn, _Args...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable : bool_constant<is_nothrow_invocable_v<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
-    : integral_constant<bool, is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_invocable_r : bool_constant<is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>>
 {};
 
 // Not going directly through __invoke_result_t because we want the additional device lambda checks in invoke_result
