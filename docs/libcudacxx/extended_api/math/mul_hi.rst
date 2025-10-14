@@ -32,8 +32,8 @@ Computes the most significant half of the bits of the product of two non-negativ
 
 **Remarks**
 
-- Uses ``__mulhi``, ``__umulhi``, ``__mul64hi``, ``__umul64hi`` instructions on device when available.
-- Uses ``__mulh``, ``__umulh`` instructions on Windows host code when available.
+- Uses ``__mulhi``, ``__umulhi``, ``__mul64hi``, ``__umul64hi`` intrinsics on device when available.
+- Uses ``__mulh``, ``__umulh`` intrinsics on Windows host code when available.
 - Uses a double-width intermediate type when possible.
 - Relies on a manual decomposition fallback when 128-bit intermediates are unavailable for 64-bit integers.
 
