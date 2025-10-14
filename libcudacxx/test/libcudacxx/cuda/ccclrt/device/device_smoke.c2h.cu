@@ -8,8 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/devices>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstddef>
 
 #include <testing.cuh>
 
@@ -29,6 +31,13 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
   return result;
 }
 } // namespace
+
+C2H_CCCLRT_TEST("init", "[device]")
+{
+  cuda::device_ref dev{0};
+  dev.init();
+  CCCLRT_REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
+}
 
 C2H_CCCLRT_TEST("Smoke", "[device]")
 {
@@ -54,10 +63,12 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
     ::test_device_attribute<attributes::max_grid_dim_x, ::cudaDevAttrMaxGridDimX, int>();
     ::test_device_attribute<attributes::max_grid_dim_y, ::cudaDevAttrMaxGridDimY, int>();
     ::test_device_attribute<attributes::max_grid_dim_z, ::cudaDevAttrMaxGridDimZ, int>();
-    ::test_device_attribute<attributes::max_shared_memory_per_block, ::cudaDevAttrMaxSharedMemoryPerBlock, int>();
-    ::test_device_attribute<attributes::total_constant_memory, ::cudaDevAttrTotalConstantMemory, int>();
+    ::test_device_attribute<attributes::max_shared_memory_per_block,
+                            ::cudaDevAttrMaxSharedMemoryPerBlock,
+                            cuda::std::size_t>();
+    ::test_device_attribute<attributes::total_constant_memory, ::cudaDevAttrTotalConstantMemory, cuda::std::size_t>();
     ::test_device_attribute<attributes::warp_size, ::cudaDevAttrWarpSize, int>();
-    ::test_device_attribute<attributes::max_pitch, ::cudaDevAttrMaxPitch, int>();
+    ::test_device_attribute<attributes::max_pitch, ::cudaDevAttrMaxPitch, cuda::std::size_t>();
     ::test_device_attribute<attributes::max_texture_1d_width, ::cudaDevAttrMaxTexture1DWidth, int>();
     ::test_device_attribute<attributes::max_texture_1d_linear_width, ::cudaDevAttrMaxTexture1DLinearWidth, int>();
     ::test_device_attribute<attributes::max_texture_1d_mipmapped_width, ::cudaDevAttrMaxTexture1DMipmappedWidth, int>();
@@ -65,7 +76,9 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
     ::test_device_attribute<attributes::max_texture_2d_height, ::cudaDevAttrMaxTexture2DHeight, int>();
     ::test_device_attribute<attributes::max_texture_2d_linear_width, ::cudaDevAttrMaxTexture2DLinearWidth, int>();
     ::test_device_attribute<attributes::max_texture_2d_linear_height, ::cudaDevAttrMaxTexture2DLinearHeight, int>();
-    ::test_device_attribute<attributes::max_texture_2d_linear_pitch, ::cudaDevAttrMaxTexture2DLinearPitch, int>();
+    ::test_device_attribute<attributes::max_texture_2d_linear_pitch,
+                            ::cudaDevAttrMaxTexture2DLinearPitch,
+                            cuda::std::size_t>();
     ::test_device_attribute<attributes::max_texture_2d_mipmapped_width, ::cudaDevAttrMaxTexture2DMipmappedWidth, int>();
     ::test_device_attribute<attributes::max_texture_2d_mipmapped_height, ::cudaDevAttrMaxTexture2DMipmappedHeight, int>();
     ::test_device_attribute<attributes::max_texture_3d_width, ::cudaDevAttrMaxTexture3DWidth, int>();
@@ -106,8 +119,8 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
                             int>();
     ::test_device_attribute<attributes::max_registers_per_block, ::cudaDevAttrMaxRegistersPerBlock, int>();
     ::test_device_attribute<attributes::clock_rate, ::cudaDevAttrClockRate, int>();
-    ::test_device_attribute<attributes::texture_alignment, ::cudaDevAttrTextureAlignment, int>();
-    ::test_device_attribute<attributes::texture_pitch_alignment, ::cudaDevAttrTexturePitchAlignment, int>();
+    ::test_device_attribute<attributes::texture_alignment, ::cudaDevAttrTextureAlignment, cuda::std::size_t>();
+    ::test_device_attribute<attributes::texture_pitch_alignment, ::cudaDevAttrTexturePitchAlignment, cuda::std::size_t>();
     ::test_device_attribute<attributes::gpu_overlap, ::cudaDevAttrGpuOverlap, bool>();
     ::test_device_attribute<attributes::multiprocessor_count, ::cudaDevAttrMultiProcessorCount, int>();
     ::test_device_attribute<attributes::kernel_exec_timeout, ::cudaDevAttrKernelExecTimeout, bool>();
@@ -119,7 +132,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
     ::test_device_attribute<attributes::pci_bus_id, ::cudaDevAttrPciBusId, int>();
     ::test_device_attribute<attributes::pci_device_id, ::cudaDevAttrPciDeviceId, int>();
     ::test_device_attribute<attributes::tcc_driver, ::cudaDevAttrTccDriver, bool>();
-    ::test_device_attribute<attributes::l2_cache_size, ::cudaDevAttrL2CacheSize, int>();
+    ::test_device_attribute<attributes::l2_cache_size, ::cudaDevAttrL2CacheSize, cuda::std::size_t>();
     ::test_device_attribute<attributes::max_threads_per_multiprocessor, ::cudaDevAttrMaxThreadsPerMultiProcessor, int>();
     ::test_device_attribute<attributes::unified_addressing, ::cudaDevAttrUnifiedAddressing, bool>();
     ::test_device_attribute<attributes::compute_capability_major, ::cudaDevAttrComputeCapabilityMajor, int>();
@@ -129,7 +142,7 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
     ::test_device_attribute<attributes::local_l1_cache_supported, ::cudaDevAttrLocalL1CacheSupported, bool>();
     ::test_device_attribute<attributes::max_shared_memory_per_multiprocessor,
                             ::cudaDevAttrMaxSharedMemoryPerMultiprocessor,
-                            int>();
+                            cuda::std::size_t>();
     ::test_device_attribute<attributes::max_registers_per_multiprocessor,
                             ::cudaDevAttrMaxRegistersPerMultiprocessor,
                             int>();
@@ -156,13 +169,17 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
                             bool>();
     ::test_device_attribute<attributes::max_shared_memory_per_block_optin,
                             ::cudaDevAttrMaxSharedMemoryPerBlockOptin,
-                            int>();
+                            cuda::std::size_t>();
     ::test_device_attribute<attributes::max_blocks_per_multiprocessor, ::cudaDevAttrMaxBlocksPerMultiprocessor, int>();
-    ::test_device_attribute<attributes::max_persisting_l2_cache_size, ::cudaDevAttrMaxPersistingL2CacheSize, int>();
-    ::test_device_attribute<attributes::max_access_policy_window_size, ::cudaDevAttrMaxAccessPolicyWindowSize, int>();
+    ::test_device_attribute<attributes::max_persisting_l2_cache_size,
+                            ::cudaDevAttrMaxPersistingL2CacheSize,
+                            cuda::std::size_t>();
+    ::test_device_attribute<attributes::max_access_policy_window_size,
+                            ::cudaDevAttrMaxAccessPolicyWindowSize,
+                            cuda::std::size_t>();
     ::test_device_attribute<attributes::reserved_shared_memory_per_block,
                             ::cudaDevAttrReservedSharedMemoryPerBlock,
-                            int>();
+                            cuda::std::size_t>();
     ::test_device_attribute<attributes::sparse_cuda_array_supported, ::cudaDevAttrSparseCudaArraySupported, bool>();
     ::test_device_attribute<attributes::host_register_read_only_supported,
                             ::cudaDevAttrHostRegisterReadOnlySupported,
@@ -264,10 +281,10 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
     SECTION("Compute capability")
     {
-      int compute_cap       = device_ref(0).attribute(attributes::compute_capability);
-      int compute_cap_major = device_ref(0).attribute(attributes::compute_capability_major);
-      int compute_cap_minor = device_ref(0).attribute(attributes::compute_capability_minor);
-      CCCLRT_REQUIRE(compute_cap == 10 * compute_cap_major + compute_cap_minor);
+      cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
+      int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
+      int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
+      CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
     }
   }
   SECTION("Name")
@@ -319,7 +336,7 @@ C2H_CCCLRT_TEST("global devices vector", "[device]")
 #if _CCCL_HAS_EXCEPTIONS()
   try
   {
-    [[maybe_unused]] const cuda::physical_device& dev = cuda::devices[cuda::devices.size()];
+    [[maybe_unused]] const cuda::device_ref& dev = cuda::devices[cuda::devices.size()];
     CCCLRT_REQUIRE(false); // should not get here
   }
   catch (const std::out_of_range&)

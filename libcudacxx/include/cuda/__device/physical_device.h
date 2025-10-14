@@ -23,110 +23,83 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__device/arch_traits.h>
-#  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__fwd/devices.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
 #  include <cassert>
+#  include <memory>
 #  include <mutex>
+#  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace __detail
-{
-//! @brief A proxy object used to in-place construct a `device` object from an
-//! integer ID. Used in __detail/all_devices.cuh.
-struct __emplace_device
-{
-  int __id_;
 
-  [[nodiscard]] operator physical_device() const;
-
-  [[nodiscard]] constexpr const __emplace_device* operator->() const;
-};
-} // namespace __detail
-
-//! @brief For a given attribute, type of the attribute value.
-//!
-//! @par Example
-//! @code
-//! using threads_per_block_t = device::attr_result_t<device_attributes::max_threads_per_block>;
-//! static_assert(std::is_same_v<threads_per_block_t, int>);
-//! @endcode
-//!
-//! @sa device_attributes
-template <::cudaDeviceAttr _Attr>
-using device_attribute_result_t = typename __detail::__dev_attr<_Attr>::type;
+[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices();
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
 //
 //! @brief An immovable "owning" representation of a CUDA device.
-class physical_device : public device_ref
+class __physical_device
 {
-public:
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#    if _CCCL_COMPILER(MSVC)
-  // When __EDG__ is defined, std::construct_at will not permit constructing
-  // a device object from an __emplace_device object. This is a workaround.
-  physical_device(__detail::__emplace_device __ed)
-      : physical_device(__ed.__id_)
-  {}
-#    endif
-#  endif
+  friend _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
+  __make_physical_devices(::cuda::std::size_t __device_count);
 
-  //! @brief Retrieve architecture traits of this device.
-  //!
-  //! Architecture traits object contains information about certain traits
-  //! that are shared by all devices belonging to given architecture.
-  //!
-  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch::traits_t& arch_traits() const noexcept
+  ::CUdevice __device_{};
+
+  ::std::once_flag __primary_ctx_once_flag_{};
+  ::CUcontext __primary_ctx_{};
+
+  static constexpr ::cuda::std::size_t __max_name_length{256};
+  ::std::once_flag __name_once_flag_{};
+  char __name_[__max_name_length]{};
+  ::cuda::std::size_t __name_length_{};
+
+  ::std::once_flag __peers_once_flag_{};
+  ::std::vector<device_ref> __peers_{};
+
+public:
+  _CCCL_HIDE_FROM_ABI __physical_device() = default;
+
+  _CCCL_HOST_API ~__physical_device()
   {
-    return __traits;
+    if (__primary_ctx_ != nullptr)
+    {
+      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device_);
+    }
   }
 
   //! @brief Retrieve the primary context for this device.
   //!
   //! @return A reference to the primary context for this device.
-  ::CUcontext primary_context() const
+  [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context()
   {
-    ::std::call_once(__init_once, [this]() {
-      __device      = _CUDA_DRIVER::__deviceGet(__id_);
-      __primary_ctx = _CUDA_DRIVER::__primaryCtxRetain(__device);
+    ::std::call_once(__primary_ctx_once_flag_, [this]() {
+      __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     });
-    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::primary_context failed to get context");
-
-    return __primary_ctx;
+    return __primary_ctx_;
   }
 
-  ~physical_device()
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
   {
-    if (__primary_ctx)
-    {
-      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device);
-    }
-  }
-
-  [[nodiscard]] ::cuda::std::string_view __name() const
-  {
-    ::std::call_once(__init_once_name_, [this]() {
-      ::cuda::__driver::__deviceGetName(__name_, __max_name_length, get());
+    ::std::call_once(__name_once_flag_, [this]() {
+      const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
+      ::cuda::__driver::__deviceGetName(__name_, __max_name_length, __id);
       __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
     });
     return ::cuda::std::string_view{__name_, __name_length_};
   }
 
-  [[nodiscard]] ::cuda::std::span<const device_ref> __peers() const
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> __peers()
   {
-    ::std::call_once(__init_once_peers_, [this]() {
-      int __count = 0;
-      _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
+    ::std::call_once(__peers_once_flag_, [this]() {
+      const auto __count = static_cast<int>(::cuda::__physical_devices().size());
+      const auto __id    = ::cuda::__driver::__cudevice_to_ordinal(__device_);
       __peers_.reserve(__count);
       for (int __other_id = 0; __other_id < __count; ++__other_id)
       {
@@ -136,14 +109,15 @@ public:
         // Usage of the peer access control is smoother when *this is excluded,
         // while it can be easily added with .push_back() on the vector if a full
         // group of peers is needed (for cases other than peer access control)
-        if (__other_id != __id_)
+        if (__other_id != __id)
         {
+          device_ref __dev{__id};
           device_ref __other_dev{__other_id};
 
           // While in almost all practical applications peer access should be symmetrical,
           // it is possible to build a system with one directional peer access, check
           // both ways here just to be safe
-          if (has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(*this))
+          if (__dev.has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(__dev))
           {
             __peers_.push_back(__other_dev);
           }
@@ -152,63 +126,42 @@ public:
     });
     return ::cuda::std::span<const device_ref>{__peers_};
   }
-
-private:
-  // TODO: put a mutable thread-safe (or thread_local) cache of device
-  // properties here.
-
-  friend class device_ref;
-  friend struct __detail::__emplace_device;
-
-  mutable ::CUcontext __primary_ctx = nullptr;
-  mutable ::CUdevice __device{};
-  mutable ::std::once_flag __init_once;
-
-  static constexpr ::cuda::std::size_t __max_name_length{256};
-  mutable ::std::once_flag __init_once_name_{};
-  mutable char __name_[__max_name_length]{};
-  mutable ::cuda::std::size_t __name_length_{};
-
-  mutable ::std::once_flag __init_once_peers_{};
-  mutable ::std::vector<device_ref> __peers_{};
-
-  // TODO should this be a reference/pointer to the constexpr traits instances?
-  //  Do we care about lazy init?
-  //  We should have some of the attributes just return from the arch traits
-  arch::traits_t __traits;
-
-  explicit physical_device(int __id)
-      : device_ref(__id)
-      , __traits(arch::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id)))
-  {}
-
-  // `device` objects are not movable or copyable.
-  physical_device(physical_device&&)                 = delete;
-  physical_device(const physical_device&)            = delete;
-  physical_device& operator=(physical_device&&)      = delete;
-  physical_device& operator=(const physical_device&) = delete;
-
-  friend bool operator==(const physical_device& __lhs, int __rhs) = delete;
-  friend bool operator==(int __lhs, const physical_device& __rhs) = delete;
-
-#  if _CCCL_STD_VER <= 2017
-  friend bool operator!=(const physical_device& __lhs, int __rhs) = delete;
-  friend bool operator!=(int __lhs, const physical_device& __rhs) = delete;
-#  endif // _CCCL_STD_VER <= 2017
 };
 
-namespace __detail
+[[nodiscard]] _CCCL_HOST_API inline ::std::unique_ptr<__physical_device[]>
+__make_physical_devices(::cuda::std::size_t __device_count)
 {
-[[nodiscard]] inline __emplace_device::operator physical_device() const
-{
-  return physical_device(__id_);
+  ::std::unique_ptr<__physical_device[]> __devices{::new __physical_device[__device_count]};
+  for (::cuda::std::size_t __i = 0; __i < __device_count; ++__i)
+  {
+    __devices[__i].__device_ = static_cast<int>(__i);
+  }
+  return __devices;
 }
 
-[[nodiscard]] inline constexpr const __emplace_device* __emplace_device::operator->() const
+[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
 {
-  return this;
+  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
+  static const auto __devices      = ::cuda::__make_physical_devices(__device_count);
+  return ::cuda::std::span<__physical_device>{__devices.get(), __device_count};
 }
-} // namespace __detail
+
+// device_ref methods dependent on __physical_device
+
+_CCCL_HOST_API inline void device_ref::init() const
+{
+  (void) ::cuda::__physical_devices()[__id_].__primary_context();
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::string_view device_ref::name() const
+{
+  return ::cuda::__physical_devices()[__id_].__name();
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> device_ref::peers() const
+{
+  return ::cuda::__physical_devices()[__id_].__peers();
+}
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

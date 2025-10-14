@@ -24,44 +24,29 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__fwd/devices.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
-
-#  include <vector>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-class physical_device;
-namespace arch
-{
-struct traits_t;
-} // namespace arch
-
-namespace __detail
-{
-template <::cudaDeviceAttr _Attr>
-struct __dev_attr;
-} // namespace __detail
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
-  friend class physical_device;
-
   int __id_ = 0;
 
 public:
   //! @brief Create a `device_ref` object from a native device ordinal.
-  /*implicit*/ constexpr device_ref(int __id) noexcept
+  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
   {}
 
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
   //! @return int The native device ordinal held by the `device_ref` object
-  [[nodiscard]] constexpr int get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr int get() const noexcept
   {
     return __id_;
   }
@@ -75,7 +60,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  [[nodiscard]] friend constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
@@ -89,7 +74,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  [[nodiscard]] constexpr friend bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
@@ -105,22 +90,27 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  [[nodiscard]] auto attribute(_Attr __attr) const
+  [[nodiscard]] _CCCL_HOST_API auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  [[nodiscard]] auto attribute() const
+  [[nodiscard]] _CCCL_HOST_API auto attribute() const
   {
-    return attribute(__detail::__dev_attr<_Attr>());
+    return attribute(__dev_attr<_Attr>());
   }
+
+  //! @brief Initializes the primary context of the device.
+  _CCCL_HOST_API void init() const; // implemented in <cuda/__device/physical_device.h> to avoid circular dependency
 
   //! @brief Retrieve the name of this device.
   //!
   //! @return String view containing the name of this device.
-  [[nodiscard]] ::cuda::std::string_view name() const;
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view name() const; // implemented in
+                                                                      // <cuda/__device/physical_device.h> to avoid
+                                                                      // circular dependency
 
   //! @brief Queries if its possible for this device to directly access specified device's memory.
   //!
@@ -130,19 +120,11 @@ public:
   //!
   //! @param __other_dev Device to query the peer access
   //! @return true if its possible for this device to access the specified device's memory
-  [[nodiscard]] bool has_peer_access_to(device_ref __other_dev) const
+  [[nodiscard]] _CCCL_HOST_API bool has_peer_access_to(device_ref __other_dev) const
   {
     return ::cuda::__driver::__deviceCanAccessPeer(
       ::cuda::__driver::__deviceGet(get()), ::cuda::__driver::__deviceGet(__other_dev.get()));
   }
-
-  //! @brief Retrieve architecture traits of this device.
-  //!
-  //! Architecture traits object contains information about certain traits
-  //! that are shared by all devices belonging to given architecture.
-  //!
-  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  const arch::traits_t& arch_traits() const;
 
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
@@ -153,7 +135,9 @@ public:
   //! The device on which this API is called is not included in the vector.
   //!
   //! @throws cuda_error if any peer access query fails
-  [[nodiscard]] ::cuda::std::span<const device_ref> peers() const;
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> peers() const; // implemented in
+                                                                                  // <cuda/__device/physical_device.h>
+                                                                                  // to avoid circular dependency
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

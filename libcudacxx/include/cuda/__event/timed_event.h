@@ -26,6 +26,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__event/event.h>
 #  include <cuda/__utility/no_init.h>
