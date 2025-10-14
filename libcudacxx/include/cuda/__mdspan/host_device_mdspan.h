@@ -56,7 +56,7 @@ public:
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
-                 _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
+                 _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&...))
 _CCCL_HOST_DEVICE explicit host_mdspan(_ElementType*, _OtherIndexTypes...)
   -> host_mdspan<_ElementType, ::cuda::std::extents<size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
 

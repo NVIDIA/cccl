@@ -28,6 +28,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -119,10 +120,7 @@ class __host_accessor : public _Accessor
           ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
         return (__status != ::cudaSuccess) || __type == ::CU_MEMORYTYPE_HOST;
       }
-      else
-      {
-        return true;
-      }
+      return true;
     }
     else
 #endif // _CCCL_HAS_CTK()
@@ -208,7 +206,7 @@ public:
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
-      (_CCCL_ASSERT(false, "cuda::__host_accessor cannot be used in DEVICE code");),
+      (_CCCL_VERIFY(false, "cuda::__host_accessor cannot be used in DEVICE code");),
       (_CCCL_ASSERT(__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");))
     return _Accessor::access(__p, __i);
   }
@@ -362,7 +360,7 @@ public:
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
       (_CCCL_ASSERT(__is_device_accessible_pointer_from_device(__p), "The pointer is not device accessible");),
-      (_CCCL_ASSERT(false, "cuda::device_accessor cannot be used in HOST code");))
+      (_CCCL_VERIFY(false, "cuda::device_accessor cannot be used in HOST code");))
     return _Accessor::access(__p, __i);
   }
 
