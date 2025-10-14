@@ -106,10 +106,11 @@ class __host_accessor : public _Accessor
   static constexpr bool __is_offset_noexcept =
     noexcept(::cuda::std::declval<_Accessor>().offset(::cuda::std::declval<__data_handle_type>(), 0));
 
-  [[nodiscard]] _CCCL_API static constexpr bool
+#if !_CCCL_COMPILER(NVRTC)
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool
   __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
-#if _CCCL_HAS_CTK()
+#  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
       if (!cuda::std::__cccl_default_is_constant_evaluated())
@@ -123,11 +124,12 @@ class __host_accessor : public _Accessor
       return true;
     }
     else
-#endif // _CCCL_HAS_CTK()
+#  endif // _CCCL_HAS_CTK()
     {
       return true; // cannot be verified
     }
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 public:
   using offset_policy    = __host_accessor<typename _Accessor::offset_policy>;
