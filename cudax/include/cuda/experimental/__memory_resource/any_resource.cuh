@@ -29,7 +29,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/optional>
 
-#include <cuda/experimental/__memory_resource/properties.cuh>
+#include <cuda/__memory_resource/properties.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -300,7 +300,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -323,7 +323,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
   // Inherit constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>);
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -366,7 +366,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   template <class... _OtherProperties>
   synchronous_resource_ref(::cuda::mr::resource_ref<_OtherProperties...>) = delete;
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -390,7 +390,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   // Inherit other constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>&);
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,

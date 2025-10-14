@@ -81,15 +81,15 @@ public:
   {}
 
   //! @brief Enables the \c device_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept {}
 
-  using default_queries = properties_list<device_accessible, host_accessible>;
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
 
-static_assert(::cuda::mr::resource_with<pinned_memory_resource, device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::host_accessible>, "");
 
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 

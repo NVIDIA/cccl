@@ -112,9 +112,9 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(legacy_pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -123,14 +123,14 @@ public:
         && (::cuda::mr::default_cuda_malloc_host_alignment % __alignment == 0);
   }
 
-  using default_queries = properties_list<device_accessible, host_accessible>;
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 
 private:
   device_ref __device_{0};
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, device_accessible>, "");
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
 
 } // namespace cuda::experimental
 

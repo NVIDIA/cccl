@@ -230,7 +230,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
 
   { // comparison against a pinned_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     pinned_resource second{};
-    cudax::synchronous_resource_ref<cudax::device_accessible> const second_ref{second};
+    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> const second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -241,7 +241,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
   if constexpr (cuda::mr::resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref
     pinned_resource second{};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

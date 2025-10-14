@@ -34,7 +34,7 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/experimental/__stream/internal_streams.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
