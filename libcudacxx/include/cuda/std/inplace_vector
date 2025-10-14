@@ -1736,7 +1736,7 @@ public:
     }
   }
 
-  _CCCL_API constexpr inplace_vector(const size_type __count, const _Tp& __value)
+  _CCCL_API constexpr inplace_vector(const size_type __count, const _Tp&)
       : __base()
   {
     if (__count > 0)
@@ -1973,7 +1973,7 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
-  _CCCL_API constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  _CCCL_API constexpr iterator insert_range(const_iterator, _Range&& __range)
   {
     if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {
