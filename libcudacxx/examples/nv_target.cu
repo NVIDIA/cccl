@@ -2,8 +2,6 @@
 // pitfalls regarding compiler/dialect compatibility.
 
 //=======================================================================================================================
-#include <cuda/std/__bit/popcount.h>
-
 #include <nv/target>
 
 // The below are part of libcu++ and are exposed for users that would like a simpler method of targeting host/device
