@@ -17,6 +17,7 @@
 // <cuda/barrier>
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/utility> // cuda::std::move
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
@@ -30,7 +31,6 @@
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
-namespace cde = cuda::device::experimental;
 
 constexpr size_t GMEM_WIDTH  = 1024; // Width of tensor (in # elements)
 constexpr size_t GMEM_HEIGHT = 1024; // Height of tensor (in # elements)
@@ -85,7 +85,14 @@ __device__ void test(int base_i, int base_j)
   if (threadIdx.x == 0)
   {
     // Fastest moving coordinate first.
-    cde::cp_async_bulk_tensor_2d_global_to_shared(smem_buffer, global_tensor_map, base_j, base_i, bar);
+    const int coords[]{base_j, base_i};
+    cuda::ptx::cp_async_bulk_tensor(
+      cuda::ptx::space_cluster,
+      cuda::ptx::space_global,
+      smem_buffer,
+      global_tensor_map,
+      coords,
+      cuda::device::barrier_native_handle(bar));
     token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
   }
   else
@@ -113,15 +120,17 @@ __device__ void test(int base_i, int base_j)
   {
     smem_buffer[i] = 2 * smem_buffer[i] + 1;
   }
-  cde::fence_proxy_async_shared_cta();
+  cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
   __syncthreads();
 
   // Write back to global memory:
   if (threadIdx.x == 0)
   {
-    cde::cp_async_bulk_tensor_2d_shared_to_global(global_tensor_map, base_j, base_i, smem_buffer);
-    cde::cp_async_bulk_commit_group();
-    cde::cp_async_bulk_wait_group_read<0>();
+    const int coords[]{base_j, base_i};
+    cuda::ptx::cp_async_bulk_tensor(
+      cuda::ptx::space_global, cuda::ptx::space_shared, global_tensor_map, coords, smem_buffer);
+    cuda::ptx::cp_async_bulk_commit_group();
+    cuda::ptx::cp_async_bulk_wait_group_read<0>({});
   }
   __threadfence();
   __syncthreads();

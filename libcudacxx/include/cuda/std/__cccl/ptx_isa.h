@@ -105,7 +105,6 @@
 #if __cccl_ptx_isa >= 800
 #  if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__)
 #    define __cccl_lib_local_barrier_arrive_tx
-#    define __cccl_lib_experimental_ctk12_cp_async_exposure
 #  endif
 #endif // __cccl_ptx_isa >= 800
 
