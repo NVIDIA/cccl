@@ -58,7 +58,7 @@ function(libcudacxx_add_public_headers_host_only header)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in" "${headertest_src}.cpp")
 
   # Create the default target for that file
-  libcudacxx_create_public_header_test_host(${header_name}, ${headertest_src})
+  libcudacxx_create_public_header_test_host(${header_name} ${headertest_src})
 endfunction()
 
 foreach(header IN LISTS public_headers_host_only)

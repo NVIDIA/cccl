@@ -62,7 +62,7 @@ function(libcudacxx_add_public_header_test header)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in" "${headertest_src}.cu")
 
   # Create the default target for that file
-  libcudacxx_create_public_header_test(${header_name}, ${headertest_src})
+  libcudacxx_create_public_header_test(${header_name} ${headertest_src})
 endfunction()
 
 foreach(header IN LISTS public_headers)
