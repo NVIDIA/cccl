@@ -30,12 +30,13 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
-function(libcudacxx_create_internal_header_test header_name, headertest_src)
+function(libcudacxx_create_internal_header_test header_name headertest_src)
   # Create the default target for that file
   set(internal_headertest_${header_name} verify_${header_name})
   add_library(internal_headertest_${header_name} SHARED "${headertest_src}.cu")
   target_include_directories(internal_headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_definitions(internal_headertest_${header_name} PRIVATE _CCCL_HEADER_TEST)
+  cccl_configure_target(internal_headertest_${header_name} DIALECT ${CMAKE_CUDA_STANDARD})
 
   # Bring in the global CCCL compile definitions
   # Link against the right cuda runtime

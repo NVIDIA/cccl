@@ -34,7 +34,7 @@ if (CCCL_USE_LIBCXX)
   list(APPEND public_host_header_cxx_compile_options "-stdlib=libc++")
 endif()
 
-function(libcudacxx_create_public_header_test_host header_name, headertest_src)
+function(libcudacxx_create_public_header_test_host header_name headertest_src)
   # Create the default target for that file
   set(public_headers_host_only_${header_name} verify_${header_name})
   add_library(public_headers_host_only_${header_name} SHARED "${headertest_src}.cpp")
@@ -42,9 +42,10 @@ function(libcudacxx_create_public_header_test_host header_name, headertest_src)
   target_compile_definitions(public_headers_host_only_${header_name} PRIVATE _CCCL_HEADER_TEST)
   target_compile_definitions(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_definitions}")
   target_compile_options(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_options}")
+  cccl_configure_target(public_headers_host_only_${header_name} DIALECT ${CMAKE_CXX_STANDARD})
 
   # Bring in the global CCCL compile definitions
-  target_link_libraries(public_headertest_${header_name} PUBLIC libcudacxx.compiler_interface)
+  target_link_libraries(public_headers_host_only_${header_name} PUBLIC libcudacxx.compiler_interface)
   add_dependencies(libcudacxx.test.public_headers_host_only public_headers_host_only_${header_name})
 endfunction()
 

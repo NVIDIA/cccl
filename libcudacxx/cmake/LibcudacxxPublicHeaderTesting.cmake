@@ -29,12 +29,13 @@ foreach(item IN LISTS CMAKE_CUDA_ARCHITECTURES)
   endif()
 endforeach()
 
-function(libcudacxx_create_public_header_test header_name, headertest_src)
+function(libcudacxx_create_public_header_test header_name headertest_src)
   # Create the default target for that file
   set(public_headertest_${header_name} verify_${header_name})
   add_library(public_headertest_${header_name} SHARED "${headertest_src}.cu")
   target_include_directories(public_headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_definitions(public_headertest_${header_name} PRIVATE _CCCL_HEADER_TEST)
+  cccl_configure_target(public_headertest_${header_name} DIALECT ${CMAKE_CUDA_STANDARD})
 
   # Bring in the global CCCL compile definitions
   target_link_libraries(public_headertest_${header_name} PUBLIC libcudacxx.compiler_interface)
