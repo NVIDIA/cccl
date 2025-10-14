@@ -55,6 +55,9 @@ inline constexpr bool is_restrict_accessor_v<__restrict_accessor<_Accessor>> = t
  * Restrict Accessor
  **********************************************************************************************************************/
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wignored-qualifiers")
+
 template <typename _Accessor>
 class __restrict_accessor : public _Accessor
 {
@@ -114,6 +117,8 @@ public:
     return _Accessor::offset(__p, __i);
   }
 };
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 
