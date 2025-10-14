@@ -129,7 +129,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
   {
     using receiver_concept = receiver_t;
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
     {

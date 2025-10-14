@@ -410,7 +410,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @tparam _Fn The callable to apply.
   //! @param __fn The callable instance.
   //! @return The result of calling __fn with all signatures as arguments.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
   {
@@ -423,7 +423,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @param The predicate instance.
   //! @return A new completion_signatures set with only the signatures for which the
   //! predicate returns true.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto filter(_Fn)
@@ -462,7 +462,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @param __transform The transform instance.
   //! @param __reduce The reduce instance.
   //! @return The result of reducing the transformed signatures.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)

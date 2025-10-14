@@ -258,7 +258,7 @@ inline constexpr bool __has_get_completion_signatures<_Sndr, _Env> =
 struct _COULD_NOT_DETERMINE_COMPLETION_SIGNATURES_FOR_THIS_SENDER
 {};
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr, class... _Env>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
 {
