@@ -22,13 +22,17 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -76,8 +80,8 @@ public:
   using element_type     = typename _Accessor::element_type;
 
   _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, _Accessor2))
-  _CCCL_API inline __restrict_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
+  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor2>)
+  _CCCL_API constexpr __restrict_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
@@ -86,20 +90,41 @@ public:
       : _Accessor{__acc}
   {}
 
+  _CCCL_API constexpr __restrict_accessor(_Accessor&& __acc) noexcept(
+    ::cuda::std::is_nothrow_move_constructible_v<_Accessor>)
+      : _Accessor{::cuda::std::move(__acc)}
+  {}
+
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
-                   _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
-  _CCCL_API constexpr __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{
-    _CUDA_VSTD::declval<_OtherAccessor>()}))
+  _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, const _OtherAccessor&> _CCCL_AND(
+    ::cuda::std::is_convertible_v<const _OtherAccessor&, _Accessor>))
+  _CCCL_API constexpr __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _OtherAccessor)
-                   _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, const _OtherAccessor&> _CCCL_AND(
+    !::cuda::std::is_convertible_v<const _OtherAccessor&, _Accessor>))
   _CCCL_API constexpr explicit __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+    ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, _OtherAccessor> _CCCL_AND(
+    ::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
+  _CCCL_API constexpr __restrict_accessor(__restrict_accessor<_OtherAccessor>&& __acc) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
+      : _Accessor{::cuda::std::move(__acc)}
+  {}
+
+  _CCCL_TEMPLATE(typename _OtherAccessor)
+  _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, _OtherAccessor> _CCCL_AND(
+    !::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
+  _CCCL_API constexpr explicit __restrict_accessor(__restrict_accessor<_OtherAccessor>&& __acc) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
+      : _Accessor{::cuda::std::move(__acc)}
   {}
 
   _CCCL_API constexpr reference access(__element_type* _CCCL_RESTRICT __p, size_t __i) const
