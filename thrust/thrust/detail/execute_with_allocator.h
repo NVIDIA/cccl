@@ -28,7 +28,6 @@
 
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
-#include <thrust/detail/integer_math.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/pair.h>
