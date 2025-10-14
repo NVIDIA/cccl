@@ -256,13 +256,17 @@ public:
     return __iter;
   }
 
+  template <class _Iter2, class _OtherIter>
+  static constexpr bool __noexcept_difference =
+    noexcept(::cuda::std::declval<const _Iter2&>() - ::cuda::std::declval<const _OtherIter&>());
+
   //! @brief Returns distance between two @c strided_iterator's in units of the stride
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
   _CCCL_REQUIRES(_CUDA_VSTD::sized_sentinel_for<_OtherIter, _Iter>)
   [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<_Iter>() - _CUDA_VSTD::declval<_OtherIter>()))
+  operator-(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) //
+    noexcept(__noexcept_difference<_Iter, _OtherIter>)
   {
     const difference_type __diff = __x.__iter_ - __y.base();
     _CCCL_ASSERT(__x.stride() == __y.stride(), "Taking the difference of two strided_iterators with different stride");
