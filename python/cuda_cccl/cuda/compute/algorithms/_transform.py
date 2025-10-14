@@ -11,7 +11,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
-from ..numba_utils import get_inferred_return_type
+from ..numba_utils import get_inferred_return_type, signature_from_annotations
 from ..op import OpKind
 from ..typing import DeviceArrayLike
 
@@ -32,16 +32,20 @@ class _UnaryTransform:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        in_value_type = cccl.get_value_type(d_in)
-        out_value_type = cccl.get_value_type(d_out)
 
         # For well-known operations, we don't need a signature
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
-            if not out_value_type.is_internal:
-                out_value_type = get_inferred_return_type(op, (in_value_type,))
-            sig = out_value_type(in_value_type)
+            try:
+                sig = signature_from_annotations(op)
+            except ValueError:
+                in_value_type = cccl.get_value_type(d_in)
+                out_value_type = cccl.get_value_type(d_out)
+                if not out_value_type.is_internal:
+                    out_value_type = get_inferred_return_type(op, (in_value_type,))
+                sig = out_value_type(in_value_type)
+
             self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.call_build(
             _bindings.DeviceUnaryTransform,
@@ -97,11 +101,14 @@ class _BinaryTransform:
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
-            if not out_value_type.is_internal:
-                out_value_type = get_inferred_return_type(
-                    op, (in1_value_type, in2_value_type)
-                )
-            sig = out_value_type(in1_value_type, in2_value_type)
+            try:
+                sig = signature_from_annotations(op)
+            except ValueError:
+                if not out_value_type.is_internal:
+                    out_value_type = get_inferred_return_type(
+                        op, (in1_value_type, in2_value_type)
+                    )
+                sig = out_value_type(in1_value_type, in2_value_type)
             self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.call_build(
             _bindings.DeviceBinaryTransform,
@@ -196,7 +203,7 @@ def make_unary_transform(
     storage allocation. For simpler usage, consider using :func:`unary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/unary_transform_object.py
            :language: python
            :start-after: # example-begin
 
@@ -227,7 +234,7 @@ def make_binary_transform(
     storage allocation. For simpler usage, consider using :func:`binary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_object.py
            :language: python
            :start-after: # example-begin
 
@@ -259,7 +266,14 @@ def unary_transform(
     Example:
         Below, ``unary_transform`` is used to apply a transformation to each element of the input.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/unary_transform_basic.py
+           :language: python
+           :start-after: # example-begin
+
+        When working with custom struct types, you need to provide type annotations
+        to help with type inference. See the binary transform struct example for reference:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
            :language: python
            :start-after: # example-begin
 
@@ -291,7 +305,14 @@ def binary_transform(
     Example:
         Below, ``binary_transform`` is used to apply a transformation to pairs of elements from two input sequences.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_basic.py
+           :language: python
+           :start-after: # example-begin
+
+        When working with custom struct types, you need to provide type annotations
+        to help with type inference. See the following example:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
            :language: python
            :start-after: # example-begin
 

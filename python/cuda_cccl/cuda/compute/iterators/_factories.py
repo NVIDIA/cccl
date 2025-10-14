@@ -10,6 +10,7 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
+    make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
 )
@@ -26,7 +27,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/cache_modified_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/cache_modified_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -55,7 +56,7 @@ def ConstantIterator(value):
         The code snippet below demonstrates the usage of a ``ConstantIterator``
         representing a sequence of constant values:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/constant_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/constant_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -78,7 +79,7 @@ def CountingIterator(offset):
         The code snippet below demonstrates the usage of a ``CountingIterator``
         representing the sequence ``[10, 11, 12]``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
@@ -100,13 +101,13 @@ def ReverseIterator(sequence):
     Examples:
         The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_input_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/reverse_input_iterator.py
             :language: python
             :start-after: # example-begin
 
         The code snippet below demonstrates the usage of a ``ReverseIterator`` as an output iterator:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_output_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/reverse_output_iterator.py
             :language: python
             :start-after: # example-begin
 
@@ -129,7 +130,7 @@ def TransformIterator(it, op):
         The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
         to transform the input before performing a reduction.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
             :language: python
             :start-after: # example-begin
     Args:
@@ -151,7 +152,7 @@ def TransformOutputIterator(it, op):
         The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
         of a reduction before writing to an output array.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
             :language: python
             :start-after: # example-begin
 
@@ -163,6 +164,33 @@ def TransformOutputIterator(it, op):
         A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
     return make_transform_iterator(it, op, "output")
+
+
+def PermutationIterator(values, indices):
+    """Returns an Iterator that accesses values through an index mapping.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1permutation__iterator.html
+
+    The permutation iterator accesses elements from the values collection using indices
+    from the indices collection, effectively computing values[indices[i]] at position i.
+    This is useful for gather/scatter operations and indirect array access patterns.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``PermutationIterator``
+        to access values in a permuted order:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/permutation_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        values: The values array or iterator to be permuted
+        indices: An iterator or device array providing the indices for permutation
+
+    Returns:
+        A ``PermutationIterator`` object that yields values[indices[i]] at position i
+    """
+    return make_permutation_iterator(values, indices)
 
 
 def ZipIterator(*iterators):
@@ -178,7 +206,7 @@ def ZipIterator(*iterators):
         The code snippet below demonstrates the usage of a ``ZipIterator``
         combining two device arrays:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator_elementwise.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
             :language: python
             :start-after: # example-begin
 

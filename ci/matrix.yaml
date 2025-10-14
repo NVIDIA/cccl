@@ -75,12 +75,43 @@ workflows:
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
-    # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 'all', sm: '75;80;90;100'}
     # libc++
     # - arm64 for now as it's closest to android.
     - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
+
+  # Used when an upstream project changes to reduce time spent smoke testing dependencies.
+  pull_request_lite:
+    # libcudacxx - Specialized, testing default SM
+    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cxx: 'clang'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '70;80;90;100'}
+    - {project: 'libcudacxx', jobs: ['nvrtc'], std: 'max', gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'libcudacxx', jobs: ['verify_codegen']}
+    # CUB - Specialized, testing default SM
+    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    - {project: 'cub', jobs: ['build'], std: 'max', cxx: 'clang', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    - {project: 'cub', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    - {project: 'cub', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;80;90;100', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    # Thrust - Keep number of sm small. Kernel coverage is in CUB. This just tests dispatch / glue in lite mode:
+    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx4090', sm: 'gpu'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;100'}
+    # cudax
+    - {project: 'cudax', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'cudax', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
+    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
+    # stdpar
+    - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
+    # Python + support
+    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: 'gcc13'}
+    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
+    - {project: 'cccl_c_stf', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
+    # Packaging / install
+    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'packaging', jobs: ['install']}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -157,9 +188,7 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
-    # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -236,9 +265,7 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
-    # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
@@ -269,6 +296,8 @@ workflows:
   exclude:
     # GPU runners are not available on Windows.
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
+    # cudax doesn't support C++17 on msvc:
+    - {project: 'cudax', std: 17, cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
 
 
 #############################################################################################
@@ -292,7 +321,7 @@ all_stds: [17, 20]
 # - pybuild: Selects image to use for python wheel builds' outer docker instance
 ctk_versions:
   12.0: { stds: [17, 20] }
-  12.9: { stds: [17, 20], alias: ['12.X', 'nvhpc', 'nvhpc-prev', 'pybuild'] }
+  12.9: { stds: [17, 20], alias: ['12.X', 'nvhpc', 'nvhpc-prev', 'pybuild', 'clang-cuda'] }
   13.0: { stds: [17, 20], alias: ['13.X'] }
 
 device_compilers:
@@ -328,7 +357,7 @@ host_compilers:
       17: { stds: [17, 20] }
       18: { stds: [17, 20] }
       19: { stds: [17, 20] }
-      20: { stds: [17, 20] }
+      20: { stds: [17, 20], alias: 'cuda' }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'

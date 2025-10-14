@@ -42,7 +42,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -123,7 +122,7 @@ using __zv_iter_category_base =
 template <class... _Iterators>
 class zip_iterator : public __zv_iter_category_base<_Iterators...>
 {
-  __tuple_or_pair<_Iterators...> __current_;
+  ::cuda::std::tuple<_Iterators...> __current_;
 
   template <class...>
   friend class zip_iterator;
@@ -131,8 +130,8 @@ class zip_iterator : public __zv_iter_category_base<_Iterators...>
   template <class _Fn>
   _CCCL_API static constexpr auto
   __zip_apply(const _Fn& __fun,
-              const __tuple_or_pair<_Iterators...>& __tuple1,
-              const __tuple_or_pair<_Iterators...>& __tuple2) //
+              const ::cuda::std::tuple<_Iterators...>& __tuple1,
+              const ::cuda::std::tuple<_Iterators...>& __tuple2) //
     noexcept(noexcept(__fun(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>())))
   {
     return __fun(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>());
@@ -143,8 +142,8 @@ public:
   _CCCL_HIDE_FROM_ABI zip_iterator() = default;
 
   //! @brief Constructs a @c zip_iterator from a tuple of iterators
-  //! @param __iters A tuple or pair of iterators
-  _CCCL_API constexpr explicit zip_iterator(__tuple_or_pair<_Iterators...> __iters)
+  //! @param __iters A tuple of iterators
+  _CCCL_API constexpr explicit zip_iterator(::cuda::std::tuple<_Iterators...> __iters)
       : __current_(::cuda::std::move(__iters))
   {}
 
@@ -163,8 +162,8 @@ public:
   {}
 
   using iterator_concept = decltype(__get_zip_iterator_concept<_Iterators...>());
-  using value_type       = __tuple_or_pair<::cuda::std::iter_value_t<_Iterators>...>;
-  using reference        = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
+  using value_type       = ::cuda::std::tuple<::cuda::std::iter_value_t<_Iterators>...>;
+  using reference        = ::cuda::std::tuple<::cuda::std::iter_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
 
   // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
@@ -360,8 +359,8 @@ public:
     _CCCL_EXEC_CHECK_DISABLE
     template <size_t _Zero, size_t... _Indices>
     [[nodiscard]] _CCCL_API constexpr difference_type
-    operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-               const __tuple_or_pair<_Iterators...>& __iters2,
+    operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
+               const ::cuda::std::tuple<_Iterators...>& __iters2,
                ::cuda::std::index_sequence<_Zero, _Indices...>) const //
       noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2)) && ...)))
     {
@@ -391,8 +390,8 @@ public:
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-                                        const __tuple_or_pair<_Iterators...>& __iters2,
+    _CCCL_API constexpr bool operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
+                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
                                         ::cuda::std::index_sequence<_Indices...>) const
       noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
     {
@@ -490,8 +489,8 @@ public:
   struct __zip_op_iter_swap
   {
     template <size_t... _Indices>
-    _CCCL_API constexpr void operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-                                        const __tuple_or_pair<_Iterators...>& __iters2,
+    _CCCL_API constexpr void operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
+                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
                                         ::cuda::std::index_sequence<_Indices...>) const
       noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
     {
@@ -508,12 +507,12 @@ public:
     return __zip_apply(__zip_op_iter_swap{}, __lhs.__current_, __rhs.__current_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __tuple_or_pair<_Iterators...>& __iterators() noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::tuple<_Iterators...>& __iterators() noexcept
   {
     return __current_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr const __tuple_or_pair<_Iterators...>& __iterators() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const ::cuda::std::tuple<_Iterators...>& __iterators() const noexcept
   {
     return __current_;
   }
@@ -521,9 +520,6 @@ public:
 
 template <class... _Iterators>
 _CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
-
-template <class _Iterator1, class _Iterator2>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::pair<_Iterator1, _Iterator2>) -> zip_iterator<_Iterator1, _Iterator2>;
 
 template <class... _Iterators>
 _CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;

@@ -118,7 +118,19 @@ unique_by_key_params = [
 
 
 @pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
-def test_unique_by_key(dtype, num_items, op):
+def test_unique_by_key(dtype, num_items, op, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -312,7 +324,19 @@ def test_unique_by_key_struct_types():
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-def test_unique_by_key_with_stream(cuda_stream):
+def test_unique_by_key_with_stream(cuda_stream, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
     num_items = 10000
 
@@ -355,7 +379,19 @@ def test_unique_by_key_with_stream(cuda_stream):
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-def test_unique_by_key_well_known_equal_to():
+def test_unique_by_key_well_known_equal_to(monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop as cccl_interop
+
+        monkeypatch.setattr(
+            cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     dtype = np.int32
 
     # Create input keys and values: keys=[1,1,1,2,2,3] values=[10,20,30,40,50,60]

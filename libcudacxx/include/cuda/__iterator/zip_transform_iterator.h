@@ -41,7 +41,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
 #include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -154,7 +153,7 @@ template <class _Fn, class... _Iterators>
 class zip_transform_iterator
 {
   ::cuda::std::ranges::__movable_box<_Fn> __func_;
-  __tuple_or_pair<_Iterators...> __current_;
+  ::cuda::std::tuple<_Iterators...> __current_;
 
   template <class, class...>
   friend class zip_transform_iterator;
@@ -162,8 +161,8 @@ class zip_transform_iterator
   template <class _Op>
   _CCCL_API static constexpr auto
   __zip_apply(const _Op& __op,
-              const __tuple_or_pair<_Iterators...>& __tuple1,
-              const __tuple_or_pair<_Iterators...>& __tuple2) //
+              const ::cuda::std::tuple<_Iterators...>& __tuple1,
+              const ::cuda::std::tuple<_Iterators...>& __tuple2) //
     noexcept(noexcept(__op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>())))
   {
     return __op(__tuple1, __tuple2, ::cuda::std::make_index_sequence<sizeof...(_Iterators)>());
@@ -191,19 +190,10 @@ public:
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
-  //! @param __iters A tuple or pair of iterators
-  _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, __tuple_or_pair<_Iterators...> __iters)
-      : __func_(::cuda::std::in_place, ::cuda::std::move(__fun))
-      , __current_(::cuda::std::move(__iters))
-  {}
-
-  //! @brief Constructs a @c zip_transform_iterator from a tuple of iterators
   //! @param __iters A tuple of iterators
-  _CCCL_TEMPLATE(size_t _NumIterators = sizeof...(_Iterators))
-  _CCCL_REQUIRES((_NumIterators == 2))
   _CCCL_API constexpr explicit zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __iters)
       : __func_(::cuda::std::in_place, ::cuda::std::move(__fun))
-      , __current_(::cuda::std::get<0>(::cuda::std::move(__iters)), ::cuda::std::get<1>(::cuda::std::move(__iters)))
+      , __current_(::cuda::std::move(__iters))
   {}
 
   //! @brief Constructs a @c zip_transform_iterator from variadic set of iterators
@@ -226,7 +216,7 @@ public:
 
   // Internal helper functions to extract internals for device dispatch, must be a tuple for cub_transform_many
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::tuple<_Iterators...>
-  __base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<__tuple_or_pair<_Iterators...>>)
+  __base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<::cuda::std::tuple<_Iterators...>>)
   {
     return ::cuda::std::move(__current_);
   }
@@ -425,8 +415,8 @@ public:
     _CCCL_EXEC_CHECK_DISABLE
     template <size_t _Zero, size_t... _Indices>
     [[nodiscard]] _CCCL_API constexpr difference_type
-    operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-               const __tuple_or_pair<_Iterators...>& __iters2,
+    operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
+               const ::cuda::std::tuple<_Iterators...>& __iters2,
                ::cuda::std::index_sequence<_Zero, _Indices...>) const //
       noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2)) && ...)))
     {
@@ -456,8 +446,8 @@ public:
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-                                        const __tuple_or_pair<_Iterators...>& __iters2,
+    _CCCL_API constexpr bool operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
+                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
                                         ::cuda::std::index_sequence<_Indices...>) const
       noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
     {
@@ -547,10 +537,6 @@ public:
 template <class _Fn, class... _Iterators>
 _CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
   -> zip_transform_iterator<_Fn, _Iterators...>;
-
-template <class _Fn, class _Iterator1, class _Iterator2>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::pair<_Iterator1, _Iterator2>)
-  -> zip_transform_iterator<_Fn, _Iterator1, _Iterator2>;
 
 template <class _Fn, class... _Iterators>
 _CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
