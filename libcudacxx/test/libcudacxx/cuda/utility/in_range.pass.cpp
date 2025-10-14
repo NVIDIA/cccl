@@ -49,6 +49,8 @@ __host__ __device__ constexpr void test()
     if (!cuda::std::__cccl_default_is_constant_evaluated())
     {
       assert(!cuda::in_range(nan, -inf, inf));
+      assert(!cuda::in_range(T{1}, nan, inf));
+      assert(!cuda::in_range(T{1}, inf, nan));
     }
   }
 }
