@@ -178,29 +178,19 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
 }
 
-// __invocable
-template <class _Ret, class _Fp, class... _Args>
-struct __invocable_r
-{
-  template <class _XFp, class... _XArgs>
-  _CCCL_API inline static decltype(::cuda::std::__invoke(
-    ::cuda::std::declval<_XFp>(), ::cuda::std::declval<_XArgs>()...))
-  __try_call(int);
-
-  template <class _XFp, class... _XArgs>
-  _CCCL_API inline static __nat __try_call(...);
-
-  // FIXME: Check that _Ret, _Fp, and _Args... are all complete types, cv void,
-  // or incomplete array types as required by the standard.
-  using _Result = decltype(__try_call<_Fp, _Args...>(0));
-
-  using type              = conditional_t<!is_same_v<_Result, __nat>,
-                                          conditional_t<is_void_v<_Ret>, true_type, __is_core_convertible<_Result, _Ret>>,
-                                          false_type>;
-  static const bool value = type::value;
-};
+// __is_invocable
 template <class _Fp, class... _Args>
-using __invocable = __invocable_r<void, _Fp, _Args...>;
+using __invoke_result_t =
+  decltype(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
+
+template <class _Fp, class... _Args>
+_CCCL_CONCEPT __is_invocable =
+  _CCCL_REQUIRES_EXPR((_Fp, variadic _Args))(requires(!is_same_v<__nat, __invoke_result_t<_Fp, _Args...>>));
+
+template <class _Ret, class _Fp, class... _Args>
+_CCCL_CONCEPT __is_invocable_r = _CCCL_REQUIRES_EXPR((_Ret, _Fp, variadic _Args))(
+  requires(__is_invocable<_Fp, _Args...>),
+  requires((is_void_v<_Ret> || __is_core_convertible<__invoke_result_t<_Fp, _Args...>, _Ret>::value)));
 
 template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
 struct __nothrow_invocable_r_imp
@@ -229,14 +219,14 @@ struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
 
 template <class _Ret, class _Fp, class... _Args>
 using __nothrow_invocable_r =
-  __nothrow_invocable_r_imp<__invocable_r<_Ret, _Fp, _Args...>::value, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
+  __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fp, _Args...>, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
 
 template <class _Fp, class... _Args>
-using __nothrow_invocable = __nothrow_invocable_r_imp<__invocable<_Fp, _Args...>::value, true, void, _Fp, _Args...>;
+using __nothrow_invocable = __nothrow_invocable_r_imp<__is_invocable<_Fp, _Args...>, true, void, _Fp, _Args...>;
 
 template <class _Fp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
-    : public enable_if<__invocable<_Fp, _Args...>::value, typename __invocable_r<void, _Fp, _Args...>::_Result>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
+    : public enable_if<__is_invocable<_Fp, _Args...>, __invoke_result_t<_Fp, _Args...>>
 {
 #if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
@@ -258,41 +248,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
 #endif
 };
 
-template <class _Ret, bool = is_void_v<_Ret>>
-struct __invoke_void_return_wrapper
-{
-  template <class... _Args>
-  _CCCL_API static constexpr _Ret __call(_Args&&... __args)
-  {
-    return ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
-  }
-};
-
-template <class _Ret>
-struct __invoke_void_return_wrapper<_Ret, true>
-{
-  template <class... _Args>
-  _CCCL_API static constexpr void __call(_Args&&... __args)
-  {
-    ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
-  }
-};
-
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __is_invocable<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invocable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __is_invocable_r<_Ret, _Fn, _Args...>>
 {};
 
 template <class _Fn, class... _Args>
-inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
+inline constexpr bool is_invocable_v = __is_invocable<_Fn, _Args...>;
 
 template <class _Ret, class _Fn, class... _Args>
-inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
+inline constexpr bool is_invocable_r_v = __is_invocable_r<_Ret, _Fn, _Args...>;
 
 // is_nothrow_invocable
 
@@ -313,11 +283,7 @@ template <class _Ret, class _Fn, class... _Args>
 inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result : __invoke_of<_Fn, _Args...>
-{};
-
-template <class _Fn, class... _Args>
-using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
+using invoke_result_t = __invoke_result_t<_Fn, _Args...>;
 
 template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
@@ -330,8 +296,14 @@ _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
 _CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
 _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)
 {
-  return __invoke_void_return_wrapper<_Ret>::__call(
-    ::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  if constexpr (is_void_v<_Ret>)
+  {
+    ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  }
+  else
+  {
+    return ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  }
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
