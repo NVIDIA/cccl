@@ -37,6 +37,20 @@ __host__ __device__ constexpr void test()
   assert(!cuda::in_range(T{5}, T{cuda::std::numeric_limits<T>::max() - T{1}}, cuda::std::numeric_limits<T>::max()));
   assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), T{cuda::std::numeric_limits<T>::min() + T{1}}));
   assert(cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max()));
+
+  if constexpr (cuda::std::is_floating_point_v<T>)
+  {
+    constexpr auto nan = cuda::std::numeric_limits<T>::quiet_NaN();
+    constexpr auto inf = cuda::std::numeric_limits<T>::infinity();
+    assert(cuda::in_range(inf, -inf, inf));
+    assert(cuda::in_range(-inf, -inf, inf));
+    assert(!cuda::in_range(inf, T{0}, T{10}));
+    assert(cuda::in_range(T{1}, T{-1}, inf));
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      assert(!cuda::in_range(nan, -inf, inf));
+    }
+  }
 }
 
 __host__ __device__ constexpr bool test()
