@@ -28,6 +28,8 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/span>
 
@@ -174,12 +176,12 @@ static constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
 //! @brief  Checks whether the current device supports \c cudaMallocAsync.
-//! @param __device_id The id of the device for which to query support.
+//! @param __device The id of the device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void __verify_device_supports_stream_ordered_allocations(const int __device_id)
+inline void __verify_device_supports_stream_ordered_allocations(device_ref __device)
 {
-  if (!::cuda::devices[__device_id].attribute(::cuda::device_attributes::memory_pools_supported))
+  if (!__device.attribute(::cuda::device_attributes::memory_pools_supported))
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "cudaMallocAsync is not supported on the given device");
   }
@@ -187,11 +189,11 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
 
 //! @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
 //! CUDA driver/runtime version.
-//! @param __device_id The id of the device to check for support.
+//! @param __device The id of the device to check for support.
 //! @param __handle_type An IPC export handle type to check for support.
 //! @throws cuda_error if the specified `cudaMemAllocationHandleType` is not supported on the specified device.
 inline void __verify_device_supports_export_handle_type(
-  const int __device_id, ::cudaMemAllocationHandleType __handle_type, ::CUmemLocation __location)
+  device_ref __device, ::cudaMemAllocationHandleType __handle_type, ::CUmemLocation __location)
 {
   if (__handle_type == ::cudaMemAllocationHandleType::cudaMemHandleTypeNone)
   {
@@ -206,8 +208,7 @@ inline void __verify_device_supports_export_handle_type(
     ::cuda::__throw_cuda_error(
       ::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location");
   }
-  auto __supported_handles =
-    ::cuda::devices[__device_id].attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
+  auto __supported_handles = __device.attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
   if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
   {
     ::cuda::__throw_cuda_error(
