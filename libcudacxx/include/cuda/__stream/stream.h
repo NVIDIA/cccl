@@ -24,9 +24,9 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
-#  include <cuda/std/__cuda/api_wrapper.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -47,8 +47,7 @@ struct stream : stream_ref
       : stream_ref(__detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
+    __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 
   //! @brief Construct a new `stream` object into the moved-from state.
