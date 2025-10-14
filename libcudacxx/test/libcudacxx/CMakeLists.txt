@@ -6,6 +6,7 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
+#add dlpack
 cccl_get_dlpack()
 
 find_package(CUDAToolkit REQUIRED)
@@ -46,6 +47,7 @@ endif()
 
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
+string(APPEND LIBCUDACXX_FORCE_INCLUDE " -I ${dlpack_SOURCE_DIR}/include")
 
 # enable optional<T&>
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
@@ -162,6 +164,7 @@ set_tests_properties(libcudacxx.test.lit PROPERTIES
 
 # Add c2h tests:
 cccl_get_c2h()
+
 
 file(GLOB_RECURSE test_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
