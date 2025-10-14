@@ -69,42 +69,38 @@ template <class _Fp,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet1 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet3 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet4 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
-using __enable_if_bullet6 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -198,8 +194,8 @@ struct __invocable_r
   // or incomplete array types as required by the standard.
   using _Result = decltype(__try_call<_Fp, _Args...>(0));
 
-  using type              = conditional_t<_IsNotSame<_Result, __nat>::value,
-                                          conditional_t<is_void<_Ret>::value, true_type, __is_core_convertible<_Result, _Ret>>,
+  using type              = conditional_t<!is_same_v<_Result, __nat>,
+                                          conditional_t<is_void_v<_Ret>, true_type, __is_core_convertible<_Result, _Ret>>,
                                           false_type>;
   static const bool value = type::value;
 };
@@ -233,7 +229,7 @@ struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
 
 template <class _Ret, class _Fp, class... _Args>
 using __nothrow_invocable_r =
-  __nothrow_invocable_r_imp<__invocable_r<_Ret, _Fp, _Args...>::value, is_void<_Ret>::value, _Ret, _Fp, _Args...>;
+  __nothrow_invocable_r_imp<__invocable_r<_Ret, _Fp, _Args...>::value, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
 
 template <class _Fp, class... _Args>
 using __nothrow_invocable = __nothrow_invocable_r_imp<__invocable<_Fp, _Args...>::value, true, void, _Fp, _Args...>;
@@ -262,7 +258,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
 #endif
 };
 
-template <class _Ret, bool = is_void<_Ret>::value>
+template <class _Ret, bool = is_void_v<_Ret>>
 struct __invoke_void_return_wrapper
 {
   template <class... _Args>
