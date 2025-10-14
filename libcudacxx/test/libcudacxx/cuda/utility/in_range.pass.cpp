@@ -66,14 +66,14 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool runtime_test()
+__host__ __device__ bool runtime_test()
 {
-#if _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   test<__half>();
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
+#endif
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
   test<__nv_bfloat16>();
-#endif // _CCCL_HAS_NVBF16()
+#endif
   return true;
 }
 
