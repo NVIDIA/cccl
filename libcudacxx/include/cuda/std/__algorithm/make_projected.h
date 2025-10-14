@@ -53,7 +53,7 @@ struct _ProjectedPred
     _CCCL_API inline
     operator()(_Tp&& __v) const
   {
-    return ::cuda::std::__invoke(__pred, ::cuda::std::__invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
+    return ::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
@@ -64,9 +64,9 @@ struct _ProjectedPred
     _CCCL_API inline
     operator()(_T1&& __lhs, _T2&& __rhs) const
   {
-    return ::cuda::std::__invoke(__pred,
-                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
-                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
+    return ::cuda::std::invoke(__pred,
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
   }
 };
 

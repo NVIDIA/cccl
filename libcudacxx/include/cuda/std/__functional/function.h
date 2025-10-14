@@ -963,7 +963,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI

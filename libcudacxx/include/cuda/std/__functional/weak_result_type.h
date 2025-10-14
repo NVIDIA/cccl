@@ -258,7 +258,7 @@ struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const volatile>
 template <class _Tp, class... _Args>
 struct __invoke_return
 {
-  using type = decltype(::cuda::std::__invoke(declval<_Tp>(), declval<_Args>()...));
+  using type = decltype(::cuda::std::invoke(declval<_Tp>(), declval<_Args>()...));
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

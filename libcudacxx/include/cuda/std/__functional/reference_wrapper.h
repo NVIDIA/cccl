@@ -70,7 +70,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
-    return ::cuda::std::__invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
