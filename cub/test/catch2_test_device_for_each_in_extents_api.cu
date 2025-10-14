@@ -31,11 +31,11 @@ struct linear_store_3D
 {
   using data_t = cuda::std::array<int, 3>;
 
-  cuda::std::span<data_t> d_output_raw;
+  cuda::std::span<data_t> d_output1_raw;
 
   __device__ void operator()(int idx, int x, int y, int z)
   {
-    d_output_raw[idx] = {x, y, z};
+    d_output1_raw[idx] = {x, y, z};
   }
 };
 // example-end for-each-in-extents-op
@@ -46,43 +46,32 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;
   cuda::std::extents<int, 3, 2, 2> extents{};
-  thrust::device_vector<data_t>    d_output(cub::detail::size(extents), thrust::no_init);
-  thrust::host_vector<data_t>      h_output(cub::detail::size(extents), thrust::no_init);
-  auto                             d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()),
+  thrust::device_vector<data_t>    d_output1(cub::detail::size(extents), thrust::no_init);
+  thrust::device_vector<data_t>    d_output2(cub::detail::size(extents), thrust::no_init);
+  auto                             d_output1_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output1.data()),
+                                                                          3 * 2 * 2};
+  auto                             d_output2_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output2.data()),
                                                                           3 * 2 * 2};
   thrust::host_vector<data_t>      expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
                                                {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
                                                {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 
-  auto status = cub::DeviceFor::ForEachInExtents(extents, [=] __device__ (int idx, int x, int y, int z) {
-    d_output_raw[idx] = {x, y, z};
+  cub::DeviceFor::ForEachInExtents(extents, [=] __device__ (int idx, int x, int y, int z) {
+    d_output1_raw[idx] = {x, y, z};
   });
-  if (status != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceFor::ForEachInExtents failed with status: " << status << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
-  h_output = d_output;
-  if (!thrust::equal(h_output.begin(), h_output.end(), expected.begin()))
-  {
-    std::cerr << "error: h_output != expected" << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
+  // d_output1 is now filled with the expected values
 
-  thrust::fill(d_output.begin(), d_output.end(), data_t{});
-  status = cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output_raw});
-  if (status != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceFor::ForEachInExtents failed with status: " << status << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
-  h_output = d_output;
-  if (!thrust::equal(h_output.begin(), h_output.end(), expected.begin()))
-  {
-    std::cerr << "error: h_output != expected" << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
+  thrust::fill(d_output2.begin(), d_output2.end(), data_t{});
+  cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
+  // d_output2 is now filled with the expected values
+
   // example-end for-each-in-extents-example
+  thrust::host_vector<data_t> h_output1(cub::detail::size(extents), thrust::no_init);
+  thrust::host_vector<data_t> h_output2(cub::detail::size(extents), thrust::no_init);
+  h_output1 = d_output1;
+  h_output2 = d_output2;
+  REQUIRE(h_output1 == expected);
+  REQUIRE(h_output2 == expected);
 }
 // clang-format on
 
