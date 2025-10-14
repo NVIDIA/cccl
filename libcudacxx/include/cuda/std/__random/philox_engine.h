@@ -122,14 +122,14 @@ public:
   //! This method initializes this philox_engine's state, and optionally accepts
   //! a seed value.
   //!
-  //! @param s The seed used to initializes this philox_engine's state.
-  _CCCL_API void seed(result_type s = default_seed)
+  //! @param __s The seed used to initializes this philox_engine's state.
+  _CCCL_API void seed(result_type __s = default_seed)
   {
-    m_x    = {};
-    m_y    = {};
-    m_k    = {};
-    m_k[0] = s & max();
-    m_j    = _BufferSize - 1;
+    __x__    = {};
+    __y__    = {};
+    __k__    = {};
+    __k__[0] = __s & max();
+    __j__    = _BufferSize - 1;
   }
 
   //! This method sets the internal counter. Each increment of the counter produces n new values. The array counter
@@ -150,14 +150,14 @@ public:
   //!    e1.set_counter({0, 0, 0, 100});
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
-  //! @param counter The counter.
-  _CCCL_API void set_counter(const ::cuda::std::array<result_type, _BufferSize>& counter)
+  //! @param __counter The counter.
+  _CCCL_API void set_counter(const ::cuda::std::array<result_type, _BufferSize>& __counter)
   {
-    for (size_t j = 0; j < _BufferSize; ++j)
+    for (size_t __j = 0; __j < _BufferSize; ++__j)
     {
-      m_x[j] = counter[_BufferSize - 1 - j] & max();
+      __x__[__j] = __counter[_BufferSize - 1 - __j] & max();
     }
-    m_j = _BufferSize - 1;
+    __j__ = _BufferSize - 1;
   }
 
   // generating functions
@@ -166,346 +166,312 @@ public:
   //! @return A new random number.
   _CCCL_API result_type operator()()
   {
-    m_j++;
-    if (m_j == _BufferSize)
+    __j__++;
+    if (__j__ == _BufferSize)
     {
       this->__philox();
       this->__increment_counter();
-      m_j = 0;
+      __j__ = 0;
     }
-    return m_y[m_j];
+    return __y__[__j__];
   }
 
   //! This member function advances this philox_engine's state a given number of times
   //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
   //!
-  //! @param z The number of random values to discard.
-  _CCCL_API void discard(unsigned long long z)
+  //! @param __z The number of random values to discard.
+  _CCCL_API void discard(unsigned long long __z)
   {
-    // Advance m_j until we are at n - 1
-    while (m_j != _BufferSize - 1 && z > 0)
+    // Advance __j__ until we are at n - 1
+    while (__j__ != _BufferSize - 1 && __z > 0)
     {
       (*this)();
-      z--;
+      __z--;
     }
 
     // Increment the big integer counter, handling overflow
-    auto increment    = z / _BufferSize;
-    std::size_t carry = 0;
-    for (std::size_t j = 0; j < _BufferSize; ++j)
+    auto __increment    = __z / _BufferSize;
+    std::size_t __carry = 0;
+    for (std::size_t __j = 0; __j < _BufferSize; ++__j)
     {
-      if (increment == 0 && carry == 0)
+      if (__increment == 0 && __carry == 0)
       {
         break;
       }
-      _UIntType new_m_x_j = (m_x[j] + (increment & max()) + carry) & max();
-      carry               = (new_m_x_j < m_x[j]) ? 1 : 0;
-      m_x[j]              = new_m_x_j;
+      _UIntType __new_x_j = (__x__[__j] + (__increment & max()) + __carry) & max();
+      __carry             = (__new_x_j < __x__[__j]) ? 1 : 0;
+      __x__[__j]          = __new_x_j;
       if constexpr (_WordSize < 64)
       {
-        increment >>= _WordSize;
+        __increment >>= _WordSize;
       }
       else
       {
-        increment = 0;
+        __increment = 0;
       }
     }
 
     // Advance the output buffer position by the remainder
-    const auto remainder = z % _BufferSize;
-    for (std::size_t j = 0; j < remainder; ++j)
+    const auto __remainder = __z % _BufferSize;
+    for (std::size_t __j = 0; __j < __remainder; ++__j)
     {
       (*this)();
     }
   }
 
-private:
-  template <typename _UIntType_, size_t _WordSize_, size_t _BufferSize_, size_t _NumRounds_, _UIntType_... _Constants_>
-  friend _CCCL_API bool
-  operator==(const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& lhs,
-             const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& rhs);
-  template <typename CharT,
-            typename Traits,
-            typename _UIntType_,
-            size_t _WordSize_,
-            size_t _BufferSize_,
-            size_t _NumRounds_,
-            _UIntType_... _Constants_>
-  friend ::std::basic_istream<CharT, Traits>&
-  operator>>(::std::basic_istream<CharT, Traits>& is,
-             philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& e);
-
-  template <typename CharT,
-            typename Traits,
-            typename _UIntType_,
-            size_t _WordSize_,
-            size_t _BufferSize_,
-            size_t _NumRounds_,
-            _UIntType_... _Constants_>
-  friend ::std::basic_ostream<CharT, Traits>&
-  operator<<(::std::basic_ostream<CharT, Traits>& os,
-             const philox_engine<_UIntType_, _WordSize_, _BufferSize_, _NumRounds_, _Constants_...>& e);
-
-  _CCCL_API void __increment_counter()
+  //! This function checks two philox_engines for equality.
+  //! @param lhs The first philox_engine to test.
+  //! @param rhs The second philox_engine to test.
+  //! @return true if lhs is equal to rhs; false, otherwise.
+  [[nodiscard]] _CCCL_API friend bool
+  operator==(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __lhs,
+             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __rhs)
   {
-    // Increment the big integer m_x by 1, handling overflow.
-    std::size_t i = 0;
-    do
+    if (__lhs.__x__ != __rhs.__x__)
     {
-      m_x[i] = (m_x[i] + 1) & max();
-      ++i;
-    } while (i < _BufferSize && !m_x[i - 1]);
+      return false;
+    }
+    // Only check the y buffer if not __j__ != _BufferSize-1
+    // If __j__ == _BufferSize-1, then __y__ is not valid
+    if (__lhs.__j__ != _BufferSize - 1 && __lhs.__y__ != __rhs.__y__)
+    {
+      return false;
+    }
+    if (__lhs.__k__ != __rhs.__k__)
+    {
+      return false;
+    }
+    return __lhs.__j__ == __rhs.__j__;
   }
 
-  _CCCL_API void __mulhilo(result_type a, result_type b, result_type& hi, result_type& lo) const
+#if _CCCL_STD_VER <= 2017
+  //! This function checks two philox_engines for inequality.
+  //! @param lhs The first philox_engine to test.
+  //! @param rhs The second philox_engine to test.
+  //! @return true if lhs is not equal to rhs; false, otherwise.
+  [[nodiscard]] _CCCL_API friend bool
+  operator!=(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __lhs,
+             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __rhs)
+  {
+    return !(__lhs == __rhs);
+  }
+#endif
+
+#if !_CCCL_COMPILER(NVRTC)
+  //! This function streams a philox_engine to a std::basic_ostream.
+  //! @param os The basic_ostream to stream out to.
+  //! @param e The philox_engine to stream out.
+  //! @return os
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os,
+             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __e)
+  {
+    using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
+    using ios_base     = typename ostream_type::ios_base;
+
+    // save old flags & fill character
+    const typename ios_base::fmtflags __flags = __os.flags();
+    const _CharT __fill                       = __os.fill();
+
+    __os.flags(ios_base::dec | ios_base::fixed | ios_base::left);
+    __os.fill(__os.widen(' '));
+
+    // output counter array (__x__)
+    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    {
+      __os << __e.__x__[__i];
+      if (__i < _BufferSize - 1)
+      {
+        __os << __os.widen(' ');
+      }
+    }
+    __os << __os.widen(' ');
+
+    // output key array (__k__)
+    for (size_t __i = 0; __i < _BufferSize / 2; ++__i)
+    {
+      __os << __e.__k__[__i];
+      if (__i < _BufferSize / 2 - 1)
+      {
+        __os << __os.widen(' ');
+      }
+    }
+    __os << __os.widen(' ');
+
+    // output output buffer (__y__)
+    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    {
+      __os << __e.__y__[__i];
+      if (__i < _BufferSize - 1)
+      {
+        __os << __os.widen(' ');
+      }
+    }
+    __os << __os.widen(' ');
+
+    // output current position
+    __os << __e.__j__;
+
+    // restore flags & fill character
+    __os.flags(__flags);
+    __os.fill(__fill);
+
+    return __os;
+  }
+
+  //! This function streams a philox_engine in from a std::basic_istream.
+  //! @param is The basic_istream to stream from.
+  //! @param e The philox_engine to stream in.
+  //! @return is
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is,
+             philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __e)
+  {
+    using istream_type = ::std::basic_istream<_CharT, _Traits>;
+    using ios_base     = typename istream_type::ios_base;
+
+    // save old flags
+    const typename ios_base::fmtflags __flags = __is.flags();
+
+    __is.flags(ios_base::dec);
+
+    // input counter array (__x__)
+    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    {
+      __is >> __e.__x__[__i];
+    }
+
+    // input key array (__k__)
+    for (size_t __i = 0; __i < _BufferSize / 2; ++__i)
+    {
+      __is >> __e.__k__[__i];
+    }
+
+    // input output buffer (__y__)
+    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    {
+      __is >> __e.__y__[__i];
+    }
+
+    // input current position
+    __is >> __e.__j__;
+
+    // restore flags
+    __is.flags(__flags);
+
+    return __is;
+  }
+#endif
+
+private:
+  _CCCL_API void __increment_counter()
+  {
+    // Increment the big integer __x__ by 1, handling overflow.
+    std::size_t __i = 0;
+    do
+    {
+      __x__[__i] = (__x__[__i] + 1) & max();
+      ++__i;
+    } while (__i < _BufferSize && !__x__[__i - 1]);
+  }
+
+  _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const
   {
     if constexpr (_WordSize == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      hi = static_cast<_UIntType>(
-        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(b)));
-      lo = (a * b) & max();
+      __hi = static_cast<_UIntType>(
+        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
+      __lo = (__a * __b) & max();
     }
     else if constexpr (_WordSize == 64)
     {
-      hi = static_cast<_UIntType>(
-        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(a), static_cast<std::uint64_t>(b)));
-      lo = (a * b) & max();
+      __hi = static_cast<_UIntType>(
+        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
+      __lo = (__a * __b) & max();
     }
     else
     {
       // Generic slow implementation
-      constexpr _UIntType w_half  = _WordSize / 2;
-      constexpr _UIntType lo_mask = (((_UIntType) 1) << w_half) - 1;
+      constexpr _UIntType __w_half  = _WordSize / 2;
+      constexpr _UIntType __lo_mask = (((_UIntType) 1) << __w_half) - 1;
 
-      lo            = a * b;
-      _UIntType ahi = a >> w_half;
-      _UIntType alo = a & lo_mask;
-      _UIntType bhi = b >> w_half;
-      _UIntType blo = b & lo_mask;
+      __lo            = __a * __b;
+      _UIntType __ahi = __a >> __w_half;
+      _UIntType __alo = __a & __lo_mask;
+      _UIntType __bhi = __b >> __w_half;
+      _UIntType __blo = __b & __lo_mask;
 
-      _UIntType ahbl = ahi * blo;
-      _UIntType albh = alo * bhi;
+      _UIntType __ahbl = __ahi * __blo;
+      _UIntType __albh = __alo * __bhi;
 
-      _UIntType ahbl_albh = ((ahbl & lo_mask) + (albh & lo_mask));
-      hi                  = ahi * bhi + (ahbl >> w_half) + (albh >> w_half);
-      hi += ahbl_albh >> w_half;
-      hi += ((lo >> w_half) < (ahbl_albh & lo_mask));
+      _UIntType __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
+      __hi                  = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
+      __hi += __ahbl_albh >> __w_half;
+      __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
     }
   }
 
   _CCCL_API void __philox()
   {
     // Only two variants are allowed, n=2 or n=4
-    const _UIntType consts_array[_BufferSize] = {_Constants...};
+    const _UIntType __consts_array[_BufferSize] = {_Constants...};
     if constexpr (_BufferSize == 2)
     {
-      ::cuda::std::array<result_type, _BufferSize> S     = this->m_x;
-      ::cuda::std::array<result_type, _BufferSize / 2> K = this->m_k;
-      for (size_t j = 0; j < _NumRounds; ++j)
+      ::cuda::std::array<result_type, _BufferSize> __S     = this->__x__;
+      ::cuda::std::array<result_type, _BufferSize / 2> __K = this->__k__;
+      for (size_t __j = 0; __j < _NumRounds; ++__j)
       {
-        result_type hi, lo;
-        this->__mulhilo(S[0], consts_array[0], hi, lo);
-        S[0] = hi ^ K[0] ^ S[1];
-        S[1] = lo;
-        K[0] = (K[0] + consts_array[1]) & max();
+        result_type __hi, __lo;
+        this->__mulhilo(__S[0], __consts_array[0], __hi, __lo);
+        __S[0] = __hi ^ __K[0] ^ __S[1];
+        __S[1] = __lo;
+        __K[0] = (__K[0] + __consts_array[1]) & max();
       }
-      this->m_y = S;
+      this->__y__ = __S;
     }
     else if constexpr (_BufferSize == 4)
     {
-      ::cuda::std::array<result_type, _BufferSize> S     = this->m_x;
-      ::cuda::std::array<result_type, _BufferSize / 2> K = this->m_k;
-      for (size_t j = 0; j < _NumRounds; ++j)
+      ::cuda::std::array<result_type, _BufferSize> __S     = this->__x__;
+      ::cuda::std::array<result_type, _BufferSize / 2> __K = this->__k__;
+      for (size_t __j = 0; __j < _NumRounds; ++__j)
       {
-        ::cuda::std::array<result_type, _BufferSize> V = {S[2], S[1], S[0], S[3]};
-        result_type hi0, lo0;
-        this->__mulhilo(V[0], consts_array[2], hi0, lo0);
-        result_type hi2, lo2;
-        this->__mulhilo(V[2], consts_array[0], hi2, lo2);
+        ::cuda::std::array<result_type, _BufferSize> __V = {__S[2], __S[1], __S[0], __S[3]};
+        result_type __hi0, __lo0;
+        this->__mulhilo(__V[0], __consts_array[2], __hi0, __lo0);
+        result_type __hi2, __lo2;
+        this->__mulhilo(__V[2], __consts_array[0], __hi2, __lo2);
 
-        S[0] = hi0 ^ K[0] ^ V[1];
-        S[1] = lo0;
+        __S[0] = __hi0 ^ __K[0] ^ __V[1];
+        __S[1] = __lo0;
 
-        S[2] = hi2 ^ K[1] ^ V[3];
+        __S[2] = __hi2 ^ __K[1] ^ __V[3];
 
-        S[3] = lo2;
+        __S[3] = __lo2;
 
-        K[0] = (K[0] + consts_array[1]) & max();
-        K[1] = (K[1] + consts_array[3]) & max();
+        __K[0] = (__K[0] + __consts_array[1]) & max();
+        __K[1] = (__K[1] + __consts_array[3]) & max();
       }
 
-      this->m_y = S;
+      this->__y__ = __S;
     }
   }
 
   // The counter X, a big integer stored as _BufferSize w-bit words.
-  // The least significant word is m_x[0].
-  ::cuda::std::array<_UIntType, _BufferSize> m_x = {};
+  // The least significant word is __x__[0].
+  ::cuda::std::array<_UIntType, _BufferSize> __x__ = {};
   // K is the "Key", storing the seed
-  ::cuda::std::array<_UIntType, _BufferSize / 2> m_k = {};
+  ::cuda::std::array<_UIntType, _BufferSize / 2> __k__ = {};
   // The output buffer Y
-  // Each time m_j reaches _BufferSize, we generate _BufferSize new values and store them in m_y.
-  ::cuda::std::array<_UIntType, _BufferSize> m_y = {};
+  // Each time __j__ reaches _BufferSize, we generate _BufferSize new values and store them in __y__.
+  ::cuda::std::array<_UIntType, _BufferSize> __y__ = {};
   // Each generation produces n random numbers, which are returned one at a time.
-  // m_j cycles through [0, n-1].
-  unsigned long long m_j = 0;
+  // __j__ cycles through [0, n-1].
+  unsigned long long __j__ = 0;
 
 }; // end philox_engine
-
-//! This function checks two philox_engines for equality.
-//! @param lhs The first philox_engine to test.
-//! @param rhs The second philox_engine to test.
-//! @return true if lhs is equal to rhs; false, otherwise.
-template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
-_CCCL_API bool operator==(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& lhs,
-                          const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& rhs)
-{
-  if (lhs.m_x != rhs.m_x)
-  {
-    return false;
-  }
-  // Only check the y buffer if not m_j != _BufferSize-1
-  // If m_j == _BufferSize-1, then m_y is not valid
-  if (lhs.m_j != _BufferSize - 1 && lhs.m_y != rhs.m_y)
-  {
-    return false;
-  }
-  if (lhs.m_k != rhs.m_k)
-  {
-    return false;
-  }
-  return lhs.m_j == rhs.m_j;
-}
-
-//! This function checks two philox_engines for inequality.
-//! @param lhs The first philox_engine to test.
-//! @param rhs The second philox_engine to test.
-//! @return true if lhs is not equal to rhs; false, otherwise.
-template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
-_CCCL_API bool operator!=(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& lhs,
-                          const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& rhs)
-{
-  return !(lhs == rhs);
-}
-
-//! This function streams a philox_engine to a std::basic_ostream.
-//! @param os The basic_ostream to stream out to.
-//! @param e The philox_engine to stream out.
-//! @return os
-template <typename CharT,
-          typename Traits,
-          typename _UIntType,
-          size_t _WordSize,
-          size_t _BufferSize,
-          size_t _NumRounds,
-          _UIntType... _Constants>
-::std::basic_ostream<CharT, Traits>&
-operator<<(::std::basic_ostream<CharT, Traits>& os,
-           const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& e)
-{
-  using ostream_type = ::std::basic_ostream<CharT, Traits>;
-  using ios_base     = typename ostream_type::ios_base;
-
-  // save old flags & fill character
-  const typename ios_base::fmtflags flags = os.flags();
-  const CharT fill                        = os.fill();
-
-  os.flags(ios_base::dec | ios_base::fixed | ios_base::left);
-  os.fill(os.widen(' '));
-
-  // output counter array (m_x)
-  for (size_t i = 0; i < _BufferSize; ++i)
-  {
-    os << e.m_x[i];
-    if (i < _BufferSize - 1)
-    {
-      os << os.widen(' ');
-    }
-  }
-  os << os.widen(' ');
-
-  // output key array (m_k)
-  for (size_t i = 0; i < _BufferSize / 2; ++i)
-  {
-    os << e.m_k[i];
-    if (i < _BufferSize / 2 - 1)
-    {
-      os << os.widen(' ');
-    }
-  }
-  os << os.widen(' ');
-
-  // output output buffer (m_y)
-  for (size_t i = 0; i < _BufferSize; ++i)
-  {
-    os << e.m_y[i];
-    if (i < _BufferSize - 1)
-    {
-      os << os.widen(' ');
-    }
-  }
-  os << os.widen(' ');
-
-  // output current position
-  os << e.m_j;
-
-  // restore flags & fill character
-  os.flags(flags);
-  os.fill(fill);
-
-  return os;
-}
-
-//! This function streams a philox_engine in from a std::basic_istream.
-//! @param is The basic_istream to stream from.
-//! @param e The philox_engine to stream in.
-//! @return is
-template <typename CharT,
-          typename Traits,
-          typename _UIntType,
-          size_t _WordSize,
-          size_t _BufferSize,
-          size_t _NumRounds,
-          _UIntType... _Constants>
-::std::basic_istream<CharT, Traits>&
-operator>>(::std::basic_istream<CharT, Traits>& is,
-           philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& e)
-{
-  using istream_type = ::std::basic_istream<CharT, Traits>;
-  using ios_base     = typename istream_type::ios_base;
-
-  // save old flags
-  const typename ios_base::fmtflags flags = is.flags();
-
-  is.flags(ios_base::dec);
-
-  // input counter array (m_x)
-  for (size_t i = 0; i < _BufferSize; ++i)
-  {
-    is >> e.m_x[i];
-  }
-
-  // input key array (m_k)
-  for (size_t i = 0; i < _BufferSize / 2; ++i)
-  {
-    is >> e.m_k[i];
-  }
-
-  // input output buffer (m_y)
-  for (size_t i = 0; i < _BufferSize; ++i)
-  {
-    is >> e.m_y[i];
-  }
-
-  // input current position
-  is >> e.m_j;
-
-  // restore flags
-  is.flags(flags);
-
-  return is;
-}
 
 //! @typedef philox4x32
 //! @brief A random number engine with predefined parameters which implements the
