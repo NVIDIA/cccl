@@ -8,10 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(_MSC_VER)
-# define NOMINMAX
-#endif
-
 // ignore deprecation warnings
 #if defined(__clang__)
 #  pragma clang diagnostic ignored "-Wdeprecated"
