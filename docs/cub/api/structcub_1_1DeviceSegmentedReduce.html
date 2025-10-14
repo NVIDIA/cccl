@@ -1680,12 +1680,12 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_in</span
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
@@ -1858,13 +1858,12 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_in</span
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <code class="docutils literal notranslate"><span class="pre">num_segments`,</span> <span class="pre">such</span> <span class="pre">that</span> <span class="pre">``d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and
-<code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
@@ -2031,12 +2030,12 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_in</span
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
@@ -2210,12 +2209,12 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_in</span
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
@@ -2379,12 +2378,12 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_in</span
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
@@ -2550,12 +2549,12 @@ of <cite>int</cite> data elements.</p>
 <li><p><strong>num_segments</strong> – <strong>[in]</strong> The number of segments that comprise the segmented reduction data</p></li>
 <li><p><strong>d_begin_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of beginning offsets of
 length <cite>num_segments</cite>, such that <code class="docutils literal notranslate"><span class="pre">d_begin_offsets[i]</span></code> is the first
-element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code></p>
+element of the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code></p>
 </p>
 </p></li>
 <li><p><strong>d_end_offsets</strong> – <strong>[in]</strong> <p><p>Random-access input iterator to the sequence of ending offsets of length
 <code class="docutils literal notranslate"><span class="pre">num_segments</span></code>, such that <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span></code> is the last element of
-the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_keys_*</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_*</span></code>.
+the <em>i</em><sup>th</sup> data segment in <code class="docutils literal notranslate"><span class="pre">d_in</span></code>.
 If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">d_begin_offsets[i]</span></code>, the <em>i</em><sup>th</sup> is considered empty.</p>
 </p>
 </p></li>
