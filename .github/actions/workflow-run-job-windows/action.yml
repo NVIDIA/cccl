@@ -30,6 +30,8 @@ runs:
       with:
         path: ${{github.event.repository.name}}
         persist-credentials: false
+        fetch-depth: 0
+        fetch-tags: true
 
     - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
