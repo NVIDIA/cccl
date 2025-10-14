@@ -241,8 +241,8 @@ template <class _Sndr, class _Tag = __visit_result_t<__get_tag&, _Sndr, int&>>
 extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
-template <class _Sndr>
-  requires __is_sender<_Sndr>
+_CCCL_TEMPLATE(class _Sndr)
+_CCCL_REQUIRES(__is_sender<_Sndr>)
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class... _Tag>
