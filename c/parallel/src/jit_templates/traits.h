@@ -16,6 +16,7 @@
 #include <string>
 
 #include "../util/errors.h"
+#include "../util/types.h"
 
 extern const char* jit_template_header_contents;
 
@@ -38,6 +39,9 @@ template <typename Tag,
           typename = Traits::template type<void, parameter_mapping<Args>::archetype...>>
 specialization get_specialization(template_id<Traits> id, Args... args)
 {
+#ifdef __CUDA_ARCH__
+  return specialization{};
+#else
   if constexpr (requires { Traits::template special<Tag>(args...); })
   {
     if (auto result = Traits::template special<Tag>(args...))
@@ -47,8 +51,9 @@ specialization get_specialization(template_id<Traits> id, Args... args)
   }
 
   std::string tag_name;
-  check(nvrtcGetTypeName<Tag>(&tag_name));
+  check(cccl_type_name_from_nvrtc<Tag>(&tag_name));
 
   return {std::format("{}<{}{}>", Traits::name, tag_name, ((", " + parameter_mapping<Args>::map(id, args)) + ...)),
           std::format("struct {};", tag_name) + (parameter_mapping<Args>::aux(id, args) + ...)};
+#endif
 }

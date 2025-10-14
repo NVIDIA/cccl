@@ -197,7 +197,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
+  [[nodiscard]] _CCCL_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
   {
     return __current_;
   }
@@ -411,11 +411,10 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
-// Some compilers have issues determining _IsFancyPointer
+// Some compilers have issues determining __is_fancy_pointer
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 template <class _Iter>
-struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
-{};
+inline constexpr bool __is_fancy_pointer<move_iterator<_Iter>> = __is_fancy_pointer<_Iter>;
 #endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 
 _CCCL_EXEC_CHECK_DISABLE

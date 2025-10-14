@@ -1,14 +1,14 @@
 {
-  "image": "rapidsai/devcontainers:25.10-cpp-mambaforge-ubuntu24.04",
+  "image": "rapidsai/devcontainers:25.12-cpp-mambaforge-ubuntu24.04",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda13.0-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.12-cuda13.0-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.10": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.12": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"

@@ -29,6 +29,7 @@ function sed_runner() {
 
 # Update CI files
 sed_runner "/devcontainer_version/ s/'[0-9.]*'/'${NEXT_SHORT_TAG}'/g" ci/matrix.yaml
+sed_runner "/devcontainer_version=/ s/=[0-9.]*/=${NEXT_SHORT_TAG}/g" ci/build_cuda_cccl_python.sh
 for FILE in .github/workflows/*.yml; do
   sed_runner "/rapidsai/ s/\"branch-.*\"/\"branch-${NEXT_SHORT_TAG}\"/g" "${FILE}"
   sed_runner "/ucxx/ s/\"branch-.*\"/\"branch-${NEXT_UCXX_SHORT_TAG}\"/g" "${FILE}"

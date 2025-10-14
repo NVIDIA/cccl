@@ -128,19 +128,10 @@ struct device_seg_sort_policy_hub
     static constexpr int ITEMS_PER_SMALL_THREAD  = TUNE_S_ITEMS;
     static constexpr int ITEMS_PER_MEDIUM_THREAD = TUNE_M_ITEMS;
 
-    using SmallAndMediumSegmentedSortPolicyT = cub::AgentSmallAndMediumSegmentedSortPolicy<
-
-      BLOCK_THREADS,
-
-      // Small policy
-      cub::
-        AgentSubWarpMergeSortPolicy<TUNE_SW_THREADS, ITEMS_PER_SMALL_THREAD, TUNE_S_LOAD_ALGORITHM, TUNE_S_LOAD_MODIFIER>,
-
-      // Medium policy
-      cub::AgentSubWarpMergeSortPolicy<TUNE_MW_THREADS,
-                                       ITEMS_PER_MEDIUM_THREAD,
-                                       TUNE_M_LOAD_ALGORITHM,
-                                       TUNE_M_LOAD_MODIFIER>>;
+    using SmallSegmentPolicy = cub::
+      AgentSubWarpMergeSortPolicy<TUNE_SW_THREADS, ITEMS_PER_SMALL_THREAD, TUNE_S_LOAD_ALGORITHM, TUNE_S_LOAD_MODIFIER>;
+    using MediumSegmentPolicy = cub::
+      AgentSubWarpMergeSortPolicy<TUNE_MW_THREADS, ITEMS_PER_MEDIUM_THREAD, TUNE_M_LOAD_ALGORITHM, TUNE_M_LOAD_MODIFIER>;
   };
 
   using MaxPolicy = Policy500;

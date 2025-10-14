@@ -53,8 +53,10 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
   c2h::host_vector<Key> reference_h(size1 + size2, thrust::default_init);
   std::merge(keys1_h.begin(), keys1_h.end(), keys2_h.begin(), keys2_h.end(), reference_h.begin(), compare_op);
 
-  // FIXME(bgruber): comparing std::vectors (slower than thrust vectors) but compiles a lot faster
-  CHECK((detail::to_vec(reference_h) == detail::to_vec(c2h::host_vector<Key>(result_d))));
+  // comparing std::vectors instead compiles in 1m19s, thrust::host_vector 1m23s, thrust::device_vector 1m38
+  // let's pick the host_vector, so we don't stress device memory with another (potentially big) allocation
+  c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
+  CHECK(reference_h == result_h);
 }
 
 C2H_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", types)

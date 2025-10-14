@@ -46,8 +46,16 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunct
 
   void* args[] = {&num_items, for_kernel_state.get()};
 
-  int thread_count = 256;
-  int block_count  = (num_items + 511) / 512;
+  const unsigned int thread_count = 256;
+  const size_t items_per_block    = 512;
+  const size_t block_sz           = cuda::ceil_div(num_items, items_per_block);
+
+  if (block_sz > std::numeric_limits<unsigned int>::max())
+  {
+    return cudaErrorInvalidValue;
+  }
+  const unsigned int block_count = static_cast<unsigned int>(block_sz);
+
   check(cuLaunchKernel(static_kernel, block_count, 1, 1, thread_count, 1, 1, 0, stream, args, 0));
 
   // Check for failure to launch
@@ -62,8 +70,8 @@ static std::string get_device_for_kernel_name()
 {
   std::string offset_t;
   std::string function_op_t;
-  check(nvrtcGetTypeName<for_each_wrapper>(&function_op_t));
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<for_each_wrapper>(&function_op_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }

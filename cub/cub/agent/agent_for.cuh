@@ -42,9 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace for_each
+namespace detail::for_each
 {
 
 template <int BlockThreads, int ItemsPerThread>
@@ -78,7 +76,6 @@ struct agent_block_striped_t
   }
 };
 
-} // namespace for_each
-} // namespace detail
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

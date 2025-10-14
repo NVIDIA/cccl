@@ -16,10 +16,10 @@
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/memory_algorithms.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/std/__cccl/memory_wrapper.h>
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN

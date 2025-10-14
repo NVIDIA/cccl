@@ -13,6 +13,7 @@
 
 #include <cuda/std/__format_>
 #include <cuda/std/cassert>
+#include <cuda/std/cstring>
 #include <cuda/std/string_view>
 
 #include "literal.h"
@@ -20,7 +21,8 @@
 template <class CharT>
 __host__ __device__ constexpr void test()
 {
-  constexpr const CharT* fmt = TEST_STRLIT(CharT, "abc");
+  CharT fmt[4]{};
+  cuda::std::__cccl_strcpy(fmt, TEST_STRLIT(CharT, "abc"));
 
   {
     cuda::std::basic_format_parse_context<CharT> context(fmt);

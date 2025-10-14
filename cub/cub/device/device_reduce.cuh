@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
@@ -121,40 +122,6 @@ struct unzip_and_write_arg_extremum_op
   }
 };
 } // namespace reduce
-
-// TODO(gevtushenko): move cudax `device_memory_resource` to `cuda::__device_memory_resource` and use it here
-struct device_memory_resource
-{
-  void* allocate(size_t bytes, size_t /* alignment */)
-  {
-    void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMalloc, "allocate failed to allocate with cudaMalloc", &ptr, bytes);
-    return ptr;
-  }
-
-  void deallocate(void* ptr, size_t /* bytes */)
-  {
-    _CCCL_ASSERT_CUDA_API(::cudaFree, "deallocate failed", ptr);
-  }
-
-  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
-  {
-    return allocate(stream, bytes);
-  }
-
-  void* allocate(::cuda::stream_ref stream, size_t bytes)
-  {
-    void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
-    return ptr;
-  }
-
-  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
-  {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
-  }
-};
-
 } // namespace detail
 
 //! @rst
@@ -1514,14 +1481,13 @@ public:
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "
-                          "index of the found extremum is written. ")
-  CUB_RUNTIME_FUNCTION static cudaError_t
-    ArgMin(void* d_temp_storage,
-           size_t& temp_storage_bytes,
-           InputIteratorT d_in,
-           OutputIteratorT d_out,
-           int num_items,
-           cudaStream_t stream = 0)
+                          "index of the found extremum is written. ") CUB_RUNTIME_FUNCTION static cudaError_t
+  ArgMin(void* d_temp_storage,
+         size_t& temp_storage_bytes,
+         InputIteratorT d_in,
+         OutputIteratorT d_out,
+         int num_items,
+         cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
@@ -2021,14 +1987,13 @@ public:
   template <typename InputIteratorT, typename OutputIteratorT>
   CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
                           "iterators: one iterator to which the extremum is written and another iterator to which the "
-                          "index of the found extremum is written. ")
-  CUB_RUNTIME_FUNCTION static cudaError_t
-    ArgMax(void* d_temp_storage,
-           size_t& temp_storage_bytes,
-           InputIteratorT d_in,
-           OutputIteratorT d_out,
-           int num_items,
-           cudaStream_t stream = 0)
+                          "index of the found extremum is written. ") CUB_RUNTIME_FUNCTION static cudaError_t
+  ArgMax(void* d_temp_storage,
+         size_t& temp_storage_bytes,
+         InputIteratorT d_in,
+         OutputIteratorT d_out,
+         int num_items,
+         cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 

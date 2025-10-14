@@ -32,39 +32,59 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-#  if _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
+#  if __cccl_ptx_isa >= 870
+
+#    if _CCCL_HAS_INT128()
+using _QueryCancelResult = __uint128_t;
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+struct alignas(16) _QueryCancelResult
+{
+  ::cuda::std::uint64_t __lo_;
+  ::cuda::std::uint64_t __hi_;
+};
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
 
 template <int _Index>
-[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
+[[nodiscard]] _CCCL_DEVICE_API int __cluster_get_dim(_QueryCancelResult __result) noexcept
 {
-  int __r;
+  unsigned __r;
+
+  asm volatile("{\n\t"
+               ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+  asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+
   if constexpr (_Index == 0)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else if constexpr (_Index == 1)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else if constexpr (_Index == 2)
   {
-    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, %1;"
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, query_result;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 :
                  : "memory");
   }
   else
   {
     _CCCL_UNREACHABLE();
   }
+  asm volatile("}");
   return __r;
 }
 
@@ -80,11 +100,10 @@ template <int _Index>
 //! - All thread block threads shall call this API exactly once.
 //! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
-__for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
+_CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
 {
-  __shared__ uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
-  __shared__ __int128 __result;
+  __shared__ ::cuda::std::uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
+  __shared__ _QueryCancelResult __result;
   bool __phase = false;
 
   // Initialize barrier and kick-start try_cancel pipeline:
@@ -131,14 +150,18 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
     // the next query operations from being re-ordered above the poll loop.
     {
       int __success = 0;
-      asm volatile(
-        "{\n\t"
-        ".reg .pred p;\n\t"
-        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, %1;\n\t"
-        "selp.b32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__success)
-        : "q"(__result));
+      asm volatile("{\n\t"
+                   ".reg .pred p;\t\n"
+                   ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+      asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+      asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+      asm volatile("clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, query_result;\n\t"
+                   "selp.b32 %0, 1, 0, p;\n\t"
+                   "}\n\t"
+                   : "=r"(__success));
       if (__success != 1)
       {
         // Invalidating mbarrier and synchronizing before exiting not
@@ -148,14 +171,14 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
     }
 
     // Read new thread block dimensions
-    dim3 __b(::cuda::__cluster_get_dim<0>(__result), 1, 1);
+    ::dim3 __b(::cuda::device::__cluster_get_dim<0>(__result), 1, 1);
     if constexpr (__ThreadBlockRank >= 2)
     {
-      __b.y = ::cuda::__cluster_get_dim<1>(__result);
+      __b.y = ::cuda::device::__cluster_get_dim<1>(__result);
     }
     if constexpr (__ThreadBlockRank == 3)
     {
-      __b.z = ::cuda::__cluster_get_dim<2>(__result);
+      __b.z = ::cuda::device::__cluster_get_dim<2>(__result);
     }
     __block_idx = __b;
 
@@ -189,15 +212,14 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
   } while (true);
 }
 
-#  else // ^^^ _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870 ^^^ / vvv !_CCCL_HAS_INT128() || __cccl_ptx_isa < 870 vvv
+#  else // ^^^ __cccl_ptx_isa >= 870 ^^^ / vvv __cccl_ptx_isa < 870 vvv
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void
-__for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
+_CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool __is_leader, __UnaryFunction __uf)
 {
   // We are compiling for SM100 but PTX 8.7 is not supported, so fall back to just calling the function
   ::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);
 }
-#  endif // _CCCL_HAS_INT128() && __cccl_ptx_isa >= 870
+#  endif // ^^^ __cccl_ptx_isa < 870 ^^^
 
 //! This API for implementing work-stealing, repeatedly attempts to cancel the launch of a thread block
 //! from the current grid. On success, it invokes the unary function `__uf` before trying again.
@@ -211,60 +233,83 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
 //! - All thread block threads shall call this API exactly once.
 //! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
+_CCCL_DEVICE_API void __for_each_canceled_block(bool __is_leader, __UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3, "ThreadBlockRank out-of-range [1, 3].");
-  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, ::dim3>,
                 "__for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: __for_each_canceled_block([](dim3 block_idx) { ... });");
-  dim3 __block_idx = dim3(blockIdx.x, 1, 1);
+  ::dim3 __block_idx = ::dim3(blockIdx.x, 1, 1);
   if constexpr (__ThreadBlockRank >= 2)
   {
-    __block_idx = dim3(blockIdx.x, blockIdx.y, 1);
+    __block_idx = ::dim3(blockIdx.x, blockIdx.y, 1);
   }
   if constexpr (__ThreadBlockRank >= 3)
   {
-    __block_idx = dim3(blockIdx.x, blockIdx.y, blockIdx.z);
+    __block_idx = ::dim3(blockIdx.x, blockIdx.y, blockIdx.z);
   }
 
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100,
-                     (::cuda::__for_each_canceled_block_sm100(__block_idx, __is_leader, ::cuda::std::move(__uf));),
-                     NV_ANY_TARGET,
-                     (::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);))
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_100,
+    (::cuda::device::__for_each_canceled_block_sm100(__block_idx, __is_leader, ::cuda::std::move(__uf));),
+    NV_ANY_TARGET,
+    (::cuda::std::invoke(::cuda::std::move(__uf), __block_idx);))
 }
 
-//! This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
-//! from the current grid. On success, it invokes the unary function `__uf` before trying again.
-//! On failure, it returns.
+//! @brief This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
+//!        from the current grid. On success, it invokes the unary function `__uf` before trying again.
+//!        On failure, it returns.
 //!
-//! This API does not provide any memory synchronization.
-//! This API does not guarantee that any thread will invoke `__uf` with the next block index until all
-//! invocatons of `__uf` for the prior block index have returned.
+//!        This API does not provide any memory synchronization.
+//!        This API does not guarantee that any thread will invoke `__uf` with the next block index until all
+//!        invocatons of `__uf` for the prior block index have returned.
 //!
-//! Preconditions:
-//! - All thread block threads shall call this API exactly once.
-//! - Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
+//! @pre All thread block threads shall call this API exactly once.
+//! @pre Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
 template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
-_CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __uf)
+_CCCL_DEVICE_API void for_each_canceled_block(__UnaryFunction __uf)
 {
   static_assert(__ThreadBlockRank >= 1 && __ThreadBlockRank <= 3,
                 "for_each_canceled_block<ThreadBlockRank>: ThreadBlockRank out-of-range [1, 3].");
-  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, dim3>,
+  static_assert(::cuda::std::is_invocable_r_v<void, __UnaryFunction, ::dim3>,
                 "for_each_canceled_block first argument requires an UnaryFunction with signature: void(dim3).\n"
                 "For example, call with lambda: for_each_canceled_block([](dim3 block_idx) { ... });");
   if constexpr (__ThreadBlockRank == 1)
   {
-    ::cuda::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
+    ::cuda::device::__for_each_canceled_block<1>(threadIdx.x == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 2)
   {
-    ::cuda::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
+    ::cuda::device::__for_each_canceled_block<2>(threadIdx.x == 0 && threadIdx.y == 0, ::cuda::std::move(__uf));
   }
   else if constexpr (__ThreadBlockRank == 3)
   {
-    ::cuda::__for_each_canceled_block<3>(
+    ::cuda::device::__for_each_canceled_block<3>(
       threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0, ::cuda::std::move(__uf));
   }
+}
+
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief This API used to implement work-stealing, repeatedly attempts to cancel the launch of a thread block
+//!        from the current grid. On success, it invokes the unary function `__uf` before trying again.
+//!        On failure, it returns.
+//!
+//!        This API does not provide any memory synchronization.
+//!        This API does not guarantee that any thread will invoke `__uf` with the next block index until all
+//!        invocatons of `__uf` for the prior block index have returned.
+//!
+//! @pre All thread block threads shall call this API exactly once.
+//! @pre Exactly one thread block thread shall call this API with `__is_leader` equals `true`.
+//!
+//! @deprecated This function was moved to cuda::device:: namespace.
+template <int __ThreadBlockRank = 3, typename __UnaryFunction = void>
+CCCL_DEPRECATED_BECAUSE("Use cuda::device::for_each_canceled_block instead.") _CCCL_DEVICE_API void
+for_each_canceled_block(__UnaryFunction __uf)
+{
+  ::cuda::device::for_each_canceled_block<__ThreadBlockRank>(::cuda::std::move(__uf));
 }
 
 _CCCL_END_NAMESPACE_CUDA

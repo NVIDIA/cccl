@@ -22,6 +22,32 @@ struct input_storage_t;
 struct output_storage_t;
 struct items_storage_t; // Used in merge_sort
 
+// On Windows, nvrtcGetTypeName calls UnDecorateSymbolName from Dbghelp.dll,
+// which, for certain input types, returns string representations that nvcc
+// balks on (e.g. `long long` becomes `__int64`).  This helper function looks
+// for these unsupported types and converts them to nvcc-compatible types.
+// The method signature is kept identical to `nvrtcGetTypeName` so that this
+// helper can be used as a drop-in replacement.
+template <typename T>
+nvrtcResult cccl_type_name_from_nvrtc(std::string* result)
+{
+  if (const nvrtcResult res = nvrtcGetTypeName<T>(result); res != NVRTC_SUCCESS)
+  {
+    return res;
+  }
+
+  if (result->find("unsigned __int64") != std::string::npos)
+  {
+    *result = "::cuda::std::uint64_t";
+  }
+  else if (result->find("__int64") != std::string::npos)
+  {
+    *result = "::cuda::std::int64_t";
+  }
+
+  return NVRTC_SUCCESS;
+}
+
 template <typename StorageT = storage_t>
 std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
 {
@@ -67,7 +93,7 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
       result = "double";
       break;
     case cccl_type_enum::CCCL_STORAGE:
-      check(nvrtcGetTypeName<StorageT>(&result));
+      check(cccl_type_name_from_nvrtc<StorageT>(&result));
       break;
     case cccl_type_enum::CCCL_BOOLEAN:
       result = "bool";

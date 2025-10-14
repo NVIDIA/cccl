@@ -71,24 +71,35 @@
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
 #  ifdef NDEBUG
-// Reintroduce the __assert_fail declaration
+// Reintroduce the __assert_fail / __assert_rtn declaration
 extern "C" {
 #    if !_CCCL_CUDA_COMPILER(CLANG)
 _CCCL_HOST_DEVICE
 #    endif // !_CCCL_CUDA_COMPILER(CLANG)
-  void
-  __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) noexcept
+#    if _CCCL_OS(APPLE)
+void __assert_rtn(const char* __function, const char* __assertion, const char* __file, unsigned int __line) noexcept
   __attribute__((__noreturn__));
+#    else // ^^^ _CCCL_OS(APPLE) ^^^ / vvv !_CCCL_OS(APPLE) ^^^
+void __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) noexcept
+  __attribute__((__noreturn__));
+#    endif // !_CCCL_OS(APPLE)
 }
 #  endif // NDEBUG
-#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
-    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-    ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
+
+#  if _CCCL_OS(APPLE)
+#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0 : __assert_rtn(__func__, __FILE__, __LINE__, __message__)
+#  else // ^^^ _CCCL_OS(APPLE) ^^^ / vvv !_CCCL_OS(APPLE) ^^^
+#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
+#  endif // !_CCCL_OS(APPLE)
 #endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
 //! _CCCL_ASSERT_IMPL_DEVICE should never be used directly
-#if _CCCL_OS(QNX)
+#if _CCCL_OS(QNX) || _CCCL_OS(APPLE)
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
 #elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \

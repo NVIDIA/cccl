@@ -114,10 +114,8 @@
 // # define __cccl_lib_execution                            201603L
 // # define __cccl_lib_filesystem                           201703L
 // #  define __cccl_lib_hardware_interference_size 201703L
-#ifdef _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#  define __cccl_lib_has_unique_object_representations 201606L
-#endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
-#define __cccl_lib_hypot 201603L
+#define __cccl_lib_has_unique_object_representations 201606L
+#define __cccl_lib_hypot                             201603L
 // # define __cccl_lib_incomplete_container_elements        201505L
 #ifndef _LIBCUDACXX_HAS_NO_IS_AGGREGATE
 #  define __cccl_lib_is_aggregate 201703L
@@ -143,7 +141,7 @@
 // #   define __cccl_lib_shared_mutex                       201505L
 // # define __cccl_lib_shared_ptr_arrays                    201611L
 // # define __cccl_lib_shared_ptr_weak_type                 201606L
-// # define __cccl_lib_string_view                          201606L
+#define __cccl_lib_string_view 201803L
 // # define __cccl_lib_to_chars                             201611L
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
@@ -173,7 +171,6 @@
 // # define __cccl_lib_constexpr_misc                       201811L
 // # define __cccl_lib_constexpr_numeric                    201911L
 // # define __cccl_lib_constexpr_string                     201907L
-// # define __cccl_lib_constexpr_string_view                201811L
 // # define __cccl_lib_constexpr_swap_algorithms            201806L
 // # define __cccl_lib_constexpr_tuple                      201811L
 // # define __cccl_lib_constexpr_utility                    201811L
@@ -206,8 +203,6 @@
 // # define __cccl_lib_source_location                      201907L
 // # define __cccl_lib_ssize                                201902L
 // # define __cccl_lib_starts_ends_with                     201711L
-// # undef  __cccl_lib_string_view
-// # define __cccl_lib_string_view                          201803L
 // # define __cccl_lib_syncbuf                              201803L
 // # define __cccl_lib_three_way_comparison                 201907L
 #  define __cccl_lib_unwrap_ref 201811L

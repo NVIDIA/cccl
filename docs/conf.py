@@ -203,7 +203,6 @@ autodoc_mock_imports = [
     "numba.cuda.dispatcher",
     "numba.extending",
     "numba.types",
-    "pynvjitlink",
     "cuda.bindings",
     "cuda.bindings.driver",
     "cuda.bindings.runtime",
@@ -217,8 +216,8 @@ autodoc_mock_imports = [
     # numpy is installed as a real dependency (see requirements.txt)
     "numpydoc_test_module",  # Mock to avoid import errors
     "cupy",
-    "cuda.cccl.parallel.experimental._bindings",
-    "cuda.cccl.parallel.experimental._bindings_impl",
+    "cuda.compute._bindings",
+    "cuda.compute._bindings_impl",
 ]
 
 # External links configuration

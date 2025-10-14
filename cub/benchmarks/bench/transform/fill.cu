@@ -26,7 +26,7 @@ static void fill(nvbench::state& state, nvbench::type_list<T>)
   // A 32-bit offset type or the value 0 or 0xFF... have <1% performance impact
   using offset_t   = int64_t;
   const auto value = T{42};
-  const auto n     = narrow<offset_t>(state.get_int64("Elements{io}"));
+  const auto n     = cuda::narrow<offset_t>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> out(n);
 
   state.add_element_count(n);

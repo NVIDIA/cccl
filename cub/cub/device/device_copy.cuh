@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 //! @file
 //! cub::DeviceCopy provides device-wide, parallel operations for copying data.
@@ -41,11 +17,13 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
+#include <cub/device/dispatch/dispatch_copy_mdspan.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/mdspan>
 
 CUB_NAMESPACE_BEGIN
 
@@ -170,7 +148,7 @@ struct DeviceCopy
     OutputIt output_it,
     SizeIteratorT sizes,
     ::cuda::std::int64_t num_ranges,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
@@ -181,6 +159,117 @@ struct DeviceCopy
 
     return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
       d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+  }
+
+  //! @rst
+  //! Copies data from a multidimensional source mdspan to a destination mdspan.
+  //!
+  //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
+  //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
+  //! transformations.
+  //!
+  //! Preconditions
+  //! +++++++++++++
+  //!
+  //!    * The source and destination mdspans must have identical extents (same ranks and sizes).
+  //!    * The source and destination mdspans data handle must not be nullptr if the size is not 0.
+  //!    * The underlying memory of the source and destination must not overlap.
+  //!    * Both mdspans must point to device memory.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates usage of DeviceCopy::Copy to copy between mdspans.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_copy_mdspan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin copy-mdspan-example-op
+  //!     :end-before: example-end copy-mdspan-example-op
+  //!
+  //! @endrst
+  //!
+  //! @tparam T_In
+  //!   **[inferred]** The element type of the source mdspan
+  //!
+  //! @tparam Extents_In
+  //!   **[inferred]** The extents type of the source mdspan
+  //!
+  //! @tparam Layout_In
+  //!   **[inferred]** The layout type of the source mdspan
+  //!
+  //! @tparam Accessor_In
+  //!   **[inferred]** The accessor type of the source mdspan
+  //!
+  //! @tparam T_Out
+  //!   **[inferred]** The element type of the destination mdspan
+  //!
+  //! @tparam Extents_Out
+  //!   **[inferred]** The extents type of the destination mdspan
+  //!
+  //! @tparam Layout_Out
+  //!   **[inferred]** The layout type of the destination mdspan
+  //!
+  //! @tparam Accessor_Out
+  //!   **[inferred]** The accessor type of the destination mdspan
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage.
+  //!   When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] mdspan_in
+  //!   Source mdspan containing the data to be copied
+  //!
+  //! @param[in] mdspan_out
+  //!   Destination mdspan where the data will be copied
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  //!
+  //! @returns
+  //!   @rst
+  //!   **cudaSuccess** on success, **cudaErrorInvalidValue** if mdspan extents don't match, or error code on failure
+  //!   @endrst
+  template <typename T_In,
+            typename Extents_In,
+            typename Layout_In,
+            typename Accessor_In,
+            typename T_Out,
+            typename Extents_Out,
+            typename Layout_Out,
+            typename Accessor_Out>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  Copy(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       ::cuda::std::mdspan<T_In, Extents_In, Layout_In, Accessor_In> mdspan_in,
+       ::cuda::std::mdspan<T_Out, Extents_Out, Layout_Out, Accessor_Out> mdspan_out,
+       ::cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
+    _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
+    _CCCL_ASSERT((mdspan_in.data_handle() != nullptr && mdspan_out.data_handle() != nullptr) || mdspan_in.size() == 0,
+                 "mdspan data handle must not be nullptr if the size is not 0");
+    // Check for memory overlap between input and output mdspans
+    if (mdspan_in.size() != 0)
+    {
+      auto in_start  = mdspan_in.data_handle();
+      auto in_end    = in_start + mdspan_in.mapping().required_span_size();
+      auto out_start = mdspan_out.data_handle();
+      auto out_end   = out_start + mdspan_out.mapping().required_span_size();
+      // TODO(fbusato): replace with __are_ptrs_overlapping
+      _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
+    }
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return ::cudaSuccess;
+    }
+    return detail::copy_mdspan::copy(mdspan_in, mdspan_out, stream);
   }
 };
 

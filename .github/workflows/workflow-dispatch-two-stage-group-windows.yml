@@ -26,4 +26,3 @@ jobs:
     with:
       producers: ${{ toJSON(matrix.producers) }}
       consumers: ${{ toJSON(matrix.consumers) }}
-    secrets: inherit

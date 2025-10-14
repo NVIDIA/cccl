@@ -227,7 +227,7 @@ public:
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
   _CCCL_TEMPLATE(class _Iter, class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>)
+  _CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
   _CCCL_HIDE_FROM_ABI async_buffer(
     ::cuda::stream_ref __stream,
     __resource_t __resource,
@@ -715,7 +715,7 @@ auto make_async_buffer(
 
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>)
+_CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
 async_buffer<_Tp, _Properties...> make_async_buffer(
   stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
@@ -724,7 +724,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND
-                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::__is_cpp17_forward_iterator<_Iter>)
+                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;

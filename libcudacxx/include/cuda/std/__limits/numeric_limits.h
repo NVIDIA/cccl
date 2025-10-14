@@ -41,7 +41,7 @@ enum float_round_style
   round_toward_neg_infinity = 3
 };
 
-enum _LIBCUDACXX_DEPRECATED_IN_CXX23 float_denorm_style
+enum _CCCL_DEPRECATED_IN_CXX23 float_denorm_style
 {
   denorm_indeterminate = -1,
   denorm_absent        = 0,
@@ -118,11 +118,11 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return type();
@@ -207,11 +207,11 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return type(0);
@@ -285,11 +285,11 @@ public:
   static constexpr int max_exponent   = 0;
   static constexpr int max_exponent10 = 0;
 
-  static constexpr bool has_infinity                                             = false;
-  static constexpr bool has_quiet_NaN                                            = false;
-  static constexpr bool has_signaling_NaN                                        = false;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = false;
+  static constexpr bool has_quiet_NaN                                      = false;
+  static constexpr bool has_signaling_NaN                                  = false;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return type(0);
@@ -358,11 +358,11 @@ public:
   static constexpr int max_exponent   = FLT_MAX_EXP;
   static constexpr int max_exponent10 = FLT_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
 #if defined(_CCCL_BUILTIN_HUGE_VALF)
   _CCCL_API static constexpr type infinity() noexcept
@@ -457,11 +457,11 @@ public:
   static constexpr int max_exponent   = DBL_MAX_EXP;
   static constexpr int max_exponent10 = DBL_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
 #if defined(_CCCL_BUILTIN_HUGE_VAL)
   _CCCL_API static constexpr type infinity() noexcept
@@ -558,11 +558,11 @@ public:
   static constexpr int max_exponent   = LDBL_MAX_EXP;
   static constexpr int max_exponent10 = LDBL_MAX_10_EXP;
 
-  static constexpr bool has_infinity                                             = true;
-  static constexpr bool has_quiet_NaN                                            = true;
-  static constexpr bool has_signaling_NaN                                        = true;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _LIBCUDACXX_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
+  static constexpr bool has_infinity                                       = true;
+  static constexpr bool has_quiet_NaN                                      = true;
+  static constexpr bool has_signaling_NaN                                  = true;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
     return _CCCL_BUILTIN_HUGE_VALL();

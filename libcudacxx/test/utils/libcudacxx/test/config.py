@@ -190,7 +190,7 @@ class Configuration(object):
         self.lit_config.note(
             "Deduced compute capabilities are: %s" % deduced_compute_archs
         )
-        deduced_comput_archs_str = ", ".join(
+        deduced_comput_archs_str = ",".join(
             [str(element) for element in deduced_compute_archs]
         )
         return deduced_comput_archs_str

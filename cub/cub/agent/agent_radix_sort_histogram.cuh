@@ -85,9 +85,7 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 template <typename AgentRadixSortHistogramPolicy,
@@ -283,7 +281,6 @@ struct AgentRadixSortHistogram
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

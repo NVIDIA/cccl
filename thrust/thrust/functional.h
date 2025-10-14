@@ -286,8 +286,7 @@ using ::cuda::std::not_fn;
 _CCCL_TEMPLATE(class _Fn)
 _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
                  _CCCL_AND ::cuda::std::is_move_constructible_v<::cuda::std::decay_t<_Fn>>)
-CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead")
-[[nodiscard]] _CCCL_API constexpr auto not_fn(_Fn&& __f)
+[[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead") _CCCL_API constexpr auto not_fn(_Fn&& __f)
 {
   return ::cuda::std::not_fn(::cuda::std::forward<_Fn>(__f));
 }

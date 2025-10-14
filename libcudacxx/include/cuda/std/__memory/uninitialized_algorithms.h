@@ -347,7 +347,7 @@ uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 //
 // This function assumes that destructors do not throw, and that the allocator is bound to
 // the correct type.
-template <class _Alloc, class _BidirIter, enable_if_t<__is_cpp17_bidirectional_iterator<_BidirIter>, int> = 0>
+template <class _Alloc, class _BidirIter, enable_if_t<__has_bidirectional_traversal<_BidirIter>, int> = 0>
 _CCCL_API constexpr void
 __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _BidirIter __last) noexcept
 {
@@ -566,12 +566,10 @@ __uninitialized_allocator_copy_impl(_Alloc& __alloc, _Iter1 __first1, _Sent1 __l
 }
 
 template <class _Alloc, class _Type>
-struct __allocator_has_trivial_copy_construct : _Not<__has_construct<_Alloc, _Type*, const _Type&>>
-{};
+inline constexpr bool __allocator_has_trivial_copy_construct = !__has_construct<_Alloc, _Type*, const _Type&>;
 
 template <class _Type>
-struct __allocator_has_trivial_copy_construct<allocator<_Type>, _Type> : true_type
-{};
+inline constexpr bool __allocator_has_trivial_copy_construct<allocator<_Type>, _Type> = true;
 
 template <class _Alloc,
           class _In,
@@ -581,7 +579,7 @@ template <class _Alloc,
             // using _RawTypeIn because of the allocator<T const> extension
             is_trivially_copy_constructible_v<_RawTypeIn> && is_trivially_copy_assignable_v<_RawTypeIn>
             && is_same_v<remove_const_t<_In>, remove_const_t<_Out>>
-            && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>::value>* = nullptr>
+            && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>>* = nullptr>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
@@ -620,7 +618,7 @@ template <class _Alloc, class _Iter1, class _Sent1, class _Iter2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
-  static_assert(__is_cpp17_move_insertable<_Alloc>::value,
+  static_assert(__is_cpp17_move_insertable<_Alloc>,
                 "The specified type does not meet the requirements of Cpp17MoveInsertable");
   auto __destruct_first = __first2;
   auto __guard          = ::cuda::std::__make_exception_guard(
@@ -641,12 +639,10 @@ __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Se
 }
 
 template <class _Alloc, class _Type>
-struct __allocator_has_trivial_move_construct : _Not<__has_construct<_Alloc, _Type*, _Type&&>>
-{};
+inline constexpr bool __allocator_has_trivial_move_construct = !__has_construct<_Alloc, _Type*, _Type&&>;
 
 template <class _Type>
-struct __allocator_has_trivial_move_construct<allocator<_Type>, _Type> : true_type
-{};
+inline constexpr bool __allocator_has_trivial_move_construct<allocator<_Type>, _Type> = true;
 
 #if !_CCCL_COMPILER(GCC)
 template <class _Alloc,
@@ -654,7 +650,7 @@ template <class _Alloc,
           class _Iter2,
           class _Type = typename iterator_traits<_Iter1>::value_type,
           class       = enable_if_t<is_trivially_move_constructible_v<_Type> && is_trivially_move_assignable_v<_Type>
-                                    && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
+                                    && __allocator_has_trivial_move_construct<_Alloc, _Type>>>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {

@@ -84,15 +84,15 @@ struct test_buffer
       cuda::__ensure_current_context ctx_setter{cuda::device_ref{0}};
       if (type == test_buffer_type::pinned)
       {
-        _CCCL_TRY_CUDA_API(cudaFreeHost, "Failed to free pinned memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFreeHost, "Failed to free pinned memory", data_ptr);
       }
       else if (type == test_buffer_type::device)
       {
-        _CCCL_TRY_CUDA_API(cudaFree, "Failed to free device memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free device memory", data_ptr);
       }
       else if (type == test_buffer_type::managed)
       {
-        _CCCL_TRY_CUDA_API(cudaFree, "Failed to free managed memory", data_ptr);
+        _CCCL_LOG_CUDA_API(cudaFree, "Failed to free managed memory", data_ptr);
       }
     }
   }

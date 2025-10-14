@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,7 +28,7 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::January)>);
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::February)>);
@@ -41,19 +42,6 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::October)>);
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::November)>);
   static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::December)>);
-
-  static_assert(cuda::std::chrono::January == cuda::std::chrono::month(1), "");
-  static_assert(cuda::std::chrono::February == cuda::std::chrono::month(2), "");
-  static_assert(cuda::std::chrono::March == cuda::std::chrono::month(3), "");
-  static_assert(cuda::std::chrono::April == cuda::std::chrono::month(4), "");
-  static_assert(cuda::std::chrono::May == cuda::std::chrono::month(5), "");
-  static_assert(cuda::std::chrono::June == cuda::std::chrono::month(6), "");
-  static_assert(cuda::std::chrono::July == cuda::std::chrono::month(7), "");
-  static_assert(cuda::std::chrono::August == cuda::std::chrono::month(8), "");
-  static_assert(cuda::std::chrono::September == cuda::std::chrono::month(9), "");
-  static_assert(cuda::std::chrono::October == cuda::std::chrono::month(10), "");
-  static_assert(cuda::std::chrono::November == cuda::std::chrono::month(11), "");
-  static_assert(cuda::std::chrono::December == cuda::std::chrono::month(12), "");
 
   assert(cuda::std::chrono::January == cuda::std::chrono::month(1));
   assert(cuda::std::chrono::February == cuda::std::chrono::month(2));
@@ -80,6 +68,14 @@ int main(int, char**)
   assert(static_cast<unsigned>(cuda::std::chrono::October) == 10);
   assert(static_cast<unsigned>(cuda::std::chrono::November) == 11);
   assert(static_cast<unsigned>(cuda::std::chrono::December) == 12);
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

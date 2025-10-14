@@ -188,8 +188,8 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 ### Modules
 
-* **cuda.cccl.parallel** — Device-level algorithms, iterators, custom GPU types
-* **cuda.cccl.cooperative** — Block/warp-level primitives
+* **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.coop** — Block/warp-level primitives
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -218,13 +218,13 @@ Requirements:
 ### Usage Examples
 
 ```python
-import cuda.cccl.parallel.experimental as parallel
-result = parallel.reduce_into(input_array, output_scalar, init_val, binary_op)
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.cccl.cooperative.experimental as cooperative
+from cuda import coop
 @cuda.jit
 def kernel(data):
-    cooperative.block.reduce(data, binary_op)
+    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()

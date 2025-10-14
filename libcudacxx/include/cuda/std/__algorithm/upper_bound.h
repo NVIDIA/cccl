@@ -63,7 +63,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
-  static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
+  static_assert(is_copy_constructible_v<_ForwardIterator>, "Iterator has to be copy constructible");
   return ::cuda::std::__upper_bound<_ClassicAlgPolicy>(
     ::cuda::std::move(__first), ::cuda::std::move(__last), __value, ::cuda::std::move(__comp), ::cuda::std::identity());
 }

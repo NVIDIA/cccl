@@ -45,9 +45,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 /**
@@ -286,7 +284,6 @@ struct AgentSegmentedRadixSort
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

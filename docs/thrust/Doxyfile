@@ -146,8 +146,7 @@ PREDEFINED             = __device__= \
                         "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
                         "CUB_NAMESPACE_BEGIN=namespace cub {" \
                         "CUB_NAMESPACE_END=}" \
-                        "CUB_RUNTIME_FUNCTION=" \
-                        "CUB_STATIC_ASSERT(cond,msg)="
+                        "CUB_RUNTIME_FUNCTION="
 
 # Images and examples
 IMAGE_PATH             = ../img

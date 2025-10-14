@@ -85,13 +85,31 @@ struct AgentUniqueByKeyPolicy
   };
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  UniqueByKeyAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace unique_by_key
+namespace detail::unique_by_key
 {
 
 /**
@@ -608,7 +626,6 @@ struct AgentUniqueByKey
   }
 };
 
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

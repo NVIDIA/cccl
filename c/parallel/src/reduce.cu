@@ -84,7 +84,7 @@ std::string get_single_tile_kernel_name(
   bool is_second_kernel)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
 
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
@@ -94,11 +94,11 @@ std::string get_single_tile_kernel_name(
     // Second kernel is always invoked with an int offset.
     // See the definition of the local variable `reduce_grid_size`
     // in DispatchReduce::InvokePasses.
-    check(nvrtcGetTypeName<int>(&offset_t));
+    check(cccl_type_name_from_nvrtc<int>(&offset_t));
   }
   else
   {
-    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
   }
 
   return std::format(
@@ -116,13 +116,13 @@ std::string get_device_reduce_kernel_name(
   std::string_view reduction_op_t, std::string_view input_iterator_t, std::string_view accum_t)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<cuda::std::identity>(&transform_op_t));
+  check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
 
   return std::format(
     "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",

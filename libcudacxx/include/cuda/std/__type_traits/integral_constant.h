@@ -47,7 +47,7 @@ using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
+using _BoolConstant CCCL_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
 
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;

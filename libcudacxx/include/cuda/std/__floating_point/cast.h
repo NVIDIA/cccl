@@ -76,25 +76,25 @@ template <class _To, class _From>
 #if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_float_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_float_to_e8m0(__v, __NV_NOSAT, ::cudaRoundZero));
     }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_float_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_float_to_fp6(__v, __NV_E2M3, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_float_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_float_to_fp6(__v, __NV_E3M2, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_float_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_float_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -145,25 +145,28 @@ template <class _To, class _From>
 #if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_double_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_double_to_e8m0(__v, __NV_NOSAT, ::cudaRoundZero));
     }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_double_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(
+        ::__nv_cvt_double_to_fp6(__v, __NV_E2M3, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_double_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(
+        ::__nv_cvt_double_to_fp6(__v, __NV_E3M2, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_double_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(
+        ::__nv_cvt_double_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -352,28 +355,28 @@ template <class _To, class _From>
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
       return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(
-        ::__nv_cvt_bfloat16raw_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
+        ::__nv_cvt_bfloat16raw_to_e8m0(__v, __NV_NOSAT, ::cudaRoundZero));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
       return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(
-        ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+        ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E2M3, ::cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
       return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(
-        ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+        ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E3M2, ::cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
       return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(
-        ::__nv_cvt_bfloat16raw_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+        ::__nv_cvt_bfloat16raw_to_fp4(__v, __NV_E2M1, ::cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else

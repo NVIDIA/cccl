@@ -50,10 +50,10 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
@@ -175,9 +175,6 @@ namespace detail::reduce
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -202,7 +199,6 @@ namespace detail::reduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -274,7 +270,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::is_aligned(d_in, sizeof(VectorT));
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
     }
     else
     {
@@ -506,9 +502,6 @@ private:
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -524,7 +517,6 @@ private:
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -532,7 +524,6 @@ template <typename AgentReducePolicy,
 struct AgentReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -543,7 +534,6 @@ struct AgentReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,
@@ -574,9 +564,6 @@ struct AgentReduce
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -592,7 +579,6 @@ struct AgentReduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -600,7 +586,6 @@ template <typename AgentReducePolicy,
 struct AgentWarpReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -612,7 +597,6 @@ struct AgentWarpReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,

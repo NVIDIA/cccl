@@ -2,19 +2,19 @@
 # creates the following interface targets:
 #
 # libcudacxx.compiler_interface
-# - Interface target linked into all targets in the CUB developer build.
-#   This should not be directly used; it is only used to construct the
-#   per-dialect targets below.
-#
-# libcudacxx.compiler_interface_cppXX
-# - Interface targets providing dialect-specific compiler flags. These should
-#   be linked into the developer build targets, as they include both
-#   libcudacxx.compiler_interface and cccl.compiler_interface_cppXX.
+# - Interface target linked into all targets in the libcudacxx developer build.
+#   Defines common warning flags, definitions, etc, including those defined in
+#   the global CCCL targets.
 
 function(libcudacxx_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
+
+  #  if (CCCL_USE_LIBCXX)
+  #    list(APPEND cxx_compile_options "-stdlib=libc++")
+  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
+  #  endif()
 
   # Set test specific flags
   list(APPEND cxx_compile_definitions "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
@@ -29,12 +29,9 @@ function(libcudacxx_build_compiler_targets)
     "${cxx_compile_definitions}"
   )
 
-  foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
-    add_library(libcudacxx.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(libcudacxx.compiler_interface_cpp${dialect} INTERFACE
-      # order matters here, we need the project options to override the cccl options.
-      cccl.compiler_interface_cpp${dialect}
-      libcudacxx.compiler_interface
-    )
-  endforeach()
-endfunction()
+  # libcudacxx only builds a single dialect at a time, so link to the currently
+  # selected dialect target from cccl:
+  target_link_libraries(libcudacxx.compiler_interface INTERFACE
+    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+  )
+ endfunction()

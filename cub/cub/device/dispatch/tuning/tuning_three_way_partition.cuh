@@ -47,10 +47,44 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::three_way_partition
 {
-namespace three_way_partition
+
+template <typename PolicyT, typename = void>
+struct ThreeWayPartitionPolicyWrapper : PolicyT
 {
+  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_DEFINE_SUB_POLICY_GETTER(ThreeWayPartition)
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ThreeWayPartitionPolicy">() = ThreeWayPartition().EncodedPolicy(),
+                  key<"DelayConstructor">() =
+                    StaticPolicyT::ThreeWayPartitionPolicy::detail::delay_constructor_t::EncodedConstructor()>();
+  }
+#endif
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
+{
+  return ThreeWayPartitionPolicyWrapper<PolicyT>{policy};
+}
+
 enum class input_size
 {
   _1,
@@ -401,7 +435,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

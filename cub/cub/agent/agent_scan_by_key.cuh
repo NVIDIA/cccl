@@ -96,9 +96,7 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace scan_by_key
+namespace detail::scan_by_key
 {
 
 /**
@@ -471,7 +469,6 @@ struct AgentScanByKey
   }
 };
 
-} // namespace scan_by_key
-} // namespace detail
+} // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

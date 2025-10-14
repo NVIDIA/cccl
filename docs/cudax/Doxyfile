@@ -143,7 +143,6 @@ PREDEFINED = \
     "CUB_NAMESPACE_BEGIN=namespace cub {" \
     "CUB_NAMESPACE_END=}" \
     "CUB_RUNTIME_FUNCTION=" \
-    "CUB_STATIC_ASSERT(cond,msg)=" \
     "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \

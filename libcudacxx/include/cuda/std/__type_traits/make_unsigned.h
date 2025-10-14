@@ -52,7 +52,7 @@ using __unsigned_types =
 #  endif // _CCCL_HAS_INT128()
               >;
 
-template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
+template <class _Tp, bool = is_integral_v<_Tp> || is_enum_v<_Tp>>
 struct __make_unsigned_impl
 {};
 

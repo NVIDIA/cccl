@@ -58,8 +58,9 @@ endif()
 # stdpar library.
 #
 # The headers following headers should be used instead:
-# <algorithm> -> <thrust/detail/algorithm_wrapper.h>
-# <memory>    -> <thrust/detail/memory_wrapper.h>
+# <algorithm> -> <cuda/std/__cccl/algorithm_wrapper.h>
+# <memory>    -> <cuda/std/__cccl/memory_wrapper.h>
+# <numeric>   -> <cuda/std/__cccl/numeric_wrapper.h>
 #
 set(stdpar_header_exclusions
   # Placeholder -- none yet.
@@ -124,17 +125,17 @@ foreach(src ${cub_srcs})
     count_substrings("${src_contents}" "${numeric_regex}" numeric_count)
 
     if (NOT algorithm_count EQUAL 0)
-      message("'${src}' includes the <algorithm> header. Replace with <thrust/detail/algorithm_wrapper.h>.")
+      message("'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>.")
       set(found_errors 1)
     endif()
 
     if (NOT memory_count EQUAL 0)
-      message("'${src}' includes the <memory> header. Replace with <thrust/detail/memory_wrapper.h>.")
+      message("'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>.")
       set(found_errors 1)
     endif()
 
     if (NOT numeric_count EQUAL 0)
-      message("'${src}' includes the <numeric> header. Replace with <thrust/detail/numeric_wrapper.h>.")
+      message("'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>.")
       set(found_errors 1)
     endif()
   endif()

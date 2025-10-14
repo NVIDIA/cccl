@@ -62,10 +62,10 @@ struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>
 
 template <class _Fn,
           class... _Args,
-          class = enable_if_t<_And<is_constructible<decay_t<_Fn>, _Fn>,
-                                   is_move_constructible<decay_t<_Fn>>,
-                                   is_constructible<decay_t<_Args>, _Args>...,
-                                   is_move_constructible<decay_t<_Args>>...>::value>>
+          class = enable_if_t<__all<is_constructible_v<decay_t<_Fn>, _Fn>,
+                                    is_move_constructible_v<decay_t<_Fn>>,
+                                    is_constructible_v<decay_t<_Args>, _Args>...,
+                                    is_move_constructible_v<decay_t<_Args>>...>::value>>
 // clang-format off
 _CCCL_API constexpr auto __bind_back(_Fn&& __f, _Args&&... __args)
     noexcept(noexcept(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward_as_tuple(::cuda::std::forward<_Args>(__args)...))))

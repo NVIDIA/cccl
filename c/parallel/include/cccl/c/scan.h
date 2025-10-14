@@ -35,6 +35,7 @@ typedef struct cccl_device_scan_build_result_t
   bool force_inclusive;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
+  void* runtime_policy;
 } cccl_device_scan_build_result_t;
 
 CCCL_C_API CUresult cccl_device_scan_build(

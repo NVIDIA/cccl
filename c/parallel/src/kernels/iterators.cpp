@@ -160,7 +160,7 @@ std::string make_kernel_inout_iterator(
   std::string_view deref,
   std::string_view advance)
 {
-  constexpr std::string_view format_template = R"XXX(
+  constexpr std::string_view in_out_template = R"XXX(
 extern "C" __device__ {1}* {2}(const void *self_ptr);
 extern "C" __device__ void {3}(void *self_ptr, {0} offset);
 
@@ -193,7 +193,7 @@ struct output_iterator_t {{
 }};
 )XXX";
 
-  return std::format(format_template, diff_t, alignment, size, value_t, deref, advance);
+  return std::format(in_out_template, diff_t, alignment, size, value_t, deref, advance);
 };
 
 std::string make_kernel_inout_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)

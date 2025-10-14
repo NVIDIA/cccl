@@ -653,8 +653,9 @@
 #ifndef NVTX3_CPP_DEFINITIONS_V1_0
 #  define NVTX3_CPP_DEFINITIONS_V1_0
 
+#  include <cuda/std/__cccl/memory_wrapper.h>
+
 #  include <cstddef>
-#  include <memory>
 #  include <string>
 #  include <type_traits>
 #  include <utility>

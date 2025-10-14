@@ -229,7 +229,8 @@ struct nvrtc2_pre_build
       std::remove_if(compile_args.args, compile_args.args + compile_args.num_args, [](const char* ptr) -> bool {
         return (ptr == nullptr);
       }));
-    nvrtcResult result = nvrtcCompileProgram(context.program, n_actual_args, compile_args.args);
+    const int num_options = static_cast<int>(n_actual_args);
+    nvrtcResult result    = nvrtcCompileProgram(context.program, num_options, compile_args.args);
 
     size_t log_size{};
     check(nvrtcGetProgramLogSize(context.program, &log_size));

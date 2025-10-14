@@ -137,6 +137,7 @@ __launch_bounds__(
     ValueIt3,
     Offset,
     CompareOp>::type;
+  using MergePolicy = typename MergeAgent::policy;
 
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;

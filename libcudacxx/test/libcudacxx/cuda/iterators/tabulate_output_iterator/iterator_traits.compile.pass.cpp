@@ -33,7 +33,7 @@ __host__ __device__ void test()
 #if !_CCCL_ARCH(ARM64) // There are some compiler issues on arm compilers
     static_assert(cuda::std::output_iterator<Iter, int>);
 #endif // !_CCCL_ARCH(ARM64)
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 
   {
@@ -45,7 +45,7 @@ __host__ __device__ void test()
 #if !_CCCL_ARCH(ARM64) // There are some compiler issues on arm compilers
     static_assert(cuda::std::output_iterator<Iter, int>);
 #endif // !_CCCL_ARCH(ARM64)
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
 }
 

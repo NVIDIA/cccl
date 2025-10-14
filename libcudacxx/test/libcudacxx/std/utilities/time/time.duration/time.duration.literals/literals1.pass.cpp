@@ -1,14 +1,16 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+
+#include "test_macros.h"
 
 int main(int, char**)
 {
@@ -44,7 +46,6 @@ int main(int, char**)
   auto ns2 = 645.ns;
   assert(ns == ns2);
 
-#if TEST_STD_VER > 2017
   assert(Sunday == weekday(0));
   assert(Monday == weekday(1));
   assert(Tuesday == weekday(2));
@@ -65,7 +66,6 @@ int main(int, char**)
   assert(October == month(10));
   assert(November == month(11));
   assert(December == month(12));
-#endif
 
   return 0;
 }

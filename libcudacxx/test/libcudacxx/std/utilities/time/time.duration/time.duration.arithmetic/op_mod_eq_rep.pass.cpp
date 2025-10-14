@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -17,22 +18,34 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_constexpr()
+class NotARep
+{};
+
+using Duration = cuda::std::chrono::seconds;
+__host__ __device__ Duration operator%=(Duration d, NotARep)
 {
-  cuda::std::chrono::seconds s(11);
-  s %= 3;
-  return s.count() == 2;
+  return d;
+}
+
+__host__ __device__ constexpr bool test()
+{
+  cuda::std::chrono::microseconds us(11);
+  us %= 3;
+  assert(us.count() == 2);
+  return true;
 }
 
 int main(int, char**)
 {
-  {
-    cuda::std::chrono::microseconds us(11);
-    us %= 3;
-    assert(us.count() == 2);
-  }
+  test();
+  static_assert(test());
 
-  static_assert(test_constexpr(), "");
+  { // This is PR#41130
+    Duration d(5);
+    NotARep n;
+    d %= n;
+    assert(d.count() == 5);
+  }
 
   return 0;
 }

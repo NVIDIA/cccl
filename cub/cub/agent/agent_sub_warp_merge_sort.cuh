@@ -48,37 +48,43 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int WARP_THREADS_ARG,
+template <int BLOCK_THREADS_ARG,
+          int WARP_THREADS_ARG,
           int ITEMS_PER_THREAD_ARG,
           cub::WarpLoadAlgorithm LOAD_ALGORITHM_ARG   = cub::WARP_LOAD_DIRECT,
           cub::CacheLoadModifier LOAD_MODIFIER_ARG    = cub::LOAD_LDG,
           cub::WarpStoreAlgorithm STORE_ALGORITHM_ARG = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
-  static constexpr int WARP_THREADS     = WARP_THREADS_ARG;
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_ARG;
-  static constexpr int ITEMS_PER_TILE   = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS      = BLOCK_THREADS_ARG;
+  static constexpr int WARP_THREADS       = WARP_THREADS_ARG;
+  static constexpr int ITEMS_PER_THREAD   = ITEMS_PER_THREAD_ARG;
+  static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
 
   static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LOAD_ALGORITHM_ARG;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LOAD_MODIFIER_ARG;
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = STORE_ALGORITHM_ARG;
 };
 
-template <int BLOCK_THREADS_ARG, typename SmallPolicy, typename MediumPolicy>
-struct AgentSmallAndMediumSegmentedSortPolicy
-{
-  static constexpr int BLOCK_THREADS = BLOCK_THREADS_ARG;
-  using SmallPolicyT                 = SmallPolicy;
-  using MediumPolicyT                = MediumPolicy;
-
-  static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS / MediumPolicyT::WARP_THREADS;
-
-  static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS / SmallPolicyT::WARP_THREADS;
-};
-
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
-namespace sub_warp_merge_sort
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  SubWarpMergeSortAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (WARP_THREADS, WarpThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+namespace detail::sub_warp_merge_sort
 {
 
 /**
@@ -335,7 +341,6 @@ private:
   }
 };
 
-} // namespace sub_warp_merge_sort
-} // namespace detail
+} // namespace detail::sub_warp_merge_sort
 
 CUB_NAMESPACE_END

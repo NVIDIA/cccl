@@ -42,7 +42,7 @@ using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>:
 //! __basic_vtable
 //!
 template <class _Interface, auto... _Mbrs>
-struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
+struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
     : __rtti_base
     , __virtual_fn<_Mbrs>...
 {
@@ -105,7 +105,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
 //!
 
 template <class... _Interfaces>
-struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
+struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
     : __rtti_ex<sizeof...(_Interfaces)>
     , __vtable_for<_Interfaces>...
 {
