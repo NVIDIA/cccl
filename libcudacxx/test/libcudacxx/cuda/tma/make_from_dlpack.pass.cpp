@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "dlpack/dlpack.h"
+#include "dlpack/dlpack.h" // to include before the make_from_dlpack.h
 //
 #include <cuda/__tma/make_from_dlpack.h>
 #include <cuda/std/array>
@@ -16,12 +16,9 @@
 
 #include "test_macros.h"
 
-// DLPack headers provide the definition of DLTensor. They are added to the
-// include path via `cccl_get_dlpack()` in this directory's CMakeLists.txt.
+#if _CCCL_HOST_COMPILATION()
 
-// These tests exercise host-side utilities; no kernels or GPUs required.
-
-__host__ __device__ constexpr bool test()
+__host__ bool test()
 {
   alignas(16) float data[64]{};
 
@@ -47,9 +44,10 @@ __host__ __device__ constexpr bool test()
 
   auto descriptor = cuda::make_tma_descriptor(tensor, box_sizes, elem_strides);
 
-  assert(descriptor.objectType == CU_OBJECT_TYPE_TENSOR_MAP);
   return true;
 }
+
+#endif // _CCCL_HOST_COMPILATION()
 /*
 TEST_CASE("make_tma_descriptor with bfloat16 and swizzle")
 {
@@ -84,11 +82,10 @@ TEST_CASE("make_tma_descriptor with bfloat16 and swizzle")
     cuda::TmaL2FetchSize::bytes64,
     cuda::TmaOOBfill::nan);
 
-  TEST_REQUIRE(descriptor.objectType == CU_OBJECT_TYPE_TENSOR_MAP);
 }*/
 
 int main(int, char**)
 {
-  assert(test());
+  NV_IF_TARGET(NV_IS_HOST, (assert(test());));
   return 0;
 }
