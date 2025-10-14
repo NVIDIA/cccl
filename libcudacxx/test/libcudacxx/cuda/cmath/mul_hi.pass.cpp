@@ -115,7 +115,7 @@ __host__ __device__ constexpr void test_type()
   if constexpr (sizeof(T) == 16)
   {
     using namespace test_integer_literals;
-    assert(cuda::mul_hi(204'446'744'073'709'551'616_i128, 48'433'654'723'709'533'982_i128) == T{29});
+    assert(cuda::mul_hi(T{204'446'744'073'709'551'616_i128}, T{48'433'654'723'709'533'982_i128}) == T{29});
     if constexpr (cuda::std::is_signed_v<T>)
     {
       assert(cuda::mul_hi(T{-204'446'744'073'709'551'616_i128}, T{-48'433'654'723'709'533'982_i128}) == T{29});
