@@ -205,6 +205,7 @@ public:
       {
         throw static_cast<_Error&&>(__err);
       }
+      _CCCL_UNREACHABLE();
     }
   };
 

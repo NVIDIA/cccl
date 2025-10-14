@@ -202,7 +202,7 @@ _CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
 struct __mk_sch_env_t
 {
   template <class _Sch, class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
   {
     if constexpr (__completes_inline<env_of_t<schedule_result_t<_Sch>>, _Env...>
                   && (__callable<get_scheduler_t, const _Env&> || ...))

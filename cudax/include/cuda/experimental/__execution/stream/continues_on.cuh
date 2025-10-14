@@ -201,8 +201,8 @@ struct __continues_on_t
   template <class _Sndr>
   [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
-    auto& [__tag, __sched, __child] = __sndr;
-    using __child_t                 = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
+    [[maybe_unused]] auto& [__tag, __sched, __child] = __sndr;
+    using __child_t                                  = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
     if constexpr (::cuda::__is_specialization_of_v<decltype(__child), __sndr_t>)
     {
