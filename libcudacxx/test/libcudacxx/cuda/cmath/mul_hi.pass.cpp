@@ -17,6 +17,8 @@
 
 #include "literal.h"
 
+_CCCL_DIAG_SUPPRESS_NVCC(23)
+
 template <typename T>
 __host__ __device__ constexpr void test_type()
 {
@@ -92,7 +94,7 @@ __host__ __device__ constexpr void test_type()
   else if constexpr (sizeof(T) == 4)
   {
     assert(cuda::mul_hi(T{2305878}, T{31852876}) == T{0x42CD});
-    if constexpr (cuda::std::is_same_v<T, int>)
+    if constexpr (cuda::std::is_signed_v<T>)
     {
       assert(cuda::mul_hi(T{-2305878}, T{-31852876}) == T{0x42CD});
       assert(cuda::mul_hi(T{-2305878}, T{31852876}) == T{-0x42CE});
@@ -102,13 +104,26 @@ __host__ __device__ constexpr void test_type()
   else if constexpr (sizeof(T) == 8)
   {
     assert(cuda::mul_hi(T{2'305'878'454'534}, T{31'852'876'355'863}) == T{0x3CC166});
-    if constexpr (cuda::std::is_same_v<T, int64_t>)
+    if constexpr (cuda::std::is_signed_v<T>)
     {
       assert(cuda::mul_hi(T{-2'305'878'454'534}, T{-31'852'876'355'863}) == T{0x3CC166});
       assert(cuda::mul_hi(T{-2'305'878'454'534}, T{31'852'876'355'863}) == T{-0x3CC167});
       assert(cuda::mul_hi(T{2'305'878'454'534}, T{-31'852'876'355'863}) == T{-0x3CC167});
     }
   }
+#if _CCCL_HAS_INT128()
+  if constexpr (sizeof(T) == 16)
+  {
+    using namespace test_integer_literals;
+    assert(cuda::mul_hi(204'446'744'073'709'551'616_i128, 48'433'654'723'709'533'982_i128) == T{29});
+    if constexpr (cuda::std::is_signed_v<T>)
+    {
+      assert(cuda::mul_hi(T{-204'446'744'073'709'551'616_i128}, T{-48'433'654'723'709'533'982_i128}) == T{29});
+      assert(cuda::mul_hi(T{204'446'744'073'709'551'616_i128}, T{-48'433'654'723'709'533'982_i128}) == T{-30});
+      assert(cuda::mul_hi(T{-204'446'744'073'709'551'616_i128}, T{48'433'654'723'709'533'982_i128}) == T{-30});
+    }
+  }
+#endif // _CCCL_HAS_INT128()
 }
 
 __host__ __device__ constexpr bool test()
