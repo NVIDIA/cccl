@@ -2,8 +2,6 @@
 // pitfalls regarding compiler/dialect compatibility.
 
 //=======================================================================================================================
-#include <cuda/std/__bit/popcount.h>
-
 #include <nv/target>
 
 // The below are part of libcu++ and are exposed for users that would like a simpler method of targeting host/device
@@ -68,7 +66,7 @@ __host__ __device__ int my_popc(unsigned int v)
   // Here we check if we're compiling for device code. This function acts as a backend for both CUDA and host CPU popc.
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    return ::cuda::std::popcount(v); // Is false, use CUDA intrinsic
+    return __popc(v); // Is false, use CUDA intrinsic
     , // Notice comma signifying end of block
     return __builtin_popc(v); // Is host, use GCC builtin
   )
