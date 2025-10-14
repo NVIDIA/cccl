@@ -261,8 +261,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
     : integral_constant<bool, is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>>
 {};
 
+// Not going directly through __invoke_result_t because we want the additional device lambda checks in invoke_result
 template <class _Fn, class... _Args>
-using invoke_result_t = __invoke_result_t<_Fn, _Args...>;
+using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
 template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
