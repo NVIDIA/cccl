@@ -31,11 +31,11 @@ class __physical_device;
 class device_ref;
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
+struct arch_traits_t;
+class compute_capability;
+enum class arch_id : int;
 
-namespace arch
-{
-struct traits_t;
-} // namespace arch
+inline constexpr int __arch_specific_id_multiplier = 100000;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

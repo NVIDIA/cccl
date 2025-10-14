@@ -28,6 +28,8 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/span>
 
@@ -47,19 +49,12 @@ enum class __memory_location_type
 };
 
 //! @brief  Checks whether the current device supports \c cudaMallocAsync.
-//! @param __device_id The id of the device for which to query support.
+//! @param __device The id of the device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void __verify_device_supports_stream_ordered_allocations(const int __device_id)
+inline void __verify_device_supports_stream_ordered_allocations(device_ref __device)
 {
-  int __pool_is_supported = 0;
-  _CCCL_TRY_CUDA_API(
-    ::cudaDeviceGetAttribute,
-    "Failed to call cudaDeviceGetAttribute",
-    &__pool_is_supported,
-    ::cudaDevAttrMemoryPoolsSupported,
-    __device_id);
-  if (__pool_is_supported == 0)
+  if (!__device.attribute(::cuda::device_attributes::memory_pools_supported))
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "cudaMallocAsync is not supported on the given device");
   }
