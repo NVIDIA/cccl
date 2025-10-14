@@ -22,9 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -36,11 +33,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-
-// TODO: Disentangle the type traits and ::cuda::std::invoke properly
 
 #include <cuda/std/__cccl/prologue.h>
 
