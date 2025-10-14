@@ -26,6 +26,7 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__device/logical_device.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
