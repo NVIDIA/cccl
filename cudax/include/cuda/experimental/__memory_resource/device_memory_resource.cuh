@@ -98,7 +98,9 @@ public:
 
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
-  _CCCL_HOST_API friend constexpr void get_property(device_memory_resource const&, ::cuda::mr::device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(device_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
 };

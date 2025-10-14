@@ -33,7 +33,6 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/__memory_resource/properties.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

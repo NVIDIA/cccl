@@ -22,14 +22,13 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/__utility/basic_any.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/optional>
-
-#include <cuda/__memory_resource/properties.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

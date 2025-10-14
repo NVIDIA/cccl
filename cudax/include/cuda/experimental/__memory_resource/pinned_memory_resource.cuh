@@ -81,9 +81,12 @@ public:
   {}
 
   //! @brief Enables the \c device_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  {}
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };

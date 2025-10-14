@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_swappable.h>
@@ -29,8 +30,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
-
-#include <cuda/__memory_resource/properties.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

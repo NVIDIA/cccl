@@ -33,7 +33,6 @@
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/__memory_resource/properties.h>
 #include <cuda/experimental/__stream/internal_streams.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -121,10 +120,13 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(legacy_managed_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  _CCCL_HOST_API friend constexpr void
+  get_property(legacy_managed_memory_resource const&, ::cuda::mr::device_accessible) noexcept
   {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(legacy_managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(legacy_managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept

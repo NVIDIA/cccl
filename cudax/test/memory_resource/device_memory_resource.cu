@@ -361,9 +361,11 @@ struct resource
   {}
 };
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>, "");
+static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>,
+              "");
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>, "");
+static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>,
+              "");
 
 template <AccessibilityType Accessibility>
 struct test_resource : public resource<Accessibility>

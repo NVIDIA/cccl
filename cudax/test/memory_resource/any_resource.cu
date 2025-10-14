@@ -19,8 +19,8 @@
 static_assert(
   cuda::has_property<cudax::any_synchronous_resource<cuda::mr::host_accessible, get_data>, ::cuda::mr::host_accessible>);
 static_assert(cuda::has_property<cudax::any_synchronous_resource<cuda::mr::host_accessible, get_data>, get_data>);
-static_assert(
-  !cuda::has_property<cudax::any_synchronous_resource<cuda::mr::host_accessible, get_data>, ::cuda::mr::device_accessible>);
+static_assert(!cuda::has_property<cudax::any_synchronous_resource<cuda::mr::host_accessible, get_data>,
+                                  ::cuda::mr::device_accessible>);
 
 struct unused_property
 {};
