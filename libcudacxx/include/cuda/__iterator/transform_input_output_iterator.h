@@ -381,13 +381,20 @@ public:
     return transform_input_output_iterator{__iter.__current_ - __n, *__iter.__input_func_, *__iter.__output_func_};
   }
 
+  template <class _Iter2>
+  static constexpr bool __can_difference =
+    (::cuda::std::__has_random_access_traversal<_Iter2> || ::cuda::std::sized_sentinel_for<_Iter2, _Iter2>);
+
+  template <class _Iter2>
+  static constexpr bool __noexcept_difference =
+    noexcept(::cuda::std::declval<const _Iter2&>() - ::cuda::std::declval<const _Iter2&>());
+
   //! @brief Returns the distance between two @c transform_input_output_iterator
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator-(const transform_input_output_iterator& __lhs, const transform_input_output_iterator& __rhs) noexcept(
-    noexcept(::cuda::std::declval<const _Iter2&>() - ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(difference_type)(::cuda::std::sized_sentinel_for<_Iter2, _Iter2>)
+  [[nodiscard]] _CCCL_API friend constexpr auto operator-(const transform_input_output_iterator& __lhs,
+                                                          const transform_input_output_iterator& __rhs) //
+    noexcept(__noexcept_difference<_Iter2>) _CCCL_TRAILING_REQUIRES(difference_type)(__can_difference<_Iter2>)
   {
     return __lhs.__current_ - __rhs.__current_;
   }
