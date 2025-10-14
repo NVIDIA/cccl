@@ -48,8 +48,15 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/__algorithm_>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -552,7 +559,7 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
+    int segment_first_lane = ::cuda::std::__bit_log2(ballot);
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
