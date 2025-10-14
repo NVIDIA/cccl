@@ -286,15 +286,19 @@ In the spirit of "You only support what you test", see our [CI Overview](https:/
 
 ### GPU Architectures
 
-While some features may be specific to certain architectures, CCCL generally supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
+CCCL supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
 
-To be clear, while CCCL supports compilation with [two CTK major versions](#CUDA-toolkit-(CTK)-compatibility), this does *not* mean we continue to support all architectures from the older CTK.
+To be clear, while CCCL can be compiled with both the current and previous CTK major versions, we do not test or validate architectures that were only supported in the older CTK. 
+
+Those architectures may still work — we do not intentionally break them — but they are outside our regular CI coverage. Furthermore, new features are not guaranteed to work with these architectures either. 
+
+We welcome community contributions for reasonable fixes that unblock users on these older architectures.
 
 For example, CCCL 3.0 supports compiling with CTK 12.x and 13.x where
 - CUDA Toolkit 13.x supports `>=sm_75`
 - CUDA Toolkit 12.x supports `>=sm_50`
 
-So even when compiling CCCL 3.0 with CTK 12.x, only the architectures supported by the current CTK (13.x) are available (`sm_75`+).
+In this scenario, compiling CCCL 3.0 with CTK 12.x targeting architectures below `sm_75` may work, but those configurations are not part of our regular testing.
 
 ### C++ Dialects
 - C++17
