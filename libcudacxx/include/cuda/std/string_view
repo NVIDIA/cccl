@@ -97,16 +97,21 @@ _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
     (__d.operator ::cuda::std::basic_string_view<_CharT, _Traits>()));
 
 template <class _Range, class _CharT, class _Traits>
-_CCCL_CONCEPT __cccl_basic_sv_compatible_range_check_traits = _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits))(
-  typename(typename _Range::traits_type), requires(is_same_v<typename _Range::traits_type, _Traits>));
+_CCCL_CONCEPT __cccl_basic_sv_compatible_range_check_traits = _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits)) //
+  ( //
+    typename(typename _Range::traits_type), //
+    requires(is_same_v<typename _Range::traits_type, _Traits>) //
+  );
 
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_basic_sv_compatible_range_check_traits_std_ext =
 #if !_CCCL_COMPILER(NVRTC)
-  _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits))(
-    typename(typename _Range::traits_type),
-    requires(is_same_v<typename _Range::traits_type, ::std::char_traits<_CharT>>),
-    requires(is_same_v<_Traits, ::cuda::std::char_traits<_CharT>>));
+  _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits)) //
+  ( //
+    typename(typename _Range::traits_type), //
+    requires(is_same_v<typename _Range::traits_type, ::std::char_traits<_CharT>>), //
+    requires(is_same_v<_Traits, ::cuda::std::char_traits<_CharT>>) //
+  );
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
   true;
 #endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
@@ -231,6 +236,17 @@ public:
       : __data_{::cuda::std::ranges::data(__r)}
       , __size_{::cuda::std::ranges::size(__r)}
   {}
+
+  // msvc has problems with constructing a string view from another string view using the from ranges constructor,
+  // so we define the constructor ourselves
+#if _CCCL_COMPILER(MSVC)
+  _CCCL_TEMPLATE(class _OtherTraits)
+  _CCCL_REQUIRES((!is_same_v<_Traits, _OtherTraits>) )
+  _CCCL_API explicit constexpr basic_string_view(const basic_string_view<_CharT, _OtherTraits>& __other)
+      : __data_{__other.data()}
+      , __size_{__other.size()}
+  {}
+#endif // _CCCL_COMPILER(MSVC)
 
   [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
   {
