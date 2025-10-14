@@ -18,15 +18,15 @@ using ext_t = cuda::std::extents<int, 4>;
 
 __device__ void basic_mdspan_access_test()
 {
-  cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
-  cuda::device_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
   NV_IF_TARGET(NV_IS_DEVICE, unused(d_md[0]);)
   unused(m_md[0]);
 }
 
 __global__ void test_kernel(cuda::device_mdspan<int, ext_t> md)
 {
-  cuda::device_mdspan<int, ext_t> h_md2{md};
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> h_md2{md};
   unused(h_md2);
 }
 
