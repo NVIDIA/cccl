@@ -61,23 +61,26 @@ struct __member_pointer_class_type<_Ret _ClassType::*>
   using type = _ClassType;
 };
 
+template <class _DecayedFp>
+using __member_pointer_class_type_t = typename __member_pointer_class_type<_DecayedFp>::type;
+
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet1 =
   enable_if_t<is_member_function_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
 
-template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet2 =
   enable_if_t<is_member_function_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet3 =
   enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
               && !__cccl_is_reference_wrapper_v<_DecayA0>>;
@@ -85,20 +88,20 @@ using __enable_if_bullet3 =
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet4 =
   enable_if_t<is_member_object_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
 
-template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet5 =
   enable_if_t<is_member_object_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet6 =
   enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
               && !__cccl_is_reference_wrapper_v<_DecayA0>>;
@@ -298,13 +301,13 @@ inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::va
 // is_nothrow_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
+    : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable_r : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
+    : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
@@ -337,7 +340,7 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_noth
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invocable, typename InputT, typename InitT = InputT>
-using __accumulator_t = typename decay<typename ::cuda::std::__invoke_of<Invocable, InitT, InputT>::type>::type;
+using __accumulator_t = decay_t<invoke_result_t<Invocable, InitT, InputT>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
