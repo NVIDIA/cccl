@@ -90,7 +90,33 @@ class philox_engine
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
 
 public:
-  using result_type = _UIntType;
+  using result_type                   = _UIntType;
+  static constexpr size_t word_size   = _WordSize;
+  static constexpr size_t word_count  = _BufferSize;
+  static constexpr size_t round_count = _NumRounds;
+  static constexpr auto multipliers   = []() constexpr {
+    constexpr result_type __constants[] = {_Constants...};
+    if constexpr (word_count == 2)
+    {
+      return ::cuda::std::array<result_type, 1>{__constants[0]};
+    }
+    else
+    {
+      return ::cuda::std::array<result_type, 2>{__constants[0], __constants[2]};
+    }
+  }();
+  static constexpr auto round_consts = []() constexpr {
+    constexpr result_type __constants[] = {_Constants...};
+    if constexpr (word_count == 2)
+    {
+      return ::cuda::std::array<result_type, 1>{__constants[1]};
+    }
+    else
+    {
+      return ::cuda::std::array<result_type, 2>{__constants[1], __constants[3]};
+    }
+  }();
+  static constexpr std::uint_least32_t default_seed = 20111115u;
 
   //! The smallest value this engine may potentially produce.
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
@@ -100,11 +126,8 @@ public:
   //! The largest value this engine may potentially produce.
   [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
-    return ((1ull << (_WordSize - 1)) | ((1ull << (_WordSize - 1)) - 1));
+    return ((1ull << (word_size - 1)) | ((1ull << (word_size - 1)) - 1));
   }
-
-  //! The default seed.
-  static constexpr result_type default_seed = 20111115u;
 
   //! This constructor, which optionally accepts a seed, initializes a new
   //! philox_engine.
@@ -129,7 +152,7 @@ public:
     __y__    = {};
     __k__    = {};
     __k__[0] = __s & max();
-    __j__    = _BufferSize - 1;
+    __j__    = word_count - 1;
   }
 
   //! This method sets the internal counter. Each increment of the counter produces n new values. The array counter
@@ -151,13 +174,13 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param __counter The counter.
-  _CCCL_API void set_counter(const ::cuda::std::array<result_type, _BufferSize>& __counter)
+  _CCCL_API void set_counter(const ::cuda::std::array<result_type, word_count>& __counter)
   {
-    for (size_t __j = 0; __j < _BufferSize; ++__j)
+    for (size_t __j = 0; __j < word_count; ++__j)
     {
-      __x__[__j] = __counter[_BufferSize - 1 - __j] & max();
+      __x__[__j] = __counter[word_count - 1 - __j] & max();
     }
-    __j__ = _BufferSize - 1;
+    __j__ = word_count - 1;
   }
 
   // generating functions
@@ -167,7 +190,7 @@ public:
   _CCCL_API result_type operator()()
   {
     __j__++;
-    if (__j__ == _BufferSize)
+    if (__j__ == word_count)
     {
       this->__philox();
       this->__increment_counter();
@@ -183,27 +206,27 @@ public:
   _CCCL_API void discard(unsigned long long __z)
   {
     // Advance __j__ until we are at n - 1
-    while (__j__ != _BufferSize - 1 && __z > 0)
+    while (__j__ != word_count - 1 && __z > 0)
     {
       (*this)();
       __z--;
     }
 
     // Increment the big integer counter, handling overflow
-    auto __increment    = __z / _BufferSize;
+    auto __increment    = __z / word_count;
     std::size_t __carry = 0;
-    for (std::size_t __j = 0; __j < _BufferSize; ++__j)
+    for (std::size_t __j = 0; __j < word_count; ++__j)
     {
       if (__increment == 0 && __carry == 0)
       {
         break;
       }
-      _UIntType __new_x_j = (__x__[__j] + (__increment & max()) + __carry) & max();
-      __carry             = (__new_x_j < __x__[__j]) ? 1 : 0;
-      __x__[__j]          = __new_x_j;
-      if constexpr (_WordSize < 64)
+      result_type __new_x_j = (__x__[__j] + (__increment & max()) + __carry) & max();
+      __carry               = (__new_x_j < __x__[__j]) ? 1 : 0;
+      __x__[__j]            = __new_x_j;
+      if constexpr (word_size < 64)
       {
-        __increment >>= _WordSize;
+        __increment >>= word_size;
       }
       else
       {
@@ -212,7 +235,7 @@ public:
     }
 
     // Advance the output buffer position by the remainder
-    const auto __remainder = __z % _BufferSize;
+    const auto __remainder = __z % word_count;
     for (std::size_t __j = 0; __j < __remainder; ++__j)
     {
       (*this)();
@@ -224,16 +247,16 @@ public:
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend bool
-  operator==(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __lhs,
-             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __rhs)
+  operator==(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs)
   {
     if (__lhs.__x__ != __rhs.__x__)
     {
       return false;
     }
-    // Only check the y buffer if not __j__ != _BufferSize-1
-    // If __j__ == _BufferSize-1, then __y__ is not valid
-    if (__lhs.__j__ != _BufferSize - 1 && __lhs.__y__ != __rhs.__y__)
+    // Only check the y buffer if not __j__ != word_count-1
+    // If __j__ == word_count-1, then __y__ is not valid
+    if (__lhs.__j__ != word_count - 1 && __lhs.__y__ != __rhs.__y__)
     {
       return false;
     }
@@ -250,8 +273,8 @@ public:
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is not equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend bool
-  operator!=(const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __lhs,
-             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __rhs)
+  operator!=(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs)
   {
     return !(__lhs == __rhs);
   }
@@ -265,7 +288,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os,
-             const philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __e)
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base     = typename ostream_type::ios_base;
@@ -278,10 +301,10 @@ public:
     __os.fill(__os.widen(' '));
 
     // output counter array (__x__)
-    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__x__[__i];
-      if (__i < _BufferSize - 1)
+      if (__i < word_count - 1)
       {
         __os << __os.widen(' ');
       }
@@ -289,10 +312,10 @@ public:
     __os << __os.widen(' ');
 
     // output key array (__k__)
-    for (size_t __i = 0; __i < _BufferSize / 2; ++__i)
+    for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __os << __e.__k__[__i];
-      if (__i < _BufferSize / 2 - 1)
+      if (__i < word_count / 2 - 1)
       {
         __os << __os.widen(' ');
       }
@@ -300,10 +323,10 @@ public:
     __os << __os.widen(' ');
 
     // output output buffer (__y__)
-    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__y__[__i];
-      if (__i < _BufferSize - 1)
+      if (__i < word_count - 1)
       {
         __os << __os.widen(' ');
       }
@@ -327,7 +350,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is,
-             philox_engine<_UIntType, _WordSize, _BufferSize, _NumRounds, _Constants...>& __e)
+             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
     using ios_base     = typename istream_type::ios_base;
@@ -338,19 +361,19 @@ public:
     __is.flags(ios_base::dec);
 
     // input counter array (__x__)
-    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__x__[__i];
     }
 
     // input key array (__k__)
-    for (size_t __i = 0; __i < _BufferSize / 2; ++__i)
+    for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __is >> __e.__k__[__i];
     }
 
     // input output buffer (__y__)
-    for (size_t __i = 0; __i < _BufferSize; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__y__[__i];
     }
@@ -374,41 +397,41 @@ private:
     {
       __x__[__i] = (__x__[__i] + 1) & max();
       ++__i;
-    } while (__i < _BufferSize && !__x__[__i - 1]);
+    } while (__i < word_count && !__x__[__i - 1]);
   }
 
   _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const
   {
-    if constexpr (_WordSize == 32)
+    if constexpr (word_size == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      __hi = static_cast<_UIntType>(
+      __hi = static_cast<result_type>(
         ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
       __lo = (__a * __b) & max();
     }
-    else if constexpr (_WordSize == 64)
+    else if constexpr (word_size == 64)
     {
-      __hi = static_cast<_UIntType>(
+      __hi = static_cast<result_type>(
         ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
       __lo = (__a * __b) & max();
     }
     else
     {
       // Generic slow implementation
-      constexpr _UIntType __w_half  = _WordSize / 2;
-      constexpr _UIntType __lo_mask = (((_UIntType) 1) << __w_half) - 1;
+      constexpr result_type __w_half  = word_size / 2;
+      constexpr result_type __lo_mask = (((result_type) 1) << __w_half) - 1;
 
-      __lo            = __a * __b;
-      _UIntType __ahi = __a >> __w_half;
-      _UIntType __alo = __a & __lo_mask;
-      _UIntType __bhi = __b >> __w_half;
-      _UIntType __blo = __b & __lo_mask;
+      __lo              = __a * __b;
+      result_type __ahi = __a >> __w_half;
+      result_type __alo = __a & __lo_mask;
+      result_type __bhi = __b >> __w_half;
+      result_type __blo = __b & __lo_mask;
 
-      _UIntType __ahbl = __ahi * __blo;
-      _UIntType __albh = __alo * __bhi;
+      result_type __ahbl = __ahi * __blo;
+      result_type __albh = __alo * __bhi;
 
-      _UIntType __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
-      __hi                  = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
+      result_type __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
+      __hi                    = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
       __hi += __ahbl_albh >> __w_half;
       __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
     }
@@ -417,32 +440,31 @@ private:
   _CCCL_API void __philox()
   {
     // Only two variants are allowed, n=2 or n=4
-    const _UIntType __consts_array[_BufferSize] = {_Constants...};
-    if constexpr (_BufferSize == 2)
+    if constexpr (word_count == 2)
     {
-      ::cuda::std::array<result_type, _BufferSize> __S     = this->__x__;
-      ::cuda::std::array<result_type, _BufferSize / 2> __K = this->__k__;
-      for (size_t __j = 0; __j < _NumRounds; ++__j)
+      ::cuda::std::array<result_type, word_count> __S     = this->__x__;
+      ::cuda::std::array<result_type, word_count / 2> __K = this->__k__;
+      for (size_t __j = 0; __j < round_count; ++__j)
       {
         result_type __hi, __lo;
-        this->__mulhilo(__S[0], __consts_array[0], __hi, __lo);
+        this->__mulhilo(__S[0], multipliers[0], __hi, __lo);
         __S[0] = __hi ^ __K[0] ^ __S[1];
         __S[1] = __lo;
-        __K[0] = (__K[0] + __consts_array[1]) & max();
+        __K[0] = (__K[0] + round_consts[0]) & max();
       }
       this->__y__ = __S;
     }
-    else if constexpr (_BufferSize == 4)
+    else if constexpr (word_count == 4)
     {
-      ::cuda::std::array<result_type, _BufferSize> __S     = this->__x__;
-      ::cuda::std::array<result_type, _BufferSize / 2> __K = this->__k__;
-      for (size_t __j = 0; __j < _NumRounds; ++__j)
+      ::cuda::std::array<result_type, word_count> __S     = this->__x__;
+      ::cuda::std::array<result_type, word_count / 2> __K = this->__k__;
+      for (size_t __j = 0; __j < round_count; ++__j)
       {
-        ::cuda::std::array<result_type, _BufferSize> __V = {__S[2], __S[1], __S[0], __S[3]};
+        ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
         result_type __hi0, __lo0;
-        this->__mulhilo(__V[0], __consts_array[2], __hi0, __lo0);
+        this->__mulhilo(__V[0], multipliers[1], __hi0, __lo0);
         result_type __hi2, __lo2;
-        this->__mulhilo(__V[2], __consts_array[0], __hi2, __lo2);
+        this->__mulhilo(__V[2], multipliers[0], __hi2, __lo2);
 
         __S[0] = __hi0 ^ __K[0] ^ __V[1];
         __S[1] = __lo0;
@@ -451,22 +473,22 @@ private:
 
         __S[3] = __lo2;
 
-        __K[0] = (__K[0] + __consts_array[1]) & max();
-        __K[1] = (__K[1] + __consts_array[3]) & max();
+        __K[0] = (__K[0] + round_consts[0]) & max();
+        __K[1] = (__K[1] + round_consts[1]) & max();
       }
 
       this->__y__ = __S;
     }
   }
 
-  // The counter X, a big integer stored as _BufferSize w-bit words.
+  // The counter X, a big integer stored as word_count w-bit words.
   // The least significant word is __x__[0].
-  ::cuda::std::array<_UIntType, _BufferSize> __x__ = {};
+  ::cuda::std::array<result_type, word_count> __x__ = {};
   // K is the "Key", storing the seed
-  ::cuda::std::array<_UIntType, _BufferSize / 2> __k__ = {};
+  ::cuda::std::array<result_type, word_count / 2> __k__ = {};
   // The output buffer Y
-  // Each time __j__ reaches _BufferSize, we generate _BufferSize new values and store them in __y__.
-  ::cuda::std::array<_UIntType, _BufferSize> __y__ = {};
+  // Each time __j__ reaches word_count, we generate word_count new values and store them in __y__.
+  ::cuda::std::array<result_type, word_count> __y__ = {};
   // Each generation produces n random numbers, which are returned one at a time.
   // __j__ cycles through [0, n-1].
   unsigned long long __j__ = 0;
