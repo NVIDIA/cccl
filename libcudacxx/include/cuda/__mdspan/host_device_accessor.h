@@ -290,9 +290,9 @@ public:
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
-  _CCCL_TEMPLATE(typename _NotUsed = void)
-  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor>)
-  _CCCL_API constexpr __device_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor>)
+  _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
+  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor2>)
+  _CCCL_API constexpr __device_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
@@ -425,9 +425,9 @@ public:
   using reference        = typename _Accessor::reference;
   using element_type     = typename _Accessor::element_type;
 
-  _CCCL_TEMPLATE(typename _NotUsed = void)
-  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor>)
-  _CCCL_API constexpr __managed_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor>)
+  _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
+  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor2>)
+  _CCCL_API constexpr __managed_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
