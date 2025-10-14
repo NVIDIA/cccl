@@ -85,8 +85,8 @@ class philox_engine
 {
   static_assert(_BufferSize == 2 || _BufferSize == 4, "N argument must be either 2 or 4");
   static_assert(sizeof...(_Constants) == _BufferSize, "consts array must be of length N");
-  static_assert(0 < _NumRounds, "rounds must be a natural number");
-  static_assert((0 < _WordSize && _WordSize <= std::numeric_limits<_UIntType>::digits),
+  static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
+  static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
 
 public:
@@ -192,8 +192,8 @@ public:
     __j__++;
     if (__j__ == word_count)
     {
-      this->__philox();
-      this->__increment_counter();
+      __philox();
+      __increment_counter();
       __j__ = 0;
     }
     return __y__[__j__];
@@ -213,9 +213,9 @@ public:
     }
 
     // Increment the big integer counter, handling overflow
-    auto __increment    = __z / word_count;
-    std::size_t __carry = 0;
-    for (std::size_t __j = 0; __j < word_count; ++__j)
+    unsigned long long __increment = __z / word_count;
+    ::cuda::std::size_t __carry    = 0;
+    for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
     {
       if (__increment == 0 && __carry == 0)
       {
@@ -236,7 +236,7 @@ public:
 
     // Advance the output buffer position by the remainder
     const auto __remainder = __z % word_count;
-    for (std::size_t __j = 0; __j < __remainder; ++__j)
+    for (::cuda::std::size_t __j = 0; __j < __remainder; ++__j)
     {
       (*this)();
     }
@@ -392,12 +392,14 @@ private:
   _CCCL_API void __increment_counter()
   {
     // Increment the big integer __x__ by 1, handling overflow.
-    std::size_t __i = 0;
-    do
+    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __x__[__i] = (__x__[__i] + 1) & max();
-      ++__i;
-    } while (__i < word_count && !__x__[__i - 1]);
+      if (__x__[__i] != 0)
+      {
+        break;
+      }
+    }
   }
 
   _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const
