@@ -192,38 +192,6 @@ _CCCL_CONCEPT __is_invocable_r = _CCCL_REQUIRES_EXPR((_Ret, _Fp, variadic _Args)
   requires(__is_invocable<_Fp, _Args...>),
   requires((is_void_v<_Ret> || __is_core_convertible<__invoke_result_t<_Fp, _Args...>, _Ret>::value)));
 
-template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp
-{
-  static const bool value = false;
-};
-
-template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...>
-{
-  using _ThisT = __nothrow_invocable_r_imp;
-
-  template <class _Tp>
-  _CCCL_API inline static void __test_noexcept(_Tp) noexcept;
-
-  static const bool value =
-    noexcept(_ThisT::__test_noexcept<_Ret>(::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
-};
-
-template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
-{
-  static const bool value =
-    noexcept(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
-};
-
-template <class _Ret, class _Fp, class... _Args>
-using __nothrow_invocable_r =
-  __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fp, _Args...>, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
-
-template <class _Fp, class... _Args>
-using __nothrow_invocable = __nothrow_invocable_r_imp<__is_invocable<_Fp, _Args...>, true, void, _Fp, _Args...>;
-
 template <class _Fp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
     : public enable_if<__is_invocable<_Fp, _Args...>, __invoke_result_t<_Fp, _Args...>>
@@ -266,21 +234,38 @@ inline constexpr bool is_invocable_r_v = __is_invocable_r<_Ret, _Fn, _Args...>;
 
 // is_nothrow_invocable
 
+template <class _Tp>
+_CCCL_API constexpr void __cccl_test_noexcept_conversion(_Tp) noexcept;
+
+template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp = false;
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...> =
+  noexcept(::cuda::std::__cccl_test_noexcept_conversion<_Ret>(
+    ::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...> =
+  noexcept(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
+
+template <class _Fp, class... _Args>
+inline constexpr bool is_nothrow_invocable_v =
+  __nothrow_invocable_r_imp<__is_invocable<_Fp, _Args...>, true, void, _Fp, _Args...>;
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool is_nothrow_invocable_r_v =
+  __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fp, _Args...>, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
+
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
-    : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
+    : integral_constant<bool, is_nothrow_invocable_v<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
-    : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
+    : integral_constant<bool, is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>>
 {};
-
-template <class _Fn, class... _Args>
-inline constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fn, _Args...>::value;
-
-template <class _Ret, class _Fn, class... _Args>
-inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
 
 template <class _Fn, class... _Args>
 using invoke_result_t = __invoke_result_t<_Fn, _Args...>;
