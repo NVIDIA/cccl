@@ -91,9 +91,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 } // namespace detail
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
-namespace detail
-{
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 
 template <class OffsetT>
@@ -603,7 +601,6 @@ struct AgentThreeWayPartition
   }
 };
 
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

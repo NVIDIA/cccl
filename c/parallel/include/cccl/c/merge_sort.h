@@ -33,6 +33,7 @@ typedef struct cccl_device_merge_sort_build_result_t
   CUkernel block_sort_kernel;
   CUkernel partition_kernel;
   CUkernel merge_kernel;
+  void* runtime_policy;
 } cccl_device_merge_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_merge_sort_build(

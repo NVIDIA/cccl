@@ -53,9 +53,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace scan
+namespace detail::scan
 {
 enum class keep_rejects
 {
@@ -615,7 +613,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace scan
-} // namespace detail
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

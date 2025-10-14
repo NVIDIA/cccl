@@ -34,9 +34,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !_CCCL_COMPILER(NVRTC)
-#  include <memory>
-#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER(NVRTC)
+#ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
+#  include <cuda/std/__cccl/memory_wrapper.h>
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
 #include <cuda/std/__cccl/prologue.h>
 

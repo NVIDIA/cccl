@@ -146,9 +146,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 /**
@@ -783,7 +781,6 @@ struct AgentRadixSortDownsweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

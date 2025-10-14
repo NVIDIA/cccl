@@ -23,7 +23,6 @@ option(LIBCUDACXX_TEST_WITH_NVRTC
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
   # Should also set up dependency on the project when NVRTC is enabled
-  set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/nvrtc_force_include.h")
   foreach (include IN ITEMS ${CUDA_INCLUDE_DIR})
     set(LIBCUDACXX_TEST_COMPILER_FLAGS "${LIBCUDACXX_TEST_COMPILER_FLAGS} -I'${include}'")
   endforeach()
@@ -182,7 +181,7 @@ function(libcudacxx_add_test target_name_var source)
   target_link_libraries(${target_name} PRIVATE
     libcudacxx::libcudacxx
     cccl.c2h.main
-    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    libcudacxx.compiler_interface
   )
 
   add_dependencies(${c2h_all_target} ${target_name})

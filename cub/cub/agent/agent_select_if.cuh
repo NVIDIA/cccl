@@ -126,9 +126,7 @@ struct AgentSelectIfPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace select
+namespace detail::select
 {
 
 template <typename EqualityOpT>
@@ -1114,7 +1112,6 @@ struct AgentSelectIf
   }
 };
 
-} // namespace select
-} // namespace detail
+} // namespace detail::select
 
 CUB_NAMESPACE_END

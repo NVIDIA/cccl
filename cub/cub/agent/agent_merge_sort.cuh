@@ -66,9 +66,28 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
-namespace merge_sort
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  MergeSortAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES
+
+namespace detail::merge_sort
 {
 
 template <typename Policy,
@@ -724,7 +743,6 @@ struct AgentMerge
   }
 };
 
-} // namespace merge_sort
-} // namespace detail
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

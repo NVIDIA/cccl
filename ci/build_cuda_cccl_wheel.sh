@@ -5,7 +5,7 @@ set -euo pipefail
 # The /workspace pathnames are hard-wired here.
 
 # Install GCC 13 toolset (needed for the build)
-dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
+/workspace/ci/util/retry.sh 5 30 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
 echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 source /etc/profile.d/enable_devtools.sh
 

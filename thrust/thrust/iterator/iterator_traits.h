@@ -316,6 +316,17 @@ struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
 
+template <class Fn, class... Iterators>
+struct iterator_system<::cuda::zip_transform_iterator<Fn, Iterators...>>
+{
+  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+};
+template <class Fn, class... Iterators>
+struct iterator_traversal<::cuda::zip_transform_iterator<Fn, Iterators...>>
+{
+  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+};
+
 //! \} // end iterator_traits
 
 THRUST_NAMESPACE_END

@@ -563,7 +563,7 @@ struct __variant
             class... _OtherVariants,
             enable_if_t<(_Remaining != 0) && (_CurrentVariant == 0), int> = 0>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr size_t
-  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  __get_runtime_index(const _Variant& __v, const _OtherVariants&...) noexcept
   {
     return __v.__impl_.index();
   }
@@ -574,7 +574,7 @@ struct __variant
             class... _OtherVariants,
             enable_if_t<(_Remaining != 0) && (_CurrentVariant != 0), int> = 0>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr size_t
-  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  __get_runtime_index(const _Variant&, const _OtherVariants&... __vs) noexcept
   {
     return __get_runtime_index<_Remaining, _CurrentVariant - 1>(__vs...);
   }

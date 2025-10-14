@@ -144,11 +144,11 @@ __launch_bounds__(
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
+    keys1,
+    items1,
     num_keys1,
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
+    keys2,
+    items2,
     num_keys2,
     keys_result,
     items_result,

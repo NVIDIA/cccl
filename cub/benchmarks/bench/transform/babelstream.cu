@@ -43,7 +43,7 @@ static_assert(startA == (startA + startB + startScalar * startC), "nstream must 
 template <typename T, typename OffsetT>
 static void mul(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  const auto n = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
 
@@ -65,7 +65,7 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types, offset_types))
 template <typename T, typename OffsetT>
 static void add(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  const auto n = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
@@ -87,7 +87,7 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types, offset_types))
 template <typename T, typename OffsetT>
 static void triad(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  const auto n = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
@@ -110,7 +110,7 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types, offset_types))
 template <typename T, typename OffsetT>
 static void nstream(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  const auto n = narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);

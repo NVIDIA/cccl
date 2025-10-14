@@ -49,8 +49,8 @@ int main()
     array.begin(),
     row_indices.begin(),
     row_sums.begin(),
-    ::cuda::std::equal_to<int>(),
-    ::cuda::std::plus<int>());
+    cuda::std::equal_to<int>(),
+    cuda::std::plus<int>());
 
   // print data
   for (int i = 0; i < R; i++)

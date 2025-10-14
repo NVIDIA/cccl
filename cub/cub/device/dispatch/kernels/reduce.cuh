@@ -47,9 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 /**
@@ -580,7 +578,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 }
 
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END

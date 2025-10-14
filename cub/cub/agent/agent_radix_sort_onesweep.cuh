@@ -100,9 +100,7 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 template <typename AgentRadixSortOnesweepPolicy,
@@ -700,7 +698,6 @@ struct AgentRadixSortOnesweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

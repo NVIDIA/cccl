@@ -46,9 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace histogram
+namespace detail::histogram
 {
 enum class primitive_sample
 {
@@ -272,7 +270,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace histogram
-} // namespace detail
+} // namespace detail::histogram
 
 CUB_NAMESPACE_END

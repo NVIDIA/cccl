@@ -49,9 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace scan_by_key
+namespace detail::scan_by_key
 {
 enum class primitive_accum
 {
@@ -1007,7 +1005,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace scan_by_key
-} // namespace detail
+} // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

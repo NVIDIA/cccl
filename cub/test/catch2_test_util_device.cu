@@ -144,8 +144,9 @@ struct policy_hub_all
   GEN_POLICY(1030, 1010);
   GEN_POLICY(1100, 1030);
   GEN_POLICY(1200, 1100);
+  GEN_POLICY(1210, 1200);
   // add more policies here when new architectures emerge
-  GEN_POLICY(2000, 1200); // non-existing architecture, just to test pruning
+  GEN_POLICY(2000, 1210); // non-existing architecture, just to test pruning
 
   using max_policy = policy2000;
 };

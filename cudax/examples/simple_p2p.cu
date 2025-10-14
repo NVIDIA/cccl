@@ -69,9 +69,9 @@ void print_peer_accessibility()
       {
         bool can_access_peer = dev_i.has_peer_access_to(dev_j);
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.name().c_str(),
+               dev_i.name().data(),
                dev_i.get(),
-               dev_j.name().c_str(),
+               dev_j.name().data(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
@@ -200,9 +200,10 @@ try
   std::vector<cuda::device_ref> peers;
   for (auto& dev : cuda::devices)
   {
-    peers = dev.peer_devices();
-    if (peers.size() != 0)
+    const auto dev_peers = dev.peers();
+    if (dev_peers.size() != 0)
     {
+      peers.assign(dev_peers.begin(), dev_peers.end());
       peers.insert(peers.begin(), dev);
       break;
     }

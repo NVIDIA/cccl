@@ -43,9 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace batch_memcpy
+namespace detail::batch_memcpy
 {
 /**
  * Parameterizable tuning policy type for AgentBatchMemcpy
@@ -115,7 +113,6 @@ struct policy_hub
 
   using MaxPolicy = Policy700;
 };
-} // namespace batch_memcpy
-} // namespace detail
+} // namespace detail::batch_memcpy
 
 CUB_NAMESPACE_END

@@ -633,7 +633,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
 struct large_key_pair
 {
   int a;
-  char c[100];
+  char c[500];
 
   bool operator==(const large_key_pair& other) const
   {
@@ -647,7 +647,7 @@ C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsm
 
   operation_t op = make_operation(
     "op",
-    "struct large_key_pair { int a; char c[100]; };\n"
+    "struct large_key_pair { int a; char c[500]; };\n"
     "extern \"C\" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {\n"
     "  return lhs.a == rhs.a;\n"
     "}");

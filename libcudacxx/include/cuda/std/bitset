@@ -653,7 +653,7 @@ _CCCL_API constexpr void __throw_if_out_of_range(size_t __pos, const char* __msg
 }
 
 template <>
-_CCCL_API inline void __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
+_CCCL_API inline void __throw_if_out_of_range<0>(size_t, const char* __msg)
 {
   ::cuda::std::__throw_out_of_range(__msg);
 }
