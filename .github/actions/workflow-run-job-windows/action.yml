@@ -200,7 +200,6 @@ runs:
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
           --env COMMAND='& ${{inputs.command}}' \
-          --env COMMAND='& ${{inputs.command}}' \
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
           --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
