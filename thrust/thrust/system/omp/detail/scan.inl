@@ -77,14 +77,14 @@ OutputIterator inclusive_scan(
 
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
+  const int num_threads = omp_get_max_threads();
+
   // Use serial scan for small arrays where parallel overhead dominates
-  if (static_cast<size_t>(n) < parallel_scan_threshold)
+  if (static_cast<size_t>(n) < parallel_scan_threshold || num_threads <= 1)
   {
     ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
     return result;
   }
-
-  const int num_threads = omp_get_max_threads();
 
   thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
 
@@ -103,10 +103,7 @@ OutputIterator inclusive_scan(
   }
 
   // Step 2: Scan block sums using cuda::std::exclusive_scan
-  if (num_threads > 1)
-  {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
-  }
+  ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
 
   // Step 3: Scan each block with offset (N reads/writes)
   THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
@@ -154,14 +151,14 @@ OutputIterator exclusive_scan(
 
   thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
+  const int num_threads = omp_get_max_threads();
+
   // Use serial scan for small arrays where parallel overhead dominates
-  if (static_cast<size_t>(n) < parallel_scan_threshold)
+  if (static_cast<size_t>(n) < parallel_scan_threshold || num_threads <= 1)
   {
     ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
     return result;
   }
-
-  const int num_threads = omp_get_max_threads();
 
   thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
 
@@ -180,10 +177,7 @@ OutputIterator exclusive_scan(
   }
 
   // Step 2: Scan block sums using cuda::std::exclusive_scan
-  if (num_threads > 1)
-  {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
-  }
+  ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
 
   // Step 3: Exclusive scan each block with offset (N reads/writes)
   THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
