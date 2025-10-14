@@ -141,7 +141,7 @@ __host__ __device__ constexpr void iterate(MDS mds, Args... args)
   }
 }
 
-__managed__ cuda::std::array<int, 1024> iteration_data{};
+__device__ __managed__ cuda::std::array<int, 1024> iteration_data{};
 
 template <class Mapping>
 __host__ __device__ constexpr void test_iteration(Mapping m)
