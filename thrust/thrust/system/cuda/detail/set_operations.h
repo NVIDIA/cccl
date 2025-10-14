@@ -561,7 +561,7 @@ struct SetOpAgent
       Size tile_output_count    = 0;
       Size thread_output_prefix = 0;
       Size tile_output_prefix   = 0;
-      Size thread_output_count  = static_cast<Size>(::cuda::std::popcount(active_mask));
+      Size thread_output_count  = static_cast<Size>(::cuda::std::popcount(static_cast<unsigned>(active_mask)));
 
       if (tile_idx == 0) // first tile
       {
