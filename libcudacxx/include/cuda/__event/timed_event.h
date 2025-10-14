@@ -26,9 +26,9 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__event/event.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/chrono>
 #  include <cuda/std/cstddef>
 
@@ -51,7 +51,7 @@ public:
   //!
   //! @throws cuda_error if the event creation fails.
   explicit timed_event(device_ref __device, flags __flags = flags::none)
-      : event(__device, static_cast<unsigned int>(__flags))
+      : event(__device, static_cast<unsigned>(__flags))
   {}
 
   //! @brief Construct a new `timed_event` object into the moved-from state.
@@ -96,9 +96,8 @@ public:
   //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
   [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
-    float __ms = 0.0f;
-    _CUDA_DRIVER::__eventElapsedTime(__start.get(), __end.get(), &__ms);
-    return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
+    const auto __ms = ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get());
+    return ::cuda::std::chrono::nanoseconds(static_cast<::cuda::std::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
 private:

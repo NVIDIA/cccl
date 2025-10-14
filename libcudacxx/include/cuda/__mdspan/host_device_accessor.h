@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
@@ -107,10 +108,11 @@ class __host_accessor : public _Accessor
 #if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
-      ::cudaPointerAttributes __ptr_attrib{};
-      auto __p1 = _CUDA_VSTD::to_address(__p);
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
-      return __ptr_attrib.hostPointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
+      auto __p1 = ::cuda::std::to_address(__p);
+      ::CUmemorytype __type{};
+      const auto __status =
+        ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
+      return (__status != ::cudaSuccess) || __type == ::CU_MEMORYTYPE_HOST;
     }
     else
 #endif // _CCCL_HAS_CTK()
@@ -223,10 +225,11 @@ class __device_accessor : public _Accessor
 #if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
-      ::cudaPointerAttributes __ptr_attrib{};
-      auto __p1 = _CUDA_VSTD::to_address(__p);
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
-      return __ptr_attrib.devicePointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
+      auto __p1 = ::cuda::std::to_address(__p);
+      ::CUmemorytype __type{};
+      const auto __status =
+        ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
+      return (__status != ::cudaSuccess) || __type == ::CU_MEMORYTYPE_DEVICE;
     }
     else
 #endif // _CCCL_HAS_CTK()
@@ -352,10 +355,11 @@ class __managed_accessor : public _Accessor
 #if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
-      ::cudaPointerAttributes __ptr_attrib{};
-      auto __p1 = _CUDA_VSTD::to_address(__p);
-      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
-      return __ptr_attrib.devicePointer != nullptr && __ptr_attrib.hostPointer == __ptr_attrib.devicePointer;
+      const auto __p1 = ::cuda::std::to_address(__p);
+      bool __is_managed{};
+      const auto __status =
+        ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p1);
+      return (__status != ::cudaSuccess) || __is_managed;
     }
     else
 #endif // _CCCL_HAS_CTK()
