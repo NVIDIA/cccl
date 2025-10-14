@@ -51,6 +51,13 @@ string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
 
+# Set permissive flag
+if (MSVC)
+  set(permissive_flag "/permissive")
+else()
+  set(permissive_flag "-fpermissive")
+endif()
+
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
@@ -80,7 +87,8 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " -Wno-unknown-cuda-version"
     " ${LIBCUDACXX_FORCE_INCLUDE}"
     " -I${libcudacxx_SOURCE_DIR}/include"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " ${LIBCUDACXX_WARNING_LEVEL}"
+    " ${permissive_flag}")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
     " ${CMAKE_CUDA_FLAGS}"
@@ -91,10 +99,12 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
     " ${LIBCUDACXX_WARNING_LEVEL}"
-    " -Wno-deprecated-gpu-targets")
+    " -Wno-deprecated-gpu-targets"
+    " -Xcompiler=${permissive_flag}")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
-    " -stdpar")
+    " -stdpar"
+    " ${permissive_flag}")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
     " -stdpar")
 endif()

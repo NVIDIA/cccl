@@ -1397,6 +1397,8 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
                 # warning C4996: deprecation warnings
                 self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
+                # add permissive flag
+                self.cxx.warning_flags += ["-Xcompiler", "/permissive"]
             else:
                 # TODO: Re-enable soon.
                 def addIfHostSupports(flag):
@@ -1423,6 +1425,10 @@ class Configuration(object):
                 addIfHostSupports("-Wno-noexcept-type")
                 addIfHostSupports("-Wno-unused-function")
 
+                # add permissive flag
+                if hasattr(self.cxx, "host_cxx"):
+                    self.cxx.warning_flags += ["-Xcompiler", "-fpermissive"]
+
                 if "gcc-4.8" in self.config.available_features:
                     # GCC pre-GCC5 spuriously generates these on reasonable aggregate initialization.
                     addIfHostSupports("-Wno-missing-field-initializers")
@@ -1439,6 +1445,7 @@ class Configuration(object):
                 "-Wall",
                 "-Wextra",
                 "-Werror",
+                "-fpermissive",
             ]
             if self.cxx.hasWarningFlag("-Wuser-defined-warnings"):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]
