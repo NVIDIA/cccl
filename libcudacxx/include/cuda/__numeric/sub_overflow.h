@@ -56,7 +56,7 @@ template <typename _Result, typename _Lhs, typename _Rhs>
 
 // addition with unsigned types to avoid UB, return an unsigned type
 template <typename _Result, typename _Lhs, typename _Rhs>
-[[nodiscard]] _CCCL_API constexpr _Result __safe_add(_Lhs __lhs, _Rhs __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr _Result __add_as_unsigned(_Lhs __lhs, _Rhs __rhs) noexcept
 {
   using _UnsignedResult = ::cuda::std::make_unsigned_t<_Result>;
   const auto __lhs1     = static_cast<_UnsignedResult>(__lhs);
@@ -276,17 +276,17 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
         if (sizeof(_ActualResult) >= sizeof(_Rhs)
             || is_signed_v<_Rhs> || ::cuda::std::cmp_less_equal(__rhs, __result_max))
         {
-          // use __safe_add to avoid UB with INT_MIN
+          // use __add_as_unsigned to avoid UB with INT_MIN
           using _SumType            = make_signed_t<common_type_t<_Rhs, _ActualResult>>;
-          const auto __safe_sum     = ::cuda::__safe_add<_SumType>(__signed_min, __rhs);
-          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __safe_sum);
+          const auto __usum         = ::cuda::__add_as_unsigned<_SumType>(__signed_min, __rhs);
+          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __usum);
           return overflow_result<_ActualResult>{__sub_ret, __is_underflow};
         }
         else // * otherwise, rhs > result_max and we need to use the unsigned common type
         {
           using _SumType            = make_unsigned_t<common_type_t<_Rhs, _ActualResult>>;
-          const auto __safe_sum     = ::cuda::__safe_add<_SumType>(__signed_min, __rhs);
-          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __safe_sum);
+          const auto __usum         = ::cuda::__add_as_unsigned<_SumType>(__signed_min, __rhs);
+          const bool __is_underflow = ::cuda::std::cmp_less(__lhs, __usum);
           return overflow_result<_ActualResult>{__sub_ret, __is_underflow};
         }
       }
@@ -310,7 +310,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
     {
       using _Up                     = make_unsigned_t<common_type_t<_Rhs, _ActualResult>>;
       constexpr auto __unsigned_max = numeric_limits<_ActualResult>::max();
-      const auto __sum              = ::cuda::__safe_add<_Up>(__unsigned_max, __rhs);
+      const auto __sum              = ::cuda::__add_as_unsigned<_Up>(__unsigned_max, __rhs);
       const bool __is_overflow      = ::cuda::std::cmp_greater(__lhs, __sum);
       return overflow_result<_ActualResult>{__sub_ret, __is_overflow};
     }

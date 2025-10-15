@@ -156,13 +156,13 @@ __host__ __device__ constexpr void test_type()
     {
       // negative result -> lhs_min - rhs_min < result_min?
       using SignedCommon = cuda::std::make_signed_t<cuda::std::common_type_t<Lhs, Rhs>>;
-      auto sub           = cuda::__safe_sub<SignedCommon>(lhs_min, rhs_min);
+      auto sub           = cuda::__sub_as_unsigned<SignedCommon>(lhs_min, rhs_min);
       test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_less(sub, result_min));
     }
     else // lhs_min > rhs_min -> positive result -> lhs_min - rhs_min > result_max + rhs_min?
     {
       using UnsignedCommon = cuda::std::make_unsigned_t<cuda::std::common_type_t<Lhs, Rhs>>;
-      auto sub             = cuda::__safe_sub<UnsignedCommon>(lhs_min, rhs_min);
+      auto sub             = cuda::__sub_as_unsigned<UnsignedCommon>(lhs_min, rhs_min);
       test_sub_overflow<Result>(lhs_min, rhs_min, cuda::std::cmp_greater(sub, Result{result_max}));
     }
   }
