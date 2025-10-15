@@ -20,6 +20,18 @@ from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
 
 
+def get_init_kind(
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+) -> _bindings.InitKind:
+    match init_value:
+        case None:
+            return _bindings.InitKind.NO_INIT
+        case _ if isinstance(init_value, DeviceArrayLike):
+            return _bindings.InitKind.FUTURE_VALUE_INIT
+        case _:
+            return _bindings.InitKind.VALUE_INIT
+
+
 class _Scan:
     __slots__ = [
         "build_result",
@@ -28,7 +40,7 @@ class _Scan:
         "init_value_cccl",
         "op_wrapper",
         "device_scan_fn",
-        "is_future_value",
+        "init_kind",
     ]
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
@@ -37,34 +49,50 @@ class _Scan:
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         force_inclusive: bool,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
 
-        self.is_future_value = isinstance(init_value, DeviceArrayLike)
+        self.init_kind = get_init_kind(init_value)
 
-        self.init_value_cccl: _bindings.Iterator | _bindings.Value
+        self.init_value_cccl: _bindings.Iterator | _bindings.Value | None
 
-        if isinstance(init_value, DeviceArrayLike):
-            self.init_value_cccl = cccl.to_cccl_input_iter(init_value)
-            value_type = numba.from_dtype(protocols.get_dtype(init_value))
-            init_value_type_info = self.init_value_cccl.value_type
-        elif isinstance(init_value, np.ndarray):
-            self.init_value_cccl = cccl.to_cccl_value(init_value)
-            value_type = numba.from_dtype(init_value.dtype)
-            init_value_type_info = self.init_value_cccl.type
-        else:
-            self.init_value_cccl = cccl.to_cccl_value(init_value)
-            value_type = numba.typeof(init_value)
-            init_value_type_info = self.init_value_cccl.type
+        match self.init_kind:
+            case _bindings.InitKind.NO_INIT:
+                # TODO: we just need to extract the dtype from the input iterator
+                if not isinstance(d_in, DeviceArrayLike):
+                    raise ValueError(
+                        "No init value not supported for non-DeviceArrayLike input"
+                    )
+
+                self.init_value_cccl = None
+                value_type = numba.from_dtype(protocols.get_dtype(d_in))
+                init_value_type_info = self.d_in_cccl.value_type
+
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                self.init_value_cccl = cccl.to_cccl_input_iter(init_value)
+                value_type = numba.from_dtype(
+                    protocols.get_dtype(cast(DeviceArrayLike, init_value))
+                )
+                init_value_type_info = self.init_value_cccl.value_type
+
+            case _bindings.InitKind.VALUE_INIT:
+                self.init_value_cccl = cccl.to_cccl_value(init_value)
+                value_type = (
+                    numba.from_dtype(init_value.dtype)
+                    if isinstance(init_value, np.ndarray)
+                    else numba.typeof(init_value)
+                )
+                init_value_type_info = self.init_value_cccl.type
 
         # For well-known operations, we don't need a signature
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
             self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+
         self.build_result = call_build(
             _bindings.DeviceScanBuildResult,
             self.d_in_cccl,
@@ -72,21 +100,23 @@ class _Scan:
             self.op_wrapper,
             init_value_type_info,
             force_inclusive,
-            self.is_future_value,
+            self.init_kind,
         )
 
-        if force_inclusive:
-            self.device_scan_fn = (
-                self.build_result.compute_inclusive_future_value
-                if self.is_future_value
-                else self.build_result.compute_inclusive
-            )
-        else:
-            self.device_scan_fn = (
-                self.build_result.compute_exclusive_future_value
-                if self.is_future_value
-                else self.build_result.compute_exclusive
-            )
+        match (force_inclusive, self.init_kind):
+            case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
+                self.device_scan_fn = self.build_result.compute_inclusive_future_value
+            case (True, _bindings.InitKind.VALUE_INIT):
+                self.device_scan_fn = self.build_result.compute_inclusive
+            case (True, _bindings.InitKind.NO_INIT):
+                self.device_scan_fn = self.build_result.compute_inclusive_no_init
+
+            case (False, _bindings.InitKind.FUTURE_VALUE_INIT):
+                self.device_scan_fn = self.build_result.compute_exclusive_future_value
+            case (False, _bindings.InitKind.VALUE_INIT):
+                self.device_scan_fn = self.build_result.compute_exclusive
+            case (False, _bindings.InitKind.NO_INIT):
+                raise ValueError("Exclusive scan with No init value is not supported")
 
     def __call__(
         self,
@@ -94,22 +124,25 @@ class _Scan:
         d_in,
         d_out,
         num_items: int,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        if self.is_future_value:
-            # We know that the init_value_cccl is an Iterator, so this cast
-            # tells MyPy what the actual type is. cast() is a no-op at runtime,
-            # which makes it better than isinstance() since this is a hot path
-            # and we have to minimize the work we do prior to calling the
-            # kernel.
-            self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
-            set_cccl_iterator_state(self.init_value_cccl, init_value)
-        else:
-            self.init_value_cccl.state = to_cccl_value_state(init_value)
+        match self.init_kind:
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                # We know that the init_value_cccl is an Iterator, so this cast
+                # tells MyPy what the actual type is. cast() is a no-op at runtime,
+                # which makes it better than isinstance() since this is a hot path
+                # and we have to minimize the work we do prior to calling the
+                # kernel.
+                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
+                set_cccl_iterator_state(self.init_value_cccl, init_value)
+
+            case _bindings.InitKind.VALUE_INIT:
+                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
+                self.init_value_cccl.state = to_cccl_value_state(init_value)
 
         stream_handle = validate_and_get_stream(stream)
 
@@ -137,7 +170,7 @@ def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     d_in_key = (
         d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
@@ -153,14 +186,17 @@ def make_cache_key(
     else:
         op_key = CachableFunction(op)
 
-    is_future_value = isinstance(init_value, DeviceArrayLike)
+    init_kind_key = get_init_kind(init_value)
+    match init_kind_key:
+        case _bindings.InitKind.NO_INIT:
+            init_value_key = None
+        case _bindings.InitKind.FUTURE_VALUE_INIT:
+            init_value_key = protocols.get_dtype(cast(DeviceArrayLike, init_value))
+        case _bindings.InitKind.VALUE_INIT:
+            init_value = cast(np.ndarray | GpuStruct, init_value)
+            init_value_key = init_value.dtype
 
-    init_value_key = (
-        protocols.get_dtype(init_value)
-        if isinstance(init_value, DeviceArrayLike)
-        else init_value.dtype
-    )
-    return (d_in_key, d_out_key, op_key, init_value_key, is_future_value)
+    return (d_in_key, d_out_key, op_key, init_value_key, init_kind_key)
 
 
 # TODO Figure out `sum` without operator and initial value
@@ -170,7 +206,7 @@ def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -186,7 +222,7 @@ def make_exclusive_scan(
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
         op: Callable or OpKind representing the binary operator to apply
-        init_value: Numpy array, device array, or GPU struct storing initial value of the scan
+        init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
 
     Returns:
         A callable object that can be used to perform the scan
@@ -198,7 +234,7 @@ def exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,
     stream=None,
 ):
@@ -236,7 +272,7 @@ def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
@@ -252,7 +288,7 @@ def make_inclusive_scan(
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
         op: Callable or OpKind representing the binary operator to apply
-        init_value: Numpy array, device array, or GPU struct storing initial value of the scan
+        init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
 
     Returns:
         A callable object that can be used to perform the scan
@@ -264,7 +300,7 @@ def inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct,
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,
     stream=None,
 ):

@@ -358,21 +358,33 @@ def test_reverse_output_iterator():
     "force_inclusive",
     [True, False],
 )
-def test_future_value(force_inclusive):
+def test_future_init_value(force_inclusive):
     num_items = 1024
     dtype = np.dtype("int32")
 
-    # Random device input and future init value (device pointer)
     d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
     d_output = cp.empty_like(d_input)
     init_value = cp.array([42], dtype=dtype)
 
-    # Execute on device using the high-level wrapper
     scan_device(d_input, d_output, num_items, OpKind.PLUS, init_value, force_inclusive)
 
-    # Validate against host reference
     got = d_output.get()
     expected = scan_host(
         d_input.get(), lambda a, b: a + b, init_value.get(), force_inclusive
     )
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value():
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
+    d_output = cp.empty_like(d_input)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
     np.testing.assert_array_equal(expected, got)
