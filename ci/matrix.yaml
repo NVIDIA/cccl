@@ -21,6 +21,8 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['msvc'], gpu: ['rtx2080', 'l4', 'h100']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -56,9 +58,9 @@ workflows:
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
-    # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # c.parallel -- pinned to gcc13 on Linux to match python
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -106,8 +108,8 @@ workflows:
     # stdpar
     - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
     # Python + support
-    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',           gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: ['gcc13', 'msvc']}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
@@ -170,8 +172,8 @@ workflows:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
     # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -247,8 +249,8 @@ workflows:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
     # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
