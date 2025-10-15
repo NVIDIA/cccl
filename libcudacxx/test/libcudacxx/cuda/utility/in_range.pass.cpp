@@ -23,6 +23,10 @@
 template <typename T>
 __host__ __device__ constexpr void test()
 {
+  if constexpr (!cuda::std::is_same_v<T, __half> && !cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    static_assert(noexcept(cuda::in_range(T{1}, T{0}, T{10})));
+  }
   assert(cuda::in_range(T{5}, T{0}, T{10}));
   assert(!cuda::in_range(T{15}, T{0}, T{10}));
   assert(cuda::in_range(T{10}, T{0}, T{10})); // test bound
