@@ -77,11 +77,11 @@ struct scan_runtime_tuning_policy
   }
 };
 
-static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_type_info init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
-  return init.type;
+  return init;
 }
 
 std::string get_input_iterator_name()
@@ -99,7 +99,7 @@ std::string get_output_iterator_name()
 }
 
 std::string
-get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cccl_op_t op, cccl_value_t init)
+get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cccl_op_t op, cccl_type_info init)
 {
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
@@ -107,7 +107,12 @@ get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cc
 }
 
 std::string get_scan_kernel_name(
-  cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_value_t init, bool force_inclusive)
+  cccl_iterator_t input_it,
+  cccl_iterator_t output_it,
+  cccl_op_t op,
+  cccl_type_info init,
+  bool force_inclusive,
+  bool is_future_value)
 {
   std::string chained_policy_t;
   check(cccl_type_name_from_nvrtc<device_scan_policy>(&chained_policy_t));
@@ -122,7 +127,8 @@ std::string get_scan_kernel_name(
     output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(output_it.value_type.type, true) //
       : scan::get_output_iterator_name();
-  const std::string init_t = cccl_type_enum_to_name(init.type.type);
+  const std::string init_t       = cccl_type_enum_to_name(init.type);
+  const std::string init_value_t = is_future_value ? std::format("cub::FutureValue<{0}>", init_t) : init_t;
 
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
@@ -138,7 +144,7 @@ std::string get_scan_kernel_name(
     output_iterator_t, // 2
     tile_state_t, // 3
     scan_op_t, // 4
-    init_t, // 5
+    init_value_t, // 5
     offset_t, // 6
     accum_cpp_t, // 7
     force_inclusive ? "true" : "false", // 8
@@ -187,8 +193,9 @@ CUresult cccl_device_scan_build_ex(
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  bool is_future_value,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -291,7 +298,8 @@ struct device_scan_policy {{
 #endif
 
     std::string init_kernel_name = scan::get_init_kernel_name(input_it, output_it, op, init);
-    std::string scan_kernel_name = scan::get_scan_kernel_name(input_it, output_it, op, init, force_inclusive);
+    std::string scan_kernel_name =
+      scan::get_scan_kernel_name(input_it, output_it, op, init, force_inclusive, is_future_value);
     std::string init_kernel_lowered_name;
     std::string scan_kernel_lowered_name;
 
@@ -337,6 +345,7 @@ struct device_scan_policy {{
     build_ptr->cubin_size                 = result.size;
     build_ptr->accumulator_type           = accum_t;
     build_ptr->force_inclusive            = force_inclusive;
+    build_ptr->is_future_value            = is_future_value;
     build_ptr->description_bytes_per_tile = description_bytes_per_tile;
     build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
     build_ptr->runtime_policy             = new scan::scan_runtime_tuning_policy{scan_policy};
@@ -352,7 +361,7 @@ struct device_scan_policy {{
   return error;
 }
 
-template <cub::ForceInclusive EnforceInclusive>
+template <cub::ForceInclusive EnforceInclusive, typename InitValueT>
 CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
@@ -361,7 +370,7 @@ CUresult cccl_device_scan(
   cccl_iterator_t d_out,
   uint64_t num_items,
   cccl_op_t op,
-  cccl_value_t init,
+  InitValueT init,
   CUstream stream)
 {
   bool pushed    = false;
@@ -378,7 +387,7 @@ CUresult cccl_device_scan(
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
-      ::cuda::std::size_t,
+      cuda::std::size_t,
       void,
       EnforceInclusive,
       scan::scan_runtime_tuning_policy,
@@ -446,13 +455,46 @@ CUresult cccl_device_inclusive_scan(
     build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
 }
 
+CUresult cccl_device_exclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
+  CUstream stream)
+{
+  assert(!build.force_inclusive);
+  return cccl_device_scan<cub::ForceInclusive::No>(
+    build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
+}
+
+CUresult cccl_device_inclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
+  CUstream stream)
+{
+  assert(build.force_inclusive);
+  return cccl_device_scan<cub::ForceInclusive::Yes>(
+    build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
+}
+
 CUresult cccl_device_scan_build(
   cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  bool is_future_value,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -467,6 +509,7 @@ CUresult cccl_device_scan_build(
     op,
     init,
     force_inclusive,
+    is_future_value,
     cc_major,
     cc_minor,
     cub_path,

@@ -33,6 +33,7 @@ typedef struct cccl_device_scan_build_result_t
   CUkernel init_kernel;
   CUkernel scan_kernel;
   bool force_inclusive;
+  bool is_future_value;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
   void* runtime_policy;
@@ -43,8 +44,9 @@ CCCL_C_API CUresult cccl_device_scan_build(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  bool is_future_value,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -58,8 +60,9 @@ CCCL_C_API CUresult cccl_device_scan_build_ex(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
   bool force_inclusive,
+  bool is_future_value,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -88,6 +91,28 @@ CCCL_C_API CUresult cccl_device_inclusive_scan(
   uint64_t num_items,
   cccl_op_t op,
   cccl_value_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_exclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_inclusive_scan_future_value(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_iterator_t init,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr);

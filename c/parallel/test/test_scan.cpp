@@ -45,6 +45,7 @@ struct scan_build
   CUresult operator()(
     BuildResultT* build_ptr,
     bool inclusive,
+    bool is_future_value,
     cccl_iterator_t input,
     cccl_iterator_t output,
     uint64_t,
@@ -62,8 +63,41 @@ struct scan_build
       input,
       output,
       op,
-      init,
+      init.type,
       inclusive,
+      is_future_value,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    bool inclusive,
+    bool is_future_value,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_iterator_t init,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_scan_build(
+      build_ptr,
+      input,
+      output,
+      op,
+      init.value_type,
+      inclusive,
+      is_future_value,
       cc_major,
       cc_minor,
       cub_path,
@@ -83,7 +117,12 @@ struct scan_run
 {
   template <typename... Ts>
   CUresult operator()(
-    BuildResultT build, void* temp_storage, size_t* temp_storage_nbytes, bool inclusive, Ts... args) const noexcept
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_nbytes,
+    bool inclusive,
+    bool /*is_future_value*/,
+    Ts... args) const noexcept
   {
     if (inclusive)
     {
@@ -92,6 +131,28 @@ struct scan_run
     else
     {
       return cccl_device_exclusive_scan(build, temp_storage, temp_storage_nbytes, args...);
+    }
+  }
+};
+
+struct scan_run_future_value
+{
+  template <typename... Ts>
+  CUresult operator()(
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_nbytes,
+    bool inclusive,
+    bool /*is_future_value*/,
+    Ts... args) const noexcept
+  {
+    if (inclusive)
+    {
+      return cccl_device_inclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
+    }
+    else
+    {
+      return cccl_device_exclusive_scan_future_value(build, temp_storage, temp_storage_nbytes, args...);
     }
   }
 };
@@ -109,12 +170,35 @@ void scan(cccl_iterator_t input,
           std::optional<BuildCache>& cache,
           const std::optional<KeyT>& lookup_key)
 {
+  bool is_future_value = false;
   AlgorithmExecute<BuildResultT,
                    scan_build<Disable75SassCheck, DisableForOtherArches>,
                    scan_cleanup,
                    scan_run,
                    BuildCache,
-                   KeyT>(cache, lookup_key, inclusive, input, output, num_items, op, init);
+                   KeyT>(cache, lookup_key, inclusive, is_future_value, input, output, num_items, op, init);
+}
+
+template <bool Disable75SassCheck    = false,
+          bool DisableForOtherArches = false,
+          typename BuildCache        = scan_build_cache_t,
+          typename KeyT              = std::string>
+void scan(cccl_iterator_t input,
+          cccl_iterator_t output,
+          uint64_t num_items,
+          cccl_op_t op,
+          cccl_iterator_t init,
+          bool inclusive,
+          std::optional<BuildCache>& cache,
+          const std::optional<KeyT>& lookup_key)
+{
+  bool is_future_value = true;
+  AlgorithmExecute<BuildResultT,
+                   scan_build<Disable75SassCheck, DisableForOtherArches>,
+                   scan_cleanup,
+                   scan_run_future_value,
+                   BuildCache,
+                   KeyT>(cache, lookup_key, inclusive, is_future_value, input, output, num_items, op, init);
 }
 
 // ==============
@@ -547,8 +631,9 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
       input_ptr,
       output_ptr,
       op,
-      init,
+      get_type_info<T>(),
       true,
+      false,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
       build_info.get_cub_path(),
@@ -579,4 +664,31 @@ C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
 
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}
+
+struct Scan_FutureInitValue_Fixture_Tag;
+C2H_TEST("Scan works with future init value", "[scan]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  T init{42};
+  pointer_t<T> init_ptr(std::vector<T>{init});
+
+  auto& build_cache    = get_cache<Scan_FutureInitValue_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  scan(input_ptr, output_ptr, num_items, op, init_ptr, false, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
 }
