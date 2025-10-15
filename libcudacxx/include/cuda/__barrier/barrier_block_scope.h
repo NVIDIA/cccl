@@ -136,47 +136,71 @@ public:
       (new (&__b->__barrier) __barrier_base(__expected);))
   }
 
+private:
+  _CCCL_DEVICE_API arrival_token __arrive_sm90(::cuda::std::ptrdiff_t __update)
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return __barrier.arrive(__update);
+    }
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      ::__trap();
+    }
+    return ::cuda::ptx::mbarrier_arrive(__native_handle(), __update);
+  }
+
+  _CCCL_DEVICE_API arrival_token __arrive_sm80(::cuda::std::ptrdiff_t __update)
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return __barrier.arrive(__update);
+    }
+    // Need 2 instructions, can't finish barrier with arrive > 1
+    if (__update > 1)
+    {
+      ::cuda::ptx::mbarrier_arrive_no_complete(__native_handle(), __update - 1);
+    }
+    return ::cuda::ptx::mbarrier_arrive(__native_handle());
+  }
+
+  _CCCL_DEVICE_API arrival_token __arrive_sm70(::cuda::std::ptrdiff_t __update)
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return __barrier.arrive(__update);
+    }
+
+    unsigned int __mask    = ::__activemask();
+    unsigned int __activeA = ::__match_any_sync(__mask, __update);
+    unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
+    unsigned int __active  = __activeA & __activeB;
+    int __inc              = ::cuda::std::popcount(__active) * __update;
+
+    int __leader = ::__ffs(__active) - 1;
+    // All threads in mask synchronize here, establishing cummulativity to the __leader:
+    ::__syncwarp(__mask);
+    arrival_token __token = {};
+    if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid()))
+    {
+      __token = __barrier.arrive(__inc);
+    }
+    return ::__shfl_sync(__active, __token, __leader);
+  }
+
+public:
   [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
-    arrival_token __token = {};
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return __barrier.arrive(__update);
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          ::__trap();
-        } __token = ::cuda::ptx::mbarrier_arrive(__native_handle(), __update);),
+      (return __arrive_sm90(__update);),
       NV_PROVIDES_SM_80,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return __barrier.arrive(__update);
-        }
-        // Need 2 instructions, can't finish barrier with arrive > 1
-        if (__update > 1) { ::cuda::ptx::mbarrier_arrive_no_complete(__native_handle(), __update - 1); } __token =
-          ::cuda::ptx::mbarrier_arrive(__native_handle());),
+      (return __arrive_sm80(__update);),
       NV_PROVIDES_SM_70,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return __barrier.arrive(__update);
-        }
-
-        unsigned int __mask    = ::__activemask();
-        unsigned int __activeA = ::__match_any_sync(__mask, __update);
-        unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
-        unsigned int __active  = __activeA & __activeB;
-        int __inc              = ::cuda::std::popcount(__active) * __update;
-
-        int __leader = ::__ffs(__active) - 1;
-        // All threads in mask synchronize here, establishing cummulativity to the __leader:
-        ::__syncwarp(__mask);
-        if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid())) {
-          __token = __barrier.arrive(__inc);
-        } __token = ::__shfl_sync(__active, __token, __leader);),
+      (return __arrive_sm70(__update);),
       NV_IS_HOST,
-      (__token = __barrier.arrive(__update);))
-    return __token;
+      (return __barrier.arrive(__update);))
   }
 
 private:
