@@ -56,9 +56,8 @@ void initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
 //  In this example, we do no require a specific output order and do not require deterministic results (this allows for
 //  better performance in some cases). However, the output of DeviceTopK::MinKeys() is not sorted. This function sorts
 //  the output keys for comparison against the reference solution.
-thrust::host_vector<float> sort_unordered_results(thrust::device_vector<float>& d_keys_out)
+thrust::host_vector<float> sort_unordered_results(thrust::host_vector<float> h_res_keys)
 {
-  thrust::host_vector<float> h_res_keys{d_keys_out};
   thrust::sort(h_res_keys.begin(), h_res_keys.end());
   return h_res_keys;
 }
@@ -114,7 +113,7 @@ int main(int argc, char** argv)
     nullptr, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, requirements));
 
   // Allocate temporary storage
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run the top-k algorithm

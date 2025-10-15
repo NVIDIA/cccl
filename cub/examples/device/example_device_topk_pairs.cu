@@ -67,10 +67,8 @@ void initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
 //  better performance in some cases). However, the output of DeviceTopK::MinPairs() is not sorted. This function sorts
 //  the output keys for comparison against the reference solution.
 ::cuda::std::tuple<thrust::host_vector<float>, thrust::host_vector<int>>
-sort_unordered_results(thrust::device_vector<float>& d_keys_out, thrust::device_vector<int>& d_values_out)
+sort_unordered_results(thrust::host_vector<float> h_res_keys, thrust::host_vector<int> h_res_values)
 {
-  thrust::host_vector<float> h_res_keys{d_keys_out};
-  thrust::host_vector<int> h_res_values{d_values_out};
   auto h_pairs = thrust::make_zip_iterator(h_res_keys.begin(), h_res_values.begin());
   thrust::sort(h_pairs, h_pairs + h_res_keys.size());
   return ::cuda::std::make_tuple(h_res_keys, h_res_values);
@@ -145,7 +143,7 @@ int main(int argc, char** argv)
     requirements));
 
   // Allocate temporary storage
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run the top-k algorithm
