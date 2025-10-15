@@ -123,14 +123,14 @@ public:
       NV_PROVIDES_SM_90,
       (
         if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          ::cuda::ptx::mbarrier_init(__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
+          ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
         } else if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
           ::__trap();
         } else { new (&__b->__barrier) __barrier_base(__expected); }),
       NV_PROVIDES_SM_80,
       (
         if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          ::cuda::ptx::mbarrier_init(__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
+          ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
         } else { new (&__b->__barrier) __barrier_base(__expected); }),
       NV_ANY_TARGET,
       (new (&__b->__barrier) __barrier_base(__expected);))
