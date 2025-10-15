@@ -94,7 +94,7 @@ class philox_engine
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
   static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
-  static _CCCL_API constexpr auto __multipliers()
+  [[nodiscard]] _CCCL_API static constexpr auto __multipliers()
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -106,7 +106,8 @@ class philox_engine
       return ::cuda::std::array<_UIntType, 2>{__constants[0], __constants[2]};
     }
   }
-  static _CCCL_API constexpr auto __round_consts()
+
+  [[nodiscard]] _CCCL_API static constexpr auto __round_consts()
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -175,22 +176,22 @@ public:
   template <class Sseq>
   _CCCL_API void seed(Sseq& seq, typename std::enable_if<!std::is_convertible<Sseq, result_type>::value>::type* = 0)
   {
-    __x_             = {};
-    __y_             = {};
-    __k_             = {};
-    __j_             = word_count - 1;
-    constexpr auto p = (word_size - 1) / 32 + 1;
-    ::cuda::std::array<std::uint_least32_t, word_count / 2 * p> a;
-    seq.generate(a.begin(), a.end());
-    auto a_iter = a.begin();
-    for (::cuda::std::size_t k = 0; k < word_count / 2; k++)
+    __x_               = {};
+    __y_               = {};
+    __k_               = {};
+    __j_               = word_count - 1;
+    constexpr auto __p = (word_size - 1) / 32 + 1;
+    ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a;
+    seq.generate(__a.begin(), __a.end());
+    auto a_iter = __a.begin();
+    for (::cuda::std::size_t __k = 0; __k < word_count / 2; ++__k)
     {
-      result_type sum = 0;
-      for (::cuda::std::size_t i = 0; i < p; ++i)
+      result_type __sum = 0;
+      for (::cuda::std::size_t __i = 0; __i < __p; ++__i)
       {
-        sum += static_cast<result_type>(*a_iter++) << (32 * i);
+        __sum += static_cast<result_type>(*a_iter++) << (32 * __i);
       }
-      __k_[k] = sum & max();
+      __k_[__k] = __sum & max();
     }
   }
 
