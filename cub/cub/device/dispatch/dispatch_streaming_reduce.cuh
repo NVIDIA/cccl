@@ -18,8 +18,8 @@
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -217,8 +217,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
     // eventually, write to the user-provided output iterators
-    using accumulating_transform_out_it_t =
-      THRUST_NS_QUALIFIER::tabulate_output_iterator<accumulating_transform_output_op_t>;
+    using accumulating_transform_out_it_t = ::cuda::tabulate_output_iterator<accumulating_transform_output_op_t>;
 
     // Empty problem initialization type
     using empty_problem_init_t = empty_problem_init_t<per_partition_accum_t>;
@@ -270,7 +269,7 @@ struct dispatch_streaming_arg_reduce_t
       nullptr,
       allocation_sizes[0],
       d_indexed_offset_in,
-      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
+      ::cuda::make_tabulate_output_iterator(accumulating_out_op),
       static_cast<PerPartitionOffsetT>(largest_partition_size),
       reduce_op,
       initial_value,
@@ -315,7 +314,7 @@ struct dispatch_streaming_arg_reduce_t
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_offset_in,
-        THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
+        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
         static_cast<PerPartitionOffsetT>(current_num_items),
         reduce_op,
         initial_value,
