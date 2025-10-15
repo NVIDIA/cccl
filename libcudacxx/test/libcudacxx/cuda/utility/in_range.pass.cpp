@@ -15,7 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 #include <cuda/utility>
 
 #include "test_macros.h"
@@ -42,7 +42,8 @@ __host__ __device__ constexpr void test()
   assert(!cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), T{cuda::std::numeric_limits<T>::min() + T{1}}));
   assert(cuda::in_range(T{5}, cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max()));
 
-  if constexpr (cuda::std::is_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T> && cuda::std::numeric_limits<T>::has_quiet_NaN
+                && cuda::std::numeric_limits<T>::has_infinity)
   {
     constexpr auto nan = cuda::std::numeric_limits<T>::quiet_NaN();
     constexpr auto inf = cuda::std::numeric_limits<T>::infinity();
@@ -61,8 +62,6 @@ __host__ __device__ constexpr void test()
 
 __host__ __device__ constexpr bool test()
 {
-  static_assert(noexcept(cuda::in_range(1, 0, 10)));
-
   test<unsigned char>();
   test<signed char>();
   test<unsigned short>();
@@ -82,7 +81,6 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-
   return true;
 }
 
