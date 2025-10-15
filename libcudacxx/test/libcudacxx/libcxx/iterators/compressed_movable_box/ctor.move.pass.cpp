@@ -75,6 +75,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     test<NotTriviallyCopyConstructible<MayThrow>>(1337);
   }
 
+  { // not default constructible
+    test<NotDefaultConstructible>(1337);
+  }
+
+  { // not copy assignable not default constructible
+    test<NotMoveAssignableNotDefaultConstructible<42>>(1337);
+  }
+
   return true;
 }
 
