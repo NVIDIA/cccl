@@ -366,6 +366,21 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   template <class... _OtherProperties>
   synchronous_resource_ref(::cuda::mr::resource_ref<_OtherProperties...>) = delete;
 
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
+  {
+    __basic_any_access::__cast_to(
+      const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base(), *this);
+    return *this;
+  }
+
+  synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<synchronous_resource_ref&>(__other).__get_base(), *this);
+    return *this;
+  }
+
   using default_queries = properties_list<_Properties...>;
 
 private:
@@ -373,7 +388,16 @@ private:
                 "The properties of cuda::experimental::synchronous_resource_ref must contain at least one execution "
                 "space "
                 "property!");
+
+  template <class...>
+  friend struct synchronous_resource_ref;
+
   using __base::interface;
+
+  __base& __get_base() noexcept
+  {
+    return *this;
+  }
 };
 
 //! @brief Type erased wrapper around a `synchronous_resource` that satisfies \tparam _Properties
@@ -390,6 +414,20 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   // Inherit other constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>&);
 
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base(), *this);
+    return *this;
+  }
+
+  resource_ref& operator=(const resource_ref& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<resource_ref&>(__other).__get_base(), *this);
+    return *this;
+  }
+
   using default_queries = properties_list<_Properties...>;
 
 private:
@@ -399,6 +437,8 @@ private:
 
   template <class...>
   friend struct synchronous_resource_ref;
+  template <class...>
+  friend struct resource_ref;
 
   using __base::interface;
 
