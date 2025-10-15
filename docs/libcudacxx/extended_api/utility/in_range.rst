@@ -39,6 +39,10 @@ Checks whether a value ``value`` is within the range ``[start, end]``, inclusive
 
 - ``end`` must be greater than or equal to ``start``.
 
+.. note::
+
+  For floating-point types, ``NaN`` is considered a valid value. The function returns ``false`` if any input is ``NaN``.
+
 **Performance considerations**
 
 - The function is optimized when ``value`` is an unsigned integer type. The optimization is useful when ``start`` and ``end`` are known at compile-time, or when ``in_range`` is used multiple times with the same range.
