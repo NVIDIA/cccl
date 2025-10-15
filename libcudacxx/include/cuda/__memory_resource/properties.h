@@ -77,7 +77,7 @@ struct properties_list
   using rebind = _Fn<_ExtraArgs..., _Properties...>;
 
   template <class _QueryProperty>
-  static constexpr bool has_property([[maybe_unused]] _QueryProperty)
+  _CCCL_HOST_API static constexpr bool has_property([[maybe_unused]] _QueryProperty)
   {
     return ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Properties...>, _QueryProperty>;
   }
