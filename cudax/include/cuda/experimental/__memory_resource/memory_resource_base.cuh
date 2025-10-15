@@ -94,7 +94,9 @@ public:
   //! @note The pointer passed to `deallocate_sync` must not be in use in a stream. It is the caller's responsibility to
   //! properly synchronize all relevant streams before calling `deallocate_sync`.
   _CCCL_HOST_API void deallocate_sync(
-    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
+    void* __ptr,
+    const size_t,
+    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to __memory_resource_base::deallocate_sync.");

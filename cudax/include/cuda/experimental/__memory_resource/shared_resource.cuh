@@ -179,7 +179,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
   _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
-  void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment)
+  void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
     this->__control_block->__resource.deallocate(__stream, __ptr, __bytes, __alignment);
   }
