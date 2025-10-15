@@ -26,6 +26,7 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
 #endif // _CCCL_CUDA_COMPILATION()
@@ -384,7 +385,8 @@ public:
     // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   while (!__try_wait(__phase))
+                   while (!::cuda::ptx::mbarrier_try_wait(
+                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase))
                      ;
                    return;
                  }))
@@ -398,7 +400,8 @@ public:
     // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   while (!__try_wait_parity(__phase_parity))
+                   while (!::cuda::ptx::mbarrier_try_wait_parity(
+                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase_parity))
                      ;
                    return;
                  }))
