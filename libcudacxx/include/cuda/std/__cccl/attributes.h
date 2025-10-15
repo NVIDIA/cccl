@@ -156,8 +156,7 @@
 
 // _CCCL_NO_UNIQUE_ADDRESS
 
-// BUGBUG
-#if 1 //_CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
 // MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
 #  define _CCCL_NO_UNIQUE_ADDRESS

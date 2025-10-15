@@ -330,7 +330,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __upon_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __upon_tag_t __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
 };

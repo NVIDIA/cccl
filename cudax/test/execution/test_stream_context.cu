@@ -139,7 +139,7 @@ void bulk_on_stream_scheduler()
   auto mr      = cudax::device_memory_resource{_dev};
   auto mr2     = cudax::any_resource<cudax::device_accessible>(mr);
   _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
-  cudax::async_device_buffer<int> buf{sctx, mr2, 10, 40, env}; // a device buffer of 10 integers, initialized to 40
+  auto buf = cudax::make_async_buffer<int>(sctx, mr2, 10, 40, env); // a device buffer of 10 integers, initialized to 40
   cuda::std::span data{buf};
 
   auto start = //
@@ -156,7 +156,8 @@ void bulk_on_stream_scheduler()
         data[i] += 2;
       });
 
-  cudax::async_device_buffer<int> expected{sctx, mr2, 10, 42, env}; // a device buffer of 10 integers, initialized to 42
+  auto expected = cudax::make_async_buffer<int>(sctx, mr2, 10, 42, env); // a device buffer of 10 integers, initialized
+                                                                         // to 42
 
   // start the sender and wait for it to finish
   auto [span] = ex::sync_wait(std::move(start)).value();

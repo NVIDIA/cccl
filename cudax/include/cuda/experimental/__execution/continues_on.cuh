@@ -423,7 +423,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
     return __attrs_t<_Sch, _Sndr>{this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS continues_on_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ continues_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 };

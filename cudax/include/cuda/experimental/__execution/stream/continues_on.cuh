@@ -187,8 +187,8 @@ struct __continues_on_t
 
     // The use of __tag_t here instructs the stream_domain not to apply any further
     // transformations to this sender. See stream/domain.cuh.
-    _CCCL_NO_UNIQUE_ADDRESS __tag_t<continues_on_t> __tag_;
-    _CCCL_NO_UNIQUE_ADDRESS ::cuda::std::__ignore_t __ignore_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<continues_on_t> __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 

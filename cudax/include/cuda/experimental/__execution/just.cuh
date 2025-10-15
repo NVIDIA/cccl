@@ -135,7 +135,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
     return __inln_attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __just_tag_t __tag_;
   ::cuda::std::__tuple<_Ts...> __values_;
 };
 

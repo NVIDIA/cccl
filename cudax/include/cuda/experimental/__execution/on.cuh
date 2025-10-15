@@ -416,7 +416,7 @@ public:
     return {__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS on_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 };
@@ -432,7 +432,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS on_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ on_t __tag_;
   __closure_t<_Sch, _Closure> __sch_closure_;
   _Sndr __sndr_;
 };

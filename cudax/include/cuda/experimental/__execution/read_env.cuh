@@ -147,8 +147,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     return __attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ read_env_t __tag;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Query __query;
 };
 
 template <class _Query>

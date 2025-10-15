@@ -150,7 +150,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   }
 
   _Env __env_;
-  _CCCL_NO_UNIQUE_ADDRESS _Config __launch_config_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Config __launch_config_;
 };
 
 // This is the inner receiver that is used to connect the child sender.
@@ -397,8 +397,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     return __attrs_t<_Sndr, _GetStream>{*this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS _GetStream __get_stream_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _GetStream __get_stream_;
   _Sndr __sndr_;
 };
 

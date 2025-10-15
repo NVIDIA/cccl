@@ -302,7 +302,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
     return __value;
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Ty __value{};
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Ty __value{};
 };
 
 template <class _Ty>

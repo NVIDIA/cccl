@@ -216,7 +216,7 @@ template <class _Pred, class _Then, class _Else, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure_base_t<_Pred, _Then, _Else>, _Sndr>
 {
   using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure_base_t<_Pred, _Then, _Else>;
-  _CCCL_NO_UNIQUE_ADDRESS conditional_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
 

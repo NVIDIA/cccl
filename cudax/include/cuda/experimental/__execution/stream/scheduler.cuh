@@ -200,7 +200,7 @@ public:
       return __opstate_t<_Rcvr>{static_cast<_Rcvr&&>(__rcvr), __attrs_.__stream_};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS __tag_t __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t __tag_;
     __attrs_t __attrs_;
   };
 

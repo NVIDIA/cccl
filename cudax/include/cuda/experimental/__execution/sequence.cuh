@@ -269,8 +269,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     return {this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS ::cuda::std::__ignore_t __ign_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ sequence_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ ::cuda::std::__ignore_t __ign_;
   _Sndr1 __sndr1_;
   _Sndr2 __sndr2_;
 };

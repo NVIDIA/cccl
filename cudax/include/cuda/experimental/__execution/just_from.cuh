@@ -151,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
     return __inln_attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __just_from_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __just_from_tag_t __tag_;
   _Fn __fn_;
 };
 

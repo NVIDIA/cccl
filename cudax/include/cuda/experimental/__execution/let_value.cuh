@@ -507,7 +507,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
     return {__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _LetTag __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
 };

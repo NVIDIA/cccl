@@ -190,7 +190,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     return __attrs_t{this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS starts_on_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ starts_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 };

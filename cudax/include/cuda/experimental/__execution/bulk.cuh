@@ -211,7 +211,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
         {{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS _Policy __policy_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ _Policy __policy_;
     _Shape __shape_;
     _Fn __fn_;
   };
@@ -259,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       return {__state_.__shape_, __sndr_};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS _BulkTag __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ _BulkTag __tag_;
     __closure_base_t<_Policy, _Shape, _Fn> __state_;
     _Sndr __sndr_;
   };
