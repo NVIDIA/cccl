@@ -27,22 +27,18 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#ifdef _LIBCUDACXX_HAS_STL_LITERALS
-// Literal suffix for complex number literals [complex.literals]
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
-_CCCL_DIAG_SUPPRESS_MSVC(4455)
+_CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
+_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506, 20208) // a user-provided literal suffix must begin with "_", long double treated as
+                                          // double
 
 inline namespace literals
 {
 inline namespace complex_literals
 {
-#  if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-// NOTE: if you get a warning from GCC <7 here that "literal operator suffixes not preceded by ‘_’ are reserved for
-// future standardization" then we are sorry. The warning was implemented before GCC 7, but can only be disabled since
-// GCC 7. See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69523
 _CCCL_API constexpr complex<long double> operator""il(long double __im)
 {
   return {0.0l, __im};
@@ -71,33 +67,11 @@ _CCCL_API constexpr complex<float> operator""if(unsigned long long __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }
-#  else // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC) ^^^ / vvv other compilers vvv
-_CCCL_API constexpr complex<double> operator""i(double __im)
-{
-  return {0.0, static_cast<double>(__im)};
-}
-
-_CCCL_API constexpr complex<double> operator""i(unsigned long long __im)
-{
-  return {0.0, static_cast<double>(__im)};
-}
-
-_CCCL_API constexpr complex<float> operator""if(double __im)
-{
-  return {0.0f, static_cast<float>(__im)};
-}
-
-_CCCL_API constexpr complex<float> operator""if(unsigned long long __im)
-{
-  return {0.0f, static_cast<float>(__im)};
-}
-#  endif // other compilers
 } // namespace complex_literals
 } // namespace literals
 
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
-
-#endif // _LIBCUDACXX_HAS_STL_LITERALS
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
