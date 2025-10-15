@@ -55,7 +55,7 @@ template <class _Int>
 struct __avoid_promotions
 {
   using __base =
-    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
+    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned_v<_Int>, unsigned int, signed int>>;
 
   _CCCL_HIDE_FROM_ABI constexpr __avoid_promotions() = default;
 
@@ -653,7 +653,7 @@ _CCCL_API constexpr void __throw_if_out_of_range(size_t __pos, const char* __msg
 }
 
 template <>
-_CCCL_API inline void __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
+_CCCL_API inline void __throw_if_out_of_range<0>(size_t, const char* __msg)
 {
   ::cuda::std::__throw_out_of_range(__msg);
 }

@@ -43,6 +43,10 @@
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 
+// On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702)
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -105,8 +109,9 @@ struct TransformKernelSource<Offset,
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
+private:
   template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, [[maybe_unused]] int alignment)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
@@ -116,6 +121,14 @@ struct TransformKernelSource<Offset,
     {
       return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
     }
+  }
+
+public:
+  CUB_RUNTIME_FUNCTION constexpr static bool
+  CanVectorize(int vec_size, const RandomAccessIteratorOut& out, const RandomAccessIteratorsIn&... in)
+  {
+    return is_pointer_aligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vec_size)
+        && (is_pointer_aligned(in, sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size) && ...);
   }
 };
 
@@ -380,7 +393,7 @@ struct dispatch_t<StableAddress,
   }
 
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_no_input, prefetch, ItemsPerThreadNoInput)
-  CUB_DEFINE_SFINAE_GETTER(load_store_word_size, vectorized, LoadStoreWordSize)
+  CUB_DEFINE_SFINAE_GETTER(vec_size, vectorized, VecSize)
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_vectorized, vectorized, ItemsPerThreadVectorized)
 
 #undef CUB_DEFINE_SFINAE_GETTER
@@ -437,9 +450,8 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
-                   && kernel_source.IsPointerAligned(out, alignment);
+      const int vs  = vec_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
     }
 
     int ipt        = 0;
@@ -452,6 +464,7 @@ struct dispatch_t<StableAddress,
         ipt_found = true;
       }
     }
+
     if (!ipt_found)
     {
       // otherwise, set up the prefetch kernel
@@ -549,5 +562,8 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
+
 } // namespace detail::transform
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP

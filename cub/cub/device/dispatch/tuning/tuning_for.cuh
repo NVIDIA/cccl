@@ -42,9 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace for_each
+namespace detail::for_each
 {
 
 struct policy_hub_t
@@ -57,7 +55,6 @@ struct policy_hub_t
   using MaxPolicy = policy_500_t;
 };
 
-} // namespace for_each
-} // namespace detail
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

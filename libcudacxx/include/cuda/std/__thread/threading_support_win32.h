@@ -22,7 +22,7 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
 
-#  include <cuda/std/chrono>
+#  include <cuda/std/__chrono/duration.h>
 
 #  include <process.h>
 #  include <windows.h>

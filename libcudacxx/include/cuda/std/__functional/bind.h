@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct is_bind_expression
-    : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, false_type, is_bind_expression<remove_cvref_t<_Tp>>>
+    : _If<is_same_v<_Tp, remove_cvref_t<_Tp>>, false_type, is_bind_expression<remove_cvref_t<_Tp>>>
 {};
 
 template <class _Tp>
@@ -60,7 +60,7 @@ inline constexpr size_t is_bind_expression_v = is_bind_expression<_Tp>::value;
 
 template <class _Tp>
 struct is_placeholder
-    : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, integral_constant<int, 0>, is_placeholder<remove_cvref_t<_Tp>>>
+    : _If<is_same_v<_Tp, remove_cvref_t<_Tp>>, integral_constant<int, 0>, is_placeholder<remove_cvref_t<_Tp>>>
 {};
 
 template <class _Tp>
@@ -97,14 +97,13 @@ _CCCL_API inline _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
 }
 
 template <class _Ti, class... _Uj, size_t... _Indx>
-_CCCL_API inline typename __invoke_of<_Ti&, _Uj...>::type
-__mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
+_CCCL_API inline invoke_result_t<_Ti&, _Uj...> __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
   return __ti(::cuda::std::forward<_Uj>(::cuda::std::get<_Indx>(__uj))...);
 }
 
 template <class _Ti, class... _Uj>
-_CCCL_API inline enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
+_CCCL_API inline enable_if_t<is_bind_expression<_Ti>::value, invoke_result<_Ti&, _Uj...>>
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
   using __indices = __make_tuple_indices_t<sizeof...(_Uj)>;
@@ -151,12 +150,12 @@ struct __mu_return_invocable // false
 template <class _Ti, class... _Uj>
 struct __mu_return_invocable<true, _Ti, _Uj...>
 {
-  using type = typename __invoke_of<_Ti&, _Uj...>::type;
+  using type = invoke_result_t<_Ti&, _Uj...>;
 };
 
 template <class _Ti, class... _Uj>
 struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
-    : public __mu_return_invocable<__invocable<_Ti&, _Uj...>::value, _Ti, _Uj...>
+    : public __mu_return_invocable<is_invocable_v<_Ti&, _Uj...>, _Ti, _Uj...>
 {};
 
 template <class _Ti, class _TupleUj>
@@ -196,13 +195,13 @@ struct __is_valid_bind_return
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invocable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = is_invocable_v<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invocable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = is_invocable_v<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj, bool = __is_valid_bind_return<_Fp, _BoundArgs, _TupleUj>::value>
@@ -211,13 +210,13 @@ struct __bind_return;
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj, true>
 {
-  using type = typename __invoke_of<_Fp&, typename __mu_return<_BoundArgs, _TupleUj>::type...>::type;
+  using type = invoke_result_t<_Fp&, typename __mu_return<_BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj, true>
 {
-  using type = typename __invoke_of<_Fp&, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::type;
+  using type = invoke_result_t<_Fp&, typename __mu_return<const _BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj>
@@ -295,8 +294,7 @@ public:
               result_type>
   operator()(_Args&&... __args)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base&>(*this), ::cuda::std::forward<_Args>(__args)...);
+    return ::cuda::std::invoke_r<_Rp>(static_cast<base&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 
   template <class... _Args>
@@ -305,8 +303,7 @@ public:
     result_type>
   operator()(_Args&&... __args) const
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base const&>(*this), ::cuda::std::forward<_Args>(__args)...);
+    return ::cuda::std::invoke_r<_Rp>(static_cast<base const&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 };
 

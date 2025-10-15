@@ -106,7 +106,7 @@ public:
     ++my_count;
   }
 
-  _CCCL_HOST_DEVICE bool operator==(const Wrapper& input) const
+  _CCCL_HOST_DEVICE bool operator==(const Wrapper&) const
   {
     return true;
   }

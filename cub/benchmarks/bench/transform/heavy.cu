@@ -45,7 +45,7 @@ static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
 {
   using value_t                     = std::uint32_t;
   using offset_t                    = int;
-  const auto n                      = narrow<offset_t>(state.get_int64("Elements{io}"));
+  const auto n                      = cuda::narrow<offset_t>(state.get_int64("Elements{io}"));
   thrust::device_vector<value_t> in = generate(n);
   thrust::device_vector<value_t> out(n);
 
