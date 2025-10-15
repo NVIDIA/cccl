@@ -230,6 +230,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
@@ -240,6 +241,7 @@ public:
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
   //! @param __iter The original @c tabulate_output_iterator
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
@@ -257,6 +259,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator decremented a given number of elements
   //! @param __n The number of elements to decremented
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
