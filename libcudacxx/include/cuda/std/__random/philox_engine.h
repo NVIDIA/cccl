@@ -94,7 +94,7 @@ class philox_engine
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
   static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
-  static constexpr auto __multipliers()
+  static _CCCL_API constexpr auto __multipliers()
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -106,7 +106,7 @@ class philox_engine
       return ::cuda::std::array<_UIntType, 2>{__constants[0], __constants[2]};
     }
   }
-  static constexpr auto __round_consts()
+  static _CCCL_API constexpr auto __round_consts()
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)

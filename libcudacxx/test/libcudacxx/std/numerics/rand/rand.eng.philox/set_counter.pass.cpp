@@ -28,13 +28,13 @@ __host__ __device__ void test()
   e1 = Engine(7);
   e2 = Engine(7);
   e1.set_counter({0, 0, 1, 0});
-  if constexpr (std::is_same_v<Engine, cuda::std::philox4x32>)
+  if constexpr (::cuda::std::is_same_v<Engine, typename ::cuda::std::philox4x32>)
   {
-    e2.set_counter({0, 0, 0, cuda::std::numeric_limits<std::uint32_t>::max()});
+    e2.set_counter({0, 0, 0, ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max()});
   }
   else
   {
-    e2.set_counter({0, 0, 0, cuda::std::numeric_limits<std::uint64_t>::max()});
+    e2.set_counter({0, 0, 0, ::cuda::std::numeric_limits<::cuda::std::uint64_t>::max()});
   }
   e2.discard(4);
   assert(e1 == e2);
