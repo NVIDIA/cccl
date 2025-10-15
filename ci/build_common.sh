@@ -111,6 +111,18 @@ function validate_and_resolve_compiler() {
 HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
 CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
+if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
+    NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    # Verify that we have an X.Y.Z version in case the output format changes:
+    if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
+        echo "$CUDA_COMPILER --version" >&2 || :
+        $CUDA_COMPILER --version >&2 || :
+        exit 1
+    fi
+fi
+
+
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
 fi
@@ -197,6 +209,12 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v sccache &> /dev/null; then
+    sccache --version
+  else
+    echo "sccache not found"
   fi
 
   if command -v cmake &> /dev/null; then
@@ -289,7 +307,7 @@ function build_preset() {
     local sccache_json="${preset_dir}/sccache_stats.json"
     local memmon_log="${preset_dir}/memmon.log"
 
-    source "./sccache_stats.sh" "start" || :
+    sccache -z > /dev/null || :
 
     # Track memory usage on CI:
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
@@ -308,21 +326,13 @@ function build_preset() {
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
       util/memmon.sh --stop || :
-      echo "::group::📝 Memory Usage"
-      head -n20 "$memmon_log" || :
-      echo "::endgroup::"
+      run_command "📝 Memory Monitor Log" head -n20 "$memmon_log" || :
     fi
-
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
-
-    minimal_sccache_stats=$(source "./sccache_stats.sh" "end" || :)
 
     # Only print detailed stats in actions workflow
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        begin_group "💲 sccache stats"
-        echo "${minimal_sccache_stats}"
-        sccache -s || :
-        end_group
+        sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
+        run_command "📊 sccache stats" sccache --show-adv-stats || :
 
         begin_group "🥷 ninja build times"
         echo "The "weighted" time is the elapsed time of each build step divided by the number
@@ -334,7 +344,7 @@ function build_preset() {
         ./ninja_summary.py -C ${BUILD_DIR}/${PRESET} || echo "Warning: ninja_summary.py failed to execute properly."
         end_group
     else
-      echo $minimal_sccache_stats
+      sccache -s
     fi
 
     return $status

@@ -52,12 +52,12 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   {
     auto __half_len = ::cuda::std::__half_positive(__len);
     _Iter __mid     = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__mid), __value))
+    if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__mid), __value))
     {
       __first = ++__mid;
       __len -= __half_len + 1;
     }
-    else if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
+    else if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {
       __end = __mid;
       __len = __half_len;

@@ -84,9 +84,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 } // namespace detail
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
-namespace detail
-{
-namespace sub_warp_merge_sort
+namespace detail::sub_warp_merge_sort
 {
 
 /**
@@ -343,7 +341,6 @@ private:
   }
 };
 
-} // namespace sub_warp_merge_sort
-} // namespace detail
+} // namespace detail::sub_warp_merge_sort
 
 CUB_NAMESPACE_END

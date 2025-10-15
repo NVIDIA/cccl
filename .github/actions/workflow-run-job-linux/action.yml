@@ -33,27 +33,58 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        GH_TOKEN: ${{ github.token }}
       run: |
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
 
+        # Use the job def info to setup the Github cache key:
+        job_hash=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
+        job_project=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_job_project.sh ${{ inputs.id }})
+
         echo "::group::️🔍 Job Inputs"
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
         # Define the job input parameters as JOB_* environment variables that are visible in all steps:
         echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
         echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
-        echo
-        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
+        # Used to locate an appropriate existing cache:
+        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
+        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
+
+        # The new cache won't be uploaded unless the cache key is unique:
+        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
         echo "::endgroup::"
 
-        echo "ARTIFACT_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" >> "${GITHUB_ENV}"
+    - name: Setup sccache preprocessor cache
+      id: sccache-preprocessor-cache
+      uses: actions/cache@v4
+      with:
+        path: .cache/sccache/preprocessor
+        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        restore-keys: |
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
+    - name: Setup sccache-dist client toolchains cache
+      id: sccache-dist-toolchains-cache
+      uses: actions/cache@v4
+      with:
+        path: .cache/sccache-dist-client
+        key: sccache-toolchains-cache--${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        restore-keys: |
+          sccache-toolchains-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
+          sccache-toolchains-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
 
     - name: Add NVCC problem matcher
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
+
     - name: Get AWS credentials for sccache bucket
       if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@v4
@@ -61,20 +92,7 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - id: sccache-preprocessor-cache
-      name: Setup sccache preprocessor cache
-      uses: actions/cache@v4
-      with:
-        path: .cache/sccache/preprocessor
-        restore-keys: sccache-preprocessor-cache-${{runner.os}}-${{inputs.id}}
-        key: sccache-preprocessor-cache-${{runner.os}}-${{inputs.id}}-${{env.ARTIFACT_SLUG}}
-    - id: sccache-dist-toolchains-cache
-      name: Setup sccache-dist client toolchains cache
-      uses: actions/cache@v4
-      with:
-        path: .cache/sccache-dist-client
-        restore-keys: sccache-toolchains-cache-${{runner.os}}-${{inputs.id}}
-        key: sccache-toolchains-cache-${{runner.os}}-${{inputs.id}}-${{env.ARTIFACT_SLUG}}
+
     - name: Print CI override matrix job def
       env:
         GH_TOKEN: ${{ github.token }}
@@ -97,6 +115,7 @@ runs:
 
         echo -e "\e[1;34mOverride matrix entry:\e[0m"
         echo -e "\e[1;34m    $matrix_job\e[0m"
+
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -237,22 +256,18 @@ runs:
             --cuda $JOB_CUDA \
             --host $JOB_HOST \
             "${extra_launch_args[@]}" \
-            --env "COMMAND=$COMMAND" \
             --env "CI=true" \
+            --env "COMMAND=$COMMAND" \
             --env "GH_TOKEN=$GH_TOKEN" \
-            --env "GITHUB_ENV=$GITHUB_ENV" \
-            --env "GITHUB_SHA=$GITHUB_SHA" \
-            --env "GITHUB_PATH=$GITHUB_PATH" \
-            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
-            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
-            --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
             --env "JOB_ID=$JOB_ID" \
+            --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
+            --env "RUNNER_TEMP=$RUNNER_TEMP" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \

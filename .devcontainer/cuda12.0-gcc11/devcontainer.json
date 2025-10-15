@@ -29,7 +29,6 @@
   "containerEnv": {
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
-    "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",
     "NVCC_APPEND_FLAGS": "-t=100",
     "SCCACHE_DIST_AUTH_TOKEN_VAR": "${localEnv:SCCACHE_DIST_AUTH_TOKEN_VAR}",
     "SCCACHE_DIST_TOKEN": "${localEnv:SCCACHE_DIST_TOKEN}",
@@ -48,6 +47,7 @@
     "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.0-gcc11",
+    "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
     "CCCL_CUDA_VERSION": "12.0",
     "CCCL_HOST_COMPILER": "gcc",
     "CCCL_HOST_COMPILER_VERSION": "11",
