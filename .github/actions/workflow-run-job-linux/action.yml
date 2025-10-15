@@ -74,7 +74,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: .cache/sccache-dist-client
-        key: sccache-toolchains-cache--${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        key: sccache-toolchains-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
         restore-keys: |
           sccache-toolchains-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
           sccache-toolchains-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
