@@ -31,7 +31,6 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
-#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
 #include <cuda/experimental/__execution/start_detached.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>
