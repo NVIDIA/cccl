@@ -10,7 +10,7 @@
 
 // <random>
 
-#include <cuda/std/random>
+#include <cuda/std/__random/philox_engine.h>
 
 #include "test_macros.h"
 

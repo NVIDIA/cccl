@@ -10,7 +10,7 @@
 
 // <random>
 
-#include <cuda/std/random>
+#include <cuda/std/__random/philox_engine.h>
 
 template <typename Engine, typename Engine::result_type value_10000>
 __host__ __device__ void test()
