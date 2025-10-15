@@ -452,18 +452,17 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
 
-  using T = ::cuda::std::iter_value_t<Input>;
-  if constexpr (::cuda::std::is_same_v<T, AccumT> && enable_sm90_simd_reduction_v<T, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm90_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (::cuda::std::is_same_v<T, AccumT> && enable_sm80_simd_reduction_v<T, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm80_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (::cuda::std::is_same_v<T, AccumT> && enable_sm70_simd_reduction_v<T, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm70_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
   }
@@ -471,7 +470,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   if constexpr (length >= 6)
   {
     // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
-    if constexpr (enable_ternary_reduction_sm90_v<T, ReductionOp>)
+    if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
       // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
       if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
@@ -484,7 +483,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
       NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
     }
 
-    if constexpr (enable_ternary_reduction_sm50_v<T, ReductionOp>)
+    if constexpr (enable_ternary_reduction_sm50_v<ValueT, ReductionOp>)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
     }
