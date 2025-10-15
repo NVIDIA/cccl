@@ -9,6 +9,8 @@
 
 // <cuda/std/complex>
 
+// UNSUPPORTED: gcc-7
+
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>

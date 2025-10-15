@@ -21,9 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__complex/complex.h>
+// gcc < 8 warns about it's extended literals being shadowed by the implementation, so let's just disable the complex
+// literals
+#if !_CCCL_COMPILER(GCC, <, 8)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__complex/complex.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -32,8 +36,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
 _CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
 _CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506, 20208) // a user-provided literal suffix must begin with "_", long double treated as
-                                          // double
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506, 20208) // a user-provided literal suffix must begin with "_",
+                                          // long double treated as double
 
 inline namespace literals
 {
@@ -75,6 +79,8 @@ _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(GCC, <, 8)
 
 #endif // _CUDA_STD___COMPLEX_LITERALS_H
