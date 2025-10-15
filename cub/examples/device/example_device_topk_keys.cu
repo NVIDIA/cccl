@@ -12,28 +12,31 @@
 #include <cub/device/device_topk.cuh>
 #include <cub/util_allocator.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/sort.h>
 
 #include <algorithm>
-#include <cstdio>
+#include <iostream>
 
 #include "../../test/test_util.h"
 
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and aliases
+// Globals
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
-CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
+// Whether to display input/output to console
+bool g_verbose = false;
 
 //---------------------------------------------------------------------
-// Test generation
+// Helper functions
 //---------------------------------------------------------------------
 
-// Initialize key-value sorting problem.
-void Initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
+// Initialize the input data and the reference solution
+void initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
 {
   for (int i = 0; i < num_items; ++i)
   {
@@ -42,19 +45,22 @@ void Initialize(float* h_keys, float* h_reference_keys, int num_items, int k)
 
   if (g_verbose)
   {
-    printf("Input keys:\n");
+    std::cout << "Input keys:\n";
     DisplayResults(h_keys, num_items);
-    printf("\n\n");
+    std::cout << "\n\n";
   }
 
   std::partial_sort_copy(h_keys, h_keys + num_items, h_reference_keys, h_reference_keys + k);
 }
 
-//  In some case the results of topK is unordered. Sort the results to compare with ground truth.
-void SortUnorderedRes(float* h_res_keys, float* d_keys_out, int k)
+//  In this example, we do no require a specific output order and do not require deterministic results (this allows for
+//  better performance in some cases). However, the output of DeviceTopK::MinKeys() is not sorted. This function sorts
+//  the output keys for comparison against the reference solution.
+thrust::host_vector<float> sort_unordered_results(thrust::device_vector<float>& d_keys_out)
 {
-  CubDebugExit(cudaMemcpy(h_res_keys, d_keys_out, sizeof(float) * k, cudaMemcpyDeviceToHost));
-  std::stable_sort(h_res_keys, h_res_keys + k);
+  thrust::host_vector<float> h_res_keys{d_keys_out};
+  thrust::sort(h_res_keys.begin(), h_res_keys.end());
+  return h_res_keys;
 }
 
 //---------------------------------------------------------------------
@@ -64,105 +70,69 @@ int main(int argc, char** argv)
 {
   int num_items = 10240;
   int k         = 10;
-  // Initialize command line
+
+  // initialize command line
   CommandLineArgs args(argc, argv);
   g_verbose = args.CheckCmdLineFlag("v");
   args.GetCmdLineArgument("n", num_items);
   args.GetCmdLineArgument("k", k);
+
   // Print usage
   if (args.CheckCmdLineFlag("help"))
   {
-    printf("%s "
-           "[--n=<input items> "
-           "[--k=<output items> "
-           "[--device=<device-id>] "
-           "[--v] "
-           "\n",
-           argv[0]);
+    std::cout << "Usage: " << argv[0] << " [--n=<input items>] [--k=<output items>] [--device=<device-id>] [--v]\n";
     exit(0);
   }
 
   // Initialize device
   CubDebugExit(args.DeviceInit());
 
-  printf("cub::DeviceTopK::MinKeys() find %d smallest items from %d items (%d-byte keys)\n",
-         k,
-         num_items,
-         int(sizeof(float)));
-  fflush(stdout);
+  std::cout << "cub::DeviceTopK::MinKeys() find " << k << " smallest items from " << num_items << " items ("
+            << sizeof(float) << "-byte keys)\n";
 
   // Allocate host arrays
   thrust::host_vector<float> h_keys_vector(num_items);
   thrust::host_vector<float> h_reference_keys_vector(k);
-  thrust::host_vector<float> h_res_keys_vector(k);
-
-  float* h_keys           = thrust::raw_pointer_cast(h_keys_vector.data());
-  float* h_reference_keys = thrust::raw_pointer_cast(h_reference_keys_vector.data());
-  float* h_res_keys       = thrust::raw_pointer_cast(h_res_keys_vector.data());
 
   // Initialize problem and solution on host
-  Initialize(h_keys, h_reference_keys, num_items, k);
+  initialize(thrust::raw_pointer_cast(h_keys_vector.data()),
+             thrust::raw_pointer_cast(h_reference_keys_vector.data()),
+             num_items,
+             k);
 
   // Allocate device arrays
-  float* d_keys_in = nullptr;
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys_in, sizeof(float) * num_items));
-
-  // Initialize device input
-  CubDebugExit(cudaMemcpy(d_keys_in, h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
-
-  // Allocate device output array and num selected
-  float* d_keys_out = nullptr;
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys_out, sizeof(float) * k));
-
-  // Allocate temporary storage
-  size_t temp_storage_bytes = 0;
-  void* d_temp_storage      = nullptr;
+  thrust::device_vector<float> d_keys_in{h_keys_vector};
+  thrust::device_vector<float> d_keys_out(k);
 
   // Specify that we do not require a specific output order and do not require deterministic results
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
-  CubDebugExit(
-    DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
-  CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+  // Query temporary storage requirements
+  size_t temp_storage_bytes = 0;
+  CubDebugExit(DeviceTopK::MinKeys(
+    nullptr, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, requirements));
 
-  // Initialize device arrays
-  CubDebugExit(cudaMemcpy(d_keys_in, h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
+  // Allocate temporary storage
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  CubDebugExit(
-    DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
+  // Run the top-k algorithm
+  CubDebugExit(DeviceTopK::MinKeys(
+    d_temp_storage, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, requirements));
 
   // Check for correctness (and display results, if specified)
-  SortUnorderedRes(h_res_keys, d_keys_out, k);
+  auto h_res_keys_vector = sort_unordered_results(d_keys_out);
   if (g_verbose)
   {
-    printf("Output keys:\n");
-    DisplayResults(h_res_keys, k);
-    printf("\n\n");
+    std::cout << "Output keys:\n";
+    DisplayResults(thrust::raw_pointer_cast(h_res_keys_vector.data()), k);
+    std::cout << "\n\n";
   }
-  const int compare = CompareResults(h_reference_keys, h_res_keys, k, g_verbose);
+  const int compare = CompareResults(h_reference_keys_vector.data(), h_res_keys_vector.data(), k, g_verbose);
   AssertEquals(0, compare);
 
-  // Cleanup
-  if (d_keys_in)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_keys_in));
-    d_keys_in = nullptr;
-  }
-
-  if (d_keys_out)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_keys_out));
-    d_keys_out = nullptr;
-  }
-
-  if (d_temp_storage)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
-    d_temp_storage = nullptr;
-  }
-
-  printf("\n\n");
+  std::cout << "\n\n";
 
   return 0;
 }
