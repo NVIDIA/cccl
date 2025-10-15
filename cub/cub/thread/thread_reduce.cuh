@@ -533,7 +533,7 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   {
     array[i + 1] = input[i];
   }
-  return cub::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
+  return cub::ThreadReduce<decltype(array), ReductionOp, ValueT, AccumT>(array, reduction_op);
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
