@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/mul_hi.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
@@ -151,6 +152,12 @@ public:
     seed(__seed);
   }
 
+  template <class Sseq>
+  _CCCL_API explicit philox_engine(Sseq& q) noexcept
+  {
+    seed(q);
+  }
+
   //! This method initializes this philox_engine's state, and optionally accepts
   //! a seed value.
   //!
@@ -162,6 +169,29 @@ public:
     __k__    = {};
     __k__[0] = __s & max();
     __j__    = word_count - 1;
+  }
+
+  // Prevent this overload if Sseq is convertible to result_type
+  template <class Sseq>
+  _CCCL_API void seed(Sseq& seq, typename std::enable_if<!std::is_convertible<Sseq, result_type>::value>::type* = 0)
+  {
+    __x__            = {};
+    __y__            = {};
+    __k__            = {};
+    __j__            = word_count - 1;
+    constexpr auto p = (word_size - 1) / 32 + 1;
+    ::cuda::std::array<std::uint_least32_t, word_count / 2 * p> a;
+    seq.generate(a.begin(), a.end());
+    auto a_iter = a.begin();
+    for (::cuda::std::size_t k = 0; k < word_count / 2; k++)
+    {
+      result_type sum = 0;
+      for (::cuda::std::size_t i = 0; i < p; ++i)
+      {
+        sum += static_cast<result_type>(*a_iter++) << (32 * i);
+      }
+      __k__[k] = sum & max();
+    }
   }
 
   //! This method sets the internal counter. Each increment of the counter produces n new values. The array counter
@@ -216,16 +246,15 @@ public:
   _CCCL_API void discard(unsigned long long __z) noexcept
   {
     // Advance __j__ until we are at n - 1
-    while (__j__ != word_count - 1 && __z > 0)
-    {
-      (*this)();
-      __z--;
-    }
+    auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j__));
+    __j__ += static_cast<::cuda::std::size_t>(__advance);
+    __z -= __advance;
 
     // Increment the big integer counter, handling overflow
     unsigned long long __increment       = __z / word_count;
     const unsigned long long __remainder = __z % word_count;
     ::cuda::std::size_t __carry          = 0;
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
     {
       if (__increment == 0 && __carry == 0)
@@ -246,9 +275,11 @@ public:
     }
 
     // Advance the output buffer position by the remainder
-    for (::cuda::std::size_t __j = 0; __j < __remainder; ++__j)
+    if (__remainder > 0)
     {
-      (*this)();
+      __philox();
+      __increment_counter();
+      __j__ = static_cast<::cuda::std::size_t>(__remainder - 1);
     }
   }
 
@@ -298,7 +329,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e) noexcept
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base     = typename ostream_type::ios_base;
@@ -360,7 +391,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is,
-             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e) noexcept
+             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
     using ios_base     = typename istream_type::ios_base;
