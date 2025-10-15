@@ -26,6 +26,13 @@ __host__ __device__ void test()
   assert(e == e2);
   e2 = Engine(4);
   assert(e != e2);
+
+  constexpr auto test_constexpr = []() {
+    constexpr Engine e1;
+    constexpr Engine e2;
+    static_assert(e1 == e2, "constexpr philox_engine operator== is broken");
+    return 0;
+  }();
 }
 
 int main(int, char**)

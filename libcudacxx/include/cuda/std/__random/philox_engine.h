@@ -144,17 +144,17 @@ public:
   //! philox_engine.
   //!
   //! @param s The seed used to initialize this philox_engine's state.
-  _CCCL_API philox_engine() noexcept
+  _CCCL_API constexpr philox_engine() noexcept
   {
     seed(default_seed);
   }
-  _CCCL_API explicit philox_engine(const result_type __seed) noexcept
+  _CCCL_API constexpr explicit philox_engine(const result_type __seed) noexcept
   {
     seed(__seed);
   }
 
   template <class Sseq>
-  _CCCL_API explicit philox_engine(Sseq& q) noexcept
+  _CCCL_API constexpr explicit philox_engine(Sseq& q) noexcept
   {
     seed(q);
   }
@@ -163,7 +163,7 @@ public:
   //! a seed value.
   //!
   //! @param __s The seed used to initializes this philox_engine's state.
-  _CCCL_API void seed(result_type __s = default_seed) noexcept
+  _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
   {
     __x_    = {};
     __y_    = {};
@@ -174,7 +174,8 @@ public:
 
   // Prevent this overload if Sseq is convertible to result_type
   template <class Sseq>
-  _CCCL_API void seed(Sseq& seq, typename std::enable_if<!std::is_convertible<Sseq, result_type>::value>::type* = 0)
+  _CCCL_API constexpr void
+  seed(Sseq& seq, typename std::enable_if<!std::is_convertible<Sseq, result_type>::value>::type* = 0)
   {
     __x_               = {};
     __y_               = {};
@@ -214,7 +215,7 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param __counter The counter.
-  _CCCL_API void set_counter(const ::cuda::std::array<result_type, word_count>& __counter) noexcept
+  _CCCL_API constexpr void set_counter(const ::cuda::std::array<result_type, word_count>& __counter) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
@@ -228,7 +229,7 @@ public:
 
   //! This member function produces a new random value and updates this philox_engine's state.
   //! @return A new random number.
-  _CCCL_API result_type operator()() noexcept
+  _CCCL_API constexpr result_type operator()() noexcept
   {
     __j_++;
     if (__j_ == word_count)
@@ -244,7 +245,7 @@ public:
   //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
   //!
   //! @param __z The number of random values to discard.
-  _CCCL_API void discard(unsigned long long __z) noexcept
+  _CCCL_API constexpr void discard(unsigned long long __z) noexcept
   {
     // Advance __j_ until we are at n - 1
     auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
@@ -288,7 +289,7 @@ public:
   //! @param lhs The first philox_engine to test.
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is equal to rhs; false, otherwise.
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
              const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
   {
@@ -314,7 +315,7 @@ public:
   //! @param lhs The first philox_engine to test.
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is not equal to rhs; false, otherwise.
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
              const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
   {
@@ -431,7 +432,7 @@ public:
 #endif
 
 private:
-  _CCCL_API void __increment_counter() noexcept
+  _CCCL_API constexpr void __increment_counter() noexcept
   {
     // Increment the big integer __x_ by 1, handling overflow.
     for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
@@ -444,42 +445,52 @@ private:
     }
   }
 
-  _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const noexcept
+  _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) const noexcept
+  {
+    // Generic slow implementation
+    constexpr result_type __w_half  = word_size / 2;
+    constexpr result_type __lo_mask = (((result_type) 1) << __w_half) - 1;
+
+    result_type __lo  = __a * __b;
+    result_type __ahi = __a >> __w_half;
+    result_type __alo = __a & __lo_mask;
+    result_type __bhi = __b >> __w_half;
+    result_type __blo = __b & __lo_mask;
+
+    result_type __ahbl = __ahi * __blo;
+    result_type __albh = __alo * __bhi;
+
+    result_type __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
+    result_type __hi        = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
+    __hi += __ahbl_albh >> __w_half;
+    __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
+
+    return ::cuda::std::make_pair(__hi, __lo);
+  }
+
+  _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
   {
     if constexpr (word_size == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
-      __lo = (__a * __b) & max();
+      return ::cuda::std::make_pair(
+        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b))),
+        (__a * __b) & max());
     }
     else if constexpr (word_size == 64)
     {
-      __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
-      __lo = (__a * __b) & max();
+      auto __hi =
+        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
+      auto __lo = (__a * __b) & max();
+      return ::cuda::std::make_pair(__hi, __lo);
     }
     else
     {
-      // Generic slow implementation
-      constexpr result_type __w_half  = word_size / 2;
-      constexpr result_type __lo_mask = (((result_type) 1) << __w_half) - 1;
-
-      __lo              = __a * __b;
-      result_type __ahi = __a >> __w_half;
-      result_type __alo = __a & __lo_mask;
-      result_type __bhi = __b >> __w_half;
-      result_type __blo = __b & __lo_mask;
-
-      result_type __ahbl = __ahi * __blo;
-      result_type __albh = __alo * __bhi;
-
-      result_type __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
-      __hi                    = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
-      __hi += __ahbl_albh >> __w_half;
-      __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
+      return __mulhilo_fallback(__a, __b);
     }
   }
 
-  _CCCL_API void __philox() noexcept
+  _CCCL_API constexpr void __philox() noexcept
   {
     // Only two variants are allowed, n=2 or n=4
     if constexpr (word_count == 2)
@@ -488,11 +499,10 @@ private:
       ::cuda::std::array<result_type, word_count / 2> __K = this->__k_;
       for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
-        result_type __hi, __lo;
-        this->__mulhilo(__S[0], multipliers[0], __hi, __lo);
-        __S[0] = __hi ^ __K[0] ^ __S[1];
-        __S[1] = __lo;
-        __K[0] = (__K[0] + round_consts[0]) & max();
+        auto [__hi, __lo] = __mulhilo(__S[0], multipliers[0]);
+        __S[0]            = __hi ^ __K[0] ^ __S[1];
+        __S[1]            = __lo;
+        __K[0]            = (__K[0] + round_consts[0]) & max();
       }
       this->__y_ = __S;
     }
@@ -503,10 +513,8 @@ private:
       for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
         ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
-        result_type __hi0, __lo0;
-        this->__mulhilo(__V[0], multipliers[1], __hi0, __lo0);
-        result_type __hi2, __lo2;
-        this->__mulhilo(__V[2], multipliers[0], __hi2, __lo2);
+        auto [__hi0, __lo0]                             = __mulhilo(__V[0], multipliers[1]);
+        auto [__hi2, __lo2]                             = __mulhilo(__V[2], multipliers[0]);
 
         __S[0] = __hi0 ^ __K[0] ^ __V[1];
         __S[1] = __lo0;

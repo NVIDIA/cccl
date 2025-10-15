@@ -20,6 +20,7 @@ __host__ __device__ void test()
   {
     assert(e() <= Engine::max());
   }
+  static_assert(Engine::max() > 0, "philox_engine::max() is broken");
 }
 
 int main(int, char**)

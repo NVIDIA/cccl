@@ -13,7 +13,7 @@
 #include <cuda/std/__random/philox_engine.h>
 
 template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ void test()
+__host__ __device__ constexpr void test()
 {
   Engine e;
   for (int i = 0; i < 100; ++i)
@@ -27,6 +27,14 @@ __host__ __device__ void test()
   e = Engine();
   e.discard(9999);
   assert(e() == value_10000);
+
+  constexpr auto x = []() -> typename Engine::result_type {
+    constexpr Engine e1;
+    Engine e2 = e1;
+    e2.discard(9999);
+    return e2();
+  }();
+  static_assert(x == value_10000, "constexpr philox_engine::discard is broken");
 }
 
 int main(int, char**)
