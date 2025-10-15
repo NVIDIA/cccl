@@ -124,9 +124,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
     {
       const _Shape __tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-      if (__tid < this->__shape_)
+      // Each thread processes exactly one element, if it is in range.
+      if (__tid < this->__state_->__shape_)
       {
-        this->__fn_(_Shape(__tid), __values...);
+        this->__state_->__fn_(_Shape(__tid), __values...);
       }
 
       __syncthreads();
@@ -135,7 +136,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
       // elements.
       if (__tid == 0)
       {
-        execution::set_value(static_cast<_Rcvr&&>(this->__rcvr_), static_cast<_Values&&>(__values)...);
+        execution::set_value(static_cast<_Rcvr&&>(this->__state_->__rcvr_), static_cast<_Values&&>(__values)...);
       }
     }
   };

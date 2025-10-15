@@ -53,19 +53,17 @@ namespace __stream
 //! Only then can the schedule operation be safely invoked -- from the CPU.
 //!
 //! To effect this, continues_on(sndr, sch) is transformed into
-//! continues_on(SYNC-STREAM-ADAPTOR(STREAM-SENDER-ADAPTOR(sndr)), sch), where
-//! STREAM-SENDER-ADAPTOR wraps sndr for stream execution (see __stream/adaptor.cuh), and
-//! SYNC-STREAM-ADAPTOR(X) is a sender that does the following:
+//! continues_on(SYNC-STREAM-ADAPTOR(sndr), sch), where SYNC-STREAM-ADAPTOR(sndr) is a
+//! sender that does the following:
 //!
-//! 1. In connect (called on host): Connects X with a sink receiver that ignores values
+//! 1. In connect (called on host): Connects sndr with a sink receiver that ignores values
 //!    passed to it and simply returns. The sink receiver's completion operations are
 //!    executed on device when the child sender completes.
 //!
 //! 2. In start (called on host): Starts the child sender, which launches kernels for the
 //!    predecessor operations, and then synchronizes the CUDA stream to ensure all queued
-//!    GPU work is finished. Then, it pulls the results from X's operation state and
-//!    passes them to the receiver on the host. (Recall that X is the result of adapting
-//!    sndr for stream execution, so the type of its operation state is known.)
+//!    GPU work is finished. Then, it pulls the results from sndr's operation state and
+//!    passes them to the receiver on the host.
 struct __continues_on_t
 {
   // Transition from the GPU to the CPU domain
@@ -199,8 +197,8 @@ struct __continues_on_t
   }
 
   // This function is called when a continues_on sender, with a predecessor that completes
-  // on the stream scheduler, is being connected. It wraps the child sender in a stream
-  // sender adaptor if it isn't already wrapped.
+  // on the stream scheduler, is being connected. It wraps the child sender so that it
+  // synchronizes the stream after launching the child.
   template <class _Sndr>
   [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
@@ -213,7 +211,7 @@ struct __continues_on_t
     }
     else
     {
-      return execution::continues_on(__mk_sndr(__stream::__adapt(static_cast<__child_t&&>(__child))), __sched);
+      return execution::continues_on(__mk_sndr(static_cast<__child_t&&>(__child)), __sched);
     }
   }
 };

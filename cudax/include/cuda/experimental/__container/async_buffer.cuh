@@ -669,7 +669,11 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 // Size and value make function
 template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
 async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_resource<_Properties...> __mr, size_t __size, const _Tp& __value, const _Env& __env = {})
+  stream_ref __stream,
+  any_resource<_Properties...> __mr,
+  size_t __size,
+  const _Tp& __value,
+  [[maybe_unused]] const _Env& __env = {})
 {
   auto __res = async_buffer<_Tp, _Properties...>{__stream, __mr, __size, no_init};
   __fill_n<_Tp, !::cuda::mr::__is_device_accessible<_Properties...>>(
