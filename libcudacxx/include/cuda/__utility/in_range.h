@@ -25,6 +25,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
@@ -33,7 +34,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::std::is_floating_point_v<_Tp>
+               || ::cuda::std::__is_extended_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool in_range(_Tp __v, _Tp __start, _Tp __end) noexcept
 {
   _CCCL_ASSERT(::cuda::std::isnan(__start) || ::cuda::std::isnan(__end) || __end >= __start,
