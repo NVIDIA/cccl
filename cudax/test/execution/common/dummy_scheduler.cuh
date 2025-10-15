@@ -81,6 +81,12 @@ struct dummy_scheduler : _dummy::_attrs_t<Domain>
     return {};
   }
 
+  template <class Sndr, class Env>
+  _CCCL_HOST_DEVICE constexpr auto _bulk_transform(Sndr&& sndr, const Env&) -> Sndr
+  {
+    return cuda::std::forward<Sndr>(sndr);
+  }
+
   _CCCL_HOST_DEVICE friend constexpr bool operator==(dummy_scheduler, dummy_scheduler) noexcept
   {
     return true;

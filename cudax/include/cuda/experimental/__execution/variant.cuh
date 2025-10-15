@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
@@ -210,6 +211,9 @@ struct __variant : __variant_impl<::cuda::std::index_sequence_for<_Ts...>, _Ts..
 
 template <class... _Ts>
 using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
+
+template <class... _Ts>
+using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<::cuda::std::monostate, _Ts...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
