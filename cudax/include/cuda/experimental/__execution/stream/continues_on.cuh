@@ -139,14 +139,17 @@ struct __continues_on_t
       }
     }
 
-    _CCCL_DEVICE_API void __device_start() noexcept
+    [[noreturn]] _CCCL_DEVICE_API void __device_start() noexcept
     {
-      // _CCCL_ASSERT(false, "stream::continues_on opstate started on device");
-      if (false)
-      {
-        execution::start(__opstate_);
-        __opstate_.__set_results(__rcvr_);
-      }
+      _CCCL_ASSERT(false, "internal error: stream::continues_on opstate started on device");
+      ::cuda::std::terminate();
+
+      // We do not want the following to be called, but we need these code paths to be
+      // instantiated. Without this, the __device_start function in stream/adaptor.cuh
+      // will not be instantiated, and the kernel launch in the adaptor's __host_start
+      // function will fail.
+      execution::start(__opstate_);
+      __opstate_.__set_results(__rcvr_);
     }
 
     _Rcvr __rcvr_;

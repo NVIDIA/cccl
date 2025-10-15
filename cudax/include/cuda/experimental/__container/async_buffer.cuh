@@ -233,8 +233,6 @@ public:
   //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the async_buffer.
   //! @param __value The initial value for all elements in the async_buffer.
-  //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
-  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
   template <class _Env = ::cuda::std::execution::env<>>
   _CCCL_HIDE_FROM_ABI explicit async_buffer(
