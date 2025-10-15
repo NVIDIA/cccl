@@ -95,45 +95,36 @@ public:
 
   _CCCL_API inline ~barrier()
   {
-    NV_DISPATCH_TARGET(
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                   // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
+                   asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+                     ::__cvta_generic_to_shared(&__barrier)))
+                                : "memory");
+                   return;
+                 }))
+
+    NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
-          asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-            ::__cvta_generic_to_shared(&__barrier)))
-                       : "memory");
-        } else if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          ::__trap();
-        }),
-      NV_PROVIDES_SM_80,
-      (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-        // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
-        asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-          ::__cvta_generic_to_shared(&__barrier)))
-                     : "memory");
-      }))
+      (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) { ::__trap(); }))
   }
 
   _CCCL_API inline friend void init(barrier* __b,
                                     ::cuda::std::ptrdiff_t __expected,
                                     ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
-        } else if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
-          ::__trap();
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
-      NV_PROVIDES_SM_80,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
-      NV_ANY_TARGET,
-      (new (&__b->__barrier) __barrier_base(__expected);))
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
+                   ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
+                   return;
+                 }))
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
+                   ::__trap();
+                 }))
+
+    new (&__b->__barrier) __barrier_base(__expected);
   }
 
 private:
