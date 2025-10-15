@@ -95,7 +95,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       return __state_.__stop_token_;
     }
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const

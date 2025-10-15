@@ -93,7 +93,7 @@ inline constexpr size_t structured_binding_size<_Sndr const&> = structured_bindi
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class _CvSndr, class _Context>
     requires(static_cast<int>(structured_binding_size<_CvSndr>) >= 2)
   _CCCL_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const

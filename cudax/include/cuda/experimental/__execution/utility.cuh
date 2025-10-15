@@ -92,7 +92,7 @@ _CCCL_API constexpr auto __index_of() noexcept -> size_t
   return execution::__find_pos(__map, __map + sizeof...(_Ts));
 }
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty, class _Uy = _Ty>
 _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
@@ -106,7 +106,7 @@ _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _
   return old_value;
 }
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
@@ -120,7 +120,7 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
   __right   = static_cast<_Ty&&>(__tmp);
 }
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 [[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>
 {
@@ -227,7 +227,7 @@ private:
 
 public:
   //! @brief Calls the first function that is callable with a given set of arguments.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
@@ -238,7 +238,7 @@ public:
   }
 
   //! @overload
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
@@ -261,7 +261,7 @@ namespace __detail
 // not callable.
 struct __call_or_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn, class _Default, class... _Args)
   _CCCL_REQUIRES(__callable<_Fn, _Args...>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
@@ -270,7 +270,7 @@ struct __call_or_t
     return static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...);
   }
 
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Default, class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
     noexcept(__nothrow_movable<_Default>) -> _Default

@@ -68,7 +68,7 @@ struct __decay_transform
 template <class _Fn, class... _As>
 using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
   -> __meta_call_result_t<const _Fn&, _Ay, _As...>
@@ -76,7 +76,7 @@ template <class _Ay, class... _As, class _Fn>
   return __fn.template operator()<_Ay, _As...>();
 }
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
 {

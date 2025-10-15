@@ -126,7 +126,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query, _Args...>)
   [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const

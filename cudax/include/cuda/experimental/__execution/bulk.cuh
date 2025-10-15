@@ -84,7 +84,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
                  (_CCCL_ASSERT(false, "cannot get a launch configuration from device"); ::cuda::std::terminate();))
   }
 
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
   [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const

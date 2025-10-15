@@ -88,7 +88,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 // get_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
@@ -109,7 +109,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 // get_delegation_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
@@ -141,7 +141,7 @@ struct get_completion_scheduler_t
   // accept an environment.
   struct __read_query_t
   {
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
@@ -153,7 +153,7 @@ struct get_completion_scheduler_t
       return __attrs.query(_GetComplSch{});
     }
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch, const _Env&>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
@@ -173,7 +173,7 @@ private:
   // completion scheduler is equal to itself (or it doesn't have one).
   struct __recurse_query_t
   {
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Self = __recurse_query_t, class _Sch, class... _Env>
     [[nodiscard]]
     _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept

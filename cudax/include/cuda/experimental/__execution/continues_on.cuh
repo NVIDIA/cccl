@@ -278,7 +278,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
 
     // The continues_on sender completes on the scheduler's domain.
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, _Env&&...) const noexcept
       -> __scheduler_domain_t<_Sch, __fwd_env_t<_Env>...>
@@ -288,7 +288,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 
     // If the predecessor sender does not have a _SetTag completion, then the completion
     // domain for _SetTag is the scheduler's if it has one.
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr, __fwd_env_t<_Env>...>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
@@ -299,7 +299,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 
     // If the scheduler's sender does not have a _SetTag completion, then the completion
     // domain for _SetTag is the sender's if it has one.
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES((!__has_completions_for<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
@@ -309,7 +309,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
 
     // continues_on has a special rule for the domain used to transform the sender.
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_domain_override_t, _Env&&...) const noexcept
       -> __completion_domain_of_t<set_value_t, _Sndr, __fwd_env_t<_Env>...>
@@ -326,7 +326,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
                                execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>());
     }
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(
       __detail::__forwarding_continues_on_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)

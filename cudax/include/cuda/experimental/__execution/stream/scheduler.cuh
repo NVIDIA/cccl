@@ -109,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   {
     using operation_state_concept = operation_state_t;
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __stream_{__stream_ref}

@@ -60,7 +60,7 @@ _CCCL_CONCEPT __has_set_value_mbr = //
 
 struct set_value_t : __completion_tag<__disposition::__value>
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr, class... _Ts)
   _CCCL_REQUIRES(__has_set_value_mbr<_Rcvr, _Ts...>)
   _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
@@ -80,7 +80,7 @@ _CCCL_CONCEPT __has_set_error_mbr = //
 
 struct set_error_t : __completion_tag<__disposition::__error>
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr, class _Ey)
   _CCCL_REQUIRES(__has_set_error_mbr<_Rcvr, _Ey>)
   _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
@@ -100,7 +100,7 @@ _CCCL_CONCEPT __has_set_stopped_mbr = //
 
 struct set_stopped_t : __completion_tag<__disposition::__stopped>
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr)
   _CCCL_REQUIRES(__has_set_stopped_mbr<_Rcvr>)
   _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr) const noexcept
@@ -120,7 +120,7 @@ _CCCL_CONCEPT __has_start_mbr = //
 
 struct start_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpState)
   _CCCL_REQUIRES(__has_start_mbr<_OpState>)
   _CCCL_TRIVIAL_API constexpr void operator()(_OpState& __opstate) const noexcept
@@ -134,7 +134,7 @@ struct start_t
 // connect
 struct connect_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr, class _Rcvr>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
     noexcept(noexcept(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>())))
@@ -146,7 +146,7 @@ struct connect_t
 
 struct schedule_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sch&& __sch) const noexcept
   {

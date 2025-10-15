@@ -87,7 +87,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @param __sndr The sender to which the operation is applied.
   //! @param __args Additional arguments for the operation.
   //! @return The result of applying the sender operation.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
   _CCCL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
     noexcept(_Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) //
@@ -104,7 +104,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @param __sndr The sender to be transformed.
   //! @param __env The environment used for the transformation.
   //! @return The result of transforming the sender with the given environment.
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env)
   _CCCL_REQUIRES(__has_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
   [[nodiscard]] _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   }
 
   //! @overload
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
   [[nodiscard]] _CCCL_API static constexpr auto
   transform_sender(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t = {}) //
@@ -135,7 +135,7 @@ struct __hide_query
       : __env_{static_cast<_Env&&>(__env)}
   {}
 
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _As)
   _CCCL_REQUIRES(__none_of<_Query, _Queries...> _CCCL_AND __queryable_with<_Env, _Query, _As...>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Query __query, const _As&... __as) const
@@ -343,7 +343,7 @@ _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_stopped_t> get_completion_doma
 // Used by the continues_on sender
 struct get_domain_override_t
 {
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Attrs)
   _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t>)
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, ::cuda::std::__ignore_t = {}) const noexcept
@@ -352,7 +352,7 @@ struct get_domain_override_t
     return {};
   }
 
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Attrs, class _Env)
   _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t, const _Env&>)
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, const _Env&) const noexcept

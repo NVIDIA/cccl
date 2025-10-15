@@ -80,7 +80,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
 public:
-  // _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Ts>
   _CCCL_API constexpr auto operator()(_Ts... __ts) const;
 };
@@ -156,7 +156,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
   static_assert(sizeof...(_Ts) == 0, "just_stopped_t must not be called with any types.");
 };
 
-// _CCCL_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
 _CCCL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const

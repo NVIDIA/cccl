@@ -38,7 +38,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     // Prefer to query _Env
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -49,7 +49,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 
     // Fallback to querying the inner receiver's environment, but only for forwarding
     // queries.
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES((!__queryable_with<_Env, _Query, _Args...>)
                      _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query, _Args...>)

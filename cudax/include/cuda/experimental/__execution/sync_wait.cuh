@@ -66,7 +66,7 @@ public:
   template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
@@ -75,7 +75,7 @@ public:
       return get_env(__state_->__loop_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_scheduler_t>)
@@ -89,7 +89,7 @@ public:
       _CCCL_UNREACHABLE();
     }
 
-    // _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_API constexpr auto query(get_delegation_scheduler_t) const noexcept
     {
       if constexpr (__queryable_with<_Env, get_delegation_scheduler_t>)
