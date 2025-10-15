@@ -43,6 +43,8 @@ It gives more control over the synchronization with a barrier than ``memcpy_asyn
 Currently, ``memcpy_async_tx`` has no synchronous fallback mechanism., i.e., it currently does not work on older hardware
 (pre-CUDA Compute Capability 9.0, i.e., Hopper).
 
+ .. _libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx-example:
+
 Example
 -------
 
@@ -78,4 +80,4 @@ Example
      smem_x[threadIdx.x] += 1;
    }
 
-`See it on Godbolt <https://godbolt.org/z/PGTa76Ef7>`_
+`See it on Godbolt <https://godbolt.org/z/no86Kaazb>`_
