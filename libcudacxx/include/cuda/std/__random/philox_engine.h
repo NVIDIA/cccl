@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/fast_modulo_division.h>
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!
 //! @tparam _UIntType The type of unsigned integer to produce.
 //! @tparam _WordSize The word size
-//! @tparam _BufferSize The buffer size
+//! @tparam _WordCount The buffer size
 //! @tparam _NumRounds The number of rounds
 //! @tparam _Constants The constants used in the generation algorithm.
 //!
@@ -80,43 +80,52 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!
 //! @see cuda::std::philox4x32
 //! @see cuda::std::philox4x64
-template <typename _UIntType, size_t _WordSize, size_t _BufferSize, size_t _NumRounds, _UIntType... _Constants>
+template <typename _UIntType,
+          ::cuda::std::size_t _WordSize,
+          ::cuda::std::size_t _WordCount,
+          ::cuda::std::size_t _NumRounds,
+          _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(_BufferSize == 2 || _BufferSize == 4, "N argument must be either 2 or 4");
-  static_assert(sizeof...(_Constants) == _BufferSize, "consts array must be of length N");
+  static_assert(::cuda::std::is_unsigned_v<_UIntType>, "philox_engine: _UIntType must be an unsigned integer type");
+  static_assert(_WordCount == 2 || _WordCount == 4, "N argument must be either 2 or 4");
+  static_assert(sizeof...(_Constants) == _WordCount, "consts array must be of length N");
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
   static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
+  static constexpr auto __multipliers()
+  {
+    constexpr _UIntType __constants[] = {_Constants...};
+    if constexpr (_WordCount == 2)
+    {
+      return ::cuda::std::array<_UIntType, 1>{__constants[0]};
+    }
+    else
+    {
+      return ::cuda::std::array<_UIntType, 2>{__constants[0], __constants[2]};
+    }
+  }
+  static constexpr auto __round_consts()
+  {
+    constexpr _UIntType __constants[] = {_Constants...};
+    if constexpr (_WordCount == 2)
+    {
+      return ::cuda::std::array<_UIntType, 1>{__constants[1]};
+    }
+    else
+    {
+      return ::cuda::std::array<_UIntType, 2>{__constants[1], __constants[3]};
+    }
+  }
 
 public:
-  using result_type                   = _UIntType;
-  static constexpr size_t word_size   = _WordSize;
-  static constexpr size_t word_count  = _BufferSize;
-  static constexpr size_t round_count = _NumRounds;
-  static constexpr auto multipliers   = []() constexpr {
-    constexpr result_type __constants[] = {_Constants...};
-    if constexpr (word_count == 2)
-    {
-      return ::cuda::std::array<result_type, 1>{__constants[0]};
-    }
-    else
-    {
-      return ::cuda::std::array<result_type, 2>{__constants[0], __constants[2]};
-    }
-  }();
-  static constexpr auto round_consts = []() constexpr {
-    constexpr result_type __constants[] = {_Constants...};
-    if constexpr (word_count == 2)
-    {
-      return ::cuda::std::array<result_type, 1>{__constants[1]};
-    }
-    else
-    {
-      return ::cuda::std::array<result_type, 2>{__constants[1], __constants[3]};
-    }
-  }();
-  static constexpr std::uint_least32_t default_seed = 20111115u;
+  using result_type                                = _UIntType;
+  static constexpr ::cuda::std::size_t word_size   = _WordSize;
+  static constexpr ::cuda::std::size_t word_count  = _WordCount;
+  static constexpr ::cuda::std::size_t round_count = _NumRounds;
+  static constexpr auto multipliers                = __multipliers();
+  static constexpr auto round_consts               = __round_consts();
+  static constexpr result_type default_seed        = 20111115u;
 
   //! The smallest value this engine may potentially produce.
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
@@ -146,7 +155,7 @@ public:
   //! a seed value.
   //!
   //! @param __s The seed used to initializes this philox_engine's state.
-  _CCCL_API void seed(result_type __s = default_seed)
+  _CCCL_API void seed(result_type __s = default_seed) noexcept
   {
     __x__    = {};
     __y__    = {};
@@ -174,9 +183,10 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param __counter The counter.
-  _CCCL_API void set_counter(const ::cuda::std::array<result_type, word_count>& __counter)
+  _CCCL_API void set_counter(const ::cuda::std::array<result_type, word_count>& __counter) noexcept
   {
-    for (size_t __j = 0; __j < word_count; ++__j)
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
     {
       __x__[__j] = __counter[word_count - 1 - __j] & max();
     }
@@ -187,7 +197,7 @@ public:
 
   //! This member function produces a new random value and updates this philox_engine's state.
   //! @return A new random number.
-  _CCCL_API result_type operator()()
+  _CCCL_API result_type operator()() noexcept
   {
     __j__++;
     if (__j__ == word_count)
@@ -203,7 +213,7 @@ public:
   //! and discards the results. philox_engine is a counter-based engine, therefore can discard with O(1) complexity.
   //!
   //! @param __z The number of random values to discard.
-  _CCCL_API void discard(unsigned long long __z)
+  _CCCL_API void discard(unsigned long long __z) noexcept
   {
     // Advance __j__ until we are at n - 1
     while (__j__ != word_count - 1 && __z > 0)
@@ -213,8 +223,9 @@ public:
     }
 
     // Increment the big integer counter, handling overflow
-    unsigned long long __increment = __z / word_count;
-    ::cuda::std::size_t __carry    = 0;
+    unsigned long long __increment       = __z / word_count;
+    const unsigned long long __remainder = __z % word_count;
+    ::cuda::std::size_t __carry          = 0;
     for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
     {
       if (__increment == 0 && __carry == 0)
@@ -235,7 +246,6 @@ public:
     }
 
     // Advance the output buffer position by the remainder
-    const auto __remainder = __z % word_count;
     for (::cuda::std::size_t __j = 0; __j < __remainder; ++__j)
     {
       (*this)();
@@ -248,7 +258,7 @@ public:
   //! @return true if lhs is equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend bool
   operator==(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs)
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
   {
     if (__lhs.__x__ != __rhs.__x__)
     {
@@ -274,7 +284,7 @@ public:
   //! @return true if lhs is not equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend bool
   operator!=(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs)
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -288,7 +298,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
+             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e) noexcept
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base     = typename ostream_type::ios_base;
@@ -301,7 +311,7 @@ public:
     __os.fill(__os.widen(' '));
 
     // output counter array (__x__)
-    for (size_t __i = 0; __i < word_count; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__x__[__i];
       if (__i < word_count - 1)
@@ -312,7 +322,7 @@ public:
     __os << __os.widen(' ');
 
     // output key array (__k__)
-    for (size_t __i = 0; __i < word_count / 2; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __os << __e.__k__[__i];
       if (__i < word_count / 2 - 1)
@@ -323,7 +333,7 @@ public:
     __os << __os.widen(' ');
 
     // output output buffer (__y__)
-    for (size_t __i = 0; __i < word_count; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__y__[__i];
       if (__i < word_count - 1)
@@ -350,7 +360,7 @@ public:
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is,
-             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
+             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e) noexcept
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
     using ios_base     = typename istream_type::ios_base;
@@ -361,19 +371,19 @@ public:
     __is.flags(ios_base::dec);
 
     // input counter array (__x__)
-    for (size_t __i = 0; __i < word_count; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__x__[__i];
     }
 
     // input key array (__k__)
-    for (size_t __i = 0; __i < word_count / 2; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __is >> __e.__k__[__i];
     }
 
     // input output buffer (__y__)
-    for (size_t __i = 0; __i < word_count; ++__i)
+    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__y__[__i];
     }
@@ -389,7 +399,7 @@ public:
 #endif
 
 private:
-  _CCCL_API void __increment_counter()
+  _CCCL_API void __increment_counter() noexcept
   {
     // Increment the big integer __x__ by 1, handling overflow.
     for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
@@ -402,19 +412,17 @@ private:
     }
   }
 
-  _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const
+  _CCCL_API void __mulhilo(result_type __a, result_type __b, result_type& __hi, result_type& __lo) const noexcept
   {
     if constexpr (word_size == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      __hi = static_cast<result_type>(
-        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
+      __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
       __lo = (__a * __b) & max();
     }
     else if constexpr (word_size == 64)
     {
-      __hi = static_cast<result_type>(
-        ::cuda::__multiply_extract_higher_bits(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
+      __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
       __lo = (__a * __b) & max();
     }
     else
@@ -439,14 +447,14 @@ private:
     }
   }
 
-  _CCCL_API void __philox()
+  _CCCL_API void __philox() noexcept
   {
     // Only two variants are allowed, n=2 or n=4
     if constexpr (word_count == 2)
     {
       ::cuda::std::array<result_type, word_count> __S     = this->__x__;
       ::cuda::std::array<result_type, word_count / 2> __K = this->__k__;
-      for (size_t __j = 0; __j < round_count; ++__j)
+      for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
         result_type __hi, __lo;
         this->__mulhilo(__S[0], multipliers[0], __hi, __lo);
@@ -460,7 +468,7 @@ private:
     {
       ::cuda::std::array<result_type, word_count> __S     = this->__x__;
       ::cuda::std::array<result_type, word_count / 2> __K = this->__k__;
-      for (size_t __j = 0; __j < round_count; ++__j)
+      for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
         ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
         result_type __hi0, __lo0;
