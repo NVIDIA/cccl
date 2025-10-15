@@ -288,9 +288,9 @@ In the spirit of "You only support what you test", see our [CI Overview](https:/
 
 CCCL supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
 
-To be clear, while CCCL can be compiled with both the current and previous CTK major versions, we do not test or validate architectures that were only supported in the older CTK. 
+To be clear, while CCCL can be compiled with both the current and previous CTK major versions, we do not test or validate architectures that were only supported in the older CTK.
 
-Those architectures may still work — we do not intentionally break them — but they are outside our regular CI coverage. Furthermore, new features are not guaranteed to work with these architectures either. 
+Those architectures may still work — we do not intentionally break them — but they are outside our regular CI coverage. Furthermore, new features are not guaranteed to work with these architectures either.
 
 We welcome community contributions for reasonable fixes that unblock users on these older architectures.
 
