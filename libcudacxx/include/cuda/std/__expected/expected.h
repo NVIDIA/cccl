@@ -135,25 +135,24 @@ public:
 
 private:
   template <class _Up, class _OtherErr, class _UfQual, class _OtherErrQual>
-  using __can_convert =
-    _And<is_constructible<_Tp, _UfQual>,
-         is_constructible<_Err, _OtherErrQual>,
-         _Not<is_constructible<_Tp, expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<_Tp, expected<_Up, _OtherErr>>>,
-         _Not<is_constructible<_Tp, const expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<_Tp, const expected<_Up, _OtherErr>>>,
-         _Not<is_convertible<expected<_Up, _OtherErr>&, _Tp>>,
-         _Not<is_convertible<expected<_Up, _OtherErr>&&, _Tp>>,
-         _Not<is_convertible<const expected<_Up, _OtherErr>&, _Tp>>,
-         _Not<is_convertible<const expected<_Up, _OtherErr>&&, _Tp>>,
-         _Not<is_constructible<unexpected<_Err>, expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<unexpected<_Err>, expected<_Up, _OtherErr>>>,
-         _Not<is_constructible<unexpected<_Err>, const expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<unexpected<_Err>, const expected<_Up, _OtherErr>>>>;
+  static constexpr bool __can_convert =
+    is_constructible_v<_Tp, _UfQual> && is_constructible_v<_Err, _OtherErrQual>
+    && !is_constructible_v<_Tp, expected<_Up, _OtherErr>&> //
+    && !is_constructible_v<_Tp, expected<_Up, _OtherErr>> //
+    && !is_constructible_v<_Tp, const expected<_Up, _OtherErr>&>
+    && !is_constructible_v<_Tp, const expected<_Up, _OtherErr>> //
+    && !is_convertible_v<expected<_Up, _OtherErr>&, _Tp> //
+    && !is_convertible_v<expected<_Up, _OtherErr>&&, _Tp> //
+    && !is_convertible_v<const expected<_Up, _OtherErr>&, _Tp>
+    && !is_convertible_v<const expected<_Up, _OtherErr>&&, _Tp>
+    && !is_constructible_v<unexpected<_Err>, expected<_Up, _OtherErr>&>
+    && !is_constructible_v<unexpected<_Err>, expected<_Up, _OtherErr>>
+    && !is_constructible_v<unexpected<_Err>, const expected<_Up, _OtherErr>&>
+    && !is_constructible_v<unexpected<_Err>, const expected<_Up, _OtherErr>>;
 
 public:
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _CCCL_AND
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&> _CCCL_AND
                    is_convertible_v<const _Up&, _Tp> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
     is_nothrow_constructible_v<_Tp, const _Up&> && is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
@@ -170,7 +169,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _CCCL_AND(
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&> _CCCL_AND(
     !is_convertible_v<const _Up&, _Tp> || !is_convertible_v<const _OtherErr&, _Err>))
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
     is_nothrow_constructible_v<_Tp, const _Up&> && is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
@@ -187,7 +186,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _CCCL_AND is_convertible_v<_Up, _Tp> _CCCL_AND
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr> _CCCL_AND is_convertible_v<_Up, _Tp> _CCCL_AND
                    is_convertible_v<_OtherErr, _Err>)
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(expected<_Up, _OtherErr>&& __other) noexcept(
     is_nothrow_constructible_v<_Tp, _Up> && is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
@@ -206,7 +205,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _CCCL_AND(
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr> _CCCL_AND(
     !is_convertible_v<_Up, _Tp> || !is_convertible_v<_OtherErr, _Err>))
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
     is_nothrow_constructible_v<_Tp, _Up> && is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
@@ -347,12 +346,9 @@ public:
 private:
   template <class _OtherErrQual>
   static constexpr bool __can_assign_from_unexpected =
-    _And<is_constructible<_Err, _OtherErrQual>,
-         is_assignable<_Err&, _OtherErrQual>,
-         _Lazy<_Or,
-               is_nothrow_constructible<_Err, _OtherErrQual>,
-               is_nothrow_move_constructible<_Tp>,
-               is_nothrow_move_constructible<_Err>>>::value;
+    is_constructible_v<_Err, _OtherErrQual> && is_assignable_v<_Err&, _OtherErrQual>
+    && (is_nothrow_constructible_v<_Err, _OtherErrQual> || is_nothrow_move_constructible_v<_Tp>
+        || is_nothrow_move_constructible_v<_Err>);
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
@@ -1184,13 +1180,12 @@ class expected<void, _Err> : private __expected_move_assign<void, _Err>
   friend class expected;
 
   template <class _Up, class _OtherErr, class _OtherErrQual>
-  using __can_convert =
-    _And<is_void<_Up>,
-         is_constructible<_Err, _OtherErrQual>,
-         _Not<is_constructible<unexpected<_Err>, expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<unexpected<_Err>, expected<_Up, _OtherErr>>>,
-         _Not<is_constructible<unexpected<_Err>, const expected<_Up, _OtherErr>&>>,
-         _Not<is_constructible<unexpected<_Err>, const expected<_Up, _OtherErr>>>>;
+  static constexpr bool __can_convert =
+    is_void_v<_Up> && is_constructible_v<_Err, _OtherErrQual>
+    && !is_constructible_v<unexpected<_Err>, expected<_Up, _OtherErr>&>
+    && !is_constructible_v<unexpected<_Err>, expected<_Up, _OtherErr>>
+    && !is_constructible_v<unexpected<_Err>, const expected<_Up, _OtherErr>&>
+    && !is_constructible_v<unexpected<_Err>, const expected<_Up, _OtherErr>>;
 
 public:
   using value_type      = void;
@@ -1208,8 +1203,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr expected& operator=(expected&&)      = default;
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(
-    __can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
     is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
@@ -1221,8 +1215,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(
-    __can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND(!is_convertible_v<const _OtherErr&, _Err>))
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&> _CCCL_AND(!is_convertible_v<const _OtherErr&, _Err>))
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
     is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
@@ -1234,7 +1227,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND is_convertible_v<_OtherErr, _Err>)
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr> _CCCL_AND is_convertible_v<_OtherErr, _Err>)
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20
   expected(expected<_Up, _OtherErr>&& __other) noexcept(is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
       : __base(__other.__has_val_)
@@ -1247,7 +1240,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr> _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
     is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
       : __base(__other.__has_val_)

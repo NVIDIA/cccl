@@ -32,7 +32,7 @@ else
   artifact_path="$2"
 fi
 
-readonly artifact_archive="$ARTIFACT_ARCHIVES/$artifact_name.tar.bz2"
+readonly artifact_archive="$ARTIFACT_ARCHIVES/$artifact_name.tar.zst"
 
 start=$SECONDS
 "$ci_dir/util/artifacts/download/fetch.sh" "$artifact_name" "${ARTIFACT_ARCHIVES}"

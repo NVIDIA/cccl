@@ -97,6 +97,12 @@
 
 #define TEST_IGNORE_NODISCARD (void)
 
+#if TEST_COMPILER(NVRTC, >=, 13)
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
+#else
+#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
+#endif
+
 #if TEST_COMPILER(MSVC)
 #  include <intrin.h>
 template <class Tp>

@@ -44,6 +44,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_device.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -76,10 +77,21 @@ struct AgentThreeWayPartitionPolicy
   };
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  ThreeWayPartitionAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 
 template <class OffsetT>
@@ -589,7 +601,6 @@ struct AgentThreeWayPartition
   }
 };
 
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END
