@@ -47,20 +47,20 @@ struct cufile_driver_attribute_range
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 //! @brief Implementation defined type that implements the cuFILE driver interface.
-class __cufile_driver
+class cufile_driver_t
 {
-  _CCCL_HIDE_FROM_ABI constexpr __cufile_driver() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr cufile_driver_t() noexcept = default;
 
 public:
-  [[nodiscard]] static _CCCL_HOST_API constexpr __cufile_driver __make_instance() noexcept
+  [[nodiscard]] static _CCCL_HOST_API constexpr cufile_driver_t __make_instance() noexcept
   {
-    return __cufile_driver{};
+    return cufile_driver_t{};
   }
 
-  __cufile_driver(const __cufile_driver&)            = delete;
-  __cufile_driver& operator=(const __cufile_driver&) = delete;
-  __cufile_driver(__cufile_driver&&)                 = delete;
-  __cufile_driver& operator=(__cufile_driver&&)      = delete;
+  cufile_driver_t(const cufile_driver_t&)            = delete;
+  cufile_driver_t& operator=(const cufile_driver_t&) = delete;
+  cufile_driver_t(cufile_driver_t&&)                 = delete;
+  cufile_driver_t& operator=(cufile_driver_t&&)      = delete;
 
   //! @brief Check if the driver is open.
   //!
@@ -279,6 +279,6 @@ public:
 };
 
 //! @brief Global instance of the cuFile driver interface.
-inline constexpr __cufile_driver cufile_driver = __cufile_driver::__make_instance();
+inline constexpr cufile_driver_t cufile_driver = cufile_driver_t::__make_instance();
 
 } // namespace cuda::experimental
