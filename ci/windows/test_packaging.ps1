@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -6,7 +6,10 @@
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
-    [string]$CUDA_ARCH = ""
+    [string]$CUDA_ARCH = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,16 +20,16 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
 $PRESET = "packaging"
-$CMAKE_OPTIONS = ""
+$LOCAL_CMAKE_OPTIONS = ""
 
 if ($env:GITHUB_SHA) {
-    $CMAKE_OPTIONS += "-DCCCL_EXAMPLE_CPM_TAG=$env:GITHUB_SHA "
+    $LOCAL_CMAKE_OPTIONS = '"-DCCCL_EXAMPLE_CPM_TAG={0}"' -f $env:GITHUB_SHA
 }
 
-configure_preset "Packaging" $PRESET "$CMAKE_OPTIONS"
+configure_preset "Packaging" $PRESET $LOCAL_CMAKE_OPTIONS
 test_preset "Packaging" $PRESET
 
 If($CURRENT_PATH -ne "ci") {

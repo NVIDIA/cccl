@@ -23,16 +23,15 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__device/arch_traits.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/std/__cccl/memory_wrapper.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
 #  include <cassert>
-#  include <memory>
 #  include <mutex>
 #  include <vector>
 
@@ -52,10 +51,6 @@ class __physical_device
   __make_physical_devices(::cuda::std::size_t __device_count);
 
   ::CUdevice __device_{};
-
-  // TODO We should have some of the attributes just return from the arch traits
-  ::std::once_flag __traits_once_flag_{};
-  arch::traits_t __traits_{};
 
   ::std::once_flag __primary_ctx_once_flag_{};
   ::CUcontext __primary_ctx_{};
@@ -88,21 +83,6 @@ public:
       __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     });
     return __primary_ctx_;
-  }
-
-  //! @brief Retrieve architecture traits of this device.
-  //!
-  //! Architecture traits object contains information about certain traits
-  //! that are shared by all devices belonging to given architecture.
-  //!
-  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  [[nodiscard]] _CCCL_HOST_API const arch::traits_t& __arch_traits()
-  {
-    ::std::call_once(__traits_once_flag_, [this]() {
-      const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
-      __traits_       = ::cuda::arch::__arch_traits_might_be_unknown(__id, device_attributes::compute_capability(__id));
-    });
-    return __traits_;
   }
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
@@ -176,11 +156,6 @@ _CCCL_HOST_API inline void device_ref::init() const
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::string_view device_ref::name() const
 {
   return ::cuda::__physical_devices()[__id_].__name();
-}
-
-[[nodiscard]] _CCCL_HOST_API inline const arch::traits_t& device_ref::arch_traits() const
-{
-  return ::cuda::__physical_devices()[__id_].__arch_traits();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> device_ref::peers() const

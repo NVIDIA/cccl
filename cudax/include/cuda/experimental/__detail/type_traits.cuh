@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -34,27 +35,21 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+using ::cuda::std::__declfn_t;
 using ::cuda::std::decay_t;
 
 template <class _Ty, bool _Nothrow = true>
-using __declfn_t = _Ty (*)() noexcept(_Nothrow);
-
-_CCCL_DIAG_PUSH
-_CCCL_NV_DIAG_PUSH()
-_CCCL_DIAG_SUPPRESS_MSVC(5046) // '__declfn': Symbol involving type with internal linkage not defined
-_CCCL_DIAG_SUPPRESS_NVCC(114) // function 'declfn' was referenced but not defined
-_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-internal") // function 'declfn' has internal linkage but is not defined
-
-template <class _Ty, bool _Nothrow = true>
-_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
-
-_CCCL_NV_DIAG_POP()
-_CCCL_DIAG_POP
+[[noreturn]] _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty
+{
+  _CCCL_ASSERT(false, "__declfn should never be called at runtime.");
+  _CCCL_UNREACHABLE();
+}
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;

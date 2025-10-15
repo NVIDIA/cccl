@@ -22,21 +22,68 @@ inputs:
     required: true
 
 runs:
+
   using: "composite"
   steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        path: ${{github.event.repository.name}}
+        persist-credentials: false
+
     - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         COMMAND: "${{inputs.command}}"
+        GH_TOKEN: ${{ github.token }}
       run: |
-        echo "::group::️🔍 Job Inputs"
-        printf 'JOB_ID=%s\n' "${{inputs.id}}" | tee -a "${GITHUB_ENV}"
-        printf 'JOB_IMAGE=%s\n' "${{inputs.image}}" | tee -a "${GITHUB_ENV}"
-        printf 'JOB_RUNNER=%s\n' "${{inputs.runner}}" | tee -a "${GITHUB_ENV}"
-        printf 'JOB_CUDA=%s\n' "${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
-        printf 'JOB_HOST=%s\n' "${{inputs.host}}" | tee -a "${GITHUB_ENV}"
-        printf 'JOB_COMMAND=%s\n' "${COMMAND}"
+        # Use the job def info to setup the Github cache key:
+        pushd "${GITHUB_WORKSPACE}/${{github.event.repository.name}}" > /dev/null
+        job_hash=$(ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
+        job_project=$(ci/util/workflow/get_job_project.sh ${{ inputs.id }})
+        popd > /dev/null
+
+        echo "::group::️🔍 Job Vars"
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
+        # Define the job input parameters as JOB_* environment variables that are visible in all steps:
+        echo "JOB_ID=${{inputs.id}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_RUNNER=${{inputs.runner}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+
+        # SCCACHE config:
+        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_DIR=C:\sccache\cache" | tee -a "${GITHUB_ENV}"
+
+        # Used to locate an appropriate existing cache:
+        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
+        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
+
+        # The new cache won't be uploaded unless the cache key is unique:
+        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
         echo "::endgroup::"
+
+    - name: Create sccache dir
+      shell: powershell
+      run: |
+        mkdir $env:SCCACHE_DIR/preprocessor -Force > $null
+
+    - name: Setup sccache preprocessor cache
+      id: sccache-preprocessor-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{env.SCCACHE_DIR}}/preprocessor
+        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        restore-keys: |
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
 
     - name: Install GPU driver
       if: ${{ contains(inputs.runner, '-gpu-') }}
@@ -49,15 +96,6 @@ runs:
         nvidia-smi
         echo "::endgroup::"
 
-    - name: Configure sccache
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
-
     - name: Get AWS credentials for sccache bucket
       if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@v4
@@ -65,12 +103,6 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        path: ${{github.event.repository.name}}
-        persist-credentials: false
 
     - name: Initialize artifact environment
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -160,33 +192,36 @@ runs:
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
           --mount type=bind,source="${{ env.ARTIFACT_ARCHIVES_WIN }}",target="${{ env.ARTIFACT_ARCHIVES_WIN }}" \
           --mount type=bind,source="${{ env.WORKFLOW_DIR_WIN }}",target="${{ env.WORKFLOW_DIR_WIN }}" \
+          --mount type=bind,source="$SCCACHE_DIR",target="$SCCACHE_DIR" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
           --env COMMAND='& ${{inputs.command}}' \
-          --env JOB_ID='${{inputs.id}}' \
-          --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
-          --env GH_TOKEN="$GH_TOKEN" \
-          --env "GITHUB_SHA=$GITHUB_SHA" \
-          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-          --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
-          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-          --env "CI=true" \
+          --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
+          --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
+          --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
           --env "AWS_ACCESS_KEY_ID=${{env.AWS_ACCESS_KEY_ID}}" \
           --env "AWS_SECRET_ACCESS_KEY=${{env.AWS_SECRET_ACCESS_KEY}}" \
-          --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN }}" \
+          --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN}}" \
+          --env "CI=true" \
+          --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
+          --env "GH_TOKEN=$GH_TOKEN" \
+          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+          --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+          --env "GITHUB_SHA=$GITHUB_SHA" \
+          --env "JOB_ID=${{inputs.id}}" \
+          --env "NVCC_APPEND_FLAGS=-t=100" \
+          --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
-          --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
+          --env "SCCACHE_DIR=${{env.SCCACHE_DIR}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
-          --env "SCCACHE_S3_USE_SSL=${{env.SCCACHE_S3_USE_SSL}}" \
+          --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
           --env "SCCACHE_S3_NO_CREDENTIALS=${{env.SCCACHE_S3_NO_CREDENTIALS}}" \
-          --env RUNNER_TEMP='${{ env.RUNNER_TEMP_HOST }}' \
-          --env ARTIFACT_UPLOAD_STAGE='${{ env.ARTIFACT_UPLOAD_STAGE }}' \
-          --env ARTIFACT_ARCHIVES='${{ env.ARTIFACT_ARCHIVES }}' \
-          --env ARTIFACT_UPLOAD_REGISTERY='${{ env.ARTIFACT_UPLOAD_REGISTERY }}' \
-          --env WORKFLOW_ARTIFACT='${{ env.WORKFLOW_ARTIFACT }}' \
-          --env WORKFLOW_DIR='${{ env.WORKFLOW_DIR }}' \
+          --env "SCCACHE_S3_USE_SSL=${{env.SCCACHE_S3_USE_SSL}}" \
+          --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
+          --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
@@ -199,6 +234,7 @@ runs:
         fi
 
         exit "$docker_exit"
+
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
       uses: ./.github/actions/upload-artifacts

@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -61,9 +62,10 @@ public:
   //!
   //! For behavior of the default stream,
   //! @see //! https://docs.nvidia.com/cuda/cuda-runtime-api/stream-sync-behavior.html
-  [[deprecated("Using the default/null stream is generally discouraged. If you need to use it, please construct a "
-               "stream_ref from cudaStream_t{nullptr}")]]
-  _CCCL_HIDE_FROM_ABI stream_ref() = default;
+  CCCL_DEPRECATED_BECAUSE("Using the default/null stream is generally discouraged. If you need to use it, please "
+                          "construct a "
+                          "stream_ref from cudaStream_t{nullptr}") _CCCL_HIDE_FROM_ABI
+  stream_ref() = default;
 
   //! @brief Constructs a `stream_ref` from a `cudaStream_t` handle.
   //!
@@ -124,8 +126,7 @@ public:
   //! @brief Deprecated. Use sync() instead.
   //!
   //! @deprecated Use sync() instead.
-  [[deprecated("Use sync() instead.")]]
-  void wait() const
+  CCCL_DEPRECATED_BECAUSE("Use sync() instead.") _CCCL_HOST_API void wait() const
   {
     sync();
   }
@@ -184,7 +185,7 @@ public:
   //! @throws cuda::cuda_error if the query fails.
   //!
   //! @return `true` if all operations have completed, or `false` if not.
-  [[deprecated("Use is_done() instead.")]] [[nodiscard]] bool ready() const
+  [[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use is_done() instead.") _CCCL_HOST_API bool ready() const
   {
     return is_done();
   }
@@ -216,7 +217,7 @@ public:
   //! @return A new event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CCCL_HOST_API event record_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API event record_event(event_flags __flags = event_flags::none) const
   {
     return event(*this, __flags);
   }
@@ -226,7 +227,7 @@ public:
   //! @return A new timed event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CCCL_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API timed_event record_timed_event(event_flags __flags = event_flags::none) const
   {
     return timed_event(*this, __flags);
   }
@@ -237,7 +238,7 @@ public:
   //! returned
   //!
   //! @throws cuda_error if device check fails
-  _CCCL_HOST_API device_ref device() const
+  [[nodiscard]] _CCCL_HOST_API device_ref device() const
   {
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -260,7 +261,7 @@ public:
   }
 };
 
-inline void event_ref::record(stream_ref __stream) const
+_CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
 {
   _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::record no event set");
   _CCCL_ASSERT(__stream.get() != nullptr, "cuda::event_ref::record invalid stream passed");
@@ -268,26 +269,26 @@ inline void event_ref::record(stream_ref __stream) const
   ::cuda::__driver::__eventRecord(__event_, __stream.get());
 }
 
-inline event::event(stream_ref __stream, event::flags __flags)
-    : event(__stream, static_cast<unsigned>(__flags) | cudaEventDisableTiming)
+_CCCL_HOST_API inline event::event(stream_ref __stream, event_flags __flags)
+    : event(__stream, ::cuda::std::to_underlying(__flags) | cudaEventDisableTiming)
 {
   record(__stream);
 }
 
-inline event::event(stream_ref __stream, unsigned __flags)
+_CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
   [[maybe_unused]] __ensure_current_context __ctx_setter(__stream);
   __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
 }
 
-inline timed_event::timed_event(stream_ref __stream, event::flags __flags)
-    : event(__stream, static_cast<unsigned>(__flags))
+_CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags __flags)
+    : event(__stream, ::cuda::std::to_underlying(__flags))
 {
   record(__stream);
 }
 
-inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
+_CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
   auto __ctx = __driver::__streamGetCtx(__stream.get());
   ::cuda::__driver::__ctxPush(__ctx);

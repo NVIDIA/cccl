@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>

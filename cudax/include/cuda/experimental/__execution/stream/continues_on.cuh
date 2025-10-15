@@ -144,29 +144,23 @@ struct __continues_on_t
     }
 
     _CCCL_NO_UNIQUE_ADDRESS __thunk_t __tag_;
-    ::cuda::std::__ignore_t __ignore_;
+    _CCCL_NO_UNIQUE_ADDRESS ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 
-  template <class _Sndr>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
+  // If the child sender has not already been adapted to be a stream sender, we adapt it
+  // now.
+  _CCCL_TEMPLATE(class _Sndr)
+  _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<decay_t<__child_of_t<_Sndr>>, __stream::__sndr_t>) )
+  [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     auto& [__tag, __sched, __child] = __sndr;
     using __child_t                 = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
-    // If the child sender has not already been adapted to be a stream sender,
-    // we adapt it now.
-    if constexpr (!::cuda::__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
-    {
-      auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
-      using __adapted_sndr_t = decltype(__adapted_sndr);
-      return execution::schedule_from(
-        __sched, __sndr_t<__adapted_sndr_t>{{}, {}, static_cast<__adapted_sndr_t&&>(__adapted_sndr)});
-    }
-    else
-    {
-      return execution::schedule_from(__sched, __sndr_t<decltype(__child)>{{}, {}, static_cast<__child_t&&>(__child)});
-    }
+    auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
+    using __adapted_sndr_t = decltype(__adapted_sndr);
+    return execution::continues_on(
+      __sched, __sndr_t<__adapted_sndr_t>{{}, {}, static_cast<__adapted_sndr_t&&>(__adapted_sndr)});
   }
 };
 } // namespace __stream
