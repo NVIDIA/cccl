@@ -76,6 +76,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     test<NotTriviallyCopyConstructible<MayThrow>>(1337);
   }
 
+  { // not default constructible
+    test<NotDefaultConstructible>(1337);
+  }
+
+  { // not copy assignable not default constructible
+    test<NotCopyAssignableNotDefaultConstructible<42>>(1337);
+  }
+
   { // not copy constructible
     static_assert(!cuda::std::is_copy_constructible_v<box<NotCopyConstructible<42>>>);
     static_assert(!cuda::std::is_copy_constructible_v<box<NotCopyConstructibleEmpty>>);
