@@ -13,6 +13,13 @@ namespace stdexec = cuda::std::execution;
 
 using namespace thrust::placeholders;
 
+auto make_stream_env(cudaStream_t stream)
+{
+  // MSVC has trouble nesting two aggregate initializations with CTAD
+  auto stream_prop = stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}};
+  return stdexec::env{cuda::std::move(stream_prop)};
+}
+
 C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
 {
   using type          = int;
@@ -30,7 +37,7 @@ C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::Transform(cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, env);
   }
 
@@ -54,7 +61,7 @@ C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device]
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::Transform(a, result.begin(), num_items, _1 + 13, env);
   }
 
@@ -78,7 +85,7 @@ C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::Generate(result.begin(), num_items, generator, env);
   }
 
@@ -101,7 +108,7 @@ C2H_TEST("DeviceTransform::Fill custom stream", "[device][transform]")
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::Fill(result.begin(), num_items, 0xBAD, env);
   }
 
@@ -136,7 +143,7 @@ C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::TransformIf(
       cuda::std::make_tuple(a, b), result.begin(), num_items, (_1 + _2) > 1000, _1 + _2, env);
   }
@@ -163,7 +170,7 @@ C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[devic
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::TransformIf(a, result.begin(), num_items, (_1 + 13) > 1000, _1 + 13, env);
   }
 
@@ -191,7 +198,7 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
   }
   SECTION("environment")
   {
-    auto env = stdexec::env{stdexec::prop{cuda::get_stream, cuda::stream_ref{stream}}};
+    auto env = make_stream_env(stream);
     cub::DeviceTransform::TransformStableArgumentAddresses(
       cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, env);
   }
