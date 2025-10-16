@@ -37,11 +37,11 @@ __host__ __device__ void test()
   }
 
   {
-    using Iter       = cuda::tabulate_output_iterator<basic_functor, char>;
+    using Iter       = cuda::tabulate_output_iterator<basic_functor, signed char>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, void>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, char>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, signed char>);
 #if !_CCCL_ARCH(ARM64) // There are some compiler issues on arm compilers
     static_assert(cuda::std::output_iterator<Iter, int>);
 #endif // !_CCCL_ARCH(ARM64)
