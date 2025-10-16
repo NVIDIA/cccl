@@ -591,7 +591,6 @@ cdef class Iterator:
     cdef object state_obj
     cdef object host_advance_obj
     cdef cccl_iterator_t iter_data
-    cdef TypeInfo value_type
 
     def __cinit__(self,
         int alignment,
@@ -657,7 +656,6 @@ cdef class Iterator:
         self.iter_data.type = <cccl_iterator_kind_t> it_kind
         self.iter_data.advance = self.advance.op_data
         self.iter_data.dereference = self.dereference.op_data
-        self.value_type = value_type
         self.iter_data.value_type = value_type.type_info
 
     @property
@@ -733,7 +731,8 @@ cdef class Iterator:
 
     @property
     def value_type(self):
-        return self.value_type
+        cdef cccl_type_info type_info = self.iter_data.value_type
+        return TypeInfo(type_info.size, type_info.alignment, type_info.type)
 
     def is_kind_pointer(self):
         cdef cccl_iterator_kind_t it_kind = self.iter_data.type
@@ -960,7 +959,7 @@ cdef extern from "cccl/c/scan.h":
         cccl_op_t,
         cccl_type_info,
         _Bool,
-        _Bool,
+        cccl_init_kind_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 

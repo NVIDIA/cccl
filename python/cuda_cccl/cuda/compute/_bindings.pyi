@@ -207,7 +207,7 @@ class DeviceScanBuildResult:
         binary_op: Op,
         init_type: TypeInfo,
         force_inclusive: bool,
-        is_future_value: bool,
+        init_kind: InitKind,
         info: CommonData,
     ): ...
     def compute_inclusive(
