@@ -36,8 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Tp>
-                  || ::cuda::std::__is_extended_floating_point_v<_Tp>)
+    if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
       return ::cuda::std::fmin(__lhs, __rhs);
     }
