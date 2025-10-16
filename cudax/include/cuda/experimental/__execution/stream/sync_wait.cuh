@@ -23,6 +23,7 @@
 
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -45,7 +46,7 @@ struct __sync_wait_t : private sync_wait_t
     // The transformation would happen in due course in the connect cpo, so why transform
     // it here? This transformation shuffles the sender into one that can provide a
     // stream_ref, which is needed by __host_apply.
-    auto __new_sndr = execution::transform_sender(stream_domain{}, static_cast<_Sndr&&>(__sndr), __env);
+    auto __new_sndr = stream_domain{}.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), __env);
 
     NV_IF_TARGET(NV_IS_HOST,
                  (return __host_apply(::cuda::std::move(__new_sndr), static_cast<_Env&&>(__env));),
@@ -61,7 +62,7 @@ struct __sync_wait_t : private sync_wait_t
 
 private:
   template <class _Sndr, class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __managed_state_t
   {
     using __partial_completions_t = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
     using __all_nothrow_t =
@@ -74,9 +75,9 @@ private:
     using __errors_t = __error_types<__completions_t, __decayed_variant>;
     using __rcvr_t   = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
 
-    _CCCL_HOST_API explicit __state_t(_Sndr&& __sndr, _Env&& __env)
+    _CCCL_HOST_API explicit __managed_state_t(_Sndr&& __sndr, _Env&& __env)
         : __result_{}
-        , __state_{{{}, static_cast<_Env&&>(__env)}, &__result_, {}}
+        , __state_{static_cast<_Env&&>(__env), &__result_}
         , __opstate_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state_})}
     {}
 
@@ -97,7 +98,7 @@ private:
     stream_ref __stream = __get_stream(__sndr, __env);
 
     // Launch the sender with a continuation that will fill in a variant
-    using __box_t = __managed_box<__state_t<_Sndr, _Env>>;
+    using __box_t = __managed_box<__managed_state_t<_Sndr, _Env>>;
     auto __box    = __box_t::__make_unique(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
     execution::start(__box->__value.__opstate_);
 

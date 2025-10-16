@@ -11,7 +11,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 static_assert(cuda::std::is_default_constructible<cuda::stream_ref>::value, "");
 static_assert(!cuda::std::is_constructible<cuda::stream_ref, int>::value, "");
