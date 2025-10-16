@@ -106,6 +106,41 @@ struct NotTriviallyCopyConstructibleEmpty
   }
 };
 
+// Must  store inline because its not assignable and not nothrow move constructible
+template <int Val>
+struct CopyConstructibleWithEngaged
+{
+  int val_ = Val;
+
+  __host__ __device__ constexpr CopyConstructibleWithEngaged(const int val) noexcept
+      : val_(val)
+  {}
+  CopyConstructibleWithEngaged() = default;
+  __host__ __device__ constexpr CopyConstructibleWithEngaged(const CopyConstructibleWithEngaged& other)
+      : val_(other.val_)
+  {}
+  CopyConstructibleWithEngaged(CopyConstructibleWithEngaged&&)                 = default;
+  CopyConstructibleWithEngaged& operator=(const CopyConstructibleWithEngaged&) = delete;
+  CopyConstructibleWithEngaged& operator=(CopyConstructibleWithEngaged&&)      = delete;
+};
+
+// Must  store inline because its not copyable and not nothrow move constructible
+template <int Val>
+struct NotDefaultConstructibleWithEngaged
+{
+  int val_ = Val;
+
+  __host__ __device__ constexpr NotDefaultConstructibleWithEngaged(const int val) noexcept
+      : val_(val)
+  {}
+  __host__ __device__ constexpr NotDefaultConstructibleWithEngaged(const NotDefaultConstructibleWithEngaged& other)
+      : val_(other.val_)
+  {}
+  NotDefaultConstructibleWithEngaged(NotDefaultConstructibleWithEngaged&&)                 = default;
+  NotDefaultConstructibleWithEngaged& operator=(const NotDefaultConstructibleWithEngaged&) = delete;
+  NotDefaultConstructibleWithEngaged& operator=(NotDefaultConstructibleWithEngaged&&)      = delete;
+};
+
 template <int Val>
 struct NotCopyConstructible
 {
@@ -134,6 +169,24 @@ struct NotCopyConstructibleEmpty
   {
     return val == 42;
   }
+};
+
+// Must  store inline because its not copy constructible, not movable and not nothrow move constructible
+template <int Val>
+struct NotCopyConstructibleEngaged
+{
+  int val_ = Val;
+
+  __host__ __device__ constexpr NotCopyConstructibleEngaged(const int val) noexcept
+      : val_(val)
+  {}
+  NotCopyConstructibleEngaged()                                   = default;
+  NotCopyConstructibleEngaged(const NotCopyConstructibleEngaged&) = delete;
+  __host__ __device__ constexpr NotCopyConstructibleEngaged(NotCopyConstructibleEngaged&& other)
+      : val_(cuda::std::exchange(other.val_, -1))
+  {}
+  NotCopyConstructibleEngaged& operator=(const NotCopyConstructibleEngaged&) = delete;
+  NotCopyConstructibleEngaged& operator=(NotCopyConstructibleEngaged&&)      = delete;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,6 +291,23 @@ struct NotCopyAssignable
 };
 
 template <int Val>
+struct NotCopyAssignableNotDefaultConstructible
+{
+  int val_ = Val;
+
+  __host__ __device__ constexpr NotCopyAssignableNotDefaultConstructible(const int val) noexcept
+      : val_(val)
+  {}
+  __host__ __device__ constexpr NotCopyAssignableNotDefaultConstructible(
+    const NotCopyAssignableNotDefaultConstructible& other) noexcept(Val != MayThrow)
+      : val_(other.val_)
+  {}
+  NotCopyAssignableNotDefaultConstructible(NotCopyAssignableNotDefaultConstructible&&)                 = default;
+  NotCopyAssignableNotDefaultConstructible& operator=(const NotCopyAssignableNotDefaultConstructible&) = delete;
+  NotCopyAssignableNotDefaultConstructible& operator=(NotCopyAssignableNotDefaultConstructible&&)      = default;
+};
+
+template <int Val>
 struct NotCopyAssignableEmpty
 {
   __host__ __device__ constexpr NotCopyAssignableEmpty(const int val) noexcept {}
@@ -249,6 +319,26 @@ struct NotCopyAssignableEmpty
   NotCopyAssignableEmpty& operator=(NotCopyAssignableEmpty&&)      = default;
 
   __host__ __device__ friend constexpr bool operator==(const NotCopyAssignableEmpty&, const int val) noexcept
+  {
+    return val == Val;
+  }
+};
+
+template <int Val>
+struct NotCopyAssignableNotDefaultConstructibleEmpty
+{
+  __host__ __device__ constexpr NotCopyAssignableNotDefaultConstructibleEmpty(const int val) noexcept {}
+
+  __host__ __device__ constexpr NotCopyAssignableNotDefaultConstructibleEmpty(
+    const NotCopyAssignableNotDefaultConstructibleEmpty&) noexcept(Val != MayThrow)
+  {}
+  NotCopyAssignableNotDefaultConstructibleEmpty(NotCopyAssignableNotDefaultConstructibleEmpty&&) = default;
+  NotCopyAssignableNotDefaultConstructibleEmpty&
+  operator=(const NotCopyAssignableNotDefaultConstructibleEmpty&)                                           = delete;
+  NotCopyAssignableNotDefaultConstructibleEmpty& operator=(NotCopyAssignableNotDefaultConstructibleEmpty&&) = default;
+
+  __host__ __device__ friend constexpr bool
+  operator==(const NotCopyAssignableNotDefaultConstructibleEmpty&, const int val) noexcept
   {
     return val == Val;
   }
@@ -290,31 +380,31 @@ struct NotTriviallyMoveAssignable
   __host__ __device__ constexpr NotTriviallyMoveAssignable(const int val) noexcept
       : val_(val)
   {}
-  NotTriviallyMoveAssignable()                                  = default;
-  NotTriviallyMoveAssignable(const NotTriviallyMoveAssignable&) = default;
-  NotTriviallyMoveAssignable(NotTriviallyMoveAssignable&&)      = default;
+  NotTriviallyMoveAssignable()                                             = default;
+  NotTriviallyMoveAssignable(const NotTriviallyMoveAssignable&)            = default;
+  NotTriviallyMoveAssignable(NotTriviallyMoveAssignable&&)                 = default;
+  NotTriviallyMoveAssignable& operator=(const NotTriviallyMoveAssignable&) = default;
   __host__ __device__ constexpr NotTriviallyMoveAssignable&
-  operator=(const NotTriviallyMoveAssignable& other) noexcept(Val != MayThrow)
+  operator=(NotTriviallyMoveAssignable&& other) noexcept(Val != MayThrow)
   {
     val_ = other.val_;
     return *this;
   }
-  NotTriviallyMoveAssignable& operator=(NotTriviallyMoveAssignable&&) = default;
 };
 
 template <int Val>
 struct NotTriviallyMoveAssignableEmpty
 {
   __host__ __device__ constexpr NotTriviallyMoveAssignableEmpty(const int) noexcept {}
-  NotTriviallyMoveAssignableEmpty()                                       = default;
-  NotTriviallyMoveAssignableEmpty(const NotTriviallyMoveAssignableEmpty&) = default;
-  NotTriviallyMoveAssignableEmpty(NotTriviallyMoveAssignableEmpty&&)      = default;
+  NotTriviallyMoveAssignableEmpty()                                                  = default;
+  NotTriviallyMoveAssignableEmpty(const NotTriviallyMoveAssignableEmpty&)            = default;
+  NotTriviallyMoveAssignableEmpty(NotTriviallyMoveAssignableEmpty&&)                 = default;
+  NotTriviallyMoveAssignableEmpty& operator=(const NotTriviallyMoveAssignableEmpty&) = default;
   __host__ __device__ constexpr NotTriviallyMoveAssignableEmpty&
-  operator=(const NotTriviallyMoveAssignableEmpty& other) noexcept(Val != MayThrow)
+  operator=(NotTriviallyMoveAssignableEmpty&& other) noexcept(Val != MayThrow)
   {
     return *this;
   }
-  NotTriviallyMoveAssignableEmpty& operator=(NotTriviallyMoveAssignableEmpty&&) = default;
 
   __host__ __device__ friend constexpr bool operator==(const NotTriviallyMoveAssignableEmpty&, const int val) noexcept
   {
@@ -335,8 +425,25 @@ struct NotMoveAssignable
       : val_(other.val_)
   {}
   NotMoveAssignable(NotMoveAssignable&&)                 = default;
-  NotMoveAssignable& operator=(const NotMoveAssignable&) = delete;
-  NotMoveAssignable& operator=(NotMoveAssignable&&)      = default;
+  NotMoveAssignable& operator=(const NotMoveAssignable&) = default;
+  NotMoveAssignable& operator=(NotMoveAssignable&&)      = delete;
+};
+
+template <int Val>
+struct NotMoveAssignableNotDefaultConstructible
+{
+  int val_ = Val;
+
+  __host__ __device__ constexpr NotMoveAssignableNotDefaultConstructible(const int val) noexcept
+      : val_(val)
+  {}
+  __host__ __device__ constexpr NotMoveAssignableNotDefaultConstructible(
+    const NotMoveAssignableNotDefaultConstructible& other) noexcept(Val != MayThrow)
+      : val_(other.val_)
+  {}
+  NotMoveAssignableNotDefaultConstructible(NotMoveAssignableNotDefaultConstructible&&)                 = default;
+  NotMoveAssignableNotDefaultConstructible& operator=(const NotMoveAssignableNotDefaultConstructible&) = default;
+  NotMoveAssignableNotDefaultConstructible& operator=(NotMoveAssignableNotDefaultConstructible&&)      = delete;
 };
 
 template <int Val>
@@ -347,10 +454,31 @@ struct NotMoveAssignableEmpty
   NotMoveAssignableEmpty() = default;
   __host__ __device__ constexpr NotMoveAssignableEmpty(const NotMoveAssignableEmpty&) noexcept(Val != MayThrow) {}
   NotMoveAssignableEmpty(NotMoveAssignableEmpty&&)                 = default;
-  NotMoveAssignableEmpty& operator=(const NotMoveAssignableEmpty&) = delete;
-  NotMoveAssignableEmpty& operator=(NotMoveAssignableEmpty&&)      = default;
+  NotMoveAssignableEmpty& operator=(const NotMoveAssignableEmpty&) = default;
+  NotMoveAssignableEmpty& operator=(NotMoveAssignableEmpty&&)      = delete;
 
   __host__ __device__ friend constexpr bool operator==(const NotMoveAssignableEmpty&, const int val) noexcept
+  {
+    return val == Val;
+  }
+};
+
+template <int Val>
+struct NotMoveAssignableNotDefaultConstructibleEmpty
+{
+  __host__ __device__ constexpr NotMoveAssignableNotDefaultConstructibleEmpty(const int val) noexcept {}
+
+  NotMoveAssignableNotDefaultConstructibleEmpty() = default;
+  __host__ __device__ constexpr NotMoveAssignableNotDefaultConstructibleEmpty(
+    const NotMoveAssignableNotDefaultConstructibleEmpty&) noexcept(Val != MayThrow)
+  {}
+  NotMoveAssignableNotDefaultConstructibleEmpty(NotMoveAssignableNotDefaultConstructibleEmpty&&) = default;
+  NotMoveAssignableNotDefaultConstructibleEmpty&
+  operator=(const NotMoveAssignableNotDefaultConstructibleEmpty&)                                           = default;
+  NotMoveAssignableNotDefaultConstructibleEmpty& operator=(NotMoveAssignableNotDefaultConstructibleEmpty&&) = delete;
+
+  __host__ __device__ friend constexpr bool
+  operator==(const NotMoveAssignableNotDefaultConstructibleEmpty&, const int val) noexcept
   {
     return val == Val;
   }
