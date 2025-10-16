@@ -96,6 +96,18 @@ struct radix_sort_runtime_tuning_policy
     return is_onesweep;
   }
 
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT policy)
+  {
+    return policy.RadixBits();
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT policy)
+  {
+    return policy.BlockThreads();
+  }
+
   using MaxPolicy = radix_sort_runtime_tuning_policy;
 
   template <typename F>
