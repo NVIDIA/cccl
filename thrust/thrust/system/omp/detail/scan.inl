@@ -37,24 +37,13 @@ namespace system::omp::detail
 // Benchmarking shows parallel overhead dominates for small arrays
 inline constexpr size_t parallel_scan_threshold = 1024;
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator inclusive_scan(
-  execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  BinaryFunction binary_op)
-{
-  using ValueType = thrust::detail::it_value_t<InputIterator>;
-  return inclusive_scan(exec, first, last, result, ValueType{}, binary_op);
-}
-
-template <typename DerivedPolicy,
+template <bool IsInclusive,
+          typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
-OutputIterator inclusive_scan(
+OutputIterator scan_impl(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -75,14 +64,19 @@ OutputIterator inclusive_scan(
     return result;
   }
 
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-
   const int num_threads = omp_get_max_threads();
 
   // Use serial scan for small arrays where parallel overhead dominates
   if (static_cast<size_t>(n) < parallel_scan_threshold || num_threads <= 1)
   {
-    ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
+    if constexpr (IsInclusive)
+    {
+      ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
+    }
+    else
+    {
+      ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
+    }
     return result;
   }
 
@@ -116,12 +110,46 @@ OutputIterator inclusive_scan(
     if (start < n)
     {
       const ValueType offset = block_sums[tid];
-      ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
+      if constexpr (IsInclusive)
+      {
+        ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
+      }
+      else
+      {
+        ::cuda::std::exclusive_scan(first + start, first + end, result + start, offset, binary_op);
+      }
     }
   }
 
-  ::cuda::std::advance(result, n);
-  return result;
+  return result + n;
+}
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
+OutputIterator inclusive_scan(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  BinaryFunction binary_op)
+{
+  using ValueType = thrust::detail::it_value_t<InputIterator>;
+  return inclusive_scan(exec, first, last, result, ValueType{}, binary_op);
+}
+
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename InitialValueType,
+          typename BinaryFunction>
+OutputIterator inclusive_scan(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  InitialValueType init,
+  BinaryFunction binary_op)
+{
+  return scan_impl<true>(exec, first, last, result, init, binary_op);
 }
 
 template <typename DerivedPolicy,
@@ -137,65 +165,7 @@ OutputIterator exclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
-  using namespace thrust::detail;
-
-  using ValueType = InitialValueType;
-  using Size      = thrust::detail::it_difference_t<InputIterator>;
-
-  const Size n = ::cuda::std::distance(first, last);
-
-  if (n == 0)
-  {
-    return result;
-  }
-
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
-
-  const int num_threads = omp_get_max_threads();
-
-  // Use serial scan for small arrays where parallel overhead dominates
-  if (static_cast<size_t>(n) < parallel_scan_threshold || num_threads <= 1)
-  {
-    ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
-    return result;
-  }
-
-  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
-
-  // Step 1: Reduce each block (N reads)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
-  {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
-
-    if (start < n)
-    {
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, tid == 0 ? init : ValueType{}, binary_op);
-    }
-  }
-
-  // Step 2: Scan block sums using cuda::std::exclusive_scan
-  ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
-
-  // Step 3: Exclusive scan each block with offset (N reads/writes)
-  THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
-  {
-    const int tid         = omp_get_thread_num();
-    const Size block_size = ::cuda::ceil_div(n, num_threads);
-    const Size start      = tid * block_size;
-    const Size end        = ::cuda::std::min(start + block_size, n);
-
-    if (start < n)
-    {
-      const ValueType offset = block_sums[tid];
-      ::cuda::std::exclusive_scan(first + start, first + end, result + start, offset, binary_op);
-    }
-  }
-
-  ::cuda::std::advance(result, n);
-  return result;
+  return scan_impl<false>(exec, first, last, result, init, binary_op);
 }
 
 } // namespace system::omp::detail
