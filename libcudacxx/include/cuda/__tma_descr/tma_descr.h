@@ -273,7 +273,7 @@ __check_elem_strides(::cuda::std::span<int, _SpanSize> __elem_strides, __tma_siz
 
 template <::cuda::std::size_t _SpanSize>
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(
-  const ::DLTensor* __tensor,
+  const ::DLTensor& __tensor,
   ::cuda::std::span<int, _SpanSize> __box_sizes,
   ::cuda::std::span<int, _SpanSize> __elem_strides,
   TmaInterleaveLayout __interleave_layout = TmaInterleaveLayout::none,
@@ -281,7 +281,6 @@ template <::cuda::std::size_t _SpanSize>
   TmaL2FetchSize __l2_fetch_size          = TmaL2FetchSize::none) noexcept
 {
   static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
-  _CCCL_ASSERT(__tensor != nullptr, "__tensor is null");
   // check compute capability 9.0 or higher.
   ::CUtensorMap __tensor_map{};
   const auto __data_type    = ::cuda::__get_tensor_map_data_type(__tensor, __oobfill);
