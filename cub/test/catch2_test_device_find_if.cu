@@ -44,7 +44,7 @@ template <typename InputIt, typename OutputIt, typename BinaryOp>
 void compute_find_if_reference(InputIt first, InputIt last, OutputIt& result, BinaryOp op)
 {
   auto pos = thrust::find_if(first, last, op);
-  result   = pos - first;
+  result   = static_cast<OutputIt>(pos - first);
 }
 
 template <typename T>
