@@ -49,6 +49,15 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+## cudax_add_catch2_cufile_test
+#
+# Same as cudax_add_catch2_test but links CUDA::cuFile to the target.
+function(cudax_add_catch2_cufile_test target_name_var test_name cn_target) # ARGN=test sources
+  cudax_add_catch2_test(${target_name_var} ${test_name} ${cn_target} ${ARGN})
+  target_link_libraries(${${target_name_var}} PRIVATE CUDA::cuFile)
+  set(${target_name_var} ${target_name_var} PARENT_SCOPE)
+endfunction()
+
 # Create tests for each enabled configuration:
 foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cn_target} PREFIX)
@@ -166,14 +175,21 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   if (cudax_ENABLE_CUFILE)
-    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
+    cudax_add_catch2_cufile_test(test_target cufile_driver ${cn_target}
       cufile/driver.cu
     )
 
-    set(cufile_test_targets ${cufile_driver_target})
-    foreach(cufile_test_target IN LISTS cufile_test_targets)
-      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
-    endforeach()
+    cudax_add_catch2_cufile_test(test_target cufile_cufile ${cn_target}
+      cufile/cufile.cu
+    )
+
+    cudax_add_catch2_cufile_test(test_target cufile_cufile_ref ${cn_target}
+      cufile/cufile_ref.cu
+    )
+
+    cudax_add_catch2_cufile_test(test_target cufile_open_mode ${cn_target}
+      cufile/open_mode.cu
+    )
   endif()
 endforeach()
 
