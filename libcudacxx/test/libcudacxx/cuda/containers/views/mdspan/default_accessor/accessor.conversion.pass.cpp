@@ -305,7 +305,7 @@ __host__ __device__ void test_conversion()
     // Test explicit and implicit conversion from Wrapper<AccessorC<T>> to Wrapper<AccessorA<T>>.
     // This works because Wrapper<AccessorC<T>> publicly inherits from AccessorC<T>,
     // so it inherits AccessorC<T>'s conversion operators.
-    WrapperA wrapper_acc1{WrapperC{}};
+    [[maybe_unused]] WrapperA wrapper_acc1{WrapperC{}};
     auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
@@ -315,7 +315,7 @@ __host__ __device__ void test_conversion()
     // Test explicit conversion from Wrapper<AccessorD<T>> to Wrapper<AccessorB<T>>.
     // This works because Wrapper<AccessorD<T>> publicly inherits from AccessorD<T>,
     // so it inherits AccessorD<T>'s conversion operators.
-    WrapperB wrapper_acc1{WrapperD{}};
+    [[maybe_unused]] WrapperB wrapper_acc1{WrapperD{}};
     auto f1 = [](const WrapperD& w) -> WrapperB {
       return WrapperB{};
       // return w; // rightfully does not compile

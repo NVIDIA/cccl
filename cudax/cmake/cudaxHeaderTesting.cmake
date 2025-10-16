@@ -23,6 +23,9 @@ function(cudax_add_header_test label definitions)
         # The following internal headers are not required to compile independently:
         "cuda/experimental/__execution/prologue.cuh"
         "cuda/experimental/__execution/epilogue.cuh"
+        # cuFile headers are compiled separately:
+        "cuda/experimental/cufile.cuh"
+        "cuda/experimental/__cufile/*"
         # STF headers are compiled separately:
         "cuda/experimental/stf.cuh"
         "cuda/experimental/__stf/*"
@@ -36,6 +39,23 @@ function(cudax_add_header_test label definitions)
 
     add_dependencies(cudax.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
+
+    if (cudax_ENABLE_CUFILE)
+      ###############
+      # cuFIle headers #
+      set(headertest_target ${config_prefix}.headers.${label}.cufile)
+      cccl_generate_header_tests(${headertest_target} cudax/include
+        HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+        GLOBS
+          "cuda/experimental/cufile.cuh"
+          "cuda/experimental/__cufile/*.cuh"
+      )
+      target_link_libraries(${headertest_target} PUBLIC ${cn_target})
+      cudax_clone_target_properties(${headertest_target} ${cn_target})
+
+      add_dependencies(cudax.all.headers ${headertest_target})
+      add_dependencies(${config_prefix}.all ${headertest_target})
+    endif()
 
     # FIXME: Enable MSVC
     if (cudax_ENABLE_CUDASTF AND
@@ -64,10 +84,10 @@ function(cudax_add_header_test label definitions)
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
       )
       cudax_clone_target_properties(${headertest_target} ${cn_target})
-    endif()
 
-    add_dependencies(cudax.all.headers ${headertest_target})
-    add_dependencies(${config_prefix}.all ${headertest_target})
+      add_dependencies(cudax.all.headers ${headertest_target})
+      add_dependencies(${config_prefix}.all ${headertest_target})
+    endif()
   endforeach()
 endfunction()
 

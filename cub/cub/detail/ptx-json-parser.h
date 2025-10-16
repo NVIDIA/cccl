@@ -29,7 +29,7 @@
 
 #include <cub/config.cuh>
 
-#include <thrust/detail/algorithm_wrapper.h>
+#include <cuda/std/__cccl/algorithm_wrapper.h>
 
 #include <format>
 #include <string_view>

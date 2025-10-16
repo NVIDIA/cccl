@@ -24,6 +24,7 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -113,8 +114,28 @@ template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
 private:
-  ::cuda::std::ranges::__movable_box<_Fn> __func_;
-  _Index __index_ = 0;
+  // Not a base because then the friend operators would be ambiguous
+  ::cuda::std::__compressed_movable_box<_Index, _Fn> __store_;
+
+  [[nodiscard]] _CCCL_API constexpr _Index& __index() noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Index& __index() const noexcept
+  {
+    return __store_.template __get<0>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Fn& __func() noexcept
+  {
+    return __store_.template __get<1>();
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const _Fn& __func() const noexcept
+  {
+    return __store_.template __get<1>();
+  }
 
 public:
   using iterator_concept  = ::cuda::std::random_access_iterator_tag;
@@ -124,45 +145,39 @@ public:
   using pointer           = void;
   using reference         = void;
 
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HIDE_FROM_ABI tabulate_output_iterator()
-    requires ::cuda::std::default_initializable<_Fn>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
   _CCCL_REQUIRES(::cuda::std::default_initializable<_Fn2>)
-  _CCCL_API constexpr tabulate_output_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Fn2>) {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+  _CCCL_API constexpr tabulate_output_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Fn2>)
+      : __store_()
+  {}
 
   //! @brief Constructs a @c tabulate_output_iterator with a given functor and an optional index
   //! @param __func the output function
   //! @param __index the position in the output sequence
   _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
-      : __func_(::cuda::std::in_place, ::cuda::std::move(__func))
-      , __index_(__index)
+      : __store_(__index, ::cuda::std::move(__func))
   {}
 
   //! @brief Returns the stored index
   [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
-    return __index_;
+    return __index();
   }
 
   //! @brief Dereferences the @c tabulate_output_iterator
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator*() const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(*__func_), __index_};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), __index()};
   }
 
   //! @brief Dereferences the @c tabulate_output_iterator
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator*() noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{*__func_, __index_};
+    return __tabulate_proxy<_Fn, _Index>{__func(), __index()};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -170,7 +185,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(*__func_), __index_ + __n};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), __index() + __n};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -178,13 +193,13 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{*__func_, __index_ + __n};
+    return __tabulate_proxy<_Fn, _Index>{__func(), __index() + __n};
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
   _CCCL_API constexpr tabulate_output_iterator& operator++() noexcept
   {
-    ++__index_;
+    ++__index();
     return *this;
   }
 
@@ -193,14 +208,14 @@ public:
   operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     tabulate_output_iterator __tmp = *this;
-    ++__index_;
+    ++__index();
     return __tmp;
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by decrementing the stored index
   _CCCL_API constexpr tabulate_output_iterator& operator--() noexcept
   {
-    --__index_;
+    --__index();
     return *this;
   }
 
@@ -209,56 +224,61 @@ public:
   operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     tabulate_output_iterator __tmp = *this;
-    --__index_;
+    --__index();
     return __tmp;
   }
 
   //! @brief Returns a copy of this @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
-  [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator+(difference_type __n) const
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
+  [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
+  operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{*__func_, __index_ + __n};
+    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
   }
 
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
   //! @param __iter The original @c tabulate_output_iterator
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return __iter + __n;
+    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
   }
 
   //! @brief Advances the @c tabulate_output_iterator by a given number of elements
   //! @param __n The number of elements to advance
   _CCCL_API constexpr tabulate_output_iterator& operator+=(difference_type __n) noexcept
   {
-    __index_ += __n;
+    __index() += __n;
     return *this;
   }
 
   //! @brief Returns a copy of this @c tabulate_output_iterator decremented a given number of elements
   //! @param __n The number of elements to decremented
-  [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator-(difference_type __n) const
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
+  [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
+  operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{*__func_, __index_ - __n};
+    return tabulate_output_iterator{__iter.__func(), __iter.__index() - __n};
   }
 
   //! @brief Returns the distance between two @c tabulate_output_iterator 's
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __rhs.__index_ - __lhs.__index_;
+    return __rhs.__index() - __lhs.__index();
   }
 
   //! @brief Decrements the @c tabulate_output_iterator by a given number of elements
   //! @param __n The number of elements to decrement
   _CCCL_API constexpr tabulate_output_iterator& operator-=(difference_type __n) noexcept
   {
-    __index_ -= __n;
+    __index() -= __n;
     return *this;
   }
 
@@ -266,7 +286,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ == __rhs.__index_;
+    return __lhs.__index() == __rhs.__index();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -274,7 +294,7 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ != __rhs.__index_;
+    return __lhs.__index() != __rhs.__index();
   }
 #endif // _CCCL_STD_VER <= 2017
 
@@ -283,35 +303,35 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr strong_ordering
   operator<=>(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ <=> __rhs.__index_;
+    return __lhs.__index() <=> __rhs.__index();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Compares two @c tabulate_output_iterator for less than by comparing their indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ < __rhs.__index_;
+    return __lhs.__index() < __rhs.__index();
   }
 
   //! @brief Compares two @c tabulate_output_iterator for less equal by comparing their indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ <= __rhs.__index_;
+    return __lhs.__index() <= __rhs.__index();
   }
 
   //! @brief Compares two @c tabulate_output_iterator for greater than by comparing their indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ > __rhs.__index_;
+    return __lhs.__index() > __rhs.__index();
   }
 
   //! @brief Compares two @c tabulate_output_iterator for greater equal by comparing their indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const tabulate_output_iterator& __lhs, const tabulate_output_iterator& __rhs) noexcept
   {
-    return __lhs.__index_ >= __rhs.__index_;
+    return __lhs.__index() >= __rhs.__index();
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
