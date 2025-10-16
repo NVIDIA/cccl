@@ -80,7 +80,7 @@ private:
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), execution::current_exception());
         }
       }
     }
