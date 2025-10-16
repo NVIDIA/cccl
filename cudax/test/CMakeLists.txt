@@ -175,8 +175,12 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   if (cudax_ENABLE_CUFILE)
-    cudax_add_catch2_cufile_test(test_target cufile_driver ${cn_target}
-      cufile/driver.cu
+    cudax_add_catch2_cufile_test(test_target cufile_driver_attributes ${cn_target}
+      cufile/driver_attributes.cu
+    )
+
+    cudax_add_catch2_cufile_test(test_target cufile_driver_register ${cn_target}
+      cufile/driver_register.cu
     )
 
     cudax_add_catch2_cufile_test(test_target cufile_cufile ${cn_target}

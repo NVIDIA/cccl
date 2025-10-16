@@ -18,23 +18,9 @@
 #include <testing.cuh>
 #include <unistd.h>
 
+#include "common.h"
+
 // todo: test error states and resetting errno
-
-void test_check_fd_is_valid(int fd)
-{
-  CUDAX_REQUIRE(fcntl(fd, F_GETFD) == 0);
-}
-
-void test_check_file_exists(const char* filename)
-{
-  CUDAX_REQUIRE(access(filename, F_OK) == 0);
-}
-
-void test_remove_file(const char* filename)
-{
-  test_check_file_exists(filename);
-  CUDAX_REQUIRE(std::remove(filename) == 0);
-}
 
 C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
 {
@@ -212,6 +198,7 @@ C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
 
     CUDAX_REQUIRE(close(fd) == 0);
   }
+  test_remove_file(filename);
 
   // 15. Test from_native_handle(native_handle).
   STATIC_REQUIRE(!noexcept(cudax::cufile::from_native_handle(cuda::std::declval<int>())));

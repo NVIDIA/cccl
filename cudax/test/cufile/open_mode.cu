@@ -85,7 +85,7 @@ C2H_CCCLRT_TEST("cuFile open mode", "[cufile][open_mode]")
     STATIC_REQUIRE(cuda::std::is_same_v<cudax::cufile_open_mode&, decltype(lhs ^= rhs)>);
     STATIC_REQUIRE(noexcept(lhs ^= rhs));
     CUDAX_REQUIRE(cuda::std::to_underlying(lhs ^= rhs) == 0x3u);
-    CUDAX_REQUIRE(cuda::std::to_underlying(lhs ^= cudax::cufile_open_mode::in) == 0x0u);
+    CUDAX_REQUIRE(cuda::std::to_underlying(lhs ^= cudax::cufile_open_mode::in) == 0x2u);
   }
 
   // 5. Test operator~(cufile_open_flags)

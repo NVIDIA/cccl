@@ -13,15 +13,10 @@
 
 #include <cuda/experimental/cufile.cuh>
 
-#include <cstdio>
-
 #include <cufile.h>
 #include <testing.cuh>
 
-void test_remove_file(const char* filename)
-{
-  CUDAX_REQUIRE(std::remove(filename) == 0);
-}
+#include "common.h"
 
 C2H_CCCLRT_TEST("cuFile cufile_ref", "[cufile][cufile]")
 {

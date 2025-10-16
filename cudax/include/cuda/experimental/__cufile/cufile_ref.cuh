@@ -26,6 +26,8 @@
 namespace cuda::experimental
 {
 
+using __cufile_os_native_type = int;
+
 //! @brief A non-owning wrapper of \c CUfileHandle_t.
 class cufile_ref
 {
