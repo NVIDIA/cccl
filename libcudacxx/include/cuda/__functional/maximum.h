@@ -36,10 +36,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    using _Up = _CUDA_VSTD::remove_cv_t<_Tp>;
-    if constexpr (_CUDA_VSTD::is_floating_point_v<_Up> || _CUDA_VSTD::__is_extended_floating_point_v<_Up>)
+    using _Up = ::cuda::std::remove_cv_t<_Tp>;
+    if constexpr (::cuda::std::is_floating_point_v<_Up> || ::cuda::std::__is_extended_floating_point_v<_Up>)
     {
-      return _CUDA_VSTD::fmax(__lhs, __rhs);
+      return ::cuda::std::fmax(__lhs, __rhs);
     }
     else
     {
@@ -57,10 +57,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
-    using _Common = _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::common_type_t<_T1, _T2>>;
-    if constexpr (_CUDA_VSTD::is_floating_point_v<_Common> || _CUDA_VSTD::__is_extended_floating_point_v<_Common>)
+    using _Common = ::cuda::std::remove_cv_t<::cuda::std::common_type_t<_T1, _T2>>;
+    if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {
-      return _CUDA_VSTD::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
+      return ::cuda::std::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
     else
     {
