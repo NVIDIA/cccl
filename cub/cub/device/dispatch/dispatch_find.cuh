@@ -33,7 +33,8 @@
 CUB_NAMESPACE_BEGIN
 
 template <typename ValueType, typename OutputIteratorT>
-__global__ void write_final_result_in_output_iterator_already(ValueType* d_temp_storage, OutputIteratorT d_out)
+__launch_bounds__(1) __global__
+  void write_final_result_in_output_iterator_already(ValueType* d_temp_storage, OutputIteratorT d_out)
 {
   *d_out = *d_temp_storage;
 }
@@ -54,7 +55,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
     AgentFind<typename ChainedPolicyT::ActivePolicy::FindPolicy, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>;
 
   __shared__ typename AgentFindT::TempStorage sresult;
-  // __shared__ int temp_storage;
   // Process tiles
   AgentFindT agent(sresult, d_in, scan_op); // Seems like sresult can be defined and initialized in agent_find.cuh
                                             // directly without having to pass it here as an argument.
@@ -148,8 +148,8 @@ struct DispatchFind : SelectedPolicy
     do
     {
       // Number of input tiles
-      int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+      constexpr int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
+      const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // Get device ordinal
       int device_ordinal;
@@ -174,9 +174,9 @@ struct DispatchFind : SelectedPolicy
         break;
       }
 
-      int findif_device_occupancy = find_if_sm_occupancy * sm_count;
-      int max_blocks       = findif_device_occupancy; // no * CUB_SUBSCRIPTION_FACTOR(0) because max_blocks gets too big
-      int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
+      int max_blocks = find_if_sm_occupancy * sm_count; // no * CUB_SUBSCRIPTION_FACTOR(0) because max_blocks gets too
+                                                        // big
+      const int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
 
       // Temporary storage allocation requirements
       void* allocations[1]       = {};
@@ -201,14 +201,16 @@ struct DispatchFind : SelectedPolicy
       // use d_temp_storage as the intermediate device result
       // to read and write from. Then store the final result in the output iterator.
 
-      cuda_mem_set_async_dtemp_storage<<<1, 1>>>(value_temp_storage, num_items);
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
+        .doit(cuda_mem_set_async_dtemp_storage<OffsetT, OffsetT>, value_temp_storage, num_items);
 
       // Invoke FindIfKernel
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
         .doit(find_kernel, d_in, d_out, num_items, value_temp_storage, scan_op);
 
-      write_final_result_in_output_iterator_already<OffsetT><<<1, 1>>>(value_temp_storage, d_out);
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
+        .doit(write_final_result_in_output_iterator_already<OffsetT, OutputIteratorT>, value_temp_storage, d_out);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -239,9 +241,8 @@ struct DispatchFind : SelectedPolicy
   }
 
   /**
-   * @brief @giannis ENTER NO DOCUMENTATION. DISPATCH LAYER IN NEW ALGOS NOT EXPOSED
-   *
-  // private: ????? */
+   * Internal dispatch routine
+   */
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -268,8 +269,7 @@ struct DispatchFind : SelectedPolicy
       DispatchFind dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, scan_op, stream, ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch)); // @giannis how is Invoke() been called since it
-                                                                   // takes no arguments
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;

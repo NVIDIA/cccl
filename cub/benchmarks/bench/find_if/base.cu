@@ -22,7 +22,6 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
   thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, 0);
   thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
   thrust::device_vector<T> d_result(1, thrust::no_init);
-  ///
 
   void* d_temp_storage = nullptr;
   size_t temp_storage_bytes{};
