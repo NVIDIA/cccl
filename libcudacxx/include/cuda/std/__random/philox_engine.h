@@ -22,6 +22,7 @@
 
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
@@ -153,8 +154,9 @@ public:
     seed(__seed);
   }
 
-  template <class Sseq>
-  _CCCL_API constexpr explicit philox_engine(Sseq& q) noexcept
+  _CCCL_TEMPLATE(class _Sseq)
+  _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
+  _CCCL_API constexpr explicit philox_engine(_Sseq& q) noexcept
   {
     seed(q);
   }
@@ -173,9 +175,9 @@ public:
   }
 
   // Prevent this overload if Sseq is convertible to result_type
-  template <class Sseq>
-  _CCCL_API constexpr void
-  seed(Sseq& seq, typename std::enable_if<!std::is_convertible<Sseq, result_type>::value>::type* = 0)
+  _CCCL_TEMPLATE(class _Sseq)
+  _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
+  _CCCL_API constexpr void seed(_Sseq& seq)
   {
     __x_               = {};
     __y_               = {};
@@ -310,7 +312,7 @@ public:
     return __lhs.__j_ == __rhs.__j_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER == 2017
   //! This function checks two philox_engines for inequality.
   //! @param lhs The first philox_engine to test.
   //! @param rhs The second philox_engine to test.
@@ -435,6 +437,7 @@ private:
   _CCCL_API constexpr void __increment_counter() noexcept
   {
     // Increment the big integer __x_ by 1, handling overflow.
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
     {
       __x_[__i] = (__x_[__i] + 1) & max();
@@ -495,8 +498,9 @@ private:
     // Only two variants are allowed, n=2 or n=4
     if constexpr (word_count == 2)
     {
-      ::cuda::std::array<result_type, word_count> __S     = this->__x_;
-      ::cuda::std::array<result_type, word_count / 2> __K = this->__k_;
+      ::cuda::std::array<result_type, word_count> __S     = __x_;
+      ::cuda::std::array<result_type, word_count / 2> __K = __k_;
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
         auto [__hi, __lo] = __mulhilo(__S[0], multipliers[0]);
@@ -504,12 +508,13 @@ private:
         __S[1]            = __lo;
         __K[0]            = (__K[0] + round_consts[0]) & max();
       }
-      this->__y_ = __S;
+      __y_ = __S;
     }
     else if constexpr (word_count == 4)
     {
-      ::cuda::std::array<result_type, word_count> __S     = this->__x_;
-      ::cuda::std::array<result_type, word_count / 2> __K = this->__k_;
+      ::cuda::std::array<result_type, word_count> __S     = __x_;
+      ::cuda::std::array<result_type, word_count / 2> __K = __k_;
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
       {
         ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
@@ -527,7 +532,7 @@ private:
         __K[1] = (__K[1] + round_consts[1]) & max();
       }
 
-      this->__y_ = __S;
+      __y_ = __S;
     }
   }
 
