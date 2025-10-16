@@ -32,6 +32,10 @@ Returns ``true`` when the half-open byte ranges ``[lhs_start, lhs_end)`` and ``[
 
 - ``true`` when the two ranges overlap, ``false`` otherwise.
 
+**Performance considerations**
+
+- The function is optimized when the ranges are contiguous and random access iterators.
+
 Example
 -------
 
@@ -53,4 +57,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/GPc4T4h7x>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/xP343GKea>`_

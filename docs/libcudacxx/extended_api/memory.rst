@@ -16,6 +16,7 @@ Memory
    memory/is_aligned
    memory/ptr_rebind
    memory/ptr_in_range
+   memory/ranges_overlap
 
 .. list-table::
    :widths: 25 45 30 30
