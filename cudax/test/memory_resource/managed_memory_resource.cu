@@ -219,7 +219,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
 
   { // comparison against a managed_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     managed_resource second{};
-    cudax::synchronous_resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -243,7 +243,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
   if constexpr (cuda::mr::resource<managed_resource>)
   { // comparison against a managed_memory_resource wrapped inside a resource_ref
     managed_resource second{};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

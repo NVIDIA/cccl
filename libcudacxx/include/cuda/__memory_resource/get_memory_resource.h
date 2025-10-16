@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
-#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -79,4 +79,4 @@ _CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#endif //_CUDA__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H

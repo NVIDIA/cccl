@@ -33,7 +33,6 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -119,7 +118,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -131,7 +130,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -390,7 +389,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device_accessible>;
+using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, ::cuda::mr::device_accessible>;
 
 } // namespace cuda::experimental
 
