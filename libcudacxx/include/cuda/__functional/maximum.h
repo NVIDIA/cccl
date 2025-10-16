@@ -37,8 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
     noexcept(__is_max_min_noexcept_v<_Tp, _Tp>)
   {
-    using _Up = ::cuda::std::remove_cv_t<_Tp>;
-    if constexpr (::cuda::std::is_floating_point_v<_Up> || ::cuda::std::__is_extended_floating_point_v<_Up>)
+    if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
       return ::cuda::std::fmax(__lhs, __rhs);
     }
