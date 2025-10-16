@@ -997,9 +997,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == _CurrentIndex)
     {
-      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+      _CUDA_VSTD::__construct_at(
+        _CUDA_VSTD::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     __generic_construct_impl(
@@ -1012,9 +1013,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == 0)
     {
-      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+                                 in_place,
+                                 __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1029,7 +1030,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API inline static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    __construct_at(_CUDA_VSTD::addressof(__a), in_place, _CUDA_VSTD::forward<_Args>(__args)...);
+    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__a), in_place, _CUDA_VSTD::forward<_Args>(__args)...);
     return __a.__value;
   }
 
