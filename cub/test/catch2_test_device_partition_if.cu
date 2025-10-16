@@ -30,7 +30,6 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/distance.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
