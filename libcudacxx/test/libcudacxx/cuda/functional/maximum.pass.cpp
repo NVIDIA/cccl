@@ -13,31 +13,43 @@
 
 #include "test_macros.h"
 
-template <typename OpT, typename T>
-__host__ __device__ constexpr void test_op(const T lhs, const T rhs, const T expected)
+template <typename OpT, typename T, typename U, typename Result>
+__host__ __device__ constexpr void test_op(const T lhs, const U rhs, const Result expected)
 {
+  static_assert(noexcept(OpT{}(cuda::std::declval<T>(), cuda::std::declval<U>())), "OpT is not noexcept");
+  static_assert(cuda::std::is_same_v<decltype(OpT{}(lhs, rhs)), Result>, "OpT is not the expected type");
   assert((OpT{}(lhs, rhs) == expected) && (OpT{}(lhs, rhs) == OpT{}(rhs, lhs)));
 }
 
-template <typename T>
-__host__ __device__ constexpr void test(const T lhs, const T rhs, const T expected)
+template <typename T, typename U, typename Result>
+__host__ __device__ constexpr void test(const T lhs, const U rhs, const Result expected)
 {
-  test_op<cuda::maximum<T>>(lhs, rhs, expected);
-  test_op<cuda::maximum<>>(lhs, rhs, expected);
-  test_op<cuda::maximum<void>>(lhs, rhs, expected);
+  if constexpr (cuda::std::is_same_v<T, U> && cuda::std::is_same_v<Result, T>)
+  {
+    test_op<cuda::maximum<T>>(lhs, rhs, expected);
+  }
+  else
+  {
+    test_op<cuda::maximum<>>(lhs, rhs, expected);
+    test_op<cuda::maximum<void>>(lhs, rhs, expected);
+  }
 }
 
 __host__ __device__ constexpr bool test()
 {
-  test<int>(0, 1, 1);
-  test<int>(1, 0, 1);
-  test<int>(0, 0, 0);
-  test<int>(-1, 1, 1);
-  test<char>('a', 'b', 'b');
-  test<float>(1.0f, 2.0f, 2.0f);
-  test<double>(1.0, 2.0, 2.0);
+  test<int, int, int>(0, 1, 1);
+  test<int, int, int>(1, 0, 1);
+  test<int, int, int>(0, 0, 0);
+  test<int, int, int>(-1, 1, 1);
+  test<char, char, char>('a', 'b', 'b');
+  test<float, float, float>(1.0f, 2.0f, 2.0f);
+  test<double, double, double>(1.0, 2.0, 2.0);
+
+  test<float, double, double>(1.0f, 2.0, 2.0);
 #if _CCCL_HAS_FLOAT128()
-  test<__float128>(__float128(1.0f), __float128(2.0f), __float128(2.0f));
+  test<__float128, __float128, __float128>(__float128(1.0f), __float128(2.0f), __float128(2.0f));
+  test<float, __float128, __float128>(1.0f, __float128(2.0f), __float128(2.0f));
+  test<double, __float128, __float128>(2.0, __float128(2.0f), __float128(2.0f));
 #endif // _CCCL_HAS_FLOAT128()
   return true;
 }
@@ -45,10 +57,14 @@ __host__ __device__ constexpr bool test()
 __host__ __device__ bool runtime_test()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
-  test<__half>(__half(1.0f), __half(2.0f), __half(2.0f));
+  test<__half, __half, __half>(__half(1.0f), __half(2.0f), __half(2.0f));
+  test<__half, float, float>(__half(1.0f), 2.0f, 2.0f);
+  test<__half, double, double>(__half(1.0f), 2.0, 2.0);
 #endif
 #if _LIBCUDACXX_HAS_NVBF16()
-  test<__nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f));
+  test<__nv_bfloat16, __nv_bfloat16, __nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f));
+  test<__nv_bfloat16, float, float>(__nv_bfloat16(1.0f), 2.0f, 2.0f);
+  test<__nv_bfloat16, double, double>(__nv_bfloat16(1.0f), 2.0, 2.0);
 #endif
   return true;
 }
