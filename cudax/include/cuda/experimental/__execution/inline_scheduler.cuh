@@ -36,10 +36,10 @@
 namespace cuda::experimental::execution
 {
 //! Scheduler that returns a sender that always completes inline (successfully).
-struct _CCCL_TYPE_VISIBILITY_DEFAULT inline_scheduler : __inln_attrs_t<set_value_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT inline_scheduler : __inln_attrs_t
 {
 private:
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t : __inln_attrs_t<set_value_t>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t : __inln_attrs_t
   {};
 
   template <class _Rcvr>

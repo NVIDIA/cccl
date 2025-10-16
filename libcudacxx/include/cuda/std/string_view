@@ -24,6 +24,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__fwd/char_traits.h>
+#include <cuda/std/__fwd/string.h>
 #include <cuda/std/__fwd/string_view.h>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/bounded_iter.h>
@@ -55,10 +58,11 @@
 #include <cuda/std/limits>
 #include <cuda/std/version>
 
+// todo: find a way to get rid of these includes
 #if !_CCCL_COMPILER(NVRTC)
-#  include <string>
+#  include <string> // for std::basic_string operator<<
 #  if __cpp_lib_string_view >= 201606L
-#    include <string_view>
+#    include <string_view> // for std::basic_string_view operator<<
 #  endif // __cpp_lib_string_view >= 201606L
 #endif // __cpp_lib_string_view >= 201606L
 
@@ -855,9 +859,10 @@ _CCCL_HOST_API ::std::basic_ostream<_CharT>&
 operator<<(::std::basic_ostream<_CharT>& __os, basic_string_view<_CharT> __str)
 {
 #  if __cpp_lib_string_view >= 201606L
-  return __os << ::std::basic_string_view<_CharT>{__str};
+  return __os << ::std::basic_string_view<_CharT, ::std::char_traits<_CharT>>{__str};
 #  else // ^^^ __cpp_lib_string_view >= 201606L ^^^ / vvv __cpp_lib_string_view < 201606L vvv
-  return __os << ::std::basic_string<_CharT>{__str.data(), __str.size()};
+  return __os
+      << ::std::basic_string<_CharT, ::std::char_traits<_CharT>, ::std::allocator<_CharT>>{__str.data(), __str.size()};
 #  endif // ^^^ __cpp_lib_string_view < 201606L ^^^
 }
 
@@ -868,7 +873,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT
 #  if __cpp_lib_string_view >= 201606L
   return __os << ::std::basic_string_view<_CharT, _Traits>{__str};
 #  else // ^^^ __cpp_lib_string_view >= 201606L ^^^ / vvv __cpp_lib_string_view < 201606L vvv
-  return __os << ::std::basic_string<_CharT, _Traits>{__str.data(), __str.size()};
+  return __os << ::std::basic_string<_CharT, _Traits, ::std::allocator<_CharT>>{__str.data(), __str.size()};
 #  endif // ^^^ __cpp_lib_string_view < 201606L ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
