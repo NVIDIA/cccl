@@ -153,7 +153,6 @@ Structs
 * :doc:`cuda::experimental::level_dimensions <structcuda_1_1experimental_1_1level__dimensions>`
 * :doc:`cuda::experimental::memory_pool_properties <structcuda_1_1experimental_1_1memory__pool__properties>`
 * :doc:`cuda::experimental::path_builder <structcuda_1_1experimental_1_1path__builder>`
-* :doc:`cuda::experimental::properties_list <structcuda_1_1experimental_1_1properties__list>`
 * :doc:`cuda::experimental::shared_resource <structcuda_1_1experimental_1_1shared__resource>`
 * :doc:`cuda::experimental::stf::cuda_kernel_desc <structcuda_1_1experimental_1_1stf_1_1cuda__kernel__desc>`
 * :doc:`cuda::experimental::stf::decorated_stream <structcuda_1_1experimental_1_1stf_1_1decorated__stream>`
@@ -300,8 +299,8 @@ Type Definitions
 * :doc:`cuda::experimental::stf::task_dep_vector_untyped <namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62>`
 * :doc:`cuda::experimental::stf::token <namespacecuda_1_1experimental_1_1stf_1aa9c8a86afb5d22780fd035a16435c768>`
 * :doc:`cuda::experimental::synchronous_resource_ref <namespacecuda_1_1experimental_1ab23ef2175595750ef0075ca8bef26a33>`
-* :doc:`cuda::experimental::uninitialized_async_device_buffer <namespacecuda_1_1experimental_1a352a2bd6a5dd2cd31b01168b92c06b60>`
-* :doc:`cuda::experimental::uninitialized_device_buffer <namespacecuda_1_1experimental_1a985dd73cbbab6e6d44aa7307e27ed90b>`
+* :doc:`cuda::experimental::uninitialized_async_device_buffer <namespacecuda_1_1experimental_1aefba5d75351aad499faf30658b54df50>`
+* :doc:`cuda::experimental::uninitialized_device_buffer <namespacecuda_1_1experimental_1a0d0aa10903bca9350c88da9e7121c089>`
 
 Enumerations
 ~~~~~~~~~~~~
@@ -505,7 +504,6 @@ Variables
    structcuda_1_1experimental_1_1stf_1_1owning__container__of_3_01scalar__view_3_01T_01_4_01_4
    structcuda_1_1experimental_1_1path__builder
    structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config
-   structcuda_1_1experimental_1_1properties__list
    structcuda_1_1experimental_1_1stf_1_1scalar__view
    structcuda_1_1experimental_1_1shared__resource
    structcuda_1_1experimental_1_1stream
@@ -622,8 +620,8 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62
    namespacecuda_1_1experimental_1_1stf_1aa9c8a86afb5d22780fd035a16435c768
    namespacecuda_1_1experimental_1ab23ef2175595750ef0075ca8bef26a33
-   namespacecuda_1_1experimental_1a352a2bd6a5dd2cd31b01168b92c06b60
-   namespacecuda_1_1experimental_1a985dd73cbbab6e6d44aa7307e27ed90b
+   namespacecuda_1_1experimental_1aefba5d75351aad499faf30658b54df50
+   namespacecuda_1_1experimental_1a0d0aa10903bca9350c88da9e7121c089
    namespacecuda_1_1experimental_1a4401baa9c7798a0dd6f981de4e549d86
    namespacecuda_1_1experimental_1_1stf_1a923aa8f0346e2b2a9e970a0fab753673
    namespacecuda_1_1experimental_1_1stf_1a82008bf924d44262d76e4dd3e923e196
