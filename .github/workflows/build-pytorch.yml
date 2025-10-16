@@ -1,15 +1,10 @@
-name: Build MatX
+name: Build PyTorch
 
 on:
   workflow_dispatch:
     inputs:
       override_cccl_tag:
-        description: "If set, override the tag used when pulling the CCCL repository into MatX."
-        required: false
-        default: ""
-        type: string
-      override_cccl_version:
-        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        description: "If set, override the tag used when pulling the CCCL repository into PyTorch."
         required: false
         default: ""
         type: string
@@ -21,12 +16,7 @@ on:
   workflow_call:
     inputs:
       override_cccl_tag:
-        description: "If set, override the tag used when pulling the CCCL repository into MatX."
-        required: false
-        default: ""
-        type: string
-      override_cccl_version:
-        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        description: "If set, override the tag used when pulling the CCCL repository into PyTorch."
         required: false
         default: ""
         type: string
@@ -37,8 +27,8 @@ on:
         type: boolean
 
 jobs:
-  build-matx:
-    name: Build MatX
+  build-pytorch:
+    name: Build PyTorch
     runs-on: linux-amd64-cpu16m
     permissions:
       id-token: write
@@ -66,7 +56,7 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          ~/cccl/ci/matx/build_matx.sh
+          ~/cccl/ci/pytorch/build_pytorch.sh
           sccache --show-adv-stats
           EOF
 
@@ -92,11 +82,10 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 12.9 \
+            --cuda 13.0 \
             --host gcc14 \
             --cuda-ext \
             --env "CCCL_TAG=${CCCL_TAG}" \
-            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env VAULT_HOST= \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
@@ -105,9 +94,9 @@ jobs:
             -- /ci.sh
 
   notify-failure:
-    name: Notify Slack of MatX failure
+    name: Notify Slack of PyTorch failure
     if: ${{ failure() && inputs.enable_slack_alerts }}
-    needs: build-matx
+    needs: build-pytorch
     runs-on: ubuntu-latest
     steps:
       - name: Notify
@@ -119,6 +108,6 @@ jobs:
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
           slack-message: |
-            MatX build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
+            PyTorch build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
 
             Details: ${{ env.SUMMARY_URL }}
