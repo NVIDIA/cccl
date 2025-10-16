@@ -30,7 +30,6 @@
 
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/random.h>
@@ -39,6 +38,7 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -1666,7 +1666,7 @@ inline int generate_unspecified_segments_offsets(
   // calculation below.
   c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 2);
 
-  auto const_zero_begin = thrust::make_constant_iterator<int>(0);
+  auto const_zero_begin = cuda::make_constant_iterator<int>(0);
   auto const_zero_end   = const_zero_begin + erase_indices.size();
 
   thrust::scatter(

@@ -50,7 +50,7 @@ struct DeviceCopy
   //!    {
   //!      __host__ __device__ __forceinline__ auto operator()(uint32_t index)
   //!      {
-  //!        return thrust::make_constant_iterator(d_data_in[index]);
+  //!        return ::cuda::make_constant_iterator(d_data_in[index]);
   //!      }
   //!      int32_t *d_data_in;
   //!    };
