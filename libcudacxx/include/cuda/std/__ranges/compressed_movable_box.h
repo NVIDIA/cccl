@@ -288,6 +288,10 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_base<_Index, _Tp, __compresse
 {
   using __base = __compressed_box_storage<_Index, _Tp>;
 
+  _CCCL_API constexpr __compressed_box_base(bool __engaged) noexcept
+      : __base(__engaged)
+  {}
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
