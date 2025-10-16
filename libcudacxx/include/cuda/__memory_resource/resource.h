@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -29,7 +30,6 @@
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
-#include <cuda/stream_ref>
 
 #include <cuda/std/__cccl/prologue.h>
 

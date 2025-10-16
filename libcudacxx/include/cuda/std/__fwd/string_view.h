@@ -24,6 +24,19 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits>
+class basic_string_view;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+
+// cuda::std:: forward declarations
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
@@ -52,6 +65,7 @@ _CCCL_PREFERRED_NAME(wstring_view)
 #endif // _CCCL_HAS_WCHAR_T()
       basic_string_view;
 // clang-format on
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

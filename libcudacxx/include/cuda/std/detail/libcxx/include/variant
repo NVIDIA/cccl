@@ -995,9 +995,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == _CurrentIndex)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     __generic_construct_impl(
@@ -1010,9 +1011,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == 0)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1027,7 +1029,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API inline static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    __construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
