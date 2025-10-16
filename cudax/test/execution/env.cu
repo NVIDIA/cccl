@@ -30,8 +30,8 @@ struct test_resource
   {
     return nullptr;
   }
-  void deallocate_sync(void*, size_t, size_t) {}
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
 
   constexpr bool operator==(const test_resource&) const noexcept
   {

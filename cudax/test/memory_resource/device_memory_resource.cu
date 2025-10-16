@@ -10,7 +10,7 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -151,7 +151,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(get != current_default_pool);
 
     // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, 0));
+    CHECK(ensure_release_threshold(get, cuda::std::numeric_limits<size_t>::max()));
 
     // Ensure that we disable reuse with unsupported drivers
     CHECK(ensure_disable_reuse(get, driver_version));
@@ -163,8 +163,8 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with release threshold")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
+      42,
     };
     cudax::device_memory_pool pool{current_device, props};
     test_resource with_threshold{pool};
@@ -186,9 +186,9 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with allocation handle")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
-      cudax::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
+      42,
+      ::cudaMemHandleTypePosixFileDescriptor,
     };
     cudax::device_memory_pool pool{current_device, props};
     test_resource with_allocation_handle{pool};
@@ -203,7 +203,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ensure_disable_reuse(get, driver_version));
 
     // Ensure that we disable export
-    CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
+    CHECK(ensure_export_handle(get, props.allocation_handle_type));
   }
 }
 
@@ -357,13 +357,15 @@ struct resource
 
   template <AccessibilityType Accessibilty2                                         = Accessibility,
             cuda::std::enable_if_t<Accessibilty2 == AccessibilityType::Device, int> = 0>
-  friend void get_property(const resource&, cudax::device_accessible) noexcept
+  friend void get_property(const resource&, ::cuda::mr::device_accessible) noexcept
   {}
 };
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>,
+              "");
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>,
+              "");
 
 template <AccessibilityType Accessibility>
 struct test_resource : public resource<Accessibility>
@@ -375,9 +377,9 @@ struct test_resource : public resource<Accessibility>
   void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
 };
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>, "");
 
 C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 {
@@ -408,7 +410,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     cudax::device_memory_resource second{cuda::device_ref{0}};
-    cudax::synchronous_resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -417,7 +419,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_resource wrapped inside a resource_ref
     cudax::device_memory_resource second{cuda::device_ref{0}};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

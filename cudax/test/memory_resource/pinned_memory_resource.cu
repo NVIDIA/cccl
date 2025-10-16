@@ -10,7 +10,7 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
@@ -60,7 +60,7 @@ static void ensure_pinned_ptr(void* ptr)
   // CHECK(attributes.devicePointer != nullptr);
 }
 
-C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
+C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
   pinned_resource res{};
@@ -218,7 +218,7 @@ struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 };
 static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>, "");
 
-C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
+C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
   pinned_resource first{};
@@ -230,7 +230,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
 
   { // comparison against a pinned_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     pinned_resource second{};
-    cudax::synchronous_resource_ref<cudax::device_accessible> const second_ref{second};
+    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> const second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -241,7 +241,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
   if constexpr (cuda::mr::resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref
     pinned_resource second{};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -279,7 +279,7 @@ C2H_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYP
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-C2H_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
+C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
   cudax::pinned_memory_resource resource{};
   test_deallocate_async(resource);

@@ -49,7 +49,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // pair
-      cuda::zip_transform_iterator iter{Plus{}, cuda::std::pair{buffer + 1, static_cast<const int*>(buffer + 3)}};
+      cuda::zip_transform_iterator iter{Plus{}, cuda::std::tuple{buffer + 1, static_cast<const int*>(buffer + 3)}};
       static_assert(cuda::std::is_same_v<decltype(iter), cuda::zip_transform_iterator<Plus, int*, const int*>>);
       assert(*iter == Plus{}(buffer[1], buffer[3]));
     }
@@ -90,7 +90,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // pair
-      cuda::zip_transform_iterator<Plus, int*, const int*> iter{Plus{}, cuda::std::pair{buffer + 1, buffer + 3}};
+      cuda::zip_transform_iterator<Plus, int*, const int*> iter{Plus{}, cuda::std::tuple{buffer + 1, buffer + 3}};
       assert(*iter == Plus{}(buffer[1], buffer[3]));
     }
 

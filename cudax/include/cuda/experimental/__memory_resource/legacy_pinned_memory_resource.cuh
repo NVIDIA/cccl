@@ -33,6 +33,7 @@
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
+#include <cuda/experimental/__stream/internal_streams.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -41,21 +42,28 @@
 namespace cuda::experimental
 {
 
-//! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+//! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
 //! `cuda::experimental::pinned_memory_resource` instead, which is the long-term replacement.
 class legacy_pinned_memory_resource
 {
 public:
-  constexpr legacy_pinned_memory_resource() noexcept {}
+  //! @brief Construct a new legacy_pinned_memory_resource.
+  //! @note Synchronous allocations in CUDA are tied to a device, even if not located in device memory.
+  //! This constructor takes an optional device argument to specify the device that should be tied to allocations
+  //! for the resource. This association has the effect of initializing that device and the memory being implicitly
+  //! freed if the device is reset.
+  _CCCL_HOST_API constexpr legacy_pinned_memory_resource(device_ref __device = {0}) noexcept
+      : __device_(__device)
+  {}
 
   //! @brief Allocate host memory of size at least \p __bytes.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate_sync(const size_t __bytes,
-                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) const
+  [[nodiscard]] _CCCL_HOST_API void*
+  allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -65,8 +73,8 @@ public:
         "legacy_pinned_memory_resource::allocate_sync.");
     }
 
-    void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "Failed to allocate memory with cudaMallocHost.", &__ptr, __bytes);
+    ::cuda::__ensure_current_context __guard(__device_);
+    void* __ptr = ::cuda::__driver::__mallocHost(__bytes);
     return __ptr;
   }
 
@@ -74,20 +82,22 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  void deallocate_sync(
-    void* __ptr, const size_t, const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) const noexcept
+  _CCCL_HOST_API void deallocate_sync(
+    void* __ptr,
+    const size_t,
+    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_pinned_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "legacy_pinned_memory_resource::deallocate_sync failed", __ptr);
-    (void) __alignment;
+    _CCCL_ASSERT_CUDA_API(
+      ::cuda::__driver::__freeHostNoThrow, "legacy_pinned_memory_resource::deallocate_sync failed", __ptr);
   }
 
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
-  [[nodiscard]] constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
@@ -95,16 +105,20 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
-  [[nodiscard]] constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
   }
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(legacy_pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(legacy_pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -113,11 +127,14 @@ public:
         && (::cuda::mr::default_cuda_malloc_host_alignment % __alignment == 0);
   }
 
-  using default_queries = properties_list<device_accessible, host_accessible>;
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
+
+private:
+  device_ref __device_{0};
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, device_accessible>, "");
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
 
 } // namespace cuda::experimental
 

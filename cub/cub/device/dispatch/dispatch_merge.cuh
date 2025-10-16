@@ -122,9 +122,8 @@ __launch_bounds__(
 {
   // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
   using key_t = it_value_t<KeyIt1>;
-  static_assert(::cuda::std::__invocable<CompareOp, key_t, key_t>::value,
-                "Comparison operator cannot compare two keys");
-  static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
+  static_assert(::cuda::std::is_invocable_v<CompareOp, key_t, key_t>, "Comparison operator cannot compare two keys");
+  static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<CompareOp, key_t, key_t>, bool>,
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
@@ -144,11 +143,11 @@ __launch_bounds__(
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
+    keys1,
+    items1,
     num_keys1,
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
-    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
+    keys2,
+    items2,
     num_keys2,
     keys_result,
     items_result,
