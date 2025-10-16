@@ -22,14 +22,13 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/__utility/basic_any.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/optional>
-
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -300,7 +299,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -323,7 +322,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
   // Inherit constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>);
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -381,7 +380,22 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
     return *this;
   }
 
-  using default_queries = properties_list<_Properties...>;
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
+  {
+    __basic_any_access::__cast_to(
+      const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    return *this;
+  }
+
+  synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<synchronous_resource_ref&>(__other).__get_base(), __get_base());
+    return *this;
+  }
+
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -428,7 +442,21 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     return *this;
   }
 
-  using default_queries = properties_list<_Properties...>;
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    return *this;
+  }
+
+  resource_ref& operator=(const resource_ref& __other) noexcept
+  {
+    __basic_any_access::__cast_to(const_cast<resource_ref&>(__other).__get_base(), __get_base());
+    return *this;
+  }
+
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,

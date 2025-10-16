@@ -77,7 +77,7 @@ namespace rfa
 {
 
 template <typename Invocable, typename InputT>
-using transformed_input_t = ::cuda::std::decay_t<typename ::cuda::std::__invoke_of<Invocable, InputT>::type>;
+using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
 template <typename InitT, typename InputIteratorT, typename TransformOpT>
 using accum_t =
