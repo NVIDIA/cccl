@@ -472,7 +472,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
                 "msvc" not in matrix_job["cxx"]
             ):
                 return f"{runner_os}-{cpu}-cpu16"
-        return f"{runner_os}-{cpu}-cpu16"
+        return f"{runner_os}-{cpu}-cpu8"
 
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
