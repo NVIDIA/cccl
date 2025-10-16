@@ -57,6 +57,25 @@
 namespace cuda::experimental
 {
 
+enum class __memory_accessability
+{
+  device,
+  host,
+  device_and_host,
+};
+
+// This assumes one of host or device accessible properties is present, needs to be updated when we relax that
+template <typename... _Properties>
+struct __memory_accessability_from_properties
+{
+  static constexpr __memory_accessability value =
+    ::cuda::mr::__is_device_accessible<_Properties...>
+      ? ::cuda::mr::__is_host_accessible<_Properties...>
+        ? __memory_accessability::device_and_host
+        : __memory_accessability::device
+      : __memory_accessability::host;
+};
+
 // Once we add support from options taken from the env we can list them here in addition to using is_same_v
 template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
@@ -583,7 +602,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
-template <typename _Tp, bool _IsHostOnly>
+template <typename _Tp, __memory_accessability _Accessability>
 _CCCL_HIDE_FROM_ABI void
 __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, const _Tp& __value)
 {
@@ -592,7 +611,30 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     return;
   }
 
-  if constexpr (_IsHostOnly)
+  // We don't know what to do with both device and host accessible buffers, so we need to check the attributes
+  if constexpr (_Accessability == __memory_accessability::device_and_host)
+  {
+    __driver::__pointer_attribute_value_type_t<CU_POINTER_ATTRIBUTE_MEMORY_TYPE> __type;
+    bool __is_managed{};
+    auto __status1 = ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __first);
+    auto __status2 =
+      ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __first);
+    if (__status1 != ::cudaSuccess || __status2 != ::cudaSuccess)
+    {
+      __throw_cuda_error(__status1, "Failed to get buffer memory attributes");
+    }
+    if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
+    {
+      __fill_n<_Tp, __memory_accessability::host>(__stream, __first, __count, __value);
+    }
+    else
+    {
+      __fill_n<_Tp, __memory_accessability::device>(__stream, __first, __count, __value);
+    }
+    return;
+  }
+
+  if constexpr (_Accessability == __memory_accessability::host)
   {
     ::cuda::experimental::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
@@ -674,7 +716,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(
   [[maybe_unused]] const _Env& __env = {})
 {
   auto __res = async_buffer<_Tp, _Properties...>{__stream, __mr, __size, no_init};
-  __fill_n<_Tp, !::cuda::mr::__is_device_accessible<_Properties...>>(
+  __fill_n<_Tp, __memory_accessability_from_properties<_Properties...>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -687,7 +729,7 @@ auto make_async_buffer(
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
   using __buffer_type     = __buffer_type_for_props<_Tp, __default_queries>;
   auto __res              = __buffer_type{__stream, __mr, __size, no_init};
-  __fill_n<_Tp, !__default_queries::has_property(::cuda::mr::device_accessible{})>(
+  __fill_n<_Tp, __default_queries::template rebind<__memory_accessability_from_properties>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
