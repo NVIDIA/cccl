@@ -6,11 +6,12 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -47,7 +48,7 @@ struct offset_to_constant_it
   template <typename OffsetT>
   __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
   {
-    return thrust::make_constant_iterator(static_cast<T>(offset));
+    return cuda::make_constant_iterator(static_cast<T>(offset));
   }
 };
 
@@ -201,9 +202,9 @@ try
 
   // Run test
   const auto num_buffers = 1;
-  auto d_buffer_srcs     = thrust::make_constant_iterator(input_data_it);
-  auto d_buffer_dsts     = thrust::make_constant_iterator(check_result_it);
-  auto d_buffer_sizes    = thrust::make_constant_iterator(num_items);
+  auto d_buffer_srcs     = cuda::make_constant_iterator(input_data_it);
+  auto d_buffer_dsts     = cuda::make_constant_iterator(check_result_it);
+  auto d_buffer_sizes    = cuda::make_constant_iterator(num_items);
   copy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes, num_buffers);
 
   // Verify result
@@ -225,7 +226,7 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
   c2h::device_vector<iterator> in_iter{in.begin(), in.begin() + 1, in.begin() + 2};
   c2h::device_vector<iterator> out_iter{out.begin(), out.begin() + 1, out.begin() + 2};
 
-  auto sizes = thrust::make_constant_iterator(1);
+  auto sizes = cuda::make_constant_iterator(1);
 
   copy_batched(in_iter.begin(), out_iter.begin(), sizes, num_buffers);
 

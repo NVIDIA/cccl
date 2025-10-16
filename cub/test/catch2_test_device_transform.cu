@@ -7,7 +7,6 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -92,7 +91,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
   auto a_it               = thrust::make_counting_iterator(offset_t{0});
-  auto b_it               = thrust::make_constant_iterator(offset_t{42});
+  auto b_it               = cuda::make_constant_iterator(offset_t{42});
   auto expected_result_it = thrust::make_counting_iterator(offset_t{42});
 
   // Prepare helper to check results
