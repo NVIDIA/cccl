@@ -285,7 +285,9 @@ struct RadixSortPolicyWrapper : PolicyT
   {}
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 using namespace radix_sort_runtime_policies;
+#endif
 
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
