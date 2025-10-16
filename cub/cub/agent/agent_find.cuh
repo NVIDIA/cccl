@@ -12,18 +12,6 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
-
-/******************************************************************************
- * Tuning policy types
- ******************************************************************************/
-
-/**
- * Parameterizable tuning policy type for AgentFind
- * @tparam NominalBlockThreads4B Threads per thread block
- * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
- */
 template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
@@ -32,27 +20,23 @@ template <int NominalBlockThreads4B,
           typename ScalingType = cub::detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentFindPolicy : ScalingType
 {
-  /// Number of items per vectorized load
+  // Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
-  /// Cache load modifier for reading input elements
+  // Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
 
-template <typename AgentFindPolicy,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ScanOpT> // @giannis OutputiteratorT not needed
+template <typename AgentFindPolicy, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
 struct AgentFind
 {
-  /// The input value type
+  // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
-  /// Vector type of InputT for data movement
+  // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentFindPolicy::VECTOR_LOAD_LENGTH>::Type;
 
-  /// Input iterator wrapper type (for applying cache modifier)
+  // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
@@ -60,7 +44,6 @@ struct AgentFind
                      CacheModifiedInputIterator<AgentFindPolicy::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
-  /// Constants
   static constexpr int BLOCK_THREADS      = AgentFindPolicy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = AgentFindPolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
@@ -74,19 +57,15 @@ struct AgentFind
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentFindPolicy::LOAD_MODIFIER;
 
-  /// Shared memory type required by this thread block
+  // Shared memory type required by this thread block
   using _TempStorage = OffsetT;
 
-  /// Alias wrapper allowing storage to be unioned
+  // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
 
-  _TempStorage& sresult; ///< Reference to temp_storage
-  InputIteratorT d_in; ///< Input data to find
-  // OutputIteratorT d_out;
-  // OffsetT num_items;
-  // OffsetT* value_temp_storage;
-  // WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to find
-  ScanOpT scan_op; ///< Binary reduction operator
+  _TempStorage& sresult;
+  InputIteratorT d_in;
+  ScanOpT scan_op; // Binary reduction operator
 
   template <typename T>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAlignedAndFullTile(
@@ -96,10 +75,10 @@ struct AgentFind
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
-    /// Create an AgentFindIf and extract these two as type member in the encapsulating struct
+    // Create an AgentFindIf and extract these two as type member in the encapsulating struct
     using InputT  = T;
     using VectorT = typename CubVector<InputT, VECTOR_LOAD_LENGTH>::Type;
-    ///
+    //
     const bool full_tile  = (tile_offset + tile_size) <= num_items;
     const bool is_aligned = reinterpret_cast<::cuda::std::uintptr_t>(d_in) % uintptr_t{sizeof(VectorT)} == 0;
     return full_tile && is_aligned;
@@ -116,12 +95,6 @@ struct AgentFind
     return false;
   }
 
-  /**
-   * @brief Constructor
-   * @param sresult Reference to temp_storage
-   * @param d_in Input data to search
-   * @param scan_op Binary scan operator
-   */
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentFind(TempStorage& sresult, InputIteratorT d_in, ScanOpT scan_op)
       : sresult(sresult.Alias())
       , d_in(d_in)
@@ -129,7 +102,7 @@ struct AgentFind
   {}
 
   template <typename Pred>
-  __device__ void ConsumeTile(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
     int tile_offset,
     Pred pred,
     OffsetT* result,
@@ -149,7 +122,7 @@ struct AgentFind
     __syncthreads();
 
     constexpr int NUMBER_OF_VECTORS = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
-    //// vectorized loads begin
+    // vectorized loads begin
     InputT* d_in_unqualified = const_cast<InputT*>(d_in) + tile_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
 
     cub::CacheModifiedInputIterator<AgentFindPolicy::LOAD_MODIFIER, VectorT> d_vec_in(
@@ -158,12 +131,12 @@ struct AgentFind
     InputT input_items[ITEMS_PER_THREAD];
     VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < NUMBER_OF_VECTORS; ++i)
     {
       vec_items[i] = d_vec_in[BLOCK_THREADS * i];
     }
-    //// vectorized loads end
+    // vectorized loads end
 
     bool found = false;
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
@@ -200,7 +173,7 @@ struct AgentFind
   }
 
   template <typename Pred>
-  __device__ void ConsumeTile(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
     int tile_offset,
     Pred pred,
     OffsetT* result,
@@ -243,7 +216,7 @@ struct AgentFind
     }
   }
 
-  __device__ void Process(OffsetT* value_temp_storage, OffsetT num_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* value_temp_storage, OffsetT num_items)
   {
     for (int tile_offset = blockIdx.x * TILE_ITEMS; tile_offset < num_items; tile_offset += TILE_ITEMS * gridDim.x)
     {
