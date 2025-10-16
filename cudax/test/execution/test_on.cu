@@ -85,15 +85,15 @@ void simple_continue_on_stream_test()
 
 namespace
 {
-// C2H_TEST("simple on(sch, sndr) thread test", "[on]")
-// {
-//   simple_start_on_thread_test();
-// }
+C2H_TEST("simple on(sch, sndr) thread test", "[on]")
+{
+  simple_start_on_thread_test();
+}
 
-// C2H_TEST("simple on(sndr, sch, closure) thread test", "[on]")
-// {
-//   simple_continue_on_thread_test();
-// }
+C2H_TEST("simple on(sndr, sch, closure) thread test", "[on]")
+{
+  simple_continue_on_thread_test();
+}
 
 C2H_TEST("simple on(sch, sndr) stream test", "[on][stream]")
 {
