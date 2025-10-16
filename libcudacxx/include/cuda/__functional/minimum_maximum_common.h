@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__utility/declval.h>
@@ -38,22 +37,22 @@ constexpr bool __is_max_min_noexcept_v = noexcept(
     : ::cuda::std::declval<_Tp>());
 
 template <typename _Up>
-constexpr bool __is_max_min_noexcept_v<__half, _Up> = true;
+constexpr bool __is_max_min_noexcept_v<::__half, _Up> = true;
 
 template <typename _Up>
-constexpr bool __is_max_min_noexcept_v<__nv_bfloat16, _Up> = true;
+constexpr bool __is_max_min_noexcept_v<::__nv_bfloat16, _Up> = true;
 
 template <typename _Tp>
-constexpr bool __is_max_min_noexcept_v<_Tp, __half> = true;
+constexpr bool __is_max_min_noexcept_v<_Tp, ::__half> = true;
 
 template <typename _Tp>
-constexpr bool __is_max_min_noexcept_v<_Tp, __nv_bfloat16> = true;
+constexpr bool __is_max_min_noexcept_v<_Tp, ::__nv_bfloat16> = true;
 
 template <>
-constexpr bool __is_max_min_noexcept_v<__half, __half> = true;
+constexpr bool __is_max_min_noexcept_v<::__half, ::__half> = true;
 
 template <>
-constexpr bool __is_max_min_noexcept_v<__nv_bfloat16, __nv_bfloat16> = true;
+constexpr bool __is_max_min_noexcept_v<::__nv_bfloat16, ::__nv_bfloat16> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 
