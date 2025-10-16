@@ -318,7 +318,7 @@ struct DispatchRadixSort
               policy.SingleTile().ItemsPerThread(),
               1,
               begin_bit,
-              policy.RadixBits(policy.SingleTile()));
+              policy.SingleTile().RadixBits());
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
@@ -515,7 +515,7 @@ struct DispatchRadixSort
       int /*ptx_version*/,
       int sm_count,
       OffsetT num_items,
-      ActivePolicyT policy                   = {},
+      ActivePolicyT /*policy*/               = {},
       UpsweepPolicyT upsweep_policy          = {},
       ScanPolicyT scan_policy                = {},
       DownsweepPolicyT downsweep_policy      = {},
@@ -527,7 +527,7 @@ struct DispatchRadixSort
         this->upsweep_kernel   = upsweep_kernel;
         this->scan_kernel      = scan_kernel;
         this->downsweep_kernel = downsweep_kernel;
-        radix_bits             = policy.RadixBits(downsweep_policy);
+        radix_bits             = downsweep_policy.RadixBits();
         radix_digits           = 1 << radix_bits;
 
         error = CubDebug(upsweep_config.Init(upsweep_kernel, upsweep_policy, launcher_factory));
@@ -566,7 +566,7 @@ struct DispatchRadixSort
     using AtomicOffsetT  = PortionOffsetT;
 
     // compute temporary storage size
-    const int RADIX_BITS                = policy.RadixBits(policy.Onesweep());
+    const int RADIX_BITS                = policy.Onesweep().RadixBits();
     const int RADIX_DIGITS              = 1 << RADIX_BITS;
     const int ONESWEEP_ITEMS_PER_THREAD = policy.Onesweep().ItemsPerThread();
     const int ONESWEEP_BLOCK_THREADS    = policy.Onesweep().BlockThreads();
@@ -658,7 +658,7 @@ struct DispatchRadixSort
               reinterpret_cast<long long>(stream),
               policy.Histogram().ItemsPerThread(),
               histo_blocks_per_sm,
-              policy.RadixBits(policy.Histogram()));
+              policy.Histogram().RadixBits());
 #endif
 
       error = launcher_factory(histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
@@ -676,7 +676,7 @@ struct DispatchRadixSort
       }
 
       // exclusive sums to determine starts
-      const int SCAN_BLOCK_THREADS = policy.BlockThreads(policy.ExclusiveSum());
+      const int SCAN_BLOCK_THREADS = policy.ExclusiveSum().BlockThreads();
 
 // log exclusive_sum_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -684,7 +684,7 @@ struct DispatchRadixSort
               num_passes,
               SCAN_BLOCK_THREADS,
               reinterpret_cast<long long>(stream),
-              policy.RadixBits(policy.ExclusiveSum()));
+              policy.ExclusiveSum().RadixBits());
 #endif
 
       error = launcher_factory(num_passes, SCAN_BLOCK_THREADS, 0, stream)
@@ -1495,12 +1495,12 @@ struct DispatchSegmentedRadixSort
       // Init regular and alternate kernel configurations
       PassConfig<SegmentedKernelT> pass_config, alt_pass_config;
       if ((error = pass_config.InitPassConfig(
-             segmented_kernel, policy.RadixBits(policy.Segmented()), policy.Segmented(), launcher_factory)))
+             segmented_kernel, policy.Segmented().RadixBits(), policy.Segmented(), launcher_factory)))
       {
         break;
       }
       if ((error = alt_pass_config.InitPassConfig(
-             alt_segmented_kernel, policy.RadixBits(policy.AltSegmented()), policy.AltSegmented(), launcher_factory)))
+             alt_segmented_kernel, policy.AltSegmented().RadixBits(), policy.AltSegmented(), launcher_factory)))
       {
         break;
       }
@@ -1534,8 +1534,8 @@ struct DispatchSegmentedRadixSort
 
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
-      int radix_bits         = policy.RadixBits(policy.Segmented());
-      int alt_radix_bits     = policy.RadixBits(policy.AltSegmented());
+      int radix_bits         = policy.Segmented().RadixBits();
+      int alt_radix_bits     = policy.AltSegmented().RadixBits();
       int num_bits           = end_bit - begin_bit;
       int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;

@@ -20,6 +20,7 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
+#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/radix_sort.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -30,147 +31,62 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace radix_sort
 {
-struct agent_radix_sort_downsweep_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int radix_bits;
-
-  int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-};
-
-struct agent_radix_sort_upsweep_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int radix_bits;
-
-  int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-};
-
-struct agent_radix_sort_onesweep_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int rank_num_parts;
-  int radix_bits;
-
-  int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-};
-
-struct agent_radix_sort_histogram_policy
-{
-  int block_threads;
-  int items_per_thread;
-  int num_parts;
-  int radix_bits;
-
-  int BlockThreads() const
-  {
-    return block_threads;
-  }
-};
-
-struct agent_radix_sort_exclusive_sum_policy
-{
-  int block_threads;
-  int radix_bits;
-};
-
-struct agent_scan_policy
-{
-  int block_threads;
-  int items_per_thread;
-
-  int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-};
+using namespace cub::detail::radix_sort_runtime_policies;
 
 struct radix_sort_runtime_tuning_policy
 {
-  agent_radix_sort_histogram_policy histogram;
-  agent_radix_sort_exclusive_sum_policy exclusive_sum;
-  agent_radix_sort_onesweep_policy onesweep;
-  agent_scan_policy scan;
-  agent_radix_sort_downsweep_policy downsweep;
-  agent_radix_sort_downsweep_policy alt_downsweep;
-  agent_radix_sort_upsweep_policy upsweep;
-  agent_radix_sort_upsweep_policy alt_upsweep;
-  agent_radix_sort_downsweep_policy single_tile;
+  RuntimeRadixSortHistogramAgentPolicy histogram;
+  RuntimeRadixSortExclusiveSumAgentPolicy exclusive_sum;
+  RuntimeRadixSortOnesweepAgentPolicy onesweep;
+  cub::detail::RuntimeScanAgentPolicy scan;
+  RuntimeRadixSortDownsweepAgentPolicy downsweep;
+  RuntimeRadixSortDownsweepAgentPolicy alt_downsweep;
+  RuntimeRadixSortUpsweepAgentPolicy upsweep;
+  RuntimeRadixSortUpsweepAgentPolicy alt_upsweep;
+  RuntimeRadixSortDownsweepAgentPolicy single_tile;
   bool is_onesweep;
 
-  agent_radix_sort_histogram_policy Histogram() const
+  auto Histogram() const
   {
     return histogram;
   }
 
-  agent_radix_sort_exclusive_sum_policy ExclusiveSum() const
+  auto ExclusiveSum() const
   {
     return exclusive_sum;
   }
 
-  agent_radix_sort_onesweep_policy Onesweep() const
+  auto Onesweep() const
   {
     return onesweep;
   }
 
-  agent_scan_policy Scan() const
+  auto Scan() const
   {
     return scan;
   }
 
-  agent_radix_sort_downsweep_policy Downsweep() const
+  auto Downsweep() const
   {
     return downsweep;
   }
 
-  agent_radix_sort_downsweep_policy AltDownsweep() const
+  auto AltDownsweep() const
   {
     return alt_downsweep;
   }
 
-  agent_radix_sort_upsweep_policy Upsweep() const
+  auto Upsweep() const
   {
     return upsweep;
   }
 
-  agent_radix_sort_upsweep_policy AltUpsweep() const
+  auto AltUpsweep() const
   {
     return alt_upsweep;
   }
 
-  agent_radix_sort_downsweep_policy SingleTile() const
+  auto SingleTile() const
   {
     return single_tile;
   }
@@ -180,80 +96,13 @@ struct radix_sort_runtime_tuning_policy
     return is_onesweep;
   }
 
-  template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT policy)
+  using MaxPolicy = radix_sort_runtime_tuning_policy;
+
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
   {
-    return policy.radix_bits;
+    return op.template Invoke<radix_sort_runtime_tuning_policy>(*this);
   }
-
-  template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT policy)
-  {
-    return policy.block_threads;
-  }
-};
-
-std::pair<int, int>
-reg_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per_thread, int key_size)
-{
-  assert(key_size > 0);
-  int items_per_thread = std::max(1, nominal_4_byte_items_per_thread * 4 / std::max(4, key_size));
-  int block_threads =
-    std::min(nominal_4_byte_block_threads,
-             cuda::ceil_div(int{cub::detail::max_smem_per_block} / (key_size * items_per_thread), 32) * 32);
-
-  return {items_per_thread, block_threads};
-}
-
-std::pair<int, int>
-mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per_thread, int key_size)
-{
-  assert(key_size > 0);
-  int items_per_thread =
-    std::max(1, std::min(nominal_4_byte_items_per_thread * 4 / key_size, nominal_4_byte_items_per_thread * 2));
-  int block_threads =
-    std::min(nominal_4_byte_block_threads,
-             cuda::ceil_div(int{cub::detail::max_smem_per_block} / (key_size * items_per_thread), 32) * 32);
-
-  return {items_per_thread, block_threads};
-}
-
-radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
-{
-  // TODO: we hardcode some of these values in order to make sure that the radix_sort tests do not fail due to the
-  // memory op assertions. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  constexpr int onesweep_radix_bits = 8;
-  const int primary_radix_bits      = (key_size > 1) ? 7 : 5;
-  const int single_tile_radix_bits  = (key_size > 1) ? 6 : 5;
-
-  const agent_radix_sort_histogram_policy histogram_policy{
-    256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits};
-  constexpr agent_radix_sort_exclusive_sum_policy exclusive_sum_policy{256, onesweep_radix_bits};
-
-  const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
-  // const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 23, key_size);
-  const int scan_items_per_thread = 5;
-  const int scan_block_threads    = 512;
-  // const auto [downsweep_items_per_thread, downsweep_block_threads] = mem_bound_scaling(160, 39, key_size);
-  const int downsweep_items_per_thread = 5;
-  const int downsweep_block_threads    = 160;
-  // const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
-  const int alt_downsweep_items_per_thread                             = 5;
-  const int alt_downsweep_block_threads                                = 256;
-  const auto [single_tile_items_per_thread, single_tile_block_threads] = mem_bound_scaling(256, 19, key_size);
-
-  constexpr bool is_onesweep = false;
-
-  return {histogram_policy,
-          exclusive_sum_policy,
-          {onesweep_block_threads, onesweep_items_per_thread, 1, onesweep_radix_bits},
-          {scan_block_threads, scan_items_per_thread},
-          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
-          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
-          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-          {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits},
-          is_onesweep};
 };
 
 std::string get_single_tile_kernel_name(
@@ -348,21 +197,6 @@ std::string get_onesweep_kernel_name(
     "op_wrapper");
 }
 
-template <auto* GetPolicy>
-struct dynamic_radix_sort_policy_t
-{
-  using MaxPolicy = dynamic_radix_sort_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<radix_sort_runtime_tuning_policy>(
-      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
-  }
-
-  uint64_t key_size;
-};
-
 struct radix_sort_kernel_source
 {
   cccl_device_radix_sort_build_result_t& build;
@@ -446,7 +280,6 @@ CUresult cccl_device_radix_sort_build_ex(
     const char* name = "test";
 
     const int cc       = cc_major * 10 + cc_minor;
-    const auto policy  = radix_sort::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
     const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto value_cpp =
       input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
@@ -458,6 +291,12 @@ CUresult cccl_device_radix_sort_build_ex(
         : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
     constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
+
     constexpr std::string_view src_template = R"XXX(
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
@@ -468,118 +307,96 @@ struct __align__({1}) storage_t {{
 struct __align__({3}) values_storage_t {{
   char data[{2}];
 }};
-struct agent_histogram_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {4};
-  static constexpr int BLOCK_THREADS = {5};
-  static constexpr int RADIX_BITS = {6};
-  static constexpr int NUM_PARTS = {7};
-}};
-struct agent_exclusive_sum_policy_t {{
-  static constexpr int BLOCK_THREADS = {8};
-  static constexpr int RADIX_BITS = {9};
-}};
-struct agent_onesweep_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {10};
-  static constexpr int BLOCK_THREADS = {11};
-  static constexpr int RANK_NUM_PARTS = {12};
-  static constexpr int RADIX_BITS = {13};
-  static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM       = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM       = cub::BLOCK_SCAN_WARP_SCANS;
-  static constexpr cub::RadixSortStoreAlgorithm STORE_ALGORITHM = cub::RADIX_SORT_STORE_DIRECT;
-}};
-struct agent_scan_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {14};
-  static constexpr int BLOCK_THREADS = {15};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = cub::BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = cub::LOAD_DEFAULT;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM   = cub::BLOCK_SCAN_RAKING_MEMOIZE;
-  struct detail
-  {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<{16}>;
-  }};
-}};
-struct agent_downsweep_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {17};
-  static constexpr int BLOCK_THREADS = {18};
-  static constexpr int RADIX_BITS = {19};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
-  static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_BASIC;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
-}};
-struct agent_alt_downsweep_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {20};
-  static constexpr int BLOCK_THREADS = {21};
-  static constexpr int RADIX_BITS = {22};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-  static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_MEMOIZE;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_RAKING_MEMOIZE;
-}};
-struct agent_single_tile_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {23};
-  static constexpr int BLOCK_THREADS = {24};
-  static constexpr int RADIX_BITS = {25};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-  static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_MEMOIZE;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
-}};
-struct {26} {{
-  struct ActivePolicy {{
-    using HistogramPolicy = agent_histogram_policy_t;
-    using ExclusiveSumPolicy = agent_exclusive_sum_policy_t;
-    using OnesweepPolicy = agent_onesweep_policy_t;
-    using ScanPolicy = agent_scan_policy_t;
-    using DownsweepPolicy = agent_downsweep_policy_t;
-    using AltDownsweepPolicy = agent_alt_downsweep_policy_t;
-    using UpsweepPolicy = agent_downsweep_policy_t;
-    using AltUpsweepPolicy = agent_alt_downsweep_policy_t;
-    using SingleTilePolicy = agent_single_tile_policy_t;
-  }};
-}};
-{27};
+{4}
 )XXX";
 
-    std::string offset_t;
-    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
-
-    const std::string src = std::format(
+    std::string src = std::format(
       src_template,
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_values_it.value_type.size, // 2
       input_values_it.value_type.alignment, // 3
-      policy.histogram.items_per_thread, // 4
-      policy.histogram.block_threads, // 5
-      policy.histogram.radix_bits, // 6
-      policy.histogram.num_parts, // 7
-      policy.exclusive_sum.block_threads, // 8
-      policy.exclusive_sum.radix_bits, // 9
-      policy.onesweep.items_per_thread, // 10
-      policy.onesweep.block_threads, // 11
-      policy.onesweep.rank_num_parts, // 12
-      policy.onesweep.radix_bits, // 13
-      policy.scan.items_per_thread, // 14
-      policy.scan.block_threads, // 15
-      offset_t, // 16
-      policy.downsweep.items_per_thread, // 17
-      policy.downsweep.block_threads, // 18
-      policy.downsweep.radix_bits, // 19
-      policy.alt_downsweep.items_per_thread, // 20
-      policy.alt_downsweep.block_threads, // 21
-      policy.alt_downsweep.radix_bits, // 22
-      policy.single_tile.items_per_thread, // 23
-      policy.single_tile.block_threads, // 24
-      policy.single_tile.radix_bits, // 25
-      chained_policy_t, // 26
-      op_src // 27
+      op_src // 4
+    );
+
+    std::string offset_t;
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
+
+    nlohmann::json runtime_policy = get_policy(
+      std::format("cub::detail::radix::MakeRadixSortPolicyWrapper(cub::detail::radix::policy_hub<{}, {}, "
+                  "{}>::MaxPolicy::ActivePolicy{{}})",
+                  key_cpp,
+                  value_cpp,
+                  offset_t),
+      "#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>\n" + src,
+      ptx_args);
+
+    auto delay_ctor_info = runtime_policy["ScanDelayConstructor"];
+    std::string delay_ctor_params;
+    for (auto&& param : delay_ctor_info["params"])
+    {
+      delay_ctor_params.append(to_string(param) + ", ");
+    }
+    delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
+    auto delay_ctor_t =
+      std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
+
+    using namespace cub::detail::radix_sort_runtime_policies;
+    using cub::detail::RuntimeScanAgentPolicy;
+    auto [single_tile_policy,
+          single_tile_policy_str] = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+    auto [onesweep_policy,
+          onesweep_policy_str]    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
+    auto [upsweep_policy,
+          upsweep_policy_str]     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
+    auto [alt_upsweep_policy,
+          alt_upsweep_policy_str] = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
+    auto [downsweep_policy,
+          downsweep_policy_str]   = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
+    auto [alt_downsweep_policy, alt_downsweep_policy_str] =
+      RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
+    auto [histogram_policy,
+          histogram_policy_str] = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+    auto [exclusive_sum_policy, exclusive_sum_policy_str] =
+      RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
+    auto [scan_policy, scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy", delay_ctor_t);
+    auto is_onesweep                    = runtime_policy["Onesweep"].get<bool>();
+
+    constexpr std::string_view final_src_template = R"XXX(
+{0}
+struct {10} {{
+  struct ActivePolicy {{
+    {1}
+    {2}
+    {3}
+    {4}
+    {5}
+    {6}
+    {7}
+    {8}
+    {9}
+  }};
+}};
+)XXX";
+
+    const std::string final_src = std::format(
+      final_src_template,
+      src, // 0
+      single_tile_policy_str, // 1
+      onesweep_policy_str, // 2
+      upsweep_policy_str, // 3
+      alt_upsweep_policy_str, // 4
+      downsweep_policy_str, // 5
+      alt_downsweep_policy_str, // 6
+      histogram_policy_str, // 7
+      exclusive_sum_policy_str, // 8
+      scan_policy_str, // 9
+      chained_policy_t // 10
     );
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
@@ -626,7 +443,7 @@ struct {26} {{
 
     nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
         ->add_expression({single_tile_kernel_name})
         ->add_expression({upsweep_kernel_name})
         ->add_expression({alt_upsweep_kernel_name})
@@ -665,12 +482,23 @@ struct {26} {{
       &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
 
-    build_ptr->cc         = cc;
-    build_ptr->cubin      = (void*) result.data.release();
-    build_ptr->cubin_size = result.size;
-    build_ptr->key_type   = input_keys_it.value_type;
-    build_ptr->value_type = input_values_it.value_type;
-    build_ptr->order      = sort_order;
+    build_ptr->cc             = cc;
+    build_ptr->cubin          = (void*) result.data.release();
+    build_ptr->cubin_size     = result.size;
+    build_ptr->key_type       = input_keys_it.value_type;
+    build_ptr->value_type     = input_values_it.value_type;
+    build_ptr->order          = sort_order;
+    build_ptr->runtime_policy = new radix_sort::radix_sort_runtime_tuning_policy{
+      histogram_policy,
+      exclusive_sum_policy,
+      onesweep_policy,
+      scan_policy,
+      downsweep_policy,
+      alt_downsweep_policy,
+      upsweep_policy,
+      alt_upsweep_policy,
+      single_tile_policy,
+      is_onesweep};
   }
   catch (const std::exception& exc)
   {
@@ -735,7 +563,7 @@ CUresult cccl_device_radix_sort_impl(
       indirect_arg_t,
       OffsetT,
       indirect_arg_t,
-      radix_sort::dynamic_radix_sort_policy_t<&radix_sort::get_policy>,
+      radix_sort::radix_sort_runtime_tuning_policy,
       radix_sort::radix_sort_kernel_source,
       cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
@@ -751,7 +579,7 @@ CUresult cccl_device_radix_sort_impl(
         decomposer,
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {d_keys_in.value_type.size});
+        *reinterpret_cast<radix_sort::radix_sort_runtime_tuning_policy*>(build.runtime_policy));
 
     *selector = d_keys_buffer.selector;
     error     = static_cast<CUresult>(exec_status);
@@ -850,6 +678,7 @@ CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* b
     }
 
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> runtime_policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
