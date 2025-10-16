@@ -380,21 +380,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
     return *this;
   }
 
-  _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
-  {
-    __basic_any_access::__cast_to(
-      const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
-    return *this;
-  }
-
-  synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
-  {
-    __basic_any_access::__cast_to(const_cast<synchronous_resource_ref&>(__other).__get_base(), __get_base());
-    return *this;
-  }
-
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
@@ -427,20 +412,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
 
   // Inherit other constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>&);
-
-  _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
-  resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
-  {
-    __basic_any_access::__cast_to(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
-    return *this;
-  }
-
-  resource_ref& operator=(const resource_ref& __other) noexcept
-  {
-    __basic_any_access::__cast_to(const_cast<resource_ref&>(__other).__get_base(), __get_base());
-    return *this;
-  }
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
