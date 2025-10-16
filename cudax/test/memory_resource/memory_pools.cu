@@ -10,7 +10,7 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>

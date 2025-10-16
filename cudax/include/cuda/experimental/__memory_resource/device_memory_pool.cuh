@@ -28,10 +28,10 @@
 
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__new_>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
 #include <cuda/experimental/__stream/stream.cuh>

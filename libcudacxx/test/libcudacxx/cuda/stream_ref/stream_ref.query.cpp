@@ -11,7 +11,7 @@
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 __host__ __device__ void test()
 {
