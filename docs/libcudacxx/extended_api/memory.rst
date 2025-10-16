@@ -71,7 +71,7 @@ Memory
      - CCCL 3.1.0
      - CUDA 13.1
 
-   * - :ref:`ptr_ranges_overlap <libcudacxx-extended-api-memory-ptr_ranges_overlap>`
-     - Check if two pointer ranges overlap
+   * - :ref:`ranges_overlap <libcudacxx-extended-api-memory-ranges_overlap>`
+     - Check if two ranges overlap
      - CCCL 3.2.0
      - CUDA 13.2
