@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
@@ -30,7 +31,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 

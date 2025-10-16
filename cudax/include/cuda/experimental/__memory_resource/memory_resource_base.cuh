@@ -27,11 +27,10 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/__device/device_ref.h>
-#include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cstddef>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
