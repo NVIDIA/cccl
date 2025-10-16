@@ -60,7 +60,9 @@ workflows:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 on Linux to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
+    # c.parallel -- pinned to gcc13 to match python
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
