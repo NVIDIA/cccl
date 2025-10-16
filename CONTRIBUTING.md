@@ -187,6 +187,23 @@ Documentation previews allow reviewers to see how changes will appear on the liv
 
 The preview URL will be posted as a comment on your PR and automatically cleaned up when the PR is closed.
 
+### Checking for Performance Regressions
+
+Performance stability is a key goal for CCCL, especially for `Device*` algorithms in CUB. When modifying any functionality that could impact these algorithms, contributors are encouraged to verify that no performance regressions occur.
+
+This verification is a two-step process:
+
+1. Determine whether your changes affect the generated SASS code (details on how to do this are provided below).  
+2. If the generated SASS code changes, run the benchmarks (see [CUB Benchmarks](docs/cub/benchmarking.rst)) to quantify potential performance implications.
+
+**Steps to check whether your changes generate different SASS code:**
+
+1. Identify the `Device*` algorithm(s) that may be affected by the change. This isn't always straightforward, and you will need to confirm whether any of the CUB algorithms depend on components modified by your changes. 
+2. Navigate to the build directory, compile the benchmarks for the specific `Device*` algorithm(s) identified in step 1, and dump the SASS code. For example: `ninja cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_after.sass`. 
+3. Check out the `main` branch to compare against the baseline SASS code: `git checkout $(git merge-base HEAD upstream/main)`
+4. Dump the SASS code emitted on the `main` branch. For example: `ninja cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_before.sass`. 
+5. Check whether there are differences in the generated SASS output: `git diff --text --no-index --word-diff radix_sort.keys_before.sass radix_sort.keys_after.sass`
+
 ## Code Formatting (pre-commit hooks)
 
 CCCL uses [pre-commit](https://pre-commit.com/) to execute all code linters and formatters. These
