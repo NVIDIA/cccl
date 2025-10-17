@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_NODEBUG_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -123,7 +123,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
@@ -293,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_NODEBUG_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -390,7 +390,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
 public:
   template <class... _Sndrs>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -493,7 +493,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+    _CCCL_TEMPLATE(class... _Env)
+    _CCCL_REQUIRES((__callable<get_completion_domain_t<set_value_t>, _Sndrs, _Env...> && ...))
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
     {
       if constexpr (sizeof...(_Sndrs) == 0)
       {
@@ -501,12 +503,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
       }
       else
       {
-        return ::cuda::std::common_type_t<__early_domain_of_t<_Sndrs>...>{};
+        return ::cuda::std::common_type_t<__completion_domain_of_t<set_value_t, _Sndrs, _Env...>...>{};
       }
     }
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<_Sndrs, _Env...>()...);
     }
@@ -519,27 +521,32 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 };
 
 template <class... _Sndrs>
-_CCCL_NODEBUG_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {
     return __sndr_t{};
   }
-  else if constexpr (!__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>)
-  {
-    static_assert(__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>,
-                  "when_all: all child senders must have the same domain");
-  }
   else
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = ::cuda::std::common_type_t<__early_domain_of_t<_Sndrs>...>;
     // If the incoming senders are non-dependent, we can check the completion
     // signatures of the composed sender immediately.
     if constexpr (((!dependent_sender<_Sndrs>) && ...))
     {
       __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndrs...>>());
     }
-    return transform_sender(__dom_t{}, __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}});
+
+    // If the incoming senders all know their completion domain, we can check
+    // that they all share a common domain.
+    if constexpr ((__callable<get_completion_domain_t<set_value_t>, env_of_t<_Sndrs>> && ...))
+    {
+      static_assert(
+        __is_instantiable_with<::cuda::std::common_type_t, __completion_domain_of_t<set_value_t, _Sndrs>...>,
+        "when_all: all child senders must share a common domain; that is, they must "
+        "all complete on execution contexts that are similar in their execution semantics.");
+    }
+
+    return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
   }
 }
 

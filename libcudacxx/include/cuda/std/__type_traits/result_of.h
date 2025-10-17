@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_RESULT_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_RESULT_OF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_RESULT_OF_H
+#define _CUDA_STD___TYPE_TRAITS_RESULT_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,15 +33,15 @@ template <class _Callable>
 class result_of;
 
 template <class _Fp, class... _Args>
-class _LIBCUDACXX_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
+class CCCL_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public invoke_result<_Fp, _Args...>
 {};
 
 template <class _Tp>
-using result_of_t _LIBCUDACXX_DEPRECATED = typename result_of<_Tp>::type;
+using result_of_t CCCL_DEPRECATED = typename result_of<_Tp>::type;
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_RESULT_OF_H
+#endif // _CUDA_STD___TYPE_TRAITS_RESULT_OF_H

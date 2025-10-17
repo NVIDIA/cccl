@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H
-#define _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H
+#ifndef _CUDA_STD___TUPLE_MAKE_TUPLE_TYPES_H
+#define _CUDA_STD___TUPLE_MAKE_TUPLE_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
@@ -61,7 +63,27 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
   template <size_t>
   using __value_type = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
-  using __apply_quals = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+};
+
+template <class _Vt, size_t... _Idx>
+struct __make_tuple_types_flat<complex<_Vt>, __tuple_indices<_Idx...>>
+{
+  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
+  template <size_t>
+  using __value_type = _Vt;
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+};
+
+template <class _Vt, size_t... _Idx>
+struct __make_tuple_types_flat<::cuda::complex<_Vt>, __tuple_indices<_Idx...>>
+{
+  static_assert(sizeof...(_Idx) == 2, "__make_tuple_types: complex has only 2 members");
+  template <size_t>
+  using __value_type = _Vt;
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG_ALIAS = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
 };
 
 template <class _Tp,
@@ -95,4 +117,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H
+#endif // _CUDA_STD___TUPLE_MAKE_TUPLE_TYPES_H

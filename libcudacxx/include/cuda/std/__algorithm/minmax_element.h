@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
-#define _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
+#ifndef _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H
+#define _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,8 +46,7 @@ public:
   template <class _Iter>
   _CCCL_API constexpr bool operator()(_Iter& __it1, _Iter& __it2)
   {
-    return ::cuda::std::__invoke(
-      __comp_, ::cuda::std::__invoke(__proj_, *__it1), ::cuda::std::__invoke(__proj_, *__it2));
+    return ::cuda::std::invoke(__comp_, ::cuda::std::invoke(__proj_, *__it1), ::cuda::std::invoke(__proj_, *__it2));
   }
 };
 
@@ -119,8 +118,7 @@ template <class _ForwardIterator, class _Compare>
 [[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
-                "::cuda::std::minmax_element requires a ForwardIterator");
+  static_assert(__has_input_traversal<_ForwardIterator>, "::cuda::std::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
   auto __proj = identity();
@@ -138,4 +136,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
+#endif // _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H

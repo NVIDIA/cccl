@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -50,7 +50,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Note: a `__basic_any<__ireference<_Interface>> &&` is an rvalue reference,
 //! whereas a `__basic_any<_Interface &> &&` is an lvalue reference.
 template <class _Interface>
-struct __ireference : _Interface
+struct __ireference : ::cuda::std::remove_const_t<_Interface>
 {
   static_assert(::cuda::std::is_class_v<_Interface>, "expected a class type");
   static constexpr size_t __size_      = sizeof(void*);
@@ -334,4 +334,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H

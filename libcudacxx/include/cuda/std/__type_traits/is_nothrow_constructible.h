@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -64,12 +64,12 @@ struct __cccl_is_nothrow_constructible</*is constructible*/ false, _IsReference,
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible
-    : __cccl_is_nothrow_constructible<is_constructible<_Tp, _Args...>::value, is_reference<_Tp>::value, _Tp, _Args...>
+    : __cccl_is_nothrow_constructible<is_constructible_v<_Tp, _Args...>, is_reference_v<_Tp>, _Tp, _Args...>
 {};
 
 template <class _Tp, size_t _Ns>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp[_Ns]>
-    : __cccl_is_nothrow_constructible<is_constructible<_Tp>::value, is_reference<_Tp>::value, _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_constructible<_Tp[_Ns]> : __cccl_is_nothrow_constructible<is_constructible_v<_Tp>, is_reference_v<_Tp>, _Tp>
 {};
 
 template <class _Tp, class... _Args>
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONSTRUCTIBLE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
-#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
+#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H
+#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H
 
 #include <cuda/std/detail/__config>
 
@@ -169,4 +169,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
+#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING_H

@@ -25,13 +25,13 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -119,7 +119,7 @@ template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures();
+_CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
@@ -181,7 +181,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t;
@@ -200,6 +199,24 @@ template <class _Tag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_override_t;
+template <class _Tag>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_domain_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_behavior_t;
+
+template <class _Ty>
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_stop_token_t, _Ty>>;
+
+template <class _Env>
+using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
+
+template <class _Env>
+using __domain_of_t _CCCL_NODEBUG_ALIAS = decay_t<::cuda::std::__type_call<
+  ::cuda::std::__type_try_catch<::cuda::std::__type_bind_front_quote<__call_result_t, get_domain_t>,
+                                ::cuda::std::__type_always<default_domain>>,
+  _Env>>;
+
+template <class _Tag, class _Sndr, class... _Env>
+using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee
@@ -214,7 +231,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_NODEBUG_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
+  _CCCL_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
@@ -224,7 +241,8 @@ template <class _Sndr, class _Tag = __visit_result_t<__get_tag&, _Sndr, int&>>
 extern __fn_ptr_t<_Tag> __tag_of_v;
 } // namespace __detail
 
-template <class _Sndr>
+_CCCL_TEMPLATE(class _Sndr)
+_CCCL_REQUIRES(__is_sender<_Sndr>)
 using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class... _Tag>
@@ -249,6 +267,8 @@ template <>
 inline constexpr __disposition __signature_disposition<set_stopped_t()> = __disposition::__stopped;
 
 } // namespace __detail
+
+struct inline_scheduler;
 
 struct stream_domain;
 struct stream_context;

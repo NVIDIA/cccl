@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_CHAR_TRAITS_H
-#define _LIBCUDACXX___FWD_CHAR_TRAITS_H
+#ifndef _CUDA_STD___FWD_CHAR_TRAITS_H
+#define _CUDA_STD___FWD_CHAR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,19 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/prologue.h>
+
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT>
+struct char_traits;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -46,4 +59,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_CHAR_TRAITS_H
+#endif // _CUDA_STD___FWD_CHAR_TRAITS_H

@@ -3,7 +3,7 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <cuda/cmath>
+#include <cuda/std/mdspan>
 
 #include <nvbench_helper.cuh>
 

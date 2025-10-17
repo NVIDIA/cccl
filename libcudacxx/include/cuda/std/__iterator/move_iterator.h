@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_MOVE_ITERATOR_H
+#define _CUDA_STD___ITERATOR_MOVE_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -197,7 +197,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
+  [[nodiscard]] _CCCL_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
   {
     return __current_;
   }
@@ -411,11 +411,10 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
-// Some compilers have issues determining _IsFancyPointer
+// Some compilers have issues determining __is_fancy_pointer
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 template <class _Iter>
-struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
-{};
+inline constexpr bool __is_fancy_pointer<move_iterator<_Iter>> = __is_fancy_pointer<_Iter>;
 #endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -430,4 +429,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_MOVE_ITERATOR_H

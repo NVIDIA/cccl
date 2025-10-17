@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_PUSH_HEAP_H
-#define _LIBCUDACXX___ALGORITHM_PUSH_HEAP_H
+#ifndef _CUDA_STD___ALGORITHM_PUSH_HEAP_H
+#define _CUDA_STD___ALGORITHM_PUSH_HEAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -80,9 +80,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _CCCL_API constexpr void push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(::cuda::std::is_copy_constructible<_RandomAccessIterator>::value,
-                "Iterators must be copy constructible.");
-  static_assert(::cuda::std::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
+  static_assert(::cuda::std::is_copy_constructible_v<_RandomAccessIterator>, "Iterators must be copy constructible.");
+  static_assert(::cuda::std::is_copy_assignable_v<_RandomAccessIterator>, "Iterators must be copy assignable.");
 
   ::cuda::std::__push_heap<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), __comp);
 }
@@ -98,4 +97,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_PUSH_HEAP_H
+#endif // _CUDA_STD___ALGORITHM_PUSH_HEAP_H

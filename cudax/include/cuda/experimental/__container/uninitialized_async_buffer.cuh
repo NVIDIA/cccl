@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
@@ -30,10 +31,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -119,7 +118,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -131,7 +130,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -249,18 +248,30 @@ public:
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
-  //! was used to create the buffer and destroys the memory resource.
+  //! is stored in the buffer and destroys the memory resource.
+  //! @param __stream The stream to deallocate the buffer on.
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+    // TODO should we make sure we move the mr only once by moving it to the if above?
+    // It won't work for 0 count buffers, so we would probably need a separate bool to track it
+    auto __tmp_mr = ::cuda::std::move(__mr_);
+  }
+
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
+  //! is stored in the buffer and destroys the memory resource.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
-    if (__buf_)
-    {
-      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
-      __buf_   = nullptr;
-      __count_ = 0;
-    }
-    auto __tmp_mr = ::cuda::std::move(__mr_);
+    destroy(__stream_);
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
@@ -331,6 +342,7 @@ public:
   }
 
   //! @brief Returns the stored stream
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;
@@ -377,7 +389,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device_accessible>;
+using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, ::cuda::mr::device_accessible>;
 
 } // namespace cuda::experimental
 

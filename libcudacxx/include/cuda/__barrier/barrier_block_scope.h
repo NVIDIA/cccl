@@ -26,6 +26,7 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
 #endif // _CCCL_CUDA_COMPILATION()
@@ -34,8 +35,10 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/high_resolution_clock.h>
+#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__new_>
-#include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -379,12 +382,30 @@ private:
 public:
   _CCCL_API inline void wait(arrival_token&& __phase) const
   {
+    // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                   while (!::cuda::ptx::mbarrier_try_wait(
+                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase))
+                     ;
+                   return;
+                 }))
+    // fallback implementation
     ::cuda::std::__cccl_thread_poll_with_backoff(
       ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__phase)));
   }
 
   _CCCL_API inline void wait_parity(bool __phase_parity) const
   {
+    // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                   while (!::cuda::ptx::mbarrier_try_wait_parity(
+                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase_parity))
+                     ;
+                   return;
+                 }))
+    // fallback implementation
     ::cuda::std::__cccl_thread_poll_with_backoff(
       ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
   }

@@ -30,30 +30,84 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        GH_TOKEN: ${{ github.token }}
       run: |
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
 
+        # Use the job def info to setup the Github cache key:
+        job_hash=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
+        job_project=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_job_project.sh ${{ inputs.id }})
+
         echo "::group::️🔍 Job Inputs"
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
         # Define the job input parameters as JOB_* environment variables that are visible in all steps:
         echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
         echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
-        echo
-        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
+        # SCCACHE config:
+        echo "SCCACHE_DIR=${RUNNER_TEMP}/sccache" | tee -a $GITHUB_ENV
+        mkdir -p ${RUNNER_TEMP}/sccache/preprocessor
+
+        # Used to locate an appropriate existing cache:
+        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
+        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
+
+        # The new cache won't be uploaded unless the cache key is unique:
+        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
         echo "::endgroup::"
 
+    - name: Setup sccache preprocessor cache
+      id: sccache-preprocessor-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{env.SCCACHE_DIR}}/preprocessor
+        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        restore-keys: |
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
+
     - name: Add NVCC problem matcher
+      continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
+
     - name: Get AWS credentials for sccache bucket
+      if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
+
+    - name: Print CI override matrix job def
+      env:
+        GH_TOKEN: ${{ github.token }}
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        # Get the origin matrix job definition embedded in thw workflow artifact:
+        matrix_job=$(ci/util/workflow/get_job_def.sh | jq -c '.origin.matrix_job')
+
+        # Delete the cxx_family and cudacxx_family fields
+        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family, .job_name)')
+
+        # Convert to a single line of YAML, with unquoted keys:
+        matrix_job=$(
+          echo "- $matrix_job" |
+            yq -o=yaml |
+            sed -E 's/"([[:alnum:]_]+)"([[:space:]]*):/\1\2:/g' |
+            tr '"' "'"
+        )
+
+        echo -e "\e[1;34mOverride matrix entry:\e[0m"
+        echo -e "\e[1;34m    $matrix_job\e[0m"
+
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -71,6 +125,9 @@ runs:
         #! /usr/bin/env bash
 
         set -euo pipefail
+
+        # Need this for git to trust the docker-mounted workspace:
+        git config --global --add safe.directory "$(pwd)"
 
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
@@ -118,11 +175,16 @@ runs:
         chmod 0600 "${aws_dir}/credentials"
         chmod 0664 "${aws_dir}/config"
 
+        # Clear the ARN when using the pre-minted aws creds on the main repo.
+        if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
+          set aws_arn="--env AWS_ROLE_ARN="
+        fi
+
         declare -a gpu_request=()
 
         # Explicitly pass which GPU to use if on a GPU runner
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
         fi
 
         # If the image contains "cudaXX.Yext"...
@@ -143,25 +205,23 @@ runs:
             --host $JOB_HOST \
             ${cuda_ext_request:-} \
             "${gpu_request[@]}" \
-            --env "AWS_ROLE_ARN=" \
+            ${aws_arn:-} \
+            --env "CI=true" \
             --env "COMMAND=$COMMAND" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
-            --env "GITHUB_ENV=$GITHUB_ENV" \
-            --env "GITHUB_SHA=$GITHUB_SHA" \
-            --env "GITHUB_PATH=$GITHUB_PATH" \
-            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
-            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-            --env "GH_TOKEN=${{ github.token }}" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
-            --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
             --env "JOB_ID=$JOB_ID" \
+            --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
+            --env "RUNNER_TEMP=$RUNNER_TEMP" \
+            --env "SCCACHE_DIR=$SCCACHE_DIR" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
+            --volume "${SCCACHE_DIR}:${SCCACHE_DIR}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
         )

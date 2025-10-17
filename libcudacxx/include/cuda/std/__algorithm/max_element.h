@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MAX_ELEMENT_H
-#define _LIBCUDACXX___ALGORITHM_MAX_ELEMENT_H
+#ifndef _CUDA_STD___ALGORITHM_MAX_ELEMENT_H
+#define _CUDA_STD___ALGORITHM_MAX_ELEMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _ForwardIterator>
 _CCCL_API constexpr _ForwardIterator __max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
-                "::cuda::std::max_element requires a ForwardIterator");
+  static_assert(__has_input_traversal<_ForwardIterator>, "::cuda::std::max_element requires a ForwardIterator");
   if (__first != __last)
   {
     _ForwardIterator __i = __first;
@@ -65,4 +64,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MAX_ELEMENT_H
+#endif // _CUDA_STD___ALGORITHM_MAX_ELEMENT_H

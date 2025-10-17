@@ -36,6 +36,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup reordering
  *  \ingroup algorithms
+ *  \{
  *
  *  \addtogroup partitioning
  *  \ingroup reordering

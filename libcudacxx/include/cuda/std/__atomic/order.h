@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_ORDER_H
-#define __LIBCUDACXX___ATOMIC_ORDER_H
+#ifndef __CUDA_STD___ATOMIC_ORDER_H
+#define __CUDA_STD___ATOMIC_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_orde
                         : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
 }
 
-static_assert((is_same<underlying_type<memory_order>::type, __memory_order_underlying_t>::value),
+static_assert((is_same_v<underlying_type<memory_order>::type, __memory_order_underlying_t>),
               "unexpected underlying type for std::memory_order");
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -156,4 +156,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_ORDER_H
+#endif // __CUDA_STD___ATOMIC_ORDER_H

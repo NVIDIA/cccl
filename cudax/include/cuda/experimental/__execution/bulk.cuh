@@ -41,6 +41,7 @@
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
@@ -67,11 +68,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
 template <class _Sndr, class _Shape>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
-  [[nodiscard]] _CCCL_HOST_API constexpr auto query(get_launch_config_t) const noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr auto __get_launch_config(_Shape __shape) noexcept
   {
     constexpr int __block_threads = 256;
-    const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape_), __block_threads);
+    const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
     return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+  }
+
+  using __launch_config_t = decltype(__get_launch_config(_Shape()));
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_launch_config_t) const noexcept -> __launch_config_t
+  {
+    NV_IF_TARGET(NV_IS_HOST,
+                 (return __get_launch_config(__shape_);),
+                 (_CCCL_ASSERT(false, "cannot get a launch configuration from device"); ::cuda::std::terminate();))
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -151,7 +161,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
 
-    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
+    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Rcvr>>
     {
       return __fwd_env(execution::get_env(__state_->__rcvr_));
     }
@@ -187,23 +197,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
     {
       static_assert(__is_sender<_Sndr>);
 
-      using __domain_t = __early_domain_of_t<_Sndr>;
-      using __sndr_t   = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
-
       if constexpr (!dependent_sender<_Sndr>)
       {
+        using __sndr_t = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
         __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
       }
 
-      return transform_sender(__domain_t{},
-                              __sndr_t{{{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}});
+      return typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>{
+        {{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS _Policy __policy_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ _Policy __policy_;
     _Shape __shape_;
     _Fn __fn_;
   };
@@ -251,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       return {__state_.__shape_, __sndr_};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS _BulkTag __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ _BulkTag __tag_;
     __closure_base_t<_Policy, _Shape, _Fn> __state_;
     _Sndr __sndr_;
   };
@@ -268,10 +276,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   // This function call operator creates a sender adaptor closure object that can appear
   // on the right-hand side of a pipe operator, like: sndr | bulk(par, shape, fn).
   template <class _Policy, class _Shape, class _Fn>
-  [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
+  [[nodiscard]] _CCCL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
   {
     static_assert(::cuda::std::integral<_Shape>);
-    static_assert(is_execution_policy_v<_Policy>);
+    static_assert(::cuda::std::is_execution_policy_v<_Policy>);
     using __closure_t = typename _BulkTag::template __closure_t<_Policy, _Shape, _Fn>;
     return __closure_t{{__policy, __shape, static_cast<_Fn&&>(__fn)}};
   }
@@ -390,7 +398,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Ts>
-    _CCCL_NODEBUG_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
+    _CCCL_API void operator()(_Shape __begin, _Shape __end, _Ts&&... __values) noexcept(
       __nothrow_callable<_Fn&, _Shape, decltype(__values)&...>)
     {
       for (; __begin != __end; ++__begin)
@@ -406,7 +414,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
+  [[nodiscard]] _CCCL_API static auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
     static_assert(__same_as<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;

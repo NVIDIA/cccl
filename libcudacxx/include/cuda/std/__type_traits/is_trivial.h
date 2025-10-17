@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIAL_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIAL_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIAL_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,36 +21,22 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIAL) && !defined(_LIBCUDACXX_USE_IS_TRIVIAL_FALLBACK)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivial : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivial : bool_constant<_CCCL_BUILTIN_IS_TRIVIAL(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_trivial_v = _CCCL_BUILTIN_IS_TRIVIAL(_Tp);
 
-#else
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivial
-    : public integral_constant<bool, is_trivially_copyable<_Tp>::value && is_trivially_default_constructible<_Tp>::value>
-{};
-
-template <class _Tp>
-inline constexpr bool is_trivial_v = is_trivial<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_TRIVIAL) && !defined(_LIBCUDACXX_USE_IS_TRIVIAL_FALLBACK)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIAL_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIAL_H

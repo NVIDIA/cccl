@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -174,8 +174,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __alloc_func* __clone() const
@@ -227,8 +226,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __default_alloc_func* __clone() const
@@ -408,8 +406,8 @@ public:
     if (__function::__not_null(__f))
     {
       _FunAlloc __af(__a);
-      if (sizeof(_Fun) <= sizeof(__buf_) && is_nothrow_copy_constructible<_Fp>::value
-          && is_nothrow_copy_constructible<_FunAlloc>::value)
+      if (sizeof(_Fun) <= sizeof(__buf_)
+          && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
       {
         __f_ = ::new ((void*) &__buf_) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
@@ -423,7 +421,7 @@ public:
     }
   }
 
-  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __value_func>::value>>
+  template <class _Fp, class = enable_if_t<!is_same_v<decay_t<_Fp>, __value_func>>>
   _CCCL_API inline explicit __value_func(_Fp&& __f)
       : __value_func(::cuda::std::forward<_Fp>(__f), allocator<_Fp>())
   {}
@@ -598,10 +596,9 @@ union __policy_storage
 // True if _Fun can safely be held in __policy_storage.__small.
 template <typename _Fun>
 struct __use_small_storage
-    : public integral_constant<
-        bool,
-        sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
-          && is_trivially_copy_constructible<_Fun>::value && is_trivially_destructible<_Fun>::value>
+    : public integral_constant<bool,
+                               sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
+                                 && is_trivially_copy_constructible_v<_Fun> && is_trivially_destructible_v<_Fun>>
 {};
 
 // Policy contains information about how to copy, destroy, and move the
@@ -691,7 +688,7 @@ private:
 // Used to choose between perfect forwarding or pass-by-value. Pass-by-value is
 // faster for types that can be passed in registers.
 template <typename _Tp>
-using __fast_forward = conditional_t<is_scalar<_Tp>::value, _Tp, _Tp&&>;
+using __fast_forward = conditional_t<is_scalar_v<_Tp>, _Tp, _Tp&&>;
 
 // __policy_invoker calls an instance of __alloc_func held in __policy_storage.
 
@@ -790,7 +787,7 @@ public:
     }
   }
 
-  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __policy_func>::value>>
+  template <class _Fp, class = enable_if_t<!is_same_v<decay_t<_Fp>, __policy_func>>>
   _CCCL_API inline explicit __policy_func(_Fp&& __f)
       : __policy_(__policy::__create_empty())
   {
@@ -964,7 +961,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI
@@ -997,13 +994,12 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = _And<_IsNotSame<remove_cvref_t<_Fp>, function>, __invocable<_Fp, _ArgTypes...>>::value>
+  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && is_invocable_v<_Fp, _ArgTypes...>>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
   {
-    static const bool value =
-      is_void<_Rp>::value || __is_core_convertible<typename __invoke_of<_Fp, _ArgTypes...>::type, _Rp>::value;
+    static const bool value = is_void_v<_Rp> || __is_core_convertible<invoke_result_t<_Fp, _ArgTypes...>, _Rp>::value;
   };
   template <class _Fp>
   struct __callable<_Fp, false>
@@ -1276,4 +1272,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_FUNCTION_H

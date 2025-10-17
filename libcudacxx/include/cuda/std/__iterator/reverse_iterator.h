@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H
+#define _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -83,7 +83,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
 private:
 #if _CCCL_STD_VER > 2017
-  static_assert(__is_cpp17_bidirectional_iterator<_Iter>::value || bidirectional_iterator<_Iter>,
+  static_assert(__has_bidirectional_traversal<_Iter> || bidirectional_iterator<_Iter>,
                 "reverse_iterator<It> requires It to be a bidirectional iterator.");
 #endif // _CCCL_STD_VER > 2017
 
@@ -94,7 +94,7 @@ public:
   using iterator_type = _Iter;
 
   using iterator_category =
-    _If<__is_cpp17_random_access_iterator<_Iter>::value,
+    _If<__has_random_access_traversal<_Iter>,
         random_access_iterator_tag,
         typename iterator_traits<_Iter>::iterator_category>;
   using pointer          = typename iterator_traits<_Iter>::pointer;
@@ -368,4 +368,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H

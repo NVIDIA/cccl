@@ -52,8 +52,9 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/__algorithm_>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -102,9 +103,7 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 /**
@@ -551,7 +550,6 @@ struct AgentRadixSortUpsweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

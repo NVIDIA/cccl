@@ -445,3 +445,28 @@ void TestUniqueWithCustomEqualityOp()
 }
 
 DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
+
+template <typename F>
+struct NonConstAdapter
+{
+  F f;
+  NonConstAdapter(const F& func)
+      : f(func)
+  {}
+
+  template <typename... Args>
+  __device__ auto operator()(Args&&... args) -> decltype(f(cuda::std::forward<Args>(args)...))
+  {
+    return f(cuda::std::forward<Args>(args)...);
+  }
+};
+
+void TestUniqueWithCustomEqualityOpMutable()
+{
+  using Vector = thrust::device_vector<int>;
+
+  thrust::device_vector<int> in = {1, 1, 2, 3, 4, 4, 5};
+  thrust::unique(thrust::cuda::par, in.begin(), in.end(), NonConstAdapter(cuda::std::equal_to<>{}));
+}
+
+DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ABSTRACT_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ABSTRACT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_ABSTRACT_H
+#define _CUDA_STD___TYPE_TRAITS_IS_ABSTRACT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,6 +24,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_ABSTRACT(...) __is_abstract(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
@@ -37,4 +39,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ABSTRACT_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_ABSTRACT_H

@@ -3,6 +3,11 @@ if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   return()
 endif()
 
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+  message(STATUS "Skipping ptx-json tests for clang-cuda.")
+  return()
+endif()
+
 set(is_20_available FALSE)
 foreach(cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(dialect ${cub_target} DIALECT)
@@ -64,7 +69,9 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     )
     set_target_properties(${target_name} PROPERTIES
       CUDA_PTX_COMPILATION ON
-      CUDA_ARCHITECTURES 90
+      # Use compute_80 -- CTK 13.0 started running ptxas on 90+, even when just producing PTX.
+      # This breaks the ptx-json stuff, which produces intentionally invalid PTX.
+      CUDA_ARCHITECTURES "80-virtual"
     )
 
     add_test(NAME ${target_name}

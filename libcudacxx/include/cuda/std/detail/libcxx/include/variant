@@ -563,7 +563,7 @@ struct __variant
             class... _OtherVariants,
             enable_if_t<(_Remaining != 0) && (_CurrentVariant == 0), int> = 0>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr size_t
-  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  __get_runtime_index(const _Variant& __v, const _OtherVariants&...) noexcept
   {
     return __v.__impl_.index();
   }
@@ -574,7 +574,7 @@ struct __variant
             class... _OtherVariants,
             enable_if_t<(_Remaining != 0) && (_CurrentVariant != 0), int> = 0>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr size_t
-  __get_runtime_index(const _Variant& __v, const _OtherVariants&... __vs) noexcept
+  __get_runtime_index(const _Variant&, const _OtherVariants&... __vs) noexcept
   {
     return __get_runtime_index<_Remaining, _CurrentVariant - 1>(__vs...);
   }
@@ -995,9 +995,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == _CurrentIndex)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     __generic_construct_impl(
@@ -1010,9 +1011,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == 0)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1027,7 +1029,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API inline static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    __construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
@@ -1500,10 +1502,10 @@ struct __variant_constraints
   template <bool>
   struct __swappable
   {
-    static constexpr bool __is_swappable =
+    static constexpr bool __is_swappable_v =
       __all<(is_move_constructible_v<_Types> && is_swappable_v<_Types>) ...>::value;
 
-    static constexpr bool __is_nothrow_swappable =
+    static constexpr bool __is_nothrow_swappable_v =
       __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_swappable_v<_Types>) ...>::value;
   };
 };
@@ -1679,8 +1681,8 @@ public:
 
   template <bool _Dummy       = true,
             class _Constraint = __swap_constraint<_Dummy>,
-            class             = enable_if_t<_Constraint::__is_swappable>>
-  _CCCL_API inline void swap(variant& __that) noexcept(_Constraint::__is_nothrow_swappable)
+            class             = enable_if_t<_Constraint::__is_swappable_v>>
+  _CCCL_API inline void swap(variant& __that) noexcept(_Constraint::__is_nothrow_swappable_v)
   {
     __impl_.__swap(__that.__impl_);
   }

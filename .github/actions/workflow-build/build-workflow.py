@@ -115,14 +115,23 @@ def error_message_with_matrix_job(matrix_job, message):
 
 
 @memoize_result
+def workflow_exists(workflow_name):
+    return workflow_name in matrix_yaml["workflows"]
+
+
+@memoize_result
 def canonicalize_ctk_version(ctk_string):
     if ctk_string in matrix_yaml["ctk_versions"]:
         return ctk_string
 
-    # Check for aka's:
+    # Check for aliases:
     for ctk_key, ctk_value in matrix_yaml["ctk_versions"].items():
-        if "aka" in ctk_value and ctk_string == ctk_value["aka"]:
-            return ctk_key
+        if "alias" in ctk_value:
+            # Allow a string or list of strings:
+            aliases = ctk_value["alias"]
+            aliases = [aliases] if isinstance(aliases, str) else aliases
+            if ctk_string in aliases:
+                return ctk_key
 
     raise Exception(f"Unknown CTK version '{ctk_string}'")
 
@@ -136,7 +145,19 @@ def get_ctk(ctk_string):
 @memoize_result
 def parse_cxx_string(cxx_string):
     "Returns (id, version) tuple. Version may be None if not present."
-    return re.match(r"^([a-z]+)-?([\d\.]+)?$", cxx_string).groups()
+    # Captures three groups:
+    # 0: The compiler ID (e.g. 'nvhpc' in ['nvhpc', 'nvhpc25.7', 'nvhpc-25.7', 'nvhpc-prev'])
+    # 1: A maybe-hyphenated numeric version suffix (e.g. '10' in ['gcc10', 'gcc-10'])
+    # 2: A hyphenated string alias (e.g. 'prev' in 'nvhpc-prev')
+    #
+    # Either 1, 2, or both may be None.
+    match = re.match(r"^([^\d-]+)(?:(-?[\d\.]+)|-(.+))?$", cxx_string).groups()
+    # Clean up to (id, version):
+    if match[2] is None:
+        return (match[0], match[1])
+    else:
+        return (match[0], match[2])
+    return match
 
 
 @memoize_result
@@ -163,11 +184,15 @@ def canonicalize_host_compiler_name(cxx_string):
             hc_def["versions"].keys(), key=lambda x: tuple(map(int, x.split(".")))
         )
 
-    # Check for aka's:
+    # Check for aliases:
     if version not in hc_def["versions"]:
         for version_key, version_data in hc_def["versions"].items():
-            if "aka" in version_data and version == version_data["aka"]:
-                version = version_key
+            if "alias" in version_data:
+                # Allow a string or list of strings:
+                aliases = version_data["alias"]
+                aliases = [aliases] if isinstance(aliases, str) else aliases
+                if version in aliases:
+                    version = version_key
 
     if version not in hc_def["versions"]:
         raise Exception(f"Unknown version '{version}' for host compiler '{id}'.")
@@ -284,7 +309,11 @@ def get_job_type_info(job):
         result["gpu"] = False
     if "cuda_ext" not in result:
         result["cuda_ext"] = False
-    if "force_producer_ctk" not in result:
+    if "force_producer_ctk" in result:
+        result["force_producer_ctk"] = canonicalize_ctk_version(
+            result["force_producer_ctk"]
+        )
+    else:
         result["force_producer_ctk"] = None
     if "needs" not in result:
         result["needs"] = None
@@ -396,33 +425,38 @@ def generate_dispatch_group_name(matrix_job):
 
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
-    ctk = matrix_job["ctk"]
-    std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
-    py_version = (
-        (", py" + matrix_job["py_version"]) if "py_version" in matrix_job else ""
-    )
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
     cmake_options = (
         (" " + matrix_job["cmake_options"]) if "cmake_options" in matrix_job else ""
     )
-
-    host_compiler = get_host_compiler(matrix_job["cxx"])
-
-    config_tag = f"CTK{ctk} {std_str}{host_compiler['name']}{host_compiler['version']}"
-
-    extra_info = (
-        f":{cuda_compile_arch}{cmake_options}"
-        if cuda_compile_arch or cmake_options
+    extra_args = (
+        (" " + matrix_job["args"])
+        if "args" in matrix_job and matrix_job["args"]
         else ""
     )
 
-    return (
-        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}{py_version}){extra_info}"
+    ctk = matrix_job["ctk"]
+    host_compiler = get_host_compiler(matrix_job["cxx"])
+    std_str = (" C++" + str(matrix_job["std"])) if "std" in matrix_job else ""
+    py_str = (
+        (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
     )
+
+    config_tag = (
+        f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    )
+
+    extra_info = (
+        f":{cuda_compile_arch}{cmake_options}{extra_args}"
+        if cuda_compile_arch or cmake_options or extra_args
+        else ""
+    )
+
+    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -486,6 +520,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+    extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
     if job_args:
@@ -500,6 +535,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+    if extra_args:
+        command += f" {extra_args}"
 
     return command
 
@@ -513,24 +550,33 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
 
+    # Replace the unexploded 'jobs' tag with the current single job type:
+    origin_job["jobs"] = [job_info["id"]]
+
     # The origin tags are used to build the execution summary for the CI PR comment.
     # Use the human readable job label for the execution summary:
-    origin_job["jobs"] = job_info["name"]
+    origin_job["job_name"] = job_info["name"]
+
+    if not job_info["gpu"]:
+        del origin_job["gpu"]
 
     # Replace some of the clunkier tags with a summary-friendly version:
     if "cxx" in origin_job:
         host_compiler = get_host_compiler(matrix_job["cxx"])
         del origin_job["cxx"]
 
-        origin_job["cxx"] = host_compiler["name"] + host_compiler["version"]
+        origin_job["cxx"] = host_compiler["id"] + host_compiler["version"]
         origin_job["cxx_family"] = host_compiler["name"]
 
     if "cudacxx" in origin_job:
         device_compiler = get_device_compiler(matrix_job)
         del origin_job["cudacxx"]
 
-        origin_job["cudacxx"] = device_compiler["name"] + device_compiler["version"]
+        origin_job["cudacxx"] = device_compiler["id"] + device_compiler["version"]
         origin_job["cudacxx_family"] = device_compiler["name"]
+
+    if "args" in origin_job and not origin_job["args"]:
+        del origin_job["args"]
 
     origin["matrix_job"] = origin_job
 
@@ -881,7 +927,7 @@ def get_matrix_job_origin(matrix_job, workflow_name, workflow_location):
 
 @static_result
 def get_excluded_matrix_jobs():
-    return parse_workflow_matrix_jobs(None, "exclude")
+    return parse_workflow_matrix_jobs("exclude")
 
 
 def apply_matrix_job_exclusion(matrix_job, exclusion):
@@ -1093,7 +1139,7 @@ def preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix=False):
     return result
 
 
-def parse_workflow_matrix_jobs(args, workflow_name):
+def parse_workflow_matrix_jobs(workflow_name, filter_projects=None):
     # Special handling for exclusion matrix: don't validate, add default, etc. Only explode.
     is_exclusion_matrix = workflow_name == "exclude"
 
@@ -1124,10 +1170,8 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     # Fill in default values, explode lists.
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
-    if args and args.dirty_projects is not None and workflow_name != "override":
-        matrix_jobs = [
-            job for job in matrix_jobs if job["project"] in args.dirty_projects
-        ]
+    if filter_projects is not None and workflow_name != "override":
+        matrix_jobs = [job for job in matrix_jobs if job["project"] in filter_projects]
 
     # Don't remove excluded jobs if we're currently parsing them:
     if not is_exclusion_matrix:
@@ -1144,9 +1188,26 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
 
 def parse_workflow_dispatch_groups(args, workflow_name):
+    full_build_projects = args.full_build_projects
+    lite_build_projects = args.lite_build_projects
+    lite_workflow_name = f"{workflow_name}_lite"
+
+    # If no lite workflow exists, pull all projects from the full workflow:
+    if (
+        full_build_projects
+        and lite_build_projects
+        and not workflow_exists(lite_workflow_name)
+    ):
+        full_build_projects += lite_build_projects
+        lite_build_projects = []
+
     # Add origin information to each matrix job, explode, filter, add defaults, etc.
     # The resulting matrix_jobs list is a complete and standardized list of jobs for the dispatch_group builder.
-    matrix_jobs = parse_workflow_matrix_jobs(args, workflow_name)
+    matrix_jobs = parse_workflow_matrix_jobs(workflow_name, full_build_projects)
+    if lite_build_projects:
+        matrix_jobs += parse_workflow_matrix_jobs(
+            lite_workflow_name, lite_build_projects
+        )
 
     # If we're printing multiple workflows, add a prefix to the group name to differentiate them.
     group_prefix = f"[{workflow_name}] " if len(args.workflows) > 1 else ""
@@ -1243,6 +1304,9 @@ def print_gha_workflow(args):
 def print_devcontainer_info(args):
     devcontainer_version = matrix_yaml["devcontainer_version"]
 
+    cuda99_gcc_version = matrix_yaml["cuda99_gcc_version"]
+    cuda99_clang_version = matrix_yaml["cuda99_clang_version"]
+
     matrix_jobs = []
 
     # Remove the `exclude` and `override` entries:
@@ -1251,16 +1315,21 @@ def print_devcontainer_info(args):
         key for key in matrix_yaml["workflows"].keys() if key not in ignored_matrix_keys
     ]
     for workflow_name in workflow_names:
-        matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
+        matrix_jobs.extend(parse_workflow_matrix_jobs(workflow_name))
+
+    # Explode jobs to ensure that the cuda_ext tags are correctly handled:
+    exploded_jobs = []
+    for matrix_job in matrix_jobs:
+        exploded_jobs.extend(explode_tags(matrix_job, "jobs"))
+    matrix_jobs = exploded_jobs
 
     # Check if the extended cuda images are needed:
     for matrix_job in matrix_jobs:
         cuda_ext = False
-        for job in matrix_job["jobs"]:
-            job_info = get_job_type_info(job)
-            if job_info["cuda_ext"]:
-                cuda_ext = True
-                break
+        job = matrix_job["jobs"]
+        job_info = get_job_type_info(job)
+        if job_info["cuda_ext"]:
+            cuda_ext = True
         matrix_job["cuda_ext"] = cuda_ext
 
     # Remove all but the following keys from the matrix jobs:
@@ -1285,6 +1354,8 @@ def print_devcontainer_info(args):
 
     devcontainer_json = {
         "devcontainer_version": devcontainer_version,
+        "cuda99_gcc_version": cuda99_gcc_version,
+        "cuda99_clang_version": cuda99_clang_version,
         "combinations": unique_combinations,
     }
 
@@ -1327,7 +1398,18 @@ def main():
         help="Print devcontainer info instead of GHA workflows.",
     )
     parser.add_argument(
-        "--dirty-projects", nargs="*", help="Filter jobs to only these projects"
+        "--full-build-projects",
+        nargs="*",
+        help="Run jobs in the requested workflows for these projects.",
+    )
+    parser.add_argument(
+        "--lite-build-projects",
+        nargs="*",
+        help=(
+            "If a '_lite' version of a workflow exists, run jobs in that workflow for these projects. "
+            "Otherwise use the full workflow. Used to reduce testing for unchanged projects with "
+            "modified dependencies."
+        ),
     )
     parser.add_argument(
         "--allow-override",

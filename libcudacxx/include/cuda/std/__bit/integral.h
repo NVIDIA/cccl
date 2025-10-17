@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_INTEGRAL_H
-#define _LIBCUDACXX___BIT_INTEGRAL_H
+#ifndef _CUDA_STD___BIT_INTEGRAL_H
+#define _CUDA_STD___BIT_INTEGRAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/bfind.h>
-#include <cuda/__ptx/instructions/shl.h>
-#include <cuda/__ptx/instructions/shr.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/bfind.h>
+#  include <cuda/__ptx/instructions/shl.h>
+#  include <cuda/__ptx/instructions/shr.h>
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -121,4 +123,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_INTEGRAL_H
+#endif // _CUDA_STD___BIT_INTEGRAL_H

@@ -76,13 +76,13 @@ public:
     return false;
   }
 
-private:
   static int next_id()
   {
     static ::std::atomic<int> id = 0;
     return id++;
   }
 
+private:
   int _value = next_id();
 };
 

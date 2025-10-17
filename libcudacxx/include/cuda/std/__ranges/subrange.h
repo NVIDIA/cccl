@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_SUBRANGE_H
-#define _LIBCUDACXX___RANGES_SUBRANGE_H
+#ifndef _CUDA_STD___RANGES_SUBRANGE_H
+#define _CUDA_STD___RANGES_SUBRANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -510,4 +510,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_SUBRANGE_H
+#endif // _CUDA_STD___RANGES_SUBRANGE_H

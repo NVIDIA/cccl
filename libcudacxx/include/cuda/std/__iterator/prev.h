@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_PREV_H
-#define _LIBCUDACXX___ITERATOR_PREV_H
+#ifndef _CUDA_STD___ITERATOR_PREV_H
+#define _CUDA_STD___ITERATOR_PREV_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,12 +32,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _InputIter)
-_CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
+_CCCL_REQUIRES(__has_input_traversal<_InputIter>)
 [[nodiscard]] _CCCL_API constexpr _InputIter
 prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
-  _CCCL_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-               "Attempt to prev(it, +n) on a non-bidi iterator");
+  _CCCL_ASSERT(__n <= 0 || __has_bidirectional_traversal<_InputIter>, "Attempt to prev(it, +n) on a non-bidi iterator");
   ::cuda::std::advance(__x, -__n);
   return __x;
 }
@@ -88,4 +87,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_PREV_H
+#endif // _CUDA_STD___ITERATOR_PREV_H

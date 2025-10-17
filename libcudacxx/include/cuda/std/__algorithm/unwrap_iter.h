@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_UNWRAP_ITER_H
-#define _LIBCUDACXX___ALGORITHM_UNWRAP_ITER_H
+#ifndef _CUDA_STD___ALGORITHM_UNWRAP_ITER_H
+#define _CUDA_STD___ALGORITHM_UNWRAP_ITER_H
 
 #include <cuda/std/detail/__config>
 
@@ -41,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // "unwrapped" result back into the original iterator type. Doing that is the job of __rewrap_iter.
 
 // Default case - we can't unwrap anything
-template <class _Iter, bool = __is_cpp17_contiguous_iterator<_Iter>::value>
+template <class _Iter, bool = __has_contiguous_traversal<_Iter>>
 struct __unwrap_iter_impl
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -75,7 +75,7 @@ struct __unwrap_iter_impl<_Iter, true>
   }
 };
 
-template <class _Iter, class _Impl = __unwrap_iter_impl<_Iter>, enable_if_t<is_copy_constructible<_Iter>::value, int> = 0>
+template <class _Iter, class _Impl = __unwrap_iter_impl<_Iter>, enable_if_t<is_copy_constructible_v<_Iter>, int> = 0>
 _CCCL_API constexpr decltype(_Impl::__unwrap(::cuda::std::declval<_Iter>())) __unwrap_iter(_Iter __i) noexcept
 {
   return _Impl::__unwrap(__i);
@@ -92,4 +92,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_UNWRAP_ITER_H
+#endif // _CUDA_STD___ALGORITHM_UNWRAP_ITER_H

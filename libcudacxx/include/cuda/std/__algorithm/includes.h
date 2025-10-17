@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_INCLUDES_H
-#define _LIBCUDACXX___ALGORITHM_INCLUDES_H
+#ifndef _CUDA_STD___ALGORITHM_INCLUDES_H
+#define _CUDA_STD___ALGORITHM_INCLUDES_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,13 +40,11 @@ _CCCL_API constexpr bool __includes(
   for (; __first2 != __last2; ++__first1)
   {
     if (__first1 == __last1
-        || ::cuda::std::__invoke(
-          __comp, ::cuda::std::__invoke(__proj2, *__first2), ::cuda::std::__invoke(__proj1, *__first1)))
+        || ::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj2, *__first2), ::cuda::std::invoke(__proj1, *__first1)))
     {
       return false;
     }
-    if (!::cuda::std::__invoke(
-          __comp, ::cuda::std::__invoke(__proj1, *__first1), ::cuda::std::__invoke(__proj2, *__first2)))
+    if (!::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj1, *__first1), ::cuda::std::invoke(__proj2, *__first2)))
     {
       ++__first2;
     }
@@ -89,4 +87,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_INCLUDES_H
+#endif // _CUDA_STD___ALGORITHM_INCLUDES_H

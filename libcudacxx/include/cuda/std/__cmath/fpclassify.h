@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_FPCLASSIFY_H
-#define _LIBCUDACXX___CMATH_FPCLASSIFY_H
+#ifndef _CUDA_STD___CMATH_FPCLASSIFY_H
+#define _CUDA_STD___CMATH_FPCLASSIFY_H
 
 #include <cuda/std/detail/__config>
 
@@ -55,6 +55,21 @@
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ ^/  vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <math.h>
 #endif // !_CCCL_COMPILER(NVRTC)
+
+#ifndef FP_ILOGB0
+#  define FP_ILOGB0 (-INT_MAX - 1)
+#  define FP_LLOGB0 (-LONG_MAX - 1)
+#endif // !FP_ILOGB0
+
+#ifndef FP_ILOGBNAN
+#  ifdef __FP_LOGBNAN_MIN
+#    define FP_ILOGBNAN (-INT_MAX - 1)
+#    define FP_LLOGBNAN (-LONG_MAX - 1)
+#  else // ^^^ __FP_LOGBNAN_MIN ^^^ / vvv !__FP_LOGBNAN_MIN vvv
+#    define FP_ILOGBNAN INT_MAX
+#    define FP_LLOGBNAN LONG_MAX
+#  endif // !__FP_LOGBNAN_MIN
+#endif // !FP_ILOGBNAN
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -213,4 +228,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_FPCLASSIFY_H
+#endif // _CUDA_STD___CMATH_FPCLASSIFY_H

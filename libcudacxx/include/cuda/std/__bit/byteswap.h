@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_BYTESWAP_H
-#define _LIBCUDACXX___BIT_BYTESWAP_H
+#ifndef _CUDA_STD___BIT_BYTESWAP_H
+#define _CUDA_STD___BIT_BYTESWAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/prmt.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/prmt.h>
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -180,4 +182,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_BYTESWAP_H
+#endif // _CUDA_STD___BIT_BYTESWAP_H

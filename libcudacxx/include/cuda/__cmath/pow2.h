@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CMATH_POW2
-#define _CUDA___CMATH_POW2
+#ifndef _CUDA___CMATH_POW2_H
+#define _CUDA___CMATH_POW2_H
 
 #include <cuda/std/detail/__config>
 
@@ -71,4 +71,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___CMATH_POW2
+#endif // _CUDA___CMATH_POW2_H

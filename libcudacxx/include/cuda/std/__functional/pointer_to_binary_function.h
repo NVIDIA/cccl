@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg1, class _Arg2, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED
 pointer_to_binary_function : public __binary_function<_Arg1, _Arg2, _Result>
 {
   _Result (*__f_)(_Arg1, _Arg2);
@@ -48,8 +48,7 @@ public:
 };
 
 template <class _Arg1, class _Arg2, class _Result>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline pointer_to_binary_function<_Arg1, _Arg2, _Result>
-ptr_fun(_Result (*__f)(_Arg1, _Arg2))
+CCCL_DEPRECATED _CCCL_API inline pointer_to_binary_function<_Arg1, _Arg2, _Result> ptr_fun(_Result (*__f)(_Arg1, _Arg2))
 {
   return pointer_to_binary_function<_Arg1, _Arg2, _Result>(__f);
 }
@@ -62,4 +61,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_POINTER_TO_BINARY_FUNCTION_H

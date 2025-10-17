@@ -50,11 +50,17 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -120,9 +126,7 @@ struct AgentSelectIfPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace select
+namespace detail::select
 {
 
 template <typename EqualityOpT>
@@ -131,8 +135,24 @@ struct guarded_inequality_op
   EqualityOpT op;
   int num_remaining;
 
-  template <typename T>
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<EqualityOpT&, const T&, const T&>, int> = 0>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) noexcept(
+    ::cuda::std::__is_nothrow_callable_v<EqualityOpT&, const T&, const T&>)
+  {
+    if (idx < num_remaining)
+    {
+      return !op(a, b); // In bounds
+    }
+
+    // Flag out-of-bounds items as selected (as they are discounted for in the agent implementation)
+    return true;
+  }
+
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<const EqualityOpT&, const T&, const T&>, int> = 0>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+    noexcept(::cuda::std::__is_nothrow_callable_v<const EqualityOpT&, const T&, const T&>)
   {
     if (idx < num_remaining)
     {
@@ -1092,7 +1112,6 @@ struct AgentSelectIf
   }
 };
 
-} // namespace select
-} // namespace detail
+} // namespace detail::select
 
 CUB_NAMESPACE_END

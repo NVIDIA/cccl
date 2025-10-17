@@ -20,7 +20,6 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
@@ -31,9 +30,10 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/cmath>
-#include <cuda/std/functional> // ::cuda::std::identity
-#include <cuda/std/iterator> // ::cuda::std::iter_value_t
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 
 CUB_NAMESPACE_BEGIN
 

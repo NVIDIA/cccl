@@ -6,18 +6,17 @@
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/sort.h>
+
+#include <cuda/iterator>
 
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
 #  define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
 #  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
 #    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
 #  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
 #    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
 #  endif // TUNE_TRANSPOSE
 
@@ -37,7 +36,6 @@ struct policy_hub_t
     using merge_policy =
       cub::agent_policy_t<TUNE_THREADS_PER_BLOCK,
                           cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
-                          TUNE_LOAD_ALGORITHM,
                           TUNE_LOAD_MODIFIER,
                           TUNE_STORE_ALGORITHM>;
   };
@@ -108,7 +106,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
     counting_it,
     counting_it + elements,
     rnd_selector_val.begin(),
-    thrust::make_tabulate_output_iterator(write_pivot_point_t<offset_t>{
+    cuda::make_tabulate_output_iterator(write_pivot_point_t<offset_t>{
       static_cast<offset_t>(num_items_lhs), thrust::raw_pointer_cast(pivot_point.data())}),
     select_lhs_op);
 

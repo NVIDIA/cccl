@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___EXCEPTION_CUDA_ERROR_H
-#define _LIBCUDACXX___EXCEPTION_CUDA_ERROR_H
+#ifndef _CUDA_STD___EXCEPTION_CUDA_ERROR_H
+#define _CUDA_STD___EXCEPTION_CUDA_ERROR_H
 
 #include <cuda/std/detail/__config>
 
@@ -109,10 +109,7 @@ private:
   [[maybe_unused]] const char* __api                  = nullptr,
   [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (::cudaGetLastError(); // clear CUDA error state
-                     throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
-                    (::cuda::std::terminate();))
+  NV_IF_TARGET(NV_IS_HOST, (throw ::cuda::cuda_error(__status, __msg, __api, __loc);), (::cuda::std::terminate();))
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 class cuda_error
@@ -139,4 +136,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXCEPTION_CUDA_ERROR_H
+#endif // _CUDA_STD___EXCEPTION_CUDA_ERROR_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_API_REFERENCE_H
-#define __LIBCUDACXX___ATOMIC_API_REFERENCE_H
+#ifndef __CUDA_STD___ATOMIC_API_REFERENCE_H
+#define __CUDA_STD___ATOMIC_API_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -103,11 +103,11 @@ struct __atomic_ref_pointer
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
 using __atomic_ref_impl =
-  _If<is_pointer<_Tp>::value,
+  _If<is_pointer_v<_Tp>,
       __atomic_ref_pointer<_Tp, __scope_to_tag<_Sco>>,
-      _If<is_floating_point<_Tp>::value,
+      _If<is_floating_point_v<_Tp>,
           __atomic_ref_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-          _If<is_integral<_Tp>::value,
+          _If<is_integral_v<_Tp>,
               __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
               __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
@@ -115,4 +115,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_API_REFERENCE_H
+#endif // __CUDA_STD___ATOMIC_API_REFERENCE_H

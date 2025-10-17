@@ -49,8 +49,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -98,9 +100,7 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
-{
-namespace radix_sort
+namespace detail::radix_sort
 {
 
 template <typename AgentRadixSortOnesweepPolicy,
@@ -698,7 +698,6 @@ struct AgentRadixSortOnesweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

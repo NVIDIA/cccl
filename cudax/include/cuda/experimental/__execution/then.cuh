@@ -140,7 +140,7 @@ struct __upon_t
     }
 
     template <class _Tag, class... _Ts>
-    _CCCL_NODEBUG_API void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CCCL_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_Tag{} == _SetTag{})
       {
@@ -227,13 +227,13 @@ struct __upon_t
                                                        // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_API constexpr auto operator()(_Sndr __sndr) -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+    _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
       -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
@@ -244,10 +244,10 @@ struct __upon_t
 
 public:
   template <class _Sndr, class _Fn>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  _CCCL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const;
+  _CCCL_API constexpr auto operator()(_Fn __fn) const;
 };
 
 struct then_t : __upon_t<then_t, set_value_t>
@@ -330,7 +330,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __upon_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __upon_tag_t __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
 };
@@ -365,10 +365,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__closure_t
 
 template <class _UponTag, class _SetTag>
 template <class _Sndr, class _Fn>
-_CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+_CCCL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __sndr_t   = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
-  using __domain_t = __early_domain_of_t<_Sndr>;
+  using __sndr_t = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
 
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -377,12 +376,12 @@ _CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr _
     __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
   }
 
-  return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
+  return __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}};
 }
 
 template <class _UponTag, class _SetTag>
 template <class _Fn>
-_CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
+_CCCL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
 {
   using __closure_t = typename _UponTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
-#define _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
+#ifndef _CUDA_STD___MEMORY_CONSTRUCT_AT_H
+#define _CUDA_STD___MEMORY_CONSTRUCT_AT_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,9 +43,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  if !_CCCL_COMPILER(NVRTC)
-#    include <memory>
-#  endif // _CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/memory_wrapper.h>
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
@@ -245,4 +243,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
+#endif // _CUDA_STD___MEMORY_CONSTRUCT_AT_H

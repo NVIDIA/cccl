@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
-#define _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#define _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,7 +47,7 @@ using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
+using _BoolConstant CCCL_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
 
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;
@@ -59,4 +59,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#endif // _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H

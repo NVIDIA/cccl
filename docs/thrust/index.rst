@@ -8,10 +8,9 @@ Thrust
    :maxdepth: 2
 
    Overview <self>
-   developer_cmake_options
+   developer_overview
    releases
    release_process
-   api
    API documentation <api>
    API reference <api/index>
 

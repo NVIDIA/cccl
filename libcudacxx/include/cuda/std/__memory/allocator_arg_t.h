@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
-#define _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#ifndef _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#define _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@ struct __uses_alloc_ctor_imp
 {
   using _RawAlloc _CCCL_NODEBUG_ALIAS = remove_cvref_t<_Alloc>;
   static const bool __ua              = uses_allocator<_Tp, _RawAlloc>::value;
-  static const bool __ic              = is_constructible<_Tp, allocator_arg_t, _Alloc, _Args...>::value;
+  static const bool __ic              = is_constructible_v<_Tp, allocator_arg_t, _Alloc, _Args...>;
   static const int value              = __ua ? 2 - __ic : 0;
 };
 
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#endif // _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H

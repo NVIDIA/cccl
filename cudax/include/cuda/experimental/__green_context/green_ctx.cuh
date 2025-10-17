@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX
-#define _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
+#define _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
 
 #include <cuda/__cccl_config>
 
@@ -31,6 +31,13 @@
 #if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+//! @brief A unique identifier for a green context.
+enum class green_context_id : unsigned long long
+{
+};
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 struct green_context
 {
@@ -61,6 +68,13 @@ struct green_context
     return green_context(__id, __gctx, __transformed);
   }
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  [[nodiscard]] _CCCL_HOST_API green_context_id id() const
+  {
+    return green_context_id{_CUDA_DRIVER::__greenCtxGetId(__green_ctx)};
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
   [[nodiscard]] CUgreenCtx release() noexcept
   {
     __transformed = nullptr;
@@ -90,4 +104,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH

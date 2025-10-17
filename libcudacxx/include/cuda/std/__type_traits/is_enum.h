@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ENUM_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ENUM_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_ENUM_H
+#define _CUDA_STD___TYPE_TRAITS_IS_ENUM_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,48 +21,22 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_class.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_member_pointer.h>
-#include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_union.h>
-#include <cuda/std/__type_traits/is_void.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_ENUM(...) __is_enum(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum : public integral_constant<bool, _CCCL_BUILTIN_IS_ENUM(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum : bool_constant<_CCCL_BUILTIN_IS_ENUM(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_enum_v = _CCCL_BUILTIN_IS_ENUM(_Tp);
 
-#else
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum
-    : public integral_constant<
-        bool,
-        !is_void<_Tp>::value && !is_integral<_Tp>::value && !is_floating_point<_Tp>::value && !is_array<_Tp>::value
-          && !is_pointer<_Tp>::value && !is_reference<_Tp>::value && !is_member_pointer<_Tp>::value
-          && !is_union<_Tp>::value && !is_class<_Tp>::value && !is_function<_Tp>::value>
-{};
-
-template <class _Tp>
-inline constexpr bool is_enum_v = is_enum<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ENUM_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_ENUM_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H
-#define _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H
+#ifndef _CUDA_STD___ALGORITHM_UPPER_BOUND_H
+#define _CUDA_STD___ALGORITHM_UPPER_BOUND_H
 
 #include <cuda/std/detail/__config>
 
@@ -45,7 +45,7 @@ __upper_bound(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   {
     auto __half_len = ::cuda::std::__half_positive(__len);
     auto __mid      = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
+    if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {
       __len = __half_len;
     }
@@ -63,7 +63,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
-  static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
+  static_assert(is_copy_constructible_v<_ForwardIterator>, "Iterator has to be copy constructible");
   return ::cuda::std::__upper_bound<_ClassicAlgPolicy>(
     ::cuda::std::move(__first), ::cuda::std::move(__last), __value, ::cuda::std::move(__comp), ::cuda::std::identity());
 }
@@ -80,4 +80,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H
+#endif // _CUDA_STD___ALGORITHM_UPPER_BOUND_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,8 +22,8 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 
+#  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/chrono>
 #  include <cuda/std/climits>
 #  include <cuda/std/ctime>
 
@@ -140,4 +140,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // !_LIBCUDACXX_HAS_THREAD_API_PTHREAD
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H

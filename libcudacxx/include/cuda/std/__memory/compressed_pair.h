@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
-#define _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
+#ifndef _CUDA_STD___MEMORY_COMPRESSED_PAIR_H
+#define _CUDA_STD___MEMORY_COMPRESSED_PAIR_H
 
 #include <cuda/std/detail/__config>
 
@@ -203,7 +203,7 @@ public:
   }
 
   _CCCL_API constexpr void
-  swap(__compressed_pair& __x) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
+  swap(__compressed_pair& __x) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
     swap(first(), __x.first());
@@ -213,7 +213,7 @@ public:
 
 template <class _T1, class _T2>
 _CCCL_API constexpr void swap(__compressed_pair<_T1, _T2>& __x, __compressed_pair<_T1, _T2>& __y) noexcept(
-  __is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
+  is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
 {
   __x.swap(__y);
 }
@@ -222,4 +222,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
+#endif // _CUDA_STD___MEMORY_COMPRESSED_PAIR_H

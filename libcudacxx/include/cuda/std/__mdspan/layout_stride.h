@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
-#define _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
+#ifndef _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H
+#define _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H
 
 #include <cuda/std/detail/__config>
 
@@ -76,7 +76,7 @@ class layout_stride::mapping
                             __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
-  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "layout_stride::mapping template argument must be a specialization of extents.");
 
   using extents_type = _Extents;
@@ -602,4 +602,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
+#endif // _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H

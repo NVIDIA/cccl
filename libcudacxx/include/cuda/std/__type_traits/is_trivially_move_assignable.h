@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,39 +22,24 @@
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/add_rvalue_reference.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_assignable.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
-
 template <class _Tp>
 struct is_trivially_move_assignable
-    : public integral_constant<
-        bool,
-        _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>)>
+    : bool_constant<_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_trivially_move_assignable_v =
   _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>);
 
-#else
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_trivially_move_assignable : public is_trivially_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
-{};
-
-template <class _Tp>
-inline constexpr bool is_trivially_move_assignable_v = is_trivially_move_assignable<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_ASSIGNABLE_H

@@ -88,6 +88,14 @@
 #define _CCCL_PP_RBRACE()       }
 #define _CCCL_PP_COMMA_IIF(_Xp) _CCCL_PP_IIF(_Xp)(_CCCL_PP_COMMA, _CCCL_PP_EMPTY)()
 
+#define _CCCL_PP_CASE(ARG) _CCCL_PP_PROBE_N(~, ARG)
+#define _CCCL_PP_SWITCH(PREFIX, ...) \
+  _CCCL_PP_CAT(PREFIX##_CASE_, _CCCP_PP_CASE_LABEL_(PREFIX, __VA_ARGS__))(__VA_ARGS__)
+#define _CCCL_PP_SWITCH2(PREFIX, ...) \
+  _CCCL_PP_CAT(PREFIX##_CASE_, _CCCP_PP_CASE_LABEL_(PREFIX, __VA_ARGS__))(__VA_ARGS__)
+#define _CCCP_PP_CASE_LABEL_(PREFIX, ...) \
+  _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT(PREFIX##_SWITCH_, _CCCL_PP_FIRST(__VA_ARGS__)), DEFAULT, )
+
 #define _CCCL_PP_FOR_EACH(_Mp, ...)                          _CCCL_PP_FOR_EACH_N(_CCCL_PP_COUNT(__VA_ARGS__), _Mp, __VA_ARGS__)
 #define _CCCL_PP_FOR_EACH_N(_Np, _Mp, ...)                   _CCCL_PP_CAT2(_CCCL_PP_FOR_EACH_, _Np)(_Mp, __VA_ARGS__)
 #define _CCCL_PP_FOR_EACH_1(_Mp, _1)                         _Mp(_1)
@@ -99,6 +107,8 @@
 #define _CCCL_PP_FOR_EACH_7(_Mp, _1, _2, _3, _4, _5, _6, _7) _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7)
 #define _CCCL_PP_FOR_EACH_8(_Mp, _1, _2, _3, _4, _5, _6, _7, _8) \
   _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8)
+#define _CCCL_PP_FOR_EACH_9(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9)
 
 #define _CCCL_PP_PROBE_EMPTY_PROBE__CCCL_PP_PROBE_EMPTY _CCCL_PP_PROBE(~)
 

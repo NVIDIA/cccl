@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SAME_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SAME_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,16 +24,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_IS_SAME_AS(...) __is_same_as(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_same_as) || _CCCL_COMPILER(GCC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_SAME_AS)
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up)>
 {};
 
 template <class _Tp, class _Up>
-inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
+inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up);
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
 // is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
@@ -43,18 +47,18 @@ inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = bool_constant<_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>;
+using _IsSame = bool_constant<_CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up)>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>;
+using _IsNotSame = bool_constant<!_CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up)>;
 
-#else
+#else // ^^^ _CCCL_BUILTIN_IS_SAME_AS ^^^ / vvv !_CCCL_BUILTIN_IS_SAME_AS vvv
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : false_type
 {};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : true_type
 {};
 
 template <class _Tp, class _Up>
@@ -75,10 +79,10 @@ using _IsSame = bool_constant<is_same_v<_Tp, _Up>>;
 template <class _Tp, class _Up>
 using _IsNotSame = bool_constant<!is_same_v<_Tp, _Up>>;
 
-#endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_IS_SAME_AS ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SAME_H

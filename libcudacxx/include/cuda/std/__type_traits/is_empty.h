@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_EMPTY_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_EMPTY_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_EMPTY_H
+#define _CUDA_STD___TYPE_TRAITS_IS_EMPTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,53 +21,22 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_class.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_EMPTY(...) __is_empty(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_EMPTY) && !defined(_LIBCUDACXX_USE_IS_EMPTY_FALLBACK)
-
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public integral_constant<bool, _CCCL_BUILTIN_IS_EMPTY(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : bool_constant<_CCCL_BUILTIN_IS_EMPTY(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_empty_v = _CCCL_BUILTIN_IS_EMPTY(_Tp);
 
-#else
-
-template <class _Tp>
-struct __is_empty1 : public _Tp
-{
-  double __lx;
-};
-
-struct __is_empty2
-{
-  double __lx;
-};
-
-template <class _Tp, bool = is_class_v<_Tp>>
-struct __cccl_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
-{};
-
-template <class _Tp>
-struct __cccl_empty<_Tp, false> : public false_type
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __cccl_empty<_Tp>
-{};
-
-template <class _Tp>
-inline constexpr bool is_empty_v = is_empty<_Tp>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_EMPTY) && !defined(_LIBCUDACXX_USE_IS_EMPTY_FALLBACK)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_EMPTY_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_EMPTY_H

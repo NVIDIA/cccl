@@ -6,8 +6,6 @@
 #include <cmath>
 #include <iostream>
 
-#include "include/host_device.h"
-
 // The technique demonstrated in the example monte_carlo.cu
 // assigns an independently seeded random number generator to each
 // of 30K threads, and uses a hashing scheme based on thread index to
@@ -75,11 +73,7 @@ int main()
   int M = 30000;
 
   float estimate = thrust::transform_reduce(
-    thrust::counting_iterator<int>(0),
-    thrust::counting_iterator<int>(M),
-    estimate_pi(),
-    0.0f,
-    ::cuda::std::plus<float>());
+    thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
   estimate /= M;
 
   std::cout << "pi is around " << estimate << std::endl;

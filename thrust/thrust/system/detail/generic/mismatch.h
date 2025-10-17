@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
@@ -47,9 +43,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
   InputIterator2 first2,
   BinaryPredicate pred);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/mismatch.inl>

@@ -1,6 +1,8 @@
 # Libcudacxx's main lit tests
 add_subdirectory(libcudacxx)
 
+add_subdirectory(cmake)
+
 # Set appropriate warning levels for MSVC/sane
 if("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
   # CUDA 11.5 and down do not support '-use-local-env'
@@ -26,15 +28,6 @@ if(MSVC)
 else()
   set(headertest_warning_levels_host -Wall -Werror)
 endif()
-
-# Libcudacxx auto-generated internal header tests
-add_subdirectory(internal_headers)
-
-# Libcudacxx auto-generated public header tests
-add_subdirectory(public_headers)
-
-# Libcudacxx auto-generated public header as std tests
-add_subdirectory(public_headers_host_only)
 
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)

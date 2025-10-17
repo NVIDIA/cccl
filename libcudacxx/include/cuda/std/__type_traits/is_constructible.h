@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,7 +52,7 @@ struct __cccl_is_constructible;
 template <class _To, class _From>
 struct __is_invalid_base_to_derived_cast
 {
-  static_assert(is_reference<_To>::value, "Wrong specialization");
+  static_assert(is_reference_v<_To>, "Wrong specialization");
   using _RawFrom = remove_cvref_t<_From>;
   using _RawTo   = remove_cvref_t<_To>;
   static const bool value =
@@ -62,7 +62,7 @@ struct __is_invalid_base_to_derived_cast
 template <class _To, class _From>
 struct __is_invalid_lvalue_to_rvalue_cast : false_type
 {
-  static_assert(is_reference<_To>::value, "Wrong specialization");
+  static_assert(is_reference_v<_To>, "Wrong specialization");
 };
 
 template <class _ToRef, class _FromRef>
@@ -107,7 +107,7 @@ struct __is_constructible_helper
   _CCCL_API inline static false_type __test_unary(...);
 };
 
-template <class _Tp, bool = is_void<_Tp>::value>
+template <class _Tp, bool = is_void_v<_Tp>>
 struct __is_default_constructible : decltype(__is_constructible_helper::__test_nary<_Tp>(0))
 {};
 
@@ -171,4 +171,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H

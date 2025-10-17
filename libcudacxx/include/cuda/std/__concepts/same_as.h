@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_SAME_AS_H
-#define _LIBCUDACXX___CONCEPTS_SAME_AS_H
+#ifndef _CUDA_STD___CONCEPTS_SAME_AS_H
+#define _CUDA_STD___CONCEPTS_SAME_AS_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,13 +30,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // [concept.same]
 
 template <class _Tp, class _Up>
-_CCCL_CONCEPT __same_as_impl = _IsSame<_Tp, _Up>::value;
-
-template <class _Tp, class _Up>
-_CCCL_CONCEPT same_as = __same_as_impl<_Tp, _Up> && __same_as_impl<_Up, _Tp>;
+_CCCL_CONCEPT same_as = is_same_v<_Tp, _Up> && is_same_v<_Up, _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_SAME_AS_H
+#endif // _CUDA_STD___CONCEPTS_SAME_AS_H

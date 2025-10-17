@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_EXTENTS_HPP
-#define _LIBCUDACXX___MDSPAN_EXTENTS_HPP
+#ifndef _CUDA_STD___MDSPAN_EXTENTS_H
+#define _CUDA_STD___MDSPAN_EXTENTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -281,6 +281,9 @@ public:
     return _StaticValues::__get(__i);
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+
   [[nodiscard]] _CCCL_API constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
@@ -293,7 +296,10 @@ public:
            : static_cast<_TDynamic>(__static_val);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _TDynamic operator[](size_t __i) const
+  _CCCL_DIAG_POP // MSVC(4702) Unreachable code
+
+    [[nodiscard]] _CCCL_API constexpr _TDynamic
+    operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -686,9 +692,10 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 namespace __mdspan_detail
 {
 
+//! NOTE we define __is_extents_v through __is_extents because nvrtc fails otherwise.
+//! Specializing __is_extents_v is valid, because all other cases remain as false
 template <class _IndexType, size_t... _ExtentsPack>
-struct __is_extents<extents<_IndexType, _ExtentsPack...>> : true_type
-{};
+inline constexpr bool __is_extents_v<extents<_IndexType, _ExtentsPack...>> = true;
 
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
@@ -754,4 +761,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_EXTENTS_H
+#endif // _CUDA_STD___MDSPAN_EXTENTS_H

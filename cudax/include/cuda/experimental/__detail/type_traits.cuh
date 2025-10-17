@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -34,21 +35,51 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+using ::cuda::std::__declfn_t;
+using ::cuda::std::decay_t;
+
+template <class _Ty, bool _Nothrow = true>
+[[noreturn]] _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty
+{
+  _CCCL_ASSERT(false, "__declfn should never be called at runtime.");
+  _CCCL_UNREACHABLE();
+}
+
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
 
-using ::cuda::std::decay_t;
+template <class _Ty, class _Uy>
+_CCCL_CONCEPT __not_same_as = !::cuda::std::_IsSame<_Ty, _Uy>::value;
+
+template <class _Ty, class... _Us>
+_CCCL_CONCEPT __one_of = (__same_as<_Ty, _Us> || ...);
+
+template <class _Ty, class... _Us>
+_CCCL_CONCEPT __none_of = (__not_same_as<_Ty, _Us> && ...);
+
+#if _CCCL_HAS_CONCEPTS()
+
+template <template <class...> class _Fn, class... _Ts>
+_CCCL_CONCEPT __is_instantiable_with = requires { typename _Fn<_Ts...>; };
+
+template <class _Fn, class... _As>
+_CCCL_CONCEPT __callable = requires(__declfn_t<_Fn> __fn, __declfn_t<_As>... __as) { __fn()(__as()...); };
+
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <template <class...> class _Fn, class... _Ts>
 _CCCL_CONCEPT __is_instantiable_with = ::cuda::std::_IsValidExpansion<_Fn, _Ts...>::value;
 
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __callable = ::cuda::std::__is_callable_v<_Fn, _As...>;
+
+#endif // !_CCCL_HAS_CONCEPTS()
 
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __constructible = ::cuda::std::is_constructible_v<_Fn, _As...>;

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM
-#define _CUDAX__STREAM_STREAM
+#ifndef _CUDAX__STREAM_STREAM_CUH
+#define _CUDAX__STREAM_STREAM_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -159,4 +159,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM
+#endif // _CUDAX__STREAM_STREAM_CUH

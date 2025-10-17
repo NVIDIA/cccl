@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_INVOCABLE_H
-#define _LIBCUDACXX___CONCEPTS_INVOCABLE_H
+#ifndef _CUDA_STD___CONCEPTS_INVOCABLE_H
+#define _CUDA_STD___CONCEPTS_INVOCABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,8 +35,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Fn, class... _Args>
 concept invocable = requires(_Fn&& __fn, _Args&&... __args) {
-  ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...); // not required to be
-                                                                                                  // equality preserving
+  ::cuda::std::invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...); // not required to be
+                                                                                                // equality preserving
 };
 
 // [concept.regular.invocable]
@@ -77,4 +77,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_INVOCABLE_H
+#endif // _CUDA_STD___CONCEPTS_INVOCABLE_H

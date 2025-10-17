@@ -2,6 +2,10 @@ cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
 
+if (cudax_ENABLE_CUFILE)
+  find_package(CUDAToolkit REQUIRED)
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -25,6 +29,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
+    cudart
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -78,18 +83,20 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_continues_on.cu
     execution/test_just.cu
     execution/test_let_value.cu
-    #execution/test_on.cu
+    execution/test_on.cu
     execution/test_sequence.cu
     execution/test_starts_on.cu
-    #execution/test_stream_context.cu
+    execution/test_stream_context.cu
     execution/test_then.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
     execution/test_write_env.cu
   )
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
+
+  target_compile_options(${test_target} PRIVATE
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-allow-unsupported-compiler>
+  )
 
   # The stream context needs atomic wait/notify, which is only available on sm70 and
   # above.
@@ -124,7 +131,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target cuco ${cn_target}
-    cuco/utility/hash_test.cu
+    cuco/utility/test_hashers.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
@@ -141,11 +148,33 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     green_context/green_ctx_smoke.cu
   )
 
+  cudax_add_catch2_test(test_target kernel ${cn_target}
+    kernel/kernel_ref.cu
+  )
+
+  cudax_add_catch2_test(test_target library_ref ${cn_target}
+    library/library_ref.cu
+  )
+
+  cudax_add_catch2_test(test_target library ${cn_target}
+    library/library.cu
+  )
+
   cudax_add_catch2_test(test_target algorithm ${cn_target}
     algorithm/fill.cu
     algorithm/copy.cu
   )
 
+  if (cudax_ENABLE_CUFILE)
+    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
+      cufile/driver.cu
+    )
+
+    set(cufile_test_targets ${cufile_driver_target})
+    foreach(cufile_test_target IN LISTS cufile_test_targets)
+      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
+    endforeach()
+  endif()
 endforeach()
 
 # FIXME: Enable MSVC

@@ -40,12 +40,12 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/block/block_load.cuh>
 #  include <cub/device/device_reduce.cuh>
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
@@ -55,9 +55,10 @@
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/iterator>
 

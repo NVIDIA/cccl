@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_MEM_FUN_REF_H
-#define _LIBCUDACXX___FUNCTIONAL_MEM_FUN_REF_H
+#ifndef _CUDA_STD___FUNCTIONAL_MEM_FUN_REF_H
+#define _CUDA_STD___FUNCTIONAL_MEM_FUN_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Sp, class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun_t : public __unary_function<_Tp*, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED mem_fun_t : public __unary_function<_Tp*, _Sp>
 {
   _Sp (_Tp::*__p_)();
 
@@ -48,7 +48,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun1_t : public __binary_function<_Tp*, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED mem_fun1_t : public __binary_function<_Tp*, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap);
 
@@ -63,19 +63,19 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
+CCCL_DEPRECATED _CCCL_API inline mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
 {
   return mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
+CCCL_DEPRECATED _CCCL_API inline mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun_ref_t : public __unary_function<_Tp, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED mem_fun_ref_t : public __unary_function<_Tp, _Sp>
 {
   _Sp (_Tp::*__p_)();
 
@@ -90,7 +90,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap);
 
@@ -105,19 +105,19 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
+CCCL_DEPRECATED _CCCL_API inline mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
 {
   return mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
+CCCL_DEPRECATED _CCCL_API inline mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED const_mem_fun_t : public __unary_function<const _Tp*, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED const_mem_fun_t : public __unary_function<const _Tp*, _Sp>
 {
   _Sp (_Tp::*__p_)() const;
 
@@ -132,8 +132,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -148,19 +147,19 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const)
+CCCL_DEPRECATED _CCCL_API inline const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline const_mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap) const)
+CCCL_DEPRECATED _CCCL_API inline const_mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
 
 template <class _Sp, class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED const_mem_fun_ref_t : public __unary_function<_Tp, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED const_mem_fun_ref_t : public __unary_function<_Tp, _Sp>
 {
   _Sp (_Tp::*__p_)() const;
 
@@ -175,8 +174,7 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -191,13 +189,13 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline const_mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)() const)
+CCCL_DEPRECATED _CCCL_API inline const_mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
+CCCL_DEPRECATED _CCCL_API inline const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -210,4 +208,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_MEM_FUN_REF_H
+#endif // _CUDA_STD___FUNCTIONAL_MEM_FUN_REF_H

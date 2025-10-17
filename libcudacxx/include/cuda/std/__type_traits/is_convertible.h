@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -99,10 +99,7 @@ struct __is_convertible_test<
   decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
 {};
 
-template <class _Tp,
-          bool _IsArray    = is_array<_Tp>::value,
-          bool _IsFunction = is_function<_Tp>::value,
-          bool _IsVoid     = is_void<_Tp>::value>
+template <class _Tp, bool _IsArray = is_array_v<_Tp>, bool _IsFunction = is_function_v<_Tp>, bool _IsVoid = is_void_v<_Tp>>
 struct __is_array_function_or_void
 {
   enum
@@ -211,4 +208,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H

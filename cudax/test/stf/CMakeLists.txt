@@ -1,9 +1,12 @@
 set(stf_test_sources
   allocators/buddy_allocator.cu
+  context/context_resource_test.cu
+  context/simple_context_resource_test.cu
   cpp/concurrency_test.cu
   cpp/redundant_data.cu
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
+  cpp/task_get_stream.cu
   cpp/user_streams.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
@@ -28,6 +31,9 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/explicit_graph.cu
+  graph/explicit_graph_while.cu
+  graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
@@ -36,7 +42,7 @@ set(stf_test_sources
   interface/cuda_kernel_chain-add_deps.cu
   interface/cuda_kernel_chain-add_deps_low_level.cu
   interface/cuda_kernel_empty_args.cu
-  interface/data_from_device_async.cu
+
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
@@ -46,6 +52,7 @@ set(stf_test_sources
   places/non_current_device.cu
   places/place_partition.cu
   places/recursion.cu
+  places/execution_policy_kernel_launch_test.cu
   reclaiming/graph.cu
   reclaiming/graph_2.cu
   reclaiming/graph_real_oom.cu
@@ -93,13 +100,16 @@ set(stf_test_codegen_sources
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
+  freeze/freeze_untyped_rw.cu
+  freeze/freeze_write_back.cu
   freeze/task_fence.cu
   freeze/token.cu
   graph/epoch.cu
-  # graph/for_each_batched.cu
-  # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
+  graph/freeze_nested_graphs.cu
+  graph/freeze_while_graphs.cu
   # graph/graph_composition.cu
+  graph/graph_multiple_launch_resources.cu
   graph/graph_tmp_data.cu
   graph/many.cu
   graph/multiple_graph_ctx.cu
@@ -146,7 +156,6 @@ set(stf_test_codegen_sources
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   threads/axpy-threads-graph.cu
   threads/axpy-threads-graph-capture.cu
-  tools/auto_dump/auto_dump.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
@@ -187,7 +196,6 @@ set(stf_unittested_headers
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
-  cuda/experimental/__stf/utility/stopwatch.cuh
   cuda/experimental/__stf/utility/unittest.cuh
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )

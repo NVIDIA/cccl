@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_NAMESPACES_H
-#define _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#ifndef _CUDA_STD___INTERNAL_NAMESPACES_H
+#define _CUDA_STD___INTERNAL_NAMESPACES_H
 
 #include <cuda/__cccl_config>
 
@@ -71,7 +71,7 @@
 #  define _CCCL_END_NAMESPACE_FILESYSTEM } } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Shorthands for different qualifiers
-  // Namespaces related to execution
+// Namespaces related to execution
 #  define _CCCL_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _CCCL_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
@@ -79,13 +79,51 @@
 #  define _CCCL_END_NAMESPACE_CUDA_EXECUTION } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
-#if _CCCL_COMPILER(CLANG, ==, 16)
+#if _CCCL_COMPILER(CLANG, <=, 16)
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE namespace __hidden {
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS) } using __hidden::_CLASS;
-#else // ^^^ _CCCL_COMPILER(CLANG, ==, 16) ^^^ / vvv !_CCCL_COMPILER(CLANG, ==, 16) vvv
+#else // ^^^ _CCCL_COMPILER(CLANG, <=, 16) ^^^ / vvv _CCCL_COMPILER(CLANG, >, 16) vvv
 #  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
-#endif // !_CCCL_COMPILER(CLANG, ==, 16)
+#endif // !_CCCL_COMPILER(CLANG, >, 16)
+
+#if defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+#  define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+#  define _CCCL_END_NAMESPACE_ARCH_DEPENDENT
+#else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+#  if defined(_NVHPC_CUDA)
+#    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+      {
+#    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
+#  else // not defined(_NVHPC_CUDA)
+#    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, __CUDA_ARCH_LIST__)                \
+      {
+#    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
+#  endif // not defined(_NVHPC_CUDA)
+#endif // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+
+// Host standard library namespaces
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+  // We don't appy attributes on forward declarations, so we omit the _GLIBCXX_VISIBILITY(default)
+#  if _GLIBCXX_INLINE_VERSION
+#    define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std { inline _GLIBCXX_BEGIN_NAMESPACE_VERSION
+#    define _CCCL_END_NAMESPACE_STD   _GLIBCXX_END_NAMESPACE_VERSION } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  else // ^^^ _GLIBCXX_INLINE_VERSION ^^^ / vvv !_GLIBCXX_INLINE_VERSION vvv
+#    define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std {
+#    define _CCCL_END_NAMESPACE_STD   } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  endif // ^^^ !_GLIBCXX_INLINE_VERSION ^^^
+#elif _CCCL_HOST_STD_LIB(LIBCXX)
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() _LIBCPP_BEGIN_NAMESPACE_STD
+#  define _CCCL_END_NAMESPACE_STD   _LIBCPP_END_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#elif _CCCL_HOST_STD_LIB(STL)
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() _STD_BEGIN
+#  define _CCCL_END_NAMESPACE_STD   _STD_END _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#else
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std {
+#  define _CCCL_END_NAMESPACE_STD   } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#endif
 
 // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
@@ -102,4 +140,4 @@
 
 // clang-format on
 
-#endif // _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#endif // _CUDA_STD___INTERNAL_NAMESPACES_H

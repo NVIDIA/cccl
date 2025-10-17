@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH
-#define _CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH
+#ifndef _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H
+#define _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,166 +21,127 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDACC_AT_LEAST(13, 0)
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
+#  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
 namespace cuda::experimental
 {
 
-//! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
-class managed_memory_resource
+[[nodiscard]] static ::cudaMemPool_t __get_default_managed_pool()
 {
-private:
-  unsigned int __flags_ = cudaMemAttachGlobal;
+  return ::cuda::__driver::__getDefaultMemPool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
+}
 
-  static constexpr unsigned int __available_flags = cudaMemAttachGlobal | cudaMemAttachHost;
-
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``managed_memory_resource`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! ``managed_memory_resource`` is a thin wrapper around a \c cudaMemPool_t with the allocation type set to \c
+//! cudaMemAllocationTypeManaged.
+//!
+//! .. warning::
+//!
+//!    ``managed_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``managed_memory_resource``.
+//!
+//! @endrst
+class managed_memory_resource : public __memory_resource_base
+{
 public:
-  constexpr managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal) noexcept
-      : __flags_(__flags & __available_flags)
-  {
-    _CCCL_ASSERT(__flags_ == __flags, "Unexpected flags passed to managed_memory_resource");
-  }
+  //! @brief Default constructs the managed_memory_resource using the default \c cudaMemPool_t for host pinned memory.
+  //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+  _CCCL_HOST_API managed_memory_resource()
+      : __memory_resource_base(::cuda::experimental::__get_default_managed_pool())
+  {}
 
-  //! @brief Allocate CUDA unified memory of size at least \p __bytes.
-  //! @param __bytes The size in bytes of the allocation.
-  //! @param __alignment The requested alignment of the allocation.
-  //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
-  //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate_sync(const size_t __bytes,
-                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) const
-  {
-    // We need to ensure that the provided alignment matches the minimal provided alignment
-    if (!__is_valid_alignment(__alignment))
-    {
-      ::cuda::std::__throw_invalid_argument("Invalid alignment passed to managed_memory_resource::allocate_sync.");
-    }
-
-    void* __ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocManaged, "Failed to allocate memory with cudaMallocManaged.", &__ptr, __bytes, __flags_);
-    return __ptr;
-  }
-
-  //! @brief Allocate CUDA unified memory of size at least \p __bytes.
-  //! @param __bytes The size in bytes of the allocation.
-  //! @param __alignment The requested alignment of the allocation.
-  //! @param __stream Stream on which to perform allocation. Currently ignored
-  //! @throws std::invalid_argument In case of invalid alignment.
-  //! @throws cuda::cuda_error If an error code was return by the cuda api call.
-  //! @returns Pointer to the newly allocated memory.
-  [[nodiscard]] void*
-  allocate([[maybe_unused]] const ::cuda::stream_ref __stream, const size_t __bytes, const size_t __alignment)
-  {
-    return allocate_sync(__bytes, __alignment);
-  }
-
-  //! @brief Allocate CUDA unified memory of size at least \p __bytes.
-  //! @param __bytes The size in bytes of the allocation.
-  //! @param __stream Stream on which to perform allocation.
-  //! @throws cuda::cuda_error If an error code was return by the cuda api call.
-  //! @returns Pointer to the newly allocated memory.
-  [[nodiscard]] void* allocate([[maybe_unused]] const ::cuda::stream_ref __stream, const size_t __bytes)
-  {
-    return allocate_sync(__bytes);
-  }
-
-  //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
-  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  void deallocate_sync(
-    void* __ptr,
-    const size_t,
-    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) const noexcept
-  {
-    // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment),
-                 "Invalid alignment passed to managed_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate_sync failed", __ptr);
-  }
-
-  //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
-  //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate([[maybe_unused]] const ::cuda::stream_ref __stream,
-                  void* __ptr,
-                  const size_t __bytes,
-                  [[maybe_unused]] const size_t __alignment)
-  {
-    deallocate_sync(__ptr, __bytes);
-  }
-
-  //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
-  //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate([[maybe_unused]] const ::cuda::stream_ref __stream, void* __ptr, size_t __bytes)
-  {
-    deallocate_sync(__ptr, __bytes);
-  }
-
-  //! @brief Equality comparison with another \c managed_memory_resource.
-  //! @param __other The other \c managed_memory_resource.
-  //! @return Whether both \c managed_memory_resource were constructed with the same flags.
-  [[nodiscard]] constexpr bool operator==(managed_memory_resource const& __other) const noexcept
-  {
-    return __flags_ == __other.__flags_;
-  }
-#if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another \c managed_memory_resource.
-  //! @param __other The other \c managed_memory_resource.
-  //! @return Whether both \c managed_memory_resource were constructed with different flags.
-  [[nodiscard]] constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
-  {
-    return __flags_ != __other.__flags_;
-  }
-#endif // _CCCL_STD_VER <= 2017
+  //! @brief  Constructs the managed_memory_resource from a \c cudaMemPool_t.
+  //! @param __pool The \c cudaMemPool_t used to allocate memory.
+  _CCCL_HOST_API explicit managed_memory_resource(::cudaMemPool_t __pool) noexcept
+      : __memory_resource_base(__pool)
+  {}
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void
+  get_property(managed_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
+  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  {}
 
-  //! @brief Checks whether the passed in alignment is valid
-  static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
+};
+
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``managed_memory_pool`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! When constructed it creates an underlying \c cudaMemPool_t with the allocation type set to \c
+//! cudaMemAllocationTypeManaged and owns it.
+//!
+//! @endrst
+struct managed_memory_pool : managed_memory_resource
+{
+  using reference_type = managed_memory_resource;
+
+  //! @brief Constructs a \c managed_memory_pool with optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
+  //! @param __properties Optional, additional properties of the pool to be created.
+  _CCCL_HOST_API managed_memory_pool(memory_pool_properties __properties = {})
+      : managed_memory_resource(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED))
+  {}
+
+  // TODO add a constructor that accepts memory location one a type for it is added
+
+  ~managed_memory_pool() noexcept
   {
-    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
-        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
+    ::cuda::__driver::__mempoolDestroy(__pool_);
   }
 
-  using default_queries = properties_list<device_accessible, host_accessible>;
+  _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  {
+    return managed_memory_pool(__pool);
+  }
+
+  managed_memory_pool(const managed_memory_pool&)            = delete;
+  managed_memory_pool& operator=(const managed_memory_pool&) = delete;
+
+private:
+  managed_memory_pool(::cudaMemPool_t __pool) noexcept
+      : managed_memory_resource(__pool)
+  {}
 };
-static_assert(::cuda::mr::resource_with<managed_memory_resource, device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_resource, host_accessible>, "");
+
+static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::host_accessible>, "");
+
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH
+#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
+
+#endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H

@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg, class _Result>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED unary_function
+struct _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED unary_function
 {
   using argument_type = _Arg;
   using result_type   = _Result;
@@ -38,8 +38,8 @@ template <class _Arg, class _Result>
 struct __unary_function_keep_layout_base
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using argument_type _LIBCUDACXX_DEPRECATED = _Arg;
-  using result_type _LIBCUDACXX_DEPRECATED   = _Result;
+  using argument_type CCCL_DEPRECATED = _Arg;
+  using result_type CCCL_DEPRECATED   = _Result;
 #endif
 };
 
@@ -59,4 +59,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H

@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
@@ -76,7 +78,7 @@ struct index_to_gather_index_op
   }
 };
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::tabulate_output_iterator from cuda::std
 void TestTabulateOutputIteratorTraits()
 {
   using base_it = thrust::host_vector<int>::iterator;
@@ -96,7 +98,7 @@ void TestTabulateOutputIteratorTraits()
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+  static_assert(cuda::std::__has_random_access_traversal<it>);
 
   // FIXME(bgruber): all up to and including random access should be true
   static_assert(!cuda::std::output_iterator<it, int>);

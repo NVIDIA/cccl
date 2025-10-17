@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___BARRIER_BARRIER_H
-#define __LIBCUDACXX___BARRIER_BARRIER_H
+#ifndef __CUDA_STD___BARRIER_BARRIER_H
+#define __CUDA_STD___BARRIER_BARRIER_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,9 +23,9 @@
 
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
+#include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -224,4 +224,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___BARRIER_BARRIER_H
+#endif // __CUDA_STD___BARRIER_BARRIER_H

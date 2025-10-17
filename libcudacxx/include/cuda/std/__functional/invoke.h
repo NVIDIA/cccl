@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_INVOKE_H
-#define _LIBCUDACXX___FUNCTIONAL_INVOKE_H
+#ifndef _CUDA_STD___FUNCTIONAL_INVOKE_H
+#define _CUDA_STD___FUNCTIONAL_INVOKE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,9 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -36,11 +33,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-
-// TODO: Disentangle the type traits and ::cuda::std::invoke properly
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,220 +43,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __any
 {
   _CCCL_API inline __any(...);
-};
-
-template <class _MP, bool _IsMemberFunctionPtr, bool _IsMemberObjectPtr>
-struct __member_pointer_traits_imp
-{};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...), true, false>
-{
-  using _ClassType  = _Class;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...), true, false>
-{
-  using _ClassType  = _Class;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const, true, false>
-{
-  using _ClassType  = _Class const;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const, true, false>
-{
-  using _ClassType  = _Class const;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile, true, false>
-{
-  using _ClassType  = _Class volatile;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile, true, false>
-{
-  using _ClassType  = _Class volatile;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile, true, false>
-{
-  using _ClassType  = _Class const volatile;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile, true, false>
-{
-  using _ClassType  = _Class const volatile;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) &, true, false>
-{
-  using _ClassType  = _Class&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) &, true, false>
-{
-  using _ClassType  = _Class&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const&, true, false>
-{
-  using _ClassType  = _Class const&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const&, true, false>
-{
-  using _ClassType  = _Class const&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile&, true, false>
-{
-  using _ClassType  = _Class volatile&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile&, true, false>
-{
-  using _ClassType  = _Class volatile&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile&, true, false>
-{
-  using _ClassType  = _Class const volatile&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile&, true, false>
-{
-  using _ClassType  = _Class const volatile&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) &&, true, false>
-{
-  using _ClassType  = _Class&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) &&, true, false>
-{
-  using _ClassType  = _Class&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const&&, true, false>
-{
-  using _ClassType  = _Class const&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const&&, true, false>
-{
-  using _ClassType  = _Class const&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) volatile&&, true, false>
-{
-  using _ClassType  = _Class volatile&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) volatile&&, true, false>
-{
-  using _ClassType  = _Class volatile&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) const volatile&&, true, false>
-{
-  using _ClassType  = _Class const volatile&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param...);
-};
-
-template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatile&&, true, false>
-{
-  using _ClassType  = _Class const volatile&&;
-  using _ReturnType = _Rp;
-  using _FnType     = _Rp (*)(_Param..., ...);
-};
-
-template <class _Rp, class _Class>
-struct __member_pointer_traits_imp<_Rp _Class::*, false, true>
-{
-  using _ClassType  = _Class;
-  using _ReturnType = _Rp;
-};
-
-template <class _MP>
-struct __member_pointer_traits
-    : public __member_pointer_traits_imp<remove_cv_t<_MP>,
-                                         is_member_function_pointer<_MP>::value,
-                                         is_member_object_pointer<_MP>::value>
-{
-  //     typedef ... _ClassType;
-  //     typedef ... _ReturnType;
-  //     typedef ... _FnType;
 };
 
 template <class _DecayedFp>
@@ -275,47 +55,46 @@ struct __member_pointer_class_type<_Ret _ClassType::*>
   using type = _ClassType;
 };
 
+template <class _DecayedFp>
+using __member_pointer_class_type_t = typename __member_pointer_class_type<_DecayedFp>::type;
+
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
-using __enable_if_bullet1 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
+using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
-template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
-using __enable_if_bullet3 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
+using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
-using __enable_if_bullet4 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
+using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && is_base_of_v<_ClassT, _DecayA0>>;
 
-template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
           class _DecayFp = decay_t<_Fp>,
-          class _DecayA0 = typename decay<_A0>::type,
-          class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
-using __enable_if_bullet6 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+          class _DecayA0 = decay_t<_A0>,
+          class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
+using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
+                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -393,65 +172,23 @@ __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
 }
 
-// __invocable
-template <class _Ret, class _Fp, class... _Args>
-struct __invocable_r
-{
-  template <class _XFp, class... _XArgs>
-  _CCCL_API inline static decltype(::cuda::std::__invoke(
-    ::cuda::std::declval<_XFp>(), ::cuda::std::declval<_XArgs>()...))
-  __try_call(int);
-
-  template <class _XFp, class... _XArgs>
-  _CCCL_API inline static __nat __try_call(...);
-
-  // FIXME: Check that _Ret, _Fp, and _Args... are all complete types, cv void,
-  // or incomplete array types as required by the standard.
-  using _Result = decltype(__try_call<_Fp, _Args...>(0));
-
-  using type              = conditional_t<_IsNotSame<_Result, __nat>::value,
-                                          conditional_t<is_void<_Ret>::value, true_type, __is_core_convertible<_Result, _Ret>>,
-                                          false_type>;
-  static const bool value = type::value;
-};
+// __is_invocable
 template <class _Fp, class... _Args>
-using __invocable = __invocable_r<void, _Fp, _Args...>;
-
-template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp
-{
-  static const bool value = false;
-};
-
-template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...>
-{
-  using _ThisT = __nothrow_invocable_r_imp;
-
-  template <class _Tp>
-  _CCCL_API inline static void __test_noexcept(_Tp) noexcept;
-
-  static const bool value =
-    noexcept(_ThisT::__test_noexcept<_Ret>(::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
-};
-
-template <class _Ret, class _Fp, class... _Args>
-struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
-{
-  static const bool value =
-    noexcept(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
-};
-
-template <class _Ret, class _Fp, class... _Args>
-using __nothrow_invocable_r =
-  __nothrow_invocable_r_imp<__invocable_r<_Ret, _Fp, _Args...>::value, is_void<_Ret>::value, _Ret, _Fp, _Args...>;
+using __invoke_result_t =
+  decltype(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
 
 template <class _Fp, class... _Args>
-using __nothrow_invocable = __nothrow_invocable_r_imp<__invocable<_Fp, _Args...>::value, true, void, _Fp, _Args...>;
+_CCCL_CONCEPT __is_invocable =
+  _CCCL_REQUIRES_EXPR((_Fp, variadic _Args))(requires(!is_same_v<__nat, __invoke_result_t<_Fp, _Args...>>));
+
+template <class _Ret, class _Fp, class... _Args>
+_CCCL_CONCEPT __is_invocable_r = _CCCL_REQUIRES_EXPR((_Ret, _Fp, variadic _Args))(
+  requires(__is_invocable<_Fp, _Args...>),
+  requires((is_void_v<_Ret> || __is_core_convertible<__invoke_result_t<_Fp, _Args...>, _Ret>::value)));
 
 template <class _Fp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
-    : public enable_if<__invocable<_Fp, _Args...>::value, typename __invocable_r<void, _Fp, _Args...>::_Result>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
+    : public enable_if<__is_invocable<_Fp, _Args...>, __invoke_result_t<_Fp, _Args...>>
 {
 #if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
@@ -473,64 +210,57 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __invoke_of //
 #endif
 };
 
-template <class _Ret, bool = is_void<_Ret>::value>
-struct __invoke_void_return_wrapper
-{
-  template <class... _Args>
-  _CCCL_API static constexpr _Ret __call(_Args&&... __args)
-  {
-    return ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
-  }
-};
-
-template <class _Ret>
-struct __invoke_void_return_wrapper<_Ret, true>
-{
-  template <class... _Args>
-  _CCCL_API static constexpr void __call(_Args&&... __args)
-  {
-    ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
-  }
-};
-
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : bool_constant<__is_invocable<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invocable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : bool_constant<__is_invocable_r<_Ret, _Fn, _Args...>>
 {};
 
 template <class _Fn, class... _Args>
-inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
+inline constexpr bool is_invocable_v = __is_invocable<_Fn, _Args...>;
 
 template <class _Ret, class _Fn, class... _Args>
-inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
+inline constexpr bool is_invocable_r_v = __is_invocable_r<_Ret, _Fn, _Args...>;
 
 // is_nothrow_invocable
 
+template <class _Tp>
+_CCCL_API constexpr void __cccl_test_noexcept_conversion(_Tp) noexcept;
+
+template <bool _IsInvocable, bool _IsCVVoid, class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp = false;
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...> =
+  noexcept(::cuda::std::__cccl_test_noexcept_conversion<_Ret>(
+    ::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...> =
+  noexcept(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
+
+template <class _Fp, class... _Args>
+inline constexpr bool is_nothrow_invocable_v =
+  __nothrow_invocable_r_imp<__is_invocable<_Fp, _Args...>, true, void, _Fp, _Args...>;
+
+template <class _Ret, class _Fp, class... _Args>
+inline constexpr bool is_nothrow_invocable_r_v =
+  __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fp, _Args...>, is_void_v<_Ret>, _Ret, _Fp, _Args...>;
+
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable : bool_constant<is_nothrow_invocable_v<_Fn, _Args...>>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_invocable_r : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
+is_nothrow_invocable_r : bool_constant<is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>>
 {};
 
-template <class _Fn, class... _Args>
-inline constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fn, _Args...>::value;
-
-template <class _Ret, class _Fn, class... _Args>
-inline constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
-
-template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result : __invoke_of<_Fn, _Args...>
-{};
-
+// Not going directly through __invoke_result_t because we want the additional device lambda checks in invoke_result
 template <class _Fn, class... _Args>
 using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
@@ -545,16 +275,22 @@ _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
 _CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
 _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)
 {
-  return __invoke_void_return_wrapper<_Ret>::__call(
-    ::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  if constexpr (is_void_v<_Ret>)
+  {
+    ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  }
+  else
+  {
+    return ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
+  }
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invocable, typename InputT, typename InitT = InputT>
-using __accumulator_t = typename decay<typename ::cuda::std::__invoke_of<Invocable, InitT, InputT>::type>::type;
+using __accumulator_t = decay_t<invoke_result_t<Invocable, InitT, InputT>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_INVOKE_H
+#endif // _CUDA_STD___FUNCTIONAL_INVOKE_H

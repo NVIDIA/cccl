@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
-#define _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
+#ifndef _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H
+#define _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,7 +52,7 @@ using __unsigned_types =
 #  endif // _CCCL_HAS_INT128()
               >;
 
-template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
+template <class _Tp, bool = is_integral_v<_Tp> || is_enum_v<_Tp>>
 struct __make_unsigned_impl
 {};
 
@@ -148,4 +148,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
+#endif // _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H

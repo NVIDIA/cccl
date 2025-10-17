@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COPY_N_H
-#define _LIBCUDACXX___ALGORITHM_COPY_N_H
+#ifndef _CUDA_STD___ALGORITHM_COPY_N_H
+#define _CUDA_STD___ALGORITHM_COPY_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,8 +33,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
-          enable_if_t<__is_cpp17_input_iterator<_InputIterator>::value, int>          = 0,
-          enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
+          enable_if_t<__has_input_traversal<_InputIterator>, int>          = 0,
+          enable_if_t<!__has_random_access_traversal<_InputIterator>, int> = 0>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
@@ -58,7 +58,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
-          enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
+          enable_if_t<__has_random_access_traversal<_InputIterator>, int> = 0>
 _CCCL_API constexpr _OutputIterator copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
@@ -70,4 +70,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_COPY_N_H
+#endif // _CUDA_STD___ALGORITHM_COPY_N_H

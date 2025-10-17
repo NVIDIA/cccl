@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
-#define _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
+#ifndef _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H
+#define _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -429,4 +430,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_OPTIONAL_BASE_H
+#endif // _CUDA_STD___OPTIONAL_OPTIONAL_BASE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ISINF_H
-#define _LIBCUDACXX___CMATH_ISINF_H
+#ifndef _CUDA_STD___CMATH_ISINF_H
+#define _CUDA_STD___CMATH_ISINF_H
 
 #include <cuda/std/detail/__config>
 
@@ -202,4 +202,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ISINF_H
+#endif // _CUDA_STD___CMATH_ISINF_H

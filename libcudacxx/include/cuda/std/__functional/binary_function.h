@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BINARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_BINARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_BINARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_BINARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg1, class _Arg2, class _Result>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binary_function
+struct _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED binary_function
 {
   using first_argument_type  = _Arg1;
   using second_argument_type = _Arg2;
@@ -40,9 +40,9 @@ template <class _Arg1, class _Arg2, class _Result>
 struct __binary_function_keep_layout_base
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using first_argument_type _LIBCUDACXX_DEPRECATED  = _Arg1;
-  using second_argument_type _LIBCUDACXX_DEPRECATED = _Arg2;
-  using result_type _LIBCUDACXX_DEPRECATED          = _Result;
+  using first_argument_type CCCL_DEPRECATED  = _Arg1;
+  using second_argument_type CCCL_DEPRECATED = _Arg2;
+  using result_type CCCL_DEPRECATED          = _Result;
 #endif // _LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS
 };
 
@@ -60,4 +60,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BINARY_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_BINARY_FUNCTION_H

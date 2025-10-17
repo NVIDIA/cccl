@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_STRING_H
-#define _LIBCUDACXX___FWD_STRING_H
+#ifndef _CUDA_STD___FWD_STRING_H
+#define _CUDA_STD___FWD_STRING_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,6 +25,28 @@
 #include <cuda/std/__fwd/memory_resource.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+// libstdc++ puts basic_string to inline cxx11 namespace
+#  if _GLIBCXX_USE_CXX11_ABI
+inline _GLIBCXX_BEGIN_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+  template <class _CharT, class _Traits, class _Alloc>
+  class basic_string;
+
+#  if _GLIBCXX_USE_CXX11_ABI
+_GLIBCXX_END_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -80,4 +102,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_STRING_H
+#endif // _CUDA_STD___FWD_STRING_H

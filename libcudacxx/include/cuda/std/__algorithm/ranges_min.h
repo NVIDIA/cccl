@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_RANGES_MIN_H
-#define _LIBCUDACXX___ALGORITHM_RANGES_MIN_H
+#ifndef _CUDA_STD___ALGORITHM_RANGES_MIN_H
+#define _CUDA_STD___ALGORITHM_RANGES_MIN_H
 
 #include <cuda/std/detail/__config>
 
@@ -95,4 +95,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_RANGES_MIN_H
+#endif // _CUDA_STD___ALGORITHM_RANGES_MIN_H

@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FEATURES_H
-#define _LIBCUDACXX___INTERNAL_FEATURES_H
+#ifndef _CUDA_STD___INTERNAL_FEATURES_H
+#define _CUDA_STD___INTERNAL_FEATURES_H
 
 #include <cuda/__cccl_config>
 
@@ -44,6 +44,12 @@
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 1
 #endif
 
+#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#  define _CCCL_CONSTEXPR_COMPLEX constexpr
+#else
+#  define _CCCL_CONSTEXPR_COMPLEX
+#endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+
 #ifndef _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
@@ -63,9 +69,4 @@
 #  define _LIBCUDACXX_HAS_NVBF16() 0
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
-// NVCC does not have a way of silencing non '_' prefixed UDLs
-#if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_STL_LITERALS
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-
-#endif // _LIBCUDACXX___INTERNAL_FEATURES_H
+#endif // _CUDA_STD___INTERNAL_FEATURES_H

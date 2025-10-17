@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_COMPLEX_H
-#define _LIBCUDACXX___COMPLEX_COMPLEX_H
+#ifndef _CUDA_STD___COMPLEX_COMPLEX_H
+#define _CUDA_STD___COMPLEX_COMPLEX_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,6 +23,7 @@
 
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
@@ -36,9 +37,9 @@
 #include <cuda/std/limits>
 
 // Compatibility helpers for thrust to convert between `std::complex` and `cuda::std::complex`
+// todo: find a way to get rid of this include
 #if !_CCCL_COMPILER(NVRTC)
-#  include <complex>
-#  include <sstream> // for std::basic_ostringstream
+#  include <complex> // for std::complex stream operators
 
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
@@ -213,13 +214,13 @@ template <class _Tp>
 inline constexpr bool __is_complex_v<complex<_Tp>> = true;
 
 template <class _Tp, class _Up>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs * complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -274,8 +275,7 @@ template <class _Tp>
   return __t;
 }
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
-operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
+[[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   _Tp __a = __z.real();
   _Tp __b = __z.imag();
@@ -404,15 +404,14 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
-operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
+[[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp> operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   int __ilogbw = 0;
   _Tp __a      = __z.real();
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw  = ::cuda::std::__constexpr_logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
+  _Tp __logbw  = ::cuda::std::logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
   if (::cuda::std::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
@@ -673,4 +672,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_COMPLEX_H
+#endif // _CUDA_STD___COMPLEX_COMPLEX_H

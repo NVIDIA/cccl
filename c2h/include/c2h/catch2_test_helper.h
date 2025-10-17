@@ -36,6 +36,14 @@
 #  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
 #  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
 #endif
+// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
+// See NVBugs 5475335.
+#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#endif
 // workaround for error
 // * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
 // * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
@@ -219,6 +227,13 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
   }
 
+#define REQUIRE_APPROX_EQ_ABS(ref, out, abs)                             \
+  {                                                                      \
+    auto vec_ref = detail::to_vec(ref);                                  \
+    auto vec_out = detail::to_vec(out);                                  \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).margin(abs)); \
+  }
+
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
@@ -371,6 +386,13 @@ class nvtx_fixture
   TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
+
+#define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
+  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+
+#define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_STR(a) #a
 

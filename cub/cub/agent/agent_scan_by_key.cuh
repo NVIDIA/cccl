@@ -50,7 +50,11 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -92,9 +96,7 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace scan_by_key
+namespace detail::scan_by_key
 {
 
 /**
@@ -467,7 +469,6 @@ struct AgentScanByKey
   }
 };
 
-} // namespace scan_by_key
-} // namespace detail
+} // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

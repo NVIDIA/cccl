@@ -11,7 +11,7 @@
 #ifndef _CUDA___DEVICE_ARCH_TRAITS_H
 #define _CUDA___DEVICE_ARCH_TRAITS_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,114 +21,93 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__device/attributes.h>
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/__device/arch_id.h>
+#  include <cuda/__device/compute_capability.h>
+#  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/limits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-namespace arch
-{
 
-inline constexpr int __arch_specific_id_multiplier = 100000;
-
-// @brief Architecture identifier
-// This type identifies an architecture. It has more possible entries than just numeric values of the compute
-// capability. For example, sm_90 and sm_90a have the same compute capability, but the identifier is different.
-enum class id : int
-{
-  sm_60   = 60,
-  sm_61   = 61,
-  sm_70   = 70,
-  sm_75   = 75,
-  sm_80   = 80,
-  sm_86   = 86,
-  sm_89   = 89,
-  sm_90   = 90,
-  sm_100  = 100,
-  sm_103  = 103,
-  sm_120  = 120,
-  sm_90a  = 90 * __arch_specific_id_multiplier,
-  sm_100a = 100 * __arch_specific_id_multiplier,
-  sm_103a = 103 * __arch_specific_id_multiplier,
-  sm_120a = 120 * __arch_specific_id_multiplier,
-};
-
-// @brief Architecture traits
-// This type contains information about an architecture that is constant across devices of that architecture.
-struct traits_t
+//! @brief Architecture traits
+//! This type contains information about an architecture that is constant across devices of that architecture.
+struct arch_traits_t
 {
   // Maximum number of threads per block
-  const int max_threads_per_block = 1024;
+  int max_threads_per_block;
 
   // Maximum x-dimension of a block
-  const int max_block_dim_x = 1024;
+  int max_block_dim_x;
 
   // Maximum y-dimension of a block
-  const int max_block_dim_y = 1024;
+  int max_block_dim_y;
 
   // Maximum z-dimension of a block
-  const int max_block_dim_z = 64;
+  int max_block_dim_z;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = ::cuda::std::numeric_limits<int32_t>::max();
+  int max_grid_dim_x;
 
   // Maximum y-dimension of a grid
-  const int max_grid_dim_y = 64 * 1024 - 1;
+  int max_grid_dim_y;
 
   // Maximum z-dimension of a grid
-  const int max_grid_dim_z = 64 * 1024 - 1;
+  int max_grid_dim_z;
 
   // Maximum amount of shared memory available to a thread block in bytes
-  const int max_shared_memory_per_block = 48 * 1024;
+  ::cuda::std::size_t max_shared_memory_per_block;
 
   // Memory available on device for __constant__ variables in a CUDA C kernel in bytes
-  const int total_constant_memory = 64 * 1024;
+  ::cuda::std::size_t total_constant_memory;
 
   // Warp size in threads
-  const int warp_size = 32;
+  int warp_size;
 
   // Maximum number of concurrent grids on the device
-  const int max_resident_grids = 128;
+  int max_resident_grids;
 
   // true if the device can concurrently copy memory between host and device
   // while executing a kernel, or false if not
-  const bool gpu_overlap = true;
+  bool gpu_overlap;
 
   // true if the device can map host memory into CUDA address space
-  const bool can_map_host_memory = true;
+  bool can_map_host_memory;
 
   // true if the device supports executing multiple kernels within the same
   // context simultaneously, or false if not. It is not guaranteed that multiple
   // kernels will be resident on the device concurrently so this feature should
   // not be relied upon for correctness.
-  const bool concurrent_kernels = true;
+  bool concurrent_kernels;
 
   // true if the device supports stream priorities, or false if not
-  const bool stream_priorities_supported = true;
+  bool stream_priorities_supported;
 
   // true if device supports caching globals in L1 cache, false if not
-  const bool global_l1_cache_supported = true;
+  bool global_l1_cache_supported;
 
   // true if device supports caching locals in L1 cache, false if not
-  const bool local_l1_cache_supported = true;
+  bool local_l1_cache_supported;
 
   // TODO: We might want to have these per-arch
   // Maximum number of 32-bit registers available to a thread block
-  const int max_registers_per_block = 64 * 1024;
+  int max_registers_per_block;
 
   // Maximum number of 32-bit registers available to a multiprocessor; this
   // number is shared by all thread blocks simultaneously resident on a
   // multiprocessor
-  const int max_registers_per_multiprocessor = 64 * 1024;
+  int max_registers_per_multiprocessor;
 
   // Maximum number of 32-bit registers available to a thread
-  const int max_registers_per_thread = 255;
+  int max_registers_per_thread;
 
   // Identifier for the architecture
-  id arch_id;
+  ::cuda::arch_id arch_id;
 
   // Major compute capability version number
   int compute_capability_major;
@@ -137,12 +116,12 @@ struct traits_t
   int compute_capability_minor;
 
   // Compute capability version number in 100 * major + 10 * minor format
-  int compute_capability;
+  ::cuda::compute_capability compute_capability;
 
   // Maximum amount of shared memory available to a multiprocessor in bytes;
   // this amount is shared by all thread blocks simultaneously resident on a
   // multiprocessor
-  int max_shared_memory_per_multiprocessor;
+  ::cuda::std::size_t max_shared_memory_per_multiprocessor;
 
   // Maximum number of thread blocks that can reside on a multiprocessor
   int max_blocks_per_multiprocessor;
@@ -154,11 +133,11 @@ struct traits_t
   int max_warps_per_multiprocessor;
 
   // Shared memory reserved by CUDA driver per block in bytes
-  int reserved_shared_memory_per_block;
+  ::cuda::std::size_t reserved_shared_memory_per_block;
 
   // Maximum per block shared memory size on the device. This value can be opted
   // into when using dynamic_shared_memory with NonPortableSize set to true
-  int max_shared_memory_per_block_optin;
+  ::cuda::std::size_t max_shared_memory_per_block_optin;
 
   // TODO: Do we want these?:
   // true if architecture supports clusters
@@ -177,65 +156,81 @@ struct traits_t
   bool tma_supported;
 };
 
-// @brief Architecture traits
-// Template function that returns the traits for an architecture with a given id.
-template <id _Id>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr traits_t traits();
+[[nodiscard]] _CCCL_API constexpr arch_traits_t __common_arch_traits(arch_id __arch_id) noexcept
+{
+  const compute_capability __cc{__arch_id};
+
+  arch_traits_t __traits{};
+  __traits.max_threads_per_block            = 1024;
+  __traits.max_block_dim_x                  = 1024;
+  __traits.max_block_dim_y                  = 1024;
+  __traits.max_block_dim_z                  = 64;
+  __traits.max_grid_dim_x                   = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  __traits.max_grid_dim_y                   = 64 * 1024 - 1;
+  __traits.max_grid_dim_z                   = 64 * 1024 - 1;
+  __traits.max_shared_memory_per_block      = 48 * 1024;
+  __traits.total_constant_memory            = 64 * 1024;
+  __traits.warp_size                        = 32;
+  __traits.max_resident_grids               = 128;
+  __traits.gpu_overlap                      = true;
+  __traits.can_map_host_memory              = true;
+  __traits.concurrent_kernels               = true;
+  __traits.stream_priorities_supported      = true;
+  __traits.global_l1_cache_supported        = true;
+  __traits.local_l1_cache_supported         = true;
+  __traits.max_registers_per_block          = 64 * 1024;
+  __traits.max_registers_per_multiprocessor = 64 * 1024;
+  __traits.max_registers_per_thread         = 255;
+  __traits.arch_id                          = __arch_id;
+  __traits.compute_capability_major         = __cc.major();
+  __traits.compute_capability_minor         = __cc.minor();
+  __traits.compute_capability               = __cc;
+  // __traits.max_shared_memory_per_multiprocessor; // set up individually
+  // __traits.max_blocks_per_multiprocessor; // set up individually
+  // __traits.max_threads_per_multiprocessor; // set up individually
+  // __traits.max_warps_per_multiprocessor; // set up individually
+  __traits.reserved_shared_memory_per_block = (__cc >= compute_capability{80}) ? 1024 : 0;
+  // __traits.max_shared_memory_per_block_optin; // set up individually
+  __traits.cluster_supported  = (__cc >= compute_capability{90});
+  __traits.redux_intrinisic   = (__cc >= compute_capability{80});
+  __traits.elect_intrinsic    = (__cc >= compute_capability{90});
+  __traits.cp_async_supported = (__cc >= compute_capability{80});
+  __traits.tma_supported      = (__cc >= compute_capability{90});
+  return __traits;
+}
+
+//! @brief Gets the architecture traits for the given architecture id \c _Id.
+template <arch_id _Id>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits() noexcept;
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_60>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_60>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_60;
-  __traits.compute_capability_major             = 6;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 60;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_60);
   __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 0;
   __traits.max_shared_memory_per_block_optin    = 48 * 1024;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = false;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = false;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_61>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_61>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_61;
-  __traits.compute_capability_major             = 6;
-  __traits.compute_capability_minor             = 1;
-  __traits.compute_capability                   = 61;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_61);
   __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 0;
   __traits.max_shared_memory_per_block_optin    = 48 * 1024;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = false;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = false;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_70>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_70>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_70;
-  __traits.compute_capability_major             = 7;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 70;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_70);
   __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
@@ -243,346 +238,300 @@ template <>
   __traits.reserved_shared_memory_per_block     = 0;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = false;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = false;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_75>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_75>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_75;
-  __traits.compute_capability_major             = 7;
-  __traits.compute_capability_minor             = 5;
-  __traits.compute_capability                   = 75;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_75);
   __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_threads_per_multiprocessor       = 1024;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 0;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = false;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = false;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_80>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_80>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_80;
-  __traits.compute_capability_major             = 8;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 80;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_80);
   __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_86>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_86>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_86;
-  __traits.compute_capability_major             = 8;
-  __traits.compute_capability_minor             = 6;
-  __traits.compute_capability                   = 86;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_86);
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_89>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_87>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_89;
-  __traits.compute_capability_major             = 8;
-  __traits.compute_capability_minor             = 9;
-  __traits.compute_capability                   = 89;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_87);
+  __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 16;
+  __traits.max_threads_per_multiprocessor       = 1536;
+  __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_88>() noexcept
+{
+  auto __traits                     = ::cuda::arch_traits<arch_id::sm_86>();
+  __traits.arch_id                  = arch_id::sm_88;
+  __traits.compute_capability_major = 8;
+  __traits.compute_capability_minor = 8;
+  __traits.compute_capability       = compute_capability{88};
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_89>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_89);
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
   __traits.max_blocks_per_multiprocessor        = 24;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = false;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = false;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = false;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_90>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_90;
-  __traits.compute_capability_major             = 9;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 90;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_90);
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = true;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = true;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = true;
   return __traits;
 };
 
 // No sm_90a specific fields for now.
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_90a>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_90a>() noexcept
 {
-  return ::cuda::arch::traits<id::sm_90>();
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_90>();
+  __traits.arch_id = arch_id::sm_90a;
+  return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_100>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_100;
-  __traits.compute_capability_major             = 10;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 100;
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_90);
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_threads_per_multiprocessor       = 2048;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = true;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = true;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = true;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_100a>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_100a>() noexcept
 {
-  return ::cuda::arch::traits<id::sm_100>();
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id = arch_id::sm_100a;
+  return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_103>() noexcept
 {
-  traits_t __traits                 = ::cuda::arch::traits<id::sm_100>();
-  __traits.arch_id                  = id::sm_103;
+  auto __traits                     = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id                  = arch_id::sm_103;
   __traits.compute_capability_major = 10;
   __traits.compute_capability_minor = 3;
-  __traits.compute_capability       = 103;
+  __traits.compute_capability       = compute_capability{103};
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_103a>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_103a>() noexcept
 {
-  return ::cuda::arch::traits<id::sm_103>();
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_103>();
+  __traits.arch_id = arch_id::sm_103a;
+  return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_110>() noexcept
 {
-  traits_t __traits{};
-  __traits.arch_id                              = id::sm_120;
-  __traits.compute_capability_major             = 12;
-  __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 120;
+  auto __traits                           = ::cuda::arch_traits<arch_id::sm_100>();
+  __traits.arch_id                        = arch_id::sm_110;
+  __traits.compute_capability_major       = 11;
+  __traits.compute_capability_minor       = 0;
+  __traits.compute_capability             = compute_capability{110};
+  __traits.max_blocks_per_multiprocessor  = 24;
+  __traits.max_threads_per_multiprocessor = 1536;
+  __traits.max_warps_per_multiprocessor   = __traits.max_threads_per_multiprocessor / __traits.warp_size;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_110a>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_110>();
+  __traits.arch_id = arch_id::sm_110a;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_120>() noexcept
+{
+  auto __traits                                 = ::cuda::__common_arch_traits(arch_id::sm_120);
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
-  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_blocks_per_multiprocessor        = 24;
   __traits.max_threads_per_multiprocessor       = 1536;
   __traits.max_warps_per_multiprocessor         = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-  __traits.reserved_shared_memory_per_block     = 1024;
   __traits.max_shared_memory_per_block_optin =
     __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-  __traits.cluster_supported  = true;
-  __traits.redux_intrinisic   = true;
-  __traits.elect_intrinsic    = true;
-  __traits.cp_async_supported = true;
-  __traits.tma_supported      = true;
   return __traits;
 };
 
 template <>
-[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120a>()
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_120a>() noexcept
 {
-  return ::cuda::arch::traits<id::sm_120>();
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_120>();
+  __traits.arch_id = arch_id::sm_120a;
+  return __traits;
 };
 
-inline constexpr int __highest_known_arch = 120;
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121>() noexcept
+{
+  auto __traits                     = ::cuda::arch_traits<arch_id::sm_120>();
+  __traits.arch_id                  = arch_id::sm_121;
+  __traits.compute_capability_major = 12;
+  __traits.compute_capability_minor = 1;
+  __traits.compute_capability       = compute_capability{121};
+  return __traits;
+};
 
-[[nodiscard]] _CCCL_API inline constexpr traits_t traits_for_id(id __id)
+template <>
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits<arch_id::sm_121a>() noexcept
+{
+  auto __traits    = ::cuda::arch_traits<arch_id::sm_121>();
+  __traits.arch_id = arch_id::sm_121a;
+  return __traits;
+};
+
+//! @brief Gets the architecture traits for the given architecture id \c __id.
+//!
+//! @throws \c cuda::cuda_error if the \c __id is not a known architecture.
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(arch_id __id)
 {
   switch (__id)
   {
-    case id::sm_60:
-      return ::cuda::arch::traits<id::sm_60>();
-    case id::sm_61:
-      return ::cuda::arch::traits<id::sm_61>();
-    case id::sm_70:
-      return ::cuda::arch::traits<id::sm_70>();
-    case id::sm_75:
-      return ::cuda::arch::traits<id::sm_75>();
-    case id::sm_80:
-      return ::cuda::arch::traits<id::sm_80>();
-    case id::sm_86:
-      return ::cuda::arch::traits<id::sm_86>();
-    case id::sm_89:
-      return ::cuda::arch::traits<id::sm_89>();
-    case id::sm_90:
-      return ::cuda::arch::traits<id::sm_90>();
-    case id::sm_90a:
-      return ::cuda::arch::traits<id::sm_90a>();
-    case id::sm_100:
-      return ::cuda::arch::traits<id::sm_100>();
-    case id::sm_100a:
-      return ::cuda::arch::traits<id::sm_100a>();
-    case id::sm_103:
-      return ::cuda::arch::traits<id::sm_103>();
-    case id::sm_103a:
-      return ::cuda::arch::traits<id::sm_103a>();
-    case id::sm_120:
-      return ::cuda::arch::traits<id::sm_120>();
-    case id::sm_120a:
-      return ::cuda::arch::traits<id::sm_120a>();
+    case arch_id::sm_60:
+      return ::cuda::arch_traits<arch_id::sm_60>();
+    case arch_id::sm_61:
+      return ::cuda::arch_traits<arch_id::sm_61>();
+    case arch_id::sm_70:
+      return ::cuda::arch_traits<arch_id::sm_70>();
+    case arch_id::sm_75:
+      return ::cuda::arch_traits<arch_id::sm_75>();
+    case arch_id::sm_80:
+      return ::cuda::arch_traits<arch_id::sm_80>();
+    case arch_id::sm_86:
+      return ::cuda::arch_traits<arch_id::sm_86>();
+    case arch_id::sm_87:
+      return ::cuda::arch_traits<arch_id::sm_87>();
+    case arch_id::sm_88:
+      return ::cuda::arch_traits<arch_id::sm_88>();
+    case arch_id::sm_89:
+      return ::cuda::arch_traits<arch_id::sm_89>();
+    case arch_id::sm_90:
+      return ::cuda::arch_traits<arch_id::sm_90>();
+    case arch_id::sm_90a:
+      return ::cuda::arch_traits<arch_id::sm_90a>();
+    case arch_id::sm_100:
+      return ::cuda::arch_traits<arch_id::sm_100>();
+    case arch_id::sm_100a:
+      return ::cuda::arch_traits<arch_id::sm_100a>();
+    case arch_id::sm_103:
+      return ::cuda::arch_traits<arch_id::sm_103>();
+    case arch_id::sm_103a:
+      return ::cuda::arch_traits<arch_id::sm_103a>();
+    case arch_id::sm_110:
+      return ::cuda::arch_traits<arch_id::sm_110>();
+    case arch_id::sm_110a:
+      return ::cuda::arch_traits<arch_id::sm_110a>();
+    case arch_id::sm_120:
+      return ::cuda::arch_traits<arch_id::sm_120>();
+    case arch_id::sm_120a:
+      return ::cuda::arch_traits<arch_id::sm_120a>();
+    case arch_id::sm_121:
+      return ::cuda::arch_traits<arch_id::sm_121>();
+    case arch_id::sm_121a:
+      return ::cuda::arch_traits<arch_id::sm_121a>();
     default:
-      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
   }
 }
 
-[[nodiscard]] _CCCL_API inline constexpr id id_for_compute_capability(int compute_capability)
+//! @brief Gets the architecture traits for the given compute capability \c __cc.
+//!
+//! @throws \c cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
+[[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(compute_capability __cc)
 {
-  if (compute_capability < 60 || compute_capability > __highest_known_arch)
-  {
-    ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
-  }
-  return static_cast<id>(compute_capability);
+  return ::cuda::arch_traits_for(::cuda::to_arch_id(__cc));
 }
-
-[[nodiscard]] _CCCL_API inline constexpr traits_t traits_for_compute_capability(int compute_capability)
-{
-  return ::cuda::arch::traits_for_id(::cuda::arch::id_for_compute_capability(compute_capability));
-}
-
-_CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
-{
-  switch (value)
-  {
-    case 90:
-      return id::sm_90a;
-    case 100:
-      return id::sm_100a;
-    case 103:
-      return id::sm_103a;
-    case 120:
-      return id::sm_120a;
-    default:
-      ::cuda::__throw_cuda_error(cudaErrorInvalidValue, "Compute capability out of range");
-      break;
-  }
-}
-
-//! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-[[nodiscard]] _CCCL_DEVICE inline constexpr arch::traits_t current_traits()
-{
-  // fixme: this doesn't work with nvc++ -cuda
-#  ifdef __CUDA_ARCH__
-#    ifdef __CUDA_ARCH_SPECIFIC__
-  return ::cuda::arch::traits_for_id(::cuda::arch::__special_id_for_compute_capability(__CUDA_ARCH_SPECIFIC__ / 10));
-#    else
-  return ::cuda::arch::traits_for_compute_capability(__CUDA_ARCH__ / 10);
-#    endif // __CUDA_ARCH_SPECIFIC__
-#  else // __CUDA_ARCH__
-  // Should be unreachable in __device__ function
-  return ::cuda::arch::traits_t{};
-#  endif // __CUDA_ARCH__
-}
-
-[[nodiscard]] inline constexpr arch::traits_t
-__arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
-{
-  if (__compute_capability <= arch::__highest_known_arch)
-  {
-    return ::cuda::arch::traits_for_compute_capability(__compute_capability);
-  }
-  else
-  {
-    // If the architecture is unknown, we need to craft the arch_traits from attributes
-    arch::traits_t __traits{};
-    __traits.compute_capability_major = __compute_capability / 10;
-    __traits.compute_capability_minor = __compute_capability % 10;
-    __traits.compute_capability       = __compute_capability;
-    __traits.max_shared_memory_per_multiprocessor =
-      ::cuda::device_attributes::max_shared_memory_per_multiprocessor(__device);
-    __traits.max_blocks_per_multiprocessor    = ::cuda::device_attributes::max_blocks_per_multiprocessor(__device);
-    __traits.max_threads_per_multiprocessor   = ::cuda::device_attributes::max_threads_per_multiprocessor(__device);
-    __traits.max_warps_per_multiprocessor     = __traits.max_threads_per_multiprocessor / __traits.warp_size;
-    __traits.reserved_shared_memory_per_block = ::cuda::device_attributes::reserved_shared_memory_per_block(__device);
-    __traits.max_shared_memory_per_block_optin =
-      __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
-
-    __traits.cluster_supported  = __compute_capability >= 90;
-    __traits.redux_intrinisic   = __compute_capability >= 80;
-    __traits.elect_intrinsic    = __compute_capability >= 90;
-    __traits.cp_async_supported = __compute_capability >= 80;
-    __traits.tma_supported      = __compute_capability >= 90;
-    return __traits;
-  }
-}
-} // namespace arch
 
 _CCCL_END_NAMESPACE_CUDA
 
+#  if _CCCL_CUDA_COMPILATION()
+
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+
+//! @brief Returns the \c cuda::arch_trait_t of the architecture that is currently being compiled.
+//!
+//!        If the current architecture is not a known architecture from \c cuda::arch_id enumeration, the compilation
+//!        will fail.
+//!
+//! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
+template <class _Dummy = void>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_traits_t current_arch_traits() noexcept
+{
+#    if _CCCL_DEVICE_COMPILATION()
+  return ::cuda::arch_traits_for(::cuda::device::current_arch_id<_Dummy>());
+#    else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
+  return {};
+#    endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
+}
+
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
+#  endif // _CCCL_CUDA_COMPILATION
+
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___DEVICE_ARCH_TRAITS_H

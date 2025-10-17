@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_EMPTY_BASE_H
-#define _LIBCUDACXX___MDSPAN_EMPTY_BASE_H
+#ifndef _CUDA_STD___MDSPAN_EMPTY_BASE_H
+#define _CUDA_STD___MDSPAN_EMPTY_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -349,4 +349,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_EMPTY_BASE_H
+#endif // _CUDA_STD___MDSPAN_EMPTY_BASE_H

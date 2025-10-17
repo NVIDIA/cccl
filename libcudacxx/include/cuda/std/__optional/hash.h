@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_HASH_H
-#define _LIBCUDACXX___OPTIONAL_HASH_H
+#ifndef _CUDA_STD___OPTIONAL_HASH_H
+#define _CUDA_STD___OPTIONAL_HASH_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,8 +34,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
 #  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using argument_type _LIBCUDACXX_DEPRECATED = optional<_Tp>;
-  using result_type _LIBCUDACXX_DEPRECATED   = size_t;
+  using argument_type CCCL_DEPRECATED = optional<_Tp>;
+  using result_type CCCL_DEPRECATED   = size_t;
 #  endif
 
   _CCCL_API inline size_t operator()(const optional<_Tp>& __opt) const
@@ -50,4 +50,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_HASH_H
+#endif // _CUDA_STD___OPTIONAL_HASH_H

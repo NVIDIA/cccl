@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
-#define _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
+#ifndef _CUDA_STD___ALGORITHM_EQUAL_RANGE_H
+#define _CUDA_STD___ALGORITHM_EQUAL_RANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,12 +52,12 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   {
     auto __half_len = ::cuda::std::__half_positive(__len);
     _Iter __mid     = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__mid), __value))
+    if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__mid), __value))
     {
       __first = ++__mid;
       __len -= __half_len + 1;
     }
-    else if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
+    else if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {
       __end = __mid;
       __len = __half_len;
@@ -78,7 +78,7 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
-  static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
+  static_assert(is_copy_constructible_v<_ForwardIterator>, "Iterator has to be copy constructible");
   return ::cuda::std::__equal_range<_ClassicAlgPolicy>(
     ::cuda::std::move(__first),
     ::cuda::std::move(__last),
@@ -98,4 +98,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
+#endif // _CUDA_STD___ALGORITHM_EQUAL_RANGE_H

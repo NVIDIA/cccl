@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+
 #include <cuda/experimental/green_context.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -59,6 +62,32 @@ C2H_TEST("Green context", "[green_context]")
       }
     }
   }
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  if (test::cuda_driver_version() >= 13000)
+  {
+    INFO("Can get green context ID");
+    {
+      STATIC_REQUIRE(cuda::std::is_same_v<unsigned long long, cuda::std::underlying_type_t<cudax::green_context_id>>);
+      STATIC_REQUIRE(
+        cuda::std::is_same_v<cudax::green_context_id, decltype(cuda::std::declval<cudax::green_context>().id())>);
+
+      cudax::green_context ctx1{cuda::devices[0]};
+      cudax::green_context ctx2{cuda::devices[0]};
+
+      // Test that id() returns a valid ID
+      auto id1 = ctx1.id();
+      auto id2 = ctx2.id();
+
+      // Test that different contexts have different IDs
+      CUDAX_REQUIRE(id1 != id2);
+
+      // Test that the same context returns the same ID when called multiple times
+      CUDAX_REQUIRE(ctx1.id() == id1);
+      CUDAX_REQUIRE(ctx2.id() == id2);
+    }
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
 // For some reason CI fails with empty test, add a dummy test case

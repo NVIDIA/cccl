@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,50 +21,23 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_scalar.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
-
 template <class _Tp, class _Arg>
-struct is_trivially_assignable : integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(_Tp, _Arg)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_assignable : bool_constant<_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(_Tp, _Arg)>
 {};
 
 template <class _Tp, class _Arg>
 inline constexpr bool is_trivially_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(_Tp, _Arg);
 
-#else
-
-template <class _Tp, class _Arg>
-struct is_trivially_assignable : public false_type
-{};
-
-template <class _Tp>
-struct is_trivially_assignable<_Tp&, _Tp> : integral_constant<bool, is_scalar<_Tp>::value>
-{};
-
-template <class _Tp>
-struct is_trivially_assignable<_Tp&, _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
-{};
-
-template <class _Tp>
-struct is_trivially_assignable<_Tp&, const _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
-{};
-
-template <class _Tp>
-struct is_trivially_assignable<_Tp&, _Tp&&> : integral_constant<bool, is_scalar<_Tp>::value>
-{};
-
-template <class _Tp, class _Arg>
-inline constexpr bool is_trivially_assignable_v = is_trivially_assignable<_Tp, _Arg>::value;
-
-#endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_ASSIGNABLE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
-#define _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
+#ifndef _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H
+#define _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -28,6 +31,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // MSVC and clang cuda need the host side functions included
 #if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
@@ -633,6 +637,62 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
   return ::cuda::std::scalbn((double) __x, __y);
 }
 
+template <class _Tp>
+_CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
+{
+  if (::cuda::std::is_constant_evaluated())
+  {
+    if (__x == _Tp(0))
+    {
+      return __x;
+    }
+
+    if (::cuda::std::isinf(__x))
+    {
+      return __x;
+    }
+
+    if (_Tp(__exp) == _Tp(0))
+    {
+      return __x;
+    }
+
+    if (::cuda::std::isnan(__x))
+    {
+      return numeric_limits<_Tp>::quiet_NaN();
+    }
+
+    _Tp __mult(1);
+    if (__exp > 0)
+    {
+      __mult = numeric_limits<_Tp>::radix;
+      --__exp;
+    }
+    else
+    {
+      ++__exp;
+      __exp = -__exp;
+      __mult /= numeric_limits<_Tp>::radix;
+    }
+
+    while (__exp > 0)
+    {
+      if (!(__exp & 1))
+      {
+        __mult *= __mult;
+        __exp >>= 1;
+      }
+      else
+      {
+        __x *= __mult;
+        --__exp;
+      }
+    }
+    return __x;
+  }
+  return ::cuda::std::scalbn(__x, __exp);
+}
+
 // pow
 
 #if _CCCL_CHECK_BUILTIN(builtin_pow) || _CCCL_COMPILER(GCC)
@@ -721,4 +781,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
+#endif // _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H

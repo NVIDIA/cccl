@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -54,7 +54,7 @@ _CCCL_API inline
 template <class, class>
 _CCCL_API inline false_type __is_assignable_test(...);
 
-template <class _Tp, class _Arg, bool = is_void<_Tp>::value || is_void<_Arg>::value>
+template <class _Tp, class _Arg, bool = is_void_v<_Tp> || is_void_v<_Arg>>
 struct __is_assignable_imp : public decltype((::cuda::std::__is_assignable_test<_Tp, _Arg>(0)))
 {};
 
@@ -75,4 +75,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H

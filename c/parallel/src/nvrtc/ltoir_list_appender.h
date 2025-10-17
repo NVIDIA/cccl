@@ -15,15 +15,33 @@
 #include "command_list.h"
 #include <cccl/c/types.h>
 
-struct nvrtc_ltoir_list_appender
+struct nvrtc_linkable_list_appender
 {
-  nvrtc_ltoir_list& ltoir_list;
+  nvrtc_linkable_list& linkable_list;
 
-  void append(nvrtc_ltoir lto)
+  void append(nvrtc_linkable linkable)
   {
-    if (lto.ltsz)
+    std::visit(
+      [&](auto&& l) {
+        if (l.size)
+        {
+          linkable_list.push_back(std::move(l));
+        }
+      },
+      linkable);
+  }
+
+  // New method that handles both types
+  void append_operation(cccl_op_t op)
+  {
+    if (op.code_type == CCCL_OP_LTOIR)
     {
-      ltoir_list.push_back(std::move(lto));
+      // LTO-IR goes directly to the link list
+      append(nvrtc_linkable{nvrtc_ltoir{op.code, op.code_size}});
+    }
+    else
+    {
+      append(nvrtc_linkable{nvrtc_code{op.code, op.code_size}});
     }
   }
 
@@ -31,8 +49,8 @@ struct nvrtc_ltoir_list_appender
   {
     if (cccl_iterator_kind_t::CCCL_ITERATOR == it.type)
     {
-      append({it.advance.ltoir, it.advance.ltoir_size});
-      append({it.dereference.ltoir, it.dereference.ltoir_size});
+      append_operation(it.advance); // Use new method
+      append_operation(it.dereference); // Use new method
     }
   }
 };

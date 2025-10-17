@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_GENERATE_CANONICAL_H
-#define _LIBCUDACXX___RANDOM_GENERATE_CANONICAL_H
+#ifndef _CUDA_STD___RANDOM_GENERATE_CANONICAL_H
+#define _CUDA_STD___RANDOM_GENERATE_CANONICAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -53,4 +53,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_GENERATE_CANONICAL_H
+#endif // _CUDA_STD___RANDOM_GENERATE_CANONICAL_H

@@ -23,6 +23,7 @@ __host__ __device__ constexpr void test_fp_conversion_operator()
 
   // Conversion to a floating point type is implicit if Fp has the greater or equal conversion rank
   static_assert(cuda::std::__fp_is_implicit_conversion_v<T, Fp> == cuda::std::is_convertible_v<T, Fp>);
+  static_assert(cuda::std::__fp_is_explicit_conversion_v<T, Fp> == !cuda::std::is_convertible_v<T, Fp>);
 
   // TODO: check conversion to a floating point type
   [[maybe_unused]] Fp val(T{});

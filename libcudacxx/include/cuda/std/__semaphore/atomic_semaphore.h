@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
-#define _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#ifndef _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#define _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -230,4 +231,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#endif // _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H

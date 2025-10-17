@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM
-#define _CUDAX__STREAM_DEVICE_TRANSFORM
+#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#define _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+
 #include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -20,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
@@ -29,7 +31,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
@@ -186,4 +187,4 @@ using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM
+#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM_CUH

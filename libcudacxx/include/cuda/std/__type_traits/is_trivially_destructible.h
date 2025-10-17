@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,52 +22,37 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_destructible.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__type_traits/remove_all_extents.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_trivially_destructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(...) __is_trivially_destructible(__VA_ARGS__)
+#endif // has __is_trivially_destructible || msvc || nvrtc
+
+#if _CCCL_CHECK_BUILTIN(has_trivial_destructor) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
+#endif // has __has_trivial_destructor || gcc || msvc || nvrtc
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_DESTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_trivially_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
+inline constexpr bool is_trivially_destructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp);
+
+#else // ^^^ _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE vvv
+
+template <class _Tp>
+inline constexpr bool is_trivially_destructible_v = is_destructible_v<_Tp> && _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(_Tp);
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE ^^^
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible : bool_constant<is_trivially_destructible_v<_Tp>>
 {};
-
-#elif defined(_CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
-    : public integral_constant<bool, is_destructible<_Tp>::value && _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(_Tp)>
-{};
-_CCCL_SUPPRESS_DEPRECATED_POP
-
-#else
-
-template <class _Tp>
-struct __cccl_trivial_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_trivially_destructible : public __cccl_trivial_destructor<remove_all_extents_t<_Tp>>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible<_Tp[]> : public false_type
-{};
-
-#endif // defined(_CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
-
-template <class _Tp>
-inline constexpr bool is_trivially_destructible_v = is_trivially_destructible<_Tp>::value;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H

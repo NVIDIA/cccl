@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COMP_H
-#define _LIBCUDACXX___ALGORITHM_COMP_H
+#ifndef _CUDA_STD___ALGORITHM_COMP_H
+#define _CUDA_STD___ALGORITHM_COMP_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,12 +40,6 @@ struct __equal_to
   }
 };
 
-#if defined(_LIBCUDACXX_HAS_STRING)
-template <class _Lhs, class _Rhs>
-struct __is_trivial_equality_predicate<__equal_to, _Lhs, _Rhs> : true_type
-{};
-#endif // _LIBCUDACXX_HAS_STRING
-
 struct __less
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -61,4 +55,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_COMP_H
+#endif // _CUDA_STD___ALGORITHM_COMP_H

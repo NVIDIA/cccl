@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/chrono>
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/high_resolution_clock.h>
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
@@ -102,4 +103,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_H

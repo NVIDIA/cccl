@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_FORWARD_H
-#define _LIBCUDACXX___UTILITY_FORWARD_H
+#ifndef _CUDA_STD___UTILITY_FORWARD_H
+#define _CUDA_STD___UTILITY_FORWARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
-  static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
+  static_assert(!is_lvalue_reference_v<_Tp>, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);
 }
 
@@ -56,4 +56,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_FORWARD_H
+#endif // _CUDA_STD___UTILITY_FORWARD_H

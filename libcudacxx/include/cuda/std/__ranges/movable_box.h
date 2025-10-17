@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_MOVABLE_BOX_H
-#define _LIBCUDACXX___RANGES_MOVABLE_BOX_H
+#ifndef _CUDA_STD___RANGES_MOVABLE_BOX_H
+#define _CUDA_STD___RANGES_MOVABLE_BOX_H
 
 #include <cuda/std/detail/__config>
 
@@ -65,7 +65,7 @@ _CCCL_CONCEPT __movable_box_object = move_constructible<_Tp> && is_object_v<_Tp>
 // whenever we can apply any of these optimizations for both the copy assignment and the move assignment
 // operator.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __doesnt_need_empty_state() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __doesnt_need_empty_state() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -92,7 +92,7 @@ template <class _Tp>
 // Hence, when the _Tp doesn't have an assignment operator, we can't risk making it a potentially-overlapping
 // subobject because of the above, and we don't use [[no_unique_address]] in that case.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __can_use_no_unique_address() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __can_use_no_unique_address() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -407,4 +407,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_MOVABLE_BOX_H
+#endif // _CUDA_STD___RANGES_MOVABLE_BOX_H

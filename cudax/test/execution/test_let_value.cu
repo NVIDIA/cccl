@@ -12,9 +12,9 @@
 
 // IWYU pragma: keep
 #include "common/checked_receiver.cuh"
+#include "common/dummy_scheduler.cuh" // IWYU pragma: keep
 #include "common/error_scheduler.cuh" // IWYU pragma: keep
 #include "common/impulse_scheduler.cuh" // IWYU pragma: keep
-#include "common/inline_scheduler.cuh" // IWYU pragma: keep
 #include "common/stopped_scheduler.cuh" // IWYU pragma: keep
 #include "common/utility.cuh"
 #include "testing.cuh" // IWYU pragma: keep
@@ -26,9 +26,9 @@ namespace
 // Return a different sender when we invoke this custom defined let_value implementation
 struct let_value_test_domain
 {
-  _CCCL_TEMPLATE(class Sender)
-  _CCCL_REQUIRES(::cuda::std::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
-  static auto transform_sender(Sender&&)
+  _CCCL_TEMPLATE(class Sender, class Env)
+  _CCCL_REQUIRES(ex::sender_for<Sender, ex::let_value_t>)
+  static auto transform_sender(ex::set_value_t, Sender&&, const Env&)
   {
     return ex::just(std::string{"hallo"});
   }
@@ -343,7 +343,7 @@ C2H_TEST("let_value has the values_type corresponding to the given values", "[ad
 
 C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]")
 {
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler sched2{::std::exception_ptr{}};
   error_scheduler<int> sched3{43};
 
@@ -377,9 +377,8 @@ C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]
 
 C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_value]")
 {
-  inline_scheduler sched1{};
-  error_scheduler sched2{::std::exception_ptr{}};
-  stopped_scheduler sched3{};
+  dummy_scheduler sched1{};
+  stopped_scheduler sched2{};
 
   check_sends_stopped<false>( //
     ex::just() | ex::continues_on(sched1) | ex::let_value([] {
@@ -389,20 +388,17 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
     ex::just() | ex::continues_on(sched2) | ex::let_value([] {
       return ex::just();
     }));
-  check_sends_stopped<true>( //
-    ex::just() | ex::continues_on(sched3) | ex::let_value([] {
-      return ex::just();
-    }));
 }
 
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
+  auto env = ex::prop{ex::get_domain, let_value_test_domain{}};
   // The customization will return a different value
-  auto sndr = ex::just(std::string{"hello"}) | ex::write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
+  auto sndr = ex::just(std::string{"hello"}) //
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
-  wait_for_value(std::move(sndr), std::string{"hallo"});
+  wait_for_value_with_env(std::move(sndr), env, std::string{"hallo"});
 }
 
 C2H_TEST("let_value can nest", "[adaptors][let_value]")
@@ -479,7 +475,7 @@ struct let_value_test_domain2
 C2H_TEST("let_value predecessor's domain is accessible via the receiver connected to the secondary sender",
          "[adaptors][let_value]")
 {
-  auto attrs  = ex::prop{ex::get_domain, let_value_test_domain2{}};
+  auto attrs  = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain2{}};
   using Sndr2 = decltype(ex::read_env(ex::get_domain));
 
   auto sndr = ex::just() //
@@ -495,11 +491,11 @@ C2H_TEST("let_value predecessor's domain is accessible via the receiver connecte
 
 C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
 {
-  auto attrs = ex::prop{ex::get_domain, let_value_test_domain{}};
+  auto attrs = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain{}};
   auto sndr  = ex::just() | ex::let_value([=] {
                 return ex::write_attrs(ex::just(), attrs);
               });
-  auto dom   = ex::get_domain(ex::get_env(sndr));
+  auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
   static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
 

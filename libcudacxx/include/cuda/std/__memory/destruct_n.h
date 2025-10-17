@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_DESTRUCT_N_H
-#define _LIBCUDACXX___MEMORY_DESTRUCT_N_H
+#ifndef _CUDA_STD___MEMORY_DESTRUCT_N_H
+#define _CUDA_STD___MEMORY_DESTRUCT_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -68,19 +68,19 @@ public:
   template <class _Tp>
   _CCCL_API inline void __incr() noexcept
   {
-    __incr(integral_constant<bool, is_trivially_destructible<_Tp>::value>());
+    __incr(integral_constant<bool, is_trivially_destructible_v<_Tp>>());
   }
 
   template <class _Tp>
   _CCCL_API inline void __set(size_t __s, _Tp*) noexcept
   {
-    __set(__s, integral_constant<bool, is_trivially_destructible<_Tp>::value>());
+    __set(__s, integral_constant<bool, is_trivially_destructible_v<_Tp>>());
   }
 
   template <class _Tp>
   _CCCL_API inline void operator()(_Tp* __p) noexcept
   {
-    __process(__p, integral_constant<bool, is_trivially_destructible<_Tp>::value>());
+    __process(__p, integral_constant<bool, is_trivially_destructible_v<_Tp>>());
   }
 };
 
@@ -88,4 +88,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_DESTRUCT_N_H
+#endif // _CUDA_STD___MEMORY_DESTRUCT_N_H

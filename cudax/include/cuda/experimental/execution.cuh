@@ -22,6 +22,7 @@
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
+#include <cuda/experimental/__execution/inline_scheduler.cuh>
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>
@@ -30,7 +31,6 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
-#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
 #include <cuda/experimental/__execution/start_detached.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>

@@ -40,9 +40,6 @@
 
 #include <cub/util_device.cuh>
 
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-
 #include <nv/target>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -55,6 +52,9 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+// forward declare to avoid cyclic includes
+template <class>
+struct execution_policy;
 
 inline _CCCL_HOST_DEVICE cudaStream_t default_stream()
 {
@@ -136,7 +136,8 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class Type>
-THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
+_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
+trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
   cudaError status = cudaSuccess;
   if (count == 0)
@@ -150,7 +151,8 @@ THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const*
 }
 
 template <class Type>
-THRUST_HOST_FUNCTION cudaError_t trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
+_CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
+trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
   cudaError status = cudaSuccess;
   if (count == 0)

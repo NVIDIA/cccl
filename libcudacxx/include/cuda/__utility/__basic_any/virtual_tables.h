@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
 
 #include <cuda/std/detail/__config>
 
@@ -42,7 +42,7 @@ using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>:
 //! __basic_vtable
 //!
 template <class _Interface, auto... _Mbrs>
-struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
+struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
     : __rtti_base
     , __virtual_fn<_Mbrs>...
 {
@@ -105,7 +105,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable
 //!
 
 template <class... _Interfaces>
-struct _CCCL_DECLSPEC_EMPTY_BASES __vtable_tuple
+struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
     : __rtti_ex<sizeof...(_Interfaces)>
     , __vtable_for<_Interfaces>...
 {
@@ -152,4 +152,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRTUAL_TABLES_H

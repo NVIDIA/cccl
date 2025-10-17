@@ -40,13 +40,9 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/std/type_traits>
-
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace scan
+namespace detail::scan
 {
 
 /******************************************************************************
@@ -188,7 +184,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   AgentScanT(temp_storage, d_in, d_out, scan_op, real_init_value).ConsumeRange(num_items, tile_state, start_tile);
 }
 
-} // namespace scan
-} // namespace detail
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

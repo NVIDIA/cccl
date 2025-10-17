@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_STATIC_FOR_H
-#define _LIBCUDACXX___UTILITY_STATIC_FOR_H
+#ifndef _CUDA___UTILITY_STATIC_FOR_H
+#define _CUDA___UTILITY_STATIC_FOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -76,4 +76,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_STATIC_FOR_H
+#endif // _CUDA___UTILITY_STATIC_FOR_H

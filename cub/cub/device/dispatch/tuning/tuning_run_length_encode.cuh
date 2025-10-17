@@ -46,14 +46,13 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/cmath>
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace rle
+namespace detail::rle
 {
 enum class primitive_key
 {
@@ -669,7 +668,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace non_trivial_runs
-} // namespace rle
-} // namespace detail
+} // namespace detail::rle
 
 CUB_NAMESPACE_END

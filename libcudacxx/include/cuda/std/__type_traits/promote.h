@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H
-#define _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_PROMOTE_H
+#define _CUDA_STD___TYPE_TRAITS_PROMOTE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,11 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,9 +47,12 @@ struct __numeric_type
   _CCCL_API inline static double __test(unsigned long long);
   _CCCL_API inline static double __test(double);
   _CCCL_API inline static long double __test(long double);
+#if _CCCL_HAS_FLOAT128()
+  _CCCL_API inline static __float128 __test(__float128);
+#endif // _CCCL_HAS_FLOAT128()
 
   using type              = decltype(__test(declval<_Tp>()));
-  static const bool value = _IsNotSame<type, void>::value;
+  static const bool value = !is_same_v<type, void>;
 };
 
 template <>
@@ -160,4 +160,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H
+#endif // _CUDA_STD___TYPE_TRAITS_PROMOTE_H

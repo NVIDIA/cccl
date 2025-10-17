@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
-#define _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
+#ifndef _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_H
+#define _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -214,4 +214,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
+#endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_H

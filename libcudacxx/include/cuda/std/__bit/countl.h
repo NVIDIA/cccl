@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_COUNTL_H
-#define _LIBCUDACXX___BIT_COUNTL_H
+#ifndef _CUDA_STD___BIT_COUNTL_H
+#define _CUDA_STD___BIT_COUNTL_H
 
 #include <cuda/std/detail/__config>
 
@@ -100,7 +100,14 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countl_zero_impl_device(_Tp __v) noexcept
 {
-  return (sizeof(_Tp) == sizeof(uint32_t)) ? ::__clz(static_cast<int>(__v)) : ::__clzll(static_cast<long long>(__v));
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return static_cast<int>(::__clz(static_cast<int>(__v)));
+  }
+  else
+  {
+    return static_cast<int>(::__clzll(static_cast<long long>(__v)));
+  }
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -164,4 +171,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_COUNTL_H
+#endif // _CUDA_STD___BIT_COUNTL_H

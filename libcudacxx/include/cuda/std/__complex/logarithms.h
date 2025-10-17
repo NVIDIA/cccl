@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_LOGARITHMS_H
-#define _LIBCUDACXX___COMPLEX_LOGARITHMS_H
+#ifndef _CUDA_STD___COMPLEX_LOGARITHMS_H
+#define _CUDA_STD___COMPLEX_LOGARITHMS_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,6 +27,7 @@
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -299,4 +300,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_LOGARITHMS_H
+#endif // _CUDA_STD___COMPLEX_LOGARITHMS_H

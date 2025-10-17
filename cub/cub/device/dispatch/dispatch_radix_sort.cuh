@@ -44,7 +44,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -54,8 +53,12 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -1375,14 +1378,6 @@ struct DispatchSegmentedRadixSort
     // Number of radix sort invocations until all segments have been processed
     const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
 
-    // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
-    // max_num_segments_per_invocation segments per invocation
-    if (num_invocations > 1
-        && !detail::all_iterators_support_add_assign_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
-    {
-      return cudaErrorInvalidValue;
-    }
-
     BeginOffsetIteratorT begin_offsets_current_it = d_begin_offsets;
     EndOffsetIteratorT end_offsets_current_it     = d_end_offsets;
 
@@ -1431,8 +1426,8 @@ struct DispatchSegmentedRadixSort
 
       if (invocation_index + 1 < num_invocations)
       {
-        detail::advance_iterators_inplace_if_supported(begin_offsets_current_it, num_current_segments);
-        detail::advance_iterators_inplace_if_supported(end_offsets_current_it, num_current_segments);
+        begin_offsets_current_it += num_current_segments;
+        end_offsets_current_it += num_current_segments;
       }
 
       // Sync the stream if specified to flush runtime errors

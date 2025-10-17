@@ -10,11 +10,12 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <stdexcept>
+#include <vector>
 
 #include <testing.cuh>
 #include <utility.cuh>
@@ -143,14 +144,13 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     cudax::memory_pool_properties props = {
       42,
     };
-    cudax::device_memory_pool pool{current_device, props};
-    test_resource from_initial_pool_size{pool};
+    cudax::device_memory_pool from_initial_pool_size{current_device, props};
 
     ::cudaMemPool_t get = from_initial_pool_size.get();
     CHECK(get != current_default_pool);
 
     // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, 0));
+    CHECK(ensure_release_threshold(get, cuda::std::numeric_limits<size_t>::max()));
 
     // Ensure that we disable reuse with unsupported drivers
     CHECK(ensure_disable_reuse(get, driver_version));
@@ -162,11 +162,10 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with release threshold")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
+      42,
     };
-    cudax::device_memory_pool pool{current_device, props};
-    test_resource with_threshold{pool};
+    cudax::device_memory_pool with_threshold{current_device, props};
 
     ::cudaMemPool_t get = with_threshold.get();
     CHECK(get != current_default_pool);
@@ -185,12 +184,11 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
   SECTION("Construct with allocation handle")
   {
     cudax::memory_pool_properties props = {
-      42,
       20,
-      cudax::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
+      42,
+      ::cudaMemHandleTypePosixFileDescriptor,
     };
-    cudax::device_memory_pool pool{current_device, props};
-    test_resource with_allocation_handle{pool};
+    cudax::device_memory_pool with_allocation_handle{current_device, props};
 
     ::cudaMemPool_t get = with_allocation_handle.get();
     CHECK(get != current_default_pool);
@@ -202,7 +200,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ensure_disable_reuse(get, driver_version));
 
     // Ensure that we disable export
-    CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
+    CHECK(ensure_export_handle(get, props.allocation_handle_type));
   }
 }
 
@@ -356,13 +354,15 @@ struct resource
 
   template <AccessibilityType Accessibilty2                                         = Accessibility,
             cuda::std::enable_if_t<Accessibilty2 == AccessibilityType::Device, int> = 0>
-  friend void get_property(const resource&, cudax::device_accessible) noexcept
+  friend void get_property(const resource&, ::cuda::mr::device_accessible) noexcept
   {}
 };
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>,
+              "");
 static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>,
+              "");
 
 template <AccessibilityType Accessibility>
 struct test_resource : public resource<Accessibility>
@@ -374,9 +374,9 @@ struct test_resource : public resource<Accessibility>
   void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
 };
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, cudax::device_accessible>, "");
+static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, cudax::device_accessible>, "");
+static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>, "");
 
 C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 {
@@ -407,7 +407,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     cudax::device_memory_resource second{cuda::device_ref{0}};
-    cudax::synchronous_resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -416,7 +416,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_resource wrapped inside a resource_ref
     cudax::device_memory_resource second{cuda::device_ref{0}};
-    cudax::resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -457,13 +457,12 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 {
   if (cuda::devices.size() > 1)
   {
-    auto peers = cuda::devices[0].peer_devices();
+    auto peers = cuda::devices[0].peers();
     if (peers.size() > 0)
     {
       cudax::device_memory_pool pool{cuda::devices[0]};
-      cudax::device_memory_resource resource{pool};
       cudax::stream stream{peers.front()};
-      CUDAX_CHECK(resource.is_accessible_from(cuda::devices[0]));
+      CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
         auto* ptr1  = resource.allocate(stream, sizeof(int));
@@ -476,45 +475,47 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
         resource.deallocate_sync(ptr2, sizeof(int));
       };
 
-      resource.enable_access_from(peers);
+      pool.enable_access_from(peers);
 
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
+      allocate_and_check_access(pool);
+
+      cudax::device_memory_resource resource{pool};
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
       allocate_and_check_access(resource);
 
-      cudax::device_memory_resource another_resource{pool};
-      CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
-      allocate_and_check_access(another_resource);
-
-      resource.disable_access_from(peers.front());
+      pool.disable_access_from(peers.front());
+      CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
-      CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
 
       if (peers.size() > 1)
       {
-        CUDAX_CHECK(resource.is_accessible_from(peers[1]));
+        CUDAX_CHECK(pool.is_accessible_from(peers[1]));
       }
 
-      resource.disable_access_from(peers);
+      pool.disable_access_from(peers);
 
-      resource.enable_access_from(peers.front());
+      pool.enable_access_from(peers.front());
+      CUDAX_CHECK(pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
-      CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
-      peers.push_back(cuda::devices[0]);
-      resource.enable_access_from(peers);
+      {
+        std::vector peers_ext(peers.begin(), peers.end());
+        peers_ext.push_back(cuda::devices[0]);
+        pool.enable_access_from(peers_ext);
 
-      // Check the resource using the default pool
-      cudax::device_memory_resource default_pool_resource{cuda::device_ref{0}};
-      cudax::device_memory_resource another_default_pool_resource{cuda::device_ref{0}};
+        // Check the resource using the default pool
+        cudax::device_memory_resource default_pool_resource{cuda::device_ref{0}};
+        cudax::device_memory_resource another_default_pool_resource{cuda::device_ref{0}};
 
-      default_pool_resource.enable_access_from(peers.front());
+        pool.enable_access_from(peers_ext.front());
 
-      CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
-      allocate_and_check_access(default_pool_resource);
-      CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers.front()));
-      allocate_and_check_access(another_default_pool_resource);
+        CUDAX_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
+        allocate_and_check_access(default_pool_resource);
+        CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        allocate_and_check_access(another_default_pool_resource);
+      }
     }
   }
 }
