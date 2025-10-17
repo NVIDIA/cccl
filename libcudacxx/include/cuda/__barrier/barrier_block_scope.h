@@ -168,7 +168,7 @@ public:
         unsigned int __active  = __activeA & __activeB;
         int __inc              = ::__popc(__active) * __update;
 
-        int __leader = ::__ffs(__active) - 1;
+        int __leader = ::cuda::ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
         ::__syncwarp(__mask);
         if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid())) {
