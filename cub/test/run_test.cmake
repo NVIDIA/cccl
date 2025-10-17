@@ -100,6 +100,11 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     message(FATAL_ERROR "CCCL_SKIP_TEST:\n${TEST} intentionally throws CUDA errors. Skipping.")
   endif()
 
+  # The allocator test uses blocking-kernel tricks to explicitly control kernel lifetimes.
+  # This causes initcheck to deadlock.
+  if ("${TEST}" MATCHES "/cub.*.test.allocator$" AND tool STREQUAL "initcheck")
+    message(FATAL_ERROR "CCCL_SKIP_TEST:\n${TEST} uses blocking-kernels that break initcheck. Skipping.")
+  endif()
 
   if (TYPE STREQUAL "Catch2")
     list(APPEND ARGS
