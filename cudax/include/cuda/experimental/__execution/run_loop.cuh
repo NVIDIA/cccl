@@ -70,7 +70,7 @@ public:
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
     _CCCL_HIDE_FROM_ABI __task() = default;
-    _CCCL_NODEBUG_API explicit __task(__execute_fn_t* __execute_fn) noexcept
+    _CCCL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
         : __execute_fn_(__execute_fn)
     {}
 
@@ -250,14 +250,24 @@ public:
   }
 
 private:
-  _CCCL_NO_UNIQUE_ADDRESS _Env __env_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Env __env_;
 };
 
+// A run_loop with an empty environment. This is a struct instead of a type alias to give
+// it a simpler type name that is easier to read in diagnostics.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : basic_run_loop<env<>>
 {
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler : basic_run_loop::scheduler
+  {};
+
   _CCCL_API constexpr run_loop() noexcept
       : basic_run_loop<env<>>{env{}}
   {}
+
+  [[nodiscard]] _CCCL_API constexpr auto get_scheduler() noexcept -> scheduler
+  {
+    return scheduler{basic_run_loop::get_scheduler()};
+  }
 };
 
 template <class _Env>

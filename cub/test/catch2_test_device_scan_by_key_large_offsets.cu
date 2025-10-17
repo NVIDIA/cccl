@@ -65,7 +65,7 @@ struct expected_sum_op
       sum_within_partial_segment = (index_within_segment * (index_within_segment + 1)) / 2;
     }
     return index_within_segment == 0
-           ? (IsExclusive ? init_value : init_value + full_segments)
+           ? (IsExclusive ? init_value : static_cast<ItemT>(init_value + full_segments))
            : static_cast<ItemT>(sum_within_partial_segment + full_segments) + init_value;
   }
 };

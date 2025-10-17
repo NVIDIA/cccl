@@ -69,11 +69,6 @@
 #  define _LIBCUDACXX_HAS_NVBF16() 0
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
-// NVCC does not have a way of silencing non '_' prefixed UDLs
-#if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_STL_LITERALS
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-
 // Clang provides 128b atomics as a builtin
 #if defined(CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B)
 #  define _CCCL_HOST_128_ATOMICS_ENABLED() 1

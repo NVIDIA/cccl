@@ -185,7 +185,7 @@ function(libcudacxx_add_test target_name_var source)
   target_link_libraries(${target_name} PRIVATE
     libcudacxx::libcudacxx
     cccl.c2h.main
-    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    libcudacxx.compiler_interface
   )
 
   add_dependencies(${c2h_all_target} ${target_name})

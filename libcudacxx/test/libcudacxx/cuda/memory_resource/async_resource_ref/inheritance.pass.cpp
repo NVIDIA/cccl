@@ -29,7 +29,7 @@ struct async_resource_base
 
   virtual void* allocate(cuda::stream_ref, std::size_t, std::size_t) = 0;
 
-  virtual void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) = 0;
+  virtual void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept = 0;
 
   bool operator==(const async_resource_base& other) const
   {
@@ -73,7 +73,7 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
     return &_val;
   }
 
-  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const async_resource_derived_first& other) const
   {
@@ -114,7 +114,7 @@ struct async_resource_derived_second : public async_resource_base<Properties...>
     return &_val->_val;
   }
 
-  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const async_resource_derived_second& other) const
   {

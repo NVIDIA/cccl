@@ -26,6 +26,7 @@
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
@@ -34,7 +35,6 @@
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
-#  include <cuda/stream_ref>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -161,10 +161,7 @@ struct _Resource_vtable_builder
   template <class _Resource>
   static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
-    // TODO: this breaks RMM because their memory resources do not declare their
-    // deallocate_sync functions to be noexcept. Comment out the check for now until
-    // we can fix RMM.
-    // static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
+    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate_sync(__ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate_sync(__ptr, __bytes, __alignment);
   }
 
@@ -176,8 +173,9 @@ struct _Resource_vtable_builder
 
   template <class _Resource>
   static void
-  _Dealloc_async(void* __object, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _Dealloc_async(void* __object, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream) noexcept
   {
+    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__stream, __ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate(__stream, __ptr, __bytes, __alignment);
   }
 
