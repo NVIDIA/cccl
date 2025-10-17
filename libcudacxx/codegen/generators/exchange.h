@@ -61,10 +61,10 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{
-  static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
+  static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b exchange is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
+    NV_ANY_TARGET, (__atomic_exchange_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {{
