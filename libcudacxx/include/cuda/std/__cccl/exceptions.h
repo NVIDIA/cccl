@@ -51,23 +51,35 @@
 //   {
 //     printf("unknown error\n");
 //   }
+//
+// All uses of _CCCL_TRY must end with a _CCCL_CATCH_ALL or _CCCL_CATCH_FALLTHROUGH.
 #if !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC))
-#  define _CCCL_TRY if constexpr (true)
-#  define _CCCL_CATCH(...)                                              \
-    else if constexpr (__VA_ARGS__ = ::__cccl_catch_any_lvalue{}; true) \
-    {                                                                   \
-    }                                                                   \
-    else
+#  define _CCCL_TRY     \
+    if constexpr (true) \
+    {
+#  define _CCCL_THROW(...) ::cuda::std::terminate()
+#  define _CCCL_CATCH(...)                                                 \
+    }                                                                      \
+    else if constexpr (__VA_ARGS__ = ::stdexec::__catch_any_lvalue; false) \
+    {
 #  define _CCCL_CATCH_ALL    \
+    }                        \
     else if constexpr (true) \
     {                        \
     }                        \
     else
+#  define _CCCL_CATCH_FALLTHROUGH \
+    }                             \
+    else                          \
+    {                             \
+    }
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() || (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) ^^^
       // vvv _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) vvv
-#  define _CCCL_TRY       try
-#  define _CCCL_CATCH     catch
-#  define _CCCL_CATCH_ALL catch (...)
+#  define _CCCL_TRY        try
+#  define _CCCL_THROW(...) throw __VA_ARGS__
+#  define _CCCL_CATCH(...) catch (__VA_ARGS__)
+#  define _CCCL_CATCH_ALL  catch (...)
+#  define _CCCL_CATCH_FALLTHROUGH
 #endif // ^^^ _CCCL_HAS_EXCEPTIONS() && (!_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)) ^^^
 
 struct __cccl_catch_any_lvalue
