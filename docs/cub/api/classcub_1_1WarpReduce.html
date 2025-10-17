@@ -1597,6 +1597,7 @@ of the 32-thread warps).</p>
 <span class="w">    </span><span class="c1">// Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Sum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">...,</span> <span class="pre">127}</span></code>.
@@ -1619,6 +1620,8 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...</span>
 <span class="w">        </span><span class="c1">// Return the warp-wide sum to lane0</span>
 <span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Sum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the warp of threads is <code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">...,</span> <span class="pre">31}</span></code>.
@@ -1674,6 +1677,7 @@ The output is valid in warp <em>lane</em><sub>0</sub>.</p>
 <span class="w">    </span><span class="c1">// Return the warp-wide sums to each lane0</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Sum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">...,</span> <span class="pre">127}</span></code>.
@@ -1754,8 +1758,8 @@ block of 32 threads (one warp).</p>
 <span class="w">        </span><span class="n">thread_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d_data</span><span class="p">[</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">];</span>
 
 <span class="w">    </span><span class="c1">// Return the warp-wide sums to each lane0</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Sum</span><span class="p">(</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">valid_items</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Sum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">valid_items</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">...</span></code> and <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> is <code class="docutils literal notranslate"><span class="pre">4</span></code>.
@@ -1818,6 +1822,7 @@ reduction within a block of 32 threads (one warp).</p>
 <span class="w">    </span><span class="c1">// Return the warp-wide sums to each lane0</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WarpReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">HeadSegmentedSum</span><span class="p">(</span>
 <span class="w">        </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">head_flag</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> and <code class="docutils literal notranslate"><span class="pre">head_flag</span></code> across the block of threads

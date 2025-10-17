@@ -1596,6 +1596,7 @@ are partitioned across 128 threads where each thread owns 4 samples.</p>
 
 <span class="w">    </span><span class="c1">// Compute the block-wide histogram</span>
 <span class="w">    </span><span class="n">BlockHistogram</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Histogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">smem_histogram</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -1688,6 +1689,7 @@ where each thread owns 4 samples.</p>
 
 <span class="w">  </span><span class="c1">// Update the block-wide histogram</span>
 <span class="w">  </span><span class="n">BlockHistogram</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Composite</span><span class="p">(</span><span class="n">thread_samples</span><span class="p">,</span><span class="w"> </span><span class="n">smem_histogram</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -1738,6 +1740,7 @@ are partitioned across 128 threads where each thread owns 4 samples.</p>
 
 <span class="w">    </span><span class="c1">// Compute the block-wide histogram</span>
 <span class="w">    </span><span class="n">BlockHistogram</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Histogram</span><span class="p">(</span><span class="n">thread_samples</span><span class="p">,</span><span class="w"> </span><span class="n">smem_histogram</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -1798,6 +1801,7 @@ where each thread owns 4 samples.</p>
 
 <span class="w">    </span><span class="c1">// Update the block-wide histogram</span>
 <span class="w">    </span><span class="n">BlockHistogram</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Composite</span><span class="p">(</span><span class="n">thread_samples</span><span class="p">,</span><span class="w"> </span><span class="n">smem_histogram</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>

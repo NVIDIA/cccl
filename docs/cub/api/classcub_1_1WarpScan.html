@@ -1607,6 +1607,7 @@ the <em>i</em><sup>th</sup> output reduction.</p></li>
 <span class="w">    </span><span class="c1">// Compute warp-wide prefix sums</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="w">    </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1633,6 +1634,8 @@ threads will be <code class="docutils literal notranslate"><span class="pre">0,<
 
 <span class="w">        </span><span class="c1">// Compute warp-wide prefix sums</span>
 <span class="w">        </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the warp of threads is
@@ -1693,6 +1696,7 @@ block of 128 threads (one per each of the 32-thread warps).</p>
 <span class="w">    </span><span class="c1">// Compute inclusive warp-wide prefix sums</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="w">    </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">InclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1746,9 +1750,8 @@ block of 128 threads (one per each of the 32-thread warps).</p>
 <span class="w">    </span><span class="c1">// Compute inclusive warp-wide prefix sums</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_aggregate</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
-<span class="w">    </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">InclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span>
-<span class="w">                                                 </span><span class="n">thread_data</span><span class="p">,</span>
-<span class="w">                                                 </span><span class="n">warp_aggregate</span><span class="p">);</span>
+<span class="w">    </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">InclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">warp_aggregate</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1801,6 +1804,7 @@ block of 128 threads (one per each of the 32-thread warps).</p>
 <span class="w">    </span><span class="c1">// Compute exclusive warp-wide prefix sums</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">32</span><span class="p">;</span>
 <span class="w">    </span><span class="n">WarpScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is

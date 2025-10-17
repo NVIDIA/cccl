@@ -1755,6 +1755,7 @@ functor. Each thread contributes an array of consecutive input elements.</p>
 
 <span class="w">    </span><span class="c1">// Compute the block-wide max for thread0</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">aggregate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BlockReduce</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Reduce</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>

@@ -1596,6 +1596,7 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeads</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1687,6 +1688,7 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeads</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1760,8 +1762,9 @@ where each thread owns 4 consecutive items.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute head flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeads</span><span class="p">(</span>
-<span class="w">        </span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">(),</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">);</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeads</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                               </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">(),</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1840,6 +1843,7 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute tail flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagTails</span><span class="p">(</span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1914,8 +1918,9 @@ where each thread owns 4 consecutive items.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute tail flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagTails</span><span class="p">(</span>
-<span class="w">        </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">(),</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">);</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagTails</span><span class="p">(</span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                               </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">(),</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1999,8 +2004,9 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head and flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span>
-<span class="w">        </span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -2083,8 +2089,10 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head and flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span>
-<span class="w">        </span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">tile_successor_item</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -2177,9 +2185,10 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head and flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span>
-<span class="w">        </span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">,</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -2271,9 +2280,10 @@ where each thread owns 4 consecutive items.</p>
 <span class="w">    </span><span class="c1">// Collectively compute head and flags for discontinuities in the segment</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">head_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span>
-<span class="w">        </span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">,</span><span class="w"> </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">,</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockDiscontinuity</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">FlagHeadsAndTails</span><span class="p">(</span><span class="n">head_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_predecessor_item</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">tail_flags</span><span class="p">,</span><span class="w"> </span><span class="n">tile_successor_item</span><span class="p">,</span>
+<span class="w">                                                       </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">Inequality</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is

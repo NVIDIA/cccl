@@ -1618,6 +1618,7 @@ access pattern.</p>
 
 <span class="w">    </span><span class="c1">// Store items to linear memory</span>
 <span class="w">    </span><span class="n">WarpStoreT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Store</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the warp threads is

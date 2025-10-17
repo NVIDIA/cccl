@@ -1606,6 +1606,7 @@ pattern (after which items are locally reordered among threads).</p>
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockLoad</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">...</span></code>. The set of <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads in
@@ -1687,6 +1688,7 @@ pattern (after which items are locally reordered among threads).</p>
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockLoad</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">...</span></code>. The set of <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads
@@ -1738,6 +1740,7 @@ pattern (after which items are locally reordered among threads).</p>
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockLoad</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_items_end</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">6...</span></code> and <code class="docutils literal notranslate"><span class="pre">block_items_end</span></code> is <code class="docutils literal notranslate"><span class="pre">5</span></code>. The set of
@@ -1793,6 +1796,7 @@ pattern (after which items are locally reordered among threads).</p>
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 <span class="w">    </span><span class="n">BlockLoad</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_items_end</span><span class="p">,</span><span class="w"> </span><span class="mi">-1</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">6...</span></code>, <code class="docutils literal notranslate"><span class="pre">block_items_end</span></code> is <code class="docutils literal notranslate"><span class="pre">5</span></code>, and the out-of-bounds

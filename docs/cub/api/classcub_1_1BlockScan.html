@@ -1619,6 +1619,7 @@ where each thread owns 4 consecutive items.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1698,6 +1699,7 @@ are partitioned across 128 threads.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">1</span></code>.
@@ -1747,6 +1749,7 @@ are partitioned across 128 threads.</p>
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">1</span></code>.
@@ -1842,6 +1845,7 @@ of 128 integer items that are partitioned across 128 threads.</p>
 <span class="w">        </span><span class="c1">// Store scanned items to output segment</span>
 <span class="w">        </span><span class="n">d_data</span><span class="p">[</span><span class="n">block_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...</span></code>.
@@ -1910,6 +1914,7 @@ where each thread owns 4 consecutive items.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -1974,6 +1979,7 @@ a <a class="reference internal" href="../index.html#flexible-data-arrangement"><
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
@@ -2086,6 +2092,7 @@ across 128 threads where each thread owns 4 consecutive items.</p>
 <span class="w">        </span><span class="n">BlockStore</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">.</span><span class="n">store</span><span class="p">).</span><span class="n">Store</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">block_offset</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
 <span class="w">        </span><span class="n">__syncthreads</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...</span></code>.
@@ -2156,6 +2163,7 @@ are partitioned across 128 threads.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix max scan</span>
 <span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveScan</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">INT_MIN</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">-1,</span> <span class="pre">2,</span> <span class="pre">-3,</span> <span class="pre">...,</span> <span class="pre">126,</span> <span class="pre">-127</span></code>.
@@ -2220,8 +2228,9 @@ are partitioned across 128 threads.</p>
 
 <span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix max scan</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveScan</span><span class="p">(</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">INT_MIN</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
+<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveScan</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                          </span><span class="n">INT_MIN</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">-1,</span> <span class="pre">2,</span> <span class="pre">-3,</span> <span class="pre">...,</span> <span class="pre">126,</span> <span class="pre">-127</span></code>.
@@ -2329,6 +2338,7 @@ Each tile consists of 128 integer items that are partitioned across 128 threads.
 <span class="w">        </span><span class="c1">// Store scanned items to output segment</span>
 <span class="w">        </span><span class="n">d_data</span><span class="p">[</span><span class="n">block_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">-1,</span> <span class="pre">2,</span> <span class="pre">-3,</span> <span class="pre">4,</span> <span class="pre">-5,</span> <span class="pre">...</span></code>.

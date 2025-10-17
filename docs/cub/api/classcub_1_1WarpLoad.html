@@ -1613,8 +1613,8 @@ pattern (after which items are locally reordered among threads).</p>
 
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="n">items_per_thread</span><span class="p">];</span>
-<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span>
-<span class="w">                                       </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">...</span></code>.
@@ -1687,8 +1687,8 @@ threads will be: <code class="docutils literal notranslate"><span class="pre">{<
 
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="n">items_per_thread</span><span class="p">];</span>
-<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span>
-<span class="w">                                          </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">...</span></code>,
@@ -1744,9 +1744,9 @@ threads will be: <code class="docutils literal notranslate"><span class="pre">{<
 
 <span class="w">    </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="n">items_per_thread</span><span class="p">];</span>
-<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span>
-<span class="w">                                          </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">    </span><span class="n">WarpLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">[</span><span class="n">warp_id</span><span class="p">]).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_data</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">warp_id</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile_size</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
 <span class="w">                                          </span><span class="n">valid_items</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3,</span> <span class="pre">4,</span> <span class="pre">5,</span> <span class="pre">...</span></code> and <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> is <code class="docutils literal notranslate"><span class="pre">5</span></code>.

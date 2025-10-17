@@ -1611,10 +1611,9 @@ compute the left difference between adjacent elements.</p>
 <span class="w">    </span><span class="c1">// Collectively compute adjacent_difference</span>
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
 
-<span class="w">    </span><span class="n">BlockAdjacentDifferenceT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">SubtractLeft</span><span class="p">(</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span>
-<span class="w">        </span><span class="n">result</span><span class="p">,</span>
-<span class="w">        </span><span class="n">CustomDifference</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockAdjacentDifferenceT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">SubtractLeft</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">,</span>
+<span class="w">                                                        </span><span class="n">CustomDifference</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <cite>thread_data</cite> across the block of threads is
@@ -1693,10 +1692,9 @@ adjacent elements.</p>
 <span class="w">    </span><span class="p">...</span>
 
 <span class="w">    </span><span class="c1">// Collectively compute adjacent_difference</span>
-<span class="w">    </span><span class="n">BlockAdjacentDifferenceT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">SubtractLeft</span><span class="p">(</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span>
-<span class="w">        </span><span class="n">thread_data</span><span class="p">,</span>
-<span class="w">        </span><span class="n">CustomDifference</span><span class="p">());</span>
+<span class="w">    </span><span class="n">BlockAdjacentDifferenceT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">SubtractLeft</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span>
+<span class="w">                                                        </span><span class="n">CustomDifference</span><span class="p">());</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
