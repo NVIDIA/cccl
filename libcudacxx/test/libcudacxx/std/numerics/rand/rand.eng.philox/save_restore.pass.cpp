@@ -14,6 +14,7 @@
 
 #include "test_macros.h"
 
+#if !_CCCL_COMPILER(NVRTC)
 template <typename Engine>
 void test()
 {
@@ -28,6 +29,7 @@ void test()
   e1.discard(10000);
   assert(e0() == e1());
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 int main(int, char**)
 {

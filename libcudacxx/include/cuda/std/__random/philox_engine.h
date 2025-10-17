@@ -444,7 +444,7 @@ private:
     }
   }
 
-  _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) const noexcept
   {
     // Generic slow implementation
     constexpr result_type __w_half  = word_size / 2;
