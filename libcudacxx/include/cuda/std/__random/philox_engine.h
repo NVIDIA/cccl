@@ -156,9 +156,9 @@ public:
 
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr explicit philox_engine(_Sseq& q) noexcept
+  _CCCL_API constexpr explicit philox_engine(_Sseq& __seq) noexcept
   {
-    seed(q);
+    seed(__seq);
   }
 
   //! This method initializes this philox_engine's state, and optionally accepts
@@ -292,8 +292,7 @@ public:
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
+  operator==(const philox_engine& __lhs, const philox_engine& __rhs) noexcept
   {
     if (__lhs.__x_ != __rhs.__x_)
     {
@@ -318,8 +317,7 @@ public:
   //! @param rhs The second philox_engine to test.
   //! @return true if lhs is not equal to rhs; false, otherwise.
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __lhs,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __rhs) noexcept
+  operator!=(const philox_engine& __lhs, const philox_engine& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -332,8 +330,7 @@ public:
   //! @return os
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
-  operator<<(::std::basic_ostream<_CharT, _Traits>& __os,
-             const philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const philox_engine& __e)
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base     = typename ostream_type::ios_base;
@@ -394,8 +391,7 @@ public:
   //! @return is
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
-  operator>>(::std::basic_istream<_CharT, _Traits>& __is,
-             philox_engine<result_type, word_size, word_count, round_count, _Constants...>& __e)
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, philox_engine& __e)
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
     using ios_base     = typename istream_type::ios_base;
@@ -431,7 +427,7 @@ public:
 
     return __is;
   }
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
 private:
   _CCCL_API constexpr void __increment_counter() noexcept
@@ -471,7 +467,7 @@ private:
     return ::cuda::std::make_pair(__hi, __lo);
   }
 
-  _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
   {
     if constexpr (word_size == 32)
     {
@@ -555,7 +551,7 @@ private:
 //!        Philox counter based random number generation algorithm.
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x32
 //!       shall produce the value 1955073260.
-using philox4x32 = philox_engine<std::uint_fast32_t, 32, 4, 10, 0xD2511F53, 0x9E3779B9, 0xCD9E8D57, 0xBB67AE85>;
+using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xD2511F53, 0x9E3779B9, 0xCD9E8D57, 0xBB67AE85>;
 
 //! @typedef philox4x64
 //! @brief A random number engine with predefined parameters which implements the
@@ -563,7 +559,14 @@ using philox4x32 = philox_engine<std::uint_fast32_t, 32, 4, 10, 0xD2511F53, 0x9E
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x64
 //!       shall produce the value 3409172418970261260.
 using philox4x64 =
-  philox_engine<std::uint_fast64_t, 64, 4, 10, 0xD2E7470EE14C6C93, 0x9E3779B97F4A7C15, 0xCA5A826395121157, 0xBB67AE8584CAA73B>;
+  philox_engine<::cuda::std::uint_fast64_t,
+                64,
+                4,
+                10,
+                0xD2E7470EE14C6C93,
+                0x9E3779B97F4A7C15,
+                0xCA5A826395121157,
+                0xBB67AE8584CAA73B>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
