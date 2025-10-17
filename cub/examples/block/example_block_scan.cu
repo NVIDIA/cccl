@@ -291,6 +291,66 @@ void Test()
   }
 }
 
+// example-begin inclusive-scan-prefix-callback
+// A stateful callback functor that maintains a running prefix to be applied
+// during consecutive scan operations.
+struct BlockPrefixCallbackOp
+{
+  // Running prefix
+  int running_total;
+
+  // Constructor
+  __device__ BlockPrefixCallbackOp(int running_total)
+      : running_total(running_total)
+  {}
+
+  // Callback operator to be entered by the first warp of threads in the block.
+  // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  __device__ int operator()(int block_aggregate)
+  {
+    int old_prefix = running_total;
+    running_total += block_aggregate;
+    return old_prefix;
+  }
+};
+
+__global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
+{
+  // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
+  using BlockLoadT  = BlockLoad<int, 128, 4, BLOCK_LOAD_TRANSPOSE>;
+  using BlockStoreT = BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>;
+  using BlockScanT  = BlockScan<int, 128>;
+
+  // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
+  __shared__ union
+  {
+    typename BlockLoadT::TempStorage load;
+    typename BlockScanT::TempStorage scan;
+    typename BlockStoreT::TempStorage store;
+  } temp_storage;
+
+  // Initialize running total
+  BlockPrefixCallbackOp prefix_op(0);
+
+  // Have the block iterate over segments of items
+  for (int block_offset = 0; block_offset < num_items; block_offset += 128 * 4)
+  {
+    // Load a segment of consecutive items that are blocked across threads
+    int thread_data[4];
+    BlockLoadT(temp_storage.load).Load(d_data + block_offset, thread_data);
+    __syncthreads();
+
+    // Collectively compute the block-wide inclusive prefix sum
+    BlockScanT(temp_storage.scan).InclusiveSum(thread_data, thread_data, prefix_op);
+    __syncthreads();
+
+    // Store scanned items to output segment
+    BlockStoreT(temp_storage.store).Store(d_data + block_offset, thread_data);
+    __syncthreads();
+  }
+}
+// example-end inclusive-scan-prefix-callback
+
 /**
  * Main
  */
