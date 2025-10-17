@@ -7,9 +7,11 @@ from typing import Any
 
 from typing_extensions import (
     Protocol,
+    runtime_checkable,
 )  # TODO: typing_extensions required for Python 3.7 docs env
 
 
+@runtime_checkable
 class DeviceArrayLike(Protocol):
     """
     Objects representing a device array, having a `.__cuda_array_interface__`

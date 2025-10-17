@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_swappable.h>
@@ -29,8 +30,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
-
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,7 +49,7 @@ namespace cuda::experimental
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
-struct shared_resource : __copy_default_queries<_Resource>
+struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>, "");
 

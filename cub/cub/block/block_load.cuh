@@ -771,6 +771,7 @@ enum BlockLoadAlgorithm
 //!        // Load a segment of consecutive items that are blocked across threads
 //!        int thread_data[4];
 //!        BlockLoad(temp_storage).Load(d_data, thread_data);
+//!    }
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads in
 //! those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1123,6 +1124,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads
   //! in those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1170,6 +1172,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...`` and ``block_items_end`` is ``5``. The set of
   //! ``thread_data`` across the block of threads in those threads will be ``{ [0,1,2,3], [4,?,?,?], ..., [?,?,?,?] }``,
@@ -1222,6 +1225,7 @@ public:
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[4];
   //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end, -1);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...``, ``block_items_end`` is ``5``, and the out-of-bounds
   //! default is ``-1``. The set of ``thread_data`` across the block of threads in those threads will be

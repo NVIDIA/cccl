@@ -177,17 +177,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
     {
       using __tupl_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
-      if constexpr (__nothrow_decay_copyable<_As...>)
+      _CCCL_TRY
       {
         __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
       }
-      else
+      _CCCL_CATCH_ALL
       {
-        _CCCL_TRY
-        {
-          __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
-        }
-        _CCCL_CATCH_ALL
+        // Avoid ODR-using this completion operation if this code path is not taken.
+        if constexpr (!__nothrow_decay_copyable<_As...>)
         {
           execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
         }
@@ -315,7 +312,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     _CCCL_EXEC_CHECK_DISABLE
     template <class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_domain_override_t, _Env&&...) const noexcept
-      -> __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, _Env...>
+      -> __completion_domain_of_t<set_value_t, _Sndr, __fwd_env_t<_Env>...>
     {
       return {};
     }
@@ -382,6 +379,8 @@ public:
   }
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// continues_on sender
 template <class _Sch, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
 {
@@ -424,7 +423,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
     return __attrs_t<_Sch, _Sndr>{this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS continues_on_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ continues_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 };
