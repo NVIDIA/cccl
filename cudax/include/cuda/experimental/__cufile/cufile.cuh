@@ -161,7 +161,7 @@ public:
   //! @return The created cufile object.
   [[nodiscard]] static _CCCL_HOST_API cufile from_native_handle(native_handle_type __native_handle)
   {
-    return cufile{cufile_driver.register_file(__native_handle), __native_handle};
+    return cufile{cufile_driver.register_native_handle(__native_handle), __native_handle};
   }
 
   _CCCL_HIDE_FROM_ABI cufile() noexcept = default;
@@ -179,7 +179,7 @@ public:
     __native_handle_ = __open_file(__filename, __make_oflags(__open_mode));
     try
     {
-      __cufile_handle_ = cufile_driver.register_file(__native_handle_).get();
+      __cufile_handle_ = cufile_driver.register_native_handle(__native_handle_).get();
     }
     catch (...)
     {
@@ -225,7 +225,7 @@ public:
   {
     if (is_open())
     {
-      cufile_driver.deregister_file(__cufile_handle_);
+      cufile_driver.deregister_native_handle(__cufile_handle_);
       [[maybe_unused]] const auto __ignore_close_retval = __close_file_no_throw(__native_handle_);
     }
   }
@@ -265,7 +265,7 @@ public:
 
     try
     {
-      __cufile_handle_ = cufile_driver.register_file(__native_handle_).get();
+      __cufile_handle_ = cufile_driver.register_native_handle(__native_handle_).get();
     }
     catch (...)
     {
@@ -286,7 +286,7 @@ public:
       return;
     }
 
-    cufile_driver.deregister_file(::cuda::std::exchange(__cufile_handle_, nullptr));
+    cufile_driver.deregister_native_handle(::cuda::std::exchange(__cufile_handle_, nullptr));
     __close_file(::cuda::std::exchange(__native_handle_, __invalid_native_handle));
   }
 
@@ -304,7 +304,7 @@ public:
   //! @returns The native handle.
   [[nodiscard]] _CCCL_HOST_API native_handle_type release() noexcept
   {
-    cufile_driver.deregister_file(::cuda::std::exchange(__cufile_handle_, nullptr));
+    cufile_driver.deregister_native_handle(::cuda::std::exchange(__cufile_handle_, nullptr));
     return ::cuda::std::exchange(__native_handle_, __invalid_native_handle);
   }
 };

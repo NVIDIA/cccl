@@ -279,9 +279,9 @@ public:
   }
 
   //! @brief Registers an OS native file handle type in the cuFile driver. The registered cuFile handle can be used with
-  //!        other cuFile APIs. The handle must be deregistered calling the \c cuda::cufile_driver.deregister_file(...)
-  //!        method with the obtained cuFile handle. For each OS native file handle can be called once before
-  //!        deregistered.
+  //!        other cuFile APIs. The handle must be deregistered calling the \c
+  //!        cuda::cufile_driver.deregister_native_handle(...) method with the obtained cuFile handle. For each OS
+  //!        native file handle can be called once before deregistered.
   //!
   //! @param __native_handle The OS native file handle.
   //!
@@ -289,7 +289,7 @@ public:
   //!
   //! @throws cuda::cuda_error if a CUDA driver error occurs.
   //! @throws cuda::cufile_error if a cuFile driver error occurs.
-  [[nodiscard]] _CCCL_HOST_API cufile_ref register_file(__cufile_os_native_type __native_handle) const
+  [[nodiscard]] _CCCL_HOST_API cufile_ref register_native_handle(__cufile_os_native_type __native_handle) const
   {
     ::CUfileDescr_t __desc{};
     __desc.type      = ::CU_FILE_HANDLE_TYPE_OPAQUE_FD;
@@ -305,7 +305,7 @@ public:
   //! @param __file The cuFile handle.
   //!
   //! @note The \c cuda::cufile implementation relies on this function being \c noexcept.
-  _CCCL_HOST_API void deregister_file(cufile_ref __file) const noexcept
+  _CCCL_HOST_API void deregister_native_handle(cufile_ref __file) const noexcept
   {
     ::cuFileHandleDeregister(__file.get());
   }
