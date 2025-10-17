@@ -104,11 +104,11 @@ struct pool_options
    */
   bool validate() const
   {
-    if (!::cuda::is_power_of_two(smallest_block_size))
+    if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {
       return false;
     }
-    if (!::cuda::is_power_of_two(largest_block_size))
+    if (largest_block_size != 0 && !::cuda::is_power_of_two(largest_block_size))
     {
       return false;
     }
