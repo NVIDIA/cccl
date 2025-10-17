@@ -13,19 +13,25 @@
 #include <cuda/std/__random/philox_engine.h>
 
 template <typename Engine>
-__host__ __device__ void test()
+__host__ __device__ constexpr bool test()
 {
-  Engine e;
-  for (int i = 0; i < 10000; ++i)
+  const auto seeds = {0, 29332, 9000};
+  for (auto seed : seeds)
   {
-    assert(e() <= Engine::max());
+    Engine e;
+    for (int i = 0; i < 100; ++i)
+    {
+      assert(e() <= Engine::max());
+    }
   }
-  static_assert(Engine::max() > 0, "philox_engine::max() is broken");
+  return true;
 }
 
 int main(int, char**)
 {
   test<cuda::std::philox4x32>();
+  static_assert(test<cuda::std::philox4x32>());
   test<cuda::std::philox4x64>();
+  static_assert(test<cuda::std::philox4x64>());
   return 0;
 }

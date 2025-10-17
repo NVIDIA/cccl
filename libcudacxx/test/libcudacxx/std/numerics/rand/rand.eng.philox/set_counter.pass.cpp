@@ -12,7 +12,7 @@
 
 #include <cuda/std/__random/philox_engine.h>
 template <typename Engine>
-__host__ __device__ void test()
+__host__ __device__ constexpr bool test()
 {
   Engine e1(7);
   Engine e2(7);
@@ -38,18 +38,14 @@ __host__ __device__ void test()
   }
   e2.discard(4);
   assert(e1 == e2);
-
-  constexpr auto test_constexpr = []() {
-    Engine e1(7);
-    e1.set_counter({0, 0, 0, 100});
-    e1();
-    return 0;
-  }();
+  return true;
 }
 
 int main(int, char**)
 {
   test<cuda::std::philox4x32>();
+  static_assert(test<cuda::std::philox4x32>());
   test<cuda::std::philox4x64>();
+  static_assert(test<cuda::std::philox4x64>());
   return 0;
 }
