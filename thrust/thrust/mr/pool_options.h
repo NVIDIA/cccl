@@ -112,7 +112,7 @@ struct pool_options
     {
       return false;
     }
-    if (!::cuda::is_power_of_two(alignment))
+    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
     {
       return false;
     }
