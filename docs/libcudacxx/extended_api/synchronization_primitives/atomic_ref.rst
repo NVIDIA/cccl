@@ -49,6 +49,7 @@ No object or subobject of an object referenced by an ``atomic_­ref`` shall be c
 
 For ``cuda::atomic_ref<T>`` and ``cuda::std::atomic_ref<T>`` the type ``T`` must satisfy the following:
   - ``sizeof(T) <= 16``.
+  - The referenced object must be aligned to its size: ``alignof(T) == sizeof(T)``.
   - ``T`` must not have “padding bits”, i.e., T's `object representation <https://en.cppreference.com/w/cpp/language/object#Object_representation_and_value_representation>`_
     must not have bits that do not participate in it's value representation.
 
