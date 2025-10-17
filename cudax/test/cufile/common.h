@@ -17,7 +17,7 @@
 
 void test_check_fd_is_valid(int fd)
 {
-  CUDAX_REQUIRE(fcntl(fd, F_GETFD) == 0);
+  CUDAX_REQUIRE(fcntl(fd, F_GETFD) != -1);
 }
 
 void test_check_file_exists(const char* filename)
