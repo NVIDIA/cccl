@@ -17,6 +17,9 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_inclusive_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_exclusive_segmented_sum);
+
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_inclusive_segmented_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, device_exclusive_segmented_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, device_inclusive_segmented_scan_with_init);
@@ -165,8 +168,9 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   {
     using op_t = ::cuda::minimum<>;
 
+    // check 3 offset iterators API
     device_exclusive_segmented_scan(
-      d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, d_offsets_it, op_t{}, output_t{});
+      d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, op_t{}, output_t{});
 
     h_output = output_vec;
 
@@ -182,6 +186,17 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
       bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
       REQUIRE(correct);
     }
+
+    // check 2 offset iterators API
+    device_exclusive_segmented_scan(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments, op_t{}, output_t{});
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
   }
 
   SECTION("inclusive scan")
@@ -192,8 +207,9 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
+    // check 3 offset iterators API
     device_inclusive_segmented_scan(
-      unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, d_offsets_it, d_offsets_it + 1, d_offsets_it, scan_op);
+      unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, scan_op);
 
     h_output = output_vec;
 
@@ -213,8 +229,10 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     if constexpr (::cuda::std::is_same_v<input_t, output_t>)
     {
       output_vec = in_items;
+
+      // check 2 iterators API for in-place scan
       device_inclusive_segmented_scan(
-        unwrap_it(d_out_it), unwrap_it(d_out_it), num_segments, d_offsets_it, d_offsets_it + 1, d_offsets_it, scan_op);
+        unwrap_it(d_out_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op);
 
       h_output = output_vec;
 
@@ -240,13 +258,14 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     accum_t init_value{};
     init_default_constant(init_value);
 
+    // check 3 offset iterators API
     device_inclusive_segmented_scan_with_init(
       unwrap_it(d_in_it),
       unwrap_it(d_out_it),
-      num_segments,
       d_offsets_it,
       d_offsets_it + 1,
       d_offsets_it,
+      num_segments,
       scan_op,
       init_value);
 
@@ -264,5 +283,88 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
       bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
       REQUIRE(correct);
     }
+
+    // check 2 offset iterators API
+    device_inclusive_segmented_scan_with_init(
+      unwrap_it(d_in_it), unwrap_it(d_out_it), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, init_value);
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      // Verify result
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
   }
+
+#if ((TEST_TYPES == 0) || (TEST_TYPES == 1))
+  SECTION("exclusive sum")
+  {
+    using op_t = cuda::std::plus<>;
+
+    // check 3 offset iterators API
+    device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      compute_exclusive_scan_reference(
+        h_input.cbegin() + h_segment_offsets[i],
+        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_ref.begin() + h_segment_offsets[i],
+        output_t{},
+        cuda::std::plus<>{});
+
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
+
+    // check 2 offset iterators API
+    device_exclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
+  }
+
+  SECTION("inclusive sum")
+  {
+    using op_t = cuda::std::plus<>;
+
+    // check 3 offset iterators API
+    device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments);
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      compute_inclusive_scan_reference(
+        h_input.cbegin() + h_segment_offsets[i],
+        h_input.cbegin() + h_segment_offsets[i + 1],
+        h_ref.begin() + h_segment_offsets[i],
+        cuda::std::plus<>{},
+        output_t{});
+
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
+
+    // check 2 offset iterators API
+    device_inclusive_segmented_sum(d_in_it, d_out_it, d_offsets_it, d_offsets_it + 1, num_segments);
+
+    h_output = output_vec;
+
+    for (offset_t i = 0; i < num_segments; ++i)
+    {
+      bool correct = check_segment(h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]);
+      REQUIRE(correct);
+    }
+  }
+#endif
 }
