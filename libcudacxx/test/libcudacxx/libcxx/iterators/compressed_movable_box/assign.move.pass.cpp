@@ -54,48 +54,105 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
+  using cuda::std::__compressed_box_choose;
+  using cuda::std::__compressed_box_move_assign_available;
+  using cuda::std::__compressed_box_specialization;
+  using cuda::std::__smf_availability;
+
   { // trivial empty type
-    box<TrivialEmpty> input{};
-    box<TrivialEmpty> b{};
+    using T = TrivialEmpty;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__trivial);
+
+    box<T> input{};
+    box<T> b{};
     b = cuda::std::move(input);
     assert(b.__get<0>() == 42);
     static_assert(noexcept(b = cuda::std::move(input)));
   }
 
   { // trivial nonempty type
-    test<int>(1337);
+    using T = int;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__trivial);
+    test<T>(1337);
   }
 
   { // non-trivial empty type
-    test<NotTriviallyMoveAssignableEmpty<13>>(13);
+    using T = NotTriviallyMoveAssignableEmpty<13>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(13);
   }
 
   { // non-trivial nonempty type
-    test<NotTriviallyMoveAssignable<42>>(1337);
+    using T = NotTriviallyMoveAssignable<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // non-trivial empty type, not noexcept
-    test<NotTriviallyMoveAssignableEmpty<MayThrow>>(MayThrow);
+    using T = NotTriviallyMoveAssignableEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
   }
 
   { // non-trivial nonempty type, not noexcept
-    test<NotTriviallyMoveAssignable<MayThrow>>(1337);
+    using T = NotTriviallyMoveAssignable<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // nonempty not copy assignable
-    test<NotMoveAssignable<42>>(1337);
+    using T = NotMoveAssignable<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // not copy assignable,
-    test<NotMoveAssignableEmpty<13>>(13);
+    using T = NotMoveAssignableEmpty<13>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(13);
   }
 
   { // nonempty not copy assignable
-    test<NotMoveAssignable<MayThrow>>(1337);
+    using T = NotMoveAssignable<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
+  }
+
+  { // nonempty not copy assignable, not default constructible
+    using T = NotMoveAssignableNotDefaultConstructible<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
+  }
+
+  { // nonempty not copy assignable, not default constructible, may throw
+    using T = NotMoveAssignableNotDefaultConstructible<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // empty not copy assignable,
-    test<NotMoveAssignableEmpty<MayThrow>>(MayThrow);
+    using T = NotMoveAssignableEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
+  }
+
+  { // empty not copy assignable,
+    using T = NotMoveAssignableNotDefaultConstructibleEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_move_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
   }
 
   return true;
@@ -105,7 +162,11 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020
+#  if !TEST_COMPILER(GCC, ==, 10) && !TEST_COMPILER(MSVC)
+  // GCC-10:  segfault
+  // MSVC: error: read of an uninitialized symbol
   static_assert(test());
+#  endif // !TEST_COMPILER(GCC, ==, 10) && !TEST_COMPILER(MSVC)
 #endif // TEST_STD_VER >= 2020
 
   return 0;
