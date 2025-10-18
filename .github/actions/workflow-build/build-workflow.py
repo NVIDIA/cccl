@@ -465,7 +465,14 @@ def generate_dispatch_job_runner(matrix_job, job_type):
 
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return f"{runner_os}-{cpu}-cpu16"
+        # Use smaller 4-core runners for build jobs if we can
+        if job_type == "build":
+            # ClangCUDA, MSVC, and NVHPC should use 16-core runners
+            if ("clang" not in matrix_job["cudacxx"]) and (
+                "msvc" not in matrix_job["cxx"]
+            ):
+                return f"{runner_os}-{cpu}-cpu16"
+        return f"{runner_os}-{cpu}-cpu8"
 
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""

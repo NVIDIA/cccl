@@ -9,12 +9,7 @@ endmacro()
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
-  set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}")
-endforeach ()
-
-message(STATUS "Enabled CUDA architectures:${_compute_message}")
+message(STATUS "Enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 option(LIBCUDACXX_TEST_WITH_NVRTC
   "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
@@ -52,7 +47,7 @@ string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIAL
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
+  set(LIBCUDACXX_WARNING_LEVEL "-Xcompiler=-Wall -Xcompiler=-Wextra")
 endif()
 
 if (MSVC)
@@ -79,8 +74,7 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " -Xclang -Wno-unused-parameter"
     " -Wno-unknown-cuda-version"
     " ${LIBCUDACXX_FORCE_INCLUDE}"
-    " -I${libcudacxx_SOURCE_DIR}/include"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " -I${libcudacxx_SOURCE_DIR}/include")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
     " ${CMAKE_CUDA_FLAGS}"
@@ -98,8 +92,6 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
     " -stdpar")
 endif()
-
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
 
 include(AddLLVM)
 
@@ -135,7 +127,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
     COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
     "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    "-Dexecutor=\"NoopExecutor()\"" -j $ENV{CMAKE_BUILD_PARALLEL_LEVEL} "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
 
 endif()
@@ -153,7 +145,7 @@ add_test(NAME libcudacxx.test.lit COMMAND
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 10800 # 3hr, some CI machines are slow
+  TIMEOUT 21600 # 6hr to match CI timeout
   RUN_SERIAL TRUE
 )
 

@@ -90,6 +90,7 @@ jobs:
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]'
       }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read
@@ -109,6 +110,7 @@ jobs:
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]'
       }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read
@@ -128,6 +130,7 @@ jobs:
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]'
       }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read
@@ -147,6 +150,7 @@ jobs:
         toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]'
       }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read
