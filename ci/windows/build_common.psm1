@@ -19,6 +19,13 @@ $ErrorActionPreference = "Stop"
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
 $script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
 
+Write-Host "=== Docker Container Resource Info ==="
+Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
+Get-WmiObject Win32_OperatingSystem | ForEach-Object {
+    Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize / 1MB), ($_.FreePhysicalMemory / 1MB))
+}
+Write-Host "======================================"
+
 # Extract the CL version for export to build scripts:
 $script:CL_VERSION_STRING = & cl.exe /?
 if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
