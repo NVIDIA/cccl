@@ -29,11 +29,11 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/cmath>
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -330,7 +330,7 @@ try
   // All the same -> single unique
   SECTION("AllSame")
   {
-    auto in = thrust::make_constant_iterator(offset_t{0});
+    auto in = cuda::make_constant_iterator(offset_t{0});
     constexpr offset_t expected_num_unique{1};
 
     // Prepare expected data
