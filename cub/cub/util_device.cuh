@@ -660,7 +660,9 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 _CCCL_TEMPLATE(typename PolicyT)
-_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) )
+#if _CCCL_STD_VER < 2020
+_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
+#endif
 __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
