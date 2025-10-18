@@ -181,7 +181,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   _CCCL_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
-    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
+    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, exception_ptr>)
     {
       __complete(execution::set_error, cudaErrorUnknown);
     }
