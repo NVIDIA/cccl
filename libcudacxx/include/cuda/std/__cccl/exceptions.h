@@ -58,9 +58,9 @@
     if constexpr (true) \
     {
 #  define _CCCL_THROW(...) ::cuda::std::terminate()
-#  define _CCCL_CATCH(...)                                                 \
-    }                                                                      \
-    else if constexpr (__VA_ARGS__ = ::stdexec::__catch_any_lvalue; false) \
+#  define _CCCL_CATCH(...)                                               \
+    }                                                                    \
+    else if constexpr (__VA_ARGS__ = ::__cccl_catch_any_lvalue{}; false) \
     {
 #  define _CCCL_CATCH_ALL    \
     }                        \
