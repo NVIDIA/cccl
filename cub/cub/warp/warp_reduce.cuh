@@ -105,6 +105,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)
 //!        int warp_id   = threadIdx.x / 32;
 //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
 //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will be
@@ -130,6 +131,8 @@ CUB_NAMESPACE_BEGIN
 //!            int thread_data = ...
 //!            // Return the warp-wide sum to lane0
 //!            int aggregate = WarpReduce(temp_storage).Sum(thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is ``{0, 1, 2, 3, ..., 31}``.
 //! The corresponding output ``aggregate`` in thread0 will be ``496`` (and is undefined in other threads).
@@ -218,6 +221,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int warp_id = threadIdx.x / 32;
   //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
   //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will ``496``, ``1520``, ``2544``, and
@@ -299,8 +303,8 @@ public:
   //!            thread_data = d_data[threadIdx.x];
   //!
   //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).Sum(
-  //!            thread_data, valid_items);
+  //!        int aggregate = WarpReduce(temp_storage).Sum(thread_data, valid_items);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
   //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
@@ -363,6 +367,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedSum(
   //!            thread_data, head_flag);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
   //! is ``{0, 1, 2, 3, ..., 31`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0``,

@@ -62,7 +62,8 @@ struct sync_wait_t
     basic_run_loop<_Env> __loop_;
   };
 
-  template <class _Env>
+public:
+  template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     _CCCL_EXEC_CHECK_DISABLE
@@ -108,6 +109,7 @@ struct sync_wait_t
   template <class... _Ts>
   using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 
+  _CUDAX_SEMI_PRIVATE :
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
@@ -177,7 +179,15 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error __err) const
+    [[noreturn]]
+    _CCCL_API void operator()(_Error __err) const
+    {
+      NV_IF_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
+    }
+
+    template <class _Error>
+    [[noreturn]]
+    _CCCL_HOST_API static void __do_throw(_Error __err)
     {
       if constexpr (__same_as<_Error, ::std::exception_ptr>)
       {
@@ -195,6 +205,7 @@ struct sync_wait_t
       {
         throw static_cast<_Error&&>(__err);
       }
+      _CCCL_UNREACHABLE();
     }
   };
 
