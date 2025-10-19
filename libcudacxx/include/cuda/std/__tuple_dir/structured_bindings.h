@@ -31,6 +31,10 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_volatile.h>
 
 // This is a workaround for the fact that structured bindings require that the specializations of
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
@@ -43,8 +47,54 @@ _CCCL_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct tuple_size;
 
+#if _CCCL_COMPILER(NVRTC)
+
+template <class _Tp>
+struct tuple_size<
+  ::cuda::std::__enable_if_tuple_size_imp<const _Tp,
+                                          ::cuda::std::enable_if_t<!::cuda::std::is_volatile_v<_Tp>>,
+                                          ::cuda::std::integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
+    : public ::cuda::std::integral_constant<size_t, tuple_size<_Tp>::value>
+{};
+
+template <class _Tp>
+struct tuple_size<
+  ::cuda::std::__enable_if_tuple_size_imp<volatile _Tp,
+                                          ::cuda::std::enable_if_t<!::cuda::std::is_const_v<_Tp>>,
+                                          ::cuda::std::integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
+    : public ::cuda::std::integral_constant<size_t, tuple_size<_Tp>::value>
+{};
+
+template <class _Tp>
+struct tuple_size<
+  ::cuda::std::__enable_if_tuple_size_imp<const volatile _Tp,
+                                          ::cuda::std::integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
+    : public ::cuda::std::integral_constant<size_t, tuple_size<_Tp>::value>
+{};
+#endif // _CCCL_COMPILER(NVRTC)
+
 template <size_t _Ip, class _Tp>
 struct tuple_element;
+
+#if _CCCL_COMPILER(NVRTC)
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = const typename tuple_element<_Ip, _Tp>::type;
+};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, volatile _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = volatile typename tuple_element<_Ip, _Tp>::type;
+};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const volatile _Tp>
+{
+  using type _CCCL_NODEBUG_ALIAS = const volatile typename tuple_element<_Ip, _Tp>::type;
+};
+#endif // _CCCL_COMPILER(NVRTC)
 
 template <class _Tp, size_t _Size>
 struct tuple_size<::cuda::std::array<_Tp, _Size>>
