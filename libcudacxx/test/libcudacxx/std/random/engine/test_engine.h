@@ -65,7 +65,7 @@ __host__ __device__ constexpr bool test_seed()
   e1.seed(Engine::default_seed);
   assert(e1 == e2);
 
-  constexpr SeedSequence seq;
+  constexpr auto seq = SeedSequence{};
   static_assert(cuda::std::is_void_v<decltype(e1.seed())>);
   static_assert(cuda::std::is_void_v<decltype(e1.seed(23))>);
   static_assert(cuda::std::is_void_v<decltype(e1.seed(seq))>);
