@@ -1560,6 +1560,8 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>Keys must be in a form suitable for radix ranking (i.e., unsigned bits).</p></li>
+<li><p><strong>Important</strong>: BlockRadixRank ranks only <code class="docutils literal notranslate"><span class="pre">RADIX_BITS</span></code> bits at a time from the keys, not the entire key.
+The digit extractor determines which bits are ranked.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 </ul>
 </section>
@@ -1576,19 +1578,19 @@
 <span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">radix_bits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Specialize BlockRadixRank for a 1D block of 2 threads</span>
-<span class="w">  </span><span class="c1">// Specialize BlockRadixRank for a 1D block of 2 threads</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">block_radix_rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockRadixRank</span><span class="o">&lt;</span><span class="n">block_threads</span><span class="p">,</span><span class="w"> </span><span class="n">radix_bits</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="o">&gt;</span><span class="p">;</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">storage_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">block_radix_rank</span><span class="o">::</span><span class="n">TempStorage</span><span class="p">;</span>
 
-<span class="w">  </span><span class="c1">// Allocate shared memory for BlockRadixSort</span>
+<span class="w">  </span><span class="c1">// Allocate shared memory for BlockRadixRank</span>
 <span class="w">  </span><span class="n">__shared__</span><span class="w"> </span><span class="n">storage_t</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
-<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
 <span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">ranks</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
 <span class="w">  </span><span class="p">...</span>
 
-<span class="w">  </span><span class="n">cub</span><span class="o">::</span><span class="n">BFEDigitExtractor</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">extractor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">radix_bits</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// Extract the lowest radix_bits from each key</span>
+<span class="w">  </span><span class="n">cub</span><span class="o">::</span><span class="n">BFEDigitExtractor</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="w"> </span><span class="n">extractor</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">radix_bits</span><span class="p">);</span>
 <span class="w">  </span><span class="n">block_radix_rank</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">RankKeys</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="n">ranks</span><span class="p">,</span><span class="w"> </span><span class="n">extractor</span><span class="p">);</span>
 
 <span class="w">  </span><span class="p">...</span>
@@ -1596,6 +1598,7 @@
 </pre></div>
 </div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">keys</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[16,10],</span> <span class="pre">[9,11]</span> <span class="pre">}</span></code>.
+The extractor will rank only the lowest 5 bits: <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[16,10],</span> <span class="pre">[9,11]</span> <span class="pre">}</span></code> (bits 0-4).
 The corresponding output <code class="docutils literal notranslate"><span class="pre">ranks</span></code> in those threads will be <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[3,1],</span> <span class="pre">[0,2]</span> <span class="pre">}</span></code>.</p>
 </section>
 <section id="re-using-dynamically-allocating-shared-memory">
