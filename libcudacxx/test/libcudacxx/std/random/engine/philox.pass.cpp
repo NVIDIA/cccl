@@ -17,6 +17,7 @@ __host__ __device__ constexpr bool test_set_counter()
   Engine e1(7);
   Engine e2(7);
   e1.discard(100);
+  static_assert(::cuda::std::is_void_v<decltype(e2.set_counter({0, 0, 0, 100}))>);
   e2.set_counter({0, 0, 0, 100 / 4});
   assert(e1 == e2);
 

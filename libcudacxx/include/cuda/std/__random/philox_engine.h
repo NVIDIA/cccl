@@ -156,7 +156,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr explicit philox_engine(_Sseq& __seq) noexcept
+  _CCCL_API constexpr explicit philox_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
@@ -179,12 +179,12 @@ public:
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
   _CCCL_API constexpr void seed(_Sseq& seq)
   {
-    __x_               = {};
-    __y_               = {};
-    __k_               = {};
-    __j_               = word_count - 1;
-    constexpr auto __p = (word_size - 1) / 32 + 1;
-    ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a;
+    __x_                                                              = {};
+    __y_                                                              = {};
+    __k_                                                              = {};
+    __j_                                                              = word_count - 1;
+    constexpr auto __p                                                = (word_size - 1) / 32 + 1;
+    ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a = {};
     seq.generate(__a.begin(), __a.end());
     auto a_iter = __a.begin();
     for (::cuda::std::size_t __k = 0; __k < word_count / 2; ++__k)
