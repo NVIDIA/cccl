@@ -37,7 +37,7 @@ struct TestFn
       assert(t.load() == T(2));
     }
     {
-      using A = cuda::atomic<T;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(1);
