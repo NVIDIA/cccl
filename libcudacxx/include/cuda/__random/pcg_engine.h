@@ -64,7 +64,7 @@ public:
   }
   constexpr _CCCL_API void seed(result_type __seed = default_seed) noexcept
   {
-    __x_ = (__seed + increment) * multiplier + increment;
+    __x_ = (__seed + __increment) * __multiplier + __increment;
   }
 
   _CCCL_TEMPLATE(class _Sseq)
@@ -73,18 +73,18 @@ public:
   {
     ::cuda::std::array<uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());
-    itype seed_val = data[0];
-    seed_val       = (seed_val << 32) | data[1];
-    seed_val       = (seed_val << 32) | data[2];
-    seed_val       = (seed_val << 32) | data[3];
-    __x_           = (seed_val + increment) * multiplier + increment;
+    __uint128_type seed_val = data[0];
+    seed_val                = (seed_val << 32) | data[1];
+    seed_val                = (seed_val << 32) | data[2];
+    seed_val                = (seed_val << 32) | data[3];
+    __x_                    = (seed_val + __increment) * __multiplier + __increment;
   }
 
   // generating functions
   constexpr _CCCL_API result_type operator()() noexcept
   {
-    __x_ = __x_ * multiplier + increment;
-    return OutputTransform(__x_);
+    __x_ = __x_ * __multiplier + __increment;
+    return __output_transform(__x_);
   }
 
   constexpr _CCCL_API void discard(unsigned long long __z) noexcept
@@ -146,7 +146,7 @@ public:
     ::cuda::std::uint64_t low, hi;
     __is >> low;
     __is >> hi;
-    __e.__x_ = (static_cast<itype>(hi) << 64) | low;
+    __e.__x_ = (static_cast<__uint128_type>(hi) << 64) | low;
 
     // restore flags
     __is.flags(__flags);
@@ -156,48 +156,48 @@ public:
 #endif // !_CCCL_COMPILER(NVRTC)
 
 private:
-  using xtype      = uint64_t;
-  using itype      = unsigned __int128;
-  using bitcount_t = ::cuda::std::uint8_t;
+  using __uint128_type = unsigned __int128;
+  using __bitcount_t   = ::cuda::std::uint8_t;
 
-  static constexpr itype multiplier = ((itype) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
-  static constexpr itype increment  = ((itype) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
-
-  [[nodiscard]] _CCCL_API constexpr xtype rotr(xtype value, bitcount_t rot) noexcept
+  static constexpr __uint128_type __multiplier =
+    ((__uint128_type) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
+  static constexpr __uint128_type __increment =
+    ((__uint128_type) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
+  [[nodiscard]] _CCCL_API constexpr result_type __rotr(result_type __value, __bitcount_t __rot) noexcept
   {
-    constexpr bitcount_t bits = sizeof(xtype) * 8;
-    constexpr bitcount_t mask = bits - 1;
-    return (value >> rot) | (value << ((-rot) & mask));
+    constexpr __bitcount_t __bits = sizeof(result_type) * 8;
+    constexpr __bitcount_t __mask = __bits - 1;
+    return (__value >> __rot) | (__value << ((-__rot) & __mask));
   }
-  [[nodiscard]] _CCCL_API constexpr xtype OutputTransform(itype internal) noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_type __internal) noexcept
   {
-    bitcount_t rot = bitcount_t(internal >> 122);
-    internal ^= internal >> 64;
-    return rotr(xtype(internal), rot);
+    __bitcount_t __rot = __bitcount_t(__internal >> 122);
+    __internal ^= __internal >> 64;
+    return __rotr(result_type(__internal), __rot);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto power_mod(itype delta) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto __power_mod(__uint128_type __delta) noexcept
   {
-    constexpr itype ZERO = 0u;
-    constexpr itype ONE  = 1u;
-    itype acc_mult       = 1;
-    itype acc_plus       = 0;
-    itype cur_mult       = multiplier;
-    itype cur_plus       = increment;
-    while (delta > ZERO)
+    constexpr __uint128_type __ZERO = 0u;
+    constexpr __uint128_type __ONE  = 1u;
+    __uint128_type __acc_mult       = 1;
+    __uint128_type __acc_plus       = 0;
+    __uint128_type __cur_mult       = __multiplier;
+    __uint128_type __cur_plus       = __increment;
+    while (__delta > __ZERO)
     {
-      if (delta & ONE)
+      if (__delta & __ONE)
       {
-        acc_mult *= cur_mult;
-        acc_plus = acc_plus * cur_mult + cur_plus;
+        __acc_mult *= __cur_mult;
+        __acc_plus = __acc_plus * __cur_mult + __cur_plus;
       }
-      cur_plus = (cur_mult + ONE) * cur_plus;
-      cur_mult *= cur_mult;
-      delta >>= 1;
+      __cur_plus = (__cur_mult + __ONE) * __cur_plus;
+      __cur_mult *= __cur_mult;
+      __delta >>= 1;
     }
-    return ::cuda::std::make_pair(acc_mult, acc_plus);
+    return ::cuda::std::pair(__acc_mult, __acc_plus);
   }
-  itype __x_{};
+  __uint128_type __x_{};
 };
 
 _CCCL_END_NAMESPACE_CUDA
