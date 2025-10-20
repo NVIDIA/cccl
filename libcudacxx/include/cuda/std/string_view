@@ -205,30 +205,32 @@ public:
   }
 
 #if !_CCCL_COMPILER(NVRTC)
-  _CCCL_TEMPLATE(class _Traits2 = _Traits, class _Alloc)
-  _CCCL_REQUIRES(is_same_v<_Traits2, char_traits<_CharT>>)
-  _CCCL_HOST_API constexpr basic_string_view(
-    const ::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>& __sv) noexcept
+  _CCCL_TEMPLATE(class _Traits2, class _Alloc)
+  _CCCL_REQUIRES(__is_cuda_std_char_traits_v<_Traits> _CCCL_AND __is_std_char_traits_v<_Traits2>)
+  _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string<_CharT, _Traits2, _Alloc>& __sv) noexcept
       : __data_{__sv.data()}
       , __size_{__sv.size()}
   {}
 
-  template <class _Alloc>
-  _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string<_CharT, _Traits, _Alloc>& __sv) noexcept
+  _CCCL_TEMPLATE(class _Traits2, class _Alloc)
+  _CCCL_REQUIRES(is_same_v<_Traits, _Traits2>)
+  _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string<_CharT, _Traits2, _Alloc>& __sv) noexcept
       : __data_{__sv.data()}
       , __size_{__sv.size()}
   {}
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if __cpp_lib_string_view >= 201606L
-  _CCCL_TEMPLATE(class _Traits2 = _Traits)
-  _CCCL_REQUIRES(is_same_v<_Traits2, char_traits<_CharT>>)
-  _CCCL_HOST_API constexpr basic_string_view(::std::basic_string_view<_CharT> __s) noexcept
+  _CCCL_TEMPLATE(class _Traits2)
+  _CCCL_REQUIRES(__is_cuda_std_char_traits_v<_Traits> _CCCL_AND __is_std_char_traits_v<_Traits2>)
+  _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string_view<_CharT, _Traits2>& __s) noexcept
       : __data_{__s.data()}
       , __size_{__s.size()}
   {}
 
-  _CCCL_HOST_API constexpr basic_string_view(::std::basic_string_view<_CharT, _Traits> __s) noexcept
+  _CCCL_TEMPLATE(class _Traits2)
+  _CCCL_REQUIRES(is_same_v<_Traits, _Traits2>)
+  _CCCL_HOST_API constexpr basic_string_view(const ::std::basic_string_view<_CharT, _Traits2>& __s) noexcept
       : __data_{__s.data()}
       , __size_{__s.size()}
   {}
