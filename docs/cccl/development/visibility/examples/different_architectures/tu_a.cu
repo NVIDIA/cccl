@@ -9,8 +9,8 @@ some_class_with_kernel<T>::some_class_with_kernel()
 void non_inlined_function()
 {
   some_class_with_kernel with_inline{1};
-  std::printf("a: value of class with inlined constructor: %d\n", with_inline.val_);
+  printf("a: value of class with inlined constructor: %d\n", with_inline.val_);
 
   some_class_with_kernel from_library{};
-  std::printf("a: value of class with constructor from library: %d\n", from_library.val_);
+  printf("a: value of class with constructor from library: %d\n", from_library.val_);
 }

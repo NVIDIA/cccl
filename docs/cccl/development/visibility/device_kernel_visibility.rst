@@ -1,4 +1,4 @@
-.. _cub-developer-guide-visibility-device-kernel-visibility:
+.. _cccl-development-visibility-device-kernel-visibility:
 
 
 Device Kernel Visibility Issue
@@ -6,7 +6,7 @@ Device Kernel Visibility Issue
 
 Consider the following simple TU:
 
-.. code:: cpp
+.. code-block:: cpp
 
     template <class T>
     __global__ void kernel(T *val) {
@@ -21,7 +21,7 @@ Consider the following simple TU:
 
 The cuda compiler frontend will turn this into:
 
-.. code:: cpp
+.. code-block:: cpp
 
    template< class T>
    static void __wrapper__device_stub_kernel(T *&ptr) {
@@ -76,14 +76,14 @@ b   0xh_kernel_b  0xd_kernel_b
 === ============= ============
 
 In contrast to
-:ref:`Problem 1 <cub-developer-guide-visibility-host-stub-visibility>` the host stubs will get a different mangled name
+:ref:`Problem 1 <cccl-development-visibility-host-stub-visibility>` the host stubs will get a different mangled name
 and so the right stub function will always be selected.
 
 Now imagine that both libraries are going to defer launching of their kernels to a function ``foo`` common to both
 ``lib_a`` and ``lib_b``, which has weak external linkage. This might happen in ``CUB``, because it launches
 kernels through the ``thrust::triple_chevron`` helper.
 
-Similar to :ref:`Problem 1 <cub-developer-guide-visibility-host-stub-visibility>` the linker will pick one of the two
+Similar to :ref:`Problem 1 <cccl-development-visibility-host-stub-visibility>` the linker will pick one of the two
 weak symbols and subsequently ``lib_a`` will try to pass its own kernel ``d_kernel<int>_a`` to ``lib_b::foo``.
 
 However, the CUDA runtime in ``lib_b`` will not find any kernel registered at the address of ``d_kernel<int>_a`` and

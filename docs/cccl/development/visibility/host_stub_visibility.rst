@@ -1,4 +1,4 @@
-.. _cub-developer-guide-visibility-host-stub-visibility:
+.. _cccl-development-visibility-host-stub-visibility:
 
 
 Host Stub Visibility Issue
@@ -6,22 +6,26 @@ Host Stub Visibility Issue
 
 Consider the following simple TU:
 
-.. code:: cpp
+.. code-block:: cpp
 
-    template <class T>
-    __global__ void kernel(T *val) {
-        ::printf("kernel: set val = 42\n");
-        *val = 42;
-    }
+  #include <cstdio>
 
-   int main() {
-     int *ptr{};
-     kernel<<<1, 1>>>(ptr);
-   }
+  template <class T>
+  __global__ void kernel(T *val) {
+      printf("kernel: set val = 42\n");
+      *val = 42;
+  }
 
-The cuda compiler frontend will turn this into:
+  __shared__ int val;
 
-.. code:: cpp
+  int main() {
+
+     kernel<<<1, 1>>>(cuda::std::addressof(val));
+  }
+
+The CUDA compiler frontend will turn this into:
+
+.. code-block:: cpp
 
    template< class T>
    static void __wrapper__device_stub_kernel(T *&ptr) {
