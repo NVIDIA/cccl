@@ -305,6 +305,14 @@ struct DispatchSegmentedScan
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    *
+   * @param[in] kernel_source
+   *   Object specifying implementation kernels
+   *
+   * @param[in] launcher_factory
+   *   Object to execute implementation kernels on the given stream
+   *
+   * @param[in] max_policy
+   *   Struct encoding chain of algorithm tuning policies
    */
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
@@ -317,7 +325,7 @@ struct DispatchSegmentedScan
     EndOffsetIteratorInputT input_end_offsets,
     BeginOffsetIteratorOutputT output_begin_offsets,
     ScanOpT scan_op,
-    InitValueT init,
+    InitValueT init_value,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
@@ -351,7 +359,7 @@ struct DispatchSegmentedScan
         input_end_offsets,
         output_begin_offsets,
         scan_op,
-        init,
+        init_value,
         stream,
         ptx_version,
         kernel_source,
