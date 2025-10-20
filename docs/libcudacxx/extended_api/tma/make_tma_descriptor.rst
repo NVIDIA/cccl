@@ -1,0 +1,191 @@
+.. _libcudacxx-extended-api-tma-make_tma_descriptor:
+
+``cuda::make_tma_descriptor``
+=============================
+
+Defined in header ``<cuda/tma>``.
+
+**Function signatures**
+
+.. code:: cuda
+
+    namespace cuda {
+ 
+    template <size_t BoxDimSize, size_t ElemStrideSize>
+    [[nodiscard]] inline CUtensorMap
+    make_tma_descriptor(
+      const DLTensor&                      tensor,
+      cuda::std::span<int, BoxDimSize>     box_sizes,
+      cuda::std::span<int, ElemStrideSize> elem_strides,
+      TmaInterleaveLayout                  interleave_layout = TmaInterleaveLayout::none,
+      TmaSwizzle                           swizzle           = TmaSwizzle::none,
+      TmaL2FetchSize                       l2_fetch_size     = TmaL2FetchSize::none,
+      TmaOOBfill                           oobfill           = TmaOOBfill::none) noexcept;
+
+    template <size_t BoxDimSize>
+    [[nodiscard]] inline CUtensorMap
+    make_tma_descriptor(
+        const DLTensor&                  tensor,
+        cuda::std::span<int, BoxDimSize> box_sizes,
+        TmaInterleaveLayout              interleave_layout = TmaInterleaveLayout::none,
+        TmaSwizzle                       swizzle           = TmaSwizzle::none,
+        TmaL2FetchSize                   l2_fetch_size     = TmaL2FetchSize::none,
+        TmaOOBfill                       oobfill           = TmaOOBfill::none) noexcept;
+
+    template <size_t BoxDimSize, size_t ElemStrideSize>
+    [[nodiscard]] inline CUtensorMap
+    make_tma_descriptor(
+        const DLManagedTensor& tensor,
+        cuda::std::span<int, BoxDimSize>     box_sizes,
+        cuda::std::span<int, ElemStrideSize> elem_strides,
+        TmaInterleaveLayout                  interleave_layout = TmaInterleaveLayout::none,
+        TmaSwizzle                           swizzle           = TmaSwizzle::none,
+        TmaL2FetchSize                       l2_fetch_size     = TmaL2FetchSize::none,
+        TmaOOBfill                           oobfill           = TmaOOBfill::none) noexcept;
+
+    template <size_t BoxDimSize>
+    [[nodiscard]] inline CUtensorMap
+    make_tma_descriptor(
+        const DLManagedTensor&           tensor,
+        cuda::std::span<int, BoxDimSize> box_sizes,
+        TmaInterleaveLayout              interleave_layout = TmaInterleaveLayout::none,
+        TmaSwizzle                       swizzle           = TmaSwizzle::none,
+        TmaL2FetchSize                   l2_fetch_size     = TmaL2FetchSize::none,
+        TmaOOBfill                       oobfill           = TmaOOBfill::none) noexcept;
+
+    } // namespace cuda
+
+**Enumerators**
+
+.. code:: cuda
+
+    namespace cuda {
+
+    enum class TmaOOBfill { none, nan };
+
+    enum class TmaL2FetchSize { none, bytes64, bytes128, bytes256 };
+
+    enum class TmaInterleaveLayout { none, bytes16, bytes32 };
+
+    enum class TmaSwizzle {
+        none,
+        bytes32,
+        bytes64,
+        bytes128,
+        bytes128_atom_32B,
+        bytes128_atom_32B_flip_8B,
+        bytes128_atom_64B
+    };
+
+    } // namespace cuda
+
+The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor`` or ``DLManagedTensor`` `descriptors <https://dmlc.github.io/dlpack/latest/c_api.html>`__. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
+
+The API is available when ``dlpack/dlpack.h`` (DLPack v1) is discoverable at compile time.
+
+.. note::
+
+  - **DLPack** assumes *row-major* convention for sizes and strides, where the fastest changing dimension is the last one (``rank - 1``).
+  - **cuTensorMap** assumes *column-major* convention for sizes and strides, where the fastest changing dimension is the first one (``0``).
+  - ``box_sizes`` and ``elem_strides`` are expected to be in the same order as the input tensor's dimensions provided by **DLPack**, namely *row-major*.
+
+Parameters
+----------
+
+- ``tensor``: The DLPack tensor describing the logical layout in device memory.
+- ``box_sizes``: Extent of the shared memory tile, one entry per tensor dimension.
+- ``elem_strides``: Stride, in elements, between consecutive accesses inside the shared memory tile. The second overload assumes a stride of ``1`` for every dimension.
+- ``interleave_layout``: [Optional] Interleaving applied to the underlying memory.
+- ``swizzle``: [Optional] Swizzle pattern matching the chosen interleave layout.
+- ``l2_fetch_size``: [Optional] L2 cache promotion for TMA transfers.
+- ``oobfill``: [Optional] Out-of-bounds fill policy for floating-point tensors.
+
+Return value
+------------
+
+- A ``CUtensorMap`` encoding all metadata required to launch TMA transfers.
+
+Preconditions
+-------------
+
+**General preconditions**:
+
+* Compute Capability 9.0 or newer is required.
+* ``dlpack/dlpack.h`` (DLPack v1) must be discoverable at compile time.
+
+**DLPack preconditions**:
+
+* ``tensor.device.device_type`` must be ``kDLCUDA``.
+* ``tensor.device.device_id`` must be a valid GPU device ordinal.
+* ``tensor.ndim`` (rank) must be greater than 0 and less than or equal to 5.
+
+  - ``tensor.ndim`` must not exceed ``3`` when an interleaved layout is requested.
+
+* The following data types are acceped:
+  
+  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``.
+  - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
+  - ``kDLUInt`` with ``bits == 16``, namely ``uint16_t``.
+  - ``kDLUInt`` with ``bits == 32``, namely ``uint32_t``.
+  - ``kDLUInt`` with ``bits == 64``, namely ``uint64_t``.
+  - ``kDLInt`` with ``bits == 32``, namely ``int32_t``.
+  - ``kDLInt`` with ``bits == 64``, namely ``int64_t``.
+  - ``kDLFloat`` with ``bits == 16``, namely ``__half``.
+  - ``kDLFloat`` with ``bits == 32``, namely ``float``.
+  - ``kDLFloat`` with ``bits == 64``, namely ``double``.
+  - ``kDLBfloat`` with ``bits == 16``, namely ``__nv_bfloat16``.
+
+**User parameters preconditions**:
+
+* ``box_sizes``, ``elem_strides``, and ``tensor.ndim`` must have the same rank.
+
+* ``box_sizes`` must be positive and not exceed ``256`` elements per dimension. The full size of ``box_sizes`` must fit in shared memory.
+  
+  - The inner dimension in bytes, computed as ``box_sizes[rank - 1] * sizeof(data_type)``, must be a multiple of 16 bytes if ``interleave_layout`` is ``TmaInterleaveLayout::none``.
+  - Otherwise, the inner dimension in bytes must be a multiple of the bytes of the ``swizzle`` pattern.
+
+* ``elem_strides`` must be positive and not exceed ``8`` elements per dimension.
+
+* ``oobfill`` must be ``TmaOOBfill::none`` for integer data types.
+
+References
+----------
+
+- `DLPack C API <https://dmlc.github.io/dlpack/latest/c_api.html>`__ documentation.
+- `CUDA Tensor Memory Accelerator (TMA) <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ documentation.
+- ``cuTensorMapEncodeTiled`` `CUDA driver API <https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html#group__CUDA__TENSOR__MEMORY_1ga7c7d2aaac9e49294304e755e6f341d7>`__ documentation.
+
+Example
+-------
+
+.. code:: cuda
+
+    #include <cuda/tma>
+    #include <cuda/std/span>
+    #include <dlpack/dlpack.h>
+
+    CUtensorMap create_2d_tile_descriptor(float* device_ptr) {
+        // Define DLPack tensor descriptor, commonly provided externally by the user, library, or framework.
+        constexpr int64_t shape_storage[2]   = {64, 64};
+        constexpr int64_t strides_storage[2] = {1, 64};
+
+        DLTensor tensor{};
+        tensor.data        = device_ptr;
+        tensor.device      = {kDLCUDA, 0};
+        tensor.ndim        = 2;
+        tensor.dtype.code  = static_cast<uint8_t>(kDLFloat);
+        tensor.dtype.bits  = 32;
+        tensor.dtype.lanes = 1;
+        tensor.shape       = const_cast<int64_t*>(shape_storage);
+        tensor.strides     = const_cast<int64_t*>(strides_storage);
+        tensor.byte_offset = 0;
+
+        // Define shared memory box sizes and element strides.
+        int box_sizes_storage[2]    = {16, 16};
+        int elem_strides_storage[2] = {1, 1};
+
+        return cuda::make_tma_descriptor(
+            tensor,
+            cuda::std::span{box_sizes_storage},
+            cuda::std::span{elem_strides_storage});
+    }
