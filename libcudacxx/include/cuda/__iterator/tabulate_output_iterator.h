@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -137,6 +138,8 @@ private:
     return __store_.template __get<1>();
   }
 
+  static_assert(::cuda::std::is_signed_v<_Index>, "tabulate_output_iterator: _Index must be a signed integer");
+
 public:
   using iterator_concept  = ::cuda::std::random_access_iterator_tag;
   using iterator_category = ::cuda::std::random_access_iterator_tag;
@@ -230,6 +233,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
@@ -240,6 +244,7 @@ public:
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
   //! @param __n The number of elements to advance
   //! @param __iter The original @c tabulate_output_iterator
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
@@ -257,6 +262,7 @@ public:
 
   //! @brief Returns a copy of this @c tabulate_output_iterator decremented a given number of elements
   //! @param __n The number of elements to decremented
+  template <int = 0> // Template because compiler will complain about non-literal return type if _Fn is not a literal
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)

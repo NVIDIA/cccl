@@ -123,7 +123,7 @@ struct larger_type
 {};
 
 template <class F, class... Us>
-using invoke_result = ::cuda::std::__invoke_of<F, Us...>;
+using invoke_result = ::cuda::std::invoke_result<F, Us...>;
 
 template <class F, class... Us>
 using invoke_result_t = typename invoke_result<F, Us...>::type;

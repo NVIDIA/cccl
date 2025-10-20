@@ -114,6 +114,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Compute warp-wide prefix sums
 //!        int warp_id = threadIdx.x / 32;
 //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps of
@@ -143,6 +144,8 @@ CUB_NAMESPACE_BEGIN
 //!
 //!            // Compute warp-wide prefix sums
 //!            WarpScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` will be
@@ -248,6 +251,7 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -294,9 +298,8 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_aggregate;
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data,
-  //!                                                     thread_data,
-  //!                                                     warp_aggregate);
+  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data, warp_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -352,6 +355,7 @@ public:
   //!        // Compute exclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps

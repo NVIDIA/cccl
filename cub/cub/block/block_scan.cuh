@@ -190,6 +190,7 @@ enum BlockScanAlgorithm
 //!
 //!        // Collectively compute the block-wide exclusive prefix sum
 //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{[1,1,1,1], [1,1,1,1], ..., [1,1,1,1]}``.
@@ -333,6 +334,7 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix sum
   //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``1, 1, ..., 1``.
   //! The corresponding output ``thread_data`` in those threads will be ``0, 1, ..., 127``.
@@ -386,6 +388,7 @@ public:
   //!        // Collectively compute the block-wide exclusive prefix sum
   //!        int block_aggregate;
   //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data, block_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``1, 1, ..., 1``.
   //! The corresponding output ``thread_data`` in those threads will be ``0, 1, ..., 127``.
@@ -479,6 +482,7 @@ public:
   //!            // Store scanned items to output segment
   //!            d_data[block_offset + threadIdx.x] = thread_data;
   //!        }
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
   //! The corresponding output for the first segment will be ``0, 1, ..., 127``.
@@ -545,6 +549,7 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix sum
   //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
@@ -606,6 +611,7 @@ public:
   //!        // Collectively compute the block-wide exclusive prefix sum
   //!        int block_aggregate;
   //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data, block_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
@@ -720,6 +726,7 @@ public:
   //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
   //!            __syncthreads();
   //!        }
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
   //! The corresponding output for the first segment will be ``0, 1, 2, 3, ..., 510, 511``.
@@ -788,6 +795,7 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
   //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -849,8 +857,9 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
   //!        int block_aggregate;
-  //!        BlockScan(temp_storage).ExclusiveScan(
-  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, block_aggregate);
+  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data,
+  //!                                              INT_MIN, cuda::maximum<>{}, block_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -960,6 +969,7 @@ public:
   //!            // Store scanned items to output segment
   //!            d_data[block_offset + threadIdx.x] = thread_data;
   //!        }
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
   //! The corresponding output for the first segment will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.

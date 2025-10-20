@@ -191,8 +191,8 @@ enum WarpLoadAlgorithm
 //!
 //!        // Load a segment of consecutive items that are blocked across threads
 //!        int thread_data[items_per_thread];
-//!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size,
-//!                                           thread_data);
+//!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data);
+//!    }
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``.
 //! The set of ``thread_data`` across the first logical warp of threads in those
@@ -484,8 +484,8 @@ public:
   //!
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[items_per_thread];
-  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size,
-  //!                                              thread_data);
+  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``,
   //! The set of ``thread_data`` across the first logical warp of threads in those
@@ -533,9 +533,9 @@ public:
   //!
   //!        // Load a segment of consecutive items that are blocked across threads
   //!        int thread_data[items_per_thread];
-  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size,
-  //!                                              thread_data,
+  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data,
   //!                                              valid_items);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...`` and ``valid_items`` is ``5``.
   //! The set of ``thread_data`` across the first logical warp of threads in those threads will be:
