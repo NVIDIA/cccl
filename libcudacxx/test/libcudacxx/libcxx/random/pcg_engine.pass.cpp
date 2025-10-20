@@ -12,46 +12,10 @@
 
 #include <cuda/__random/pcg_engine.h>
 
-#include <random>
-
-template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ constexpr bool test()
-{
-  Engine e;
-  for (int i = 0; i < 100; ++i)
-  {
-    Engine e2;
-    e2.discard(i);
-    assert(e == e2);
-    e();
-  }
-
-  e = Engine();
-  e.discard(9999);
-  assert(e() == value_10000);
-
-  return true;
-}
-
-class SeedSeq
-{
-public:
-  using result_type = uint32_t;
-  template <typename It>
-  __host__ __device__ void generate(It begin, It end)
-  {
-    uint32_t value = 0;
-    for (It it = begin; it != end; ++it)
-    {
-      *it = value++;
-    }
-  }
-};
+#include "../../std/random/engine/test_engine.h"
 
 int main(int, char**)
 {
-  test<cuda::pcg64_engine, 11135645891219275043ul>();
-
-  // static_assert(test<cuda::pcg64_engine, 11135645891219275043ul>());
+  test_engine<cuda::pcg64_engine, 11135645891219275043ul>();
   return 0;
 }
