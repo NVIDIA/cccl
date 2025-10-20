@@ -380,13 +380,9 @@ def test_no_init_value(monkeypatch):
     num_items = 1024
     dtype = np.dtype("int32")
 
-    # Skip SASS check for CUDA 13 and CC 9.0 due to LDL/STL CI failure.
-    from cuda.cccl._cuda_version_utils import detect_cuda_version
-
-    ctk_version = detect_cuda_version()
+    # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
     cc_major, _ = numba.cuda.get_current_device().compute_capability
-
-    if ctk_version == 13 and cc_major == 9:
+    if cc_major >= 9:
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
