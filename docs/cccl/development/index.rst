@@ -10,6 +10,7 @@ CCCL Development Guide
    macro
    testing
    build_and_bisect_tools
+   visibility
 
 This living document serves to describe the internal details and the development process of CCCL libraries.
 

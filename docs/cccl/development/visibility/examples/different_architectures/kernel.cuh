@@ -12,7 +12,7 @@ __attribute__((visibility("hidden"))) __host__ __device__ constexpr int sum_arch
 template <class T, auto Archs = sum_archs<__CUDA_ARCH_LIST__>()>
 __attribute__((visibility("hidden"))) __global__ void kernel(char ln, T* val)
 {
-  std::printf("%c: kernel: set val = %i\n", ln, sum_archs<__CUDA_ARCH_LIST__>());
+  printf("%c: kernel: set val = %i\n", ln, sum_archs<__CUDA_ARCH_LIST__>());
   *val = sum_archs<__CUDA_ARCH_LIST__>();
 }
 
@@ -24,7 +24,7 @@ __attribute__((visibility("hidden"))) __forceinline__ int use_kernel()
   int ret;
   if (cudaMemcpy(&ret, d_val, sizeof(size_t), cudaMemcpyDeviceToHost) != cudaSuccess)
   {
-    std::printf("c: FAILED to copy from device to host\n");
+    printf("c: FAILED to copy from device to host\n");
   }
   return ret;
 }
