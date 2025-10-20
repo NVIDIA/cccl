@@ -1,0 +1,54 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvrtc
+// UNSUPPORTED: pre-sm-90
+
+#include "dlpack/dlpack.h" // to include before the make_from_dlpack.h
+//
+#include <cuda/__tma/make_tma_descriptor.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/span>
+
+#include "test_macros.h"
+
+__host__ bool test()
+{
+  alignas(16) float data[64]{};
+
+  constexpr int64_t shape_storage[2]   = {8, 8};
+  constexpr int64_t strides_storage[2] = {1, 8};
+
+  DLTensor tensor{};
+  tensor.data        = data;
+  tensor.device      = {kDLCUDA, 0};
+  tensor.ndim        = 2;
+  tensor.dtype.code  = static_cast<uint8_t>(kDLFloat);
+  tensor.dtype.bits  = 32;
+  tensor.dtype.lanes = 1;
+  tensor.shape       = const_cast<int64_t*>(shape_storage);
+  tensor.strides     = const_cast<int64_t*>(strides_storage);
+  tensor.byte_offset = 0;
+
+  int box_sizes_storage[2]    = {8, 8};
+  int elem_strides_storage[2] = {1, 1};
+
+  cuda::std::span<int, 2> box_sizes{box_sizes_storage};
+  cuda::std::span<int, 2> elem_strides{elem_strides_storage};
+
+  auto descriptor = cuda::make_tma_descriptor(tensor, box_sizes, elem_strides);
+
+  return true;
+}
+
+int main(int, char**)
+{
+  NV_IF_TARGET(NV_IS_HOST, (assert(test());));
+  return 0;
+}
