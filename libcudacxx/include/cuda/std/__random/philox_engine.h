@@ -24,6 +24,7 @@
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for size_t
 #include <cuda/std/cstdint>
@@ -90,7 +91,8 @@ template <typename _UIntType,
           _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(::cuda::std::is_unsigned_v<_UIntType>, "philox_engine: _UIntType must be an unsigned integer type");
+  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_UIntType>,
+                "philox_engine: _UIntType must be an unsigned integer type");
   static_assert(_WordCount == 2 || _WordCount == 4, "N argument must be either 2 or 4");
   static_assert(sizeof...(_Constants) == _WordCount, "consts array must be of length N");
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
@@ -470,20 +472,12 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
   {
-    if constexpr (word_size == 32)
+    if constexpr (word_size == 32 || word_size == 64)
     {
-      // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      auto __hi =
-        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
+      using _Up = ::cuda::std::__make_nbit_uint_t<word_size>;
+      auto __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<_Up>(__a), static_cast<_Up>(__b)));
       auto __lo = (__a * __b) & max();
-      return ::cuda::std::pair(__hi, __lo);
-    }
-    else if constexpr (word_size == 64)
-    {
-      auto __hi =
-        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
-      auto __lo = (__a * __b) & max();
-      return ::cuda::std::pair(__hi, __lo);
+      return ::cuda::std::pair{__hi, __lo};
     }
     else
     {
@@ -494,44 +488,34 @@ private:
   _CCCL_API constexpr void __philox() noexcept
   {
     // Only two variants are allowed, n=2 or n=4
-    if constexpr (word_count == 2)
+    ::cuda::std::array<result_type, word_count> __S     = __x_;
+    ::cuda::std::array<result_type, word_count / 2> __K = __k_;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
     {
-      ::cuda::std::array<result_type, word_count> __S     = __x_;
-      ::cuda::std::array<result_type, word_count / 2> __K = __k_;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
+      // Only two variants are allowed, n=2 or n=4
+      if constexpr (word_count == 2)
       {
         auto [__hi, __lo] = __mulhilo(__S[0], multipliers[0]);
         __S[0]            = __hi ^ __K[0] ^ __S[1];
         __S[1]            = __lo;
         __K[0]            = (__K[0] + round_consts[0]) & max();
       }
-      __y_ = __S;
-    }
-    else // word_count == 4
-    {
-      ::cuda::std::array<result_type, word_count> __S     = __x_;
-      ::cuda::std::array<result_type, word_count / 2> __K = __k_;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
+      else // word_count == 4
       {
         ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
         auto [__hi0, __lo0]                             = __mulhilo(__V[0], multipliers[1]);
         auto [__hi2, __lo2]                             = __mulhilo(__V[2], multipliers[0]);
-
-        __S[0] = __hi0 ^ __K[0] ^ __V[1];
-        __S[1] = __lo0;
-
-        __S[2] = __hi2 ^ __K[1] ^ __V[3];
-
-        __S[3] = __lo2;
-
-        __K[0] = (__K[0] + round_consts[0]) & max();
-        __K[1] = (__K[1] + round_consts[1]) & max();
+        __S[0]                                          = __hi0 ^ __K[0] ^ __V[1];
+        __S[1]                                          = __lo0;
+        __S[2]                                          = __hi2 ^ __K[1] ^ __V[3];
+        __S[3]                                          = __lo2;
+        __K[0]                                          = (__K[0] + round_consts[0]) & max();
+        __K[1]                                          = (__K[1] + round_consts[1]) & max();
       }
-
-      __y_ = __S;
     }
+    __y_ = __S;
   }
 
   // The counter X, a big integer stored as word_count w-bit words.
