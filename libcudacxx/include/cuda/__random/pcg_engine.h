@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -31,42 +32,75 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// PCG XSL RR 128/64
+/// @class pcg64_engine
+/// @brief A 128-bit state PCG engine producing 64-bit output values.
+///
+/// This class implements the PCG XSL RR 128/64 generator described in:
+/// O’neill, Melissa E. "PCG: A family of simple fast space-efficient statistically good algorithms for random number
+/// generation." ACM Transactions on Mathematical Software 204 (2014): 1-46. The engine keeps a 128-bit internal state
+/// and returns 64-bit pseudo-random values. PCG64 is a fast general purpose PRNG that passes common statistical tests,
+/// has a long period (2^128), and can discard values in O(log n) time.
+///
+/// Usage example:
+/// @code
+///   #include <cuda/std/random>
+///
+///   cuda::pcg64_engine eng;                 // default seed
+///   uint64_t v = eng();                     // draw value
+///   eng.seed(42);                           // reseed
+///   eng.discard(10);                        // skip 10 outputs
+/// @endcode
+///
 class pcg64_engine
 {
 public:
   using result_type                         = ::cuda::std::uint64_t;
   static constexpr result_type default_seed = 0xcafef00dd15ea5e5ULL;
 
+  /// @brief Returns the smallest value the engine can produce.
+  /// @return Always 0 for pcg64_engine.
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
   {
     return 0;
   }
+  /// @brief Returns the largest value the engine can produce.
+  /// @return The maximum representable `result_type`.
   [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
     return ::cuda::std::numeric_limits<result_type>::max();
   }
 
   // constructors and seeding functions
+  /// @brief Default-constructs the engine using `default_seed`.
   constexpr _CCCL_API pcg64_engine() noexcept
       : pcg64_engine(default_seed)
   {}
+  /// @brief Constructs the engine and seeds it with `__seed`.
+  /// @param __seed The seed value used to initialize the engine state.
   constexpr _CCCL_API explicit pcg64_engine(result_type __seed) noexcept
   {
     seed(__seed);
   }
 
   _CCCL_TEMPLATE(class _Sseq)
+  /// @brief Constructs the engine and seeds it from a SeedSequence-like object.
+  /// @tparam _Sseq A SeedSequence-like type satisfying the project's seed concept.
+  /// @param __seq The seed sequence used to initialize the internal state.
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
   constexpr _CCCL_API explicit pcg64_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
+  /// @brief Seed the engine with an integer seed.
+  /// @param __seed The seed value; defaults to `default_seed`.
   constexpr _CCCL_API void seed(result_type __seed = default_seed) noexcept
   {
     __x_ = (__seed + __increment) * __multiplier + __increment;
   }
 
+  /// @brief Seed the engine from a SeedSequence-like object.
+  /// @tparam _Sseq A SeedSequence-like type providing entropy words.
+  /// @param __seq A SeedSequence-like object providing 128 bits of entropy.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
   constexpr _CCCL_API void seed(_Sseq& __seq)
@@ -80,13 +114,19 @@ public:
     __x_                    = (seed_val + __increment) * __multiplier + __increment;
   }
 
-  // generating functions
+  /// @brief Generate the next pseudo-random value.
+  ///
+  /// Advances the internal LCG state and applies the PCG output
+  /// permutation to produce a 64-bit result.
+  /// @return A 64-bit pseudo-random value.
   constexpr _CCCL_API result_type operator()() noexcept
   {
     __x_ = __x_ * __multiplier + __increment;
     return __output_transform(__x_);
   }
 
+  /// @brief Advance the engine state by `__z` steps, discarding outputs.
+  /// @param __z Number of values to discard.
   constexpr _CCCL_API void discard(unsigned long long __z) noexcept
   {
     for (; __z; --__z)
@@ -95,10 +135,13 @@ public:
     }
   }
 
+  /// @brief Equality comparison for two engines.
+  /// @return True if both engines have identical internal state.
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return __x.__x_ == __y.__x_;
   }
+  /// @brief Inequality comparison for two engines.
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
@@ -146,6 +189,7 @@ public:
     ::cuda::std::uint64_t low, hi;
     __is >> low;
     __is >> hi;
+    // Read engine state from stream: low 64 bits then high 64 bits.
     __e.__x_ = (static_cast<__uint128_type>(hi) << 64) | low;
 
     // restore flags
