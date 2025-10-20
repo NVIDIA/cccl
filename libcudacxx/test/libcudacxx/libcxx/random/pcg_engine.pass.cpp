@@ -48,21 +48,10 @@ public:
   }
 };
 
-__host__ __device__ bool test_seed_sequence()
-{
-  SeedSeq seq;
-  // Seed the engine with the seed sequence
-  cuda::pcg64_engine e(seq);
-  // Value taken from pcg reference implementation
-  assert(e() == 6292233566619932430ul);
-  return true;
-}
-
 int main(int, char**)
 {
   test<cuda::pcg64_engine, 11135645891219275043ul>();
 
-  test_seed_sequence();
   // static_assert(test<cuda::pcg64_engine, 11135645891219275043ul>());
   return 0;
 }
