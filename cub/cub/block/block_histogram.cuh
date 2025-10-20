@@ -140,6 +140,7 @@ enum BlockHistogramAlgorithm
 //!
 //!        // Compute the block-wide histogram
 //!        BlockHistogram(temp_storage).Histogram(data, smem_histogram);
+//!    }
 //!
 //! Performance and Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -281,6 +282,7 @@ public:
   //!
   //!      // Update the block-wide histogram
   //!      BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+  //!    }
   //!
   //! @endrst
   //!
@@ -338,6 +340,7 @@ public:
   //!
   //!        // Compute the block-wide histogram
   //!        BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
+  //!    }
   //!
   //! @endrst
   //!
@@ -399,6 +402,7 @@ public:
   //!
   //!        // Update the block-wide histogram
   //!        BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+  //!    }
   //!
   //! @endrst
   //!

@@ -170,6 +170,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
 //!
 //!      ...
+//!    }
 //!
 //! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
 //! The corresponding output ``ranks`` in those threads will be ``{ [3,1], [0,2] }``.
