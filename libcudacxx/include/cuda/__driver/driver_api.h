@@ -823,6 +823,39 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
+[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap __tensorMapEncodeTiled(
+  ::CUtensorMapDataType __tensorDataType,
+  ::cuda::std::uint32_t __tensorRank,
+  void* __globalAddress,
+  const ::cuda::std::uint64_t* __globalDim,
+  const ::cuda::std::uint64_t* __globalStrides,
+  const ::cuda::std::uint32_t* __boxDim,
+  const ::cuda::std::uint32_t* __elementStrides,
+  ::CUtensorMapInterleave __interleave,
+  ::CUtensorMapSwizzle __swizzle,
+  ::CUtensorMapL2promotion __l2Promotion,
+  ::CUtensorMapFloatOOBfill __oobFill)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
+  ::CUtensorMap __tensorMap{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to encode a tiled tensor map",
+    &__tensorMap,
+    __tensorDataType,
+    __tensorRank,
+    __globalAddress,
+    __globalDim,
+    __globalStrides,
+    __boxDim,
+    __elementStrides,
+    __interleave,
+    __swizzle,
+    __l2Promotion,
+    __oobFill);
+  return __tensorMap;
+}
+
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED
 
