@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool test_ctor()
   assert(e1 == e2);
   Engine e3(42);
   assert(e3 != e2);
-  constexpr SeedSequence seq;
+  constexpr auto seq = SeedSequence{};
   Engine e4(seq);
   Engine e5 = e4;
   assert(e4 == e5);
