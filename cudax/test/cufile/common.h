@@ -11,9 +11,29 @@
 #pragma once
 
 #include <cstdio>
+#include <cstdlib>
+#include <string>
 
 #include <fcntl.h>
 #include <unistd.h>
+
+void test_setup_cufile_driver()
+{
+  // Check if the current cufile.json was overridden.
+  if (std::getenv("CUFILE_ENV_PATH_JSON") != nullptr)
+  {
+    return;
+  }
+
+  // Make the path to cufile.json in local src directory.
+  std::string path{__FILE__};
+  auto path_end = path.find_last_of('/') + 1;
+  path.resize(path_end);
+  path.append("cufile.json");
+
+  // Set the environment variable.
+  CUDAX_REQUIRE(setenv("CUFILE_ENV_PATH_JSON", path.c_str(), true) == 0);
+}
 
 void test_check_fd_is_valid(int fd)
 {

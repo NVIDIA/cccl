@@ -1,0 +1,10 @@
+{
+  "execution" :
+  {
+    "max_io_queue_depth": 128,
+    "max_io_threads" : 4,
+    "parallel_io" : true,
+    "min_io_threshold_size_kb" : 8192,
+    "max_request_parallelism" : 4
+  }
+}

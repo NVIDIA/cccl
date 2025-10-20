@@ -20,6 +20,9 @@
 
 C2H_CCCLRT_TEST("cuFile cufile_ref", "[cufile][cufile]")
 {
+  // Set up cuFile driver.
+  test_setup_cufile_driver();
+
   constexpr auto filename = "cufile_ref_test_file";
 
   // 1. Test public cufile_ref types and properties.
