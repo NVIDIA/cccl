@@ -21,62 +21,76 @@
 #endif // no system header
 
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/array>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // PCG XSL RR 128/64
-template <class _UIntType>
 class pcg64_engine
 {
 public:
   // types
-  using result_type = _UIntType;
+  using result_type                         = ::cuda::std::uint64_t;
+  static constexpr result_type default_seed = 0xcafef00dd15ea5e5ULL;
 
-public:
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
   {
     return 0;
   }
   [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
-    return ~result_type(0);
+    return ::cuda::std::numeric_limits<result_type>::max();
   }
-  // engine characteristics
 
   // constructors and seeding functions
   _CCCL_API pcg64_engine() noexcept
       : pcg64_engine(default_seed)
   {}
-  _CCCL_API explicit pcg64_engine(result_type __s) noexcept
+  _CCCL_API explicit pcg64_engine(result_type __seed) noexcept
   {
-    seed(__s);
+    seed(__seed);
   }
 
-  template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, pcg64_engine>, int> = 0>
-  _CCCL_API explicit pcg64_engine(_Sseq& __q) noexcept
+  _CCCL_TEMPLATE(class _Sseq)
+  _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
+  _CCCL_API explicit pcg64_engine(_Sseq& __seq) noexcept
   {
-    seed(__q);
+    seed(__seq);
   }
-  _CCCL_API void seed(result_type __s = default_seed)
+  _CCCL_API void seed(result_type __seed = default_seed)
   {
-    __x_ = (__s + increment) * multiplier + increment;
+    __x_ = (__seed + increment) * multiplier + increment;
   }
-  template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, pcg64_engine>, int> = 0>
-  _CCCL_API void seed(_Sseq& __q) noexcept
+
+  _CCCL_TEMPLATE(class _Sseq)
+  _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
+  _CCCL_API void seed(_Sseq& __seq) noexcept
   {
-    // TODO
+    ::cuda::std::array<uint32_t, 4> data = {};
+    __seq.generate(data.begin(), data.end());
+    itype seed_val;
+    auto* as_32_bit = reinterpret_cast<uint32_t*>(&seed_val);
+    as_32_bit[0]    = data[0];
+    as_32_bit[1]    = data[1];
+    as_32_bit[2]    = data[2];
+    as_32_bit[3]    = data[3];
+    __x_            = (seed_val + increment) * multiplier + increment;
   }
 
   // generating functions
-  [[nodiscard]] _CCCL_API result_type operator()() noexcept
+  _CCCL_API result_type operator()() noexcept
   {
     __x_ = __x_ * multiplier + increment;
     return OutputTransform(__x_);
   }
 
-  _CCCL_API void discard(uint64_t __z) noexcept
+  _CCCL_API void discard(unsigned long long __z) noexcept
   {
     for (; __z; --__z)
     {
@@ -96,25 +110,25 @@ public:
 private:
   using xtype      = uint64_t;
   using itype      = unsigned __int128;
-  using bitcount_t = uint8_t;
+  using bitcount_t = ::cuda::std::uint8_t;
 
-  constexpr itype multiplier = ((itype) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
-  constexpr itype increment  = ((itype) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
+  static constexpr itype multiplier = ((itype) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
+  static constexpr itype increment  = ((itype) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
 
-  __device__ xtype rotr(xtype value, bitcount_t rot)
+  [[nodiscard]] _CCCL_API xtype rotr(xtype value, bitcount_t rot) noexcept
   {
     constexpr bitcount_t bits = sizeof(xtype) * 8;
     constexpr bitcount_t mask = bits - 1;
     return (value >> rot) | (value << ((-rot) & mask));
   }
-  __device__ xtype OutputTransform(itype internal)
+  [[nodiscard]] _CCCL_API xtype OutputTransform(itype internal) noexcept
   {
     bitcount_t rot = bitcount_t(internal >> 122);
     internal ^= internal >> 64;
     return rotr(xtype(internal), rot);
   }
 
-  constexpr __device__ auto power_mod(itype delta)
+  [[nodiscard]] _CCCL_API constexpr auto power_mod(itype delta) noexcept
   {
     constexpr itype ZERO = 0u;
     constexpr itype ONE  = 1u;
@@ -133,9 +147,9 @@ private:
       cur_mult *= cur_mult;
       delta >>= 1;
     }
-    return std::make_pair(acc_mult, acc_plus);
+    return ::cuda::std::make_pair(acc_mult, acc_plus);
   }
-  result_type __x_;
+  itype __x_;
 };
 
 _CCCL_END_NAMESPACE_CUDA
