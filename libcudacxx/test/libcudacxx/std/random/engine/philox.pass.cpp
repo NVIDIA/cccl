@@ -1,4 +1,3 @@
-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -8,11 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <random>
-
 #include <cuda/std/__random/philox_engine.h>
+
+#include "test_engine.h"
+
 template <typename Engine>
-__host__ __device__ constexpr bool test()
+__host__ __device__ constexpr bool test_set_counter()
 {
   Engine e1(7);
   Engine e2(7);
@@ -43,9 +43,9 @@ __host__ __device__ constexpr bool test()
 
 int main(int, char**)
 {
-  test<cuda::std::philox4x32>();
-  static_assert(test<cuda::std::philox4x32>());
-  test<cuda::std::philox4x64>();
-  static_assert(test<cuda::std::philox4x64>());
+  test_engine<cuda::std::philox4x32, 1955073260u>();
+  test_engine<cuda::std::philox4x64, 3409172418970261260ull>();
+  test_set_counter<cuda::std::philox4x32>();
+  test_set_counter<cuda::std::philox4x64>();
   return 0;
 }
