@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 

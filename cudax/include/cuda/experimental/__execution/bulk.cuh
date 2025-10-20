@@ -316,7 +316,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t : __bulk_t<bulk_chunked_t>
       {
         if constexpr (!__nothrow_callable<_Fn&, _Shape, _Shape, _Values&...>)
         {
-          execution::set_error(static_cast<_Rcvr&&>(this->__state_->__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(this->__state_->__rcvr_), execution::current_exception());
         }
       }
     }
@@ -357,7 +357,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t : __bulk_t<bulk_unchunked_
       {
         if constexpr (!__nothrow_callable<_Fn&, _Shape, _Values&...>)
         {
-          execution::set_error(static_cast<_Rcvr&&>(this->__state_->__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(this->__state_->__rcvr_), execution::current_exception());
         }
       }
     }

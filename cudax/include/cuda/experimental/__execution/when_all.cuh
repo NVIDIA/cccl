@@ -201,7 +201,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           }
           _CCCL_CATCH_ALL
           {
-            __set_error(::std::current_exception());
+            __set_error(execution::current_exception());
           }
         }
       }
@@ -228,7 +228,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           }
           _CCCL_CATCH_ALL
           {
-            __errors_.template __emplace<::std::exception_ptr>(::std::current_exception());
+            __errors_.template __emplace<exception_ptr>(execution::current_exception());
           }
         }
       }

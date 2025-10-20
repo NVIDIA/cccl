@@ -18,10 +18,10 @@ log_vars() {
 version_max() {
   local v1="${1}"
   local v2="${2}"
-  if [[ "$(printf "%s\n" "${v1}" "${v2}" | sort -V | head -n1)" == "${v1}" ]]; then
-    echo "${v2}"
+  if ci/util/version_compare.sh "$v1" ge "$v2"; then
+    echo "$v1"
   else
-    echo "${v1}"
+    echo "$v2"
   fi
 }
 
@@ -95,7 +95,7 @@ rm -rf build
 
 cmake \
   -B build -S MatX -G Ninja \
-  "-DCMAKE_CUDA_ARCHITECTURES=75;80" \
+  "-DCMAKE_CUDA_ARCHITECTURES=75;120" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \

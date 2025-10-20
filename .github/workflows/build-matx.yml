@@ -39,7 +39,7 @@ on:
 jobs:
   build-matx:
     name: Build MatX
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: linux-amd64-cpu16m
     permissions:
       id-token: write
       contents: read
@@ -74,7 +74,7 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          ~/cccl/ci/matx/build_matx.sh;
+          ~/cccl/ci/matx/build_matx.sh
           sccache --show-adv-stats
           EOF
 

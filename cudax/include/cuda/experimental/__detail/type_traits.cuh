@@ -93,7 +93,6 @@ _CCCL_CONCEPT __movable = (::cuda::std::is_move_constructible_v<_As> && ...);
 template <class... _As>
 _CCCL_CONCEPT __copyable = (::cuda::std::is_copy_constructible_v<_As> && ...);
 
-#if _CCCL_HOST_COMPILATION()
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __nothrow_callable = ::cuda::std::__is_nothrow_callable_v<_Fn, _As...>;
 
@@ -108,23 +107,6 @@ _CCCL_CONCEPT __nothrow_movable = (::cuda::std::is_nothrow_move_constructible_v<
 
 template <class... _As>
 _CCCL_CONCEPT __nothrow_copyable = (::cuda::std::is_nothrow_copy_constructible_v<_As> && ...);
-#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
-// There are no exceptions in device code:
-template <class _Fn, class... _As>
-_CCCL_CONCEPT __nothrow_callable = ::cuda::std::__is_callable_v<_Fn, _As...>;
-
-template <class _Ty, class... _As>
-_CCCL_CONCEPT __nothrow_constructible = ::cuda::std::is_constructible_v<_Ty, _As...>;
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_decay_copyable = __decay_copyable<_As...>;
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_movable = (::cuda::std::is_move_constructible_v<_As> && ...);
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_copyable = (::cuda::std::is_copy_constructible_v<_As> && ...);
-#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 template <class... _As>
 using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<__nothrow_decay_copyable<_As...>>;
