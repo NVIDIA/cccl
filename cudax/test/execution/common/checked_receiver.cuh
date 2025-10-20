@@ -126,12 +126,12 @@ struct checked_error_receiver
 #else
       INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
 #endif
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
     _CCCL_CATCH_ALL
     {
       INFO("expected an error completion; got a different error");
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
   }
 
