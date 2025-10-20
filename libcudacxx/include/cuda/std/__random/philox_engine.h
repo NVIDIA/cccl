@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -48,7 +49,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //! @tparam _NumRounds The number of rounds
 //! @tparam _Constants The constants used in the generation algorithm.
 //!
-//! @note Inexperienced users should not use this class template directly.  Instead, use
+//! @note Users should not use this class template directly.  Instead, use
 //!       philox4x32 or philox4x64 .
 //!
 //! The following code snippet shows examples of use of a philox_engine instance:
@@ -95,7 +96,7 @@ class philox_engine
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
   static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
-  [[nodiscard]] _CCCL_API static constexpr auto __multipliers()
+  [[nodiscard]] _CCCL_API static constexpr auto __multipliers() noexcept
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -108,7 +109,7 @@ class philox_engine
     }
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto __round_consts()
+  [[nodiscard]] _CCCL_API static constexpr auto __round_consts() noexcept
   {
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
@@ -162,7 +163,7 @@ public:
   }
 
   //! This method initializes this philox_engine's state, and optionally accepts
-  //! a seed value.
+  //! a seed value.  If none is provided uses ``default_seed``.
   //!
   //! @param __s The seed used to initializes this philox_engine's state.
   _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
@@ -186,13 +187,13 @@ public:
     constexpr auto __p                                                = (word_size - 1) / 32 + 1;
     ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a = {};
     seq.generate(__a.begin(), __a.end());
-    auto a_iter = __a.begin();
     for (::cuda::std::size_t __k = 0; __k < word_count / 2; ++__k)
     {
       result_type __sum = 0;
       for (::cuda::std::size_t __i = 0; __i < __p; ++__i)
       {
-        __sum += static_cast<result_type>(*a_iter++) << (32 * __i);
+        const size_t __current = __k * __p;
+        __sum += static_cast<result_type>(__a[__current + __i]) << (32 * __i);
       }
       __k_[__k] = __sum & max();
     }
@@ -233,7 +234,7 @@ public:
   //! @return A new random number.
   _CCCL_API constexpr result_type operator()() noexcept
   {
-    __j_++;
+    ++__j_;
     if (__j_ == word_count)
     {
       __philox();
@@ -448,7 +449,7 @@ private:
   {
     // Generic slow implementation
     constexpr result_type __w_half  = word_size / 2;
-    constexpr result_type __lo_mask = (((result_type) 1) << __w_half) - 1;
+    constexpr result_type __lo_mask = (result_type{1} << __w_half) - 1;
 
     result_type __lo  = __a * __b;
     result_type __ahi = __a >> __w_half;
@@ -464,7 +465,7 @@ private:
     __hi += __ahbl_albh >> __w_half;
     __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
 
-    return ::cuda::std::make_pair(__hi, __lo);
+    return ::cuda::std::pair(__hi, __lo);
   }
 
   [[nodiscard]] _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
@@ -472,16 +473,17 @@ private:
     if constexpr (word_size == 32)
     {
       // std::uint_fast32_t can actually be 64 bits so cast to 32 bits
-      return ::cuda::std::make_pair(
-        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b))),
-        (__a * __b) & max());
+      auto __hi =
+        static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint32_t>(__a), static_cast<std::uint32_t>(__b)));
+      auto __lo = (__a * __b) & max();
+      return ::cuda::std::pair(__hi, __lo);
     }
     else if constexpr (word_size == 64)
     {
       auto __hi =
         static_cast<result_type>(::cuda::mul_hi(static_cast<std::uint64_t>(__a), static_cast<std::uint64_t>(__b)));
       auto __lo = (__a * __b) & max();
-      return ::cuda::std::make_pair(__hi, __lo);
+      return ::cuda::std::pair(__hi, __lo);
     }
     else
     {
@@ -506,7 +508,7 @@ private:
       }
       __y_ = __S;
     }
-    else if constexpr (word_count == 4)
+    else // word_count == 4
     {
       ::cuda::std::array<result_type, word_count> __S     = __x_;
       ::cuda::std::array<result_type, word_count / 2> __K = __k_;

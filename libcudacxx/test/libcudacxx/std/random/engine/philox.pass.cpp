@@ -1,13 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random_>
 
 #include "test_engine.h"
 
@@ -42,11 +43,17 @@ __host__ __device__ constexpr bool test_set_counter()
   return true;
 }
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   test_engine<cuda::std::philox4x32, 1955073260u>();
   test_engine<cuda::std::philox4x64, 3409172418970261260ull>();
   test_set_counter<cuda::std::philox4x32>();
   test_set_counter<cuda::std::philox4x64>();
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
   return 0;
 }
