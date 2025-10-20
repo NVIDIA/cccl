@@ -1593,7 +1593,10 @@
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., the length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
 <li><p><strong>scan_op</strong> – <strong>[in]</strong> Binary scan functor</p></li>
 <li><p><strong>init_value</strong> – <strong>[in]</strong> Initial value to seed the exclusive scan</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
+<li><p><strong>kernel_source</strong> – <strong>[in]</strong> Object specifying implementation kernels</p></li>
+<li><p><strong>launcher_factory</strong> – <strong>[in]</strong> Object to execute implementation kernels on the given stream</p></li>
+<li><p><strong>max_policy</strong> – <strong>[in]</strong> Struct encoding chain of algorithm tuning policies </p></li>
 </ul>
 </dd>
 </dl>
@@ -1723,7 +1726,10 @@
 <li><p><strong>scan_op</strong> – <strong>[in]</strong> Binary scan functor</p></li>
 <li><p><strong>init_value</strong> – <strong>[in]</strong> Initial value to seed the exclusive scan</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Total number of input items (i.e., the length of <code class="docutils literal notranslate"><span class="pre">d_in</span></code>)</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
+<li><p><strong>kernel_source</strong> – <strong>[in]</strong> Object specifying implementation kernels</p></li>
+<li><p><strong>launcher_factory</strong> – <strong>[in]</strong> Object to execute implementation kernels on the given stream</p></li>
+<li><p><strong>max_policy</strong> – <strong>[in]</strong> Struct encoding chain of algorithm tuning policies </p></li>
 </ul>
 </dd>
 </dl>
