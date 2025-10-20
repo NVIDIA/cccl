@@ -198,7 +198,7 @@ This verification is a two-step process:
 
 **Steps to check whether your changes generate different SASS code:**
 
-1. Identify the `Device*` algorithm(s) that may be affected by the change. This isn't always straightforward, and you will need to confirm whether any of the CUB algorithms depend on components modified by your changes.
+1. Identify the `Device*` algorithm(s) that may be affected by the change. This isn't always straightforward, and you will need to confirm whether any of the CUB algorithms depend on components modified by your changes. If your changes affect only certain GPU architectures, make sure those architectures are included in the list of architectures used during compilation (for example, by specifying them with the `-arch` flag when using the build scripts, or with `-DCMAKE_CUDA_ARCHITECTURES` when building with CMake).
 2. Navigate to the build directory, compile the benchmarks for the specific `Device*` algorithm(s) identified in step 1, and dump the SASS code. For example: `ninja cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_after.sass`.
 3. Check out the `main` branch to compare against the baseline SASS code: `git checkout $(git merge-base HEAD upstream/main)`
 4. Dump the SASS code emitted on the `main` branch. For example: `ninja cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_before.sass`.
