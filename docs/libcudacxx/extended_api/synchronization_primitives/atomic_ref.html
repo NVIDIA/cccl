@@ -1578,12 +1578,20 @@ with the following additional operations. This class additionally deviates from 
 </div>
 <section id="limitations">
 <h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">cuda::atomic_ref&lt;T&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref&lt;T&gt;</span></code> may only be instantiated with a T that are either 4 or 8 bytes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cuda::atomic_ref&lt;T&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref&lt;T&gt;</span></code> may only be instantiated when <code class="docutils literal notranslate"><span class="pre">T</span></code> satisfies <code class="docutils literal notranslate"><span class="pre">sizeof(T)</span> <span class="pre">&lt;=</span> <span class="pre">8</span></code> or <code class="docutils literal notranslate"><span class="pre">sizeof(T)</span> <span class="pre">&lt;=</span> <span class="pre">16</span></code> when requirements are met.</p>
+<dl class="simple">
+<dt>The operations available to <code class="docutils literal notranslate"><span class="pre">T</span></code> when <code class="docutils literal notranslate"><span class="pre">sizeof(T)</span> <span class="pre">==</span> <span class="pre">16</span></code> depend on the architecture:</dt><dd><ul class="simple">
+<li><p>On SM70 and later: <code class="docutils literal notranslate"><span class="pre">load</span></code> and <code class="docutils literal notranslate"><span class="pre">store</span></code> are supported.</p></li>
+<li><p>On SM90 and later: <code class="docutils literal notranslate"><span class="pre">fetch_*</span></code> and synchronization operations are supported, implemented via atomic compare-and-swap (CAS).</p></li>
+</ul>
+</dd>
+</dl>
 <p>No object or subobject of an object referenced by an <code class="docutils literal notranslate"><span class="pre">atomic_­ref</span></code> shall be concurrently referenced by any other
 <code class="docutils literal notranslate"><span class="pre">atomic_­ref</span></code> that has a different <code class="docutils literal notranslate"><span class="pre">Scope</span></code>.</p>
 <dl class="simple">
 <dt>For <code class="docutils literal notranslate"><span class="pre">cuda::atomic_ref&lt;T&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref&lt;T&gt;</span></code> the type <code class="docutils literal notranslate"><span class="pre">T</span></code> must satisfy the following:</dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">sizeof(T)</span> <span class="pre">&lt;=</span> <span class="pre">8</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sizeof(T)</span> <span class="pre">&lt;=</span> <span class="pre">16</span></code>.</p></li>
+<li><p>The referenced object must be aligned to its size: <code class="docutils literal notranslate"><span class="pre">alignof(T)</span> <span class="pre">==</span> <span class="pre">sizeof(T)</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">T</span></code> must not have “padding bits”, i.e., T’s <a class="reference external" href="https://en.cppreference.com/w/cpp/language/object#Object_representation_and_value_representation">object representation</a>
 must not have bits that do not participate in it’s value representation.</p></li>
 </ul>
