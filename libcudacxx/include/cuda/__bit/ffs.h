@@ -26,6 +26,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <nv/target>
+
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
@@ -33,6 +35,9 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+using ::cuda::std::uint32_t;
+using ::cuda::std::uint64_t;
 
 #if _CCCL_HAS_BUILTIN(__builtin_ffs) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FFS(...)   __builtin_ffs(__VA_ARGS__)
@@ -74,13 +79,13 @@ template <typename _Tp>
 #  elif _CCCL_COMPILER(MSVC)
   unsigned long __where{};
   unsigned char __res{};
-  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  if constexpr (sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
   {
-    __res = ::_BitScanForward(&__where, static_cast<uint32_t>(__v));
+    __res = ::_BitScanForward(&__where, static_cast<::cuda::std::uint32_t>(__v));
   }
   else
   {
-    __res = ::_BitScanForward64(&__where, static_cast<uint64_t>(__v));
+    __res = ::_BitScanForward64(&__where, static_cast<::cuda::std::uint64_t>(__v));
   }
   return __res ? (static_cast<int>(__where) + 1) : 0;
 #  else
@@ -111,31 +116,16 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    const auto __lo = static_cast<uint64_t>(__v);
-    const auto __hi = static_cast<uint64_t>(static_cast<__uint128_t>(__v) >> 64);
+    const auto __lo = static_cast<::cuda::std::uint64_t>(__v);
+    const auto __hi = static_cast<::cuda::std::uint64_t>(static_cast<__uint128_t>(__v) >> 64);
 
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    if (const auto __result = ::cuda::ffs(__lo))
     {
-      if (__lo != 0)
-      {
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (return ::cuda::__ffs_impl_host(__lo);), (return ::cuda::__ffs_impl_device(__lo);));
-      }
-      if (__hi != 0)
-      {
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (return ::cuda::__ffs_impl_host(__hi) + 64;), (return ::cuda::__ffs_impl_device(__hi) + 64;));
-      }
-      return 0;
+      return __result;
     }
-
-    if (__lo != 0)
+    if (const auto __result = ::cuda::ffs(__hi))
     {
-      return ::cuda::__ffs_impl_constexpr(__lo);
-    }
-    if (__hi != 0)
-    {
-      return ::cuda::__ffs_impl_constexpr(__hi) + 64;
+      return __result + 64;
     }
     return 0;
   }
@@ -145,23 +135,29 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
     int __result{};
     if constexpr (sizeof(_Tp) <= sizeof(int))
     {
-      const auto __v32 = static_cast<uint32_t>(__v);
+      const auto __v32 = static_cast<::cuda::std::uint32_t>(__v);
       if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
         NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (return ::cuda::__ffs_impl_host(__v32);), (return ::cuda::__ffs_impl_device(__v32);));
+          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__v32);), (__result = ::cuda::__ffs_impl_device(__v32);));
       }
-      __result = ::cuda::__ffs_impl_constexpr(__v32);
+      else
+      {
+        __result = ::cuda::__ffs_impl_constexpr(__v32);
+      }
     }
     else
     {
-      const auto __v64 = static_cast<uint64_t>(__v);
+      const auto __v64 = static_cast<::cuda::std::uint64_t>(__v);
       if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
         NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (return ::cuda::__ffs_impl_host(__v64);), (return ::cuda::__ffs_impl_device(__v64);));
+          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__v64);), (__result = ::cuda::__ffs_impl_device(__v64);));
       }
-      __result = ::cuda::__ffs_impl_constexpr(__v64);
+      else
+      {
+        __result = ::cuda::__ffs_impl_constexpr(__v64);
+      }
     }
     _CCCL_ASSUME(__result >= 0 && __result <= ::cuda::std::numeric_limits<_Tp>::digits);
     return __result;
