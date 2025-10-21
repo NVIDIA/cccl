@@ -267,6 +267,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   // Inherit constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
 
+  synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
+
   // resource_ref is convertible to synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
@@ -317,6 +319,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
 {
   // Inherit other constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
+
+  resource_ref(const resource_ref& __other) noexcept = default;
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
