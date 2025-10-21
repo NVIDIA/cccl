@@ -11,6 +11,7 @@ Bit
    bit/bit_reverse
    bit/bitfield_insert
    bit/bitfield_extract
+   bit/ffs
 
 .. list-table::
    :widths: 25 45 30 30
@@ -38,5 +39,10 @@ Bit
 
    * - :ref:`bitfield_extract <libcudacxx-extended-api-bit-bitfield_extract>`
      - Extract a bitfield
+     - CCCL 3.0.0
+     - CUDA 13.0
+
+   * - :ref:`ffs <libcudacxx-extended-api-bit-ffs>`
+     - Find first set bit
      - CCCL 3.0.0
      - CUDA 13.0
