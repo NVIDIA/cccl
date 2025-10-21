@@ -69,6 +69,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp, class _Err>
 class expected;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_std_expected_v = false;
+
+template <class _Tp, class _Err>
+inline constexpr bool __is_cuda_std_expected_v<expected<_Tp, _Err>> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_expected_nonvoid_v = __is_cuda_std_expected_v<_Tp>;
+
+template <class _Err>
+inline constexpr bool __is_cuda_std_expected_nonvoid_v<expected<void, _Err>> = false;
+
 namespace __expected
 {
 template <class _Tp, class _Err>
@@ -76,18 +88,6 @@ inline constexpr bool __valid_expected =
   !is_reference_v<_Tp> && !is_function_v<_Tp> && !is_same_v<remove_cv_t<_Tp>, in_place_t>
   && !is_same_v<remove_cv_t<_Tp>, unexpect_t> && !__unexpected::__is_unexpected<remove_cv_t<_Tp>>
   && __unexpected::__valid_unexpected<_Err>;
-
-template <class _Tp>
-inline constexpr bool __is_expected = false;
-
-template <class _Tp, class _Err>
-inline constexpr bool __is_expected<expected<_Tp, _Err>> = true;
-
-template <class _Tp>
-inline constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
-
-template <class _Err>
-inline constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
 
 template <class _Tp, class _Err>
 inline constexpr bool __can_swap =
@@ -600,7 +600,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp&>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -620,7 +620,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp&>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -640,7 +640,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -660,7 +660,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -680,7 +680,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -701,7 +701,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -722,7 +722,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -743,7 +743,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -1111,7 +1111,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
-  _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
+  _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
   friend _CCCL_API constexpr bool operator==(const expected& __x, const _T2& __v)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
@@ -1119,21 +1119,21 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
-  _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
+  _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
   friend _CCCL_API constexpr bool operator==(const _T2& __v, const expected& __x)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
-  _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
+  _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
   friend _CCCL_API constexpr bool operator!=(const expected& __x, const _T2& __v)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
-  _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
+  _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
   friend _CCCL_API constexpr bool operator!=(const _T2& __v, const expected& __x)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
@@ -1461,7 +1461,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -1481,7 +1481,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -1501,7 +1501,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -1521,7 +1521,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
-    static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
+    static_assert(__is_cuda_std_expected_v<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
@@ -1540,7 +1540,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -1560,7 +1560,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -1580,7 +1580,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
@@ -1600,7 +1600,7 @@ public:
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
-    static_assert(__expected::__is_expected<_Res>,
+    static_assert(__is_cuda_std_expected_v<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
     static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
