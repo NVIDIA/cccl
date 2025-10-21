@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_INCLUDE("dlpack/dlpack.h")
+#if _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
