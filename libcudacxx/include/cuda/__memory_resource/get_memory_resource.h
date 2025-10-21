@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
-#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,11 +23,11 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/stream_ref>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -79,4 +79,4 @@ _CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#endif //_CUDA__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H

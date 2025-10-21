@@ -30,12 +30,13 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
-function(libcudacxx_create_internal_header_test header_name, headertest_src)
+function(libcudacxx_create_internal_header_test header_name headertest_src)
   # Create the default target for that file
   set(internal_headertest_${header_name} verify_${header_name})
   add_library(internal_headertest_${header_name} SHARED "${headertest_src}.cu")
   target_include_directories(internal_headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_definitions(internal_headertest_${header_name} PRIVATE _CCCL_HEADER_TEST)
+  cccl_configure_target(internal_headertest_${header_name} DIALECT ${CMAKE_CUDA_STANDARD})
 
   # Bring in the global CCCL compile definitions
   # Link against the right cuda runtime
@@ -65,7 +66,7 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src)
 endfunction()
 
 # We have fallbacks for some type traits that we want to explicitly test so that they do not bitrot
-function(libcudacxx_create_internal_header_fallback_test header_name, headertest_src)
+function(libcudacxx_create_internal_header_fallback_test header_name headertest_src)
   # MSVC cannot handle some of the fallbacks
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     if("${header}" MATCHES "is_base_of" OR
@@ -81,7 +82,7 @@ function(libcudacxx_create_internal_header_fallback_test header_name, headertest
   if(fallback)
     # Adopt the filename for the fallback tests
     set(header_name "${header_name}_fallback")
-    libcudacxx_create_internal_header_test(${header_name}, ${headertest_src})
+    libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
     target_compile_definitions(internal_headertest_${header_name} PRIVATE "-D${fallback}")
   endif()
 endfunction()
@@ -95,10 +96,10 @@ function(libcudacxx_add_internal_header_test header)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in" "${headertest_src}.cu")
 
   # Create the default target for that file
-  libcudacxx_create_internal_header_test(${header_name}, ${headertest_src})
+  libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
 
   # Optionally create a fallback target for that file
-  libcudacxx_create_internal_header_fallback_test(${header_name}, ${headertest_src})
+  libcudacxx_create_internal_header_fallback_test(${header_name} ${headertest_src})
 endfunction()
 
 foreach(header IN LISTS internal_headers)

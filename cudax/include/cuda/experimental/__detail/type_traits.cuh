@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -34,27 +35,21 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+using ::cuda::std::__declfn_t;
 using ::cuda::std::decay_t;
 
 template <class _Ty, bool _Nothrow = true>
-using __declfn_t = _Ty (*)() noexcept(_Nothrow);
-
-_CCCL_DIAG_PUSH
-_CCCL_NV_DIAG_PUSH()
-_CCCL_DIAG_SUPPRESS_MSVC(5046) // '__declfn': Symbol involving type with internal linkage not defined
-_CCCL_DIAG_SUPPRESS_NVCC(114) // function 'declfn' was referenced but not defined
-_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-internal") // function 'declfn' has internal linkage but is not defined
-
-template <class _Ty, bool _Nothrow = true>
-_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
-
-_CCCL_NV_DIAG_POP()
-_CCCL_DIAG_POP
+[[noreturn]] _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty
+{
+  _CCCL_ASSERT(false, "__declfn should never be called at runtime.");
+  _CCCL_UNREACHABLE();
+}
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
@@ -98,7 +93,6 @@ _CCCL_CONCEPT __movable = (::cuda::std::is_move_constructible_v<_As> && ...);
 template <class... _As>
 _CCCL_CONCEPT __copyable = (::cuda::std::is_copy_constructible_v<_As> && ...);
 
-#if _CCCL_HOST_COMPILATION()
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __nothrow_callable = ::cuda::std::__is_nothrow_callable_v<_Fn, _As...>;
 
@@ -113,23 +107,6 @@ _CCCL_CONCEPT __nothrow_movable = (::cuda::std::is_nothrow_move_constructible_v<
 
 template <class... _As>
 _CCCL_CONCEPT __nothrow_copyable = (::cuda::std::is_nothrow_copy_constructible_v<_As> && ...);
-#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
-// There are no exceptions in device code:
-template <class _Fn, class... _As>
-_CCCL_CONCEPT __nothrow_callable = ::cuda::std::__is_callable_v<_Fn, _As...>;
-
-template <class _Ty, class... _As>
-_CCCL_CONCEPT __nothrow_constructible = ::cuda::std::is_constructible_v<_Ty, _As...>;
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_decay_copyable = __decay_copyable<_As...>;
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_movable = (::cuda::std::is_move_constructible_v<_As> && ...);
-
-template <class... _As>
-_CCCL_CONCEPT __nothrow_copyable = (::cuda::std::is_copy_constructible_v<_As> && ...);
-#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 template <class... _As>
 using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<__nothrow_decay_copyable<_As...>>;

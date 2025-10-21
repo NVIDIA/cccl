@@ -201,6 +201,7 @@ enum WarpStoreAlgorithm
 //!
 //!        // Store items to linear memory
 //!        WarpStoreT(temp_storage[warp_id]).Store(d_data + warp_id * tile_size, thread_data);
+//!    }
 //!
 //! Suppose the set of ``thread_data`` across the warp threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }``.

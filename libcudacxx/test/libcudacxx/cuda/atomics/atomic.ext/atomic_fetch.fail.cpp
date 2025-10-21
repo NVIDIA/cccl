@@ -25,13 +25,13 @@ struct TestFn
   __host__ __device__ void operator()() const
   {
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t.fetch_min(4);
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t.fetch_max(4);

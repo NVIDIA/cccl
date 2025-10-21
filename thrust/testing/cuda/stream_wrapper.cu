@@ -2,7 +2,7 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <unittest/unittest.h>
 

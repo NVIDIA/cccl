@@ -26,6 +26,28 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+// libstdc++ puts basic_string to inline cxx11 namespace
+#  if _GLIBCXX_USE_CXX11_ABI
+inline _GLIBCXX_BEGIN_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+  template <class _CharT, class _Traits, class _Alloc>
+  class basic_string;
+
+#  if _GLIBCXX_USE_CXX11_ABI
+_GLIBCXX_END_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if 0 // we don't support these features

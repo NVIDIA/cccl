@@ -33,7 +33,7 @@ template <class _Callable>
 class result_of;
 
 template <class _Fp, class... _Args>
-class CCCL_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
+class CCCL_DEPRECATED _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public invoke_result<_Fp, _Args...>
 {};
 
 template <class _Tp>

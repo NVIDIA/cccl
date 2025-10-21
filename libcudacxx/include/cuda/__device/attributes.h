@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__device/compute_capability.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
@@ -739,12 +740,12 @@ static constexpr numa_id_t numa_id{};
 // capability in a single query
 struct compute_capability_t
 {
-  using type = int;
+  using type = ::cuda::compute_capability;
 
   [[nodiscard]] _CCCL_HOST_API type operator()(device_ref __dev_id) const
   {
-    return 10 * ::cuda::device_attributes::compute_capability_major(__dev_id)
-         + ::cuda::device_attributes::compute_capability_minor(__dev_id);
+    return type{::cuda::device_attributes::compute_capability_major(__dev_id),
+                ::cuda::device_attributes::compute_capability_minor(__dev_id)};
   }
 };
 static constexpr compute_capability_t compute_capability{};

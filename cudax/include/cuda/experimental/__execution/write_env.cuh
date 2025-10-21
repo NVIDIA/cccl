@@ -141,7 +141,7 @@ public:
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Env __env) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Env __env) const
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
   }
@@ -149,7 +149,7 @@ public:
   /// @brief Returns a closure that can be used with the pipe operator
   /// to modify the execution environment.
   template <class _Env>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env __env) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Env __env) const
   {
     return __closure_t<_Env>{static_cast<_Env&&>(__env)};
   }
@@ -185,7 +185,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ write_env_t __tag_;
   _Env __env_;
   _Sndr __sndr_;
 };
@@ -194,14 +194,13 @@ template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__closure_t
 {
   template <class _Sndr>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sndr, _Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sndr, _Env>
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env_), static_cast<_Sndr&&>(__sndr)};
   }
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
-    -> __sndr_t<_Sndr, _Env>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self) -> __sndr_t<_Sndr, _Env>
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__self.__env_), static_cast<_Sndr&&>(__sndr)};
   }

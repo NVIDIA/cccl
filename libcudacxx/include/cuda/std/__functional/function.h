@@ -174,8 +174,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __alloc_func* __clone() const
@@ -227,8 +226,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __default_alloc_func* __clone() const
@@ -963,7 +961,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI
@@ -996,13 +994,12 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && __invocable<_Fp, _ArgTypes...>::value>
+  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && is_invocable_v<_Fp, _ArgTypes...>>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
   {
-    static const bool value =
-      is_void_v<_Rp> || __is_core_convertible<typename __invoke_of<_Fp, _ArgTypes...>::type, _Rp>::value;
+    static const bool value = is_void_v<_Rp> || __is_core_convertible<invoke_result_t<_Fp, _ArgTypes...>, _Rp>::value;
   };
   template <class _Fp>
   struct __callable<_Fp, false>

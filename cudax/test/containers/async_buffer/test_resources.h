@@ -11,9 +11,9 @@
 #ifndef CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
 #define CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/memory_resource.cuh>
 

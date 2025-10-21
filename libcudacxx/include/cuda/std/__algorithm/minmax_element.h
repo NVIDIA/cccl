@@ -46,8 +46,7 @@ public:
   template <class _Iter>
   _CCCL_API constexpr bool operator()(_Iter& __it1, _Iter& __it2)
   {
-    return ::cuda::std::__invoke(
-      __comp_, ::cuda::std::__invoke(__proj_, *__it1), ::cuda::std::__invoke(__proj_, *__it2));
+    return ::cuda::std::invoke(__comp_, ::cuda::std::invoke(__proj_, *__it1), ::cuda::std::invoke(__proj_, *__it2));
   }
 };
 

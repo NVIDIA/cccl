@@ -36,10 +36,18 @@ namespace cuda::experimental::execution
 {
 namespace __detail
 {
+template <class _Env>
+using __starting_domain = __call_result_or_t<get_domain_t, default_domain, const _Env&>;
+
+template <class _Sndr, class _Env>
+using __completing_domain =
+  __call_result_t<__first_callable<get_domain_override_t, get_completion_domain_t<set_value_t>>,
+                  env_of_t<_Sndr>,
+                  const _Env&>;
+
 template <class _Domain, class _OpTag>
 struct __transform_sender_t
 {
-private:
   template <class _Sndr, class _Env>
   using __domain_for_t = ::cuda::std::_If< //
     __has_transform_sender<_Domain, _OpTag, _Sndr, _Env>,
@@ -58,13 +66,17 @@ private:
     {
       return __declfn<__result_t, __is_nothrow>;
     }
-    else
+    else if constexpr (__same_as<_OpTag, start_t>)
     {
       return __get_declfn<__result_t, const _Env&, (_Nothrow && __is_nothrow)>();
     }
+    else
+    {
+      using __transform_recurse_t = __transform_sender_t<__completing_domain<__result_t, _Env>, set_value_t>;
+      return __transform_recurse_t::template __get_declfn<__result_t, set_value_t, (_Nothrow && __is_nothrow)>();
+    }
   }
 
-public:
   template <class _Sndr, class _Env, auto _DeclFn = __get_declfn<_Sndr, _Env>()>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
     noexcept(noexcept(_DeclFn())) -> decltype(_DeclFn())
@@ -76,9 +88,15 @@ public:
     {
       return __domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env);
     }
-    else
+    else if constexpr (__same_as<_OpTag, start_t>)
     {
       return (*this)(__domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env), __env);
+    }
+    else
+    {
+      using __transform_recurse_t = __transform_sender_t<__completing_domain<__result_t, _Env>, set_value_t>;
+      return __transform_recurse_t()(
+        __domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env), __env);
     }
   }
 };
@@ -92,17 +110,17 @@ private:
   {
     template <class _Sndr, class _Env>
     _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
-      noexcept(noexcept(_Fn2()(_Fn1()(static_cast<_Sndr&&>(__sndr), __env), __env)))
-        -> decltype(_Fn2()(_Fn1()(static_cast<_Sndr&&>(__sndr), __env), __env))
+      noexcept(noexcept(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env)))
+        -> decltype(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env))
     {
-      return _Fn2()(_Fn1()(static_cast<_Sndr&&>(__sndr), __env), __env);
+      return _Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env);
     }
   };
 
   template <class _Sndr, class _Env>
   using __impl_fn_t =
-    __compose<__detail::__transform_sender_t<__call_result_or_t<get_domain_t, default_domain, const _Env&>, start_t>,
-              __detail::__transform_sender_t<__completion_domain_of_t<set_value_t, _Sndr, const _Env&>, set_value_t>>;
+    __compose<__detail::__transform_sender_t<__detail::__starting_domain<_Env>, start_t>,
+              __detail::__transform_sender_t<__detail::__completing_domain<_Sndr, _Env>, set_value_t>>;
 
 public:
   template <class _Sndr, class _Env, class _ImplFn = __impl_fn_t<_Sndr, _Env>>

@@ -160,3 +160,13 @@ jobs:
     uses: ./.github/workflows/build-matx.yml
     with:
       enable_slack_alerts: true
+
+  build-pytorch:
+    name: Build PyTorch
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-pytorch.yml
+    with:
+      enable_slack_alerts: true

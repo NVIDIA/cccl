@@ -23,7 +23,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/offset_iterator.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 

@@ -106,9 +106,9 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
     else if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
-      thrust::complex<double> z_;
-      z_ = ldexp_cexp(thrust::complex<double>(fabs(x), y), -1);
-      return (thrust::complex<double>(z_.real(), z_.imag() * copysign(1.0, x)));
+      thrust::complex<double> z_ = ldexp_cexp(thrust::complex<double>(fabs(x), y), -1);
+      z_.imag(copysign(z_.imag(), x));
+      return z_;
     }
     else
     {

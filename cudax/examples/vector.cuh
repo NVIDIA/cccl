@@ -24,9 +24,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>

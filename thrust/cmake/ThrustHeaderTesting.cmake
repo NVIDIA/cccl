@@ -4,6 +4,11 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+# Add regexes matching deprecated headers here to disable warnings for them:
+set(deprecated_headers_regexes
+  "thrust/iterator/tabulate_output_iterator\\.h"
+)
+
 # Meta target for all configs' header builds:
 add_custom_target(thrust.all.headers)
 
@@ -120,6 +125,8 @@ function(thrust_add_header_test thrust_target label definitions)
     cccl_generate_header_tests(${headertest_target} thrust
       LANGUAGE ${lang}
       HEADERS ${headers}
+      PER_HEADER_DEFINES
+        DEFINE CCCL_IGNORE_DEPRECATED_API ${deprecated_headers_regexes}
     )
     target_link_libraries(${headertest_target} PUBLIC ${thrust_target})
     thrust_clone_target_properties(${headertest_target} ${thrust_target})

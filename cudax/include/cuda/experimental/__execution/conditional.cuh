@@ -151,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
       }
       _CCCL_CATCH_ALL
       {
-        execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
+        execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), execution::current_exception());
       }
     }
 
@@ -206,17 +206,17 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure_base_t<_Pred, _Then, _Else>, _Sndr>
 {
   using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure_base_t<_Pred, _Then, _Else>;
-  _CCCL_NO_UNIQUE_ADDRESS conditional_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
 
@@ -260,7 +260,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   _Else on_false;
 
   template <class _Sndr>
-  _CCCL_NODEBUG_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     using __sndr_t = conditional_t::__sndr_t<__closure_base_t, _Sndr>;
 
@@ -275,20 +275,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   }
 
   template <class _Sndr>
-  _CCCL_NODEBUG_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_NODEBUG_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
@@ -296,7 +296,7 @@ _CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred _
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure_base_t<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};

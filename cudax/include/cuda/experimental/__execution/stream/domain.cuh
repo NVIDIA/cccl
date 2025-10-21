@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -105,11 +106,8 @@ struct stream_domain
   struct __apply_adapt_t
   {
     // This is the default apply function that adapts a sender to a stream sender.
-    // The constraint prevents this function from applying an adaptor to a sender
-    // that has already been adapted. The __stream::__adapted_t query is present
-    // only on receivers that come from an adapted sender.
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
+    _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_decay_copyable<_Sndr>)
     {
       return __stream::__adapt(static_cast<_Sndr&&>(__sndr));
@@ -119,7 +117,7 @@ struct stream_domain
   struct __apply_passthru_t
   {
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
+    _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_movable<_Sndr>) -> _Sndr
     {
       return static_cast<_Sndr&&>(__sndr);
@@ -158,20 +156,19 @@ struct stream_domain
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
   _CCCL_REQUIRES(__callable<__apply_t<_Tag>, _Sndr, _Args...>)
-  _CCCL_NODEBUG_HOST_API static constexpr auto
+  _CCCL_API static constexpr auto
   apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(__nothrow_callable<__apply_t<_Tag>, _Sndr, _Args...>)
     -> __call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
-    return __apply_t<_Tag>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
+    return __apply_t<_Tag>()(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }
 
-  _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES(__callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-  _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
-    __nothrow_callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-    -> __call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
+  _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env, class _Apply = __transform_strategy_t<_Sndr, _Env>)
+  _CCCL_REQUIRES(__callable<_Apply, _OpTag, _Sndr, const _Env&>)
+  _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) noexcept(
+    __nothrow_callable<_Apply, _OpTag, _Sndr, const _Env&>) -> __call_result_t<_Apply, _OpTag, _Sndr, const _Env&>
   {
-    return __transform_strategy_t<_Sndr, _Env>{}(static_cast<_Sndr&&>(__sndr), __env);
+    return _Apply()(_OpTag(), static_cast<_Sndr&&>(__sndr), __env);
   }
 };
 

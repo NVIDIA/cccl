@@ -43,7 +43,6 @@
 #  include <cub/device/device_radix_sort.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/trivial_sequence.h>
 #  include <thrust/distance.h>

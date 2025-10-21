@@ -73,11 +73,13 @@ struct transform_pair_of_input_iterators_t
   using value_type        = ValueType;
   using pointer           = void;
   using reference         = value_type;
-  using iterator_category = std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
 
   InputIt1 input1;
   InputIt2 input2;
   mutable BinaryOp op;
+
+  transform_pair_of_input_iterators_t() = default;
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
   transform_pair_of_input_iterators_t(InputIt1 input1_, InputIt2 input2_, BinaryOp op_)
@@ -107,7 +109,7 @@ struct transform_pair_of_input_iterators_t
   }
 
   /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator++()
   {
     ++input1;
     ++input2;
@@ -177,6 +179,10 @@ struct transform_pair_of_input_iterators_t
     return (input1 != rhs.input1) || (input2 != rhs.input2);
   }
 
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator<(const self_t& rhs) const
+  {
+    return input1 < rhs.input1;
+  }
 }; // struct transform_pair_of_input_iterators_t
 } // namespace detail
 

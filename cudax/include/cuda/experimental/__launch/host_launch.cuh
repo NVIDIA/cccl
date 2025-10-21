@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
-#include <cuda/stream_ref>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -27,9 +27,10 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
+// MSVC and clang cuda need the host side functions included
+#if _CCCL_HOST_COMPILATION() || _CCCL_CUDA_COMPILER(CLANG)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
+#endif // _CCCL_HOST_COMPILATION() || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cccl/prologue.h>
 

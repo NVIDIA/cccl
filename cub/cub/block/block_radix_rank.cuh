@@ -136,6 +136,8 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
+//! - **Important**: BlockRadixRank ranks only ``RADIX_BITS`` bits at a time from the keys, not the entire key.
+//!   The digit extractor determines which bits are ranked.
 //! - @blocked
 //!
 //! Performance Considerations
@@ -153,24 +155,26 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!      constexpr int radix_bits = 5;
 //!
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      // Specialize BlockRadixRank for a 1D block of 2 threads
 //!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
 //!      using storage_t = typename block_radix_rank::TempStorage;
 //!
-//!      // Allocate shared memory for BlockRadixSort
+//!      // Allocate shared memory for BlockRadixRank
 //!      __shared__ storage_t temp_storage;
 //!
 //!      // Obtain a segment of consecutive items that are blocked across threads
-//!      int keys[2];
+//!      unsigned int keys[2];
 //!      int ranks[2];
 //!      ...
 //!
-//!      cub::BFEDigitExtractor<int> extractor(0, radix_bits);
+//!      // Extract the lowest radix_bits from each key
+//!      cub::BFEDigitExtractor<unsigned> extractor(0, radix_bits);
 //!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
 //!
 //!      ...
+//!    }
 //!
 //! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
+//! The extractor will rank only the lowest 5 bits: ``{ [16,10], [9,11] }`` (bits 0-4).
 //! The corresponding output ``ranks`` in those threads will be ``{ [3,1], [0,2] }``.
 //!
 //! Re-using dynamically allocating shared memory

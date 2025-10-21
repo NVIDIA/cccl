@@ -6,8 +6,9 @@
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/sort.h>
+
+#include <cuda/iterator>
 
 #include <nvbench_helper.cuh>
 
@@ -105,7 +106,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
     counting_it,
     counting_it + elements,
     rnd_selector_val.begin(),
-    thrust::make_tabulate_output_iterator(write_pivot_point_t<offset_t>{
+    cuda::make_tabulate_output_iterator(write_pivot_point_t<offset_t>{
       static_cast<offset_t>(num_items_lhs), thrust::raw_pointer_cast(pivot_point.data())}),
     select_lhs_op);
 

@@ -790,7 +790,7 @@ struct DispatchSegmentedReduce
    *   Function type of cub::DeviceSegmentedReduceKernel
    *
    * @param[in] segmented_reduce_kernel
-   *   Kernel function pointer to parameterization of
+   *   Kernel function pointer to instantiation of
    *   cub::DeviceSegmentedReduceKernel
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
@@ -809,7 +809,8 @@ struct DispatchSegmentedReduce
         return cudaSuccess;
       }
 
-      // Init kernel configuration
+      // Init kernel configuration (computes kernel occupancy)
+      // maybe only used inside CUB_DEBUG_LOG code sections
       [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
         CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
@@ -839,7 +840,7 @@ struct DispatchSegmentedReduce
                 segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-        // Invoke DeviceReduceKernel
+        // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
           .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);

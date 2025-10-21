@@ -17,7 +17,7 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>

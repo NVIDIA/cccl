@@ -153,7 +153,7 @@ struct dev0_device_memory_resource : cudax::device_memory_resource
       : cudax::device_memory_resource{cuda::device_ref{0}}
   {}
 
-  using default_queries = cudax::properties_list<cuda::mr::device_accessible>;
+  using default_queries = ::cuda::mr::properties_list<cuda::mr::device_accessible>;
 };
 
 // helper class as we need to pass the properties in a tuple to the catch tests

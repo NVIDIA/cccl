@@ -44,7 +44,7 @@ _CCCL_API constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __com
   _Iter __i = __first;
   while (++__i != __last)
   {
-    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__i), ::cuda::std::__invoke(__proj, *__first)))
+    if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__i), ::cuda::std::invoke(__proj, *__first)))
     {
       __first = __i;
     }

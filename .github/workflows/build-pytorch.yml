@@ -1,0 +1,113 @@
+name: Build PyTorch
+
+on:
+  workflow_dispatch:
+    inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into PyTorch."
+        required: false
+        default: ""
+        type: string
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into PyTorch."
+        required: false
+        default: ""
+        type: string
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-pytorch:
+    name: Build PyTorch
+    runs-on: linux-amd64-cpu16m
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Add NVCC problem matcher
+        run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12h
+      - name: Run command
+        env:
+          CCCL_TAG: ${{ inputs.override_cccl_tag }}
+          CCCL_VERSION: ${{ inputs.override_cccl_version }}
+        run: |
+          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
+          #! /usr/bin/env bash
+          set -eo pipefail
+
+          ~/cccl/ci/pytorch/build_pytorch.sh
+          sccache --show-adv-stats
+          EOF
+
+          chmod +x "$RUNNER_TEMP/ci.sh"
+
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda 13.0 \
+            --host gcc14 \
+            --cuda-ext \
+            --env "CCCL_TAG=${CCCL_TAG}" \
+            --env VAULT_HOST= \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            -- /ci.sh
+
+  notify-failure:
+    name: Notify Slack of PyTorch failure
+    if: ${{ failure() && inputs.enable_slack_alerts }}
+    needs: build-pytorch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          WORKFLOW_TYPE: ${{ github.workflow }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack-message: |
+            PyTorch build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
+
+            Details: ${{ env.SUMMARY_URL }}

@@ -69,8 +69,8 @@ _CCCL_API constexpr pair<_InputIterator, _RandomAccessIterator> __partial_sort_c
     typename iterator_traits<_RandomAccessIterator>::difference_type __len = __r - __result_first;
     for (; __first != __last; ++__first)
     {
-      if (::cuda::std::__invoke(
-            __comp, ::cuda::std::__invoke(__proj1, *__first), ::cuda::std::__invoke(__proj2, *__result_first)))
+      if (::cuda::std::invoke(
+            __comp, ::cuda::std::invoke(__proj1, *__first), ::cuda::std::invoke(__proj2, *__result_first)))
       {
         *__result_first = *__first;
         ::cuda::std::__sift_down<_AlgPolicy>(__result_first, __projected_comp, __len, __result_first);
