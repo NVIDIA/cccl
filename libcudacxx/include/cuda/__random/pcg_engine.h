@@ -132,10 +132,8 @@ public:
   /// @param __z Number of values to discard.
   constexpr _CCCL_API void discard(unsigned long long __z) noexcept
   {
-    for (; __z; --__z)
-    {
-      (void) operator()();
-    }
+    auto [__mult, __plus] = __power_mod(__z);
+    __x_                  = __x_ * __mult + __plus;
   }
 
   /// @brief Equality comparison for two engines.
@@ -216,7 +214,8 @@ private:
     return ::cuda::std::rotr(result_type(__internal), __rot);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto __power_mod(__uint128_type __delta) noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::pair<__uint128_type, __uint128_type>
+  __power_mod(__uint128_type __delta) noexcept
   {
     __uint128_type __acc_mult = 1;
     __uint128_type __acc_plus = 0;
