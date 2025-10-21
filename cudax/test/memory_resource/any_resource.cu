@@ -135,8 +135,7 @@ TEMPLATE_TEST_CASE_METHOD(
   {
     Counts expected{};
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -167,8 +166,7 @@ TEMPLATE_TEST_CASE_METHOD(
   {
     Counts expected{};
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -234,8 +232,7 @@ TEMPLATE_TEST_CASE_METHOD(
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, extra_property, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, extra_property, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
