@@ -25,6 +25,7 @@
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
 {
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
-    noexcept(__is_max_min_noexcept_v<_Tp, _Tp>)
+    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Tp>)
   {
     if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
@@ -53,11 +54,11 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
-  operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(__is_max_min_noexcept_v<_T1, _T2>)
+  template <class Tp, class Up, class _Common = ::cuda::std::common_type_t<Tp, Up>>
+  [[nodiscard]] _CCCL_API constexpr _Common operator()(const Tp& __lhs, const Up& __rhs) const
+    noexcept(__is_maximum_minimum_noexcept_v<Tp, Up> && ::cuda::std::is_nothrow_convertible_v<Tp, _Common>
+             && ::cuda::std::is_nothrow_convertible_v<Up, _Common>)
   {
-    using _Common = ::cuda::std::remove_cv_t<::cuda::std::common_type_t<_T1, _T2>>;
     if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {
       return ::cuda::std::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));

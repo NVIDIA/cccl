@@ -30,29 +30,15 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+template <typename _Tp, typename _Up, typename _Enable = void>
+constexpr bool __is_maximum_minimum_noexcept_v = noexcept(::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>());
+
 template <typename _Tp, typename _Up>
-constexpr bool __is_max_min_noexcept_v = noexcept(
-  (::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>())
-    ? ::cuda::std::declval<_Up>()
-    : ::cuda::std::declval<_Tp>());
-
-template <typename _Up>
-constexpr bool __is_max_min_noexcept_v<::__half, _Up> = true;
-
-template <typename _Up>
-constexpr bool __is_max_min_noexcept_v<::__nv_bfloat16, _Up> = true;
-
-template <typename _Tp>
-constexpr bool __is_max_min_noexcept_v<_Tp, ::__half> = true;
-
-template <typename _Tp>
-constexpr bool __is_max_min_noexcept_v<_Tp, ::__nv_bfloat16> = true;
-
-template <>
-constexpr bool __is_max_min_noexcept_v<::__half, ::__half> = true;
-
-template <>
-constexpr bool __is_max_min_noexcept_v<::__nv_bfloat16, ::__nv_bfloat16> = true;
+constexpr bool __is_maximum_minimum_noexcept_v<
+  _Tp,
+  _Up,
+  ::cuda::std::enable_if_t<::cuda::std::__is_extended_floating_point_v<_Tp>
+                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 

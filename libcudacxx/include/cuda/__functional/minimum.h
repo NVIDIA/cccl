@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/minimum_maximum_common.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
 {
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
-    noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
+    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Tp>)
   {
     if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
@@ -52,13 +54,12 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Up>
-  operator()(const _Tp& __lhs, const _Up& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
+  template <class _Tp, class _Up, class _Common = ::cuda::std::common_type_t<_Tp, _Up>>
+  [[nodiscard]] _CCCL_API constexpr _Common operator()(const _Tp& __lhs, const _Up& __rhs) const
+    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Up> && ::cuda::std::is_nothrow_convertible_v<_Tp, _Common>
+             && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>)
   {
-    using _Common = ::cuda::std::common_type_t<_Tp, _Up>;
-    if constexpr (::cuda::std::__cccl_is_floating_point_helper_v<_Common>
-                  || ::cuda::std::__is_extended_floating_point_v<_Common>)
+    if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {
       return ::cuda::std::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
