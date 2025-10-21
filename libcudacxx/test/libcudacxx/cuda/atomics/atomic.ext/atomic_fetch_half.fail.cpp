@@ -29,7 +29,7 @@ struct TestFn
   {
     // Fetch min
     {
-      typedef cuda::atomic<T, ThreadScope> A;
+      using A = cuda::atomic<T, ThreadScope>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -39,7 +39,7 @@ struct TestFn
       assert(t.load() == T(-5));
     }
     {
-      typedef cuda::atomic<T, ThreadScope> A;
+      using A = cuda::atomic<T, ThreadScope>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);
@@ -48,7 +48,7 @@ struct TestFn
     }
     // Test not lesser
     {
-      typedef cuda::atomic<T, ThreadScope> A;
+      using A = cuda::atomic<T, ThreadScope>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -56,7 +56,7 @@ struct TestFn
       assert(t.load() == T(-1));
     }
     {
-      typedef cuda::atomic<T, ThreadScope> A;
+      using A = cuda::atomic<T, ThreadScope>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);
@@ -65,7 +65,7 @@ struct TestFn
     }
     // Fetch max
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(1);
@@ -73,7 +73,7 @@ struct TestFn
       assert(t.load() == T(2));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(1);
@@ -82,7 +82,7 @@ struct TestFn
     }
     // Test not greater
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(3);
@@ -90,7 +90,7 @@ struct TestFn
       assert(t.load() == T(3));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(3);

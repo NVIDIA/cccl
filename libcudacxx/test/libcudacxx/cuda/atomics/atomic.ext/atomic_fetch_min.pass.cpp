@@ -29,7 +29,7 @@ struct TestFn
   {
     // Test lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(5);
@@ -37,7 +37,7 @@ struct TestFn
       assert(t.load() == T(4));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(5);
@@ -46,7 +46,7 @@ struct TestFn
     }
     // Test not lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(3);
@@ -54,7 +54,7 @@ struct TestFn
       assert(t.load() == T(3));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(3);
@@ -73,7 +73,7 @@ struct TestFn<T, Selector, ThreadScope, true>
     TestFn<T, Selector, ThreadScope, false>()();
     // Test lesser, but with signed math
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -81,7 +81,7 @@ struct TestFn<T, Selector, ThreadScope, true>
       assert(t.load() == T(-5));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);
@@ -90,7 +90,7 @@ struct TestFn<T, Selector, ThreadScope, true>
     }
     // Test not lesser
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       t    = T(-1);
@@ -98,7 +98,7 @@ struct TestFn<T, Selector, ThreadScope, true>
       assert(t.load() == T(-1));
     }
     {
-      typedef cuda::atomic<T> A;
+      using A = cuda::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       t             = T(-1);

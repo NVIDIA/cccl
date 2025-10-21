@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// BUGBUG
-
 #include <cuda/experimental/execution.cuh>
 
 #include "testing.cuh"
