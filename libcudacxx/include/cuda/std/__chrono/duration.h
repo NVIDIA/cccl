@@ -183,7 +183,7 @@ template <class _Rep, class _Period>
 class _CCCL_TYPE_VISIBILITY_DEFAULT duration
 {
   static_assert(!__is_duration_v<_Rep>, "A duration representation can not be a duration");
-  static_assert(__is_ratio_v<_Period>, "Second template parameter of duration must be a std::ratio");
+  static_assert(__is_cuda_std_ratio_v<_Period>, "Second template parameter of duration must be a std::ratio");
   static_assert(_Period::num > 0, "duration period must be positive");
 
   template <class _R1, class _R2>

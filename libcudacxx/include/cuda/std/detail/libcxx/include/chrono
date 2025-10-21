@@ -43,7 +43,7 @@ template <class Rep, class Period = ratio<1>>
 class duration
 {
     static_assert(!__is_duration_v<Rep>, "A duration representation can not be a duration");
-    static_assert(__is_ratio_v<Period>, "Second template parameter of duration must be a std::ratio");
+    static_assert(__is_cuda_std_ratio_v<Period>, "Second template parameter of duration must be a std::ratio");
     static_assert(Period::num > 0, "duration period must be positive");
 public:
     typedef Rep rep;
