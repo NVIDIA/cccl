@@ -36,9 +36,12 @@ __host__ bool enum_test()
     cuda::tma_swizzle::bytes32,
     cuda::tma_swizzle::bytes64,
     cuda::tma_swizzle::bytes128,
+#if _CCCL_CTK_AT_LEAST(12, 8)
     cuda::tma_swizzle::bytes128_atom_32B,
     cuda::tma_swizzle::bytes128_atom_32B_flip_8B,
-    cuda::tma_swizzle::bytes128_atom_64B};
+    cuda::tma_swizzle::bytes128_atom_64B
+#endif // _CCCL_CTK_AT_LEAST(12, 8)
+  };
 
   alignas(16) float data[64]{};
   constexpr int64_t shape_storage[2]   = {8, 8};
@@ -76,12 +79,14 @@ __host__ bool enum_test()
             tensor.dtype.bits = bits;
             unused(cuda::make_tma_descriptor(tensor, box_sizes, interleave_layout, swizzle, l2_fetch_size, oobfill));
           }
+#if _CCCL_CTK_AT_LEAST(12, 8)
           {
             tensor.dtype.bits  = 4;
             tensor.dtype.lanes = 16;
             unused(cuda::make_tma_descriptor(tensor, box_sizes, interleave_layout, swizzle, l2_fetch_size, oobfill));
             tensor.dtype.lanes = 1;
           }
+#endif // _CCCL_CTK_AT_LEAST(12, 8)
           tensor.dtype.code = static_cast<uint8_t>(kDLFloat);
           for (auto bits : {16, 32, 64})
           {
