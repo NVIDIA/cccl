@@ -65,7 +65,7 @@ template <typename _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __ffs_impl_host(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HOST_API int __ffs_impl_host(_Tp __v) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FFS)
   if constexpr (sizeof(_Tp) <= sizeof(int))
