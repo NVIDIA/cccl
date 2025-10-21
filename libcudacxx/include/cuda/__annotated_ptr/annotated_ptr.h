@@ -103,9 +103,16 @@ public:
     static_assert(__is_global_access_property_v<_RuntimeProperty>,
                   "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
     _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::global),
-                               "__p must be global");))
+
+    // clang-format off
+
+    _CCCL_IF_TARGET(is_device)
+    (
+      _CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::global), "__p must be global");
+    )
+    (endif)
+
+    // clang-format on
   }
 
   // cannot be constexpr because of get()
