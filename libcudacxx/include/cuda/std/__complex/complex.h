@@ -207,12 +207,6 @@ public:
   }
 };
 
-template <class _Tp>
-inline constexpr bool __is_complex_v = false;
-
-template <class _Tp>
-inline constexpr bool __is_complex_v<complex<_Tp>> = true;
-
 template <class _Tp, class _Up>
 _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
