@@ -224,36 +224,11 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_scan.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers for
-  //!    // input and output
-  //!    int  num_segments;     // e.g., 3
-  //!    int  *d_in;            // e.g., [8, 6, 7, 5, 3, 2]
-  //!    int  *d_in_b_offsets;  // e.g., [0, 1, 2]
-  //!    int  *d_in_e_offsets;  // e.g., [4, 5, 6]
-  //!    int  *d_out_b_offsets; // e.g., [0, 4, 8]
-  //!    int  *d_out;           // e.g., [ , , , , , , , , , , , ]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceScan::ExclusiveSegmentedSum(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_out, d_in_b_offsets, d_in_e_offsets, d_out_b_offsets, num_segments);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run exclusive prefix sum
-  //!    cub::DeviceScan::ExclusiveSegmentedSum(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_out, d_in_b_offsets, d_in_e_offsets, d_out_b_offsets, num_segments);
-  //!
-  //!    // d_out <-- [0, 8, 14, 21, 0, 6, 13, 18, 0, 7, 12, 15]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-segmented-sum-three-offsets
+  //!     :end-before: example-end exclusive-segmented-sum-three-offsets
   //!
   //! @endrst
   //! @tparam InputIteratorT
@@ -652,6 +627,18 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
+  //! device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-sum-two-offsets
+  //!     :end-before: example-end inclusive-segmented-sum-two-offsets
+  //!
   //! @endrst
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
@@ -759,6 +746,18 @@ struct DeviceSegmentedScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
   //!   shall not overlap in any other way.
   //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
+  //! device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-segmented-sum-three-offsets
+  //!     :end-before: example-end inclusive-segmented-sum-three-offsets
   //!
   //! @endrst
   //! @tparam InputIteratorT
