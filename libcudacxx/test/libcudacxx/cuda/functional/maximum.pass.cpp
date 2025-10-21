@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/functional>
-#include <cuda/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/type_traits>
 
 #include "test_macros.h"
 
@@ -63,12 +63,17 @@ __host__ __device__ bool runtime_test()
 #if _LIBCUDACXX_HAS_NVFP16()
   test<__half, __half, __half>(__half(1.0f), __half(2.0f), __half(2.0f));
   test<__half, float, float>(__half(1.0f), 2.0f, 2.0f);
+// MSVC with C++17 doesn't allow operator== when mixing __half and __nv_bfloat16 with double
+#  if _LIBCUDACXX_HAS_NVFP16() && !(_CCCL_COMPILER_MSVC() && _CCCL_STD_VER == 2017)
   test<__half, double, double>(__half(1.0f), 2.0, 2.0);
+#  endif
 #endif
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !(_CCCL_COMPILER_MSVC() && _CCCL_STD_VER == 2017)
   test<__nv_bfloat16, __nv_bfloat16, __nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f));
   test<__nv_bfloat16, float, float>(__nv_bfloat16(1.0f), 2.0f, 2.0f);
+#  if _LIBCUDACXX_HAS_NVFP16() && !(_CCCL_COMPILER_MSVC() && _CCCL_STD_VER == 2017)
   test<__nv_bfloat16, double, double>(__nv_bfloat16(1.0f), 2.0, 2.0);
+#  endif
 #endif
   return true;
 }
