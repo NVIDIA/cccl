@@ -86,7 +86,7 @@ namespace __expected
 template <class _Tp, class _Err>
 inline constexpr bool __valid_expected =
   !is_reference_v<_Tp> && !is_function_v<_Tp> && !is_same_v<remove_cv_t<_Tp>, in_place_t>
-  && !is_same_v<remove_cv_t<_Tp>, unexpect_t> && !__unexpected::__is_unexpected<remove_cv_t<_Tp>>
+  && !is_same_v<remove_cv_t<_Tp>, unexpect_t> && !__is_cuda_std_unexpected<remove_cv_t<_Tp>>
   && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp, class _Err>
@@ -225,7 +225,7 @@ public:
 
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
-                   _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
+                   _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_convertible_v<_Up, _Tp>)
   _CCCL_API constexpr expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
       : __base(in_place, ::cuda::std::forward<_Up>(__u))
@@ -233,7 +233,7 @@ public:
 
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
-                   _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
+                   _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
                      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND(!is_convertible_v<_Up, _Tp>))
   _CCCL_API constexpr explicit expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
       : __base(in_place, ::cuda::std::forward<_Up>(__u))
@@ -324,11 +324,10 @@ public:
   // [expected.object.assign], assignment
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = _Tp)
-  _CCCL_REQUIRES(
-    (!is_same_v<expected, remove_cvref_t<_Up>>) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
-      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_assignable_v<_Tp&, _Up> _CCCL_AND(
-        is_nothrow_constructible_v<_Tp, _Up> || is_nothrow_move_constructible_v<_Tp>
-        || is_nothrow_move_constructible_v<_Err>))
+  _CCCL_REQUIRES((!is_same_v<expected, remove_cvref_t<_Up>>) _CCCL_AND(!__is_cuda_std_unexpected<remove_cvref_t<_Up>>)
+                   _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_assignable_v<_Tp&, _Up> _CCCL_AND(
+                     is_nothrow_constructible_v<_Tp, _Up> || is_nothrow_move_constructible_v<_Tp>
+                     || is_nothrow_move_constructible_v<_Err>))
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(_Up&& __v)
   {
     if (this->__has_val_)
