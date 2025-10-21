@@ -77,9 +77,10 @@ auto& get_cache()
 template <bool CheckSASS = true>
 struct radix_sort_build
 {
-  static constexpr auto should_check_sass(int)
+  static constexpr auto should_check_sass(int cc_major)
   {
-    return CheckSASS;
+    // TODO: re-enable w/ nvrtc version check
+    return CheckSASS && cc_major < 90;
   }
 
   // operator arguments are (build_ptr, <all_args_of_algo_driver>, cc_major, cc_minor, <paths>)

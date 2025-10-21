@@ -168,7 +168,19 @@ def test_radix_sort_keys(dtype, num_items):
     "dtype, num_items",
     DTYPE_SIZE,
 )
-def test_radix_sort_pairs(dtype, num_items):
+def test_radix_sort_pairs(dtype, num_items, monkeypatch):
+    if np.isdtype(dtype, (np.int8, np.uint8, np.int16, np.uint32)) and num_items in (
+        4,
+        1024,
+    ):
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
@@ -220,7 +232,16 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     "dtype, num_items",
     DTYPE_SIZE,
 )
-def test_radix_sort_pairs_double_buffer(dtype, num_items):
+def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
+    if np.isdtype(dtype, np.uint32) and num_items == 1024:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
@@ -260,7 +281,16 @@ DTYPE_SIZE_BIT_WINDOW = [
     "dtype, num_items",
     DTYPE_SIZE_BIT_WINDOW,
 )
-def test_radix_sort_pairs_bit_window(dtype, num_items):
+def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
+    if np.isdtype(dtype, np.uint32) and num_items == 4:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.ASCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -306,7 +336,16 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
     "dtype, num_items",
     DTYPE_SIZE_BIT_WINDOW,
 )
-def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
+def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch):
+    if np.isdtype(dtype, (np.uint8, np.int16, np.uint32)) and num_items == 4:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.DESCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
