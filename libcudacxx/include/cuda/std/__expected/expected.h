@@ -24,6 +24,7 @@
 #include <cuda/std/__expected/expected_base.h>
 #include <cuda/std/__expected/unexpect.h>
 #include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__fwd/expected.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conjunction.h>
@@ -65,21 +66,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <class _Tp, class _Err>
-class expected;
-
-template <class _Tp>
-inline constexpr bool __is_cuda_std_expected_v = false;
-
-template <class _Tp, class _Err>
-inline constexpr bool __is_cuda_std_expected_v<expected<_Tp, _Err>> = true;
-
-template <class _Tp>
-inline constexpr bool __is_cuda_std_expected_nonvoid_v = __is_cuda_std_expected_v<_Tp>;
-
-template <class _Err>
-inline constexpr bool __is_cuda_std_expected_nonvoid_v<expected<void, _Err>> = false;
 
 namespace __expected
 {
