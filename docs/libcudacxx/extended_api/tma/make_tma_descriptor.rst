@@ -81,7 +81,7 @@ Defined in header ``<cuda/tma>``.
 
 The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor`` or ``DLManagedTensor`` `descriptors <https://dmlc.github.io/dlpack/latest/c_api.html>`__. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
 
-The API is available when ``dlpack/dlpack.h`` (DLPack v1) is discoverable at compile time.
+The API is available when ``dlpack/dlpack.h`` (DLPack v1) is discovered at compile time.
 
 .. note::
 
