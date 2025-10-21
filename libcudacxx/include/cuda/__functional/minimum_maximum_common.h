@@ -37,19 +37,15 @@ constexpr bool __is_maximum_minimum_noexcept_v =
   noexcept(::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>())
   && ::cuda::std::is_nothrow_convertible_v<_Tp, _Common> && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>;
 
-// (1) Extended floating point types, such as __half and __nv bfloat16 cannot be compared with operator<. We need to
-//     handle them separately with SFINAE.
-// (2) The common type is noexcept if the resulting type is a floating point type or it is possible to convert the types
-//     to the common type without throwing an exception.
+// Extended floating point types, such as __half and __nv bfloat16 cannot be compared with operator<. We need to
+// handle them separately with SFINAE.
 template <typename _Tp, typename _Up, typename _Common>
 constexpr bool __is_maximum_minimum_noexcept_v<
   _Tp,
   _Up,
   _Common,
   ::cuda::std::enable_if_t<::cuda::std::__is_extended_floating_point_v<_Tp>
-                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> =
-  ::cuda::is_floating_point_v<_Common>
-  || (::cuda::std::is_nothrow_convertible_v<_Tp, _Common> && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>);
+                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> = false;
 
 _CCCL_END_NAMESPACE_CUDA
 

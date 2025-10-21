@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/functional>
+#include <cuda/type_traits>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
@@ -16,7 +17,10 @@
 template <typename OpT, typename T, typename U, typename Result>
 __host__ __device__ constexpr void test_op(const T lhs, const U rhs, const Result expected)
 {
-  static_assert(noexcept(OpT{}(cuda::std::declval<T>(), cuda::std::declval<U>())), "OpT is not noexcept");
+  if constexpr (!cuda::std::__is_extended_floating_point_v<T> && !cuda::std::__is_extended_floating_point_v<U>)
+  {
+    static_assert(noexcept(OpT{}(cuda::std::declval<T>(), cuda::std::declval<U>())), "OpT is not noexcept");
+  }
   static_assert(cuda::std::is_same_v<decltype(OpT{}(lhs, rhs)), Result>, "OpT is not the expected type");
   assert((OpT{}(lhs, rhs) == expected) && (OpT{}(lhs, rhs) == OpT{}(rhs, lhs)));
 }

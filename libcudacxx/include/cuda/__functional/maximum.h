@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/__functional/minimum_maximum_common.h>
-#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_nothrow_convertible.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
