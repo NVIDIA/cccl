@@ -42,7 +42,7 @@ __host__ bool enum_test()
 
   alignas(16) float data[64]{};
   constexpr int64_t shape_storage[2]   = {8, 8};
-  constexpr int64_t strides_storage[2] = {1, 8};
+  constexpr int64_t strides_storage[2] = {8, 1};
 
   DLTensor tensor{};
   tensor.data        = data;
