@@ -9,6 +9,8 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include <cuda/cmath>
 
@@ -350,4 +352,65 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   }
   REQUIRE(status == cudaSuccess);
   REQUIRE(output == h_input);
+}
+
+C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offsets works",
+         "[segmented][exclusive_scan][three-offsets]")
+
+{
+  /*
+  Example uses ExclusiveSegmentedScan to compute running maximum of a sequence of length n
+  and writes the result to upper diagonal portion of n-by-n matrix.
+  */
+  const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScan[3-offsets]";
+  // example-begin inclusive-segmented-scan-three-offsets
+  size_t n = 8;
+  thrust::device_vector<float> input{0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f};
+
+  constexpr unsigned _zero{0};
+  auto _n               = static_cast<unsigned>(n);
+  auto in_begin_offsets = thrust::make_counting_iterator(_zero);
+  auto in_end_offsets   = thrust::make_constant_iterator(_n);
+
+  // use stride n + 1 is the distance between consecutive diagonal elements in C-contiguous layout
+  auto out_begin_offsets = thrust::make_counting_iterator(_zero, _n + 1);
+
+  // allocate and zero-initialize output matrix in C-contiguous layout
+  auto output = thrust::device_vector<float>(n * n, 0.0f);
+
+  auto d_in  = input.begin();
+  auto d_out = output.begin();
+
+  auto scan_op = [] __host__ __device__(float v1, float v2) noexcept -> float { return cuda::maximum<>{}(v1, v2); };
+
+  void* temp_storage = nullptr;
+  size_t temp_storage_bytes;
+
+  // determine size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
+  check(status, algo_name);
+
+  status = cudaMalloc(&temp_storage, temp_storage_bytes);
+  check(status, "cudaMalloc");
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
+  check(status, algo_name);
+
+  thrust::device_vector<float> expected{
+    0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
+    0.00f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 1
+    0.00f, 0.00f, 0.17f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 2
+    0.00f, 0.00f, 0.00f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 3
+    0.00f, 0.00f, 0.00f, 0.00f, 0.31f, 0.31f, 1.00f, 1.00f, // row 4
+    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.25f, 1.00f, 1.00f, // row 5
+    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f, 1.00f, // row 6
+    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.72f // row 7
+  };
+
+  // example-end inclusive-segmented-scan-three-offsets
+  REQUIRE(output == expected);
+  REQUIRE(status == cudaSuccess);
 }
