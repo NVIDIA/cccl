@@ -280,13 +280,6 @@ _CCCL_API inline auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 }
 #endif // _CCCL_STD_VER >= 2020
 
-// __is_default_allocator
-template <class _Tp>
-inline constexpr bool __is_default_allocator = false;
-
-template <class _Tp>
-inline constexpr bool __is_default_allocator<allocator<_Tp>> = true;
-
 // __is_cpp17_move_insertable
 template <class _Alloc, class = void>
 inline constexpr bool __is_cpp17_move_insertable = is_move_constructible_v<typename _Alloc::value_type>;
@@ -294,7 +287,7 @@ inline constexpr bool __is_cpp17_move_insertable = is_move_constructible_v<typen
 template <class _Alloc>
 inline constexpr bool __is_cpp17_move_insertable<
   _Alloc,
-  enable_if_t<__is_default_allocator<_Alloc>
+  enable_if_t<__is_cuda_std_allocator_v<_Alloc>
               && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>>> = true;
 
 // __is_cpp17_copy_insertable
@@ -305,7 +298,7 @@ inline constexpr bool __is_cpp17_copy_insertable =
 template <class _Alloc>
 inline constexpr bool __is_cpp17_copy_insertable<
   _Alloc,
-  enable_if_t<!__is_default_allocator<_Alloc>
+  enable_if_t<!__is_cuda_std_allocator_v<_Alloc>
               && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>>> =
   __is_cpp17_move_insertable<_Alloc>;
 
@@ -434,7 +427,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 
   template <class _Tp>
   _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
+    (__is_cuda_std_allocator_v<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
       && is_trivially_move_constructible_v<_Tp>,
     void>
   __construct_forward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __begin2)
@@ -463,7 +456,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
             class _RawDestTp   = remove_const_t<_DestTp>>
   _CCCL_API inline static enable_if_t<
     is_trivially_move_constructible_v<_DestTp> && is_same_v<_RawSourceTp, _RawDestTp>
-      && (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _DestTp*, _SourceTp&>),
+      && (__is_cuda_std_allocator_v<allocator_type> || !__has_construct<allocator_type, _DestTp*, _SourceTp&>),
     void>
   __construct_range_forward(allocator_type&, _SourceTp* __begin1, _SourceTp* __end1, _DestTp*& __begin2)
   {
@@ -497,7 +490,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 
   template <class _Tp>
   _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
+    (__is_cuda_std_allocator_v<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
       && is_trivially_move_constructible_v<_Tp>,
     void>
   __construct_backward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __end2)

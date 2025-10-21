@@ -70,31 +70,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-inline constexpr bool __cccl_is_string_view_v = false;
-template <class _Tp>
-inline constexpr bool __cccl_is_string_view_v<const _Tp> = __cccl_is_string_view_v<_Tp>;
-template <class _Tp>
-inline constexpr bool __cccl_is_string_view_v<volatile _Tp> = __cccl_is_string_view_v<_Tp>;
-template <class _Tp>
-inline constexpr bool __cccl_is_string_view_v<const volatile _Tp> = __cccl_is_string_view_v<_Tp>;
-template <class _CharT, class _Traits>
-inline constexpr bool __cccl_is_string_view_v<basic_string_view<_CharT, _Traits>> = true;
-
-template <class _Tp>
-inline constexpr bool __cccl_is_std_string_v = false;
-#if !_CCCL_COMPILER(NVRTC)
-template <class _CharT, class _Traits, class _Alloc>
-inline constexpr bool __cccl_is_std_string_v<::std::basic_string<_CharT, _Traits, _Alloc>> = true;
-#endif // !_CCCL_COMPILER(NVRTC)
-
-template <class _Tp>
-inline constexpr bool __cccl_is_std_string_view_v = false;
-#if __cpp_lib_string_view >= 201606L
-template <class _CharT, class _Traits>
-inline constexpr bool __cccl_is_std_string_view_v<::std::basic_string_view<_CharT, _Traits>> = true;
-#endif // __cpp_lib_string_view >= 201606L
-
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
@@ -126,14 +101,14 @@ _CCCL_CONCEPT __cccl_basic_sv_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _C
     requires(::cuda::std::ranges::contiguous_range<_Range>), //
     requires(::cuda::std::ranges::sized_range<_Range>), //
     requires(is_same_v<::cuda::std::ranges::range_value_t<_Range>, _CharT>), //
-    requires(!(__cccl_is_string_view_v<remove_cvref_t<_Range>>
+    requires(!(__is_cuda_std_basic_string_view_v<remove_cvref_t<_Range>>
                && __cccl_basic_sv_compatible_range_check_traits<_Range, _CharT, _Traits>) ), //
     requires(!is_convertible_v<_Range, const _CharT*>), //
     requires(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>), //
-    requires(!(__cccl_is_std_string_v<remove_cvref_t<_Range>>
+    requires(!(__is_std_basic_string_v<remove_cvref_t<_Range>>
                && (__cccl_basic_sv_compatible_range_check_traits<_Range, _CharT, _Traits>
                    || __cccl_basic_sv_compatible_range_check_traits_std_ext<_Range, _CharT, _Traits>) )), //
-    requires(!(__cccl_is_std_string_view_v<remove_cvref_t<_Range>>
+    requires(!(__is_std_basic_string_view_v<remove_cvref_t<_Range>>
                && (__cccl_basic_sv_compatible_range_check_traits<_Range, _CharT, _Traits>
                    || __cccl_basic_sv_compatible_range_check_traits_std_ext<_Range, _CharT, _Traits>) )) //
   );

@@ -66,6 +66,24 @@ _CCCL_PREFERRED_NAME(wstring_view)
       basic_string_view;
 // clang-format on
 
+template <class _Tp>
+inline constexpr bool __is_std_basic_string_view_v = false;
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+template <class _CharT, class _Traits>
+inline constexpr bool __is_std_basic_string_view_v<::std::basic_string_view<_CharT, _Traits>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<const _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<volatile _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<const volatile _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _CharT, class _Traits>
+inline constexpr bool __is_cuda_std_basic_string_view_v<basic_string_view<_CharT, _Traits>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

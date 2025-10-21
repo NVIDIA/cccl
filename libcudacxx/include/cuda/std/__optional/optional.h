@@ -429,7 +429,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) &
   {
     using _Up = invoke_result_t<_Func, value_type&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -442,7 +442,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) const&
   {
     using _Up = invoke_result_t<_Func, const value_type&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -455,7 +455,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) &&
   {
     using _Up = invoke_result_t<_Func, value_type&&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -468,7 +468,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) const&&
   {
     using _Up = invoke_result_t<_Func, const value_type&&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {

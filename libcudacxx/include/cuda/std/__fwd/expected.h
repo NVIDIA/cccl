@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___FWD_ARRAY_H
-#define _CUDA_STD___FWD_ARRAY_H
+#ifndef _CUDA_STD___FWD_EXPECTED_H
+#define _CUDA_STD___FWD_EXPECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,23 +20,27 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, size_t _Size>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT array;
+template <class _Tp, class _Err>
+class _CCCL_TYPE_VISIBILITY_DEFAULT expected;
 
 template <class _Tp>
-inline constexpr bool __is_cuda_std_array_v = false;
+inline constexpr bool __is_cuda_std_expected_v = false;
 
-template <class _Tp, size_t _Sz>
-inline constexpr bool __is_cuda_std_array_v<array<_Tp, _Sz>> = true;
+template <class _Tp, class _Err>
+inline constexpr bool __is_cuda_std_expected_v<expected<_Tp, _Err>> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_expected_nonvoid_v = __is_cuda_std_expected_v<_Tp>;
+
+template <class _Err>
+inline constexpr bool __is_cuda_std_expected_nonvoid_v<expected<void, _Err>> = false;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___FWD_ARRAY_H
+#endif // _CUDA_STD___FWD_EXPECTED_H
