@@ -310,7 +310,6 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   tma_interleave_layout __interleave_layout) noexcept
 {
   using ::cuda::std::int64_t;
-  using ::cuda::std::uint64_t;
   const auto __input_strides = __tensor.strides;
   const auto __input_sizes   = __tensor.shape;
   __tma_strides_array_t __output_strides{}; // 4: max rank - 1
@@ -336,10 +335,11 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   _CCCL_VERIFY(__input_strides[__rank - 1] == 1, "stride[__rank - 1] != 1"); // implicit/innermost stride is 1
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
-    // TODO(fbusato): check if stride == 0 is valid
     _CCCL_VERIFY(__input_strides[__i] <= __max_allowed_stride_count, "Stride is too large (overflow)");
     // TODO(fbusato): check mul overflow
-    _CCCL_VERIFY(__input_strides[__i] >= __input_sizes[__i + 1] * __input_strides[__i + 1], "Stride is too small");
+    _CCCL_VERIFY(
+      __input_strides[__i] == 0 || (__input_strides[__i] >= __input_sizes[__i + 1] * __input_strides[__i + 1]),
+      "Stride is too small");
     const auto __input_stride_bytes = __input_strides[__i] * __data_type_size;
     _CCCL_VERIFY(__input_stride_bytes % __alignment == 0, "Stride is not a multiple of alignment (32 or 16)");
     __output_strides[__rank - 2 - __i] = __input_stride_bytes;
@@ -410,6 +410,7 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   tma_interleave_layout __interleave_layout) noexcept
 {
   using ::cuda::std::size_t;
+  using ::cuda::std::uint64_t;
   _CCCL_VERIFY(__elem_strides.size() == static_cast<size_t>(__rank), "Elem strides size mismatch");
   __tma_elem_strides_array_t __elem_strides_array{1};
   const int __init_index = (__interleave_layout == tma_interleave_layout::none) ? 1 : 0;

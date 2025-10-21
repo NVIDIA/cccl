@@ -3,7 +3,7 @@
 ``cuda::make_tma_descriptor``
 =============================
 
-Defined in header ``<cuda/tma>``.
+Defined in the ``<cuda/tma>`` header.
 
 **Function signatures**
 
