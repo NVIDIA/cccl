@@ -15,10 +15,10 @@
 #include <cuda/cmath>
 
 #include <iostream> // std::cerr
-#include <numeric> // std::exclusive_scan
 #include <string>
 #include <vector>
 
+#include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
 
 void check(cudaError_t status, const std::string& algo_name)
@@ -305,7 +305,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
    * over boolean values stored as bits in unsigned integer, where addition is bitwise XOR.
    * Each unsigned integer represents 32-long tuple of GF(2) values
    */
-  auto scan_op        = [] __device__ __host__(unsigned v1, unsigned v2) noexcept -> unsigned { return v1 ^ v2; };
+  auto scan_op        = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned { return v1 ^ v2; };
   unsigned init_value = 0u;
 
   // 128 input elements
@@ -340,15 +340,14 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
 
   // verify correctness
   thrust::host_vector<unsigned> h_input(input);
+
   thrust::host_vector<unsigned> h_offsets(offsets);
   for (size_t id = 0; id < num_segments; ++id)
   {
-    std::exclusive_scan(
-      h_input.begin() + h_offsets[id],
-      h_input.begin() + h_offsets[id + 1],
-      h_input.begin() + h_offsets[id],
-      init_value,
-      scan_op);
+    auto inp_b = h_input.begin() + h_offsets[id];
+    auto inp_e = h_input.begin() + h_offsets[id + 1];
+    auto out_b = h_input.begin() + h_offsets[id];
+    compute_exclusive_scan_reference(inp_b, inp_e, out_b, init_value, scan_op);
   }
   REQUIRE(status == cudaSuccess);
   REQUIRE(output == h_input);
