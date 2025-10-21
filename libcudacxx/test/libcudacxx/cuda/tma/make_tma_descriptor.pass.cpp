@@ -53,7 +53,7 @@ __host__ bool enum_test()
   tensor.strides     = const_cast<int64_t*>(strides_storage);
   tensor.byte_offset = 0;
 
-  int box_sizes_storage[2]    = {8, 8};
+  int box_sizes_storage[2] = {8, 8};
   cuda::std::span<const int, 2> box_sizes{box_sizes_storage};
 
   for (auto oobfill : tma_oob_fill_array)

@@ -10,7 +10,7 @@ Defined in header ``<cuda/tma>``.
 .. code:: cuda
 
     namespace cuda {
- 
+
     template <size_t BoxDimSize, size_t ElemStrideSize>
     [[nodiscard]] inline CUtensorMap
     make_tma_descriptor(
@@ -122,7 +122,7 @@ Preconditions
   - ``tensor.ndim`` must not exceed ``3`` when an interleaved layout is requested.
 
 * The following data types are acceped for ``tensor.dtype``:
-  
+
   - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available.
   - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
   - ``kDLUInt`` with ``bits == 16``, namely ``uint16_t``.
@@ -150,7 +150,7 @@ Preconditions
 * ``box_sizes``, ``elem_strides``, and ``tensor.ndim`` must have the same rank.
 
 * ``box_sizes`` must be positive and not exceed ``256`` elements per dimension. The full size of ``box_sizes`` must fit in shared memory.
-  
+
   - The inner dimension in bytes, computed as ``box_sizes[rank - 1] * sizeof(data_type)``, must be a multiple of 16 bytes if ``interleave_layout`` is ``tma_interleave_layout::none``.
   - Otherwise, the inner dimension in bytes must not exceed the byte-width of the selected ``swizzle`` pattern (``32``, ``64``, or ``128`` bytes).
 
