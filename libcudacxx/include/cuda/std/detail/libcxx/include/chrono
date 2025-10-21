@@ -42,7 +42,7 @@ public:
 template <class Rep, class Period = ratio<1>>
 class duration
 {
-    static_assert(!__is_duration_v<Rep>, "A duration representation can not be a duration");
+    static_assert(!__is_cuda_std_duration_v<Rep>, "A duration representation can not be a duration");
     static_assert(__is_cuda_std_ratio_v<Period>, "Second template parameter of duration must be a std::ratio");
     static_assert(Period::num > 0, "duration period must be positive");
 public:
@@ -2253,7 +2253,7 @@ template <class _Duration>
 class hh_mm_ss
 {
 private:
-  static_assert(__is_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
+  static_assert(__is_cuda_std_duration_v<_Duration>, "template parameter of hh_mm_ss must be a std::chrono::duration");
   using __CommonType = typename common_type<_Duration, chrono::seconds>::type;
 
   _CCCL_API static constexpr uint64_t __pow10(unsigned __exp)
