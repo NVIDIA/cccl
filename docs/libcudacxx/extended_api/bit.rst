@@ -44,5 +44,5 @@ Bit
 
    * - :ref:`ffs <libcudacxx-extended-api-bit-ffs>`
      - Find first set bit
-     - CCCL 3.0.0
-     - CUDA 13.0
+     - CCCL 3.2.0
+     - CUDA 13.2
