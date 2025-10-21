@@ -147,7 +147,19 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     "dtype, num_items",
     DTYPE_SIZE,
 )
-def test_radix_sort_keys(dtype, num_items):
+def test_radix_sort_keys(dtype, num_items, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -169,10 +181,8 @@ def test_radix_sort_keys(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs(dtype, num_items, monkeypatch):
-    if np.isdtype(dtype, (np.int8, np.uint8, np.int16, np.uint32)) and num_items in (
-        4,
-        1024,
-    ):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 9 or np.isdtype(dtype, (np.int8, np.uint8, np.int16, np.uint32)):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
@@ -209,7 +219,19 @@ def test_radix_sort_pairs(dtype, num_items, monkeypatch):
     "dtype, num_items",
     DTYPE_SIZE,
 )
-def test_radix_sort_keys_double_buffer(dtype, num_items):
+def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -233,7 +255,8 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
-    if np.isdtype(dtype, np.uint32) and num_items == 1024:
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 9 or np.isdtype(dtype, np.uint32):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
@@ -282,7 +305,8 @@ DTYPE_SIZE_BIT_WINDOW = [
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
-    if np.isdtype(dtype, np.uint32) and num_items == 4:
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 9 or np.isdtype(dtype, np.uint32):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
@@ -337,7 +361,7 @@ def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
     DTYPE_SIZE_BIT_WINDOW,
 )
 def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch):
-    if np.isdtype(dtype, (np.uint8, np.int16, np.uint32)) and num_items == 4:
+    if np.isdtype(dtype, (np.uint8, np.int16, np.uint32)):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
@@ -407,7 +431,19 @@ def test_radix_sort_with_stream(cuda_stream):
     np.testing.assert_array_equal(got, h_in_keys)
 
 
-def test_radix_sort():
+def test_radix_sort(monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     import cupy as cp
     import numpy as np
 
@@ -444,7 +480,19 @@ def test_radix_sort():
     np.testing.assert_array_equal(h_out_items, h_in_values)
 
 
-def test_radix_sort_double_buffer():
+def test_radix_sort_double_buffer(monkeypatch):
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
+    # TODO: add NVRTC version check, ref nvbug 5243118
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     import cupy as cp
     import numpy as np
 
