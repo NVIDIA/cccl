@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/array>
@@ -40,6 +41,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 /// generation." ACM Transactions on Mathematical Software 204 (2014): 1-46. The engine keeps a 128-bit internal state
 /// and returns 64-bit pseudo-random values. PCG64 is a fast general purpose PRNG that passes common statistical tests,
 /// has a long period (2^128), and can discard values in O(log n) time.
+///
+/// PCG64 produces the 10000th value 11135645891219275043 when seeded with the default seed.
 ///
 /// Usage example:
 /// @code
@@ -161,11 +164,11 @@ public:
     __os.flags(ios_base::dec | ios_base::fixed | ios_base::left);
     __os.fill(__os.widen(' '));
     // Write 64 bits at a time
-    ::cuda::std::uint64_t low = static_cast<::cuda::std::uint64_t>(__e.__x_);
-    ::cuda::std::uint64_t hi  = static_cast<::cuda::std::uint64_t>(__e.__x_ >> 64);
-    __os << low;
+    ::cuda::std::uint64_t __low = static_cast<::cuda::std::uint64_t>(__e.__x_);
+    ::cuda::std::uint64_t __hi  = static_cast<::cuda::std::uint64_t>(__e.__x_ >> 64);
+    __os << __low;
     __os << __os.widen(' ');
-    __os << hi;
+    __os << __hi;
     __os << __os.widen(' ');
     // restore flags & fill character
     __os.flags(__flags);
@@ -186,12 +189,11 @@ public:
 
     __is.flags(ios_base::dec | ios_base::skipws);
 
-    ::cuda::std::uint64_t low, hi;
-    __is >> low;
-    __is >> hi;
+    ::cuda::std::uint64_t __low, __hi;
+    __is >> __low;
+    __is >> __hi;
     // Read engine state from stream: low 64 bits then high 64 bits.
-    __e.__x_ = (static_cast<__uint128_type>(hi) << 64) | low;
-
+    __e.__x_ = (static_cast<__uint128_type>(__hi) << 64) | __low;
     // restore flags
     __is.flags(__flags);
 
@@ -207,39 +209,31 @@ private:
     ((__uint128_type) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
   static constexpr __uint128_type __increment =
     ((__uint128_type) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
-  [[nodiscard]] _CCCL_API constexpr result_type __rotr(result_type __value, __bitcount_t __rot) noexcept
-  {
-    constexpr __bitcount_t __bits = sizeof(result_type) * 8;
-    constexpr __bitcount_t __mask = __bits - 1;
-    return (__value >> __rot) | (__value << ((-__rot) & __mask));
-  }
   [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_type __internal) noexcept
   {
     __bitcount_t __rot = __bitcount_t(__internal >> 122);
     __internal ^= __internal >> 64;
-    return __rotr(result_type(__internal), __rot);
+    return ::cuda::std::rotr(result_type(__internal), __rot);
   }
 
   [[nodiscard]] _CCCL_API constexpr auto __power_mod(__uint128_type __delta) noexcept
   {
-    constexpr __uint128_type __ZERO = 0u;
-    constexpr __uint128_type __ONE  = 1u;
-    __uint128_type __acc_mult       = 1;
-    __uint128_type __acc_plus       = 0;
-    __uint128_type __cur_mult       = __multiplier;
-    __uint128_type __cur_plus       = __increment;
-    while (__delta > __ZERO)
+    __uint128_type __acc_mult = 1;
+    __uint128_type __acc_plus = 0;
+    __uint128_type __cur_mult = __multiplier;
+    __uint128_type __cur_plus = __increment;
+    while (__delta > 0)
     {
-      if (__delta & __ONE)
+      if (__delta & 1)
       {
         __acc_mult *= __cur_mult;
         __acc_plus = __acc_plus * __cur_mult + __cur_plus;
       }
-      __cur_plus = (__cur_mult + __ONE) * __cur_plus;
+      __cur_plus = (__cur_mult + 1) * __cur_plus;
       __cur_mult *= __cur_mult;
       __delta >>= 1;
     }
-    return ::cuda::std::pair(__acc_mult, __acc_plus);
+    return ::cuda::std::pair{__acc_mult, __acc_plus};
   }
   __uint128_type __x_{};
 };
