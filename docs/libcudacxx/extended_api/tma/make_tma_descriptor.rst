@@ -121,7 +121,7 @@ Preconditions
 
   - ``tensor.ndim`` must not exceed ``3`` when an interleaved layout is requested.
 
-* The following data types are acceped for ``tensor.dtype``:
+* The following data types are accepted for ``tensor.dtype``:
 
   - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available.
   - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
