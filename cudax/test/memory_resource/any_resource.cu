@@ -287,3 +287,23 @@ TEMPLATE_TEST_CASE_METHOD(
   // Reset the counters:
   this->counts = Counts();
 }
+
+TEMPLATE_TEST_CASE_METHOD(
+  test_fixture, "synchronous ref assignment operators", "[container][resource]", big_resource, small_resource)
+{
+  big_resource mr{42, this};
+  cudax::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref{mr};
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
+
+  big_resource mr2{43, this};
+  cudax::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref2{mr2};
+  ref = ref2;
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
+
+  cudax::synchronous_resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
+  ref = ref3;
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
+}

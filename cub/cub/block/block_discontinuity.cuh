@@ -96,6 +96,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Collectively compute head flags for discontinuities in the segment
 //!        int head_flags[4];
 //!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -387,6 +388,7 @@ public:
   //!        // Collectively compute head flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -463,8 +465,9 @@ public:
   //!
   //!        // Collectively compute head flags for discontinuities in the segment
   //!        int head_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeads(
-  //!            head_flags, thread_data, cub::Inequality(), tile_predecessor_item);
+  //!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data,
+  //!                                                   cub::Inequality(), tile_predecessor_item);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``,
@@ -549,6 +552,7 @@ public:
   //!        // Collectively compute tail flags for discontinuities in the segment
   //!        int tail_flags[4];
   //!        BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data, cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``.
@@ -640,8 +644,9 @@ public:
   //!
   //!        // Collectively compute tail flags for discontinuities in the segment
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(
-  //!            tail_flags, thread_data, cub::Inequality(), tile_successor_item);
+  //!        BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data,
+  //!                                                   cub::Inequality(), tile_successor_item);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -742,8 +747,9 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
-  //!            head_flags, tail_flags, thread_data, cub::Inequality());
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags, thread_data,
+  //!                                                           cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -864,8 +870,10 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
-  //!            head_flags, tail_flags, tile_successor_item, thread_data, cub::Inequality());
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags,
+  //!                                                           tile_successor_item, thread_data,
+  //!                                                           cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -997,9 +1005,10 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
-  //!            head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
-  //!            thread_data, cub::Inequality());
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
+  //!                                                           tail_flags, tile_successor_item,
+  //!                                                           thread_data, cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``,
@@ -1126,9 +1135,10 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
-  //!            head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
-  //!            thread_data, cub::Inequality());
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
+  //!                                                           tail_flags, tile_successor_item,
+  //!                                                           thread_data, cub::Inequality());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``,

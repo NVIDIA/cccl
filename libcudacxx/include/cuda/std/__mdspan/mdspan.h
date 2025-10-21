@@ -108,7 +108,7 @@ class mdspan
                             _AccessorPolicy>
 {
 private:
-  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
+  static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
   static_assert(!is_abstract_v<_ElementType>, "mdspan: ElementType template parameter may not be an abstract class");

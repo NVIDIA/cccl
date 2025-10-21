@@ -1542,8 +1542,8 @@ public:
 
   template <class _Arg>
   using __match_construct =
-    _If<!is_same_v<remove_cvref_t<_Arg>, variant> && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
-          && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
+    _If<!is_same_v<remove_cvref_t<_Arg>, variant> && !__is_cuda_std_inplace_type_v<remove_cvref_t<_Arg>> //
+          && !__is_cuda_std_inplace_index_v<remove_cvref_t<_Arg>>,
         typename __constraints::template __match_construct<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 
