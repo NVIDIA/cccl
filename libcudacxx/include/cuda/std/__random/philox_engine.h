@@ -98,6 +98,7 @@ class philox_engine
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
   static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
+
   [[nodiscard]] _CCCL_API static constexpr auto __multipliers() noexcept
   {
     constexpr _UIntType __constants[] = {_Constants...};
@@ -141,7 +142,7 @@ public:
   //! The largest value this engine may potentially produce.
   [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
-    return ((1ull << (word_size - 1)) | ((1ull << (word_size - 1)) - 1));
+    return ((result_type{1} << (word_size - 1)) | ((result_type{1} << (word_size - 1)) - 1));
   }
 
   //! This constructor, which optionally accepts a seed, initializes a new
@@ -447,7 +448,7 @@ private:
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) const noexcept
+  static _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
   {
     // Generic slow implementation
     constexpr result_type __w_half  = word_size / 2;
@@ -467,16 +468,16 @@ private:
     __hi += __ahbl_albh >> __w_half;
     __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
 
-    return ::cuda::std::pair(__hi, __lo);
+    return ::cuda::std::pair{__hi & max(), __lo & max()};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) const noexcept
+  static _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) noexcept
   {
     if constexpr (word_size == 32 || word_size == 64)
     {
-      using _Up = ::cuda::std::__make_nbit_uint_t<word_size>;
-      auto __hi = static_cast<result_type>(::cuda::mul_hi(static_cast<_Up>(__a), static_cast<_Up>(__b)));
-      auto __lo = (__a * __b) & max();
+      using _Up       = ::cuda::std::__make_nbit_uint_t<word_size>;
+      auto __hi       = static_cast<result_type>(::cuda::mul_hi(static_cast<_Up>(__a), static_cast<_Up>(__b)));
+      const auto __lo = (__a * __b) & max();
       return ::cuda::std::pair{__hi, __lo};
     }
     else
@@ -505,8 +506,8 @@ private:
       else // word_count == 4
       {
         ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
-        auto [__hi0, __lo0]                             = __mulhilo(__V[0], multipliers[1]);
-        auto [__hi2, __lo2]                             = __mulhilo(__V[2], multipliers[0]);
+        auto [__hi0, __lo0]                             = __mulhilo(__V[0], multipliers[0]);
+        auto [__hi2, __lo2]                             = __mulhilo(__V[2], multipliers[1]);
         __S[0]                                          = __hi0 ^ __K[0] ^ __V[1];
         __S[1]                                          = __lo0;
         __S[2]                                          = __hi2 ^ __K[1] ^ __V[3];
@@ -528,7 +529,7 @@ private:
   ::cuda::std::array<result_type, word_count> __y_ = {};
   // Each generation produces n random numbers, which are returned one at a time.
   // __j_ cycles through [0, n-1].
-  unsigned long long __j_ = 0;
+  ::cuda::std::size_t __j_ = 0;
 
 }; // end philox_engine
 
@@ -537,7 +538,7 @@ private:
 //!        Philox counter based random number generation algorithm.
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x32
 //!       shall produce the value 1955073260.
-using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xD2511F53, 0x9E3779B9, 0xCD9E8D57, 0xBB67AE85>;
+using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xCD9E8D57, 0x9E3779B9, 0xD2511F53, 0xBB67AE85>;
 
 //! @typedef philox4x64
 //! @brief A random number engine with predefined parameters which implements the
@@ -549,9 +550,9 @@ using philox4x64 =
                 64,
                 4,
                 10,
-                0xD2E7470EE14C6C93,
-                0x9E3779B97F4A7C15,
                 0xCA5A826395121157,
+                0x9E3779B97F4A7C15,
+                0xD2E7470EE14C6C93,
                 0xBB67AE8584CAA73B>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
