@@ -25,7 +25,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _Err>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT expected;
+class _CCCL_TYPE_VISIBILITY_DEFAULT expected;
 
 template <class _Tp>
 inline constexpr bool __is_cuda_std_expected_v = false;
