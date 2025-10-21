@@ -54,53 +54,128 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
+  using cuda::std::__compressed_box_choose;
+  using cuda::std::__compressed_box_copy_assign_available;
+  using cuda::std::__compressed_box_specialization;
+  using cuda::std::__smf_availability;
+
   { // trivial empty type
-    const box<TrivialEmpty> input{};
-    box<TrivialEmpty> b{};
+    using T = TrivialEmpty;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__trivial);
+
+    const box<T> input{};
+    box<T> b{};
     b = input;
     assert(b.__get<0>() == 42);
     static_assert(noexcept(b = input));
   }
 
   { // trivial nonempty type
-    test<int>(1337);
+    using T = int;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__trivial);
+    test<T>(1337);
   }
 
   { // non-trivial empty type
-    test<NotTriviallyCopyAssignableEmpty<13>>(13);
+    using T = NotTriviallyCopyAssignableEmpty<13>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(13);
   }
 
   { // non-trivial nonempty type
-    test<NotTriviallyCopyAssignable<42>>(1337);
+    using T = NotTriviallyCopyAssignable<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // non-trivial empty type, not noexcept
-    test<NotTriviallyCopyAssignableEmpty<MayThrow>>(MayThrow);
+    using T = NotTriviallyCopyAssignableEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
   }
 
   { // non-trivial nonempty type, not noexcept
-    test<NotTriviallyCopyAssignable<MayThrow>>(1337);
+    using T = NotTriviallyCopyAssignable<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // nonempty not copy assignable
-    test<NotCopyAssignable<42>>(1337);
-  }
-
-  { // not copy assignable,
-    test<NotCopyAssignableEmpty<13>>(13);
+    using T = NotCopyAssignable<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
   { // nonempty not copy assignable
-    test<NotCopyAssignable<MayThrow>>(1337);
+    using T = NotCopyAssignableNotDefaultConstructible<42>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
   }
 
-  { // empty not copy assignable,
-    test<NotCopyAssignableEmpty<MayThrow>>(MayThrow);
+  { // not copy assignable
+    using T = NotCopyAssignableEmpty<13>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(13);
+  }
+
+  { // not copy assignable
+    using T = NotCopyAssignableNotDefaultConstructibleEmpty<13>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(13);
+  }
+
+  { // nonempty not copy assignable
+    using T = NotCopyAssignable<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
+  }
+
+  { // nonempty not copy assignable
+    using T = NotCopyAssignableNotDefaultConstructible<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(1337);
+  }
+
+  { // empty not copy assignable
+    using T = NotCopyAssignableEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
+  }
+
+  { // empty not copy assignable
+    using T = NotCopyAssignableNotDefaultConstructibleEmpty<MayThrow>;
+    static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__with_engaged);
+    static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__available);
+    test<T>(MayThrow);
   }
 
   { // neither copy constructible nor copy assignable
-    static_assert(!cuda::std::is_copy_assignable_v<box<NotCopyConstructibleOrAssignable>>);
-    static_assert(!cuda::std::is_copy_assignable_v<box<NotCopyConstructibleOrAssignableEmpty>>);
+    {
+      using T = NotCopyConstructibleOrAssignable;
+      static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__store_inline);
+      static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__deleted);
+      static_assert(!cuda::std::is_copy_assignable_v<box<T>>);
+    }
+
+    {
+      using T = NotCopyConstructibleOrAssignableEmpty;
+      static_assert(__compressed_box_choose<T>() == __compressed_box_specialization::__empty_non_final);
+      static_assert(__compressed_box_copy_assign_available<T> == __smf_availability::__deleted);
+      static_assert(!cuda::std::is_copy_assignable_v<box<T>>);
+    }
   }
 
   return true;

@@ -32,7 +32,6 @@
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
-#include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,15 +42,18 @@ namespace cuda::experimental
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 
+static ::cudaMemPool_t __get_default_host_pinned_pool();
+
 //! @rst
 //! .. _cudax-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
 //!
-//! ``pinned_memory_resource`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
+//! ``pinned_memory_resource`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``pinned_memory_resource`` is a thin wrapper around a \c cudaMemPool_t.
+//! ``pinned_memory_resource`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
+//! cudaMemLocationTypeHost or \c cudaMemLocationTypeHostNuma.
 //!
 //! .. warning::
 //!
@@ -74,12 +76,6 @@ public:
       : __memory_resource_base(__pool)
   {}
 
-  //! @brief  Constructs the pinned_memory_resource from a \c pinned_memory_pool by calling get().
-  //! @param __pool The \c pinned_memory_pool used to allocate memory.
-  _CCCL_HOST_API explicit pinned_memory_resource(pinned_memory_pool& __pool) noexcept
-      : __memory_resource_base(__pool.get())
-  {}
-
   //! @brief Enables the \c device_accessible property
   _CCCL_HOST_API friend constexpr void
   get_property(pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept
@@ -91,8 +87,97 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
 
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``pinned_memory_pool`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation.
+//! When constructed it creates an underlying \c cudaMemPool_t with the location type set to \c cudaMemLocationTypeHost
+//! or \c cudaMemLocationTypeHostNuma and owns it.
+//!
+//! @endrst
+struct pinned_memory_pool : pinned_memory_resource
+{
+  using reference_type = pinned_memory_resource;
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  //! @brief Constructs a \c pinned_memory_pool with optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
+
+  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
+  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
+  //!
+  //! @param __properties Optional, additional properties of the pool to be created.
+  _CCCL_HOST_API pinned_memory_pool(memory_pool_properties __properties = {})
+      : pinned_memory_resource(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
+  {
+    enable_access_from(cuda::devices);
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
+  //!
+  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
+  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
+  //!
+  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
+  //! @param __pool_properties Optional, additional properties of the pool to be created.
+  _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
+      : pinned_memory_resource(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST_NUMA, __numa_id}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
+  {
+    enable_access_from(cuda::devices);
+  }
+
+  ~pinned_memory_pool() noexcept
+  {
+    ::cuda::__driver::__mempoolDestroy(__pool_);
+  }
+
+  _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  {
+    return pinned_memory_pool(__pool);
+  }
+
+  pinned_memory_pool(const pinned_memory_pool&)            = delete;
+  pinned_memory_pool& operator=(const pinned_memory_pool&) = delete;
+
+private:
+  pinned_memory_pool(::cudaMemPool_t __pool) noexcept
+      : pinned_memory_resource(__pool)
+  {}
+};
+
 static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::host_accessible>, "");
+
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
+
+[[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
+{
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  static ::cudaMemPool_t __default_pool = []() {
+    ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
+      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
+    ::cuda::experimental::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    return __pool;
+  }();
+
+  return __default_pool;
+#  else // _CCCL_CTK_BELOW(13, 0)
+  static pinned_memory_pool __default_pool(0);
+  return __default_pool.get();
+#  endif // _CCCL_CTK_BELOW(13, 0)
+}
 
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
