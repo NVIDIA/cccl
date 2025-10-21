@@ -121,7 +121,7 @@ Preconditions
 
   - ``tensor.ndim`` must not exceed ``3`` when an interleaved layout is requested.
 
-* The following data types are acceped:
+* The following data types are acceped for ``tensor.dtype``:
   
   - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``.
   - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
@@ -135,7 +135,17 @@ Preconditions
   - ``kDLFloat`` with ``bits == 64``, namely ``double``.
   - ``kDLBfloat`` with ``bits == 16``, namely ``__nv_bfloat16``.
 
-**User parameters preconditions**:
+* ``tensor.data`` must be a valid GPU global address and aligned to at least 16 bytes; 32 bytes for ``TmaInterleaveLayout::bytes32``.
+
+* ``tensor.shape`` must be greater than 0 and not exceed ``2^32`` elements per dimension.
+
+* ``tensor.strides`` must be greater than 0 and not exceed ``2^40`` bytes per dimension.
+
+  - ``tensor.strides[0]`` must equal ``1``.
+  - The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1]``.
+  - ``tensor.strides`` must be aligned to at least 16 bytes; 32 bytes for ``TmaInterleaveLayout::bytes32``.
+
+**User parameter preconditions**:
 
 * ``box_sizes``, ``elem_strides``, and ``tensor.ndim`` must have the same rank.
 
@@ -147,6 +157,8 @@ Preconditions
 * ``elem_strides`` must be positive and not exceed ``8`` elements per dimension.
 
 * ``oobfill`` must be ``TmaOOBfill::none`` for integer data types.
+
+* If ``interleave_layout`` is ``TmaInterleaveLayout::bytes32``, ``swizzle`` must be ``TmaSwizzle::bytes32``.
 
 References
 ----------
