@@ -28,6 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -105,6 +106,14 @@ inline constexpr bool __is_any_mdspan_layout_mapping_left_or_right_v =
 
 // template<>
 // inline constexpr bool __is_any_mdspan_layout_mapping_right_v<layout_left_padded> = true;
+
+template <class _IndexType, size_t... _Extents>
+class extents;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_extents_v = false;
+template <class _IndexType, size_t... _Extents>
+inline constexpr bool __is_cuda_std_extents_v<extents<_IndexType, _Extents...>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
