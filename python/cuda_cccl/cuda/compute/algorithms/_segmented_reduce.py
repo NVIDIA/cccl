@@ -179,7 +179,7 @@ def make_segmented_reduce(
     Example:
         Below, ``make_segmented_reduce`` is used to create a segmented reduction object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/segmented/segmented_reduce_object.py
             :language: python
             :start-after: # example-begin
 
@@ -216,7 +216,7 @@ def segmented_reduce(
     Example:
         Below, ``segmented_reduce`` is used to compute the minimum value of segments in a sequence of integers.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/segmented/segmented_reduce_basic.py
             :language: python
             :start-after: # example-begin
 

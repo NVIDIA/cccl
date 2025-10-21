@@ -10,7 +10,7 @@
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -69,12 +69,12 @@ PoolType construct_pool([[maybe_unused]] int device_id, cudax::memory_pool_prope
 #if _CCCL_CTK_AT_LEAST(12, 6)
     if constexpr (cuda::std::is_same_v<PoolType, cudax::pinned_memory_pool>)
     {
-      return PoolType(0, props);
+      return cudax::pinned_memory_pool(0, props);
     }
     else
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return PoolType(props);
+      return cudax::managed_memory_pool(props);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
@@ -259,13 +259,6 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_
     CHECK(first == first);
     CHECK(first != second);
   }
-
-  { // comparison against a cudaMemPool_t
-    CHECK(first == first.get());
-    CHECK(first.get() == first);
-    CHECK(first != current_default_pool);
-    CHECK(current_default_pool != first);
-  }
 }
 
 C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
@@ -281,7 +274,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
   }
 
   using memory_pool     = TestType;
-  using memory_resource = typename memory_pool::resource_type;
+  using memory_resource = typename memory_pool::reference_type;
   SECTION("device_memory_pool::set_attribute")
   {
     memory_pool pool = construct_pool<memory_pool>(current_device);

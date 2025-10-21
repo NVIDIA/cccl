@@ -216,7 +216,7 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
         a reduction on an input array of floating point values to compute its
         the smallest and the largest absolute values:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/minmax_reduction.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/minmax_reduction.py
             :language: python
             :start-after: # example-begin
 

@@ -15,71 +15,76 @@
 
 #include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
-#include <cuda/std/mdspan>
 
 CUB_NAMESPACE_BEGIN
-
 namespace detail
 {
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
+
 // Compute the submdspan size of a given rank
-template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
+template <typename IndexType, size_t... Extents>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, int end)
 {
+  _CCCL_ASSERT(start >= 0 && end <= static_cast<int>(ext.rank()), "invalid start or end");
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
-  for (IndexType i = Rank; i < IndexType{1 + sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
+  for (auto i = start; i < end; i++)
   {
     s *= ext.extent(i);
   }
   return s;
 }
 
-// avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <size_t Rank, typename IndexType>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType>&)
+_CCCL_DIAG_POP // MSVC(4702)
+
+  template <typename IndexType, size_t... Extents>
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+  size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
-  return ::cuda::std::make_unsigned_t<IndexType>{1};
+  return cub::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
 }
 
-// TODO: move to cuda::std
-template <typename IndexType, size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-size(const ::cuda::std::extents<IndexType, Extents...>& ext)
+template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
+[[nodiscard]] _CCCL_API auto sub_size_fast_div_mod_impl(const ::cuda::std::extents<IndexType, E...>& ext)
 {
-  return cub::detail::sub_size<0>(ext);
+  using fast_mod_div_t = fast_div_mod<IndexType>;
+  constexpr auto start = IsLayoutRight ? Position + 1 : 0;
+  constexpr auto end   = IsLayoutRight ? sizeof...(E) : Position;
+  return fast_mod_div_t(cub::detail::size_range(ext, start, end));
 }
 
 // precompute modulo/division for each submdspan size (by rank)
-template <typename IndexType, size_t... E, size_t... Ranks>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+template <bool IsLayoutRight, typename IndexType, size_t... E, size_t... Positions>
+[[nodiscard]] _CCCL_API auto
+sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
-  // deduction guides don't work with nvcc 11.x
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
+  return array_t{cub::detail::sub_size_fast_div_mod_impl<IsLayoutRight, Positions>(ext)...};
 }
 
 // precompute modulo/division for each mdspan extent
-template <typename IndexType, size_t... E, size_t... Ranks>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+template <typename IndexType, size_t... E, size_t... Positions>
+[[nodiscard]] _CCCL_API auto
+extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
+  return array_t{fast_mod_div_t(ext.extent(Positions))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
-template <int Rank, typename Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_static()
+template <typename Extents>
+[[nodiscard]] _CCCL_API constexpr bool are_extents_in_range_static(int start, int end)
 {
-  using index_type = typename Extents::index_type;
-  for (index_type i = Rank; i < Extents::rank(); i++)
+  for (auto i = start; i < end; i++)
   {
     if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
     {
@@ -106,5 +111,4 @@ template <typename MappingTypeLhs, typename MappingTypeRhs>
 }
 
 } // namespace detail
-
 CUB_NAMESPACE_END

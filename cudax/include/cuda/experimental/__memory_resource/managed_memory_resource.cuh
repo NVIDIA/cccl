@@ -28,7 +28,6 @@
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 
-#  include <cuda/experimental/__memory_resource/managed_memory_pool.cuh>
 #  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -38,15 +37,22 @@
 namespace cuda::experimental
 {
 
+[[nodiscard]] static ::cudaMemPool_t __get_default_managed_pool()
+{
+  return ::cuda::__driver::__getDefaultMemPool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
+}
+
 //! @rst
 //! .. _cudax-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
 //!
-//! ``managed_memory_resource`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
+//! ``managed_memory_resource`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``managed_memory_resource`` is a thin wrapper around a \c cudaMemPool_t.
+//! ``managed_memory_resource`` is a thin wrapper around a \c cudaMemPool_t with the allocation type set to \c
+//! cudaMemAllocationTypeManaged.
 //!
 //! .. warning::
 //!
@@ -69,22 +75,68 @@ public:
       : __memory_resource_base(__pool)
   {}
 
-  //! @brief  Constructs the managed_memory_resource from a \c managed_memory_pool by calling get().
-  //! @param __pool The \c managed_memory_pool used to allocate memory.
-  _CCCL_HOST_API explicit managed_memory_resource(managed_memory_pool& __pool) noexcept
-      : __memory_resource_base(__pool.get())
+  //! @brief Enables the \c device_accessible property
+  _CCCL_HOST_API friend constexpr void
+  get_property(managed_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  {}
+  //! @brief Enables the \c host_accessible property
+  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept
   {}
 
-  //! @brief Enables the \c device_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
-  //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
-
-  using default_queries = properties_list<device_accessible, host_accessible>;
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
 
-static_assert(::cuda::mr::resource_with<managed_memory_resource, device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_resource, host_accessible>, "");
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``managed_memory_pool`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! When constructed it creates an underlying \c cudaMemPool_t with the allocation type set to \c
+//! cudaMemAllocationTypeManaged and owns it.
+//!
+//! @endrst
+struct managed_memory_pool : managed_memory_resource
+{
+  using reference_type = managed_memory_resource;
+
+  //! @brief Constructs a \c managed_memory_pool with optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
+  //! @param __properties Optional, additional properties of the pool to be created.
+  _CCCL_HOST_API managed_memory_pool(memory_pool_properties __properties = {})
+      : managed_memory_resource(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED))
+  {}
+
+  // TODO add a constructor that accepts memory location one a type for it is added
+
+  ~managed_memory_pool() noexcept
+  {
+    ::cuda::__driver::__mempoolDestroy(__pool_);
+  }
+
+  _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  {
+    return managed_memory_pool(__pool);
+  }
+
+  managed_memory_pool(const managed_memory_pool&)            = delete;
+  managed_memory_pool& operator=(const managed_memory_pool&) = delete;
+
+private:
+  managed_memory_pool(::cudaMemPool_t __pool) noexcept
+      : managed_memory_resource(__pool)
+  {}
+};
+
+static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::host_accessible>, "");
+
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
 
 } // namespace cuda::experimental
 

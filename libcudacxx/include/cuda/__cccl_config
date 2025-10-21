@@ -23,6 +23,7 @@
 #include <cuda/std/__cccl/exceptions.h> // IWYU pragma: export
 #include <cuda/std/__cccl/execution_space.h> // IWYU pragma: export
 #include <cuda/std/__cccl/extended_data_types.h> // IWYU pragma: export
+#include <cuda/std/__cccl/host_std_lib.h> // IWYU pragma: export
 #include <cuda/std/__cccl/os.h> // IWYU pragma: export
 #include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: export
 #include <cuda/std/__cccl/ptx_isa.h> // IWYU pragma: export
