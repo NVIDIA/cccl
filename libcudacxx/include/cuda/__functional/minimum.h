@@ -36,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
 {
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
-    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Tp>)
+    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Tp, _Tp>)
   {
     if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
@@ -56,8 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Up, class _Common = ::cuda::std::common_type_t<_Tp, _Up>>
   [[nodiscard]] _CCCL_API constexpr _Common operator()(const _Tp& __lhs, const _Up& __rhs) const
-    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Up> && ::cuda::std::is_nothrow_convertible_v<_Tp, _Common>
-             && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>)
+    noexcept(__is_maximum_minimum_noexcept_v<_Tp, _Up, _Common>)
   {
     if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {

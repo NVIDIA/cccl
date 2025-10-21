@@ -21,24 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <typename _Tp, typename _Up, typename _Enable = void>
-constexpr bool __is_maximum_minimum_noexcept_v = noexcept(::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>());
+template <typename _Tp, typename _Up, typename _Common = ::cuda::std::common_type_t<_Tp, _Up>, typename _Enable = void>
+constexpr bool __is_maximum_minimum_noexcept_v =
+  noexcept(::cuda::std::declval<_Tp>() < ::cuda::std::declval<_Up>())
+  && ::cuda::std::is_nothrow_convertible_v<_Tp, _Common> && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>;
 
-template <typename _Tp, typename _Up>
+// (1) Extended floating point types, such as __half and __nv bfloat16 cannot be compared with operator<. We need to
+//     handle them separately with SFINAE.
+// (2) The common type is noexcept if the resulting type is a floating point type or it is possible to convert the types
+//     to the common type without throwing an exception.
+template <typename _Tp, typename _Up, typename _Common>
 constexpr bool __is_maximum_minimum_noexcept_v<
   _Tp,
   _Up,
+  _Common,
   ::cuda::std::enable_if_t<::cuda::std::__is_extended_floating_point_v<_Tp>
-                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> = true;
+                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> =
+  ::cuda::is_floating_point_v<_Common>
+  || (::cuda::std::is_nothrow_convertible_v<_Tp, _Common> && ::cuda::std::is_nothrow_convertible_v<_Up, _Common>);
 
 _CCCL_END_NAMESPACE_CUDA
 
