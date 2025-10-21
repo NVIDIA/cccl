@@ -72,7 +72,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(::cuda::std::ranges::sized_range<_Range>),
     requires((::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) ),
     requires((!is_array_v<remove_cvref_t<_Range>>) ),
-    requires((!__is_std_span_v<remove_cvref_t<_Range>> && !__is_std_array_v<remove_cvref_t<_Range>>) ),
+    requires((!__is_cuda_std_span_v<remove_cvref_t<_Range>> && !__is_std_array_v<remove_cvref_t<_Range>>) ),
     requires(
       is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
 
