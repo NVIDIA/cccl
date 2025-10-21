@@ -34,6 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t _ByteAlignment, class _ElementType>
 [[nodiscard]] _CCCL_API inline bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
 {
+  using ::cuda::std::uintptr_t;
   static_assert(::cuda::is_power_of_two(_ByteAlignment), "alignment must be a power of two");
   if constexpr (!::cuda::std::is_void_v<_ElementType>)
   {
