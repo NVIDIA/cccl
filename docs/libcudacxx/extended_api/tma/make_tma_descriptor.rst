@@ -14,44 +14,44 @@ Defined in header ``<cuda/tma>``.
     template <size_t BoxDimSize, size_t ElemStrideSize>
     [[nodiscard]] inline CUtensorMap
     make_tma_descriptor(
-      const DLTensor&                      tensor,
-      cuda::std::span<int, BoxDimSize>     box_sizes,
-      cuda::std::span<int, ElemStrideSize> elem_strides,
-      TmaInterleaveLayout                  interleave_layout = TmaInterleaveLayout::none,
-      TmaSwizzle                           swizzle           = TmaSwizzle::none,
-      TmaL2FetchSize                       l2_fetch_size     = TmaL2FetchSize::none,
-      TmaOOBfill                           oobfill           = TmaOOBfill::none) noexcept;
+      const DLTensor&                            tensor,
+      cuda::std::span<const int, BoxDimSize>     box_sizes,
+      cuda::std::span<const int, ElemStrideSize> elem_strides,
+      tma_interleave_layout                      interleave_layout = tma_interleave_layout::none,
+      tma_swizzle                                swizzle           = tma_swizzle::none,
+      tma_l2_fetch_size                          l2_fetch_size     = tma_l2_fetch_size::none,
+      tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
 
     template <size_t BoxDimSize>
     [[nodiscard]] inline CUtensorMap
     make_tma_descriptor(
-        const DLTensor&                  tensor,
-        cuda::std::span<int, BoxDimSize> box_sizes,
-        TmaInterleaveLayout              interleave_layout = TmaInterleaveLayout::none,
-        TmaSwizzle                       swizzle           = TmaSwizzle::none,
-        TmaL2FetchSize                   l2_fetch_size     = TmaL2FetchSize::none,
-        TmaOOBfill                       oobfill           = TmaOOBfill::none) noexcept;
+        const DLTensor&                        tensor,
+        cuda::std::span<const int, BoxDimSize> box_sizes,
+        tma_interleave_layout                  interleave_layout = tma_interleave_layout::none,
+        tma_swizzle                            swizzle           = tma_swizzle::none,
+        tma_l2_fetch_size                      l2_fetch_size     = tma_l2_fetch_size::none,
+        tma_oob_fill                           oobfill           = tma_oob_fill::none) noexcept;
 
     template <size_t BoxDimSize, size_t ElemStrideSize>
     [[nodiscard]] inline CUtensorMap
     make_tma_descriptor(
-        const DLManagedTensor& tensor,
-        cuda::std::span<int, BoxDimSize>     box_sizes,
-        cuda::std::span<int, ElemStrideSize> elem_strides,
-        TmaInterleaveLayout                  interleave_layout = TmaInterleaveLayout::none,
-        TmaSwizzle                           swizzle           = TmaSwizzle::none,
-        TmaL2FetchSize                       l2_fetch_size     = TmaL2FetchSize::none,
-        TmaOOBfill                           oobfill           = TmaOOBfill::none) noexcept;
+        const DLManagedTensor&                     tensor,
+        cuda::std::span<const int, BoxDimSize>     box_sizes,
+        cuda::std::span<const int, ElemStrideSize> elem_strides,
+        tma_interleave_layout                      interleave_layout = tma_interleave_layout::none,
+        tma_swizzle                                swizzle           = tma_swizzle::none,
+        tma_l2_fetch_size                          l2_fetch_size     = tma_l2_fetch_size::none,
+        tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
 
     template <size_t BoxDimSize>
     [[nodiscard]] inline CUtensorMap
     make_tma_descriptor(
-        const DLManagedTensor&           tensor,
-        cuda::std::span<int, BoxDimSize> box_sizes,
-        TmaInterleaveLayout              interleave_layout = TmaInterleaveLayout::none,
-        TmaSwizzle                       swizzle           = TmaSwizzle::none,
-        TmaL2FetchSize                   l2_fetch_size     = TmaL2FetchSize::none,
-        TmaOOBfill                       oobfill           = TmaOOBfill::none) noexcept;
+        const DLManagedTensor&                 tensor,
+        cuda::std::span<const int, BoxDimSize> box_sizes,
+        tma_interleave_layout                  interleave_layout = tma_interleave_layout::none,
+        tma_swizzle                            swizzle           = tma_swizzle::none,
+        tma_l2_fetch_size                      l2_fetch_size     = tma_l2_fetch_size::none,
+        tma_oob_fill                           oobfill           = tma_oob_fill::none) noexcept;
 
     } // namespace cuda
 
@@ -61,13 +61,13 @@ Defined in header ``<cuda/tma>``.
 
     namespace cuda {
 
-    enum class TmaOOBfill { none, nan };
+    enum class tma_oob_fill { none, nan };
 
-    enum class TmaL2FetchSize { none, bytes64, bytes128, bytes256 };
+    enum class tma_l2_fetch_size { none, bytes64, bytes128, bytes256 };
 
-    enum class TmaInterleaveLayout { none, bytes16, bytes32 };
+    enum class tma_interleave_layout { none, bytes16, bytes32 };
 
-    enum class TmaSwizzle {
+    enum class tma_swizzle {
         none,
         bytes32,
         bytes64,
@@ -123,7 +123,7 @@ Preconditions
 
 * The following data types are acceped for ``tensor.dtype``:
   
-  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``.
+  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available.
   - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
   - ``kDLUInt`` with ``bits == 16``, namely ``uint16_t``.
   - ``kDLUInt`` with ``bits == 32``, namely ``uint32_t``.
@@ -135,15 +135,15 @@ Preconditions
   - ``kDLFloat`` with ``bits == 64``, namely ``double``.
   - ``kDLBfloat`` with ``bits == 16``, namely ``__nv_bfloat16``.
 
-* ``tensor.data`` must be a valid GPU global address and aligned to at least 16 bytes; 32 bytes for ``TmaInterleaveLayout::bytes32``.
+* ``tensor.data`` must be a valid GPU global address and aligned to at least 16 bytes; 32 bytes for ``tma_interleave_layout::bytes32``.
 
 * ``tensor.shape`` must be greater than 0 and not exceed ``2^32`` elements per dimension.
 
 * ``tensor.strides`` must be greater than 0 and not exceed ``2^40`` bytes per dimension.
 
-  - ``tensor.strides[0]`` must equal ``1``.
+  - ``tensor.strides[rank - 1]`` must equal ``1``.
   - The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1]``.
-  - ``tensor.strides`` must be aligned to at least 16 bytes; 32 bytes for ``TmaInterleaveLayout::bytes32``.
+  - ``tensor.strides`` must be aligned to at least 16 bytes; 32 bytes for ``tma_interleave_layout::bytes32``.
 
 **User parameter preconditions**:
 
@@ -151,14 +151,14 @@ Preconditions
 
 * ``box_sizes`` must be positive and not exceed ``256`` elements per dimension. The full size of ``box_sizes`` must fit in shared memory.
   
-  - The inner dimension in bytes, computed as ``box_sizes[rank - 1] * sizeof(data_type)``, must be a multiple of 16 bytes if ``interleave_layout`` is ``TmaInterleaveLayout::none``.
-  - Otherwise, the inner dimension in bytes must be a multiple of the bytes of the ``swizzle`` pattern.
+  - The inner dimension in bytes, computed as ``box_sizes[rank - 1] * sizeof(data_type)``, must be a multiple of 16 bytes if ``interleave_layout`` is ``tma_interleave_layout::none``.
+  - Otherwise, the inner dimension in bytes must not exceed the byte-width of the selected ``swizzle`` pattern (``32``, ``64``, or ``128`` bytes).
 
 * ``elem_strides`` must be positive and not exceed ``8`` elements per dimension.
 
-* ``oobfill`` must be ``TmaOOBfill::none`` for integer data types.
+* ``oobfill`` must be ``tma_oob_fill::none`` for integer data types.
 
-* If ``interleave_layout`` is ``TmaInterleaveLayout::bytes32``, ``swizzle`` must be ``TmaSwizzle::bytes32``.
+* If ``interleave_layout`` is ``tma_interleave_layout::bytes32``, ``swizzle`` must be ``tma_swizzle::bytes32``.
 
 References
 ----------
