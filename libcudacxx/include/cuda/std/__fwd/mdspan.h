@@ -78,10 +78,10 @@ template <class _ElementType,
 class mdspan;
 
 template <class _Tp>
-inline constexpr bool __is_std_mdspan_v = false;
+inline constexpr bool __is_cuda_std_mdspan_v = false;
 
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
-inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
+inline constexpr bool __is_cuda_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
 
 template <typename _Layout>
 inline constexpr bool __is_any_mdspan_layout_mapping_left_v = false;
