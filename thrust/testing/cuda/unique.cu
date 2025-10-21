@@ -414,11 +414,17 @@ void TestUniqueWithMagnitude(int magnitude)
 }
 
 void TestUniqueWithLargeNumberOfItems()
+try
 {
   for (int mag : {30, 31, 32, 33})
   {
     TestUniqueWithMagnitude(mag);
   }
+}
+catch (std::bad_alloc&)
+{
+  // if we run out of memory, just skip the test
+  return;
 }
 DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);
 
