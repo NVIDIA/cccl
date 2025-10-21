@@ -79,16 +79,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_from_type_t
 template <class _Tp>
 inline constexpr in_place_from_type_t<_Tp> in_place_from_type{};
 
-template <class _Tp>
-struct __is_inplace_from_type_imp : ::cuda::std::false_type
-{};
-template <class _Tp>
-struct __is_inplace_from_type_imp<in_place_from_type_t<_Tp>> : ::cuda::std::true_type
-{};
-
-template <class _Tp>
-using __is_inplace_from_type = __is_inplace_from_type_imp<::cuda::std::remove_cvref_t<_Tp>>;
-
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
