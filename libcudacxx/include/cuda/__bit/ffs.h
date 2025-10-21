@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #endif // _CCCL_HAS_BUILTIN(__builtin_ffs) || _CCCL_COMPILER(GCC)
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr int __ffs_impl_constexpr(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr int __ffs_impl_constexpr(_Tp __v) noexcept
 {
   static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "_Tp must be unsigned");
 
@@ -60,7 +60,7 @@ template <typename _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
-[[nodiscard]] _CCCL_API _CCCL_HOST int __ffs_impl_host(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __ffs_impl_host(_Tp __v) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FFS)
   if constexpr (sizeof(_Tp) <= sizeof(int))
@@ -82,7 +82,7 @@ template <typename _Tp>
   {
     __res = ::_BitScanForward64(&__where, static_cast<uint64_t>(__v));
   }
-  return static_cast<int>(__where) + (__res != 0);
+  return __res ? (static_cast<int>(__where) + 1) : 0;
 #  else
   return ::cuda::__ffs_impl_constexpr(__v);
 #  endif // _CCCL_COMPILER(MSVC)
@@ -91,7 +91,7 @@ template <typename _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API int __ffs_impl_device(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __ffs_impl_device(_Tp __v) noexcept
 {
   if constexpr (sizeof(_Tp) <= sizeof(int))
   {
