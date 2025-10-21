@@ -36,9 +36,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-using ::cuda::std::uint32_t;
-using ::cuda::std::uint64_t;
-
 #if _CCCL_HAS_BUILTIN(__builtin_ffs) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FFS(...)   __builtin_ffs(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FFSLL(...) __builtin_ffsll(__VA_ARGS__)
