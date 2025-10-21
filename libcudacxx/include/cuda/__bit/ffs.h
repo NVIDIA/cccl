@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -129,32 +130,19 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   else
 #endif // _CCCL_HAS_INT128()
   {
+    using _Up = ::cuda::std::
+      conditional_t<sizeof(_Tp) == sizeof(::cuda::std::uint64_t), ::cuda::std::uint64_t, ::cuda::std::uint32_t>;
+    const auto __vu = static_cast<_Up>(__v);
+
     int __result{};
-    if constexpr (sizeof(_Tp) <= sizeof(int))
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
     {
-      const auto __v32 = static_cast<::cuda::std::uint32_t>(__v);
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
-      {
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__v32);), (__result = ::cuda::__ffs_impl_device(__v32);));
-      }
-      else
-      {
-        __result = ::cuda::__ffs_impl_constexpr(__v32);
-      }
+      NV_IF_ELSE_TARGET(
+        NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__vu);), (__result = ::cuda::__ffs_impl_device(__vu);));
     }
     else
     {
-      const auto __v64 = static_cast<::cuda::std::uint64_t>(__v);
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
-      {
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__v64);), (__result = ::cuda::__ffs_impl_device(__v64);));
-      }
-      else
-      {
-        __result = ::cuda::__ffs_impl_constexpr(__v64);
-      }
+      __result = ::cuda::__ffs_impl_constexpr(__vu);
     }
     _CCCL_ASSUME(__result >= 0 && __result <= ::cuda::std::numeric_limits<_Tp>::digits);
     return __result;
