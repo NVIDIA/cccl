@@ -70,9 +70,11 @@ enum class tma_swizzle
   bytes32,
   bytes64,
   bytes128,
+#  if _CCCL_CTK_AT_LEAST(12, 8)
   bytes128_atom_32B,
   bytes128_atom_32B_flip_8B,
   bytes128_atom_64B
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
 
 /***********************************************************************************************************************
@@ -138,12 +140,14 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
       return ::CU_TENSOR_MAP_SWIZZLE_64B;
     case tma_swizzle::bytes128:
       return ::CU_TENSOR_MAP_SWIZZLE_128B;
+#  if _CCCL_CTK_AT_LEAST(12, 8)
     case tma_swizzle::bytes128_atom_32B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B;
     case tma_swizzle::bytes128_atom_32B_flip_8B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B_FLIP_8B;
     case tma_swizzle::bytes128_atom_64B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
       _CCCL_UNREACHABLE();
   }
@@ -167,7 +171,9 @@ __to_cutensor_map_size(::CUtensorMapDataType __data_type) noexcept
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
+#  if _CCCL_CTK_AT_LEAST(12, 8)
     case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B:
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
       return 8;
     default:
       _CCCL_UNREACHABLE();
@@ -195,11 +201,13 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill, c
                    "tma_oob_fill::nan is only supported for floating-point data types");
       switch (__tensor.dtype.bits)
       {
+#  if _CCCL_CTK_AT_LEAST(12, 8)
         case 4: {
           _CCCL_VERIFY(__tensor.dtype.lanes == 16, "Uint4 data type must be 16 lanes");
           const auto __is_aligned_16B = ::cuda::std::is_sufficiently_aligned<16>(__address);
           return __is_aligned_16B ? ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B : ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
         }
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
         case 8:
           _CCCL_VERIFY(__tensor.dtype.lanes == 1, "Uint8 data type must be 1 lane");
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT8;
@@ -270,11 +278,18 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   __tma_sizes_array_t __tensor_sizes_array{};
   const auto __tensor_sizes = __tensor.shape;
   _CCCL_VERIFY(__tensor_sizes != nullptr, "Sizes is null");
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+  if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U6_ALIGN16B)
+  {
+    _CCCL_VERIFY(__tensor_sizes[__rank - 1] % 16 == 0,
+                 "The innermost dimension size must be a multiple of 16 for 16U6_ALIGN16B");
+  }
   if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B)
   {
     _CCCL_VERIFY(__tensor_sizes[__rank - 1] % 2 == 0,
                  "The innermost dimension size must be a multiple of 2 for 16U4_ALIGN8B");
   }
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
   for (int __i = 0; __i < __rank; ++__i)
   {
     constexpr auto __max_allowed_size = int64_t{1} << 32; // 2^32
