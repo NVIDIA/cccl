@@ -39,7 +39,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("Construction with explicit size")
   {
@@ -55,13 +55,13 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, Resource{}, 0, T{42});
+      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, Resource{}, 5, T{42});
+      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
     }

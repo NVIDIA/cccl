@@ -555,7 +555,7 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
   cudax::pinned_memory_pool with_allocation_handle = cudax::pinned_memory_pool(0, props);
 
   ::cudaMemPool_t get = with_allocation_handle.get();
-  CHECK(get != cudax::pinned_memory_resource{}.get());
+  CHECK(get != cudax::pinned_default_memory_pool().get());
 
   // Ensure we use the right release threshold
   CHECK(ensure_release_threshold(get, props.release_threshold));

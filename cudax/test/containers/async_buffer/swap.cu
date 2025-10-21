@@ -38,7 +38,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_ty
   using size_type = typename Buffer::size_type;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().swap(cuda::std::declval<Buffer&>())), void>);
   STATIC_REQUIRE(
