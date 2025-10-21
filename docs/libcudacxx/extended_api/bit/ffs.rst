@@ -5,9 +5,11 @@
 
 .. code:: cpp
 
-   template <typename T>
-   [[nodiscard]] constexpr int
-   ffs(T value) noexcept;
+   namespace cuda {
+   
+   template <class T>
+   [[nodiscard]] __host__ __device__ constexpr
+   int ffs(T value) noexcept;
 
 The function finds the first (least significant) set bit in ``value`` and returns its 1-based index. If ``value`` is 0, returns 0.
 
