@@ -96,6 +96,9 @@ struct get_data
   using value_type = int;
 };
 
+struct extra_property
+{};
+
 template <class T>
 struct test_resource
 {
@@ -212,7 +215,8 @@ struct test_resource
     return ::operator delete(pv);
   }
 
-  friend constexpr void get_property(const test_resource&, cudax::host_accessible) noexcept {}
+  friend constexpr void get_property(const test_resource&, ::cuda::mr::host_accessible) noexcept {}
+  friend constexpr void get_property(const test_resource&, extra_property) noexcept {}
   friend constexpr int get_property(const test_resource& self, get_data) noexcept
   {
     return self.data;
