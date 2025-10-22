@@ -43,9 +43,9 @@ __host__ bool enum_test()
 #endif // _CCCL_CTK_AT_LEAST(12, 8)
   };
 
-  alignas(16) float data[64]{};
-  constexpr int64_t shape_storage[2]   = {8, 8};
-  constexpr int64_t strides_storage[2] = {8, 1};
+  alignas(128) float data[64]{};
+  constexpr int64_t shape_storage[2]   = {128, 128};
+  constexpr int64_t strides_storage[2] = {128, 1};
 
   DLTensor tensor{};
   tensor.data        = data;
