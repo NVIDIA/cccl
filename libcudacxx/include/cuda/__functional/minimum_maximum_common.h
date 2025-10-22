@@ -21,10 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__utility/declval.h>
 
@@ -44,8 +43,7 @@ constexpr bool __is_maximum_minimum_noexcept_v<
   _Tp,
   _Up,
   _Common,
-  ::cuda::std::enable_if_t<::cuda::std::__is_extended_floating_point_v<_Tp>
-                           || ::cuda::std::__is_extended_floating_point_v<_Up>>> = false;
+  ::cuda::std::enable_if_t<::cuda::std::__is_ext_nv_fp_v<_Tp> || ::cuda::std::__is_ext_nv_fp_v<_Up>>> = false;
 
 _CCCL_END_NAMESPACE_CUDA
 
