@@ -9,10 +9,9 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 
 #include <cuda/cmath>
+#include <cuda/iterator>
 
 #include <iostream> // std::cerr
 #include <string>
@@ -368,11 +367,12 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
 
   constexpr unsigned _zero{0};
   auto _n               = static_cast<unsigned>(n);
-  auto in_begin_offsets = thrust::make_counting_iterator(_zero);
-  auto in_end_offsets   = thrust::make_constant_iterator(_n);
+  auto counting_it      = cuda::counting_iterator(_zero);
+  auto in_begin_offsets = counting_it;
+  auto in_end_offsets   = cuda::constant_iterator(_n);
 
   // use stride n + 1 is the distance between consecutive diagonal elements in C-contiguous layout
-  auto out_begin_offsets = thrust::make_counting_iterator(_zero, _n + 1);
+  auto out_begin_offsets = cuda::strided_iterator(counting_it, _n + 1);
 
   // allocate and zero-initialize output matrix in C-contiguous layout
   auto output = thrust::device_vector<float>(n * n, 0.0f);
