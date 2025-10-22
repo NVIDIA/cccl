@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -35,7 +36,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 
 #include <exception> // IWYU pragma: keep
-#include <new> // IWYU pragma: keep
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
