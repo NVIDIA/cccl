@@ -237,6 +237,15 @@ struct DispatchScan
    * @param[in] stream
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
+   *
+   * @param[in] kernel_source
+   *   Object specifying implementation kernels
+   *
+   * @param[in] launcher_factory
+   *   Object to execute implementation kernels on the given stream
+   *
+   * @param[in] max_policy
+   *   Struct encoding chain of algorithm tuning policies
    */
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(
     void* d_temp_storage,
@@ -446,6 +455,14 @@ struct DispatchScan
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    *
+   * @param[in] kernel_source
+   *   Object specifying implementation kernels
+   *
+   * @param[in] launcher_factory
+   *   Object to execute implementation kernels on the given stream
+   *
+   * @param[in] max_policy
+   *   Struct encoding chain of algorithm tuning policies
    */
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(

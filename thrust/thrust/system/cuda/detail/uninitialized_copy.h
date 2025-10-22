@@ -43,6 +43,7 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
+#  include <cuda/std/__new/device_new.h>
 #  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
@@ -70,13 +71,7 @@ struct functor
   {
     InputType const& in = raw_reference_cast(input[idx]);
     OutputType& out     = raw_reference_cast(output[idx]);
-
-#  if _CCCL_CUDA_COMPILER(CLANG)
-    // XXX unsafe, but clang is seemngly unable to call in-place new
-    out = in;
-#  else
     ::new (static_cast<void*>(&out)) OutputType(in);
-#  endif
   }
 };
 } // namespace __uninitialized_copy

@@ -43,6 +43,7 @@
 #include <cuda/__iterator/transform_input_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
 #include <cuda/std/__cccl/memory_wrapper.h> // for ::new
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN

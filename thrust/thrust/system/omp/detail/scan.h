@@ -26,5 +26,48 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits scan
-#include <thrust/system/cpp/detail/scan.h>
+// OMP parallel scan implementation
+#include <thrust/system/omp/detail/execution_policy.h>
+
+THRUST_NAMESPACE_BEGIN
+namespace system::omp::detail
+{
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
+OutputIterator inclusive_scan(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  BinaryFunction binary_op);
+
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename InitialValueType,
+          typename BinaryFunction>
+OutputIterator inclusive_scan(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  InitialValueType init,
+  BinaryFunction binary_op);
+
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename InitialValueType,
+          typename BinaryFunction>
+OutputIterator exclusive_scan(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  InitialValueType init,
+  BinaryFunction binary_op);
+
+} // namespace system::omp::detail
+THRUST_NAMESPACE_END
+
+#include <thrust/system/omp/detail/scan.inl>
