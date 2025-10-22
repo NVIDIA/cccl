@@ -331,15 +331,14 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     }
     return __output_strides;
   }
-  // TMA only requires the innermost stride to be 1.
-  _CCCL_VERIFY(__input_strides[__rank - 1] == 1, "stride[__rank - 1] != 1"); // implicit/innermost stride is 1
+  // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
     _CCCL_VERIFY(__input_strides[__i] <= __max_allowed_stride_count, "Stride is too large (overflow)");
     // TODO(fbusato): check mul overflow
-    _CCCL_VERIFY(
-      __input_strides[__i] == 0 || (__input_strides[__i] >= __input_sizes[__i + 1] * __input_strides[__i + 1]),
-      "Stride is too small");
+    const auto __next_stride = (__i == __rank - 2) ? 1 : __input_strides[__i + 1];
+    _CCCL_VERIFY(__input_strides[__i] == 0 || (__input_strides[__i] >= __input_sizes[__i + 1] * __next_stride),
+                 "Stride is too small");
     const auto __input_stride_bytes = __input_strides[__i] * __data_type_size;
     _CCCL_VERIFY(__input_stride_bytes % __alignment == 0, "Stride is not a multiple of alignment (32 or 16)");
     __output_strides[__rank - 2 - __i] = __input_stride_bytes;
@@ -381,21 +380,20 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   const auto __inner_dimension_bytes = __box_sizes[__rank - 1] * __data_type_size;
   if (__interleave_layout == tma_interleave_layout::none)
   {
-    _CCCL_VERIFY(__inner_dimension_bytes % 16 == 0, "Interleave layout requires 16B alignment");
-  }
-  else
-  {
+    _CCCL_VERIFY(__inner_dimension_bytes % 16 == 0,
+                 "tma_interleave_layout::none requires innermost dimension in bytes to be a multiple of 16");
     if (__swizzle == tma_swizzle::bytes32)
     {
-      _CCCL_VERIFY(__inner_dimension_bytes <= 32, "Swizzle requires a box size less than or equal to 32");
+      _CCCL_VERIFY(__inner_dimension_bytes <= 32, "tma_swizzle::bytes32 requires a box size less than or equal to 32");
     }
     if (__swizzle == tma_swizzle::bytes64)
     {
-      _CCCL_VERIFY(__inner_dimension_bytes <= 64, "Swizzle requires a box size less than or equal to 64");
+      _CCCL_VERIFY(__inner_dimension_bytes <= 64, "tma_swizzle::bytes64 requires a box size less than or equal to 64");
     }
     if (__swizzle == tma_swizzle::bytes128)
     {
-      _CCCL_VERIFY(__inner_dimension_bytes <= 128, "Swizzle requires a box size less than or equal to 128");
+      _CCCL_VERIFY(__inner_dimension_bytes <= 128,
+                   "tma_swizzle::bytes128 requires a box size less than or equal to 128");
     }
   }
   // TODO(fbusato) _CCCL_VERIFY(__total_size /*fits in shared memory*/, "Box sizes do not fit in shared memory");
