@@ -44,8 +44,7 @@ using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
 template <class _Property>
 struct __with_property
 {
-  _CCCL_TEMPLATE(class _Ty)
-  _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
+  template <class _Ty>
   _CCCL_PUBLIC_HOST_API static auto __get_property(const _Ty& __obj) //
     -> __property_result_t<_Property>
   {
@@ -75,7 +74,8 @@ struct __with_property
       }
     }
 
-    template <class _Ty>
+    _CCCL_TEMPLATE(class _Ty)
+    _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
     using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
   };
 };
