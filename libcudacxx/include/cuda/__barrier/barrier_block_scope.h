@@ -39,7 +39,7 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
-#include <cuda/std/__new_>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
