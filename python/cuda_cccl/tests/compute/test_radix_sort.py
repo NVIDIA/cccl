@@ -436,10 +436,10 @@ def test_radix_sort(monkeypatch):
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.compute._cccl_interop
+        import cuda.compute._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
-            cuda.compute._cccl_interop,
+            cccl_interop,
             "_check_sass",
             False,
         )
@@ -485,10 +485,10 @@ def test_radix_sort_double_buffer(monkeypatch):
     # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
-        import cuda.compute._cccl_interop
+        import cuda.compute._cccl_interop as cccl_interop
 
         monkeypatch.setattr(
-            cuda.compute._cccl_interop,
+            cccl_interop,
             "_check_sass",
             False,
         )
