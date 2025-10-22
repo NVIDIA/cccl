@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,6 +55,17 @@ enum __execution_backend : uint8_t
 #endif // _CCCL_HAS_BACKEND_TBB()
 };
 
+[[nodiscard]] _CCCL_API constexpr bool __has_unique_backend(const __execution_backend __backends) noexcept
+{
+  return ::cuda::std::has_single_bit(static_cast<uint32_t>(__backends));
+}
+
+[[nodiscard]] _CCCL_API constexpr bool
+__has_matching_backend(const __execution_backend __backends, const __execution_backend __target_backend) noexcept
+{
+  return (static_cast<uint32_t>(__backends) & static_cast<uint32_t>(__target_backend)) != 0;
+}
+
 //! @brief Enumerates the different possibilities of data movement
 //! @warning We do not allow inputs or outputs to have difference memory spaces. Either all inputs are on host or all
 //! are on device.
@@ -84,6 +97,13 @@ struct __execution_policy_base
     return _Policy != _OtherPolicy;
   }
 #endif // _CCCL_STD_VER <= 2017
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::stream_ref get_stream() noexcept
+  {
+    return ::cuda::stream_ref{cudaStreamPerThread};
+  }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
   //! @brief Tag that identifies this and all derived classes as a CCCL execution policy
   static constexpr uint32_t __cccl_policy_ = _Policy;
