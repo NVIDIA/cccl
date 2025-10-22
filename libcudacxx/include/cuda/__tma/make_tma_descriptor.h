@@ -184,8 +184,13 @@ __to_cutensor_map_size(::CUtensorMapDataType __data_type) noexcept
  * DLTensor Internal API
  ***********************************************************************************************************************/
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapDataType
-__get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill, const void* __address) noexcept
+template <::cuda::std::size_t _BoxDimSize>
+[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapDataType __get_tensor_map_data_type(
+  const ::DLTensor& __tensor,
+  tma_swizzle __swizzle,
+  tma_oob_fill __oobfill,
+  const void* __address,
+  ::cuda::std::span<const int, _BoxDimSize> __box_sizes) noexcept
 {
   const auto __type = __tensor.dtype.code;
   switch (__type)
@@ -203,22 +208,40 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill, c
       {
 #  if _CCCL_CTK_AT_LEAST(12, 8)
         case 4: {
-          _CCCL_VERIFY(__tensor.dtype.lanes == 16, "Uint4 data type must be 16 lanes");
-          const auto __is_aligned_16B = ::cuda::std::is_sufficiently_aligned<16>(__address);
-          return __is_aligned_16B ? ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B : ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
+          _CCCL_VERIFY(__tensor.dtype.lanes == 16, "uint4 data type must be 16 lanes");
+          const auto __is_aligned_16B                    = ::cuda::std::is_sufficiently_aligned<16>(__address);
+          const auto __is_inner_dim_multiple_of_128      = __tensor.shape[__tensor.ndim - 1] % 128 == 0;
+          const auto __is_inner_box_size_multiple_of_128 = __box_sizes[__tensor.ndim - 1] % 128 == 0;
+          auto __is_swizzle_bytes128                     = __swizzle == tma_swizzle::bytes128;
+#    if _CCCL_CTK_AT_LEAST(12, 8)
+          __is_swizzle_bytes128 = __is_swizzle_bytes128 || __swizzle == tma_swizzle::bytes128_atom_32B;
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
+          bool __are_strides_multiple_of_32 = true;
+          for (int __i = 0; __i < __tensor.ndim; ++__i)
+          {
+            if (__tensor.strides[__i] % 16 != 0) // stride (in bytes) * sizeof(U4) % 16 != 0
+            {
+              __are_strides_multiple_of_32 = false;
+              break;
+            }
+          }
+          return __is_aligned_16B && __is_inner_dim_multiple_of_128 && __is_inner_box_size_multiple_of_128
+                  && __is_swizzle_bytes128 && __are_strides_multiple_of_32
+                 ? ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B
+                 : ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
         }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
         case 8:
-          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "Uint8 data type must be 1 lane");
+          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "uint8 data type must be 1 lane");
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT8;
         case 16:
-          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "Uint16 data type must be 1 lane");
+          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "uint16 data type must be 1 lane");
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT16;
         case 32:
-          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "Uint32 data type must be 1 lane");
+          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "uint32 data type must be 1 lane");
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT32;
         case 64:
-          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "Uint64 data type must be 1 lane");
+          _CCCL_VERIFY(__tensor.dtype.lanes == 1, "uint64 data type must be 1 lane");
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT64;
         default:
           _CCCL_VERIFY(false, "UInt data type must be 4, 8, 16, 32, or 64 bits");
@@ -246,9 +269,13 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill, c
 [[nodiscard]] _CCCL_HOST_API inline int
 __get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout) noexcept
 {
-  const auto __rank     = __tensor.ndim;
-  const auto __max_rank = (__interleave_layout == tma_interleave_layout::none) ? 5 : 3;
-  _CCCL_VERIFY(__rank > 0 && __rank <= __max_rank, "Unsupported rank");
+  const auto __rank         = __tensor.ndim;
+  constexpr auto __max_rank = 5;
+  _CCCL_VERIFY(__rank > 0 && __rank <= __max_rank, "tensor.ndim (rank) must be between 1 and 5");
+  if (__interleave_layout != tma_interleave_layout::none)
+  {
+    _CCCL_VERIFY(__rank >= 3, "tensor.ndim (rank) must be greater than or equal to 3 for interleaved layout");
+  }
   return __rank;
 }
 
@@ -260,7 +287,7 @@ __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interle
   // note: byte_offset is 0 for most cases.
   const auto __address   = reinterpret_cast<char*>(__tensor.data) + __tensor.byte_offset;
   const auto __alignment = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
-  _CCCL_VERIFY(::cuda::is_aligned(__address, __alignment), "Address is not sufficiently aligned");
+  _CCCL_VERIFY(::cuda::is_aligned(__address, __alignment), "tensor.data (address) is not sufficiently aligned");
   // TODO (fbusato): check that the address is a valid GPU global address
   return static_cast<void*>(__address);
 }
@@ -279,10 +306,10 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   const auto __tensor_sizes = __tensor.shape;
   _CCCL_VERIFY(__tensor_sizes != nullptr, "Sizes is null");
 #  if _CCCL_CTK_AT_LEAST(12, 8)
-  if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U6_ALIGN16B)
+  if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B)
   {
     _CCCL_VERIFY(__tensor_sizes[__rank - 1] % 16 == 0,
-                 "The innermost dimension size must be a multiple of 16 for 16U6_ALIGN16B");
+                 "The innermost dimension size must be a multiple of 16 for 16U4_ALIGN16B");
   }
   if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B)
   {
@@ -325,8 +352,8 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       __cumulative_size *= __tensor_sizes[__i];
       // TODO(fbusato): check mul overflow
       const auto __stride_bytes = __cumulative_size * __data_type_size;
-      _CCCL_VERIFY(__stride_bytes % __alignment == 0, "Stride is not a multiple of alignment (32 or 16)");
-      _CCCL_VERIFY(__cumulative_size <= __max_allowed_stride_count, "Stride is too large (overflow)");
+      _CCCL_VERIFY(__stride_bytes % __alignment == 0, "Stride in bytes is not a multiple of the alignment (32 or 16)");
+      _CCCL_VERIFY(__cumulative_size < __max_allowed_stride_count, "Stride in bytes is greater than 2^40");
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
@@ -334,13 +361,15 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
-    _CCCL_VERIFY(__input_strides[__i] <= __max_allowed_stride_count, "Stride is too large (overflow)");
-    // TODO(fbusato): check mul overflow
+    _CCCL_VERIFY(__input_strides[__i] < __max_allowed_stride_count, "Stride is greater than 2^40 / sizeof(data_type)");
     const auto __next_stride = (__i == __rank - 2) ? 1 : __input_strides[__i + 1];
+    // TODO(fbusato): check mul overflow
     _CCCL_VERIFY(__input_strides[__i] == 0 || (__input_strides[__i] >= __input_sizes[__i + 1] * __next_stride),
-                 "Stride is too small");
+                 "Stride must be 0 or greater than or equal to the product of the next stride and the size of the next "
+                 "dimension");
     const auto __input_stride_bytes = __input_strides[__i] * __data_type_size;
-    _CCCL_VERIFY(__input_stride_bytes % __alignment == 0, "Stride is not a multiple of alignment (32 or 16)");
+    _CCCL_VERIFY(__input_stride_bytes % __alignment == 0,
+                 "Stride in bytes is not a multiple of the alignment (32 or 16)");
     __output_strides[__rank - 2 - __i] = __input_stride_bytes;
   }
   return __output_strides;
@@ -350,7 +379,7 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
 {
   if (__interleave_layout == tma_interleave_layout::bytes32)
   {
-    _CCCL_VERIFY(__swizzle == tma_swizzle::bytes32, "Swizzle requires bytes32");
+    _CCCL_VERIFY(__swizzle == tma_swizzle::bytes32, "ma_interleave_layout::bytes32 requires tma_swizzle::bytes32");
   }
 }
 
@@ -373,7 +402,8 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   {
     const auto __max_box_size = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{256}));
     const auto __box_size     = __box_sizes[__rank - 1 - __i];
-    _CCCL_VERIFY(__box_size > 0 && __box_size <= __max_box_size, "Box size is zero or too large");
+    _CCCL_VERIFY(__box_size > 0 && __box_size <= __max_box_size,
+                 "box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)");
     __total_size *= __box_size * __data_type_size;
     __box_sizes_array[__i] = __box_size;
   }
@@ -443,9 +473,9 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
   auto __compute_capability =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, __current_device);
   _CCCL_VERIFY(__compute_capability >= 9, "Compute capability 9.0 or higher is required");
-  const auto __address      = ::cuda::__get_tensor_address(__tensor, __interleave_layout);
-  const auto __data_type    = ::cuda::__get_tensor_map_data_type(__tensor, __oobfill, __address);
-  const auto __rank         = ::cuda::__get_tensor_map_rank(__tensor, __interleave_layout);
+  const auto __address   = ::cuda::__get_tensor_address(__tensor, __interleave_layout);
+  const auto __data_type = ::cuda::__get_tensor_map_data_type(__tensor, __swizzle, __oobfill, __address, __box_sizes);
+  const auto __rank      = ::cuda::__get_tensor_map_rank(__tensor, __interleave_layout);
   const auto __tensor_sizes = ::cuda::__get_tensor_sizes(__tensor, __rank, __data_type);
   const auto __input_strides =
     ::cuda::__get_tensor_strides(__tensor, __rank, __data_type, __tensor_sizes, __interleave_layout);
