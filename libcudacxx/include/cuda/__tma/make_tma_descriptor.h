@@ -293,7 +293,7 @@ __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interle
 }
 
 using __tma_sizes_array_t        = ::cuda::std::array<::cuda::std::uint64_t, 5>;
-using __tma_strides_array_t      = ::cuda::std::array<::cuda::std::uint64_t, 4>; // first stride is implicit stride = 1
+using __tma_strides_array_t      = ::cuda::std::array<::cuda::std::uint64_t, 4>; // inner stride is implicit stride = 1
 using __tma_box_sizes_array_t    = ::cuda::std::array<::cuda::std::uint32_t, 5>;
 using __tma_elem_strides_array_t = ::cuda::std::array<::cuda::std::uint32_t, 5>;
 
@@ -320,7 +320,8 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   for (int __i = 0; __i < __rank; ++__i)
   {
     constexpr auto __max_allowed_size = int64_t{1} << 32; // 2^32
-    _CCCL_VERIFY(__tensor_sizes[__i] > 0 && __tensor_sizes[__i] <= __max_allowed_size, "Size is zero or too large");
+    _CCCL_VERIFY(__tensor_sizes[__i] > 0 && __tensor_sizes[__i] <= __max_allowed_size,
+                 "tensor.shape[i] must be greater than 0 and less than or equal to 2^32");
     __tensor_sizes_array[__rank - 1 - __i] = __tensor_sizes[__i];
   }
   return __tensor_sizes_array;
@@ -361,8 +362,8 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
-    _CCCL_VERIFY(__input_strides[__i] < __max_allowed_stride_count, "Stride is greater than 2^40 / sizeof(data_type)");
-    const auto __next_stride = (__i == __rank - 2) ? 1 : __input_strides[__i + 1];
+    _CCCL_VERIFY(__input_strides[__i] < __max_allowed_stride_count, "Stride in bytes is greater than 2^40");
+    const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
     // TODO(fbusato): check mul overflow
     _CCCL_VERIFY(__input_strides[__i] == 0 || (__input_strides[__i] >= __input_sizes[__i + 1] * __next_stride),
                  "Stride must be 0 or greater than or equal to the product of the next stride and the size of the next "
@@ -379,7 +380,7 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
 {
   if (__interleave_layout == tma_interleave_layout::bytes32)
   {
-    _CCCL_VERIFY(__swizzle == tma_swizzle::bytes32, "ma_interleave_layout::bytes32 requires tma_swizzle::bytes32");
+    _CCCL_VERIFY(__swizzle == tma_swizzle::bytes32, "tma_interleave_layout::bytes32 requires tma_swizzle::bytes32");
   }
 }
 
@@ -396,34 +397,40 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   using ::cuda::std::uint64_t;
   __tma_box_sizes_array_t __box_sizes_array{};
   _CCCL_VERIFY(__box_sizes.size() == __rank, "Box sizes size mismatch");
-  const auto __data_type_size          = ::cuda::__to_cutensor_map_size(__data_type);
-  [[maybe_unused]] size_t __total_size = 1;
+  const auto __data_type_size = ::cuda::__to_cutensor_map_size(__data_type);
+  // size_t __total_size = 1; // TODO(fbusato): check total size
   for (int __i = 0; __i < __rank; ++__i)
   {
     const auto __max_box_size = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{256}));
     const auto __box_size     = __box_sizes[__rank - 1 - __i];
     _CCCL_VERIFY(__box_size > 0 && __box_size <= __max_box_size,
                  "box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)");
-    __total_size *= __box_size * __data_type_size;
+    //__total_size *= __box_size * __data_type_size;
     __box_sizes_array[__i] = __box_size;
   }
   const auto __inner_dimension_bytes = __box_sizes[__rank - 1] * __data_type_size;
   if (__interleave_layout == tma_interleave_layout::none)
   {
     _CCCL_VERIFY(__inner_dimension_bytes % 16 == 0,
-                 "tma_interleave_layout::none requires innermost dimension in bytes to be a multiple of 16");
+                 "tma_interleave_layout::none requires innermost dimension (box_sizes[__rank - 1]) in bytes to be a "
+                 "multiple of 16");
     if (__swizzle == tma_swizzle::bytes32)
     {
-      _CCCL_VERIFY(__inner_dimension_bytes <= 32, "tma_swizzle::bytes32 requires a box size less than or equal to 32");
+      _CCCL_VERIFY(__inner_dimension_bytes <= 32,
+                   "tma_swizzle::bytes32 requires requires innermost dimension (box_sizes[__rank - 1]) in bytes to be "
+                   "less than or equal to 32");
     }
     if (__swizzle == tma_swizzle::bytes64)
     {
-      _CCCL_VERIFY(__inner_dimension_bytes <= 64, "tma_swizzle::bytes64 requires a box size less than or equal to 64");
+      _CCCL_VERIFY(__inner_dimension_bytes <= 64,
+                   "tma_swizzle::bytes64 requires requires innermost dimension (box_sizes[__rank - 1]) in bytes to be "
+                   "less than or equal to 64");
     }
     if (__swizzle == tma_swizzle::bytes128)
     {
       _CCCL_VERIFY(__inner_dimension_bytes <= 128,
-                   "tma_swizzle::bytes128 requires a box size less than or equal to 128");
+                   "tma_swizzle::bytes128 requires requires innermost dimension (box_sizes[__rank - 1]) in bytes to be "
+                   "less than or equal to 128");
     }
   }
   // TODO(fbusato) _CCCL_VERIFY(__total_size /*fits in shared memory*/, "Box sizes do not fit in shared memory");
@@ -441,12 +448,14 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   using ::cuda::std::uint64_t;
   _CCCL_VERIFY(__elem_strides.size() == static_cast<size_t>(__rank), "Elem strides size mismatch");
   __tma_elem_strides_array_t __elem_strides_array{1};
+  // tma_interleave_layout::none ignores the innermost elem stride (always 1).
   const int __init_index = (__interleave_layout == tma_interleave_layout::none) ? 1 : 0;
   for (int __i = __init_index; __i < __rank; ++__i)
   {
     const auto __max_elem_stride = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{8}));
     const auto __elem_stride     = __elem_strides[__rank - 1 - __i];
-    _CCCL_VERIFY(__elem_stride > 0 && __elem_stride <= __max_elem_stride, "Elem stride is out of range");
+    _CCCL_VERIFY(__elem_stride > 0 && __elem_stride <= __max_elem_stride,
+                 "elem_strides[i] must be greater than 0 and less than or equal to min(tensor.shape[rank - 1 - i], 8)");
     __elem_strides_array[__i] = __elem_stride;
   }
   return __elem_strides_array;
