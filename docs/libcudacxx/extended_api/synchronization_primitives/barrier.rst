@@ -278,9 +278,8 @@ Because now we don't get an arrival token in each thread, we cannot use ``wait(t
 Instead, we just wait until the end of the barrier's current phase using ``wait_parity(0)``
 (0 is the parity of the current phase).
 
-Currently, ``bar.wait_parity(0);`` contains additional logic which may lead to unnecessary instructions.
-Until this is resolved (see `CCCL issue #6230 <https://github.com/NVIDIA/cccl/issues/6230>`_),
-users may replace this line with:
+Before CCCL 3.2, ``bar.wait_parity(0);`` contained additional logic which may have lead to unnecessary instructions.
+If you are using CCCL below 3.2, you may replace this line with:
 
 .. code:: cuda
 
