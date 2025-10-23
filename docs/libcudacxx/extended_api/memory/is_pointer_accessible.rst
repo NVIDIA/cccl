@@ -85,6 +85,8 @@ Example
 
     #include <cassert>
     #include <cuda/memory>
+    #include <cuda/device>
+    #include <cuda_runtime_api.h>
 
     int main() {
         cuda::device_ref id{0};
