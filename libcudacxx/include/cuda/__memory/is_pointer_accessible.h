@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 _CCCL_TEMPLATE(typename _Pointer)
 _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_pointer_v<_Pointer>)
 [[nodiscard]]
-_CCCL_HOST_API bool is_managed_pointer(_Pointer __p) noexcept
+_CCCL_HOST_API bool is_managed_pointer(_Pointer __p)
 {
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
@@ -79,7 +79,7 @@ _CCCL_HOST_API bool is_host_accessible(_Pointer __p)
 _CCCL_TEMPLATE(typename _Pointer)
 _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_pointer_v<_Pointer>)
 [[nodiscard]]
-_CCCL_HOST_API bool is_device_accessible(_Pointer __p) noexcept
+_CCCL_HOST_API bool is_device_accessible(_Pointer __p)
 {
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
