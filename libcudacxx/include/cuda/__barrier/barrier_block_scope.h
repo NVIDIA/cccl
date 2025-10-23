@@ -104,9 +104,9 @@ public:
                    return;
                  }))
 
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_90,
-      (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) { ::__trap(); }))
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 _CCCL_ASSERT(!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared),
+                              "barrier must not be in cluster shared memory");)
   }
 
   _CCCL_API inline friend void init(barrier* __b,
@@ -119,10 +119,10 @@ public:
                    return;
                  }))
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
-                   ::__trap();
-                 }))
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_90,
+      _CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
+                   "barrier must not be in cluster shared memory");)
 
     new (&__b->__barrier) __barrier_base(__expected);
   }
@@ -134,10 +134,8 @@ private:
     {
       return __barrier.arrive(__update);
     }
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
     return ::cuda::ptx::mbarrier_arrive(__native_handle(), __update);
   }
 
@@ -201,10 +199,8 @@ private:
     {
       return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
     }
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
     return ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token);
   }
 
@@ -236,10 +232,8 @@ private:
       return ::cuda::std::__cccl_thread_poll_with_backoff(
         ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
     }
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must not be in cluster shared memory");
 
     bool __ready = 0;
     ::cuda::std::chrono::high_resolution_clock::time_point const __start =
@@ -298,10 +292,9 @@ private:
     {
       return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
     }
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+
     return ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity);
   }
 
@@ -333,10 +326,8 @@ private:
       return ::cuda::std::__cccl_thread_poll_with_backoff(
         ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
     }
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
 
     int32_t __ready = 0;
     ::cuda::std::chrono::high_resolution_clock::time_point const __start =
@@ -429,15 +420,12 @@ public:
 private:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm90()
   {
-    // TODO(bgruber): is this correct? If the barrier is in SMEM, it will enter the first if and not pass both
     if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
     {
       return __barrier.arrive_and_drop();
     }
-    else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      ::__trap();
-    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
 
     // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
     asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
