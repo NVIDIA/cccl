@@ -76,7 +76,8 @@ struct __with_property
 
     _CCCL_TEMPLATE(class _Ty)
     _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
-    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
+    using overrides _CCCL_NODEBUG_ALIAS =
+      __overrides_for<_Ty, static_cast<__property_result_t<_Property> (*)(const _Ty&)>(&__get_property<_Ty>)>;
   };
 };
 
@@ -269,6 +270,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
 
   synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
 
+  // Allow narrowing conversion from a synchronous_resource_ref with a superset
+  // of properties by rebinding to the same underlying object.
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  synchronous_resource_ref(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
+      : __base(const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base())
+  {}
+
   // resource_ref is convertible to synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
@@ -321,6 +330,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
 
   resource_ref(const resource_ref& __other) noexcept = default;
+
+  // Allow narrowing conversion from a resource_ref with a superset of
+  // properties by rebinding to the same underlying object.
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  resource_ref(const resource_ref<_OtherProperties...>& __other) noexcept
+      : __base(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base())
+  {}
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
