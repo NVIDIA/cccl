@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-memory-is_pointer_accessible:
 
-``cuda::is_host_accessible_pointer``, ``cuda::is_device_accessible_pointer``, ``cuda::is_managed_pointer``
-==================================================================================================
+``cuda::is_host_accessible``, ``cuda::is_device_accessible``, ``cuda::is_managed_pointer``
+==========================================================================================
 
 Defined in ``<cuda/memory>`` header.
 
@@ -11,7 +11,7 @@ Defined in ``<cuda/memory>`` header.
 
    template <typename Pointer>
    [[nodiscard]] __host__ constexpr
-   bool is_host_accessible_pointer(Pointer ptr) noexcept;
+   bool is_host_accessible(Pointer ptr) noexcept;
 
    } // namespace cuda
 
@@ -25,7 +25,7 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
 
    template <typename Pointer>
    [[nodiscard]] __host__ constexpr
-   bool is_device_accessible_pointer(Pointer ptr) noexcept;
+   bool is_device_accessible(Pointer ptr) noexcept;
 
    } // namespace cuda
 
@@ -87,14 +87,14 @@ Example
         cudaMalloc(&device_ptr, 1024);
         cudaMallocManaged(&managed_ptr, 1024);
 
-        assert(cuda::is_host_accessible_pointer(host_ptr));
-        assert(!cuda::is_device_accessible_pointer(host_ptr));
+        assert(cuda::is_host_accessible(host_ptr));
+        assert(!cuda::is_device_accessible(host_ptr));
 
-        assert(cuda::is_device_accessible_pointer(device_ptr));
-        assert(!cuda::is_host_accessible_pointer(device_ptr));
+        assert(cuda::is_device_accessible(device_ptr));
+        assert(!cuda::is_host_accessible(device_ptr));
 
-        assert(cuda::is_host_accessible_pointer(managed_ptr));
-        assert(cuda::is_device_accessible_pointer(managed_ptr));
+        assert(cuda::is_host_accessible(managed_ptr));
+        assert(cuda::is_device_accessible(managed_ptr));
         assert(cuda::is_managed_pointer(managed_ptr));
 
         cudaFreeHost(host_ptr);
