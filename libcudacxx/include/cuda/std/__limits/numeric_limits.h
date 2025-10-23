@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
 
@@ -149,22 +150,6 @@ public:
   static constexpr float_round_style round_style = round_toward_zero;
 };
 
-// MSVC warns about overflowing left shift
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4309)
-template <class _Tp, int __digits, bool _IsSigned>
-struct __int_min
-{
-  static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
-};
-_CCCL_DIAG_POP
-
-template <class _Tp, int __digits>
-struct __int_min<_Tp, __digits, false>
-{
-  static constexpr _Tp value = _Tp(0);
-};
-
 template <class _Tp>
 class __numeric_limits_impl<_Tp, __numeric_limits_type::__integral>
 {
@@ -179,11 +164,12 @@ public:
   static constexpr int max_digits10 = 0;
   _CCCL_API static constexpr type min() noexcept
   {
-    return __int_min<type, digits, is_signed>::value;
+    return static_cast<_Tp>(~max());
   }
   _CCCL_API static constexpr type max() noexcept
   {
-    return is_signed ? type(type(~0) ^ min()) : type(~0);
+    using _Up = make_unsigned_t<_Tp>;
+    return static_cast<_Tp>(static_cast<_Up>(~_Up{0}) >> is_signed);
   }
   _CCCL_API static constexpr type lowest() noexcept
   {
