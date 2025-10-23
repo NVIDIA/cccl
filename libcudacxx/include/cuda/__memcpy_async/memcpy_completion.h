@@ -87,15 +87,7 @@ struct __memcpy_completion_impl
         // bulk group to be used with shared memory barriers.
         _CCCL_UNREACHABLE();
       case __completion_mechanism::__mbarrier_complete_tx:
-#if __cccl_ptx_isa >= 800
-        // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
-        NV_IF_TARGET(NV_PROVIDES_SM_90,
-                     (
-                       // Only perform the expect_tx operation with the leader thread
-                       if (__group.thread_rank() == 0) { ::cuda::device::barrier_expect_tx(__barrier, __size); }));
-#endif // __cccl_ptx_isa >= 800
-        return async_contract_fulfillment::async;
-      case __completion_mechanism::__mbarrier_complete_tx_skip:
+        // we already updated the mbarrier's tx count when we issued the bulk copy
         return async_contract_fulfillment::async;
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything. The user will have

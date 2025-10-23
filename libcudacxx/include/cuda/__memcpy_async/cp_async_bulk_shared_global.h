@@ -50,7 +50,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g)
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
-inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
+inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
   const _Group& __g, char* __dest, const char* __src, ::cuda::std::size_t __size, ::cuda::std::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
