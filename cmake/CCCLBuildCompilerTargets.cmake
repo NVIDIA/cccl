@@ -172,7 +172,7 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Woverloaded-virtual" cxx_compile_options)
     append_option_if_available("-Wcast-qual" cxx_compile_options)
     append_option_if_available("-Wpointer-arith" cxx_compile_options)
-    append_option_if_available("-Wunused-local-typedef" cxx_compile_options)
+    append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
     # Disable GNU extensions (flag is clang only)

@@ -41,6 +41,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_std_allocator_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_allocator_v<allocator<_Tp>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

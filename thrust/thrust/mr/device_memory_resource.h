@@ -26,6 +26,14 @@
 #  pragma system_header
 #endif // no system header
 
+// Some build systems need a hint to know which files we actually include
+#if 0
+#  include <thrust/system/cpp/memory_resource.h>
+#  include <thrust/system/cuda/memory_resource.h>
+#  include <thrust/system/omp/memory_resource.h>
+#  include <thrust/system/tbb/memory_resource.h>
+#endif
+
 // #include the device system's memory_resource header
 #define __THRUST_DEVICE_SYSTEM_MEMORY_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/memory_resource.h>
 #include __THRUST_DEVICE_SYSTEM_MEMORY_HEADER

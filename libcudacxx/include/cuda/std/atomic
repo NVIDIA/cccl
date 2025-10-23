@@ -95,7 +95,7 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
 
   static constexpr size_t required_alignment = sizeof(_Tp);
 
-  static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
+  static constexpr bool is_always_lock_free = __atomic_ref_impl<_Tp>::is_always_lock_free;
 
   _CCCL_API inline explicit atomic_ref(_Tp& __ref)
       : __atomic_ref_impl<_Tp>(__ref)
