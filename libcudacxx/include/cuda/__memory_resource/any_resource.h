@@ -45,8 +45,7 @@ template <class _Property>
 struct __with_property
 {
   template <class _Ty>
-  _CCCL_PUBLIC_HOST_API static auto __get_property(const _Ty& __obj) //
-    -> __property_result_t<_Property>
+  _CCCL_PUBLIC_HOST_API static __property_result_t<_Property> __get_property(const _Ty& __obj)
   {
     if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
     {
