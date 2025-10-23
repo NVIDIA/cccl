@@ -116,6 +116,14 @@ public:
            ? ::cuda::std::optional{__io_events_.ret}
            : ::cuda::std::nullopt;
   }
+
+  //! @brief Gets the cookie the batch request was created with.
+  //!
+  //! @return The cookie.
+  [[nodiscard]] _CCCL_HOST_API void* cookie() const noexcept
+  {
+    return __io_events_.cookie;
+  }
 };
 
 //! @brief Type wrapping the cuFile batch query operations.
