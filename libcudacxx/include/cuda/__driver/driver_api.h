@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__expected/expected.h>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -823,7 +824,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap __tensorMapEncodeTiled(
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::expected<::CUtensorMap, ::cudaError_t> __tensorMapEncodeTiledNoThrow(
   ::CUtensorMapDataType __tensorDataType,
   ::cuda::std::uint32_t __tensorRank,
   void* __globalAddress,
@@ -834,13 +835,11 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   ::CUtensorMapInterleave __interleave,
   ::CUtensorMapSwizzle __swizzle,
   ::CUtensorMapL2promotion __l2Promotion,
-  ::CUtensorMapFloatOOBfill __oobFill)
+  ::CUtensorMapFloatOOBfill __oobFill) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
   ::CUtensorMap __tensorMap{};
-  ::cuda::__driver::__call_driver_fn(
-    __driver_fn,
-    "Failed to encode a tiled tensor map",
+  const auto __error = static_cast<::cudaError_t>(__driver_fn(
     &__tensorMap,
     __tensorDataType,
     __tensorRank,
@@ -852,8 +851,8 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
     __interleave,
     __swizzle,
     __l2Promotion,
-    __oobFill);
-  return __tensorMap;
+    __oobFill));
+  return ::cuda::std::expected<::CUtensorMap, ::cudaError_t>{__tensorMap, __error};
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION

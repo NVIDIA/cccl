@@ -497,7 +497,7 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
     ::cuda::__get_elem_strides(__elem_strides, __tensor_sizes, __rank, __interleave_layout);
   const auto __raw_box_sizes =
     ::cuda::__get_box_sizes(__box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type);
-  return ::cuda::__driver::__tensorMapEncodeTiled(
+  return ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
     __data_type,
     __rank,
     __address,
