@@ -73,7 +73,7 @@ jobs:
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
-
+          ulimit -n $(ulimit -Hn)
           ~/cccl/ci/matx/build_matx.sh
           sccache --show-adv-stats
           EOF

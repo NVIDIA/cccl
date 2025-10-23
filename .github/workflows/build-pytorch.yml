@@ -51,11 +51,19 @@ jobs:
         env:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
+          # Build cluster auth
+          SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
+          SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
+          # Retry intermittent failures
+          SCCACHE_DIST_MAX_RETRIES: "inf"
+          # Never fallback to building locally, fail instead
+          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+          SCCACHE_IDLE_TIMEOUT: 0
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
-
+          ulimit -n $(ulimit -Hn)
           ~/cccl/ci/pytorch/build_pytorch.sh
           sccache --show-adv-stats
           EOF
@@ -85,8 +93,8 @@ jobs:
             --cuda 13.0 \
             --host gcc14 \
             --cuda-ext \
+            --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
             --env "CCCL_TAG=${CCCL_TAG}" \
-            --env VAULT_HOST= \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
