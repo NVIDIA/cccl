@@ -75,8 +75,7 @@ struct __with_property
 
     _CCCL_TEMPLATE(class _Ty)
     _CCCL_REQUIRES((::cuda::has_property<_Ty, _Property>) )
-    using overrides _CCCL_NODEBUG_ALIAS =
-      __overrides_for<_Ty, static_cast<__property_result_t<_Property> (*)(const _Ty&)>(&__get_property<_Ty>)>;
+    using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__get_property<_Ty>>;
   };
 };
 
