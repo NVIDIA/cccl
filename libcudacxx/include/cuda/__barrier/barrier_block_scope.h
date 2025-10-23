@@ -219,7 +219,7 @@ private:
       NV_PROVIDES_SM_90,
       (return __try_wait_sm90(__token);),
       NV_PROVIDES_SM_80,
-      (return __try_wait_sm80(__token)),
+      (return __try_wait_sm80(__token);),
       NV_ANY_TARGET,
       (return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));))
   }
