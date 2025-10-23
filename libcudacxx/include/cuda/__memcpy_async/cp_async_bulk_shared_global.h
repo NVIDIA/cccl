@@ -34,8 +34,6 @@
 
 #    include <nv/target>
 
-#    include <cooperative_groups.h>
-
 #    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
