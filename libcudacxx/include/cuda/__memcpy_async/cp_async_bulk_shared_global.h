@@ -59,7 +59,8 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
     (if (__elect_from_group(__g)) {
       ::cuda::ptx::cp_async_bulk(
         ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
-      ::cuda::ptx::mbarrier_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, __bar_handle, __size);
+      ::cuda::ptx::mbarrier_expect_tx(
+        ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, __bar_handle, __size);
     }),
     (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
 }
