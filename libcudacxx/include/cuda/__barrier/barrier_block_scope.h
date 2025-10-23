@@ -429,6 +429,7 @@ public:
   }
 
 private:
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm90()
   {
     if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
@@ -458,6 +459,7 @@ private:
       ::__cvta_generic_to_shared(&__barrier)))
                  : "memory");
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
 public:
   _CCCL_API inline void arrive_and_drop()
