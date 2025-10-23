@@ -121,8 +121,6 @@ public:
 //! @brief Type wrapping the cuFile batch query operations.
 class cufile_batch
 {
-  friend class cufile_batch_requests;
-
   ::CUfileBatchHandle_t __batch_{};
   unsigned __njobs_{};
   ::std::unique_ptr<cufile_batch_job[]> __jobs_{};
