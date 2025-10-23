@@ -40,8 +40,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __elect_one()
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (const auto tid = threadIdx.x; const auto warp_id = tid / 32;
-     const auto uniform_warp_id                       = __shfl_sync(~0, warp_id, 0); // broadcast from lane 0
+    (const auto tid             = threadIdx.x; //
+     const auto warp_id         = tid / 32;
+     const auto uniform_warp_id = __shfl_sync(~0, warp_id, 0); // broadcast from lane 0
      return uniform_warp_id == 0 && cuda::ptx::elect_sync(~0); // elect a leader thread among warp 0
      ),
     (::cuda::device::__cuda_elect_sync_is_not_supported_before_SM_90__(); _CCCL_UNREACHABLE();));
