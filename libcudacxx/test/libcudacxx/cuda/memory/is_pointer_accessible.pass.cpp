@@ -21,27 +21,21 @@ __device__ __managed__ int managed_ptr2[] = {1, 2, 3, 4};
 int host_ptr5[] = {1, 2, 3, 4};
 
 template <typename Pointer>
-void test_accessible_pointer(
-  Pointer ptr,
-  bool is_host_accessible,
-  bool is_device_accessible,
-  bool is_managed_accessible,
-  cuda::device_ref device_id)
+void test_accessible_pointer(Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
-  assert(cuda::is_device_accessible(ptr, device_id) == is_device_accessible);
+  assert(cuda::is_device_accessible(ptr) == is_device_accessible);
   assert(cuda::is_managed_pointer(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, void*> && !cuda::std::is_same_v<Pointer, const void*>)
   {
     assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
-    assert(cuda::is_device_accessible(ptr + 1, device_id) == is_device_accessible);
+    assert(cuda::is_device_accessible(ptr + 1) == is_device_accessible);
     assert(cuda::is_managed_pointer(ptr + 1) == is_managed_accessible);
   }
 }
 
 bool test()
 {
-  cuda::device_ref id{0};
   int host_ptr1[] = {1, 2, 3, 4};
   auto host_ptr2  = new int[2];
   int* host_ptr3  = nullptr;
@@ -56,25 +50,25 @@ bool test()
   int* managed_ptr1 = nullptr;
   assert(cudaMallocManaged(&managed_ptr1, sizeof(int) * 2) == cudaSuccess);
 
-  test_accessible_pointer((void*) nullptr, true, true, true, id);
+  test_accessible_pointer((void*) nullptr, true, true, true);
 
-  test_accessible_pointer(host_ptr1, true, true, true, id); // memory space cannot be verified for local array
-  test_accessible_pointer(host_ptr2, true, true, true, id); // memory space cannot be verified for non-cuda malloc
-  test_accessible_pointer(host_ptr3, true, false, false, id);
-  test_accessible_pointer(host_ptr4, true, false, false, id);
-  test_accessible_pointer(host_ptr5, true, true, true, id); // memory space cannot be verified for global array
+  test_accessible_pointer(host_ptr1, true, true, true); // memory space cannot be verified for local array
+  test_accessible_pointer(host_ptr2, true, true, true); // memory space cannot be verified for non-cuda malloc
+  test_accessible_pointer(host_ptr3, true, false, false);
+  test_accessible_pointer(host_ptr4, true, false, false);
+  test_accessible_pointer(host_ptr5, true, true, true); // memory space cannot be verified for global array
 
-  test_accessible_pointer(device_ptr1, false, true, false, id);
-  test_accessible_pointer(device_ptr2, true, true, true, id); // memory space cannot be verified for global device array
-  void* device_ptr3;
+  test_accessible_pointer(device_ptr1, false, true, false);
+  test_accessible_pointer(device_ptr2, true, true, true); // memory space cannot be verified for global device array
+  void* device_ptr3 = nullptr;
   assert(cudaGetSymbolAddress(&device_ptr3, device_ptr2) == cudaSuccess);
-  test_accessible_pointer(device_ptr3, false, true, false, id);
+  test_accessible_pointer(device_ptr3, false, true, false);
 
   const int* const_device_ptr1 = device_ptr1;
-  test_accessible_pointer(const_device_ptr1, false, true, false, id);
+  test_accessible_pointer(const_device_ptr1, false, true, false);
 
-  test_accessible_pointer(managed_ptr1, true, true, true, id);
-  test_accessible_pointer(managed_ptr2, true, true, true, id);
+  test_accessible_pointer(managed_ptr1, true, true, true);
+  test_accessible_pointer(managed_ptr2, true, true, true);
   return true;
 }
 

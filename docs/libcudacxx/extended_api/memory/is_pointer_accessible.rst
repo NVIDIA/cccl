@@ -25,11 +25,11 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
 
    template <typename Pointer>
    [[nodiscard]] __host__
-   bool is_device_accessible(Pointer ptr, device_ref device);
+   bool is_device_accessible(Pointer ptr);
 
    } // namespace cuda
 
-Determines whether the memory referenced by ``ptr`` is accessible from the specified CUDA device.
+Determines whether the memory referenced by ``ptr`` is accessible.
 
 ----
 
@@ -46,27 +46,10 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 **Parameters**
 
 - ``ptr``: A contiguous iterator or pointer that denotes the memory location to query.
-- ``device``: The device to query the memory space for.
 
 **Return value**
 
 - ``true`` if the queried property (host access, device access, or managed allocation) can be verified or the memory space cannot be proven, ``false`` otherwise.
-
-**Constraints**
-
-- ``Pointer`` must be a contiguous iterator or pointer.
-
-**Prerequisites**
-
-- The functions are available only when the CUDA Toolkit is available.
-
-**Exceptions**
-
-- The functions throw a ``cuda::cuda_error`` if the underlying driver API call fails.
-
-**Undefined Behavior**
-
-- The functions have undefined behavior if the pointer is not valid, for example an already freed pointer.
 
 .. note::
 
@@ -78,6 +61,22 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
   - Global host array or variable.
   - Global ``__device__`` array or variable without retrieving the address with ``cudaGetSymbolAddress()``.
 
+**Constraints**
+
+- ``Pointer`` must be a contiguous iterator or pointer.
+
+**Prerequisites**
+
+- The functions are available only when the CUDA Toolkit is available.
+
+**Exceptions**
+
+- The functions throw a ``cuda::cuda_error`` if the underlying driver API call fails. Note that this function may also return error codes from previous, asynchronous launches.
+
+**Undefined Behavior**
+
+- The functions have undefined behavior if the pointer is not valid, for example an already freed pointer.
+
 Example
 -------
 
@@ -85,11 +84,9 @@ Example
 
     #include <cassert>
     #include <cuda/memory>
-    #include <cuda/device>
     #include <cuda_runtime_api.h>
 
     int main() {
-        cuda::device_ref id{0};
         void* host_ptr    = nullptr;
         void* device_ptr  = nullptr;
         void* managed_ptr = nullptr;
@@ -99,13 +96,13 @@ Example
         cudaMallocManaged(&managed_ptr, 1024);
 
         assert(cuda::is_host_accessible(host_ptr));
-        assert(!cuda::is_device_accessible(host_ptr, id));
+        assert(!cuda::is_device_accessible(host_ptr));
 
-        assert(cuda::is_device_accessible(device_ptr, id));
+        assert(cuda::is_device_accessible(device_ptr));
         assert(!cuda::is_host_accessible(device_ptr));
 
         assert(cuda::is_host_accessible(managed_ptr));
-        assert(cuda::is_device_accessible(managed_ptr, id));
+        assert(cuda::is_device_accessible(managed_ptr));
         assert(cuda::is_managed_pointer(managed_ptr));
 
         cudaFreeHost(host_ptr);

@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
-#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -81,11 +79,10 @@ _CCCL_HOST_API bool is_host_accessible(_Pointer __p)
 _CCCL_TEMPLATE(typename _Pointer)
 _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_pointer_v<_Pointer>)
 [[nodiscard]]
-_CCCL_HOST_API bool is_device_accessible(_Pointer __p, ::cuda::device_ref __device) noexcept
+_CCCL_HOST_API bool is_device_accessible(_Pointer __p) noexcept
 {
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter{__device};
     const auto __p1 = ::cuda::std::to_address(__p);
     ::CUmemorytype __type{};
     const auto __status =
