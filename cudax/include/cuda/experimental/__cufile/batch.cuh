@@ -277,7 +277,7 @@ public:
     }
   }
 
-  //! @brief Checks if all of the tracked requests are done.
+  //! @brief Updated the jobs current state and checks if all of the tracked requests are done.
   //!
   //! @return \c true if done, \c false otherwise.
   [[nodiscard]] _CCCL_HOST_API bool is_done()
