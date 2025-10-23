@@ -30,7 +30,7 @@
 #include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <iostream>
+#  include <sstream>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
