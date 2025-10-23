@@ -34,12 +34,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! allowed).
 enum class __completion_mechanism
 {
-  // Use powers of two here to support the bit flag use case
-  __sync                      = 0,
-  __mbarrier_complete_tx      = 1 << 0,
-  __mbarrier_complete_tx_skip = 1 << 1,
-  __async_group               = 1 << 2,
-  __async_bulk_group          = 1 << 3,
+  __sync                 = 0,
+  __mbarrier_complete_tx = 1 << 0, // Use powers of two here to support the
+  __async_group          = 1 << 1, // bit flag use case
+  __async_bulk_group     = 1 << 2,
 };
 
 _CCCL_END_NAMESPACE_CUDA
