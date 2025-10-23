@@ -10,7 +10,7 @@ Defined in ``<cuda/memory>`` header.
    namespace cuda {
 
    template <typename Pointer>
-   [[nodiscard]] __host__ constexpr
+   [[nodiscard]] __host__
    bool is_host_accessible(Pointer ptr) noexcept;
 
    } // namespace cuda
@@ -24,8 +24,8 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
    namespace cuda {
 
    template <typename Pointer>
-   [[nodiscard]] __host__ constexpr
-   bool is_device_accessible(Pointer ptr) noexcept;
+   [[nodiscard]] __host__
+   bool is_device_accessible(Pointer ptr, device_ref device) noexcept;
 
    } // namespace cuda
 
@@ -36,7 +36,7 @@ Determines whether the memory referenced by ``ptr`` is accessible from the activ
 .. code:: cuda
 
    template <typename Pointer>
-   [[nodiscard]] __host__ constexpr
+   [[nodiscard]] __host__
    bool is_managed_pointer(Pointer ptr) noexcept;
 
 Determines whether the memory referenced by ``ptr`` is backed by Unified Memory (managed memory).
