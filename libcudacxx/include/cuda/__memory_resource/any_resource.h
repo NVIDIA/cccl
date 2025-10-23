@@ -44,6 +44,8 @@ using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
 template <class _Property>
 struct __with_property
 {
+  // Return type as a template parameter is a workaround for MSVC treating the function
+  // as overloaded even when the template parameter was provided
   template <class _Ty, class _ReturnType = __property_result_t<_Property>>
   _CCCL_PUBLIC_HOST_API static _ReturnType __get_property(const _Ty& __obj)
   {
