@@ -9,7 +9,7 @@
 // UNSUPPORTED: nvrtc
 // UNSfUPPORTED: pre-sm-90
 
-#include "dlpack/dlpack.h" // to include before the make_from_dlpack.h
+#include <dlpack/dlpack.h> // to include before the make_from_dlpack.h
 //
 #include <cuda/__tma/make_tma_descriptor.h>
 #include <cuda/std/array>
@@ -153,7 +153,7 @@ __host__ bool test_box_sizes()
 
   int box_sizes_storage[2] = {256, 256};
   cuda::std::span<const int, 2> box_sizes{box_sizes_storage};
-  unused(cuda::make_tma_descriptor(tensor, box_sizes, tma_interleave_layout::bytes32));
+  unused(cuda::make_tma_descriptor(tensor, box_sizes, cuda::tma_interleave_layout::bytes32));
   return true;
 }
 

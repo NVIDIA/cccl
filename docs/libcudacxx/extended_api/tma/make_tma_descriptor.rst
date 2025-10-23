@@ -32,27 +32,6 @@ Defined in the ``<cuda/tma>`` header.
         tma_l2_fetch_size                      l2_fetch_size     = tma_l2_fetch_size::none,
         tma_oob_fill                           oobfill           = tma_oob_fill::none) noexcept;
 
-    template <size_t BoxDimSize, size_t ElemStrideSize>
-    [[nodiscard]] inline CUtensorMap
-    make_tma_descriptor(
-        const DLManagedTensor&                     tensor,
-        cuda::std::span<const int, BoxDimSize>     box_sizes,
-        cuda::std::span<const int, ElemStrideSize> elem_strides,
-        tma_interleave_layout                      interleave_layout = tma_interleave_layout::none,
-        tma_swizzle                                swizzle           = tma_swizzle::none,
-        tma_l2_fetch_size                          l2_fetch_size     = tma_l2_fetch_size::none,
-        tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
-
-    template <size_t BoxDimSize>
-    [[nodiscard]] inline CUtensorMap
-    make_tma_descriptor(
-        const DLManagedTensor&                 tensor,
-        cuda::std::span<const int, BoxDimSize> box_sizes,
-        tma_interleave_layout                  interleave_layout = tma_interleave_layout::none,
-        tma_swizzle                            swizzle           = tma_swizzle::none,
-        tma_l2_fetch_size                      l2_fetch_size     = tma_l2_fetch_size::none,
-        tma_oob_fill                           oobfill           = tma_oob_fill::none) noexcept;
-
     } // namespace cuda
 
 **Enumerators**
@@ -72,16 +51,16 @@ Defined in the ``<cuda/tma>`` header.
         bytes32,
         bytes64,
         bytes128,
-        bytes128_atom_32B,
-        bytes128_atom_32B_flip_8B,
-        bytes128_atom_64B
+        bytes128_atom_32B,        // only CUDA Toolkit 12.8 and later
+        bytes128_atom_32B_flip_8B,// only CUDA Toolkit 12.8 and later
+        bytes128_atom_64B         // only CUDA Toolkit 12.8 and later
     };
 
     } // namespace cuda
 
 The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor`` or ``DLManagedTensor`` `descriptors <https://dmlc.github.io/dlpack/latest/c_api.html>`__. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
 
-The API is available when ``dlpack/dlpack.h`` (DLPack v1) is discovered at compile time.
+The API is available when ``dlpack/dlpack.h`` (`DLPack v1 <https://github.com/dmlc/dlpack>`__) is discovered at compile time.
 
 .. note::
 
@@ -95,10 +74,10 @@ Parameters
 - ``tensor``: The DLPack tensor describing the logical layout in device memory.
 - ``box_sizes``: Extent of the shared memory tile, one entry per tensor dimension.
 - ``elem_strides``: Stride, in elements, between consecutive accesses inside the shared memory tile. The second overload assumes a stride of ``1`` for every dimension.
-- ``interleave_layout``: [Optional] Interleaving applied to the underlying memory.
-- ``swizzle``: [Optional] Swizzle pattern matching the chosen interleave layout.
-- ``l2_fetch_size``: [Optional] L2 cache promotion for TMA transfers.
-- ``oobfill``: [Optional] Out-of-bounds fill policy for floating-point tensors.
+- ``interleave_layout``: *[Optional]* Interleaving applied to the underlying memory.
+- ``swizzle``: *[Optional]* Swizzle pattern matching the chosen interleave layout.
+- ``l2_fetch_size``: *[Optional]* L2 cache promotion for TMA transfers.
+- ``oobfill``: *[Optional]* Out-of-bounds fill policy for floating-point tensors.
 
 Return value
 ------------
@@ -123,7 +102,7 @@ Preconditions
 
 * The following data types are accepted for ``tensor.dtype``:
 
-  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available.
+  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available. Requires CUDA Toolkit 12.8 and later.
   - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
   - ``kDLUInt`` with ``bits == 16``, namely ``uint16_t``.
   - ``kDLUInt`` with ``bits == 32``, namely ``uint32_t``.

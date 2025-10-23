@@ -476,7 +476,8 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
   tma_oob_fill __oobfill                    = tma_oob_fill::none) noexcept
 {
   _CCCL_VERIFY(__box_sizes.size() == __elem_strides.size(), "Box sizes and elem strides size mismatch");
-  _CCCL_VERIFY(__tensor.device.device_type == ::kDLCUDA, "Device type must be kDLCUDA");
+  _CCCL_VERIFY(__tensor.device.device_type == ::kDLCUDA || __tensor.device.device_type == ::kDLCUDAManaged,
+               "Device type must be kDLCUDA or kDLCUDAManaged");
   _CCCL_VERIFY(__tensor.device.device_id >= 0, "Device ID must be a valid GPU device ordinal");
   auto __current_device = ::cuda::__driver::__deviceGet(static_cast<int>(__tensor.device.device_id));
   auto __compute_capability =
@@ -497,7 +498,7 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
     ::cuda::__get_elem_strides(__elem_strides, __tensor_sizes, __rank, __interleave_layout);
   const auto __raw_box_sizes =
     ::cuda::__get_box_sizes(__box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type);
-  return ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
+  const auto [__tensor_map, __status] = ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
     __data_type,
     __rank,
     __address,
@@ -509,6 +510,8 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
     __raw_swizzle,
     __raw_l2_fetch_size,
     __raw_oobfill);
+  _CCCL_VERIFY(__status == ::cudaSuccess, "Failed to encode TMA descriptor");
+  return __tensor_map;
 }
 
 template <::cuda::std::size_t _BoxDimSize>
@@ -526,33 +529,6 @@ template <::cuda::std::size_t _BoxDimSize>
   cuda::std::span<const int> __elem_strides{__elem_strides_storage, static_cast<size_t>(__rank)};
   return ::cuda::make_tma_descriptor(
     __tensor, __box_sizes, __elem_strides, __interleave_layout, __swizzle, __l2_fetch_size, __oobfill);
-}
-
-template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
-[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(
-  const ::DLManagedTensor& __tensor,
-  ::cuda::std::span<const int, _BoxDimSize> __box_sizes,
-  ::cuda::std::span<const int, _ElemStrideSize> __elem_strides,
-  tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
-  tma_swizzle __swizzle                     = tma_swizzle::none,
-  tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
-  tma_oob_fill __oobfill                    = tma_oob_fill::none) noexcept
-{
-  return ::cuda::make_tma_descriptor(
-    __tensor.dl_tensor, __box_sizes, __elem_strides, __interleave_layout, __swizzle, __l2_fetch_size, __oobfill);
-}
-
-template <::cuda::std::size_t _BoxDimSize>
-[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(
-  const ::DLManagedTensor& __tensor,
-  ::cuda::std::span<const int, _BoxDimSize> __box_sizes,
-  tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
-  tma_swizzle __swizzle                     = tma_swizzle::none,
-  tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
-  tma_oob_fill __oobfill                    = tma_oob_fill::none) noexcept
-{
-  return ::cuda::make_tma_descriptor(
-    __tensor.dl_tensor, __box_sizes, __interleave_layout, __swizzle, __l2_fetch_size, __oobfill);
 }
 
 _CCCL_END_NAMESPACE_CUDA
