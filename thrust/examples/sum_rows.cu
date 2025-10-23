@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 // convert a linear index to a row index
@@ -44,8 +46,8 @@ int main()
 
   // compute row sums by summing values with equal row indices
   thrust::reduce_by_key(
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(C)),
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(C)) + (R * C),
+    thrust::make_transform_iterator(cuda::counting_iterator<int>(0), linear_index_to_row_index<int>(C)),
+    thrust::make_transform_iterator(cuda::counting_iterator<int>(0), linear_index_to_row_index<int>(C)) + (R * C),
     array.begin(),
     row_indices.begin(),
     row_sums.begin(),
