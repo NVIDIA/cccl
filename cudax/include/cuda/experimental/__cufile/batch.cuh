@@ -22,9 +22,9 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__cccl/memory_wrapper.h>
 #include <cuda/std/__chrono/duration.h>
-#include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/ctime>
 #include <cuda/std/optional>
 
 #include <cuda/experimental/__cufile/cufile_ref.cuh>
@@ -37,68 +37,84 @@
 namespace cuda::experimental
 {
 
-//! @brief Enum for the cuFile batch request state.
-enum class cufile_batch_request_state
+//! @brief Class wrapping the cuFile batch request.
+class cufile_batch_request
+{
+  friend class cufile_batch;
+
+  ::CUfileIOParams_t __data_;
+
+  _CCCL_HIDE_FROM_ABI cufile_batch_request() noexcept = default;
+
+public:
+  _CCCL_HIDE_FROM_ABI cufile_batch_request(const cufile_batch_request&)            = default;
+  _CCCL_HIDE_FROM_ABI cufile_batch_request(cufile_batch_request&&)                 = default;
+  _CCCL_HIDE_FROM_ABI cufile_batch_request& operator=(const cufile_batch_request&) = default;
+  _CCCL_HIDE_FROM_ABI cufile_batch_request& operator=(cufile_batch_request&&)      = default;
+};
+
+//! @brief Enum for the cuFile batch job state.
+enum class cufile_batch_job_state
 {
   waiting, //!< Job hasn't been submitted yet.
   pending, //!< Job was enqueued.
   invalid, //!< The request was ill-formed or could not be enqueued.
-  canceled, //!< The request was successfully canceled.
-  complete, //!< The request was successfully completed.
-  timeout, //!< The request timed out.
-  failed, //!< The request was unable to complete.
+  canceled, //!< The job was successfully canceled.
+  complete, //!< The job was successfully completed.
+  timeout, //!< The job timed out.
+  failed, //!< The job was unable to complete.
 };
 
-//! @brief Class wrapping the cuFile batch request state operations.
-class cufile_batch_request
+//! @brief Class wrapping the cuFile batch job state operations.
+class cufile_batch_job
 {
   friend class cufile_batch;
 
   ::CUfileIOEvents_t __io_events_;
 
-  _CCCL_HIDE_FROM_ABI cufile_batch_request() noexcept = default;
+  _CCCL_HIDE_FROM_ABI cufile_batch_job() noexcept = default;
 
 public:
-  cufile_batch_request(const cufile_batch_request&)            = delete;
-  cufile_batch_request(cufile_batch_request&&)                 = delete;
-  cufile_batch_request& operator=(const cufile_batch_request&) = delete;
-  cufile_batch_request& operator=(cufile_batch_request&&)      = delete;
+  cufile_batch_job(const cufile_batch_job&)            = delete;
+  cufile_batch_job(cufile_batch_job&&)                 = delete;
+  cufile_batch_job& operator=(const cufile_batch_job&) = delete;
+  cufile_batch_job& operator=(cufile_batch_job&&)      = delete;
 
-  //! @brief Gets the request state.
+  //! @brief Gets the job state.
   //!
-  //! @return The request state.
-  [[nodiscard]] _CCCL_API cufile_batch_request_state state() const noexcept
+  //! @return The job state.
+  [[nodiscard]] _CCCL_HOST_API cufile_batch_job_state state() const noexcept
   {
     switch (__io_events_.status)
     {
       case ::CUFILE_WAITING:
-        return cufile_batch_request_state::waiting;
+        return cufile_batch_job_state::waiting;
       case ::CUFILE_PENDING:
-        return cufile_batch_request_state::pending;
+        return cufile_batch_job_state::pending;
       case ::CUFILE_INVALID:
-        return cufile_batch_request_state::invalid;
+        return cufile_batch_job_state::invalid;
       case ::CUFILE_CANCELED:
-        return cufile_batch_request_state::canceled;
+        return cufile_batch_job_state::canceled;
       case ::CUFILE_COMPLETE:
-        return cufile_batch_request_state::complete;
+        return cufile_batch_job_state::complete;
       case ::CUFILE_TIMEOUT:
-        return cufile_batch_request_state::timeout;
+        return cufile_batch_job_state::timeout;
       case ::CUFILE_FAILED:
-        return cufile_batch_request_state::failed;
+        return cufile_batch_job_state::failed;
       default:
         _CCCL_UNREACHABLE();
     }
   }
 
-  //! @brief Gets the number of transferred bytes by the request, written or read.
+  //! @brief Gets the number of transferred bytes by the job, written or read.
   //!
-  //! @return The number of transferred bytes. If the state is not \c cuda::cufile_batch_request_state::complete, an
+  //! @return The number of transferred bytes. If the state is not \c cuda::cufile_batch_job_state::complete, an
   //!         empty optional is returned.
-  [[nodiscard]] _CCCL_API ::cuda::std::optional<::cuda::std::size_t> transferred_nbytes() const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::optional<::cuda::std::size_t> transferred_nbytes() const noexcept
   {
-    return (state() == cufile_batch_request_state::complete)
+    return (state() == cufile_batch_job_state::complete)
            ? ::cuda::std::optional{__io_events_.ret}
-           : cuda::std::nullopt;
+           : ::cuda::std::nullopt;
   }
 };
 
@@ -108,13 +124,13 @@ class cufile_batch
   friend class cufile_batch_requests;
 
   ::CUfileBatchHandle_t __batch_{};
-  unsigned __nrequests_{};
-  ::std::unique_ptr<cufile_batch_request[]> __requests_{};
+  unsigned __njobs_{};
+  ::std::unique_ptr<cufile_batch_job[]> __jobs_{};
 
-  _CCCL_HOST_API cufile_batch(::CUfileBatchHandle_t __batch, unsigned __nrequests) noexcept
+  _CCCL_HOST_API cufile_batch(::CUfileBatchHandle_t __batch, unsigned __nrequests)
       : __batch_{__batch}
-      , __nrequests_{__nrequests}
-      , __requests_{new cufile_batch_request[__nrequests]}
+      , __njobs_{__nrequests}
+      , __jobs_{new cufile_batch_job[__nrequests]}
   {}
 
   //! @brief Checks whether the object is valid.
@@ -126,26 +142,86 @@ class cufile_batch
   //! @brief Updates the tracked requests.
   //!
   //! @return The number of active requests.
-  [[nodiscard]] _CCCL_HOST_API unsigned __update_requests(::timespec* __timeout = nullptr) const
+  [[nodiscard]] _CCCL_HOST_API unsigned __update_jobs(::timespec* __timeout = nullptr)
   {
     if (!__valid())
     {
       return 0;
     }
 
-    auto __nr = __nrequests_;
+    auto __nr = __njobs_;
     _CCCL_TRY_CUFILE_API(
       ::cuFileBatchIOGetStatus,
       "Failed to query IO batch status.",
       __batch_,
       __nr,
       &__nr,
-      reinterpret_cast<::CUfileIOEvents_t*>(__requests_.get()),
+      &__jobs_.get()->__io_events_,
       __timeout);
     return __nr;
   }
 
 public:
+  //! @brief Makes a read request.
+  //!
+  //! todo: params
+  [[nodiscard]] static _CCCL_HOST_API cufile_batch_request make_read_bytes_request(
+    cufile_ref __file,
+    cufile_ref::off_type __foffset,
+    ::cuda::std::byte* __dst,
+    ::cuda::std::size_t __nbytes,
+    ::cuda::std::ptrdiff_t __doffset = 0,
+    void* __cookie                   = nullptr) noexcept
+  {
+    cufile_batch_request __ret{};
+    __ret.__data_.mode                  = ::CUFILE_BATCH;
+    __ret.__data_.u.batch.devPtr_base   = __dst;
+    __ret.__data_.u.batch.file_offset   = __foffset;
+    __ret.__data_.u.batch.devPtr_offset = __doffset;
+    __ret.__data_.u.batch.size          = __nbytes;
+    __ret.__data_.fh                    = __file.get();
+    __ret.__data_.opcode                = ::CUFILE_READ;
+    __ret.__data_.cookie                = __cookie;
+    return __ret;
+  }
+
+  // todo: add other ops
+
+  //! @brief Commits a contiguous range of batch requests.
+  //!
+  //! @param __requests A contiguous range of batch requests.
+  //!
+  //! @return The new batch.
+  [[nodiscard]] static _CCCL_HOST_API cufile_batch commit(::cuda::std::span<const cufile_batch_request> __requests)
+  {
+    if (__requests.empty())
+    {
+      return cufile_batch{};
+    }
+
+    const auto __nr = static_cast<unsigned>(__requests.size());
+
+    ::CUfileBatchHandle_t __batch{};
+    _CCCL_TRY_CUFILE_API(::cuFileBatchIOSetUp, "Failed to setup IO batch", &__batch, __nr);
+
+    try
+    {
+      _CCCL_TRY_CUFILE_API(
+        ::cuFileBatchIOSubmit,
+        "Failed to submit IO batch.",
+        __batch,
+        __nr,
+        const_cast<::CUfileIOParams_t*>(&__requests.data()->__data_),
+        0);
+      return cufile_batch{__batch, __nr};
+    }
+    catch (...)
+    {
+      ::cuFileBatchIODestroy(__batch);
+      throw;
+    }
+  }
+
   //! @brief Default constructor.
   _CCCL_HIDE_FROM_ABI cufile_batch() noexcept = default;
 
@@ -154,8 +230,8 @@ public:
   //! @brief Move constructor.
   _CCCL_HOST_API cufile_batch(cufile_batch&& __other) noexcept
       : __batch_{::cuda::std::exchange(__other.__batch_, nullptr)}
-      , __nrequests_{::cuda::std::exchange(__other.__nrequests_, 0)}
-      , __requests_{::cuda::std::move(__other.__requests_)}
+      , __njobs_{::cuda::std::exchange(__other.__njobs_, 0)}
+      , __jobs_{::cuda::std::move(__other.__jobs_)}
   {}
 
   cufile_batch& operator=(const cufile_batch&) = delete;
@@ -168,11 +244,11 @@ public:
       if (__valid())
       {
         ::cuFileBatchIODestroy(__batch_);
-        __requests_.reset();
+        __jobs_.reset();
       }
-      __batch_     = ::cuda::std::exchange(__other.__batch_, nullptr);
-      __nrequests_ = ::cuda::std::exchange(__other.__nrequests_, 0);
-      __requests_  = ::cuda::std::move(__other.__requests_);
+      __batch_ = ::cuda::std::exchange(__other.__batch_, nullptr);
+      __njobs_ = ::cuda::std::exchange(__other.__njobs_, 0);
+      __jobs_  = ::cuda::std::move(__other.__jobs_);
     }
     return *this;
   }
@@ -187,7 +263,7 @@ public:
   }
 
   //! @brief Cancels all tracked requests.
-  _CCCL_HOST_API void cancel() const
+  _CCCL_HOST_API void cancel()
   {
     if (__valid())
     {
@@ -198,97 +274,33 @@ public:
   //! @brief Checks if all of the tracked requests are done.
   //!
   //! @return \c true if done, \c false otherwise.
-  [[nodiscard]] _CCCL_HOST_API bool is_done() const
+  [[nodiscard]] _CCCL_HOST_API bool is_done()
   {
-    return __update_requests() == 0;
+    return __update_jobs() == 0;
   }
 
-  //! @brief Gets the span of the tracked requests.
+  //! @brief Updates the jobs state and returns a view over the batch jobs.
   //!
-  //! @return The span of tracked requests.
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const cufile_batch_request> requests() const noexcept
+  //! @return The view over the batch jobs.
+  _CCCL_HOST_API ::cuda::std::span<const cufile_batch_job> update()
   {
-    __update_requests();
-    return ::cuda::std::span{__requests_.get(), static_cast<::cuda::std::size_t>(__nrequests_)};
+    __update_jobs();
+    return ::cuda::std::span<const cufile_batch_job>{__jobs_.get(), __njobs_};
   }
-};
 
-//! @brief Class wrapping the setup of the \c cuda::cufile_batch.
-class cufile_batch_requests
-{
-  ::std::vector<::CUfileIOParams_t> __io_params_{};
-
-public:
-  //! @brief Adds a read request.
+  //! @brief Waits for up to \c __timeout nanoseconds before updating the jobs state.
   //!
-  //! todo: params
-  _CCCL_API void add_read_bytes(
-    cufile_ref __file,
-    cufile_ref::off_type __foffset,
-    ::cuda::std::byte* __dst,
-    ::cuda::std::size_t __nbytes,
-    ::cuda::std::ptrdiff_t __doffset = 0)
-  {
-    ::CUfileIOParams_t& __new   = __io_params_.emplace_back();
-    __new.mode                  = ::CUFILE_BATCH;
-    __new.u.batch.devPtr_base   = __dst;
-    __new.u.batch.file_offset   = __foffset;
-    __new.u.batch.devPtr_offset = __doffset;
-    __new.u.batch.size          = __nbytes;
-    __new.fh                    = __file.get();
-    __new.opcode                = ::CUFILE_READ;
-    // todo: add cookie?
-  }
-
-  // todo: add other read/write overloads
-
-  //! @brief Clears the stored requests.
-  _CCCL_HOST_API void clear() noexcept
-  {
-    __io_params_.clear();
-  }
-
-  //! @brief Gets the request count.
+  //! @param __timeout The maximum ns to wait before updating.
   //!
-  //! @return The number of requests.
-  [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t size() const noexcept
+  //! @return The view over the batch jobs.
+  _CCCL_HOST_API ::cuda::std::span<const cufile_batch_job>
+  wait_and_update(::cuda::std::chrono::duration<::cuda::std::chrono::nanoseconds> __timeout)
   {
-    return __io_params_.size();
-  }
-
-  //! @brief Gets the request count.
-  //!
-  //! @return The number of requests.
-  [[nodiscard]] _CCCL_HOST_API bool empty() const noexcept
-  {
-    return __io_params_.empty();
-  }
-
-  //! @brief Commit the stored requests.
-  //!
-  //! @return The \c cuda::cufile_batch object.
-  [[nodiscard]] _CCCL_API cufile_batch commit()
-  {
-    if (__io_params_.empty())
-    {
-      return cufile_batch{};
-    }
-
-    const auto __nr = static_cast<unsigned>(__io_params_.size());
-
-    ::CUfileBatchHandle_t __batch{};
-    _CCCL_TRY_CUFILE_API(::cuFileBatchIOSetUp, "Failed to setup IO batch", &__batch, __nr);
-
-    try
-    {
-      _CCCL_TRY_CUFILE_API(::cuFileBatchIOSubmit, "Failed to submit IO batch.", __batch, __nr, __io_params_.data(), 0);
-      return cufile_batch{__batch, __nr};
-    }
-    catch (...)
-    {
-      ::cuFileBatchIODestroy(__batch);
-      throw;
-    }
+    ::cuda::std::timespec __timeout_spec{};
+    __timeout_spec.tv_sec  = static_cast<::cuda::std::time_t>(__timeout.count() / 1'000'000'000);
+    __timeout_spec.tv_nsec = static_cast<long>(__timeout.count() % 1'000'000'000);
+    __update_jobs(&__timeout_spec);
+    return ::cuda::std::span<const cufile_batch_job>{__jobs_.get(), __njobs_};
   }
 };
 
