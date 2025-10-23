@@ -128,6 +128,7 @@ public:
   }
 
 private:
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE arrival_token __arrive_sm90(::cuda::std::ptrdiff_t __update)
   {
     if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
@@ -176,6 +177,7 @@ private:
     }
     return ::__shfl_sync(__active, __token, __leader);
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
 public:
   [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
@@ -193,6 +195,7 @@ public:
   }
 
 private:
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm90(arrival_token __token) const
   {
     if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
@@ -212,6 +215,7 @@ private:
     }
     return ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_API inline bool __try_wait([[maybe_unused]] arrival_token __token) const
   {
@@ -224,6 +228,7 @@ private:
       (return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));))
   }
 
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __try_wait_sm90(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
@@ -266,6 +271,7 @@ private:
     } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
     return __ready;
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   // Document de drop > uint32_t for __nanosec on public for APIs
   _CCCL_API inline bool __try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
@@ -286,6 +292,7 @@ private:
                 ::cuda::std::chrono::nanoseconds(__nanosec));))
   }
 
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm90(bool __phase_parity) const
   {
     if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
@@ -306,6 +313,7 @@ private:
     }
     return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_API inline bool __try_wait_parity(bool __phase_parity) const
   {
@@ -318,6 +326,7 @@ private:
       (return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);))
   }
 
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __try_wait_parity_sm90(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
@@ -362,6 +371,7 @@ private:
 
     return __ready;
   }
+#endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_API inline bool __try_wait_parity(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
