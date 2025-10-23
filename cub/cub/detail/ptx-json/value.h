@@ -81,6 +81,24 @@ struct value<V, void>
   }
 };
 
+template <>
+struct value<true, void>
+{
+  __forceinline__ __device__ static void emit()
+  {
+    asm volatile("true" ::: "memory");
+  }
+};
+
+template <>
+struct value<false, void>
+{
+  __forceinline__ __device__ static void emit()
+  {
+    asm volatile("false" ::: "memory");
+  }
+};
+
 #pragma nv_diag_suppress 842
 template <int N, string<N> V, cuda::std::size_t... Is>
 struct value<V, cuda::std::index_sequence<Is...>>
