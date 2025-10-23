@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__type_traits/is_null_pointer.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,7 +27,6 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
-#include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
 #include <cuda/std/__cccl/prologue.h>
