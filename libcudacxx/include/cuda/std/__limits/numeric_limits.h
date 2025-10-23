@@ -169,7 +169,7 @@ public:
   _CCCL_API static constexpr type max() noexcept
   {
     using _Up = make_unsigned_t<_Tp>;
-    return static_cast<_Tp>(static_cast<_Up>(~_Up{0}) >> is_signed);
+    return static_cast<_Tp>(static_cast<_Up>(~_Up{0}) >> static_cast<int>(is_signed));
   }
   _CCCL_API static constexpr type lowest() noexcept
   {
