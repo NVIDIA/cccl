@@ -291,7 +291,7 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.mdspan.members], members
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS()
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == extents_type::rank())
                    _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
