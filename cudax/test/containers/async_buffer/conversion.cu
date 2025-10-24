@@ -38,11 +38,10 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   // Convert from a async_buffer that has more properties than the current one
-  using MatchingBuffer   = typename extract_properties<TestT>::matching_vector;
-  using MatchingResource = typename extract_properties<TestT>::matching_resource;
+  using MatchingBuffer = typename extract_properties<TestT>::matching_vector;
 
   SECTION("cudax::async_buffer construction with matching async_buffer")
   {

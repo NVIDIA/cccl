@@ -39,7 +39,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer capacity", "[container][async_buffer]", tes
   using size_type = typename Buffer::size_type;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("cudax::async_buffer::empty")
   {

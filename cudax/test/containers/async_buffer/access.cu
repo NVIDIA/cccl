@@ -44,7 +44,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
   using const_pointer   = typename Buffer::const_pointer;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("cudax::async_buffer::get_unsynchronized")
   {
