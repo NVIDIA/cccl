@@ -54,11 +54,13 @@ template void resource_static_asserts<cudax::pinned_memory_pool_ref>();
 template <class Resource>
 Resource get_resource()
 {
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
   if constexpr (cuda::std::is_same_v<Resource, cudax::pinned_memory_pool_ref>)
   {
     return cudax::pinned_default_memory_pool();
   }
   else
+#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
   {
     return Resource{};
   }

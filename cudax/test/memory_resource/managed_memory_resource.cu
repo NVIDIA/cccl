@@ -51,15 +51,18 @@ template void resource_static_asserts<cudax::managed_memory_pool_ref>();
 template <class Resource>
 Resource get_resource()
 {
+#if _CCCL_CUDACC_AT_LEAST(13, 0)
   if constexpr (cuda::std::is_same_v<Resource, cudax::managed_memory_pool_ref>)
   {
     return cudax::managed_default_memory_pool();
   }
   else
+#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
   {
     return Resource{};
   }
 }
+
 static void ensure_managed_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
