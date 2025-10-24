@@ -178,6 +178,8 @@ struct __tuple_constraints
 
   static constexpr bool __explicit_default_constructible = __default_constructible && !__implicit_default_constructible;
 
+  static constexpr bool __swappable = (is_swappable_v<_Tp> && ...);
+
   static constexpr bool __nothrow_swappable = (is_nothrow_swappable_v<_Tp> && ...);
 
   static constexpr bool __implicit_variadic_copy_constructible =
@@ -189,16 +191,6 @@ struct __tuple_constraints
     && !__tuple_convertible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>;
 
   static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
-
-  template <class... _Args>
-  struct _PackExpandsToThisTuple : false_type
-  {};
-
-  template <class _Arg>
-  struct _PackExpandsToThisTuple<_Arg>
-  {
-    static constexpr bool value = is_same_v<remove_cvref_t<_Arg>, tuple<_Tp...>>;
-  };
 
   template <class... _Args>
   struct __variadic_constraints
