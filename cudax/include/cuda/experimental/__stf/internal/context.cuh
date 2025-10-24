@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -30,6 +32,7 @@
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
+#include <stdexcept>
 #include <variant>
 
 namespace cuda::experimental::stf
@@ -880,7 +883,7 @@ public:
     }
     else
     {
-      ::cuda::std::__throw_runtime_error("Payload does not hold graph_ctx");
+      _CCCL_THROW(::std::runtime_error{"Payload does not hold graph_ctx"});
     }
   }
 

@@ -15,6 +15,7 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
@@ -113,7 +114,8 @@ struct path_builder
 
     if (__capture_status != cudaStreamCaptureStatusActive)
     {
-      __throw_cuda_error(cudaErrorInvalidValue, "Stream capture no longer active", "cudaStreamGetCaptureInfo");
+      _CCCL_THROW(
+        ::cuda::cuda_error{cudaErrorInvalidValue, "Stream capture no longer active", "cudaStreamGetCaptureInfo"});
     }
     _CCCL_TRY_CUDA_API(::cudaStreamEndCapture, "Failed to end stream capture", __stream.get(), &__graph_out);
     assert(__graph_out == __graph_);

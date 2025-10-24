@@ -31,6 +31,7 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -353,28 +354,30 @@ template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-    (
-      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes); } catch (...) {
-        return cudaErrorMemoryAllocation;
-      }),
-    (d_temp_storage = mr.allocate(stream, temp_storage_bytes);));
-  return cudaSuccess;
+  _CCCL_TRY
+  {
+    d_temp_storage = mr.allocate(stream, temp_storage_bytes);
+    return cudaSuccess;
+  }
+  _CCCL_CATCH_ALL
+  {
+    return cudaErrorMemoryAllocation;
+  }
 }
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-    (
-      try { mr.deallocate(stream, d_temp_storage, temp_storage_bytes); } catch (...) {
-        return cudaErrorMemoryAllocation;
-      }),
-    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
-  return cudaSuccess;
+  _CCCL_TRY
+  {
+    mr.deallocate(stream, d_temp_storage, temp_storage_bytes);
+    return cudaSuccess;
+  }
+  _CCCL_CATCH_ALL
+  {
+    return cudaErrorMemoryAllocation;
+  }
 }
 
 } // namespace temporary_storage

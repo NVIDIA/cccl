@@ -35,6 +35,7 @@
 #include <thrust/pair.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
 
 #include <nv/target>
@@ -83,16 +84,12 @@ public:
       // note that we pass cnt to deallocate, not a value derived from result.second
       deallocate(result.first, cnt);
 
-#if _CCCL_CUDA_COMPILATION()
       NV_IF_TARGET(
         NV_IS_HOST,
-        (throw thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed");),
+        (_CCCL_THROW(thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed"));),
         ( // NV_IS_DEVICE
           thrust::system::cuda::detail::terminate_with_message("temporary_buffer::allocate: "
                                                                "get_temporary_buffer failed");));
-#else
-      throw thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed");
-#endif
     } // end if
 
     return result.first;

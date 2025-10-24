@@ -71,7 +71,7 @@ public:
   {
     if (__indexing_ == _Indexing::__manual)
     {
-      ::cuda::std::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
+      _CCCL_THROW(::cuda::std::format_error{"using automatic argument numbering in manual argument numbering mode"});
     }
     if (__indexing_ == _Indexing::__unknown)
     {
@@ -88,7 +88,7 @@ public:
   {
     if (__indexing_ == _Indexing::__automatic)
     {
-      ::cuda::std::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
+      _CCCL_THROW(::cuda::std::format_error{"using manual argument numbering in automatic argument numbering mode"});
     }
     if (__indexing_ == _Indexing::__unknown)
     {

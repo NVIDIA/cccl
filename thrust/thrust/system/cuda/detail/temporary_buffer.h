@@ -30,6 +30,8 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__exception/exception_macros.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -53,7 +55,7 @@ _CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, 
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      _CCCL_THROW(system::detail::bad_alloc(cuda_category().message(status).c_str()));
     }
   }
 
@@ -77,7 +79,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      _CCCL_THROW(system::detail::bad_alloc(cuda_category().message(status).c_str()));
     }
   }
 }
@@ -99,7 +101,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      _CCCL_THROW(system::detail::bad_alloc(cuda_category().message(status).c_str()));
     }
   }
 
@@ -123,7 +125,7 @@ _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointe
 
     if (status != cudaSuccess)
     {
-      throw system::detail::bad_alloc(cuda_category().message(status).c_str());
+      _CCCL_THROW(system::detail::bad_alloc(cuda_category().message(status).c_str()));
     }
   }
 }

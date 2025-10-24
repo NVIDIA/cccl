@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cccl/exceptions.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/move.h>
 
@@ -97,7 +98,7 @@ public:
 
 [[noreturn]] _CCCL_API inline void rethrow_exception(const exception_ptr&)
 {
-  ::cuda::__throw_cuda_error(cudaErrorUnknown, "unknown exception");
+  _CCCL_THROW(::cuda::cuda_error{cudaErrorUnknown, "unknown exception"});
 }
 
 // ^^^ _CCCL_COMPILER(NVRTC) || !_CCCL_HOST_COMPILATION() ^^^

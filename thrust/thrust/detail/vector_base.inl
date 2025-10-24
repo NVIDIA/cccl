@@ -38,6 +38,7 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
@@ -393,19 +394,18 @@ void vector_base<T, Alloc>::reserve(size_type n)
     // record how many constructors we invoke in the try block below
     iterator new_end = new_storage.begin();
 
-    try
+    _CCCL_TRY
     {
       // construct copy all elements into the newly allocated storage
       new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
     } // end try
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       // something went wrong, so destroy & deallocate the new storage
       new_storage.destroy(new_storage.begin(), new_end);
       new_storage.deallocate();
 
-      // rethrow
-      throw;
+      _CCCL_RETHROW;
     } // end catch
 
     // call destructors on the elements in the old storage
@@ -764,7 +764,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 
       if (new_capacity > max_size())
       {
-        throw std::length_error("insert(): insertion exceeds max_size().");
+        _CCCL_THROW(std::length_error("insert(): insertion exceeds max_size()."));
       } // end if
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -772,7 +772,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       // record how many constructors we invoke in the try block below
       iterator new_end = new_storage.begin();
 
-      try
+      _CCCL_TRY
       {
         // construct copy elements before the insertion to the beginning of the newly
         // allocated storage
@@ -785,14 +785,13 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
         // remember [position, end()) refers to the old storage
         new_end = m_storage.uninitialized_copy(position, end(), new_end);
       } // end try
-      catch (...)
+      _CCCL_CATCH_ALL
       {
         // something went wrong, so destroy & deallocate the new storage
         m_storage.destroy(new_storage.begin(), new_end);
         new_storage.deallocate();
 
-        // rethrow
-        throw;
+        _CCCL_RETHROW;
       } // end catch
 
       // call destructors on the elements in the old storage
@@ -843,7 +842,7 @@ void vector_base<T, Alloc>::append(size_type n)
       // record how many constructors we invoke in the try block below
       iterator new_end = new_storage.begin();
 
-      try
+      _CCCL_TRY
       {
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
@@ -856,14 +855,13 @@ void vector_base<T, Alloc>::append(size_type n)
 
         new_end += n;
       } // end try
-      catch (...)
+      _CCCL_CATCH_ALL
       {
         // something went wrong, so destroy & deallocate the new storage
         new_storage.destroy(new_storage.begin(), new_end);
         new_storage.deallocate();
 
-        // rethrow
-        throw;
+        _CCCL_RETHROW;
       } // end catch
 
       // call destructors on the elements in the old storage
@@ -938,7 +936,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
 
       if (new_capacity > max_size())
       {
-        throw std::length_error("insert(): insertion exceeds max_size().");
+        _CCCL_THROW(std::length_error("insert(): insertion exceeds max_size()."));
       } // end if
 
       storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
@@ -946,7 +944,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
       // record how many constructors we invoke in the try block below
       iterator new_end = new_storage.begin();
 
-      try
+      _CCCL_TRY
       {
         // construct copy elements before the insertion to the beginning of the newly
         // allocated storage
@@ -960,14 +958,13 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
         // remember [position, end()) refers to the old storage
         new_end = m_storage.uninitialized_copy(position, end(), new_end);
       } // end try
-      catch (...)
+      _CCCL_CATCH_ALL
       {
         // something went wrong, so destroy & deallocate the new storage
         m_storage.destroy(new_storage.begin(), new_end);
         new_storage.deallocate();
 
-        // rethrow
-        throw;
+        _CCCL_RETHROW;
       } // end catch
 
       // call destructors on the elements in the old storage
@@ -1106,17 +1103,17 @@ void vector_base<T, Alloc>::allocate_and_copy(
 
   if (requested_size > allocated_size)
   {
-    throw std::length_error("assignment exceeds max_size().");
+    _CCCL_THROW(std::length_error("assignment exceeds max_size()."));
   } // end if
 
   new_storage.allocate(allocated_size);
 
-  try
+  _CCCL_TRY
   {
     // construct the range to the newly allocated storage
     m_storage.uninitialized_copy(first, last, new_storage.begin());
   } // end try
-  catch (...)
+  _CCCL_CATCH_ALL
   {
     // something went wrong, so destroy & deallocate the new storage
     // XXX seems like this destroys too many elements -- should just be last - first instead of requested_size
@@ -1125,8 +1122,7 @@ void vector_base<T, Alloc>::allocate_and_copy(
     m_storage.destroy(new_storage.begin(), new_storage_end);
     new_storage.deallocate();
 
-    // rethrow
-    throw;
+    _CCCL_RETHROW;
   } // end catch
 } // end vector_base::allocate_and_copy()
 

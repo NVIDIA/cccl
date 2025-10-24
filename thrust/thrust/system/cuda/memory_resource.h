@@ -37,6 +37,8 @@
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__exception/exception_macros.h>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace system
@@ -63,7 +65,7 @@ public:
     if (status != cudaSuccess)
     {
       cudaGetLastError(); // Clear the CUDA global error state.
-      throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
+      _CCCL_THROW(thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str()));
     }
 
     return Pointer(ret);

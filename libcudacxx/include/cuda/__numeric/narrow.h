@@ -24,6 +24,7 @@
 #  include <stdexcept>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -55,15 +56,6 @@ struct narrowing_error : ::std::runtime_error
 };
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-[[noreturn]] _CCCL_API inline void __throw_narrowing_error()
-{
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw narrowing_error{};), (::cuda::std::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  ::cuda::std::terminate();
-#endif // !_CCCL_HAS_EXCEPTIONS()
-}
-
 //! Uses static_cast to cast a value \p __from to type \p _To and checks whether the value has changed. \p _To needs
 //! to be constructible from \p _From and vice versa, and \p implement operator!=. Throws \ref narrowing_error in host
 //! code and traps in device code if the value has changed. Modelled after `gsl::narrow`. See also the C++ Core
@@ -78,7 +70,7 @@ template <class _To, class _From>
   const auto __converted = static_cast<_To>(__from);
   if (static_cast<_From>(__converted) != __from)
   {
-    ::cuda::__throw_narrowing_error();
+    _CCCL_THROW(narrowing_error{});
   }
 
   if constexpr (::cuda::std::is_arithmetic_v<_From>)
@@ -87,14 +79,14 @@ template <class _To, class _From>
     {
       if (__from < _From{})
       {
-        ::cuda::__throw_narrowing_error();
+        _CCCL_THROW(narrowing_error{});
       }
     }
     if constexpr (!::cuda::std::is_signed_v<_From> && ::cuda::std::is_signed_v<_To>)
     {
       if (__converted < _To{})
       {
-        ::cuda::__throw_narrowing_error();
+        _CCCL_THROW(narrowing_error{});
       }
     }
   }

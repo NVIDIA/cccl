@@ -26,6 +26,7 @@
 #include <cuda/__utility/__basic_any/virtual_ptrs.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
@@ -61,17 +62,7 @@ struct __bad_any_cast : ::std::bad_cast
     return "cannot cast value to target type";
   }
 };
-
-[[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (::cuda::std::terminate();))
-}
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-[[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
-{
-  ::cuda::std::terminate();
-}
-#endif // !_CCCL_HAS_EXCEPTIONS()
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 struct __rtti_base : __immovable
 {
@@ -243,7 +234,7 @@ template <class _SrcInterface, class _DstInterface>
     auto __dst_vptr = __try_vptr_cast<_SrcInterface, _DstInterface>(__src_vptr);
     if (!__dst_vptr && __src_vptr)
     {
-      __throw_bad_any_cast();
+      _CCCL_THROW(__bad_any_cast{});
     }
     return __dst_vptr;
   }

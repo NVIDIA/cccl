@@ -26,13 +26,13 @@
 #include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__bit/reference.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/string_view>
 #include <cuda/std/version>
 
@@ -43,6 +43,10 @@
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -373,7 +377,7 @@ private:
     const_iterator __i = ::cuda::std::find(__make_iter(sizeof(unsigned long) * CHAR_BIT), __e, true);
     if (__i != __e)
     {
-      ::cuda::std::__throw_overflow_error("bitset to_ulong overflow error");
+      _CCCL_THROW(::std::overflow_error{"bitset to_ulong overflow error"});
     }
 
     return to_ulong(true_type());
@@ -405,7 +409,7 @@ private:
     const_iterator __i = ::cuda::std::find(__make_iter(sizeof(unsigned long long) * CHAR_BIT), __e, true);
     if (__i != __e)
     {
-      ::cuda::std::__throw_overflow_error("bitset to_ullong overflow error");
+      _CCCL_THROW(::std::overflow_error{"bitset to_ullong overflow error"});
     }
 
     return to_ullong(true_type());
@@ -528,7 +532,7 @@ protected:
 #if _CCCL_COMPILER(MSVC)
     if (static_cast<unsigned long>(__first_.__data) != __first_.__data)
     {
-      ::cuda::std::__throw_overflow_error("bitset to_ulong overflow error");
+      _CCCL_THROW(::std::overflow_error{"bitset to_ulong overflow error"});
     }
     return static_cast<unsigned long>(__first_.__data);
 #else // ^^ _CCCL_COMPILER(MSVC) ^^ | vv !_CCCL_COMPILER(MSVC) vv
@@ -648,14 +652,14 @@ _CCCL_API constexpr void __throw_if_out_of_range(size_t __pos, const char* __msg
 {
   if (__pos >= _Size)
   {
-    ::cuda::std::__throw_out_of_range(__msg);
+    _CCCL_THROW(::std::out_of_range{__msg});
   }
 }
 
 template <>
 _CCCL_API inline void __throw_if_out_of_range<0>(size_t, const char* __msg)
 {
-  ::cuda::std::__throw_out_of_range(__msg);
+  _CCCL_THROW(::std::out_of_range{__msg});
 }
 
 template <size_t _Size>
@@ -692,7 +696,7 @@ public:
   {
     if (__pos > __str.size())
     {
-      ::cuda::std::__throw_out_of_range("bitset string pos out of range");
+      _CCCL_THROW(::std::out_of_range{"bitset string pos out of range"});
     }
 
     size_t __rlen = ::cuda::std::min(__n, __str.size() - __pos);
@@ -710,7 +714,7 @@ public:
   {
     if (__pos > __str.size())
     {
-      ::cuda::std::__throw_out_of_range("bitset string pos out of range");
+      _CCCL_THROW(::std::out_of_range{"bitset string pos out of range"});
     }
 
     size_t __rlen = ::cuda::std::min(__n, __str.size() - __pos);
@@ -925,7 +929,7 @@ private:
     {
       if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
       {
-        ::cuda::std::__throw_invalid_argument("bitset string ctor has invalid argument");
+        _CCCL_THROW(::std::invalid_argument{"bitset string ctor has invalid argument"});
       }
     }
 

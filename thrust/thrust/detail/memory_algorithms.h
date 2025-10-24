@@ -22,6 +22,7 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/utility>
 
@@ -112,21 +113,18 @@ _CCCL_HOST_DEVICE void uninitialized_construct(ForwardIt first, ForwardIt last, 
   using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
-
-  // No exceptions in CUDA.
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (
-      try {
-        for (; current != last; ++current)
-        {
-          ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
-        }
-      } catch (...) {
-        destroy(first, current);
-        throw;
-      }),
-    (for (; current != last; ++current) { ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...); }));
+  _CCCL_TRY
+  {
+    for (; current != last; ++current)
+    {
+      ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
+    }
+  }
+  _CCCL_CATCH_ALL
+  {
+    destroy(first, current);
+    _CCCL_RETHROW;
+  }
 }
 
 template <typename Allocator, typename ForwardIt, typename... Args>
@@ -138,21 +136,18 @@ void uninitialized_construct_with_allocator(Allocator const& alloc, ForwardIt fi
   typename traits::allocator_type alloc_T(alloc);
 
   ForwardIt current = first;
-
-  // No exceptions in CUDA.
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (
-      try {
-        for (; current != last; ++current)
-        {
-          traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
-        }
-      } catch (...) {
-        destroy(alloc_T, first, current);
-        throw;
-      }),
-    (for (; current != last; ++current) { traits::construct(alloc_T, ::cuda::std::addressof(*current), args...); }));
+  _CCCL_TRY
+  {
+    for (; current != last; ++current)
+    {
+      traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
+    }
+  }
+  _CCCL_CATCH_ALL
+  {
+    destroy(alloc_T, first, current);
+    _CCCL_RETHROW;
+  }
 }
 
 template <typename ForwardIt, typename Size, typename... Args>
@@ -161,21 +156,18 @@ void uninitialized_construct_n(ForwardIt first, Size n, Args const&... args)
   using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
-
-  // No exceptions in CUDA.
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (
-      try {
-        for (; n > 0; ++current, --n)
-        {
-          ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
-        }
-      } catch (...) {
-        destroy(first, current);
-        throw;
-      }),
-    (for (; n > 0; ++current, --n) { ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...); }));
+  _CCCL_TRY
+  {
+    for (; n > 0; ++current, --n)
+    {
+      ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
+    }
+  }
+  _CCCL_CATCH_ALL
+  {
+    destroy(first, current);
+    _CCCL_RETHROW;
+  }
 }
 
 template <typename Allocator, typename ForwardIt, typename Size, typename... Args>
@@ -187,21 +179,18 @@ void uninitialized_construct_n_with_allocator(Allocator const& alloc, ForwardIt 
   typename traits::allocator_type alloc_T(alloc);
 
   ForwardIt current = first;
-
-  // No exceptions in CUDA.
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (
-      try {
-        for (; n > 0; (void) ++current, --n)
-        {
-          traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
-        }
-      } catch (...) {
-        destroy(alloc_T, first, current);
-        throw;
-      }),
-    (for (; n > 0; (void) ++current, --n) { traits::construct(alloc_T, ::cuda::std::addressof(*current), args...); }));
+  _CCCL_TRY
+  {
+    for (; n > 0; (void) ++current, --n)
+    {
+      traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
+    }
+  }
+  _CCCL_CATCH_ALL
+  {
+    destroy(alloc_T, first, current);
+    _CCCL_RETHROW;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -42,6 +42,10 @@
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstdint>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <new>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #include <nv/target>
 
 #if _CCCL_COMPILER(NVRTC)

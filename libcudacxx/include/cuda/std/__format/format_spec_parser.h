@@ -23,6 +23,7 @@
 #include <cuda/std/__algorithm/copy_n.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__format/format_parse_context.h>
@@ -77,7 +78,7 @@ __throw_invalid_option_format_error(const char (&__id)[_IdSize], const char (&__
   char_traits<char>::copy(__msg_it += __opt_view.size(), __msg_pt3.data(), __msg_pt3.size());
   __msg_it[__msg_pt3.size()] = '\0';
 
-  ::cuda::std::__throw_format_error(__msg);
+  _CCCL_THROW(::cuda::std::format_error{__msg});
 }
 
 template <size_t _IdSize>
@@ -97,7 +98,7 @@ template <size_t _IdSize>
   char_traits<char>::copy(__msg_it += __id_view.size(), __msg_pt2.data(), __msg_pt2.size());
   __msg_it[__msg_pt2.size()] = '\0';
 
-  ::cuda::std::__throw_format_error(__msg);
+  _CCCL_THROW(::cuda::std::format_error{__msg});
 }
 
 struct __fmt_substitute_arg_id_visitor
@@ -107,7 +108,8 @@ struct __fmt_substitute_arg_id_visitor
   {
     if constexpr (is_same_v<_Tp, monostate>)
     {
-      ::cuda::std::__throw_format_error("The argument index value is too large for the number of arguments supplied");
+      _CCCL_THROW(::cuda::std::format_error{"The argument index value is too large for the number of arguments "
+                                            "supplied"});
     }
 
     // [format.string.std]/8
@@ -127,21 +129,21 @@ struct __fmt_substitute_arg_id_visitor
       {
         if (__arg < 0)
         {
-          ::cuda::std::__throw_format_error("An argument index may not have a negative value");
+          _CCCL_THROW(::cuda::std::format_error{"An argument index may not have a negative value"});
         }
       }
 
       using _CT = common_type_t<_Tp, decltype(__fmt_number_max)>;
       if (static_cast<_CT>(__arg) > static_cast<_CT>(__fmt_number_max))
       {
-        ::cuda::std::__throw_format_error("The value of the argument index exceeds its maximum value");
+        _CCCL_THROW(::cuda::std::format_error{"The value of the argument index exceeds its maximum value"});
       }
 
       return static_cast<uint32_t>(__arg);
     }
     else
     {
-      ::cuda::std::__throw_format_error("Replacement argument isn't a standard signed or unsigned integer type");
+      _CCCL_THROW(::cuda::std::format_error{"Replacement argument isn't a standard signed or unsigned integer type"});
     }
   }
 };
@@ -280,7 +282,7 @@ enum class __fmt_spec_type : uint8_t
   const auto __shift = static_cast<uint32_t>(__t);
   if (__shift > 31)
   {
-    ::cuda::std::__throw_format_error("The type does not fit in the mask");
+    _CCCL_THROW(::cuda::std::format_error{"The type does not fit in the mask"});
   }
   return 1 << __shift;
 }
@@ -446,7 +448,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_sign(__begin))
     {
-      ::cuda::std::__throw_format_error("The format specification does not allow the sign option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specification does not allow the sign option"});
     }
 
     if (__fields.__alternate_form_)
@@ -458,7 +460,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_alternate_form(__begin))
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the alternate form option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the alternate form option"});
     }
 
     if (__fields.__zero_padding_)
@@ -470,7 +472,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_zero_padding(__begin))
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the zero-padding option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the zero-padding option"});
     }
 
     if (__parse_width(__begin, __end, __ctx) && __begin == __end)
@@ -487,7 +489,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_precision(__begin, __end, __ctx))
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the precision option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the precision option"});
     }
 
     if (__fields.__locale_specific_form_)
@@ -499,7 +501,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_locale_specific_form(__begin))
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the locale-specific form option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the locale-specific form option"});
     }
 
     if (__fields.__clear_brackets_)
@@ -511,7 +513,7 @@ public:
     }
     else if (::cuda::std::is_constant_evaluated() && __parse_clear_brackets(__begin))
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the n option");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the n option"});
     }
 
     if (__fields.__type_)
@@ -526,7 +528,7 @@ public:
 
     if (__begin != __end && *__begin != _CharT{'}'})
     {
-      ::cuda::std::__throw_format_error("The format specifier should consume the input or end with a '}'");
+      _CCCL_THROW(::cuda::std::format_error{"The format specifier should consume the input or end with a '}'"});
     }
 
     return __begin;
@@ -557,7 +559,7 @@ public:
   //! run-time the error differs
   //! - run-time the exception is thrown and contains the type of field
   //!   being validated.
-  //! - at compile-time the line with `std::__throw_format_error` is shown
+  //! - at compile-time the line with `throw cuda::std::format_error` is shown
   //!   in the output. In that case it's important for the error to be on one
   //!   line.
   //! Note future versions of C++ may allow better compile-time error
@@ -570,7 +572,7 @@ public:
     {
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier does not allow the sign option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the sign option"});
       }
       else
       {
@@ -582,7 +584,7 @@ public:
     {
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier does not allow the alternate form option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the alternate form option"});
       }
       else
       {
@@ -594,7 +596,7 @@ public:
     {
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier does not allow the zero-padding option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the zero-padding option"});
       }
       else
       {
@@ -606,7 +608,7 @@ public:
     { // Works both when the precision has a value or an arg-id.
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier does not allow the precision option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the precision option"});
       }
       else
       {
@@ -618,7 +620,7 @@ public:
     {
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier does not allow the locale-specific form option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier does not allow the locale-specific form option"});
       }
       else
       {
@@ -630,7 +632,7 @@ public:
     {
       if (::cuda::std::is_constant_evaluated())
       {
-        ::cuda::std::__throw_format_error("The format specifier uses an invalid value for the type option");
+        _CCCL_THROW(::cuda::std::format_error{"The format specifier uses an invalid value for the type option"});
       }
       else
       {
@@ -739,14 +741,14 @@ private:
     // validation for the pre-conditions and post-conditions.
     if (__begin == __end)
     {
-      ::cuda::std::__throw_format_error("End of input while parsing an argument index");
+      _CCCL_THROW(::cuda::std::format_error{"End of input while parsing an argument index"});
     }
 
     auto __r = ::cuda::std::__fmt_parse_arg_id(__begin, __end, __ctx);
 
     if (__r.__last == __end || *__r.__last != _CharT{'}'})
     {
-      ::cuda::std::__throw_format_error("The argument index is invalid");
+      _CCCL_THROW(::cuda::std::format_error{"The argument index is invalid"});
     }
 
     ++__r.__last;
@@ -778,7 +780,7 @@ private:
     // check can be omitted when more code units are used.
     if (__fill == _CharT{'{'})
     {
-      ::cuda::std::__throw_format_error("The fill option contains an invalid value");
+      _CCCL_THROW(::cuda::std::format_error{"The fill option contains an invalid value"});
     }
   }
 
@@ -863,7 +865,7 @@ private:
   {
     if (*__begin == _CharT{'0'})
     {
-      ::cuda::std::__throw_format_error("The width option should not have a leading zero");
+      _CCCL_THROW(::cuda::std::format_error{"The width option should not have a leading zero"});
     }
 
     if (*__begin == _CharT{'{'})
@@ -899,7 +901,7 @@ private:
     ++__begin;
     if (__begin == __end)
     {
-      ::cuda::std::__throw_format_error("End of input while parsing format specifier precision");
+      _CCCL_THROW(::cuda::std::format_error{"End of input while parsing format specifier precision"});
     }
 
     if (*__begin == _CharT{'{'})
@@ -913,7 +915,7 @@ private:
 
     if (*__begin < _CharT{'0'} || *__begin > _CharT{'9'})
     {
-      ::cuda::std::__throw_format_error("The precision option does not contain a value or an argument index");
+      _CCCL_THROW(::cuda::std::format_error{"The precision option does not contain a value or an argument index"});
     }
 
     const auto __r      = ::cuda::std::__fmt_parse_number(__begin, __end);
@@ -1052,7 +1054,8 @@ _CCCL_API constexpr void __fmt_process_display_type_str(__fmt_spec_type __type)
     case __fmt_spec_type::__string:
       break;
     default:
-      ::cuda::std::__throw_format_error("The type option contains an invalid value for a string formatting argument");
+      _CCCL_THROW(::cuda::std::format_error{"The type option contains an invalid value for a string formatting "
+                                            "argument"});
   }
 }
 

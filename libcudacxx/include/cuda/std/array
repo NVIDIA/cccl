@@ -25,6 +25,7 @@
 #include <cuda/std/__algorithm/lexicographical_compare.h>
 #include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -41,7 +42,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 
 // standard-mandated includes
@@ -63,6 +63,10 @@
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -180,7 +184,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      ::cuda::std::__throw_out_of_range("array::at");
+      _CCCL_THROW(::std::out_of_range{"array::at"});
     }
     return __elems_[__n];
   }
@@ -189,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      ::cuda::std::__throw_out_of_range("array::at");
+      _CCCL_THROW(::std::out_of_range{"array::at"});
     }
     return __elems_[__n];
   }
@@ -352,14 +356,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 
   [[nodiscard]] _CCCL_API constexpr reference at(size_type)
   {
-    ::cuda::std::__throw_out_of_range("array<T, 0>::at");
-    _CCCL_UNREACHABLE();
+    _CCCL_THROW(::std::out_of_range{"array<T, 0>::at"});
   }
 
   [[nodiscard]] _CCCL_API constexpr const_reference at(size_type) const
   {
-    ::cuda::std::__throw_out_of_range("array<T, 0>::at");
-    _CCCL_UNREACHABLE();
+    _CCCL_THROW(::std::out_of_range{"array<T, 0>::at"});
   }
 
   [[nodiscard]] _CCCL_API constexpr reference front() noexcept

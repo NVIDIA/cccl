@@ -22,19 +22,20 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 
-#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                \
-  do                                                        \
-  {                                                         \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__);      \
-    switch (__status)                                       \
-    {                                                       \
-      case ::cudaSuccess:                                   \
-        break;                                              \
-      default:                                              \
-        ::cudaGetLastError(); /* clear CUDA error state */  \
-        ::cuda::__throw_cuda_error(__status, _MSG, #_NAME); \
-    }                                                       \
+#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                     \
+  do                                                             \
+  {                                                              \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);           \
+    switch (__status)                                            \
+    {                                                            \
+      case ::cudaSuccess:                                        \
+        break;                                                   \
+      default:                                                   \
+        ::cudaGetLastError(); /* clear CUDA error state */       \
+        _CCCL_THROW(::cuda::cuda_error{__status, _MSG, #_NAME}); \
+    }                                                            \
   } while (0)
 
 #define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \

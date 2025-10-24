@@ -34,6 +34,8 @@
 #include <thrust/system/detail/bad_alloc.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__exception/exception_macros.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -59,7 +61,7 @@ public:
 
     if (result.get() == 0)
     {
-      throw thrust::system::detail::bad_alloc("malloc_allocator::allocate: malloc failed");
+      _CCCL_THROW(thrust::system::detail::bad_alloc("malloc_allocator::allocate: malloc failed"));
     } // end if
 
     return result;

@@ -30,6 +30,7 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/utility>
 
 #include <stdexcept>
@@ -131,8 +132,13 @@ public:
     }
     else if constexpr (!allocator_traits<Alloc>::is_always_equal::value)
     {
+      // todo: should this just be:
+      // if (m_allocator != other.m_allocator)
+      // {
+      //   _CCCL_THROW(allocator_mismatch_on_swap());
+      // }
       NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other.m_allocator);), (if (m_allocator != other.m_allocator) {
-                     throw allocator_mismatch_on_swap();
+                     _CCCL_THROW(allocator_mismatch_on_swap());
                    }));
     }
   }

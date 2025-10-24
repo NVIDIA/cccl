@@ -20,6 +20,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/invocable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__expected/bad_expected_access.h>
 #include <cuda/std/__expected/expected_base.h>
 #include <cuda/std/__expected/unexpect.h>
@@ -498,7 +499,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(this->__union_.__unex_));
     }
     return this->__union_.__val_;
   }
@@ -508,7 +509,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() & requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_));
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_)));
     }
     return this->__union_.__val_;
   }
@@ -520,7 +521,7 @@ public:
                   "expected::value() const&& requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_)));
     }
     return ::cuda::std::move(this->__union_.__val_);
   }
@@ -532,7 +533,7 @@ public:
                   "expected::value() && requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_)));
     }
     return ::cuda::std::move(this->__union_.__val_);
   }
@@ -1401,7 +1402,7 @@ public:
     static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(this->__union_.__unex_));
     }
   }
 
@@ -1411,7 +1412,7 @@ public:
     static_assert(is_move_constructible_v<_Err>, "expected::value() && requires is_move_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
+      _CCCL_THROW(::cuda::std::bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_)));
     }
   }
 

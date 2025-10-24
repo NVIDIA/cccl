@@ -22,6 +22,7 @@
 
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/__charconv/to_chars.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/output_utils.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -49,7 +50,7 @@ template <class _Tp, class _CharT, class _OutIt>
 
     if (!::cuda::std::in_range<_CharInt>(static_cast<_TpInt>(__value)))
     {
-      ::cuda::std::__throw_format_error("Integral value outside the range of the char type");
+      _CCCL_THROW(::cuda::std::format_error{"Integral value outside the range of the char type"});
     }
   }
   const auto __c = static_cast<_CharT>(__value);

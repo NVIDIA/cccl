@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/traits.cuh>
@@ -129,17 +130,6 @@ struct expecter
       }
     }
   };
-
-  template <typename... Msgs>
-  [[noreturn]] static _CCCL_API inline void
-  __throw_stf_failure([[maybe_unused]] ::cuda::std::source_location loc, [[maybe_unused]] const Msgs&... msgs)
-  {
-#  if _CCCL_HAS_EXCEPTIONS()
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (::cuda::std::terminate();))
-#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    ::cuda::std::terminate();
-#  endif // !_CCCL_HAS_EXCEPTIONS()
-  }
 
   /*
    * @brief Wrapper for a comparison operation using one of `==`, `!=`, `<`, `>`, `<=`, `>=`. Includes the result and
@@ -294,17 +284,17 @@ struct expecter
     if constexpr (sizeof...(msgs) == 0)
     {
       using U = ::std::remove_reference_t<T>;
-      __throw_stf_failure(
+      _CCCL_THROW(failure{
         loc,
         "Tested expression of type " + ::std::string(type_name<T>) + " is "
           + (std::is_same_v<const U, const bool> ? "false"
              : ::std::is_arithmetic_v<U>         ? "zero"
                                                  : "null")
-          + ".\n");
+          + ".\n"});
     }
     else
     {
-      __throw_stf_failure(loc, msgs...);
+      _CCCL_THROW(failure{loc, msgs...});
     }
   }
 
@@ -323,7 +313,7 @@ struct expecter
     {
       return ::std::forward<L>(e.lhs);
     }
-    __throw_stf_failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
+    _CCCL_THROW(failure{loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...});
   }
 };
 

@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
@@ -176,7 +177,7 @@ public:
       case ::cudaSuccess:
         return true;
       default:
-        ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
+        _CCCL_THROW(::cuda::cuda_error{__result, "Failed to query stream."});
     }
   }
 

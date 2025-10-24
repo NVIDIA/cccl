@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -85,7 +86,7 @@ template <class _It>
     uint64_t __v = uint64_t(__value) * 10 + *__begin++ - _CharT{'0'};
     if (__v > __fmt_number_max || (__begin != __end_input && *__begin >= _CharT{'0'} && *__begin <= _CharT{'9'}))
     {
-      ::cuda::std::__throw_format_error("The numeric value of the format specifier is too large");
+      _CCCL_THROW(::cuda::std::format_error{"The numeric value of the format specifier is too large"});
     }
     __value = static_cast<uint32_t>(__v);
   }
@@ -123,7 +124,7 @@ __fmt_parse_arg_id(_It __begin, _It __end, _ParseCtx& __parse_ctx)
   }
   if (*__begin < _CharT{'0'} || *__begin > _CharT{'9'})
   {
-    ::cuda::std::__throw_format_error("The argument index starts with an invalid character");
+    _CCCL_THROW(::cuda::std::format_error{"The argument index starts with an invalid character"});
   }
 
   const auto __r = ::cuda::std::__fmt_parse_number(__begin, __end);

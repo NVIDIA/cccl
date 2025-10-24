@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -54,7 +55,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   ::cudaError_t __status = ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
   if (__status != ::cudaSuccess || __result != ::cudaDriverEntryPointSuccess)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
+    _CCCL_THROW(::cuda::cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress"));
   }
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
@@ -85,15 +86,15 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
+      _CCCL_THROW(::cuda::cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name));
     }
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
+      _CCCL_THROW(::cuda::cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name));
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
+      _CCCL_THROW(::cuda::cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name));
     }
   }
   return __fn;
@@ -112,7 +113,7 @@ _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args
   ::CUresult __status = __fn(__args...);
   if (__status != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(static_cast<::cudaError_t>(__status), __err_msg);
+    _CCCL_THROW(::cuda::cuda_error(static_cast<::cudaError_t>(__status), __err_msg));
   }
 }
 

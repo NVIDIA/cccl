@@ -23,10 +23,14 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/stdexcept>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -229,7 +233,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
     return __diff < 0 || static_cast<size_t>(__diff) > __len
-           ? (::cuda::std::__throw_out_of_range("__string_view index out of range"), size_t(0))
+           ? (_CCCL_THROW(::std::out_of_range{"__string_view index out of range"}), size_t(0))
            : static_cast<size_t>(__diff);
   }
 

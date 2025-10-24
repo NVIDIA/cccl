@@ -59,8 +59,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 //   }
 //
 // Notes:
-//   - try/catch blocks mustn't be nested, because of possible variable shadowing
-//   - if using try/catch block inside an if statement, always wrap it in a scope
 //   - the catch clause must always bind to a named variable
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -79,11 +77,11 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_RETHROW throw
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-#  define _CCCL_TRY                                                                                     \
+#  define _CCCL_TRY     \
     if constexpr (true) \
     {
-#  define _CCCL_CATCH(...)                                                       \
-    }                                                                            \
+#  define _CCCL_CATCH(...)                                                                       \
+    }                                                                                            \
     else if constexpr (false) for (__VA_ARGS__ = ::cuda::std::__cccl_catch_any_lvalue{}; false;) \
     {
 #  define _CCCL_CATCH_ALL \
