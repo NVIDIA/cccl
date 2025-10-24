@@ -114,12 +114,12 @@ Preconditions
     - ``bits == 64``, ``lanes == 1``, namely ``uint64_t``.
 
   - ``kDLInt``
- 
+
     -  ``bits == 32``, ``lanes == 1``, namely ``int32_t``.
     - ``bits == 64``, ``lanes == 1``, namely ``int64_t``.
 
   - ``kDLFloat``
- 
+
     - ``bits == 16``, ``lanes == 1``, namely ``__half``.
     - ``bits == 32``, ``lanes == 1``, namely ``float``.
     - ``bits == 64``, ``lanes == 1``, namely ``double``.
