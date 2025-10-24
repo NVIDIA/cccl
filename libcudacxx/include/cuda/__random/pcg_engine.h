@@ -240,4 +240,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#endif // _CUDA_STD___RANDOM_PCG_ENGINE_H
