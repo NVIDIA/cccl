@@ -68,6 +68,11 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
 
   foreach (cxx_option IN LISTS cxx_compile_options)
     target_compile_options(${interface_target} INTERFACE
+      # FIXME: Blindly adding supported CXX options to C targets.
+      # This is kind of a hack, but our C targets are internal-only so if it breaks
+      # we'll fix it then. If we really need to, we can add separate C compile
+      # option lists / checks later.
+      $<$<COMPILE_LANGUAGE:C>:${cxx_option}>
       $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
     )
