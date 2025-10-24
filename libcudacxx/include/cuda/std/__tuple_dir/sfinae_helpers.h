@@ -21,17 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__tuple_dir/make_tuple_types.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_like_ext.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
