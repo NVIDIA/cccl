@@ -139,8 +139,8 @@ THRUST_NAMESPACE_END
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... Ts>
-struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>> : true_type
-{};
+inline constexpr bool
+  __is_tuple_of_iterator_references_v<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>> = true;
 
 // define tuple_size, tuple_element, etc.
 template <class... Ts>
