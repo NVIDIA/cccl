@@ -33,65 +33,97 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+/// @class seed_seq
+///
+/// Generate unbiased seeds by filling the output range [begin, end) with 32-bit
+/// unsigned integer values, based on the (possibly biased) seeds stored in the
+/// internal buffer. If `begin == end`, the function does nothing. Otherwise,
+/// the values are produced by the standard seed sequence mixing algorithm.
+///
+/// If `std::iterator_traits<RandomIt>::value_type` is not an unsigned integer
+/// type, or its width is less than 32 bits, the program is ill-formed.
+/// If `RandomIt` does not meet the requirements of a LegacyRandomAccessIterator
+/// or is not mutable, the behavior is undefined.
 class _CCCL_TYPE_VISIBILITY_DEFAULT seed_seq
 {
 public:
-  // types
   using result_type = ::cuda::std::uint_least32_t;
 
-  // constructors
+  /// @brief Default-construct an empty seed sequence.
+  ///
+  /// `size()` will return 0.
   seed_seq() = default;
 
+  /// @brief Construct from an iterator range of seed values.
+  /// @tparam _InputIt Input iterator type yielding values convertible to `result_type`.
+  /// @param __begin Iterator pointing to the first seed value.
+  /// @param __end Iterator one-past-the-last seed value.
   template <class _InputIt>
   _CCCL_API constexpr seed_seq(_InputIt __begin, _InputIt __end)
   {
     auto __n = ::cuda::std::distance(__begin, __end);
-    if (__n == 0)
+    if (__n <= 0)
     {
       return;
     }
-    auto* m_ptr = new result_type[__n];
-    for (auto __i = 0; __i < __n; ++__i, ++__begin)
+    auto* __ptr = new result_type[__n];
+    for (::cuda::std::size_t __i = 0; __i < static_cast<::cuda::std::size_t>(__n); ++__i, ++__begin)
     {
-      auto val   = *__begin;
-      m_ptr[__i] = static_cast<result_type>(val) & 0xFFFFFFFF;
+      __ptr[__i] = static_cast<result_type>(*__begin) & 0xFFFFFFFF;
     }
-    __v_ = ::cuda::std::span<result_type>(m_ptr, __n);
+    __v_ = ::cuda::std::span<result_type>(__ptr, __n);
   }
 
+  /// @brief Construct from an initializer list of seed values.
+  /// @tparam _InitT Element type convertible to `result_type`.
+  /// @param __il The list of seed values.
   template <typename _InitT,
             typename = typename ::cuda::std::enable_if<::cuda::std::is_convertible<_InitT, result_type>::value>::type>
   _CCCL_API constexpr seed_seq(std::initializer_list<_InitT> __il)
       : seed_seq(__il.begin(), __il.end())
   {}
 
+  /// @brief seed_seq is not copyable.
   seed_seq(const seed_seq&) = delete;
 
-// Constexpr destructor from C++20 onwards
+  // Constexpr destructor from C++20 onwards
 #if _CCCL_STD_VER > 2017
   constexpr
 #endif // _CCCL_STD_VER > 2017
     _CCCL_API ~seed_seq()
   {
-    // cudamanagedfree
     if (!__v_.empty())
     {
       delete[] __v_.data();
     }
   }
 
+  /// @brief seed_seq is not copy-assignable.
   _CCCL_API auto operator=(const seed_seq&) = delete;
-  _CCCL_API constexpr ::cuda::std::size_t size() const noexcept
+
+  /// @brief Returns the number of seed values stored.
+  /// @return Number of internal seed values (may be 0).
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size() const noexcept
   {
     return __v_.size();
   }
 
+  /// @brief Copy stored seed values into the output iterator `__dest`.
+  /// @tparam _OutputIt Output iterator type accepting `result_type` values.
+  /// @param __dest Destination iterator where stored values will be written.
   template <class _OutputIt>
   _CCCL_API constexpr void param(_OutputIt __dest) const
   {
     ::cuda::std::copy(__v_.begin(), __v_.end(), __dest);
   }
 
+  /// @brief Generate unbiased seeds by filling the output range [begin, end) with 32-bit unsigned integer values, based
+  /// on the (possibly biased) seeds stored in v. The generation algorithm is adapted from the initialization sequence
+  /// of the Mersenne Twister generator by Makoto Matsumoto and Takuji Nishimura, incorporating the improvements made by
+  /// Mutsuo Saito in 2007.
+  /// @tparam _RandomIt Random-access iterator to writable storage for `result_type`.
+  /// @param __begin Iterator to the beginning of the destination range.
+  /// @param __end Iterator one-past-the-end of the destination range.
   template <class _RandomIt>
   _CCCL_API constexpr void generate(_RandomIt __begin, _RandomIt __end) const
   {
@@ -150,7 +182,7 @@ public:
   }
 
 private:
-  _CCCL_API static constexpr result_type __T(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type __T(result_type __x) noexcept
   {
     return (__x ^ (__x >> 27));
   }
@@ -161,4 +193,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___RANDOM_PHILOX_ENGINE_H
+#endif // _CUDA_STD___RANDOM_SEED_SEQ_H
