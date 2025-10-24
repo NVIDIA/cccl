@@ -11,7 +11,11 @@
 
 #include <cuda/std/__random_>
 
-__host__ __device__ constexpr bool test()
+#if _CCCL_STD_VER > 2017
+constexpr
+#endif // _CCCL_STD_VER > 2017
+  __host__ __device__ bool
+  test()
 {
   static_assert(noexcept(::cuda::std::seed_seq{}));
   cuda::std::seed_seq seq{1, 2, 3, 4, 5};

@@ -23,6 +23,7 @@
 
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
@@ -66,7 +67,11 @@ public:
 
   seed_seq(const seed_seq&) = delete;
 
-  _CCCL_API constexpr ~seed_seq()
+// Constexpr destructor from C++20 onwards
+#if _CCCL_STD_VER > 2017
+  constexpr
+#endif // _CCCL_STD_VER > 2017
+    _CCCL_API ~seed_seq()
   {
     // cudamanagedfree
     if (!__v_.empty())
