@@ -29,19 +29,16 @@ struct ExceptionBase
 struct Exception : ExceptionBase
 {};
 
-// forward declaration
-struct HostException;
-
-#if !_CCCL_COMPILER(NVRTC)
 struct HostException
 {
   int value;
 
+#if !_CCCL_COMPILER(NVRTC)
   HostException()
       : value(exception_value())
   {}
-};
 #endif // !_CCCL_COMPILER(NVRTC)
+};
 
 __host__ __device__ void test()
 {
