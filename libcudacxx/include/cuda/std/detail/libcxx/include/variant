@@ -256,6 +256,7 @@ C++20
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/unreachable.h>
+#include <cuda/std/__variant/sfinae_helpers.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
@@ -1513,10 +1514,10 @@ struct __variant_constraints
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT variant
-    : private __sfinae_base<__all<is_copy_constructible_v<_Types>...>::value,
-                            __all<is_move_constructible_v<_Types>...>::value,
-                            __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
-                            __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
+    : private __variant_base<__all<is_copy_constructible_v<_Types>...>::value,
+                             __all<is_move_constructible_v<_Types>...>::value,
+                             __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
+                             __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
 {
   static_assert(0 < sizeof...(_Types), "variant must consist of at least one alternative.");
 
