@@ -55,20 +55,16 @@ _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_poi
 [[nodiscard]]
 _CCCL_HOST_API bool is_host_accessible(_Pointer __p)
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  const auto __p1 = ::cuda::std::to_address(__p);
+  ::CUmemorytype __type{};
+  const auto __status =
+    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
+  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
   {
-    const auto __p1 = ::cuda::std::to_address(__p);
-    ::CUmemorytype __type{};
-    const auto __status =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-    if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__status, "is_host_accessible failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
-    }
-    return (__status == ::cudaErrorInvalidValue)
-        || (__type == ::CU_MEMORYTYPE_HOST || __type == ::CU_MEMORYTYPE_UNIFIED)
-        || ::cuda::is_managed_pointer(__p); // needed because MEMORY_TYPE is not sufficient for managed memory
+    ::cuda::__throw_cuda_error(__status, "is_host_accessible failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
+  return (__status == ::cudaErrorInvalidValue) || (__type == ::CU_MEMORYTYPE_HOST || __type == ::CU_MEMORYTYPE_UNIFIED)
+      || ::cuda::is_managed_pointer(__p); // needed because MEMORY_TYPE is not sufficient for managed memory
   return true; // cannot be verified
 }
 
@@ -77,21 +73,17 @@ _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_poi
 [[nodiscard]]
 _CCCL_HOST_API bool is_device_accessible(_Pointer __p)
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  const auto __p1 = ::cuda::std::to_address(__p);
+  ::CUmemorytype __type{};
+  const auto __status =
+    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
+  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
   {
-    const auto __p1 = ::cuda::std::to_address(__p);
-    ::CUmemorytype __type{};
-    const auto __status =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-    if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__status, "is_device_accessible failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
-    }
-    return (__status == ::cudaErrorInvalidValue)
-        || (__type == ::CU_MEMORYTYPE_DEVICE || __type == ::CU_MEMORYTYPE_UNIFIED)
-        || ::cuda::is_managed_pointer(__p); // needed because ATTRIBUTE_MEMORY_TYPE is not sufficient for managed memory
+    ::cuda::__throw_cuda_error(__status, "is_device_accessible failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  return true; // cannot be verified
+  return (__status == ::cudaErrorInvalidValue)
+      || (__type == ::CU_MEMORYTYPE_DEVICE || __type == ::CU_MEMORYTYPE_UNIFIED)
+      || ::cuda::is_managed_pointer(__p); // needed because ATTRIBUTE_MEMORY_TYPE is not sufficient for managed memory
 }
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
