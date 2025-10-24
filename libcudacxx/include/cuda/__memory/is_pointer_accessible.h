@@ -39,19 +39,15 @@ _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_poi
 [[nodiscard]]
 _CCCL_HOST_API bool is_managed_pointer(_Pointer __p)
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  const auto __p1 = ::cuda::std::to_address(__p);
+  bool __is_managed{};
+  const auto __status =
+    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p1);
+  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
   {
-    const auto __p1 = ::cuda::std::to_address(__p);
-    bool __is_managed{};
-    const auto __status =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p1);
-    if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__status, "is_managed_pointer failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
-    }
-    return (__status == ::cudaErrorInvalidValue) || __is_managed;
+    ::cuda::__throw_cuda_error(__status, "is_managed_pointer failed()", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  return true; // cannot be verified
+  return (__status == ::cudaErrorInvalidValue) || __is_managed;
 }
 
 _CCCL_TEMPLATE(typename _Pointer)
