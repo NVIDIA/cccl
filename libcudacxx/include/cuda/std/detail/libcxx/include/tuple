@@ -213,7 +213,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
                                         __tuple_all_copy_assignable_v<_Tp...>,
                                         __tuple_all_move_assignable_v<_Tp...>>
 {
-  _CCCL_API constexpr __tuple_impl() noexcept(__all<is_nothrow_default_constructible_v<_Tp>...>::value)
+  using _Constraints = __tuple_constraints<_Tp...>;
+
+  _CCCL_API constexpr __tuple_impl() noexcept(_Constraints::__nothrow_default_constructible)
       : __tuple_leaf<_Indx, _Tp>()...
   {}
 
