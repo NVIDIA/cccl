@@ -26,13 +26,13 @@
 #include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__bit/reference.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/string_view>
 #include <cuda/std/version>
 
@@ -105,7 +105,7 @@ struct __avoid_promotions
 
 #define _DEFINE_SHIFT_ASSIGNMENT(__op)                                                       \
   template <class _Tp>                                                                       \
-  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op##=(_Tp __n)                  \
+  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op## = (_Tp __n)                \
   {                                                                                          \
     if (__n >= sizeof(_Int) * CHAR_BIT)                                                      \
     {                                                                                        \
@@ -141,7 +141,7 @@ struct __avoid_promotions
 #undef _DEFINE_BINARY
 
 #define _DEFINE_ASSIGNMENT(__op)                                                                    \
-  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op##=(__avoid_promotions __rhs)        \
+  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op## = (__avoid_promotions __rhs)      \
   {                                                                                                 \
     __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__rhs.__data)); \
     return *this;                                                                                   \
