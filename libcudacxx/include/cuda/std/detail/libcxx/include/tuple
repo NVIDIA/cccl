@@ -444,7 +444,7 @@ public:
 
   template <class _Tuple>
   using __tuple_like_constraints =
-    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value,
+    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>,
         typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
         __invalid_tuple_constraints>;
 

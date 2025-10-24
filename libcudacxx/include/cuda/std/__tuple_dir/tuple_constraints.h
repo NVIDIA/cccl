@@ -117,6 +117,14 @@ template <class _From, class _To>
 inline constexpr bool __tuple_assignable<_From, _To, true, true> =
   __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
 
+// __tuple_like_with_size
+template <class _Tuple, size_t _ExpectedSize, bool = __tuple_like_ext<remove_cvref_t<_Tuple>>>
+inline constexpr bool __tuple_like_with_size = false;
+
+template <class _Tuple, size_t _ExpectedSize>
+inline constexpr bool __tuple_like_with_size<_Tuple, _ExpectedSize, true> =
+  _ExpectedSize == tuple_size<remove_cvref_t<_Tuple>>::value;
+
 struct __invalid_tuple_constraints
 {
   static constexpr bool __implicit_constructible = false;

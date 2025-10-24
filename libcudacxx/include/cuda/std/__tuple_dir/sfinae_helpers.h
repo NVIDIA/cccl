@@ -44,18 +44,6 @@ struct __all_dummy;
 template <bool... _Pred>
 using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
-template <bool _IsTuple, class _SizeTrait, size_t _Expected>
-struct __tuple_like_with_size_imp : false_type
-{};
-
-template <class _SizeTrait, size_t _Expected>
-struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_constant<bool, _SizeTrait::value == _Expected>
-{};
-
-template <class _Tuple, size_t _ExpectedSize, class _RawTuple = remove_cvref_t<_Tuple>>
-using __tuple_like_with_size _CCCL_NODEBUG_ALIAS =
-  __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>, tuple_size<_RawTuple>, _ExpectedSize>;
-
 enum class __smf_availability
 {
   __trivial,
