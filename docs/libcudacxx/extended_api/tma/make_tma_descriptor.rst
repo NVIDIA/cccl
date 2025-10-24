@@ -58,7 +58,7 @@ Defined in the ``<cuda/tma>`` header.
 
     } // namespace cuda
 
-The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor`` or ``DLManagedTensor`` `descriptors <https://dmlc.github.io/dlpack/latest/c_api.html>`__. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
+The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor``. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
 
 The API is available when ``dlpack/dlpack.h`` (`DLPack v1 <https://github.com/dmlc/dlpack>`__) is discovered at compile time.
 
@@ -74,10 +74,13 @@ Parameters
 - ``tensor``: The DLPack tensor describing the logical layout in device memory.
 - ``box_sizes``: Extent of the shared memory tile, one entry per tensor dimension.
 - ``elem_strides``: Stride, in elements, between consecutive accesses inside the shared memory tile. The second overload assumes a stride of ``1`` for every dimension.
-- ``interleave_layout``: *[Optional]* Interleaving applied to the underlying memory.
-- ``swizzle``: *[Optional]* Swizzle pattern matching the chosen interleave layout.
-- ``l2_fetch_size``: *[Optional]* L2 cache promotion for TMA transfers.
-- ``oobfill``: *[Optional]* Out-of-bounds fill policy for floating-point tensors.
+
+*Optional parameters*:
+
+- ``interleave_layout``: Interleaving applied to the underlying memory.
+- ``swizzle``: Swizzle pattern matching the chosen interleave layout.
+- ``l2_fetch_size``: L2 cache promotion for TMA transfers.
+- ``oobfill``: Out-of-bounds fill policy for floating-point tensors.
 
 Return value
 ------------
@@ -94,25 +97,36 @@ Preconditions
 
 **DLPack preconditions**:
 
-* ``tensor.device.device_type`` must be ``kDLCUDA``.
-* ``tensor.device.device_id`` must be a valid GPU device ordinal.
+* ``tensor.device.device_type`` must be ``kDLCUDA`` or ``kDLCUDAManaged``.
+* ``tensor.device.device_id`` must be a valid GPU device ordinal and the device must have Compute Capability 9.0 or newer.
 * ``tensor.ndim`` (rank) must be greater than 0 and less than or equal to 5.
 
-  - ``tensor.ndim`` must not exceed ``3`` when an interleaved layout is requested.
+  - ``tensor.ndim`` must be greater than or equal to ``3`` when an interleaved layout is requested.
 
 * The following data types are accepted for ``tensor.dtype``:
 
-  - ``kDLUInt`` with ``bits == 4`` and ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available. Requires CUDA Toolkit 12.8 and later.
-  - ``kDLUInt`` with ``bits == 8``, namely ``uint8_t``.
-  - ``kDLUInt`` with ``bits == 16``, namely ``uint16_t``.
-  - ``kDLUInt`` with ``bits == 32``, namely ``uint32_t``.
-  - ``kDLUInt`` with ``bits == 64``, namely ``uint64_t``.
-  - ``kDLInt`` with ``bits == 32``, namely ``int32_t``.
-  - ``kDLInt`` with ``bits == 64``, namely ``int64_t``.
-  - ``kDLFloat`` with ``bits == 16``, namely ``__half``.
-  - ``kDLFloat`` with ``bits == 32``, namely ``float``.
-  - ``kDLFloat`` with ``bits == 64``, namely ``double``.
-  - ``kDLBfloat`` with ``bits == 16``, namely ``__nv_bfloat16``.
+  - ``kDLUInt``:
+
+    - ``bits == 4``, ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available. Requires CUDA Toolkit 12.8 and later.
+    - ``bits == 8``, ``lanes == 1``, namely ``uint8_t``.
+    - ``bits == 16``, ``lanes == 1``, namely ``uint16_t``.
+    - ``bits == 32``, ``lanes == 1``, namely ``uint32_t``.
+    - ``bits == 64``, ``lanes == 1``, namely ``uint64_t``.
+
+  - ``kDLInt``
+ 
+    -  ``bits == 32``, ``lanes == 1``, namely ``int32_t``.
+    - ``bits == 64``, ``lanes == 1``, namely ``int64_t``.
+
+  - ``kDLFloat``
+ 
+    - ``bits == 16``, ``lanes == 1``, namely ``__half``.
+    - ``bits == 32``, ``lanes == 1``, namely ``float``.
+    - ``bits == 64``, ``lanes == 1``, namely ``double``.
+
+  - ``kDLBfloat``
+
+    - ``bits == 16``, ``lanes == 1``, namely ``__nv_bfloat16``.
 
 * ``tensor.data`` must be a valid GPU global address and aligned to at least 16 bytes; 32 bytes for ``tma_interleave_layout::bytes32``.
 
@@ -120,9 +134,8 @@ Preconditions
 
 * ``tensor.strides`` must be greater than 0 and not exceed ``2^40`` bytes per dimension.
 
-  - ``tensor.strides[rank - 1]`` must equal ``1``.
-  - The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1]``.
-  - ``tensor.strides`` must be aligned to at least 16 bytes; 32 bytes for ``tma_interleave_layout::bytes32``.
+  - The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1]`` or equal to ``0``.
+  - ``tensor.strides[i]`` in bytes must be a multiple of the alignment (16 or 32 bytes) for the selected ``interleave_layout``.
 
 **User parameter preconditions**:
 
