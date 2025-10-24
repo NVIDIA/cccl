@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/devices>
 #include <cuda/memory>
 #include <cuda/std/cassert>
 
@@ -21,21 +23,26 @@ __device__ __managed__ int managed_ptr2[] = {1, 2, 3, 4};
 int host_ptr5[] = {1, 2, 3, 4};
 
 template <typename Pointer>
-void test_accessible_pointer(Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible)
+void test_accessible_pointer(
+  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible, cuda::device_ref device)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::is_device_accessible(ptr) == is_device_accessible);
+  assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
+  (void) cuda::is_device_accessible(ptr, device);
   assert(cuda::is_managed_pointer(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, void*> && !cuda::std::is_same_v<Pointer, const void*>)
   {
     assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
     assert(cuda::is_device_accessible(ptr + 1) == is_device_accessible);
+    assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
     assert(cuda::is_managed_pointer(ptr + 1) == is_managed_accessible);
   }
 }
 
 bool test()
 {
+  cuda::device_ref dev{0};
   int host_ptr1[] = {1, 2, 3, 4};
   auto host_ptr2  = new int[2];
   int* host_ptr3  = nullptr;
@@ -50,30 +57,63 @@ bool test()
   int* managed_ptr1 = nullptr;
   assert(cudaMallocManaged(&managed_ptr1, sizeof(int) * 2) == cudaSuccess);
 
-  test_accessible_pointer((void*) nullptr, true, true, true);
+  test_accessible_pointer((void*) nullptr, true, true, true, dev);
 
-  test_accessible_pointer(host_ptr1, true, true, true); // memory space cannot be verified for local array
-  test_accessible_pointer(host_ptr2, true, true, true); // memory space cannot be verified for non-cuda malloc
-  test_accessible_pointer(host_ptr3, true, false, false);
-  test_accessible_pointer(host_ptr4, true, false, false);
-  test_accessible_pointer(host_ptr5, true, true, true); // memory space cannot be verified for global array
+  test_accessible_pointer(host_ptr1, true, true, true, dev); // memory space cannot be verified for local array
+  test_accessible_pointer(host_ptr2, true, true, true, dev); // memory space cannot be verified for non-cuda malloc
+  test_accessible_pointer(host_ptr3, true, false, false, dev);
+  test_accessible_pointer(host_ptr4, true, false, false, dev);
+  test_accessible_pointer(host_ptr5, true, true, true, dev); // memory space cannot be verified for global array
 
-  test_accessible_pointer(device_ptr1, false, true, false);
-  test_accessible_pointer(device_ptr2, true, true, true); // memory space cannot be verified for global device array
+  test_accessible_pointer(device_ptr1, false, true, false, dev);
+  test_accessible_pointer(device_ptr2, true, true, true, dev); // memory space cannot be verified for global device
+
   void* device_ptr3 = nullptr;
   assert(cudaGetSymbolAddress(&device_ptr3, device_ptr2) == cudaSuccess);
-  test_accessible_pointer(device_ptr3, false, true, false);
+  test_accessible_pointer(device_ptr3, false, true, false, dev);
 
   const int* const_device_ptr1 = device_ptr1;
-  test_accessible_pointer(const_device_ptr1, false, true, false);
+  test_accessible_pointer(const_device_ptr1, false, true, false, dev);
 
-  test_accessible_pointer(managed_ptr1, true, true, true);
-  test_accessible_pointer(managed_ptr2, true, true, true);
+  test_accessible_pointer(managed_ptr1, true, true, true, dev);
+  test_accessible_pointer(managed_ptr2, true, true, true, dev);
+  return true;
+}
+
+bool test_multiple_devices()
+{
+  if (cuda::devices.size() < 2)
+  {
+    return true;
+  }
+  cuda::device_ref dev0{0};
+  cuda::device_ref dev1{1};
+
+  /// DEVICE 0 CONTEXT
+  int* device_ptr0 = nullptr;
+  assert(cudaMalloc(&device_ptr0, sizeof(int) * 2) == cudaSuccess);
+
+  /// DEVICE 1 CONTEXT
+  cuda::__ensure_current_context ctx1(dev1);
+  assert(cuda::is_device_accessible(device_ptr0) == true);
+  assert(cuda::is_device_accessible(device_ptr0, dev0) == true);
+  assert(cuda::is_device_accessible(device_ptr0, dev1) == false);
+
+  int can_access_peer = 0;
+  assert(cudaDeviceCanAccessPeer(&can_access_peer, dev0.get(), dev1.get()) == cudaSuccess);
+  if (!can_access_peer)
+  {
+    return true;
+  }
+  assert(cudaDeviceEnablePeerAccess(dev1.get(), 0) == cudaSuccess);
+  assert(cuda::is_device_accessible(device_ptr0, dev0) == true);
+  assert(cuda::is_device_accessible(device_ptr0, dev1) == true);
   return true;
 }
 
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, (assert(test());))
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_multiple_devices());))
   return 0;
 }

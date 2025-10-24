@@ -27,9 +27,14 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
    [[nodiscard]] __host__
    bool is_device_accessible(Pointer ptr);
 
+   template <typename Pointer>
+   [[nodiscard]] __host__
+   bool is_device_accessible(Pointer ptr, device_ref device);
+
    } // namespace cuda
 
-Determines whether the memory referenced by ``ptr`` is accessible.
+Determines whether the memory referenced by ``ptr`` is accessible from device code or from the specified ``device``.
+The second form also checks if the memory is peer accessible from the specified ``device``.
 
 ----
 
@@ -46,6 +51,7 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 **Parameters**
 
 - ``ptr``: A contiguous iterator or pointer that denotes the memory location to query.
+- ``device``: A ``device_ref`` object that denotes the device to query.
 
 **Return value**
 
@@ -87,6 +93,7 @@ Example
     #include <cuda_runtime_api.h>
 
     int main() {
+        cuda::device_ref dev{0};
         void* host_ptr    = nullptr;
         void* device_ptr  = nullptr;
         void* managed_ptr = nullptr;
@@ -97,8 +104,10 @@ Example
 
         assert(cuda::is_host_accessible(host_ptr));
         assert(!cuda::is_device_accessible(host_ptr));
+        assert(!cuda::is_device_accessible(host_ptr, dev));
 
         assert(cuda::is_device_accessible(device_ptr));
+        assert(cuda::is_device_accessible(device_ptr, dev));
         assert(!cuda::is_host_accessible(device_ptr));
 
         assert(cuda::is_host_accessible(managed_ptr));
