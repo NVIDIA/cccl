@@ -135,15 +135,14 @@ TEMPLATE_TEST_CASE_METHOD(
   {
     Counts expected{};
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref:
-      cudax::synchronous_resource_ref<::cuda::mr::host_accessible, ::cuda::mr::device_accessible, get_data> ref = mr;
+      cudax::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref = mr;
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref with narrowing:
       cudax::synchronous_resource_ref<cuda::mr::host_accessible, get_data> ref2 = mr;
@@ -167,15 +166,14 @@ TEMPLATE_TEST_CASE_METHOD(
   {
     Counts expected{};
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref:
-      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, ::cuda::mr::device_accessible, get_data> ref = mr;
+      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref = mr;
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref with narrowing:
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref2 = mr;
@@ -234,14 +232,13 @@ TEMPLATE_TEST_CASE_METHOD(
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_synchronous_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible, get_data> mr{
-        TestResource{42, this}};
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, extra_property, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      cudax::any_synchronous_resource<::cuda::mr::device_accessible, get_data> mr2 = mr;
+      cudax::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr2 = mr;
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.copy_count;
@@ -253,7 +250,7 @@ TEMPLATE_TEST_CASE_METHOD(
       CHECK(data.has_value());
       CHECK(data.value() == 42);
 
-      auto host = try_get_property(mr2, ::cuda::mr::host_accessible{});
+      auto host = try_get_property(mr2, extra_property{});
       static_assert(cuda::std::is_same_v<decltype(host), bool>);
       CHECK(host);
 
