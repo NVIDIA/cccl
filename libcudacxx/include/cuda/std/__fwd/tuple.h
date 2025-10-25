@@ -27,6 +27,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class...>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple;
 
+template <class>
+inline constexpr bool __is_tuple_of_iterator_references_v = false;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
