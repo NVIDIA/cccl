@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/ffs.h>
 #include <cuda/__fwd/barrier.h>
 #include <cuda/__fwd/barrier_native_handle.h>
 #if _CCCL_CUDA_COMPILATION()
@@ -169,7 +170,7 @@ public:
         unsigned int __active  = __activeA & __activeB;
         int __inc              = ::cuda::std::popcount(__active) * __update;
 
-        int __leader = ::__ffs(__active) - 1;
+        int __leader = ::cuda::ffs(__active) - 1;
         // All threads in mask synchronize here, establishing cummulativity to the __leader:
         ::__syncwarp(__mask);
         if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid())) {
