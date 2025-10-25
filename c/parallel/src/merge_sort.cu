@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_merge_sort.cuh>
 
 #include <format>
@@ -19,7 +20,6 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/tuning.h"
 #include "util/types.h"
 #include <cccl/c/merge_sort.h>
@@ -279,7 +279,13 @@ CUresult cccl_device_merge_sort_build_ex(
 
     const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
-    constexpr std::string_view src_template = R"XXX(
+    std::string policy_hub_expr =
+      std::format("cub::detail::merge_sort::policy_hub<{}>",
+                  get_iterator_name(input_keys_it, merge_sort::merge_sort_iterator_t::input_keys));
+
+    std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/device/dispatch/kernels/merge_sort.cuh>
 #include <cub/util_type.cuh> // needed for cub::NullType
 struct __align__({1}) storage_t {{
@@ -293,48 +299,8 @@ struct __align__({3}) items_storage_t {{
 {6}
 {7}
 {8}
-)XXX";
+using device_merge_sort_policy = {9}::MaxPolicy;
 
-    const std::string src = std::format(
-      src_template,
-      input_keys_it.value_type.size, // 0
-      input_keys_it.value_type.alignment, // 1
-      input_items_it.value_type.size, // 2
-      input_items_it.value_type.alignment, // 3
-      input_keys_iterator_src, // 4
-      input_items_iterator_src, // 5
-      output_keys_iterator_src, // 6
-      output_items_iterator_src, // 7
-      op_src); // 8
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    std::vector<const char*> ptx_args = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    cccl::detail::extend_args_with_build_config(ptx_args, config);
-
-    std::string policy_hub_expr =
-      std::format("cub::detail::merge_sort::policy_hub<{}>",
-                  get_iterator_name(input_keys_it, merge_sort::merge_sort_iterator_t::input_keys));
-
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::merge_sort::MakeMergeSortPolicyWrapper({}::MaxPolicy::ActivePolicy{{}})",
-                  policy_hub_expr),
-      "#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>\n" + src,
-      ptx_args);
-
-    using cub::detail::RuntimeMergeSortAgentPolicy;
-    auto [ms_policy, ms_policy_str] = RuntimeMergeSortAgentPolicy::from_json(runtime_policy, "MergeSortPolicy");
-
-    std::string final_src = std::format(
-      R"XXX(
-{0}
-struct device_merge_sort_policy {{
-  struct ActivePolicy {{
-    {1}
-  }};
-}};
 struct device_merge_sort_vsmem_helper {{
   template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
   struct MergeSortVSMemHelperT {{
@@ -357,9 +323,23 @@ struct device_merge_sort_vsmem_helper {{
     }}
   }};
 }};
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_merge_sort_policy")>()
+    = cub::detail::merge_sort::MergeSortPolicyWrapper<device_merge_sort_policy::ActivePolicy>::EncodedPolicy();
+}}
 )XXX",
-      src,
-      ms_policy_str);
+      input_keys_it.value_type.size, // 0
+      input_keys_it.value_type.alignment, // 1
+      input_items_it.value_type.size, // 2
+      input_items_it.value_type.alignment, // 3
+      input_keys_iterator_src, // 4
+      input_items_iterator_src, // 5
+      output_keys_iterator_src, // 6
+      output_items_iterator_src, // 7
+      op_src, // 8
+      policy_hub_expr); // 9
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -379,7 +359,16 @@ struct device_merge_sort_vsmem_helper {{
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -415,6 +404,12 @@ struct device_merge_sort_vsmem_helper {{
       cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_merge_sort_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeMergeSortAgentPolicy;
+    auto ms_policy = RuntimeMergeSortAgentPolicy::from_json(runtime_policy, "MergeSortPolicy");
 
     build_ptr->cc             = cc;
     build_ptr->cubin          = (void*) result.data.release();

@@ -40,17 +40,17 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::ptx_json
 {
-inline nlohmann::json parse(std::string_view tag, std::string_view ptx_stream)
+inline nlohmann::json parse(std::string_view tag, std::span<const char> cubin)
 {
-  auto const open_tag      = std::format("cccl.ptx_json.begin({})", tag);
-  auto const open_location = std::ranges::search(ptx_stream, open_tag);
+  auto const open_tag      = std::format("cccl.ptx_json.begin(\"{}\")", tag);
+  auto const open_location = std::ranges::search(cubin, open_tag);
   if (std::ranges::size(open_location) != open_tag.size())
   {
     return nullptr;
   }
 
-  auto const close_tag      = std::format("cccl.ptx_json.end({})", tag);
-  auto const close_location = std::ranges::search(ptx_stream, close_tag);
+  auto const close_tag      = std::format("cccl.ptx_json.end(\"{}\")", tag);
+  auto const close_location = std::ranges::search(cubin, close_tag);
   if (std::ranges::size(close_location) != close_location.size())
   {
     return nullptr;

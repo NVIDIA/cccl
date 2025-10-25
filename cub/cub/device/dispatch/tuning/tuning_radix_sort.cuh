@@ -280,7 +280,7 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  16, 8> : sm
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -304,23 +304,23 @@ struct RadixSortPolicyWrapper<
                       typename StaticPolicyT::SegmentedPolicy,
                       typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr bool IsOnesweep()
+  _CCCL_HOST_DEVICE static constexpr bool IsOnesweep()
   {
     return StaticPolicyT::ONESWEEP;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int RadixBits(PolicyT /*policy*/)
   {
     return PolicyT::RADIX_BITS;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -358,7 +358,7 @@ struct RadixSortPolicyWrapper<
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
