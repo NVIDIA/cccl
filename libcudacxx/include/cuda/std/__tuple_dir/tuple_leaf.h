@@ -320,8 +320,7 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(is_assignable_v<_Hp&, const _Tp&>)
+  template <class _Tp, enable_if_t<is_assignable_v<_Hp&, const _Tp&>, int> = 0>
   _CCCL_API inline __tuple_leaf& operator=(const _Tp& __t) noexcept(is_nothrow_assignable_v<_Hp&, const _Tp&>)
   {
     _Hp::operator=(__t);
@@ -329,8 +328,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(is_assignable_v<_Hp&, _Tp>)
+  template <class _Tp, enable_if_t<is_assignable_v<_Hp&, _Tp>, int> = 0>
   _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
     _Hp::operator=(::cuda::std::forward<_Tp>(__t));
