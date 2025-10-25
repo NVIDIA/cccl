@@ -45,7 +45,6 @@ The function performs the following operations:
 
   - GCC/Clang: ``__builtin_ffs`` / ``__builtin_ffsll``
   - MSVC: ``_BitScanForward`` / ``_BitScanForward64``
-  - Other: Portable constexpr loop implementation
 
 Example
 -------
