@@ -110,6 +110,7 @@ template <typename _Tp>
   }
 }
 
+
 #endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_TEMPLATE(typename _Tp)
