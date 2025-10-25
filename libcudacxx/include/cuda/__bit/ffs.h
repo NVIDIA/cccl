@@ -97,6 +97,7 @@ template <typename _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 
+
 template <typename _Tp>
 [[nodiscard]] _CCCL_DEVICE_API int __ffs_impl_device(_Tp __v) noexcept
 {
