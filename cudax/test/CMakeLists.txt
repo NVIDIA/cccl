@@ -36,7 +36,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
-    cudart
+    CUDA::cudart
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -75,8 +75,14 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     binutils/demangle.cu
   )
   target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
-  # Ensure we are not mixing static and dynamic runtimes with msvc
-  target_compile_options(${test_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:-Xcompiler /MT>)
+  # cu++filt is static only library compiled with msvc static runtime, which means we need to use static rutnime, too
+  if (MSVC)
+    get_target_property(link_libs ${test_target} LINK_LIBRARIES)
+    list(REMOVE_ITEM link_libs CUDA::cudart)
+    list(APPEND link_libs CUDA::cudart_static)
+    set_target_properties(${test_target} LINK_LIBRARIES ${link_libs})
+    target_compile_options(${test_target} PRIVATE -Xcompiler /MT)
+  endif()
 
   cudax_add_catch2_test(test_target launch ${cn_target}
     launch/launch_smoke.cu
