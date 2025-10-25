@@ -19,6 +19,7 @@
 #include <format>
 #include <fstream>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <tuple>
