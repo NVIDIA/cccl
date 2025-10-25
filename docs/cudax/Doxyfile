@@ -107,6 +107,7 @@ PREDEFINED = \
     "_CCCL_END_NAMESPACE_CUDA_STD=}" \
     "_CCCL_CATCH=catch" \
     "_CCCL_CATCH_ALL=catch (...)" \
+    "_CCCL_CATCH_FALLTHROUGH=" \
     "_CCCL_CONSTEXPR_FRIEND=friend " \
     "_CCCL_CTK_AT_LEAST(x, y)=1" \
     "_CCCL_CTK_BELOW(x, y)=0" \
