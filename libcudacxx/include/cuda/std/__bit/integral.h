@@ -22,7 +22,6 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
-#  include <cuda/__bit/ffs.h>
 #  include <cuda/__ptx/instructions/bfind.h>
 #  include <cuda/__ptx/instructions/shl.h>
 #  include <cuda/__ptx/instructions/shr.h>

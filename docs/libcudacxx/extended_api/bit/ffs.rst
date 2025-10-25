@@ -3,11 +3,17 @@
 ``cuda::ffs``
 =============
 
+Defined in the ``<cuda/bit>`` header.
+
 .. code:: cpp
 
-   template <typename T>
-   [[nodiscard]] constexpr int
-   ffs(T value) noexcept;
+   namespace cuda {
+
+   template <class T>
+   [[nodiscard]] __host__ __device__ constexpr
+   int ffs(T value) noexcept;
+
+   } // namespace cuda
 
 The function finds the first (least significant) set bit in ``value`` and returns its 1-based index. If ``value`` is 0, returns 0.
 
@@ -21,7 +27,7 @@ The function finds the first (least significant) set bit in ``value`` and return
 
 **Constraints**
 
-- ``T`` is an unsigned integer type.
+- ``T`` must be an unsigned integer type. Supported types include all standard unsigned integer types and ``__uint128_t`` when available.
 
 **Relationship with other functions**
 
@@ -33,19 +39,13 @@ The function performs the following operations:
 
 - Device:
 
-  - ``uint8_t``, ``uint16_t``, ``uint32_t``: ``FFS``
-  - ``uint64_t``: ``FFSLL``
-  - ``uint128_t``: ``FFSLL`` x2 with conditional logic
+  - ``uint8_t``, ``uint16_t``, ``uint32_t``: ``BREV``, ``FLO``, ``IADD3``
 
 - Host:
 
   - GCC/Clang: ``__builtin_ffs`` / ``__builtin_ffsll``
   - MSVC: ``_BitScanForward`` / ``_BitScanForward64``
   - Other: Portable constexpr loop implementation
-
-.. note::
-
-    The function is guaranteed to be ``constexpr`` on all platforms, allowing compile-time evaluation when the input is a constant expression.
 
 Example
 -------
