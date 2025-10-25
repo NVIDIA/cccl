@@ -27,6 +27,7 @@
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/pair.h>
 
 #  include <cuda.h>
 
@@ -822,6 +823,37 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return __id;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::pair<::CUtensorMap, ::cudaError_t> __tensorMapEncodeTiledNoThrow(
+  ::CUtensorMapDataType __tensorDataType,
+  ::cuda::std::uint32_t __tensorRank,
+  void* __globalAddress,
+  const ::cuda::std::uint64_t* __globalDim,
+  const ::cuda::std::uint64_t* __globalStrides,
+  const ::cuda::std::uint32_t* __boxDim,
+  const ::cuda::std::uint32_t* __elementStrides,
+  ::CUtensorMapInterleave __interleave,
+  ::CUtensorMapSwizzle __swizzle,
+  ::CUtensorMapL2promotion __l2Promotion,
+  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
+  ::CUtensorMap __tensorMap{};
+  const auto __status = static_cast<::cudaError_t>(__driver_fn(
+    &__tensorMap,
+    __tensorDataType,
+    __tensorRank,
+    __globalAddress,
+    __globalDim,
+    __globalStrides,
+    __boxDim,
+    __elementStrides,
+    __interleave,
+    __swizzle,
+    __l2Promotion,
+    __oobFill));
+  return ::cuda::std::pair<::CUtensorMap, ::cudaError_t>{__tensorMap, __status};
+}
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED
