@@ -93,6 +93,7 @@ template <typename _Tp>
   return ::cuda::__ffs_impl_constexpr(__v);
 #  endif // _CCCL_COMPILER(MSVC)
 }
+
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_CUDA_COMPILATION()
