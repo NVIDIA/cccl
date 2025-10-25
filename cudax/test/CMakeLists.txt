@@ -1,6 +1,13 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit)
+
+# Find the cu++filt library.
+find_library(cudax_cufilt_lib "cufilt" PATHS "${CUDAToolkit_LIBRARY_DIR}" NO_DEFAULT_PATH)
+if (NOT cudax_cufilt_lib)
+  message(FATAL_ERROR "cudax: cu++filt library (libcufilt.a) not found.")
+endif()
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -29,7 +36,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
-    cudart
+    CUDA::cudart
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -63,6 +70,19 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     hierarchy/hierarchy_smoke.cu
     hierarchy/hierarchy_custom_types.cu
   )
+
+  cudax_add_catch2_test(test_target binutils_demangle ${cn_target}
+    binutils/demangle.cu
+  )
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+  # cu++filt is static only library compiled with msvc static runtime, which means we need to use static rutnime, too
+  if (MSVC)
+    get_target_property(link_libs ${test_target} LINK_LIBRARIES)
+    list(REMOVE_ITEM link_libs CUDA::cudart)
+    list(APPEND link_libs CUDA::cudart_static)
+    set_target_properties(${test_target} PROPERTIES LINK_LIBRARIES "${link_libs}")
+    target_compile_options(${test_target} PRIVATE -Xcompiler /MT)
+  endif()
 
   cudax_add_catch2_test(test_target launch ${cn_target}
     launch/launch_smoke.cu
