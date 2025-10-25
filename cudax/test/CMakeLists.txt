@@ -76,13 +76,13 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
   target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
   # cu++filt is static only library compiled with msvc static runtime, which means we need to use static rutnime, too
-  # if (MSVC)
+  if (MSVC)
     get_target_property(link_libs ${test_target} LINK_LIBRARIES)
     list(REMOVE_ITEM link_libs CUDA::cudart)
     list(APPEND link_libs CUDA::cudart_static)
     set_target_properties(${test_target} PROPERTIES LINK_LIBRARIES "${link_libs}")
     target_compile_options(${test_target} PRIVATE -Xcompiler /MT)
-  # endif()
+  endif()
 
   cudax_add_catch2_test(test_target launch ${cn_target}
     launch/launch_smoke.cu
