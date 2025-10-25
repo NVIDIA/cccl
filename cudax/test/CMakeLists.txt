@@ -80,7 +80,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     get_target_property(link_libs ${test_target} LINK_LIBRARIES)
     list(REMOVE_ITEM link_libs CUDA::cudart)
     list(APPEND link_libs CUDA::cudart_static)
-    set_target_properties(${test_target} LINK_LIBRARIES ${link_libs})
+    set_target_properties(${test_target} PROPERTIES LINK_LIBRARIES ${link_libs})
     target_compile_options(${test_target} PRIVATE -Xcompiler /MT)
   endif()
 
