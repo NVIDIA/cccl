@@ -64,7 +64,6 @@ template <typename _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 
-
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API int __ffs_impl_host(_Tp __v) noexcept
 {
@@ -98,7 +97,6 @@ template <typename _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 
-
 template <typename _Tp>
 [[nodiscard]] _CCCL_DEVICE_API int __ffs_impl_device(_Tp __v) noexcept
 {
@@ -111,7 +109,6 @@ template <typename _Tp>
     return ::__ffsll(static_cast<long long>(__v));
   }
 }
-
 
 #endif // _CCCL_CUDA_COMPILATION()
 
