@@ -59,14 +59,45 @@ Example
 
    __device__ alignas(16) int gmem_x[2048];
 
+   __device__ inline bool elect_one() {
+     const unsigned int tid = threadIdx.x;
+     const unsigned int warp_id = tid / 32;
+     const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
+     return (uniform_warp_id == 0 && cuda::ptx::elect_sync(0xFFFFFFFF)); // elect a leader thread among warp 0
+   }
+
    __global__ void example_kernel() {
      alignas(16) __shared__ int smem_x[1024];
+     #pragma nv_diag_suppress static_var_with_dynamic_init
      __shared__ cuda::barrier<cuda::thread_scope_block> bar;
+
+     // setup the mbarrier
      if (threadIdx.x == 0) {
        init(&bar, blockDim.x);
      }
      __syncthreads();
 
+     // issue the async copy from a single thread and wait for completion
+     const bool is_block_leader = elect_one();
+     const int tx_count = is_block_leader ? sizeof(smem_x) : 0;
+     if (is_block_leader) {
+       cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(tx_count), bar);
+     }
+     auto token = cuda::device::barrier_arrive_tx(bar, 1, tx_count);
+     bar.wait(cuda::std::move(token));
+
+     // smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
+     smem_x[threadIdx.x] += 1;
+   }
+
+`See it on Godbolt <https://godbolt.org/z/M8zqnrz9b>`_
+
+We previously recommended the following pattern to launch the async copy from a single thread
+and wait for its completion, but it's less efficient than the above pattern:
+
+.. code:: cuda
+
+     // LESS EFFICIENT: issue the async copy from a single thread and wait for completion
      barrier::arrival_token token;
      if (threadIdx.x == 0) {
        cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
@@ -76,8 +107,6 @@ Example
      }
      bar.wait(cuda::std::move(token));
 
-     // smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
-     smem_x[threadIdx.x] += 1;
-   }
-
-`See it on Godbolt <https://godbolt.org/z/no86Kaazb>`_
+This generates worse code, since it branches the program for the barrier arrival
+(the elected thread arrives in a different code path and the rest).
+Please use the better pattern shown in the main example above.
