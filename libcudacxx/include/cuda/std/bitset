@@ -799,18 +799,10 @@ public:
     return *this;
   }
 
-  // element access:
-#ifdef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
-  _CCCL_API constexpr bool operator[](size_t __p) const
-  {
-    return base::__make_ref(__p);
-  }
-#else
   _CCCL_API constexpr const_reference operator[](size_t __p) const
   {
     return base::__make_ref(__p);
   }
-#endif
   _CCCL_API constexpr reference operator[](size_t __p)
   {
     return base::__make_ref(__p);
