@@ -1,6 +1,13 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit)
+
+# Find the cu++filt library.
+find_library(cudax_cufilt_lib "cufilt" PATHS "${CUDAToolkit_LIBRARY_DIR}" NO_DEFAULT_PATH)
+if (NOT cudax_cufilt_lib)
+  message(FATAL_ERROR "cudax: cu++filt library (libcufilt.a) not found.")
+endif()
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -63,6 +70,13 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     hierarchy/hierarchy_smoke.cu
     hierarchy/hierarchy_custom_types.cu
   )
+
+  cudax_add_catch2_test(test_target binutils_demangle ${cn_target}
+    binutils/demangle.cu
+  )
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+  # Ensure we are not mixing static and dynamic runtimes with msvc
+  target_compile_options(${test_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:-Xcompiler /MT>)
 
   cudax_add_catch2_test(test_target launch ${cn_target}
     launch/launch_smoke.cu
