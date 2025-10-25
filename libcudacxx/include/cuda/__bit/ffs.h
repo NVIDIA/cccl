@@ -64,6 +64,7 @@ template <typename _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 
+
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API int __ffs_impl_host(_Tp __v) noexcept
 {
