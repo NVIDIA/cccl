@@ -97,7 +97,12 @@ struct three_way_partition_result_t
       , unselected(num_items)
   {}
   explicit three_way_partition_result_t(
-    std::vector<T> first, std::vector<T> second, std::vector<T> unselected, std::size_t n_first, std::size_t n_second, std::size_t n_unselected)
+    std::vector<T> first,
+    std::vector<T> second,
+    std::vector<T> unselected,
+    std::size_t n_first,
+    std::size_t n_second,
+    std::size_t n_unselected)
       : first_part(std::move(first))
       , second_part(std::move(second))
       , unselected(std::move(unselected))
