@@ -536,7 +536,11 @@ C2H_TEST("Transform works with floating point types", "[transform]", floating_po
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
   const std::vector<int> int_input = generate<int>(num_items);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);

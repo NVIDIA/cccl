@@ -623,7 +623,11 @@ C2H_TEST("segmented_reduce can work with floating point types",
   constexpr std::size_t row_size = n_cols;
 
   const std::vector<int> int_input = generate<int>(n_elems);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   std::vector<T> output(n_rows, 0);
 
   pointer_t<T> input_ptr(input); // copy from host to device
