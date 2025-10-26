@@ -505,7 +505,7 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   REQUIRE(first_part_output == std_result.first_part);
   REQUIRE(second_part_output == std_result.second_part);
   REQUIRE(unselected_output == std_result.unselected);
-  REQUIRE(num_selected[0] == std_result.num_items_in_first_part);
-  REQUIRE(num_selected[1] == std_result.num_items_in_second_part);
-  REQUIRE(static_cast<int>(num_items) - num_selected[0] - num_selected[1] == std_result.num_unselected_items);
+  REQUIRE(static_cast<std::size_t>(num_selected[0]) == std_result.num_items_in_first_part);
+  REQUIRE(static_cast<std::size_t>(num_selected[1]) == std_result.num_items_in_second_part);
+  REQUIRE(num_items - static_cast<std::size_t>(num_selected[0] - num_selected[1]) == std_result.num_unselected_items);
 }
