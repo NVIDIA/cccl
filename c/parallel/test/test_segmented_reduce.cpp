@@ -604,15 +604,18 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
   REQUIRE(host_actual == host_output);
 }
 
-struct SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag;
-C2H_TEST_LIST("segmented_reduce can work with floating point types",
-              "[segmented_reduce]",
+using fp_test_types = c2h::type_list<
 #if _CCCL_HAS_NVFP16()
-              __half,
+__half,
 #endif
-              float,
-              double)
+float, double
+>;
+struct SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag;
+C2H_TEST("segmented_reduce can work with floating point types",
+          "[segmented_reduce]", fp_test_types)
 {
+  using T = c2h::get<0, TestType>;
+
   constexpr std::size_t n_rows = 13;
   constexpr std::size_t n_cols = 12;
 
@@ -620,11 +623,11 @@ C2H_TEST_LIST("segmented_reduce can work with floating point types",
   constexpr std::size_t row_size = n_cols;
 
   const std::vector<int> int_input = generate<int>(n_elems);
-  const std::vector<TestType> input(int_input.begin(), int_input.end());
-  std::vector<TestType> output(n_rows, 0);
+  const std::vector<T> input(int_input.begin(), int_input.end());
+  std::vector<T> output(n_rows, 0);
 
-  pointer_t<TestType> input_ptr(input); // copy from host to device
-  pointer_t<TestType> output_ptr(output); // copy from host to device
+  pointer_t<T> input_ptr(input); // copy from host to device
+  pointer_t<T> output_ptr(output); // copy from host to device
 
   using SizeT                                     = unsigned long long;
   static constexpr std::string_view index_ty_name = "unsigned long long";
@@ -659,11 +662,11 @@ C2H_TEST_LIST("segmented_reduce can work with floating point types",
   end_offset_it.state.linear_id = 1;
   end_offset_it.state.row_size  = row_size;
 
-  operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
-  value_t<TestType> init{0};
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  value_t<T> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag>();
-  const auto& test_key = make_key<TestType>();
+  const auto& test_key = make_key<T>();
 
   segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
@@ -675,7 +678,7 @@ C2H_TEST_LIST("segmented_reduce can work with floating point types",
     std::size_t row_offset = i * row_size;
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
-  REQUIRE(output == std::vector<TestType>(output_ptr));
+  REQUIRE(output == std::vector<T>(output_ptr));
 }
 
 template <typename ValueT>
