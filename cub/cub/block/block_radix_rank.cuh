@@ -709,14 +709,15 @@ public:
     // Each warp will strip-mine its section of input, one strip at a time
 
     volatile DigitCounterT* digit_counters[KEYS_PER_THREAD];
-    ::cuda::std::uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
-    ::cuda::std::uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
+    using ::cuda::std::uint32_t;
+    uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
+    uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
     {
       // My digit
-      ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
+      uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
       if (IsDescending)
       {
