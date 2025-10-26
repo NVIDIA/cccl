@@ -29,28 +29,54 @@ Most CUB device-wide algorithms follow a two-phase usage pattern:
 
 Example pattern:
 
-.. code-block:: c++
-
-   // Determine temporary storage requirements
-   void* d_temp_storage = nullptr;
-   size_t temp_storage_bytes = 0;
-
-   cub::DeviceReduce::Sum(
-     d_temp_storage, temp_storage_bytes,
-     nullptr, nullptr, num_items);  // Input/output pointers can be null
-
-   // Allocate temporary storage
-   cudaMalloc(&d_temp_storage, temp_storage_bytes);
-
-   // Run the actual algorithm with real pointers
-   cub::DeviceReduce::Sum(
-     d_temp_storage, temp_storage_bytes,
-     d_in, d_out, num_items);
+.. literalinclude:: ../../../cub/examples/device/example_device_reduce.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin temp-storage-query
+   :end-before: example-end temp-storage-query
 
 **Single-Phase API** (Environment-Based)
 
-Some algorithms provide environment-based overloads that eliminate the two-phase call pattern.
-These APIs accept an execution environment parameter. See the individual algorithm documentation for availability.
+Environment-based overloads are being rolled out across CUB's device-wide primitives (rollout in progress).
+They eliminate explicit temporary-storage management, which in turn removes:
+
+- the two-phase query/execute call sequence, and
+- the two legacy storage arguments at the beginning of each API.
+
+Key properties of the execution environment argument:
+
+- It is the last parameter and is defaulted (you can omit it entirely).
+- You can specify the CUDA stream via the environment.
+- You can select the memory resource (CCCL-provided or a custom resource) that backs internal allocations.
+- For some algorithms, you can request determinism requirements (e.g., gpu-to-gpu) via the environment.
+- Multiple properties can be provided simultaneously in a single, centralized argument.
+
+Example (centralized control via a single environment argument):
+
+.. code-block:: c++
+
+   #include <cub/cub.cuh>
+   #include <cuda/std/execution>
+   #include <cuda/stream_ref>
+   #include <cuda/__memory_resource/get_memory_resource.h>
+   #include <cuda/__execution/determinism.h>
+
+   // Build an execution environment with stream, memory resource, and determinism
+   cudaStream_t stream = /* ... */;
+   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
+
+   auto mr = /* CCCL-provided or user-defined device_memory_resource */;
+   auto mr_env = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+
+   auto det_env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+
+   auto env = cuda::std::execution::env{stream_env, mr_env, det_env};
+
+   // Single-phase API (no explicit temp storage, environment last and defaulted)
+   cub::DeviceReduce::Reduce(d_in, d_out, num_items, cuda::std::plus<>{}, init, env);
+
+This page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
+availability and specifics of single-phase overloads.
 
 CUB device-level single-problem parallel algorithms:
 
@@ -62,7 +88,7 @@ CUB device-level single-problem parallel algorithms:
 * :cpp:struct:`cub::DeviceMergeSort` sorts items residing within device-accessible memory
 * :cpp:struct:`cub::DeviceRadixSort` sorts items residing within device-accessible memory using radix sorting method
 * :cpp:struct:`cub::DeviceReduce` computes reduction of items residing within device-accessible memory
-* :cpp:struct:`cub::DeviceRunLengthEncode` demarcating "runs" of same-valued items withing a sequence residing within device-accessible memory
+* :cpp:struct:`cub::DeviceRunLengthEncode` demarcating "runs" of same-valued items within a sequence residing within device-accessible memory
 * :cpp:struct:`cub::DeviceScan` computes a prefix scan across a sequence of data items residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSelect` compacts data residing within device-accessible memory
 
