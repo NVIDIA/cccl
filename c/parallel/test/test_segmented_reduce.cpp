@@ -606,13 +606,12 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
 
 using fp_test_types = c2h::type_list<
 #if _CCCL_HAS_NVFP16()
-__half,
+  __half,
 #endif
-float, double
->;
+  float,
+  double>;
 struct SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag;
-C2H_TEST("segmented_reduce can work with floating point types",
-          "[segmented_reduce]", fp_test_types)
+C2H_TEST("segmented_reduce can work with floating point types", "[segmented_reduce]", fp_test_types)
 {
   using T = c2h::get<0, TestType>;
 
