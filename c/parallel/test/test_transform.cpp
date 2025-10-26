@@ -109,7 +109,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
     return;
   }
 
-  cccl_device_transform_build_result_t build;
+  cccl_device_transform_build_result_t build{};
   operation_t op = make_operation("op", get_unary_op(get_type_info<int>().type));
   REQUIRE(
     CUDA_SUCCESS
