@@ -401,7 +401,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
     return static_cast<int_item_t>(key);
   });
 
-  std::vector<key_t> expected_keys   = input_keys;
+  std::vector<key_t> expected_keys       = input_keys;
   std::vector<int_item_t> expected_items = input_items;
 
   pointer_t<key_t> input_keys_ptr(input_keys);
