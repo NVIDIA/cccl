@@ -115,12 +115,19 @@ inline std::string compile(const std::string& source)
 template <class T>
 std::vector<T> generate(std::size_t num_items)
 {
+  // Add support for 8-bit ints, otherwise MSVC fails with:
+  // error C2338: static_assert failed:
+  //   'invalid template argument for uniform_int_distribution:
+  //     N4950 [rand.req.genl]/1.5 requires one of
+  //       short, int, long, long long,
+  //       unsigned short, unsigned int, unsigned long, or unsigned long long'
+  using dist_type = std::conditional_t<sizeof(T) == 1, short, T>;
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::uniform_int_distribution<T> dist{T{1}, T{42}};
+  std::uniform_int_distribution<dist_type> dist{dist_type{1}, dist_type{42}};
   std::vector<T> vec(num_items);
   std::generate(vec.begin(), vec.end(), [&]() {
-    return dist(mersenne_engine);
+    return static_cast<T>(dist(mersenne_engine));
   });
   return vec;
 }
