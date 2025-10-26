@@ -526,7 +526,7 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
     auto inp_ = generate<int>(n_elems);
     for (auto&& el : inp_)
     {
-      host_input.push_back(el);
+      host_input.push_back(static_cast<ValueT>(el));
     }
   }
   std::vector<ValueT> host_output(n_cols, 0);

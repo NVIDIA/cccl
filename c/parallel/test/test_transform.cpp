@@ -254,10 +254,12 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus on unsigned type
   std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
     return -x;
   });
-
+  _CCCL_DIAG_POP
   if (num_items > 0)
   {
     REQUIRE(expected == std::vector<T>(output_ptr));

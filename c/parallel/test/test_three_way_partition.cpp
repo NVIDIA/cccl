@@ -91,13 +91,13 @@ template <typename T>
 struct three_way_partition_result_t
 {
   three_way_partition_result_t() = delete;
-  explicit three_way_partition_result_t(int num_items)
+  explicit three_way_partition_result_t(std::size_t num_items)
       : first_part(num_items)
       , second_part(num_items)
       , unselected(num_items)
   {}
   explicit three_way_partition_result_t(
-    std::vector<T> first, std::vector<T> second, std::vector<T> unselected, int n_first, int n_second, int n_unselected)
+    std::vector<T> first, std::vector<T> second, std::vector<T> unselected, std::size_t n_first, std::size_t n_second, std::size_t n_unselected)
       : first_part(std::move(first))
       , second_part(std::move(second))
       , unselected(std::move(unselected))
@@ -110,9 +110,9 @@ struct three_way_partition_result_t
   std::vector<T> second_part;
   std::vector<T> unselected;
 
-  int num_items_in_first_part{};
-  int num_items_in_second_part{};
-  int num_unselected_items{};
+  std::size_t num_items_in_first_part{};
+  std::size_t num_items_in_second_part{};
+  std::size_t num_unselected_items{};
 
   bool operator==(const three_way_partition_result_t<T>& other) const
   {
