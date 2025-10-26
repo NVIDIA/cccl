@@ -28,7 +28,9 @@ target_include_directories(cccl.c2h PUBLIC "${C2H_SOURCE_DIR}/include")
 target_link_libraries(cccl.c2h PUBLIC
   CCCL::CCCL
   Catch2::Catch2
+  cccl.compiler_interface_cpp20
 )
+cccl_configure_target(cccl.c2h DIALECT 20)
 
 if (C2H_ENABLE_CURAND)
   target_link_libraries(cccl.c2h PRIVATE CUDA::curand)
