@@ -8,7 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <array>
 #include <cstdint>
+#include <vector>
 
 #include <cuda_runtime.h>
 
