@@ -506,8 +506,8 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
 {
   _CCCL_ASSERT(__attrs.size() == __results.size(), "size mismatch in __pointerGetAttributesNoThrow");
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
-  return static_cast<::cudaError_t>(
-    __driver_fn(__attrs.size(), __attrs.data(), __results.data(), reinterpret_cast<::CUdeviceptr>(__ptr)));
+  return static_cast<::cudaError_t>(__driver_fn(
+    static_cast<unsigned>(__attrs.size()), __attrs.data(), __results.data(), reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
 
 // Stream management
