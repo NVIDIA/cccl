@@ -202,10 +202,6 @@ template <class... Types>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class... _Tp, class _Alloc>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator<tuple<_Tp...>, _Alloc> : true_type
-{};
-
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
