@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -178,12 +178,12 @@ struct __tuple_constraints
   static constexpr bool __explicit_default_constructible = __default_constructible && !__implicit_default_constructible;
 
   static constexpr bool __implicit_variadic_copy_constructible =
-    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>
-    && __tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>;
+    __tuple_constructible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>
+    && __tuple_convertible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>;
 
   static constexpr bool __explicit_variadic_copy_constructible =
-    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>
-    && !__tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>;
+    __tuple_constructible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>
+    && !__tuple_convertible<__tuple_types<const _Tp&...>, __tuple_types<_Tp...>>;
 
   static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
 
@@ -200,13 +200,15 @@ struct __tuple_constraints
   template <class... _Args>
   struct __variadic_constraints
   {
-    static constexpr bool __constructible = __tuple_constructible<tuple<_Args...>, tuple<_Tp...>>;
+    static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>> && __tuple_convertible<tuple<_Args...>, tuple<_Tp...>>;
+      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
+      && __tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>> && !__tuple_convertible<tuple<_Args...>, tuple<_Tp...>>;
+      __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>
+      && !__tuple_convertible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
 
     static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Tp, _Args> && ...);
   };
@@ -215,24 +217,26 @@ struct __tuple_constraints
   struct __variadic_constraints_less_rank
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && __tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && __tuple_types_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      && __tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      && __tuple_types_all_default_constructible_v<
+        __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && !__tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && __tuple_types_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+      __tuple_constructible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      && !__tuple_convertible<__tuple_types<_Args...>, __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Args)>>
+      && __tuple_types_all_default_constructible_v<
+        __make_tuple_types_t<__tuple_types<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
   };
 
   template <class _Tuple>
   struct __valid_tuple_like_constraints
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>> && __tuple_convertible<_Tuple, tuple<_Tp...>>;
+      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && __tuple_convertible<_Tuple, __tuple_types<_Tp...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>> && !__tuple_convertible<_Tuple, tuple<_Tp...>>;
+      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && !__tuple_convertible<_Tuple, __tuple_types<_Tp...>>;
   };
 
   template <class _Tuple>
@@ -254,11 +258,11 @@ struct __tuple_constraints
     using _PreferTupleLikeConstructor = _PreferTupleLikeConstructorImpl<_Tuple2>;
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>> && __tuple_convertible<_Tuple, tuple<_Tp...>>
+      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && __tuple_convertible<_Tuple, __tuple_types<_Tp...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>> && !__tuple_convertible<_Tuple, tuple<_Tp...>>
+      __tuple_constructible<_Tuple, __tuple_types<_Tp...>> && !__tuple_convertible<_Tuple, __tuple_types<_Tp...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
   };
 
