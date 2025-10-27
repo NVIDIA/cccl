@@ -72,11 +72,11 @@ find_package(CUDAToolkit REQUIRED)
 # target_name_var: Variable name to overwrite with the name of the example
 #   target. Useful for post-processing target information.
 # source: The source file for the example.
-# cn_target: The reference cudax target with configuration information.
+# cudax_target: The reference cudax target with configuration information.
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_example target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+function(cudax_add_stf_example target_name_var source cudax_target)
+  cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   get_filename_component(dir ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
@@ -89,9 +89,10 @@ function(cudax_add_stf_example target_name_var source cn_target)
 
   add_executable(${example_target} ${source})
   cccl_configure_target(${example_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${example_target} ${cn_target})
+  cudax_clone_target_properties(${example_target} ${cudax_target})
   cudax_stf_configure_target(${example_target} ${ARGN})
   target_link_libraries(${example_target} PRIVATE
+    ${cudax_target}
     cudax.examples.thrust
     CUB::CUB
   )
@@ -105,8 +106,8 @@ function(cudax_add_stf_example target_name_var source cn_target)
 endfunction()
 
 # Create examples for each enabled configuration:
-foreach(cn_target IN LISTS cudax_TARGETS)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+foreach(cudax_target IN LISTS cudax_TARGETS)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   # Metatarget for the current configuration's examples:
   set(config_meta_target ${config_prefix}.examples)
@@ -115,18 +116,18 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   add_dependencies(${config_meta_target} ${stf_meta_target})
 
   foreach(source IN LISTS stf_example_sources)
-    cudax_add_stf_example(example_target "${source}" ${cn_target})
+    cudax_add_stf_example(example_target "${source}" ${cudax_target})
   endforeach()
 
   if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
      foreach(source IN LISTS stf_example_codegen_sources)
-         cudax_add_stf_example(example_target "${source}" ${cn_target})
+         cudax_add_stf_example(example_target "${source}" ${cudax_target})
      endforeach()
   endif()
 
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_example_mathlib_sources)
-      cudax_add_stf_example(example_target "${source}" ${cn_target} LINK_MATHLIBS)
+      cudax_add_stf_example(example_target "${source}" ${cudax_target} LINK_MATHLIBS)
     endforeach()
   endif()
 endforeach()

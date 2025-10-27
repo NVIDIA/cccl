@@ -21,14 +21,6 @@ if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   list(FILTER public_headers EXCLUDE REGEX "annotated_ptr")
 endif()
 
-# We need to handle atomic headers differently as they do not compile on architectures below sm70
-set(architectures_at_least_sm70)
-foreach(item IN LISTS CMAKE_CUDA_ARCHITECTURES)
-  if(item GREATER_EQUAL 70)
-    list(APPEND architectures_at_least_sm70 ${item})
-  endif()
-endforeach()
-
 function(libcudacxx_create_public_header_test header_name headertest_src)
   # Create the default target for that file
   set(public_headertest_${header_name} verify_${header_name})
@@ -39,16 +31,6 @@ function(libcudacxx_create_public_header_test header_name headertest_src)
 
   # Bring in the global CCCL compile definitions
   target_link_libraries(public_headertest_${header_name} PUBLIC libcudacxx.compiler_interface)
-
-  # Ensure that if this is an atomic header, we only include the right architectures
-  string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
-  if(match)
-    # Ensure that we only compile the header when we have some architectures enabled
-    if (NOT architectures_at_least_sm70)
-      return()
-    endif()
-    set_target_properties(public_headertest_${header_name} PROPERTIES CUDA_ARCHITECTURES "${architectures_at_least_sm70}")
-  endif()
 
   add_dependencies(libcudacxx.test.public_headers public_headertest_${header_name})
 endfunction()

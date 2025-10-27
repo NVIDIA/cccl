@@ -128,6 +128,7 @@ function(thrust_add_header_test thrust_target label definitions)
       PER_HEADER_DEFINES
         DEFINE CCCL_IGNORE_DEPRECATED_API ${deprecated_headers_regexes}
     )
+    cccl_configure_target(${headertest_target} DIALECT ${config_dialect})
     target_link_libraries(${headertest_target} PUBLIC ${thrust_target})
     thrust_clone_target_properties(${headertest_target} ${thrust_target})
     if (definitions)
