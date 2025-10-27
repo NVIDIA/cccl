@@ -56,20 +56,6 @@ template <class _Tuple, size_t _ExpectedSize, class _RawTuple = remove_cvref_t<_
 using __tuple_like_with_size _CCCL_NODEBUG_ALIAS =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>, tuple_size<_RawTuple>, _ExpectedSize>;
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail
-{
-  template <int&...>
-  using __enable_explicit_default = false_type;
-  template <int&...>
-  using __enable_implicit_default = false_type;
-  template <class...>
-  using __enable_explicit = false_type;
-  template <class...>
-  using __enable_implicit = false_type;
-  template <class...>
-  using __enable_assign = false_type;
-};
-
 enum class __smf_availability
 {
   __trivial,
