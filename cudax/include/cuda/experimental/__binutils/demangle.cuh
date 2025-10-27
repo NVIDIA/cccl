@@ -56,6 +56,7 @@ template <class _Dummy = void>
 #  if !_CCCL_HAS_INCLUDE(<nv_decode.h>)
   static_assert(::cuda::std::__always_false_v<_Dummy>,
                 "cuda::demangle requires the `cuxxfilt` package from the CUDA Toolkit.");
+  return {};
 #  else // ^^^ no cuxxfilt ^^^ / vvv has cuxxfilt vvv
   // input must be zero-terminated, so we convert string_view to std::string
   ::std::string __name_in{__name.begin(), __name.end()};
