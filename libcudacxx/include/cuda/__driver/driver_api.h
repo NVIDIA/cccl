@@ -484,6 +484,13 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
 
 // Stream management
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __streamAddCallbackNoThrow(
+  ::CUstream __stream, ::CUstreamCallback __callback, void* __user_data, unsigned __flags = 0) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamAddCallback);
+  return static_cast<::cudaError_t>(__driver_fn(__stream, __callback, __user_data, __flags));
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUstream __streamCreateWithPriority(unsigned __flags, int __priority)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamCreateWithPriority);
