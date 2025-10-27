@@ -91,6 +91,21 @@ struct __tuple_constructible_struct
   static constexpr bool value = __tuple_constructible<_Tp, _Up>;
 };
 
+// __tuple_nothrow_constructible
+template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+inline constexpr bool __tuple_types_nothrow_constructible = false;
+
+template <class... _From, class... _To>
+inline constexpr bool __tuple_types_nothrow_constructible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
+  (is_nothrow_constructible_v<_To, _From> && ...);
+
+template <class _From, class _To, bool = __tuple_constructible<_From, _To>>
+inline constexpr bool __tuple_nothrow_constructible = false;
+
+template <class _From, class _To>
+inline constexpr bool __tuple_nothrow_constructible<_From, _To, true> =
+  __tuple_types_nothrow_constructible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
+
 // __tuple_convertible
 template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
 inline constexpr bool __tuple_types_convertible = false;
@@ -119,6 +134,21 @@ inline constexpr bool __tuple_assignable = false;
 
 template <class _From, class _To>
 inline constexpr bool __tuple_assignable<_From, _To, true, true> =
+  __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
+
+// __tuple_nothrow_assignable
+template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+inline constexpr bool __tuple_types_nothrow_assignable = false;
+
+template <class... _From, class... _To>
+inline constexpr bool __tuple_types_nothrow_assignable<__tuple_types<_From...>, __tuple_types<_To...>, true> =
+  (is_nothrow_assignable_v<_To, _From> && ...);
+
+template <class _From, class _To, bool = __tuple_assignable<_From, _To>>
+inline constexpr bool __tuple_nothrow_assignable = false;
+
+template <class _From, class _To>
+inline constexpr bool __tuple_nothrow_assignable<_From, _To, true> =
   __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
 
 // __tuple_like_with_size

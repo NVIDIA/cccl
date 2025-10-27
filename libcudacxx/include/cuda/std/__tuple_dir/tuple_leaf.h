@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
@@ -345,6 +346,99 @@ public:
 };
 
 _CCCL_DIAG_POP
+
+struct __tuple_variadic_constructor_tag
+{};
+
+// __tuple_impl
+
+template <class _Indx, class... _Tp>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
+
+template <size_t... _Indx, class... _Tp>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
+    : public __tuple_leaf<_Indx, _Tp>...
+    , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
+                                        __tuple_all_copy_assignable_v<_Tp...>,
+                                        __tuple_all_move_assignable_v<_Tp...>>
+{
+  using _Constraints = __tuple_constraints<_Tp...>;
+
+  _CCCL_API constexpr __tuple_impl() noexcept(_Constraints::__nothrow_default_constructible)
+      : __tuple_leaf<_Indx, _Tp>()...
+  {}
+
+  // Handle non-allocator, full initialization
+  // Old MSVC cannot handle the noexept specifier outside of template arguments
+  template <class... _Up,
+            class _Constraints = typename _Constraints::template __variadic_constraints<_Up...>,
+            enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
+  _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
+                                            _Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<_Up>(__u))...
+  {}
+
+  // Handle non-allocator, partial default initialization
+  // Recursively delegate until we have full rank
+  template <class... _Up, enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
+  _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
+    noexcept(__tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
+      : __tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})
+  {}
+
+  // Handle allocator aware, full initialization
+  template <class _Alloc, class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
+  _CCCL_API inline explicit __tuple_impl(
+    allocator_arg_t, const _Alloc& __a, __tuple_variadic_constructor_tag, _Up&&... __u)
+      : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, _Up>(), __a, ::cuda::std::forward<_Up>(__u))...
+  {}
+
+  // Handle allocator aware, full default initialization
+  template <class _Alloc>
+  _CCCL_API inline explicit __tuple_impl(allocator_arg_t, const _Alloc& __a)
+      : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc>(), __a)...
+  {}
+
+  template <class _Tuple, size_t _Indx2>
+  using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
+
+  // cannot use inline variable here
+  template <class _Tuple, enable_if_t<__tuple_constructible_struct<_Tuple, __tuple_types<_Tp...>>::value, int> = 0>
+  _CCCL_API constexpr __tuple_impl(_Tuple&& __t) noexcept(__tuple_nothrow_constructible<_Tuple, __tuple_types<_Tp...>>)
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
+  {}
+
+  // cannot use inline variable here
+  template <class _Alloc,
+            class _Tuple,
+            enable_if_t<__tuple_constructible_struct<_Tuple, __tuple_types<_Tp...>>::value, int> = 0>
+  _CCCL_API inline __tuple_impl(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
+      : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
+                                 __a,
+                                 ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
+  {}
+
+  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, __tuple_types<_Tp...>>, int> = 0>
+  _CCCL_API inline __tuple_impl&
+  operator=(_Tuple&& __t) noexcept(__tuple_nothrow_assignable<_Tuple, __tuple_types<_Tp...>>)
+  {
+    (__tuple_leaf<_Indx, _Tp>::operator=(
+       ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t))),
+     ...);
+    return *this;
+  }
+
+  _CCCL_HIDE_FROM_ABI __tuple_impl(const __tuple_impl&)            = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl(__tuple_impl&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
+
+  // Using a fold exppression here breaks nvrtc
+  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
+  {
+    (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
+  }
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
