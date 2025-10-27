@@ -30,7 +30,7 @@
 #include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
+#  include <ios>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
@@ -181,7 +181,7 @@ public:
   // Prevent this overload if Sseq is convertible to result_type
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
-  _CCCL_API constexpr void seed(_Sseq& seq)
+  _CCCL_API constexpr void seed(_Sseq& __seq)
   {
     __x_                                                              = {};
     __y_                                                              = {};
@@ -189,7 +189,7 @@ public:
     __j_                                                              = word_count - 1;
     constexpr auto __p                                                = (word_size - 1) / 32 + 1;
     ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a = {};
-    seq.generate(__a.begin(), __a.end());
+    __seq.generate(__a.begin(), __a.end());
     for (::cuda::std::size_t __k = 0; __k < word_count / 2; ++__k)
     {
       result_type __sum = 0;
@@ -448,7 +448,7 @@ private:
     }
   }
 
-  static _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
+  [[nodiscard]] static _CCCL_API constexpr auto __mulhilo_fallback(result_type __a, result_type __b) noexcept
   {
     // Generic slow implementation
     constexpr result_type __w_half  = word_size / 2;
