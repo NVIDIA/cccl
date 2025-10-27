@@ -5,6 +5,7 @@
 
 import functools
 import operator
+import warnings
 from typing import Dict, Type
 
 import numba
@@ -135,8 +136,7 @@ def struct_getitem_impl(struct_val, idx):
         key = struct_class
         cases = [nb_signature(struct_numba_type, *list(field_types.values()))]
 
-    cuda_registry.register_global(
-        struct_class, numba.types.Function(StructConstructor))
+    cuda_registry.register_global(struct_class, numba.types.Function(StructConstructor))
 
     # Lowering for constructor
     def struct_constructor(context, builder, sig, args):
@@ -146,8 +146,7 @@ def struct_getitem_impl(struct_val, idx):
             setattr(retval, field_name, val)
         return retval._getvalue()
 
-    lower_builtin(struct_class, *list(field_types.values())
-                  )(struct_constructor)
+    lower_builtin(struct_class, *list(field_types.values()))(struct_constructor)
 
     # Store the struct type on the class for later use
     struct_class._numba_type = struct_numba_type
@@ -172,8 +171,7 @@ def gpu_struct_from_numba_types(
         A dynamically created struct class with the specified fields
     """
     if len(field_names) != len(field_types):
-        raise ValueError(
-            "field_names and field_types must have the same length")
+        raise ValueError("field_names and field_types must have the same length")
 
     # Create a dict mapping field names to types
     field_dict = dict(zip(field_names, field_types))
@@ -250,12 +248,26 @@ def gpu_struct(field_dict: dict, name: str = "AnonymousStruct") -> Type[GpuStruc
             })
 
     """
+    # Check if called as a decorator with type annotations (legacy syntax)
     if not isinstance(field_dict, dict):
-        raise TypeError(
-            "gpu_struct() requires a dictionary argument mapping field names to types. "
-            "The @gpu_struct decorator syntax is no longer supported. "
-            "Please use: MyStruct = gpu_struct({...})"
-        )
+        # Check if it's a class with __annotations__
+        if isinstance(field_dict, type) and hasattr(field_dict, "__annotations__"):
+            warnings.warn(
+                "The @gpu_struct decorator syntax is deprecated and will be removed in a future release. "
+                "Please use the dictionary syntax instead: MyStruct = gpu_struct({...})",
+                UserWarning,
+                stacklevel=2,
+            )
+            # Extract annotations from the class
+            annotations = field_dict.__annotations__
+            class_name = field_dict.__name__
+            return _gpu_struct_from_dict(annotations, name=class_name)
+        else:
+            raise TypeError(
+                "gpu_struct() requires a dictionary argument mapping field names to types. "
+                "The @gpu_struct decorator syntax is deprecated. "
+                "Please use: MyStruct = gpu_struct({...})"
+            )
 
     return _gpu_struct_from_dict(field_dict, name=name)
 
@@ -306,8 +318,7 @@ def _gpu_struct_from_dict(
             field_types.append(numba.from_dtype(typ))
 
     # Create the struct using gpu_struct_from_numba_types
-    StructClass = gpu_struct_from_numba_types(
-        name, field_names, tuple(field_types))
+    StructClass = gpu_struct_from_numba_types(name, field_names, tuple(field_types))
 
     # Set the dtype
     setattr(StructClass, "dtype", np.dtype(dtype_fields, align=True))
@@ -333,8 +344,7 @@ def _gpu_struct_from_dict(
                     if not nested_tuple and hasattr(val, "__len__"):
                         # If no annotations but has __len__, try to extract as sequence
                         nested_tuple = tuple(
-                            extract_value(val[i], list(
-                                processed_fields_tuple)[i][1])
+                            extract_value(val[i], list(processed_fields_tuple)[i][1])
                             for i in range(len(val))
                         )
                     return nested_tuple
@@ -417,14 +427,12 @@ def _gpu_struct_from_dict(
             # Check if this index needs conversion
             needs_conv = any(conv_i == i for conv_i, _ in conversions)
             if needs_conv:
-                impl_lines.append(
-                    f"    arg{i} = field_struct_class_{i}(*args[{i}])")
+                impl_lines.append(f"    arg{i} = field_struct_class_{i}(*args[{i}])")
             else:
                 impl_lines.append(f"    arg{i} = args[{i}]")
 
         # Build the constructor call with all converted arguments
-        arg_list = ", ".join(f"arg{i}" for i in range(
-            len(processed_fields_tuple)))
+        arg_list = ", ".join(f"arg{i}" for i in range(len(processed_fields_tuple)))
         impl_lines.append(f"    return struct_class({arg_list})")
 
         impl_code = "\n".join(impl_lines)
