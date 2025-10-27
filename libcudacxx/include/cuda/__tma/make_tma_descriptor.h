@@ -92,6 +92,7 @@ enum class tma_swizzle
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapL2promotion
@@ -110,6 +111,7 @@ __to_cutensor_map(tma_l2_fetch_size __l2_fetch_size) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapInterleave
@@ -126,6 +128,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapSwizzle __to_cutensor_map(tma_swizzle __swizzle) noexcept
@@ -151,6 +154,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
@@ -178,6 +182,7 @@ __to_cutensor_map_size(::CUtensorMapDataType __data_type) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE();
 }
 
 /***********************************************************************************************************************
@@ -391,21 +396,22 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   int __rank,
   tma_interleave_layout __interleave_layout,
   tma_swizzle __swizzle,
-  ::CUtensorMapDataType __data_type) noexcept
+  ::CUtensorMapDataType __data_type,
+  int __device_id) noexcept
 {
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
   __tma_box_sizes_array_t __box_sizes_array{};
   _CCCL_VERIFY(__box_sizes.size() == __rank, "Box sizes size mismatch");
   const auto __data_type_size = ::cuda::__to_cutensor_map_size(__data_type);
-  // size_t __total_size = 1; // TODO(fbusato): check total size
+  size_t __total_size         = 1;
   for (int __i = 0; __i < __rank; ++__i)
   {
     const auto __max_box_size = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{256}));
     const auto __box_size     = __box_sizes[__rank - 1 - __i];
     _CCCL_VERIFY(__box_size > 0 && __box_size <= __max_box_size,
                  "box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)");
-    //__total_size *= __box_size * __data_type_size;
+    __total_size *= __box_size * __data_type_size;
     __box_sizes_array[__i] = __box_size;
   }
   const auto __inner_dimension_bytes = __box_sizes[__rank - 1] * __data_type_size;
@@ -433,7 +439,9 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
                    "less than or equal to 128");
     }
   }
-  // TODO(fbusato) _CCCL_VERIFY(__total_size /*fits in shared memory*/, "Box sizes do not fit in shared memory");
+  auto __max_shmem =
+    ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
+  _CCCL_VERIFY(__total_size <= __max_shmem, "Box sizes do not fit in shared memory");
   return __box_sizes_array;
 }
 
@@ -496,8 +504,8 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
   ::cuda::__check_swizzle(__interleave_layout, __swizzle);
   const auto __raw_elem_strides =
     ::cuda::__get_elem_strides(__elem_strides, __tensor_sizes, __rank, __interleave_layout);
-  const auto __raw_box_sizes =
-    ::cuda::__get_box_sizes(__box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type);
+  const auto __raw_box_sizes = ::cuda::__get_box_sizes(
+    __box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type, __tensor.device.device_id);
   const auto [__tensor_map, __status] = ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
     __data_type,
     __rank,
