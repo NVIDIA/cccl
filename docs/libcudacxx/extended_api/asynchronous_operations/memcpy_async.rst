@@ -144,8 +144,10 @@ via the ``cp.async.bulk`` instruction to perform the copy if:
 - the source is global memory,
 - the destination is shared memory.
 
-On Ampere+ GPUs, the ``cp.async`` instruction may be used to perform the copy
-if the data is aligned to at least 4 bytes, the source is global memory, and the destination is shared memory.
+On Ampere+ GPUs, the ``cp.async`` instruction may be used to perform the copy if:
+- the data is aligned to at least 4 bytes,
+- the source is global memory,
+- the destination is shared memory.
 
 
 Examples
