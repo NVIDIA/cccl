@@ -49,18 +49,19 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class>
-inline constexpr bool __tuple_all_default_constructible_v = false;
-
-template <class... _Tp>
-inline constexpr bool __tuple_all_default_constructible_v<__tuple_types<_Tp...>> =
-  (is_default_constructible_v<_Tp> && ...);
-
 template <class... _Tp>
 inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ...);
 
 template <class... _Tp>
 inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ...);
+
+// Traits forwarding to `__tuple_types`
+template <class>
+inline constexpr bool __tuple_types_all_default_constructible_v = false;
+
+template <class... _Tp>
+inline constexpr bool __tuple_types_all_default_constructible_v<__tuple_types<_Tp...>> =
+  (is_default_constructible_v<_Tp> && ...);
 
 template <class, class>
 inline constexpr bool __tuple_types_same_size = false;
@@ -184,12 +185,12 @@ struct __tuple_constraints
     static constexpr bool __implicit_constructible =
       __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
       && __tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && __tuple_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+      && __tuple_types_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
 
     static constexpr bool __explicit_constructible =
       __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
       && !__tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
-      && __tuple_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
+      && __tuple_types_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
   };
 
   template <class _Tuple>
