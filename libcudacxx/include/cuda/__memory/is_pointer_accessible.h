@@ -28,6 +28,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 _CCCL_TEMPLATE(typename _Pointer)
 _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_pointer_v<_Pointer>)
 [[nodiscard]]
-_CCCL_HOST_API bool is_managed_pointer(_Pointer __p)
+_CCCL_HOST_API bool is_managed(_Pointer __p)
 {
   const auto __p1 = ::cuda::std::to_address(__p);
   bool __is_managed{};
@@ -46,7 +47,7 @@ _CCCL_HOST_API bool is_managed_pointer(_Pointer __p)
     ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p1);
   if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "is_managed_pointer() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   return (__status == ::cudaErrorInvalidValue) || __is_managed;
 }
@@ -56,34 +57,22 @@ _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_poi
 [[nodiscard]]
 _CCCL_HOST_API bool is_host_accessible(_Pointer __p)
 {
-  const auto __p1 = ::cuda::std::to_address(__p);
-  ::CUmemorytype __type{};
-  const auto __status =
-    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
+  const auto __p1                  = ::cuda::std::to_address(__p);
+  ::CUpointer_attribute __attrs[2] = {::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED};
+  ::CUmemorytype __memory_type     = static_cast<::CUmemorytype>(0);
+  int __is_managed                 = 0;
+  void* __results[2]               = {&__memory_type, &__is_managed};
+  const auto __status              = ::cuda::__driver::__pointerGetAttributesNoThrow(
+    ::cuda::std::span<::CUpointer_attribute, 2>{__attrs}, ::cuda::std::span<void*, 2>{__results}, __p1);
+  if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status, "__query_host_or_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  return (__status == ::cudaErrorInvalidValue) || (__type == ::CU_MEMORYTYPE_HOST || __type == ::CU_MEMORYTYPE_UNIFIED)
-      || ::cuda::is_managed_pointer(__p); // needed because MEMORY_TYPE is not sufficient for managed memory
-}
-
-_CCCL_TEMPLATE(typename _Pointer)
-_CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_pointer_v<_Pointer>)
-[[nodiscard]]
-_CCCL_HOST_API bool is_device_accessible(_Pointer __p)
-{
-  const auto __p1 = ::cuda::std::to_address(__p);
-  ::CUmemorytype __type{};
-  const auto __status =
-    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
+  if (__memory_type == static_cast<::CUmemorytype>(0)) // check if the pointer is unregistered
   {
-    ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    return true;
   }
-  return (__status == ::cudaErrorInvalidValue)
-      || (__type == ::CU_MEMORYTYPE_DEVICE || __type == ::CU_MEMORYTYPE_UNIFIED)
-      || ::cuda::is_managed_pointer(__p); // needed because ATTRIBUTE_MEMORY_TYPE is not sufficient for managed memory
+  return (__is_managed || __memory_type == ::CU_MEMORYTYPE_UNIFIED || __memory_type == ::CU_MEMORYTYPE_HOST);
 }
 
 _CCCL_TEMPLATE(typename _Pointer)
@@ -91,20 +80,47 @@ _CCCL_REQUIRES(::cuda::std::contiguous_iterator<_Pointer> || ::cuda::std::is_poi
 [[nodiscard]]
 _CCCL_HOST_API bool is_device_accessible(_Pointer __p, device_ref __device)
 {
-  int __ptr_dev_id{};
-  const auto __p1 = ::cuda::std::to_address(__p);
-  const auto __status =
-    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(__ptr_dev_id, __p1);
-  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
+  const auto __p1                  = ::cuda::std::to_address(__p);
+  ::CUpointer_attribute __attrs[4] = {
+    ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+    ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
+    ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+    ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
+  ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
+  int __is_managed             = 0;
+  int __ptr_dev_id             = 0;
+  ::CUmemoryPool __ptr_mempool = nullptr;
+  void* __results[4]           = {&__memory_type, &__is_managed, &__ptr_dev_id, &__ptr_mempool};
+  const auto __status          = ::cuda::__driver::__pointerGetAttributesNoThrow(
+    ::cuda::std::span<::CUpointer_attribute, 4>{__attrs}, ::cuda::std::span<void*, 4>{__results}, __p1);
+  if (__status != ::cudaSuccess)
   {
     ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  if (__status == ::cudaErrorInvalidValue) // unregistered pointer
+  // (1) check if the pointer is unregistered
+  if (__memory_type == static_cast<::CUmemorytype>(0))
   {
     return true;
   }
-  const bool __can_access_peer = ::cuda::__driver::__deviceCanAccessPeer(__device.get(), __ptr_dev_id);
-  return (::cuda::is_device_accessible(__p) && (__device.get() == __ptr_dev_id || __can_access_peer));
+  // (2) check if the pointer is a device accessible pointer or managed memory
+  if (!__is_managed && __memory_type != ::CU_MEMORYTYPE_DEVICE && __memory_type != ::CU_MEMORYTYPE_UNIFIED)
+  {
+    return false;
+  }
+  // (3) check if a memory pool is associated with the pointer
+  if (__ptr_mempool != nullptr)
+  {
+    ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
+    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__ptr_mempool, &__prop);
+    return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+  }
+  // (4) check if the pointer is allocated on the specified device
+  if (__ptr_dev_id == __device.get())
+  {
+    return true;
+  }
+  // (5) check if the pointer is peer accessible from the specified device
+  return ::cuda::__driver::__deviceCanAccessPeer(__device.get(), __ptr_dev_id);
 }
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)

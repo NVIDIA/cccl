@@ -78,7 +78,7 @@ Memory
      - CCCL 3.2.0
      - CUDA 13.2
 
-   * - :ref:`is_host_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_device_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_managed_pointer <libcudacxx-extended-api-memory-is_pointer_accessible>`
+   * - :ref:`is_host_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_device_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_managed <libcudacxx-extended-api-memory-is_pointer_accessible>`
      - Check if a pointer is accessible from the host, device, or managed memory
      - CCCL 3.2.0
      - CUDA 13.2

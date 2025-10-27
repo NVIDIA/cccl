@@ -27,6 +27,7 @@
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/span>
 
 #  include <cuda.h>
 
@@ -324,6 +325,20 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
+_CCCL_HOST_API inline ::cudaError_t
+__memRetainAllocationHandleNoThrow(::CUmemGenericAllocationHandle* __handle, void* __addr)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemRetainAllocationHandle);
+  return static_cast<::cudaError_t>(__driver_fn(__handle, __addr));
+}
+
+_CCCL_HOST_API inline ::cudaError_t
+__memGetAllocationPropertiesFromHandleNoThrow(::CUmemAllocationProp* __prop, ::CUmemGenericAllocationHandle __handle)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemGetAllocationPropertiesFromHandle);
+  return static_cast<::cudaError_t>(__driver_fn(__prop, __handle));
+}
+
 _CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
@@ -453,6 +468,10 @@ template <::CUpointer_attribute _Attr>
   {
     return int{};
   }
+  else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE)
+  {
+    return ::CUmemoryPool{};
+  }
   else
   {
     static_assert(::cuda::std::__always_false_v<decltype(_Attr)>, "not implemented attribute");
@@ -480,6 +499,15 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
       static_cast<::cudaError_t>(__driver_fn((void*) &__result, _Attr, reinterpret_cast<::CUdeviceptr>(__ptr)));
   }
   return __status;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __pointerGetAttributesNoThrow(
+  ::cuda::std::span<::CUpointer_attribute> __attrs, ::cuda::std::span<void*> __results, const void* __ptr)
+{
+  _CCCL_ASSERT(__attrs.size() == __results.size(), "size mismatch in __pointerGetAttributesNoThrow");
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
+  return static_cast<::cudaError_t>(
+    __driver_fn(__attrs.size(), __attrs.data(), __results.data(), reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
 
 // Stream management
