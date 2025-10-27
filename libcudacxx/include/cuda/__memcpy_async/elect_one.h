@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 extern "C" _CCCL_DEVICE void __cuda_elect_sync_is_not_supported_before_SM_90__();
 
 //! Elects a single leader thread from a one dimensional thread block
-_CCCL_DEVICE_API _CCCL_FORCEINLINE bool __elect_one()
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __elect_one() noexcept
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "The block must by one dimensional");
 
