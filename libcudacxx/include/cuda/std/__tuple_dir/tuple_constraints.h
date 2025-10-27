@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
@@ -164,6 +165,11 @@ struct __invalid_tuple_constraints
   static constexpr bool __implicit_constructible = false;
   static constexpr bool __explicit_constructible = false;
   static constexpr bool __nothrow_constructible  = false;
+
+  static constexpr bool __equality_comparable          = false;
+  static constexpr bool __nothrow_equality_comparable  = false;
+  static constexpr bool __less_than_comparable         = false;
+  static constexpr bool __nothrow_less_than_comparable = false;
 };
 
 template <class... _Tp>
@@ -261,6 +267,16 @@ struct __tuple_constraints
     conditional_t<sizeof...(_Tp) == 1,
                   __valid_tuple_like_constraints_rank_one<_Tuple>,
                   __valid_tuple_like_constraints<_Tuple>>;
+
+  template <class... _Up>
+  struct __comparison
+  {
+    static constexpr bool __equality_comparable         = (__is_cpp17_equality_comparable_v<_Tp, _Up> && ...);
+    static constexpr bool __nothrow_equality_comparable = (__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up> && ...);
+
+    static constexpr bool __less_than_comparable         = (__is_cpp17_less_than_comparable_v<_Tp, _Up> && ...);
+    static constexpr bool __nothrow_less_than_comparable = (__is_cpp17_nothrow_less_than_comparable_v<_Tp, _Up> && ...);
+  };
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -283,6 +283,93 @@ public:
   {
     __t.swap(__u);
   }
+
+  template <class... _Up>
+  using __comparison_constraints =
+    _If<(sizeof...(_Tp) == sizeof...(_Up)),
+        typename __tuple_constraints<_Tp...>::template __comparison<_Up...>,
+        __invalid_tuple_constraints>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Up, size_t... _Indices, class _Constraints = __comparison_constraints<_Up...>>
+  [[nodiscard]] _CCCL_API constexpr bool __equal(const tuple<_Up...>& __other, __tuple_indices<_Indices...>) const
+    noexcept(_Constraints::__nothrow_equality_comparable)
+  {
+    return ((::cuda::std::get<_Indices>(*this) == ::cuda::std::get<_Indices>(__other)) && ...);
+  }
+
+  // Not a friend function because MSVC has issues with nested namespaces and thrust::tuple
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__equality_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator==(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_equality_comparable)
+  {
+    return __equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
+
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__equality_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_equality_comparable)
+  {
+    return !__equal(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Up, size_t _CurrentIndex, size_t... _Indices, class _Constraints = __comparison_constraints<_Up...>>
+  [[nodiscard]] _CCCL_API constexpr bool
+  __tuple_less_than(const tuple<_Up...>& __other, __tuple_indices<_CurrentIndex, _Indices...>) const
+    noexcept(_Constraints::__nothrow_less_than_comparable)
+  {
+    if constexpr (sizeof...(_Indices) == 0)
+    {
+      return ::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other);
+    }
+    else
+    {
+      if (::cuda::std::get<_CurrentIndex>(*this) < ::cuda::std::get<_CurrentIndex>(__other))
+      {
+        return true;
+      }
+      if (::cuda::std::get<_CurrentIndex>(__other) < ::cuda::std::get<_CurrentIndex>(*this))
+      {
+        return false;
+      }
+      return this->__tuple_less_than(__other, __tuple_indices<_Indices...>{});
+    }
+  }
+
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator<(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_less_than_comparable)
+  {
+    return __tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
+
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator>(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_less_than_comparable)
+  {
+    return __rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
+
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator>=(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_less_than_comparable)
+  {
+    return !__tuple_less_than(__rhs, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
+
+  _CCCL_TEMPLATE(class... _Up, class _Constraints = __comparison_constraints<_Up...>)
+  _CCCL_REQUIRES(_Constraints::__less_than_comparable)
+  [[nodiscard]] _CCCL_API constexpr bool operator<=(const tuple<_Up...>& __rhs) const
+    noexcept(_Constraints::__nothrow_less_than_comparable)
+  {
+    return !__rhs.__tuple_less_than(*this, __make_tuple_indices_t<sizeof...(_Tp)>{});
+  }
 };
 
 template <>
@@ -303,6 +390,36 @@ public:
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc&, array<_Up, 0>) noexcept
   {}
   _CCCL_API inline void swap(tuple&) noexcept {}
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const tuple&, const tuple&) noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const tuple&, const tuple&) noexcept
+  {
+    return false;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<(const tuple&, const tuple&) noexcept
+  {
+    return false;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>(const tuple&, const tuple&) noexcept
+  {
+    return false;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(const tuple&, const tuple&) noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(const tuple&, const tuple&) noexcept
+  {
+    return true;
+  }
 };
 
 template <class... _Tp>
