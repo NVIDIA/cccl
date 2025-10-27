@@ -219,9 +219,9 @@ try
   cudax::stream dev1_stream(peers[1]);
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
-  cudax::device_memory_resource dev0_resource(peers[0]);
+  cudax::device_memory_pool_ref dev0_resource = cudax::device_default_memory_pool(peers[0]);
   dev0_resource.enable_access_from(peers[1]);
-  cudax::device_memory_resource dev1_resource(peers[1]);
+  cudax::device_memory_pool_ref dev1_resource = cudax::device_default_memory_pool(peers[1]);
   dev1_resource.enable_access_from(peers[0]);
 
   // Allocate buffers

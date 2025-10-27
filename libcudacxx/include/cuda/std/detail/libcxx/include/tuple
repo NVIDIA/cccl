@@ -1334,6 +1334,18 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_bas
     return __VA_ARGS__;                  \
   }
 
+template <class _Fn, class _Tuple>
+inline constexpr bool __can_apply_impl = false;
+
+template <class _Fn, class... _Types>
+inline constexpr bool __can_apply_impl<_Fn, __tuple_types<_Types...>> = is_invocable_v<_Fn, _Types...>;
+
+template <class _Fn, class _Tuple, bool = __tuple_like<_Tuple>>
+inline constexpr bool __can_apply = false;
+
+template <class _Fn, class _Tuple>
+inline constexpr bool __can_apply<_Fn, _Tuple, true> = __can_apply_impl<_Fn, __make_tuple_types_t<_Tuple>>;
+
 template <class _Fn, class _Tuple, size_t... _Id>
 _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
   _LIBCUDACXX_NOEXCEPT_RETURN(

@@ -29,10 +29,10 @@
 #include <thrust/detail/preprocessor.h>
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
