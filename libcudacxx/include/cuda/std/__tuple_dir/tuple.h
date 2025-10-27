@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -432,6 +433,18 @@ template <class _Alloc, class _Tp1, class _Tp2>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
+
+template <class _T1, class _T2, bool _IsRef>
+template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+  piecewise_construct_t,
+  tuple<_Args1...>& __first_args,
+  tuple<_Args2...>& __second_args,
+  __tuple_indices<_I1...>,
+  __tuple_indices<_I2...>)
+    : first(::cuda::std::forward<_Args1>(::cuda::std::get<_I1>(__first_args))...)
+    , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
+{}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
