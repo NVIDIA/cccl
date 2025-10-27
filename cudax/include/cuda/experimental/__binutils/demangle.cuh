@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/throw_error.h>
@@ -32,11 +32,10 @@
 
 #  include <string>
 
-#  if _CCCL_HAS_INCLUDE(<nv_decode.h>)
-#    include <nv_decode.h>
-#  endif // _CCCL_HAS_INCLUDE(<nv_decode.h>)
-
 #  include <cuda/std/__cccl/prologue.h>
+
+// Forward declaration of __cu_demangle function from <nv_decode.h> (cuxxfilt package from CUDA Toolkit)
+extern "C" char* __cu_demangle(const char* id, char* output_buffer, ::cuda::std::size_t* length, int* status);
 
 namespace cuda::experimental
 {
@@ -52,10 +51,11 @@ namespace cuda::experimental
 //! @throws std::bad_alloc if memory allocation fails.
 //! @throws std::runtime_error if the passed \c __name is not a valid mangled symbol.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_HOST_API ::std::string demangle(::cuda::std::string_view __name)
+[[nodiscard]] _CCCL_HOST_API ::std::string demangle([[maybe_unused]] ::cuda::std::string_view __name)
 {
 #  if !_CCCL_HAS_INCLUDE(<nv_decode.h>)
-  static_assert(__always_false_v<_Dummy>, "cuda::demangle requires the `cuxxfilt` package from the CUDA Toolkit.");
+  static_assert(::cuda::std::__always_false_v<_Dummy>,
+                "cuda::demangle requires the `cuxxfilt` package from the CUDA Toolkit.");
 #  else // ^^^ no cuxxfilt ^^^ / vvv has cuxxfilt vvv
   // input must be zero-terminated, so we convert string_view to std::string
   ::std::string __name_in{__name.begin(), __name.end()};
@@ -96,6 +96,6 @@ template <class _Dummy = void>
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___BINUTILS_DEMANGLE_CUH
