@@ -22,6 +22,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__execution/stream_policy.h>
+#include <cuda/std/__fwd/policy.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -98,13 +100,6 @@ struct __execution_policy_base
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::stream_ref get_stream() noexcept
-  {
-    return ::cuda::stream_ref{cudaStreamPerThread};
-  }
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-
   //! @brief Tag that identifies this and all derived classes as a CCCL execution policy
   static constexpr uint32_t __cccl_policy_ = _Policy;
 
@@ -152,6 +147,18 @@ struct __execution_policy_base
     constexpr uint32_t __direction_mask{0xFF00FFFF};
     return (_Policy & __direction_mask) & (static_cast<uint32_t>(__pol) << 16);
   }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::stream_ref get_stream() noexcept
+  {
+    return ::cuda::stream_ref{cudaStreamPerThread};
+  }
+
+  [[nodiscard]] _CCCL_HOST_API static auto set_stream(::cuda::stream_ref __stream) noexcept
+  {
+    return __execution_policy_stream<__execution_policy_base>{__stream};
+  }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 };
 
 using sequenced_policy = __execution_policy_base<static_cast<uint32_t>(__execution_policy::__sequenced)>;

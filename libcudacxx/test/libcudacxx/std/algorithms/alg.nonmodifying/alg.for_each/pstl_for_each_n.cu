@@ -24,6 +24,7 @@
 #include <cuda/std/__pstl/for_each_n.h>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/stream>
 
 #include <testing.cuh>
 #include <utility.cuh>
@@ -43,9 +44,22 @@ struct mark_present_for_each
 
 C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
 {
-  thrust::device_vector<bool> res(size, false);
-  mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+  SECTION("with default stream")
+  {
+    thrust::device_vector<bool> res(size, false);
+    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
-  cuda::std::for_each_n(cuda::std::execution::par_unseq, cuda::counting_iterator{0}, size, fn);
-  CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    cuda::std::for_each_n(cuda::std::execution::par_unseq, cuda::counting_iterator{0}, size, fn);
+    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
+
+  SECTION("with unique stream")
+  {
+    ::cuda::stream stream{::cuda::device_ref{0}};
+    thrust::device_vector<bool> res(size, false);
+    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+
+    cuda::std::for_each_n(cuda::std::execution::par_unseq.set_stream(stream), cuda::counting_iterator{0}, size, fn);
+    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
 }
