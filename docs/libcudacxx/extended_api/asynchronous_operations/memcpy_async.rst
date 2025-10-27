@@ -140,8 +140,8 @@ Implementation notes
 On Hopper+ GPUs, the overloads taking a barrier may use the Tensor Memory Accelerator (TMA)
 via the ``cp.async.bulk`` instruction to perform the copy if:
 - the barrier resides in shared memory,
-- the data is aligned to 16 bytes, 
-- the source is global memory, 
+- the data is aligned to 16 bytes,
+- the source is global memory,
 - the destination is shared memory.
 
 On Ampere+ GPUs, the ``cp.async`` instruction may be used to perform the copy
@@ -218,15 +218,15 @@ a custom group can be defined like:
    struct this_thread_block_1D {
      static constexpr cuda::thread_scope thread_scope = cuda::thread_scope_block;
 
-     _CCCL_DEVICE_API void sync() const {
+     __device__ void sync() const {
        __syncthreads();
      }
 
-    _CCCL_DEVICE_API auto size() const {
+     __device__ auto size() const {
        return blockDim.x;
      }
 
-     _CCCL_DEVICE_API auto thread_rank() const {
+     __device__ auto thread_rank() const {
        return threadIdx.x;
      }
    };
