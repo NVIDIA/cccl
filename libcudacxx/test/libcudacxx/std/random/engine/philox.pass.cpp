@@ -43,12 +43,51 @@ __host__ __device__ constexpr bool test_set_counter()
   return true;
 }
 
+__host__ __device__ constexpr bool test_against_reference()
+{
+  // reference values obtained from other standard library implementations
+  const int seeds[]                               = {10823018, 0, 23};
+  const int discards[]                            = {0, 5, 100};
+  const cuda::std::uint64_t reference_values_64[] = {
+    597860052874975753ull,
+    16480731654955167298ull,
+    4676222276634405366ull,
+    1609277786247541068ull,
+    4455796210202625458ull,
+    12591023382997339072ull,
+    13350274857560636235ull,
+    5430341342746607840ull,
+    4983921884708484958ull};
+  const cuda::std::uint32_t reference_values_32[] = {
+    1514423753u, 254961463u, 4167151386u, 1713891541u, 1555169499u, 444026393u, 1368340107u, 2016696101u, 1090885419u};
+
+  int ref_index = 0;
+  for (auto seed : seeds)
+  {
+    for (auto discard : discards)
+    {
+      cuda::std::philox4x64 rng(seed);
+      cuda::std::philox4x32 rng32(seed);
+      rng.discard(discard);
+      rng32.discard(discard);
+      assert(rng() == reference_values_64[ref_index]);
+      assert(rng32() == reference_values_32[ref_index]);
+      ref_index++;
+    }
+  }
+  return true;
+}
+
 __host__ __device__ constexpr bool test()
 {
   test_engine<cuda::std::philox4x32, 1955073260u>();
   test_engine<cuda::std::philox4x64, 3409172418970261260ull>();
   test_set_counter<cuda::std::philox4x32>();
+  static_assert(test_set_counter<cuda::std::philox4x32>());
   test_set_counter<cuda::std::philox4x64>();
+  static_assert(test_set_counter<cuda::std::philox4x64>());
+  test_against_reference();
+  static_assert(test_against_reference());
   return true;
 }
 
