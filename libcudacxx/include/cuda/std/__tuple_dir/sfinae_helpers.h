@@ -43,62 +43,6 @@ enum class __smf_availability
   __deleted,
 };
 
-template <bool _CanCopy>
-struct __sfinae_copy_base
-{};
-template <>
-struct __sfinae_copy_base<false>
-{
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_base()                                     = default;
-  __sfinae_copy_base(__sfinae_copy_base const&)                                = delete;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_base(__sfinae_copy_base&&)                 = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_base& operator=(__sfinae_copy_base const&) = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_base& operator=(__sfinae_copy_base&&)      = default;
-};
-
-template <bool _CanCopy, bool _CanMove>
-struct __sfinae_move_base : __sfinae_copy_base<_CanCopy>
-{};
-template <bool _CanCopy>
-struct __sfinae_move_base<_CanCopy, false> : __sfinae_copy_base<_CanCopy>
-{
-  _CCCL_HIDE_FROM_ABI __sfinae_move_base()                                     = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_base(__sfinae_move_base const&)            = default;
-  __sfinae_move_base(__sfinae_move_base&&)                                     = delete;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_base& operator=(__sfinae_move_base const&) = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_base& operator=(__sfinae_move_base&&)      = default;
-};
-
-template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
-struct __sfinae_copy_assign_base : __sfinae_move_base<_CanCopy, _CanMove>
-{};
-template <bool _CanCopy, bool _CanMove>
-struct __sfinae_copy_assign_base<_CanCopy, _CanMove, false> : __sfinae_move_base<_CanCopy, _CanMove>
-{
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base()                                       = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base(__sfinae_copy_assign_base const&)       = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base(__sfinae_copy_assign_base&&)            = default;
-  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base const&)                = delete;
-  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base&&) = default;
-};
-
-template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
-struct __sfinae_move_assign_base : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
-{};
-template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
-struct __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
-    : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
-{
-  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base()                                            = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base(__sfinae_move_assign_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base(__sfinae_move_assign_base&&)                 = default;
-  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base& operator=(__sfinae_move_assign_base const&) = default;
-  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base&&)                          = delete;
-};
-
-template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
-using __sfinae_base = __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
-
 // We need to synthesize the copy / move assignment if it would be implicitly deleted as a member of a class
 // In that case _Tp would be copy assignable but _TestSynthesizeAssignment<_Tp> would not
 // This happens e.g for reference types
