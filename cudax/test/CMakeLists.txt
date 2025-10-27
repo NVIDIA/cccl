@@ -1,6 +1,13 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit)
+
+# Find the cu++filt library.
+find_library(cudax_cufilt_lib "cufilt" PATHS "${CUDAToolkit_LIBRARY_DIR}" NO_DEFAULT_PATH)
+if (NOT cudax_cufilt_lib)
+  message(FATAL_ERROR "cudax: cu++filt library (libcufilt.a) not found.")
+endif()
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -29,7 +36,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
-    cudart
+    CUDA::cudart
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -164,6 +171,21 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/fill.cu
     algorithm/copy.cu
   )
+
+  # On windows, cu++filt library is compiled with static runtime which causes problems when linking it with cccl.c2h.main
+  # which is compiled with dynamic runtime. So, we do everything by hand. The test is implemented in lit style, so we
+  # we avoid linking with cccl.c2h.main
+  set(test_target ${config_prefix}.test.binutils_demangle)
+  add_executable(${test_target} binutils/demangle.pass.cpp)
+  target_compile_options(${test_target} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/MT>")
+  target_link_libraries(${test_target} PRIVATE
+    ${cn_target}
+    CUDA::cudart_static
+    ${cudax_cufilt_lib}
+  )
+  cudax_clone_target_properties(${test_target} ${cn_target})
+  add_dependencies(${config_meta_target} ${test_target})
+  add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
   if (cudax_ENABLE_CUFILE)
     cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
