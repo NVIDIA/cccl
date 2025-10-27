@@ -22,9 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
-#  include <cuda/__ptx/instructions/elect_sync.h>
-#endif // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
+#include <cuda/__ptx/instructions/elect_sync.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,17 +35,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "The block must by one dimensional");
 
-#if _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (const auto tid             = threadIdx.x; //
      const auto warp_id         = tid / 32;
      const auto uniform_warp_id = __shfl_sync(~0, warp_id, 0); // broadcast from lane 0
      return uniform_warp_id == 0 && cuda::ptx::elect_sync(~0); // elect a leader thread among warp 0
-     ));
-#else // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
-  return threadIdx.x == 0;
-#endif // _CCCL_CUDA_COMPILATION() && __cccl_ptx_isa >= 800
+     ),
+    (return threadIdx.x == 0;));
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
