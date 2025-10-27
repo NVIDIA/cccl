@@ -23,11 +23,8 @@ namespace detail::histogram
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
-  enum
-  {
-    // Maximum number of bins per channel for which we will use a privatized smem strategy
-    MAX_PRIVATIZED_SMEM_BINS = 256
-  };
+  // Maximum number of bins per channel for which we will use a privatized smem strategy
+  static constexpr int MAX_PRIVATIZED_SMEM_BINS = 256;
 
   //---------------------------------------------------------------------
   // Transform functors for converting samples to bin-ids
@@ -40,12 +37,10 @@ struct Transforms
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
-    /**
-     * @brief Initializer
-     *
-     * @param d_levels_ Pointer to levels array
-     * @param num_output_levels_ Number of levels in array
-     */
+    //! @brief Initializer
+    //!
+    //! @param d_levels_ Pointer to levels array
+    //! @param num_output_levels_ Number of levels in array
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
       this->d_levels          = d_levels_;
@@ -66,10 +61,10 @@ struct Transforms
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
-      int num_bins = num_output_levels - 1;
+      const int num_bins = num_output_levels - 1;
       if (valid)
       {
-        bin = UpperBound(wrapped_levels, num_output_levels, (LevelT) sample) - 1;
+        bin = UpperBound(wrapped_levels, num_output_levels, static_cast<LevelT>(sample)) - 1;
         if (bin >= num_bins)
         {
           bin = -1;
@@ -202,9 +197,7 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVFP16()
 
-    /**
-     * @brief Bin computation for floating point (and extended floating point) types
-     */
+    //! @brief Bin computation for floating point (and extended floating point) types
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */)
@@ -212,9 +205,7 @@ struct Transforms
       return static_cast<int>((sample - min_level) * scale.reciprocal);
     }
 
-    /**
-     * @brief Bin computation for custom types and __[u]int128
-     */
+    //! @brief Bin computation for custom types and __[u]int128
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */)
@@ -222,9 +213,7 @@ struct Transforms
       return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
     }
 
-    /**
-     * @brief Bin computation for integral types of up to 64-bit types
-     */
+    //! @brief Bin computation for integral types of up to 64-bit types
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
@@ -249,35 +238,32 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVFP16()
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
-    MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
+    //! @brief Returns true if the bin computation for a given combination of range `(max_level - min_level)` and number
+    //! of bins may overflow.
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins)
     {
-      return false;
-    }
-
-    /**
-     * @brief Returns true if the bin computation for a given combination of range `(max_level -
-     * min_level)` and number of bins may overflow.
-     */
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins, ::cuda::std::true_type /* is_integral */)
-    {
-      return static_cast<IntArithmeticT>(m_max - m_min)
-           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      if constexpr (::cuda::std::is_integral_v<CommonT>)
+      {
+        return static_cast<IntArithmeticT>(m_max - m_min)
+             > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      }
+      else
+      {
+        return false;
+      }
     }
 
   public:
-    /**
-     * @brief Initializes the ScaleTransform for the given parameters
-     * @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
-     * cudaSuccess otherwise
-     */
+    //! @brief Initializes the ScaleTransform for the given parameters
+    //! @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
+    //! cudaSuccess otherwise
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_levels, LevelT max_level, LevelT min_level)
     {
       m_max = static_cast<CommonT>(max_level);
       m_min = static_cast<CommonT>(min_level);
 
       // Check whether accurate bin computation for an integral sample type may overflow
-      if (MayOverflow(static_cast<CommonT>(num_levels - 1), ::cuda::std::is_integral<CommonT>{}))
+      if (MayOverflow(static_cast<CommonT>(num_levels - 1)))
       {
         return cudaErrorInvalidValue;
       }
@@ -314,7 +300,7 @@ struct Transforms
     {
       if (valid)
       {
-        bin = (int) sample;
+        bin = static_cast<int>(sample);
       }
     }
   };
@@ -324,32 +310,29 @@ struct Transforms
  * Histogram kernel entry points
  *****************************************************************************/
 
-/**
- * Histogram initialization kernel entry point
- *
- * @tparam NUM_ACTIVE_CHANNELS
- *   Number of channels actively being histogrammed
- *
- * @tparam CounterT
- *   Integer type for counting sample occurrences per histogram bin
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param num_output_bins_wrapper
- *   Number of output histogram bins per channel
- *
- * @param d_output_histograms_wrapper
- *   Histogram counter data having logical dimensions
- *   `CounterT[NUM_ACTIVE_CHANNELS][num_bins.array[CHANNEL]]`
- *
- * @param tile_queue
- *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
- */
-template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
+//! Histogram initialization kernel entry point
+//!
+//! @tparam NumActiveChannels
+//!   Number of channels actively being histogrammed
+//!
+//! @tparam CounterT
+//!   Integer type for counting sample occurrences per histogram bin
+//!
+//! @tparam OffsetT
+//!   Signed integer type for global offsets
+//!
+//! @param num_output_bins_wrapper
+//!   Number of output histogram bins per channel
+//!
+//! @param d_output_histograms_wrapper
+//!   Histogram counter data having logical dimensions `CounterT[NUM_ACTIVE_CHANNELS][num_bins.array[CHANNEL]]`
+//!
+//! @param tile_queue
+//!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
+template <int NumActiveChannels, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
+  ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+  ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
@@ -357,95 +340,93 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
     tile_queue.ResetDrain();
   }
 
-  int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
+  const int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+  for (int ch = 0; ch < NumActiveChannels; ++ch)
   {
-    if (output_bin < num_output_bins_wrapper[CHANNEL])
+    if (output_bin < num_output_bins_wrapper[ch])
     {
-      d_output_histograms_wrapper[CHANNEL][output_bin] = 0;
+      d_output_histograms_wrapper[ch][output_bin] = 0;
     }
   }
 }
 
-/**
- * Histogram privatized sweep kernel entry point (multi-block).
- * Computes privatized histograms, one per thread block.
- *
- *
- * @tparam AgentHistogramPolicyT
- *   Parameterized AgentHistogramPolicy tuning policy type
- *
- * @tparam PRIVATIZED_SMEM_BINS
- *   Maximum number of histogram bins per channel (e.g., up to 256)
- *
- * @tparam NUM_CHANNELS
- *   Number of channels interleaved in the input data (may be greater than the number of channels
- *   being actively histogrammed)
- *
- * @tparam NUM_ACTIVE_CHANNELS
- *   Number of channels actively being histogrammed
- *
- * @tparam SampleIteratorT
- *   The input iterator type. @iterator.
- *
- * @tparam CounterT
- *   Integer type for counting sample occurrences per histogram bin
- *
- * @tparam PrivatizedDecodeOpT
- *   The transform operator type for determining privatized counter indices from samples,
- *   one for each channel
- *
- * @tparam OutputDecodeOpT
- *   The transform operator type for determining output bin-ids from privatized counter indices,
- *   one for each channel
- *
- * @tparam OffsetT
- *   integer type for global offsets
- *
- * @param d_samples
- *   Input data to reduce
- *
- * @param num_output_bins_wrapper
- *   The number bins per final output histogram
- *
- * @param num_privatized_bins_wrapper
- *   The number bins per privatized histogram
- *
- * @param d_output_histograms_wrapper
- *   Reference to final output histograms
- *
- * @param d_privatized_histograms_wrapper
- *   Reference to privatized histograms
- *
- * @param output_decode_op_wrapper
- *   The transform operator for determining output bin-ids from privatized counter indices,
- *   one for each channel
- *
- * @param privatized_decode_op_wrapper
- *   The transform operator for determining privatized counter indices from samples,
- *   one for each channel
- *
- * @param num_row_pixels
- *   The number of multi-channel pixels per row in the region of interest
- *
- * @param num_rows
- *   The number of rows in the region of interest
- *
- * @param row_stride_samples
- *   The number of samples between starts of consecutive rows in the region of interest
- *
- * @param tiles_per_row
- *   Number of image tiles per row
- *
- * @param tile_queue
- *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
- */
+//! Histogram privatized sweep kernel entry point (multi-block).
+//! Computes privatized histograms, one per thread block.
+//!
+//!
+//! @tparam ChainedPolicyT
+//!   Max policy from a policy hub containing the AgentHistogramPolicy policy
+//!
+//! @tparam PrivatizedSmemBins
+//!   Maximum number of histogram bins per channel (e.g., up to 256)
+//!
+//! @tparam NumChannels
+//!   Number of channels interleaved in the input data (may be greater than the number of channels
+//!   being actively histogrammed)
+//!
+//! @tparam NumActiveChannels
+//!   Number of channels actively being histogrammed
+//!
+//! @tparam SampleIteratorT
+//!   The input iterator type. @iterator.
+//!
+//! @tparam CounterT
+//!   Integer type for counting sample occurrences per histogram bin
+//!
+//! @tparam PrivatizedDecodeOpT
+//!   The transform operator type for determining privatized counter indices from samples,
+//!   one for each channel
+//!
+//! @tparam OutputDecodeOpT
+//!   The transform operator type for determining output bin-ids from privatized counter indices,
+//!   one for each channel
+//!
+//! @tparam OffsetT
+//!   integer type for global offsets
+//!
+//! @param d_samples
+//!   Input data to reduce
+//!
+//! @param num_output_bins_wrapper
+//!   The number bins per final output histogram
+//!
+//! @param num_privatized_bins_wrapper
+//!   The number bins per privatized histogram
+//!
+//! @param d_output_histograms_wrapper
+//!   Reference to final output histograms
+//!
+//! @param d_privatized_histograms_wrapper
+//!   Reference to privatized histograms
+//!
+//! @param output_decode_op_wrapper
+//!   The transform operator for determining output bin-ids from privatized counter indices,
+//!   one for each channel
+//!
+//! @param privatized_decode_op_wrapper
+//!   The transform operator for determining privatized counter indices from samples,
+//!   one for each channel
+//!
+//! @param num_row_pixels
+//!   The number of multi-channel pixels per row in the region of interest
+//!
+//! @param num_rows
+//!   The number of rows in the region of interest
+//!
+//! @param row_stride_samples
+//!   The number of samples between starts of consecutive rows in the region of interest
+//!
+//! @param tiles_per_row
+//!   Number of image tiles per row
+//!
+//! @param tile_queue
+//!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
 template <typename ChainedPolicyT,
-          int PRIVATIZED_SMEM_BINS,
-          int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
+          int PrivatizedSmemBins,
+          int NumChannels,
+          int NumActiveChannels,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
@@ -454,12 +435,12 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     SampleIteratorT d_samples,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper,
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper,
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper,
+    ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
+    ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
+    ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
+    ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -470,9 +451,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
-                   PRIVATIZED_SMEM_BINS,
-                   NUM_CHANNELS,
-                   NUM_ACTIVE_CHANNELS,
+                   PrivatizedSmemBins,
+                   NumChannels,
+                   NumActiveChannels,
                    SampleIteratorT,
                    CounterT,
                    PrivatizedDecodeOpT,
