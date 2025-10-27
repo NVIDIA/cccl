@@ -52,11 +52,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CUDA_COMPILATION()
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 _CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
-#endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -519,14 +517,12 @@ public:
 
 _CCCL_END_NAMESPACE_CUDA
 
-#if _CCCL_CUDA_COMPILATION()
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 _CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
 {
   return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
 }
 _CCCL_END_NAMESPACE_CUDA_DEVICE
-#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 
