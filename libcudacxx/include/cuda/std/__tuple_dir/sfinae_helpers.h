@@ -28,14 +28,10 @@
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -47,66 +43,6 @@ struct __all_dummy;
 
 template <bool... _Pred>
 using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
-
-struct __tuple_sfinae_base
-{
-  template <class, class>
-  struct __test_size : false_type
-  {};
-
-  template <class... _Tp, class... _Up>
-  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : bool_constant<sizeof...(_Tp) == sizeof...(_Up)>
-  {};
-
-  template <template <class, class...> class, class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>
-  struct __test : false_type
-  {};
-
-  template <template <class, class...> class _Trait, class... _LArgs, class... _RArgs>
-  struct __test<_Trait, __tuple_types<_LArgs...>, __tuple_types<_RArgs...>, true>
-      : __all<_Trait<_LArgs, _RArgs>::value...>
-  {};
-
-  template <class _FromArgs, class _ToArgs>
-  using __constructible = __test<is_constructible, _ToArgs, _FromArgs>;
-  template <class _FromArgs, class _ToArgs>
-  using __convertible = __test<is_convertible, _FromArgs, _ToArgs>;
-  template <class _FromArgs, class _ToArgs>
-  using __assignable = __test<is_assignable, _ToArgs, _FromArgs>;
-};
-
-// __tuple_convertible
-
-template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
-struct __tuple_convertible : public false_type
-{};
-
-template <class _Tp, class _Up>
-struct __tuple_convertible<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__convertible<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up>>
-{};
-
-// __tuple_constructible
-
-template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
-struct __tuple_constructible : public false_type
-{};
-
-template <class _Tp, class _Up>
-struct __tuple_constructible<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__constructible<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up>>
-{};
-
-// __tuple_assignable
-
-template <class _Tp, class _Up, bool = __tuple_like_ext<remove_reference_t<_Tp>>, bool = __tuple_like_ext<_Up>>
-struct __tuple_assignable : public false_type
-{};
-
-template <class _Tp, class _Up>
-struct __tuple_assignable<_Tp, _Up, true, true>
-    : public __tuple_sfinae_base::__assignable<__make_tuple_types_t<_Tp>, __make_tuple_types_t<_Up&>>
-{};
 
 template <size_t _Ip, class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>

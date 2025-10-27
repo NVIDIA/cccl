@@ -26,6 +26,9 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
@@ -37,6 +40,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/lazy.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -54,6 +58,64 @@ inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp>
 
 template <class... _Tp>
 inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ...);
+
+template <class, class>
+inline constexpr bool __tuple_types_same_size = false;
+
+template <class... _Tp, class... _Up>
+inline constexpr bool __tuple_types_same_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> =
+  sizeof...(_Tp) == sizeof...(_Up);
+
+// __tuple_constructible
+template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+inline constexpr bool __tuple_types_constructible = false;
+
+template <class... _From, class... _To>
+inline constexpr bool __tuple_types_constructible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
+  (is_constructible_v<_To, _From> && ...);
+
+template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
+inline constexpr bool __tuple_constructible = false;
+
+template <class _From, class _To>
+inline constexpr bool __tuple_constructible<_From, _To, true, true> =
+  __tuple_types_constructible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
+
+template <class _Tp, class _Up>
+struct __tuple_constructible_struct
+{
+  static constexpr bool value = __tuple_constructible<_Tp, _Up>;
+};
+
+// __tuple_convertible
+template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+inline constexpr bool __tuple_types_convertible = false;
+
+template <class... _From, class... _To>
+inline constexpr bool __tuple_types_convertible<__tuple_types<_From...>, __tuple_types<_To...>, true> =
+  (is_convertible_v<_From, _To> && ...);
+
+template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
+inline constexpr bool __tuple_convertible = false;
+
+template <class _From, class _To>
+inline constexpr bool __tuple_convertible<_From, _To, true, true> =
+  __tuple_types_convertible<__make_tuple_types_t<_From>, __make_tuple_types_t<_To>>;
+
+// __tuple_assignable
+template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+inline constexpr bool __tuple_types_assignable = false;
+
+template <class... _From, class... _To>
+inline constexpr bool __tuple_types_assignable<__tuple_types<_From...>, __tuple_types<_To...>, true> =
+  (is_assignable_v<_To, _From> && ...);
+
+template <class _From, class _To, bool = __tuple_like_ext<remove_reference_t<_From>>, bool = __tuple_like_ext<_To>>
+inline constexpr bool __tuple_assignable = false;
+
+template <class _From, class _To>
+inline constexpr bool __tuple_assignable<_From, _To, true, true> =
+  __tuple_types_assignable<__make_tuple_types_t<_From>, __make_tuple_types_t<_To&>>;
 
 struct __invalid_tuple_constraints
 {
@@ -74,12 +136,12 @@ struct __tuple_constraints
   static constexpr bool __explicit_default_constructible = __default_constructible && !__implicit_default_constructible;
 
   static constexpr bool __implicit_variadic_copy_constructible =
-    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
-    && __tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>::value;
+    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>
+    && __tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>;
 
   static constexpr bool __explicit_variadic_copy_constructible =
-    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
-    && !__tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>::value;
+    __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>
+    && !__tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>;
 
   static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
 
@@ -97,12 +159,10 @@ struct __tuple_constraints
   struct __variadic_constraints
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>>::value
-      && __tuple_convertible<tuple<_Args...>, tuple<_Tp...>>::value;
+      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>> && __tuple_convertible<tuple<_Args...>, tuple<_Tp...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>>::value
-      && !__tuple_convertible<tuple<_Args...>, tuple<_Tp...>>::value;
+      __tuple_constructible<tuple<_Args...>, tuple<_Tp...>> && !__tuple_convertible<tuple<_Args...>, tuple<_Tp...>>;
 
     static constexpr bool __nothrow_constructible = (is_nothrow_constructible_v<_Tp, _Args> && ...);
   };
@@ -111,13 +171,13 @@ struct __tuple_constraints
   struct __variadic_constraints_less_rank
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>::value
-      && __tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>::value
+      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
+      && __tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
       && __tuple_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>::value
-      && !__tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>::value
+      __tuple_constructible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
+      && !__tuple_convertible<tuple<_Args...>, __make_tuple_types_t<tuple<_Tp...>, sizeof...(_Args)>>
       && __tuple_all_default_constructible_v<__make_tuple_types_t<tuple<_Tp...>, sizeof...(_Tp), sizeof...(_Args)>>;
   };
 
@@ -125,10 +185,10 @@ struct __tuple_constraints
   struct __valid_tuple_like_constraints
   {
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>>::value && __tuple_convertible<_Tuple, tuple<_Tp...>>::value;
+      __tuple_constructible<_Tuple, tuple<_Tp...>> && __tuple_convertible<_Tuple, tuple<_Tp...>>;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>>::value && !__tuple_convertible<_Tuple, tuple<_Tp...>>::value;
+      __tuple_constructible<_Tuple, tuple<_Tp...>> && !__tuple_convertible<_Tuple, tuple<_Tp...>>;
   };
 
   template <class _Tuple>
@@ -150,11 +210,11 @@ struct __tuple_constraints
     using _PreferTupleLikeConstructor = _PreferTupleLikeConstructorImpl<_Tuple2>;
 
     static constexpr bool __implicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>>::value && __tuple_convertible<_Tuple, tuple<_Tp...>>::value
+      __tuple_constructible<_Tuple, tuple<_Tp...>> && __tuple_convertible<_Tuple, tuple<_Tp...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
 
     static constexpr bool __explicit_constructible =
-      __tuple_constructible<_Tuple, tuple<_Tp...>>::value && !__tuple_convertible<_Tuple, tuple<_Tp...>>::value
+      __tuple_constructible<_Tuple, tuple<_Tp...>> && !__tuple_convertible<_Tuple, tuple<_Tp...>>
       && _PreferTupleLikeConstructor<_Tuple>::value;
   };
 
