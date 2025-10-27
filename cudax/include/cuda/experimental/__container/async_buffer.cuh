@@ -631,10 +631,8 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     {
       __fill_n<_Tp, __memory_accessability::device>(__stream, __first, __count, __value);
     }
-    return;
   }
-
-  if constexpr (_Accessability == __memory_accessability::host)
+  else if constexpr (_Accessability == __memory_accessability::host)
   {
     ::cuda::experimental::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
