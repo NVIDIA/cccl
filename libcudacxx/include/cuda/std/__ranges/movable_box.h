@@ -141,7 +141,7 @@ struct __mb_optional_copy_assign : __mb_optional_destruct_base<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
 
-  _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = delete;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(__mb_optional_copy_assign&&)      = default;
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign& operator=(const __mb_optional_copy_assign&) = delete;
@@ -209,9 +209,7 @@ struct __mb_optional_move_assign<_Tp, false> : __mb_optional_copy_assign<_Tp>
 };
 
 template <class _Tp>
-struct __mb_optional_base
-    : __mb_optional_move_assign<_Tp>
-    , __sfinae_move_base<copy_constructible<_Tp>, true>
+struct __mb_optional_base : __mb_optional_move_assign<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_base, __mb_optional_move_assign, _Tp);
 
