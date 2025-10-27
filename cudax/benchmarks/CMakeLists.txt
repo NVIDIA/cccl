@@ -38,8 +38,8 @@ function(add_bench_dir bench_dir)
   string(REPLACE "/" "." bench_prefix "${bench_prefix}")
 
   foreach(bench_src IN LISTS bench_srcs)
-    foreach(cn_target IN LISTS cudax_TARGETS)
-        cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+    foreach(cudax_target IN LISTS cudax_TARGETS)
+        cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
       get_filename_component(bench_name "${bench_src}" NAME_WLE)
       string(PREPEND bench_name "${config_prefix}.${bench_prefix}.")
@@ -48,8 +48,8 @@ function(add_bench_dir bench_dir)
       string(APPEND bench_name ".base")
 
       add_bench(base_bench_target ${bench_name} "${bench_src}")
-      target_link_libraries(${bench_name} PRIVATE ${cn_target})
-      cudax_clone_target_properties(${bench_name} ${cn_target})
+      target_link_libraries(${bench_name} PRIVATE ${cudax_target})
+      cudax_clone_target_properties(${bench_name} ${cudax_target})
 
       target_compile_options(${bench_name} PRIVATE "--extended-lambda")
     endforeach()
