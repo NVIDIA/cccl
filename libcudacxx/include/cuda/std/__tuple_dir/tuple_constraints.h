@@ -188,16 +188,6 @@ struct __tuple_constraints
   static constexpr bool __nothrow_variadic_copy_constructible = (is_nothrow_copy_constructible_v<_Tp> && ...);
 
   template <class... _Args>
-  struct _PackExpandsToThisTuple : false_type
-  {};
-
-  template <class _Arg>
-  struct _PackExpandsToThisTuple<_Arg>
-  {
-    static constexpr bool value = is_same_v<remove_cvref_t<_Arg>, tuple<_Tp...>>;
-  };
-
-  template <class... _Args>
   struct __variadic_constraints
   {
     static constexpr bool __constructible = __tuple_constructible<__tuple_types<_Args...>, __tuple_types<_Tp...>>;
