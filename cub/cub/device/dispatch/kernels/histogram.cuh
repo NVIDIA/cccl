@@ -240,7 +240,7 @@ struct Transforms
 
     //! @brief Returns true if the bin computation for a given combination of range `(max_level - min_level)` and number
     //! of bins may overflow.
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow([[maybe_unused]] CommonT num_bins)
     {
       if constexpr (::cuda::std::is_integral_v<CommonT>)
       {
