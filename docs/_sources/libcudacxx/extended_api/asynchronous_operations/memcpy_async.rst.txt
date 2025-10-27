@@ -133,8 +133,27 @@ Parameters
    * - ``pipeline``
      - The pipeline object used to wait on the copy completion.
 
+
+Implementation notes
+--------------------
+
+On Hopper+ GPUs, the overloads taking a barrier may use the Tensor Memory Accelerator (TMA)
+via the ``cp.async.bulk`` instruction to perform the copy if:
+- the barrier resides in shared memory,
+- the data is aligned to 16 bytes,
+- the source is global memory,
+- the destination is shared memory.
+
+On Ampere+ GPUs, the ``cp.async`` instruction may be used to perform the copy if:
+- the data is aligned to at least 4 bytes,
+- the source is global memory,
+- the destination is shared memory.
+
+
 Examples
 --------
+
+.. rubric:: Example: Using a system-wide barrier to copy within global memory
 
 .. code:: cuda
 
@@ -153,3 +172,65 @@ Examples
    }
 
 `See it on Godbolt <https://godbolt.org/z/od6q9s8fq>`_
+
+.. rubric:: Example: 1D load of two buffers from global to shared memory with a barrier
+
+.. code:: cuda
+
+   #include <cuda/barrier>
+
+   __global__ void example_kernel(int* gmem1, double* gmem2) {
+     constexpr int tile_size = 1024;
+     __shared__ alignas(16)    int smem1[tile_size];
+     __shared__ alignas(16) double smem2[tile_size];
+
+     #pragma nv_diag_suppress static_var_with_dynamic_init
+     __shared__  cuda::barrier<cuda::thread_scope_block> bar;
+
+     // setup the barrier where each thread in the block arrives at
+     if (threadIdx.x == 0) {
+       init(&bar, blockDim.x);
+     }
+     __syncthreads();
+
+     // issue two copy operations
+     auto group = ...;
+     cuda::memcpy_async(group, smem1, gmem1, cuda::aligned_size_t<16>(tile_size * sizeof(int)   ), bar);
+     cuda::memcpy_async(group, smem2, gmem2, cuda::aligned_size_t<16>(tile_size * sizeof(double)), bar);
+
+     // arrive and wait for copy operations to complete
+     bar.arrive_and_wait();
+
+     // process data in smem ...
+   }
+
+There are multiple possibilities to initialize the ``group`` variable.
+One option is to use the cooperative groups API:
+
+.. code:: cuda
+
+    #include <cooperative_groups.h>
+    auto group = cooperative_groups::this_thread_block();
+
+Another option, especially if the dimensionality of the thread block is known, e.g. 1D,
+a custom group can be defined like:
+
+.. code:: cuda
+
+   struct this_thread_block_1D {
+     static constexpr cuda::thread_scope thread_scope = cuda::thread_scope_block;
+
+     __device__ void sync() const {
+       __syncthreads();
+     }
+
+     __device__ auto size() const {
+       return blockDim.x;
+     }
+
+     __device__ auto thread_rank() const {
+       return threadIdx.x;
+     }
+   };
+
+`See it on Godbolt <https://godbolt.org/z/aM9cbabcW>`_
