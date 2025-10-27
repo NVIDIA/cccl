@@ -39,7 +39,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Group>
-_CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g) noexcept
 {
   // cooperative groups maps a multidimensional thread id into the thread rank the same way as warps do
   const unsigned int tid             = __g.thread_rank();
