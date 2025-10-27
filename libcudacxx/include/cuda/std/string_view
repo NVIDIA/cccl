@@ -22,6 +22,7 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__fwd/allocator.h>
@@ -54,7 +55,6 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 #include <cuda/std/version>
 
