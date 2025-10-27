@@ -20,13 +20,13 @@
 
 #include <testing.cuh>
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 #  define TEST_TYPES cudax::managed_memory_pool, cudax::device_memory_pool, cudax::pinned_memory_pool
-#elif _CCCL_CUDACC_AT_LEAST(12, 6)
+#elif _CCCL_CTK_AT_LEAST(12, 6)
 #  define TEST_TYPES cudax::device_memory_pool, cudax::pinned_memory_pool
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6)
 #  define TEST_TYPES cudax::device_memory_pool
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 namespace cudax = cuda::experimental;
 
@@ -43,18 +43,18 @@ void pool_static_asserts()
   static_assert(!cuda::std::is_empty<PoolType>::value, "");
 }
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 template void pool_static_asserts<cudax::managed_memory_pool>();
-#endif
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 template void pool_static_asserts<cudax::pinned_memory_pool>();
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 template void pool_static_asserts<cudax::device_memory_pool>();
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 static_assert(cuda::std::is_default_constructible<cudax::managed_memory_pool>::value, "");
 static_assert(cuda::std::is_default_constructible<cudax::pinned_memory_pool>::value, "");
-#endif
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 static_assert(!cuda::std::is_default_constructible<cudax::device_memory_pool>::value, "");
 
 template <typename PoolType>
@@ -204,22 +204,22 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
       pool_properties.location.type = ::cudaMemLocationTypeDevice;
       pool_properties.location.id   = current_device;
     }
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
     else if (cuda::std::is_same_v<memory_pool, cudax::pinned_memory_pool>)
     {
       pool_properties.allocType     = ::cudaMemAllocationTypePinned;
       pool_properties.location.type = cudaMemLocationTypeHostNuma;
       pool_properties.location.id   = 0;
     }
-#  if _CCCL_CUDACC_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
     else if (cuda::std::is_same_v<memory_pool, cudax::managed_memory_pool>)
     {
       pool_properties.allocType     = ::cudaMemAllocationTypeManaged;
       pool_properties.location.type = cudaMemLocationTypeNone;
       pool_properties.location.id   = 0;
     }
-#  endif
-#endif
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
     else
     {
       REQUIRE(false);
@@ -509,7 +509,7 @@ C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
   }
 }
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{0};
@@ -522,7 +522,7 @@ C2H_CCCLRT_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
   // pool.enable_access_from(cuda::devices[0]);
   // CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
 }
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]")
 {
@@ -548,7 +548,7 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]")
 {
   cudax::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
@@ -566,6 +566,6 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
   // Ensure that we disable export
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 // managed memory pool does not support allocation handles yet.
