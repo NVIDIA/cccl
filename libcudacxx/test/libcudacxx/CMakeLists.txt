@@ -20,6 +20,10 @@ option(LIBCUDACXX_TEST_WITH_NVRTC
   "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
   OFF)
 
+string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+set(LIBCUDACXX_TEST_COMPILER_FLAGS "${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${build_type_upper}}")
+set(LIBCUDACXX_TEST_LINKER_FLAGS "")
+
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
   # Should also set up dependency on the project when NVRTC is enabled
