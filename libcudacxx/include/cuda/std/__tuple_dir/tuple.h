@@ -137,12 +137,16 @@ public:
   {}
 
   template <class... _Args>
-  static constexpr bool __expands_to_this_tuple =
-    (sizeof...(_Args) == 1) && (is_same_v<remove_cvref_t<_Args>, tuple> && ...);
+  struct __expands_to_this_tuple : false_type
+  {};
+
+  template <class _Arg>
+  struct __expands_to_this_tuple<_Arg> : is_same<remove_cvref_t<_Arg>, tuple>
+  {};
 
   template <class... _Up>
   using __variadic_constraints =
-    _If<!__expands_to_this_tuple<_Up...> && sizeof...(_Up) == sizeof...(_Tp),
+    _If<!__expands_to_this_tuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
         typename __tuple_constraints<_Tp...>::template __variadic_constraints<_Up...>,
         __invalid_tuple_constraints>;
 
@@ -162,7 +166,7 @@ public:
 
   template <class... _Up>
   using __variadic_constraints_less_rank =
-    _If<!__expands_to_this_tuple<_Up...>,
+    _If<!__expands_to_this_tuple<_Up...>::value,
         typename __tuple_constraints<_Tp...>::template __variadic_constraints_less_rank<_Up...>,
         __invalid_tuple_constraints>;
 
@@ -216,35 +220,35 @@ private:
 
 public:
   template <class _Tuple,
-            class _Constraints                                       = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>, int>       = 0,
-            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>         = 0,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            class _Constraints                                       = __tuple_like_constraints<const _Tuple&>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>, int>       = 0,
-            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
   _CCCL_API constexpr tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
       : __base_(__t)
   {}
 
   template <class _Tuple,
-            class _Constraints                                       = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>, int>       = 0,
-            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>         = 0,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            class _Constraints                                       = __tuple_like_constraints<const _Tuple&>,
-            enable_if_t<!__expands_to_this_tuple<_Tuple>, int>       = 0,
-            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
+            enable_if_t<!__expands_to_this_tuple<_Tuple>::value, int> = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
       : __base_(__t)
   {}
