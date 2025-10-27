@@ -513,7 +513,8 @@ void generator_t::power_law_segment_offsets(
   const std::size_t total_segments   = device_segment_offsets.size() - 1;
   const double* uniform_distribution = dist.new_lognormal_distribution(seed, total_segments);
 
-  if (thrust::count(exec, uniform_distribution, uniform_distribution + total_segments, 0.0) == total_segments)
+  if (static_cast<std::size_t>(thrust::count(exec, uniform_distribution, uniform_distribution + total_segments, 0.0))
+      == total_segments)
   {
     uniform_distribution = dist.new_constant(total_segments, 1.0);
   }
@@ -600,7 +601,7 @@ struct offset_to_size_t
 };
 
 template <typename T>
-void gen_key_segments(executor exec, seed_t seed, cuda::std::span<T> keys, cuda::std::span<std::size_t> segment_offsets)
+void gen_key_segments(executor exec, seed_t, cuda::std::span<T> keys, cuda::std::span<std::size_t> segment_offsets)
 {
   thrust::counting_iterator<int> iota(0);
   offset_to_iterator_t<T> dst_transform_op{keys.data()};
