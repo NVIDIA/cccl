@@ -156,6 +156,7 @@ __host__ __device__ constexpr bool test_min_max()
 }
 
 #if !_CCCL_COMPILER(NVRTC)
+#include <sstream>
 template <typename Engine>
 void test_save_restore()
 {
