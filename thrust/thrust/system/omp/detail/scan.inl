@@ -77,7 +77,7 @@ OutputIterator scan_impl(
     {
       ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
     }
-    return result;
+    return result + n;
   }
 
   thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
