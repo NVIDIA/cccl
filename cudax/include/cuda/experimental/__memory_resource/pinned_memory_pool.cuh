@@ -40,7 +40,7 @@
 namespace cuda::experimental
 {
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 
 static ::cudaMemPool_t __get_default_host_pinned_pool();
 
@@ -175,13 +175,13 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
   }();
 
   return __default_pool;
-#  else // _CCCL_CTK_BELOW(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   static pinned_memory_pool __default_pool(0);
   return __default_pool.get();
-#  endif // _CCCL_CTK_BELOW(13, 0)
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 }
 
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 } // namespace cuda::experimental
 

@@ -158,11 +158,11 @@ struct extract_properties<cuda::std::tuple<T, Properties...>>
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
       return cudax::pinned_default_memory_pool();
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
       return;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
     }
     else
     {

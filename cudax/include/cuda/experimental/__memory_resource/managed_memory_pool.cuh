@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -144,6 +144,6 @@ static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_ac
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
