@@ -177,14 +177,11 @@ struct EnabledBorrowingBeginMember
   }
 };
 
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingBeginMember> = true;
 }
-
-
 
 struct BeginMemberFunction
 {
@@ -289,15 +286,11 @@ struct BeginFunctionEnabledBorrowing
   }
 };
 
-
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BeginFunctionEnabledBorrowing> = true;
 }
-
-
 
 struct BeginFunctionReturnsEmptyPtr
 {

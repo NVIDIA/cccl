@@ -38,15 +38,11 @@ struct BorrowedRange
   __host__ __device__ int* end() const;
 };
 
-
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BorrowedRange> = true;
 }
-
-
 
 static_assert(!cuda::std::ranges::borrowed_range<NotRange>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NotRange&>, "");

@@ -58,7 +58,6 @@ private:
   typedef void difference_type;
 };
 
-
 namespace cuda::std
 {
 
@@ -71,7 +70,6 @@ struct pointer_traits<C<char>::pointer>
 };
 
 } // namespace cuda::std
-
 
 int main(int, char**)
 {

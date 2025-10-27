@@ -282,7 +282,6 @@ struct BadBasicCommonReference
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int>, "");
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int&>, "");
 
-
 namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
@@ -331,7 +330,6 @@ struct IntNotConvertibleToCommonReference
 {
   __host__ __device__ operator int&() const;
 };
-
 
 namespace cuda::std
 {

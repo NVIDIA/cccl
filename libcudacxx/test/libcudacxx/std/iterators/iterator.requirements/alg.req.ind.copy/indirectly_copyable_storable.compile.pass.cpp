@@ -303,7 +303,6 @@ struct NotConstructibleFromRefIn
   __host__ __device__ ReferenceType& operator*() const;
 };
 
-
 namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
@@ -318,7 +317,6 @@ struct basic_common_reference<NotConstructibleFromRefIn::ReferenceType, NotConst
   using type = CommonType&;
 };
 } // namespace cuda::std
-
 
 static_assert(
   cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>,
@@ -355,7 +353,6 @@ struct NotAssignableFromRefIn
   __host__ __device__ ReferenceType& operator*() const;
 };
 
-
 namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
@@ -370,7 +367,6 @@ struct basic_common_reference<NotAssignableFromRefIn::ReferenceType, NotAssignab
   using type = CommonType&;
 };
 } // namespace cuda::std
-
 
 static_assert(
   cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>, "");

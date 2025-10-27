@@ -154,14 +154,11 @@ struct EnabledBorrowingDataMember
   }
 };
 
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
 }
-
-
 
 struct DataMemberAndBegin
 {
@@ -283,14 +280,11 @@ struct BeginMemberBorrowingEnabled
   }
 };
 
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
 }
-
-
 
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&>, "");
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&&>, "");

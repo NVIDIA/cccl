@@ -168,13 +168,11 @@ struct EnabledBorrowingEndMember
   }
 };
 
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingEndMember> = true;
 }
-
 
 struct EndMemberFunction
 {
@@ -318,14 +316,11 @@ struct EndFunctionEnabledBorrowing
   }
 };
 
-
 namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EndFunctionEnabledBorrowing> = true;
 }
-
-
 
 struct EndFunctionReturnsEmptyPtr
 {

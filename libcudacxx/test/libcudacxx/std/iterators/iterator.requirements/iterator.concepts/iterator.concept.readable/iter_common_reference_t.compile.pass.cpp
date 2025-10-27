@@ -42,7 +42,6 @@ struct Common
   __host__ __device__ Common(B);
 };
 
-
 namespace cuda::std
 {
 template <template <class> class TQual, template <class> class QQual>
@@ -54,7 +53,6 @@ template <template <class> class TQual, template <class> class QQual>
 struct basic_common_reference<B, A, TQual, QQual> : basic_common_reference<A, B, TQual, QQual>
 {};
 } // namespace cuda::std
-
 
 struct T3
 {
