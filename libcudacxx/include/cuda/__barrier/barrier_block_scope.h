@@ -69,7 +69,7 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    barrier& __b);
+    barrier<thread_scope_block>& __b);
 
   _CCCL_DEVICE ::cuda::std::uint64_t* __native_handle() const
   {
