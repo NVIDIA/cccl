@@ -28,7 +28,7 @@ inline __host__ __device__ T sqr(T x)
   return x * x;
 }
 
-__host__ __device__ bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     typedef cuda::std::bernoulli_distribution D;
@@ -113,5 +113,8 @@ __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
+#if TEST_STD_VER >= 2020
+  static_assert(test(), "");
+#endif
   return 0;
 }

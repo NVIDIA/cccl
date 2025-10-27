@@ -43,20 +43,20 @@ public:
   public:
     typedef bernoulli_distribution distribution_type;
 
-    _CCCL_API explicit param_type(double __p = 0.5)
+    constexpr _CCCL_API explicit param_type(double __p = 0.5)
         : __p_(__p)
     {}
 
-    _CCCL_API double p() const
+    [[nodiscard]] _CCCL_API constexpr double p() const noexcept
     {
       return __p_;
     }
 
-    friend _CCCL_API bool operator==(const param_type& __x, const param_type& __y)
+    friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__p_ == __y.__p_;
     }
-    friend _CCCL_API bool operator!=(const param_type& __x, const param_type& __y)
+    friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -67,25 +67,25 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API bernoulli_distribution()
+  constexpr _CCCL_API bernoulli_distribution()
       : bernoulli_distribution(0.5)
   {}
-  _CCCL_API explicit bernoulli_distribution(double __p)
+  constexpr _CCCL_API explicit bernoulli_distribution(double __p)
       : __p_(param_type(__p))
   {}
-  _CCCL_API explicit bernoulli_distribution(const param_type& __p)
+  constexpr _CCCL_API explicit bernoulli_distribution(const param_type& __p)
       : __p_(__p)
   {}
-  _CCCL_API void reset() {}
+  constexpr _CCCL_API void reset() noexcept {}
 
   // generating functions
   template <class _URNG>
-  _CCCL_API result_type operator()(_URNG& __g)
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URNG>
-  _CCCL_API result_type operator()(_URNG& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URNG>, "");
     uniform_real_distribution<double> __gen;
@@ -93,25 +93,24 @@ public:
   }
 
   // property functions
-  _CCCL_API double p() const
+  [[nodiscard]] _CCCL_API constexpr double p() const noexcept
   {
     return __p_.p();
   }
 
-  _CCCL_API param_type param() const
+  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API void param(const param_type& __p)
+  _CCCL_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
-
-  _CCCL_API result_type min() const
+  [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
   {
     return false;
   }
-  _CCCL_API result_type max() const
+  [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
   {
     return true;
   }
