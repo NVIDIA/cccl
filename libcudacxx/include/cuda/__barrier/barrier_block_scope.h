@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__fwd/barrier.h>
-#include <cuda/__fwd/barrier_native_handle.h>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -53,6 +52,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CUDA_COMPILATION()
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+#endif // _CCCL_CUDA_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Needed for pipeline.arrive_on
@@ -66,7 +71,7 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    barrier<thread_scope_block>& b);
+    barrier& __b);
 
   _CCCL_DEVICE ::cuda::std::uint64_t* __native_handle() const
   {
@@ -513,6 +518,15 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#if _CCCL_CUDA_COMPILATION()
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+{
+  return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
+}
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 
