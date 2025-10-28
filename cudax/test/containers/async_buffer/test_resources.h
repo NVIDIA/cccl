@@ -42,7 +42,7 @@ struct memory_resource_wrapper
 {
   // Not a resource_ref, because it can't be used to create any_resource (yet)
   // https://github.com/NVIDIA/cccl/issues/4166
-  cudax::any_resource<Properties...> resource_;
+  cuda::mr::any_resource<Properties...> resource_;
 
   void* allocate_sync(std::size_t size, std::size_t alignment)
   {

@@ -183,7 +183,7 @@ C2H_CCCLRT_TEST("make_async_buffer variants", "[container][async_buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf2)::__resource_t, cuda::mr::host_accessible>);
 
   // from any resource
-  auto any_res = cudax::any_resource<cuda::mr::device_accessible, other_property>(
+  auto any_res = cuda::mr::any_resource<cuda::mr::device_accessible, other_property>(
     cudax::device_default_memory_pool(cuda::device_ref{0}));
   auto buf3 = cudax::make_async_buffer(input.stream(), any_res, input);
   CUDAX_CHECK(equal_range(buf3));
@@ -202,7 +202,7 @@ C2H_CCCLRT_TEST("make_async_buffer variants", "[container][async_buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf4)::__resource_t, cuda::mr::host_accessible>);
 
   // from a resource reference
-  auto res_ref = cudax::resource_ref<cuda::mr::device_accessible, other_property>{any_res};
+  auto res_ref = cuda::mr::resource_ref<cuda::mr::device_accessible, other_property>{any_res};
   auto buf5    = cudax::make_async_buffer(input.stream(), res_ref, input);
   CUDAX_CHECK(equal_range(buf5));
   static_assert(
