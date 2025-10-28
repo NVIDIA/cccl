@@ -334,6 +334,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
     tile_queue.ResetDrain();

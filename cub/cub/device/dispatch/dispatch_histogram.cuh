@@ -227,7 +227,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
-      launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
+      launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue);
 
       // Return if empty problem
@@ -250,7 +250,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
-      launcher_factory(sweep_grid_dims, block_threads, 0, stream)
+      launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
