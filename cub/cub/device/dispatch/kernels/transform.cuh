@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
@@ -614,11 +615,6 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   }
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
-{
-  return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
-}
-
 template <int BulkCopyAlignment>
 _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   void* dst,
@@ -761,7 +757,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   if (inner_blocks)
   {
     // use one thread to setup the entire bulk copy
-    if (elect_one())
+    if (cuda::device::__elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
       // an update to the CUDA memory model blesses skipping the following fence
@@ -815,7 +811,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
   else
   {
-    const bool elected = elect_one();
+    const bool elected = cuda::device::__elect_one();
     if (elected)
     {
       ptx::mbarrier_init(&bar, 1);

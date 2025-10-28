@@ -24,11 +24,11 @@
 
 namespace cudax = cuda::experimental;
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 #  define TEST_TYPES cudax::legacy_managed_memory_resource, cudax::managed_memory_pool_ref
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
 #  define TEST_TYPES cudax::legacy_managed_memory_resource
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 template <typename Resource>
 void resource_static_asserts()
@@ -44,20 +44,20 @@ void resource_static_asserts()
 }
 
 template void resource_static_asserts<cudax::legacy_managed_memory_resource>();
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 template void resource_static_asserts<cudax::managed_memory_pool_ref>();
-#endif
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <class Resource>
 Resource get_resource()
 {
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
   if constexpr (cuda::std::is_same_v<Resource, cudax::managed_memory_pool_ref>)
   {
     return cudax::managed_default_memory_pool();
   }
   else
-#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
   {
     return Resource{};
   }
@@ -283,10 +283,10 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK((device_async_resource != first));
   }
 }
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 C2H_CCCLRT_TEST("managed_memory_resource async.deallocate_sync", "[memory_resource]")
 {
   cudax::managed_memory_pool_ref resource = cudax::managed_default_memory_pool();
   test_deallocate_async(resource);
 }
-#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
