@@ -684,16 +684,31 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
-
 } // namespace detail
 #endif // !_CCCL_COMPILER(NVRTC)
+
+namespace detail
+{
+template <typename T>
+struct get_active_policy
+{
+  using type = typename T::ActivePolicy;
+};
+} // namespace detail
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
 {
+private:
+  static constexpr bool have_previous_policy = !::cuda::std::is_same_v<PolicyT, PrevPolicyT>;
+
+public:
   /// The policy for the active compiler pass
-  using ActivePolicy = ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
+  using ActivePolicy =
+    typename ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion && have_previous_policy),
+                              detail::get_active_policy<PrevPolicyT>,
+                              ::cuda::std::type_identity<PolicyT>>::type;
 
 #if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
@@ -708,9 +723,12 @@ struct ChainedPolicy
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
     return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
-    if (device_ptx_version < PolicyPtxVersion)
+    if constexpr (have_previous_policy)
     {
-      return PrevPolicyT::Invoke(device_ptx_version, op);
+      if (device_ptx_version < PolicyPtxVersion)
+      {
+        return PrevPolicyT::Invoke(device_ptx_version, op);
+      }
     }
     return op.template Invoke<PolicyT>();
 #  endif
@@ -738,7 +756,7 @@ private:
   template <int DevicePtxVersion, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
   {
-    if constexpr (DevicePtxVersion < PolicyPtxVersion)
+    if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)
     {
       return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
     }
@@ -749,34 +767,6 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
-
-/// Helper for dispatching into a policy chain (end-of-chain specialization)
-template <int PolicyPtxVersion, typename PolicyT>
-struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
-{
-  template <int, typename, typename>
-  friend struct ChainedPolicy; // befriend primary template, so it can call invoke_static
-
-  /// The policy for the active compiler pass
-  using ActivePolicy = PolicyT;
-
-#if !_CCCL_COMPILER(NVRTC)
-  /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
-  template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op)
-  {
-    return op.template Invoke<PolicyT>();
-  }
-
-private:
-  template <int, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
-  {
-    return op.template Invoke<PolicyT>();
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
 CUB_NAMESPACE_END
 
 #if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)

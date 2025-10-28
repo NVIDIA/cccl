@@ -99,47 +99,6 @@ void segmented_reduce(
 //   Test section
 // ==============
 
-<<<<<<< HEAD
-=======
-static std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
-  std::string_view index_ty_name,
-  std::string_view state_name,
-  std::string_view advance_fn_name,
-  std::string_view dereference_fn_name)
-{
-  static constexpr std::string_view it_state_src_tmpl = R"XXX(
-struct {0} {{
-  {1} linear_id;
-  {1} row_size;
-}};
-)XXX";
-
-  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
-
-  static constexpr std::string_view it_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
-{{
-  state->linear_id += offset;
-}}
-)XXX";
-
-  const std::string it_advance_fn_def_src =
-    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
-
-  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2}* result)
-{{
-  *result = (state->linear_id) * (state->row_size);
-}}
-)XXX";
-
-  const std::string it_deref_fn_def_src =
-    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
-
-  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
-}
-
->>>>>>> main
 struct SegmentedReduce_SumOverRows_Fixture_Tag;
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",

@@ -36,7 +36,7 @@ See `std::memcpy <https://en.cppreference.com/w/cpp/string/byte/memcpy.html>`_  
 
 **Preconditions**
 
-The following preconditions are only enabled with the CUDA Toolkit 13.2 and CCCL 3.2 or later:
+The following preconditions are only enabled with CCCL 3.2 or later:
 
     - ``src`` is a valid pointer.
     - ``src + count`` is a valid pointer.

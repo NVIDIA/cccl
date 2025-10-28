@@ -164,14 +164,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-    InputIteratorT,
-    AccumT*,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -246,14 +249,17 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
+
+  static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
+                "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
+                "file an issue at: https://github.com/NVIDIA/cccl/issues");
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -547,14 +553,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
-    typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
-    InputIteratorT,
-    AccumT*,
-    OffsetT,
-    ReductionOpT,
-    AccumT,
-    TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
+                InputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;

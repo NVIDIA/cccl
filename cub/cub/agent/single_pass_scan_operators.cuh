@@ -228,7 +228,7 @@ struct no_delay_constructor_t
     using namespace ptx_json;
     return object<key<"name">() = value<string("no_delay_constructor_t")>(), key<"params">() = array<L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -265,7 +265,7 @@ struct reduce_by_key_delay_constructor_t
     return object<key<"name">()   = value<string("reduce_by_key_delay_constructor_t")>(),
                   key<"params">() = array<Delay, L2WriteLatency, GridThreshold>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -330,7 +330,7 @@ struct exponential_backoff_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -377,7 +377,7 @@ struct exponential_backoff_jitter_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_jitter_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -424,7 +424,7 @@ struct exponential_backoff_jitter_window_constructor_t
     return object<key<"name">()   = value<string("exponential_backoff_jitter_window_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -474,7 +474,7 @@ struct exponential_backon_jitter_window_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_jitter_window_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -523,7 +523,7 @@ struct exponential_backon_jitter_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_jitter_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -560,7 +560,7 @@ struct exponential_backon_constructor_t
     return object<key<"name">()   = value<string("exponential_backon_constructor_t")>(),
                   key<"params">() = array<InitialDelay, L2WriteLatency>()>();
   }
-#endif
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
@@ -578,36 +578,6 @@ using default_reduce_by_key_delay_constructor_t =
   ::cuda::std::_If<is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16),
                    reduce_by_key_delay_constructor_t<350, 450>,
                    default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
-
-// ptx-json encoders for delay constructor types. Unlike the other agent policy
-// member variables, this is defined as a type alias so we can't use the
-// CUB_DETAIL_POLICY_WRAPPER_DEFINE macro to embed it with ptx-json. To work
-// around this, we define the ptx-json encoders here. These can then be used in
-// the policy wrapper's EncodedPolicy member function to explicitly encode the
-// delay constructor.
-
-template <class DelayCtor>
-struct delay_constructor_json;
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_json<fixed_delay_constructor_t<Delay, L2WriteLatency>>
-{
-  using type =
-    ptx_json::object<ptx_json::key<"type">()  = ptx_json::value<ptx_json::string("fixed_delay_constructor_t")>(),
-                     ptx_json::key<"delay">() = ptx_json::value<Delay>(),
-                     ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
-};
-
-template <unsigned int L2WriteLatency>
-struct delay_constructor_json<no_delay_constructor_t<L2WriteLatency>>
-{
-  using type = ptx_json::object<ptx_json::key<"type">() = ptx_json::value<ptx_json::string("no_delay_constructor_t")>(),
-                                ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
-};
-#endif // CUB_ENABLE_POLICY_PTX_JSON
 
 /**
  * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
@@ -653,22 +623,22 @@ struct tile_state_with_memory_order
   }
 };
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int num_tiles_to_num_tile_states(int num_tiles)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_states(size_t num_tiles)
 {
   return warp_threads + num_tiles;
 }
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
-tile_state_allocation_size(int bytes_per_description, int bytes_per_payload, int num_tiles)
+tile_state_allocation_size(size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
-  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
   size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
-    static_cast<size_t>(num_tile_states * bytes_per_description),
+    num_tile_states * bytes_per_description,
     // bytes needed for partials
-    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    num_tile_states * bytes_per_payload,
     // bytes needed for inclusives
-    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+    num_tile_states * bytes_per_payload};
   // Set the necessary size of the blob
   size_t temp_storage_bytes = 0;
   void* allocations[3]      = {};
@@ -678,21 +648,21 @@ tile_state_allocation_size(int bytes_per_description, int bytes_per_payload, int
 };
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
-  int bytes_per_description,
-  int bytes_per_payload,
-  int num_tiles,
+  size_t bytes_per_description,
+  size_t bytes_per_payload,
+  size_t num_tiles,
   void* d_temp_storage,
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
   size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
-    static_cast<size_t>(num_tile_states * bytes_per_description),
+    num_tile_states * bytes_per_description,
     // bytes needed for partials
-    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    num_tile_states * bytes_per_payload,
     // bytes needed for inclusives
-    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+    num_tile_states * bytes_per_payload};
 
   // Set the necessary size of the blob
   return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);

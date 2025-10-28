@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/atomic>
-#include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

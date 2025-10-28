@@ -39,7 +39,7 @@
 
 struct device_segmented_sort_policy;
 struct device_three_way_partition_policy;
-using OffsetT = long;
+using OffsetT = ptrdiff_t;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
 // check we can map OffsetT to cuda::std::int64_t
@@ -180,7 +180,7 @@ cccl_op_t make_segments_selector_op(
   size_t num_lto_opts)
 {
   cccl_op_t selector_op{};
-  selector_state_t* selector_op_state = new selector_state_t{};
+  auto selector_op_state = std::make_unique<selector_state_t>();
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -202,8 +202,9 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
 
   auto* st = static_cast<state_t*>(state_ptr);
   const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
-  const {2} begin = static_cast<const {2}*>(st->begin_offsets)[st->base_segment_offset + sid];
-  const {3} end   = static_cast<const {3}*>(st->end_offsets)[st->base_segment_offset + sid];
+  const global_segment_offset_t index = st->base_segment_offset + static_cast<global_segment_offset_t>(sid);
+  const {2} begin = static_cast<const {2}*>(st->begin_offsets)[index];
+  const {3} end   = static_cast<const {3}*>(st->end_offsets)[index];
   const bool pred       = (end - begin) {4} st->threshold;
   *static_cast<bool*>(result_ptr) = pred;
 }}
@@ -226,9 +227,10 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
   selector_op.code_type = CCCL_OP_LTOIR;
   selector_op.size      = sizeof(selector_state_t);
   selector_op.alignment = alignof(selector_state_t);
-  selector_op.state     = selector_op_state;
+  selector_op.state     = selector_op_state.get();
 
   selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+  selector_op_state.release();
 
   return selector_op;
 }
@@ -276,16 +278,16 @@ struct segmented_sort_kernel_source
 
   void SetSegmentOffset(indirect_arg_t& selector, long long base_segment_offset) const
   {
-    auto* st                = reinterpret_cast<selector_state_t*>(selector.ptr);
+    auto* st                = static_cast<selector_state_t*>(selector.ptr);
     st->base_segment_offset = base_segment_offset;
   }
 };
 
 std::string get_three_way_partition_init_kernel_name()
 {
-  constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
+  static constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
 
-  constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+  static constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
 
   return std::format("cub::detail::three_way_partition::DeviceThreeWayPartitionInitKernel<{0}, {1}>",
                      scan_tile_state_t, // 0
@@ -297,19 +299,19 @@ std::string get_three_way_partition_kernel_name(std::string_view large_selector_
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
 
-  constexpr std::string_view input_it_t =
+  static constexpr std::string_view input_it_t =
     "thrust::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
-  constexpr std::string_view first_out_it_t  = "cub::detail::segmented_sort::local_segment_index_t*";
-  constexpr std::string_view second_out_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
-  constexpr std::string_view unselected_out_it_t =
+  static constexpr std::string_view first_out_it_t  = "cub::detail::segmented_sort::local_segment_index_t*";
+  static constexpr std::string_view second_out_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+  static constexpr std::string_view unselected_out_it_t =
     "thrust::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>";
-  constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
-  constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
+  static constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+  static constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-  constexpr std::string_view per_partition_offset_t = "cub::detail::three_way_partition::per_partition_offset_t";
-  constexpr std::string_view streaming_context_t =
+  static constexpr std::string_view per_partition_offset_t = "cub::detail::three_way_partition::per_partition_offset_t";
+  static constexpr std::string_view streaming_context_t =
     "cub::detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>";
 
   return std::format(
@@ -369,33 +371,6 @@ struct segmented_sort_runtime_tuning_policy
     return medium_segment;
   }
 
-  void CheckLoadModifierIsNotLDG() const
-  {
-    if (large_segment.LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
-    {
-      throw std::runtime_error("The memory consistency model does not apply to texture accesses");
-    }
-  }
-
-  void CheckLoadAlgorithmIsNotStriped() const
-  {
-    if (large_segment.LoadAlgorithm() == cub::BLOCK_LOAD_STRIPED
-        || medium_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED
-        || small_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED)
-    {
-      throw std::runtime_error("Striped load will make this algorithm unstable");
-    }
-  }
-
-  void CheckStoreAlgorithmIsNotStriped() const
-  {
-    if (medium_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED
-        || small_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED)
-    {
-      throw std::runtime_error("Striped stores will produce unsorted results");
-    }
-  }
-
   int PartitioningThreshold() const
   {
     return partitioning_threshold;
@@ -424,6 +399,36 @@ struct segmented_sort_runtime_tuning_policy
   int MediumPolicyItemsPerTile() const
   {
     return medium_segment.ItemsPerTile();
+  }
+
+  cub::CacheLoadModifier LargeSegmentLoadModifier() const
+  {
+    return large_segment.LoadModifier();
+  }
+
+  cub::BlockLoadAlgorithm LargeSegmentLoadAlgorithm() const
+  {
+    return large_segment.LoadAlgorithm();
+  }
+
+  cub::WarpLoadAlgorithm MediumSegmentLoadAlgorithm() const
+  {
+    return medium_segment.LoadAlgorithm();
+  }
+
+  cub::WarpLoadAlgorithm SmallSegmentLoadAlgorithm() const
+  {
+    return small_segment.LoadAlgorithm();
+  }
+
+  cub::WarpStoreAlgorithm MediumSegmentStoreAlgorithm() const
+  {
+    return medium_segment.StoreAlgorithm();
+  }
+
+  cub::WarpStoreAlgorithm SmallSegmentStoreAlgorithm() const
+  {
+    return small_segment.StoreAlgorithm();
   }
 
   using MaxPolicy = segmented_sort_runtime_tuning_policy;
@@ -471,8 +476,8 @@ std::string inject_delay_constructor_into_three_way_policy(
   const std::string& three_way_partition_policy_str, const std::string& delay_constructor_type)
 {
   // Insert before the final closing of the struct (right before the sequence "};")
-  const std::string needle = "};";
-  const auto pos           = three_way_partition_policy_str.rfind(needle);
+  static constexpr std::string_view needle = "};";
+  const auto pos                           = three_way_partition_policy_str.rfind(needle);
   if (pos == std::string::npos)
   {
     return three_way_partition_policy_str; // unexpected; return as-is
@@ -705,7 +710,7 @@ struct __align__({3}) items_storage_t {{
       segmented_sort::inject_delay_constructor_into_three_way_policy(
         three_way_partition_policy_str, three_way_partition_policy_delay_constructor);
 
-    constexpr std::string_view program_preamble_template = R"XXX(
+    static constexpr std::string_view program_preamble_template = R"XXX(
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 #include <cub/device/dispatch/kernels/three_way_partition.cuh>
 #include <thrust/iterator/counting_iterator.h> // used in three_way_partition kernel
@@ -1007,15 +1012,20 @@ CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_res
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
 
     // Clean up the selector op states
-    delete static_cast<segmented_sort::selector_state_t*>(build_ptr->large_segments_selector_op.state);
-    delete static_cast<segmented_sort::selector_state_t*>(build_ptr->small_segments_selector_op.state);
+    std::unique_ptr<segmented_sort::selector_state_t> large_state(
+      static_cast<segmented_sort::selector_state_t*>(build_ptr->large_segments_selector_op.state));
+    std::unique_ptr<segmented_sort::selector_state_t> small_state(
+      static_cast<segmented_sort::selector_state_t*>(build_ptr->small_segments_selector_op.state));
 
-    delete[] const_cast<char*>(build_ptr->large_segments_selector_op.code);
-    delete[] const_cast<char*>(build_ptr->small_segments_selector_op.code);
+    // Clean up the selector op code buffers
+    std::unique_ptr<char[]> large_code(const_cast<char*>(build_ptr->large_segments_selector_op.code));
+    std::unique_ptr<char[]> small_code(const_cast<char*>(build_ptr->small_segments_selector_op.code));
 
     // Clean up the runtime policies
-    delete static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy);
-    delete static_cast<segmented_sort::partition_runtime_tuning_policy*>(build_ptr->partition_runtime_policy);
+    std::unique_ptr<segmented_sort::segmented_sort_runtime_tuning_policy> rtp(
+      static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy));
+    std::unique_ptr<segmented_sort::partition_runtime_tuning_policy> prtp(
+      static_cast<segmented_sort::partition_runtime_tuning_policy*>(build_ptr->partition_runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

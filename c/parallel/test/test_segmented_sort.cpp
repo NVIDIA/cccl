@@ -28,7 +28,7 @@ using item_t    = float;
 
 using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
-using SizeT = long;
+using SizeT = ptrdiff_t;
 
 struct segmented_sort_cleanup
 {

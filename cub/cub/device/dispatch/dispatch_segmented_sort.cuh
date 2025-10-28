@@ -258,7 +258,6 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   error = CubDebug(error);
 }
 #endif // CUB_RDC_ENABLED
-
 template <typename MaxPolicyT,
           SortOrder Order,
           typename KeyT,
@@ -417,14 +416,18 @@ struct DispatchSegmentedSort
   {
     auto wrapped_policy = detail::segmented_sort::MakeSegmentedSortPolicyWrapper(policy);
 
-    wrapped_policy.CheckLoadModifierIsNotLDG();
+    CUB_DETAIL_STATIC_ISH_ASSERT(wrapped_policy.LargeSegmentLoadModifier() != CacheLoadModifier::LOAD_LDG,
+                                 "The memory consistency model does not apply to texture accesses");
 
-    if constexpr (!KEYS_ONLY)
-    {
-      wrapped_policy.CheckLoadAlgorithmIsNotStriped();
-    }
+    CUB_DETAIL_STATIC_ISH_ASSERT(
+      KEYS_ONLY || wrapped_policy.LargeSegmentLoadAlgorithm() != BLOCK_LOAD_STRIPED
+        || wrapped_policy.MediumSegmentLoadAlgorithm() != WARP_LOAD_STRIPED
+        || wrapped_policy.SmallSegmentLoadAlgorithm() != WARP_LOAD_STRIPED,
+      "Striped load will make this algorithm unstable");
 
-    wrapped_policy.CheckStoreAlgorithmIsNotStriped();
+    CUB_DETAIL_STATIC_ISH_ASSERT(wrapped_policy.MediumSegmentStoreAlgorithm() != WARP_STORE_STRIPED
+                                   || wrapped_policy.SmallSegmentStoreAlgorithm() != WARP_STORE_STRIPED,
+                                 "Striped stores will produce unsorted results");
 
     const int radix_bits = wrapped_policy.LargeSegmentRadixBits();
 
@@ -505,7 +508,7 @@ struct DispatchSegmentedSort
 
         // Signed integer type for global offsets
         // Check if the number of items exceeds the range covered by the selected signed offset type
-        cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+        error = ChooseOffsetT::is_exceeding_offset_type(num_items);
         if (error)
         {
           return error;
@@ -701,7 +704,7 @@ private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
   {
     constexpr int byte_size = 8;
-    const int num_bits      = kernel_source.KeySize() * byte_size;
+    const int num_bits      = static_cast<int>(kernel_source.KeySize()) * byte_size;
     const int num_passes    = ::cuda::ceil_div(num_bits, radix_bits);
     return num_passes;
   }
@@ -786,7 +789,7 @@ private:
 
       // Signed integer type for global offsets
       // Check if the number of items exceeds the range covered by the selected signed offset type
-      cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+      error = ChooseOffsetT::is_exceeding_offset_type(num_items);
       if (error)
       {
         return error;
