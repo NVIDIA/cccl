@@ -16,6 +16,8 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 
+#include <cuda/std/__numeric/reduce.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
@@ -334,8 +336,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
-  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
+                                    // writes/reads to the temp storage, we could omit the sync here
+
+  if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end()) <= 2048)
+  {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {

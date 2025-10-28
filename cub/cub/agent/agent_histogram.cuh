@@ -642,7 +642,7 @@ struct AgentHistogram
         num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
 
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
   }
 
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
