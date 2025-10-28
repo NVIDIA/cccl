@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__cccl/architecture.h>
+
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -49,8 +51,15 @@ auto& get_cache()
   return fixture<merge_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool CheckSASS = true>
 struct merge_sort_build
 {
+  static constexpr auto should_check_sass(int)
+  {
+    // TODO: re-enable on arm
+    return CheckSASS && (_CCCL_ARCH(ARM64) == 0);
+  }
+
   template <typename... Rest>
   CUresult operator()(
     BuildResultT* build_ptr,
@@ -75,7 +84,7 @@ struct merge_sort_run
   }
 };
 
-template <typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
+template <bool CheckSASS = true, typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
 void merge_sort(
   cccl_iterator_t input_keys,
   cccl_iterator_t input_items,
@@ -86,7 +95,7 @@ void merge_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, merge_sort_build, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, merge_sort_build<CheckSASS>, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
     cache, lookup_key, input_keys, input_items, output_keys, output_items, num_items, op);
 }
 
@@ -187,7 +196,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+  merge_sort<false>(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
@@ -221,7 +230,8 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
+  merge_sort<false>(
+    input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
