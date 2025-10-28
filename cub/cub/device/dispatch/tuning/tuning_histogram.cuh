@@ -219,6 +219,8 @@ struct policy_hub
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
                sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
+
+    static constexpr int pld_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
@@ -242,6 +244,8 @@ struct policy_hub
       decltype(select_agent_policy<
                sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
         0));
+
+    static constexpr int pld_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   };
 
   using MaxPolicy = Policy1000;

@@ -54,10 +54,15 @@ namespace detail::histogram
 template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename OffsetT>
 struct DeviceHistogramKernelSource
 {
-  CUB_DEFINE_KERNEL_GETTER(HistogramInitKernel, DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>);
-
   // We define this differently than the other kernel getters because there are
   // different dispatch paths which affect which policy is used and the decode operators.
+
+  template <typename PolicyT>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramInitKernel()
+  {
+    return &DeviceHistogramInitKernel<PolicyT, NUM_ACTIVE_CHANNELS, CounterT, OffsetT>;
+  }
+
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
@@ -287,7 +292,7 @@ struct dispatch_histogram
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     return Invoke<ActivePolicyT>(
-      kernel_source.HistogramInitKernel(),
+      kernel_source.template HistogramInitKernel<MaxPolicyT>(),
       kernel_source
         .template HistogramSweepKernel<MaxPolicyT, PRIVATIZED_SMEM_BINS, PrivatizedDecodeOpT, OutputDecodeOpT>(),
       active_policy);
