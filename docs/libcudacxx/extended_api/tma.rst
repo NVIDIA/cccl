@@ -18,7 +18,7 @@ Tensor Memory Accelerator (TMA)
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
 
-   * - :ref:`make_tma_descriptor <libcudacxx-extended-api-tma-make_tma_descriptor>`
+   * - :ref:`make_tma_descriptor() <libcudacxx-extended-api-tma-make_tma_descriptor>`
      - Construct a TMA descriptor from a DLPack tensor
      - CCCL 3.2.0
      - CUDA 13.2

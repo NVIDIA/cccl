@@ -51,16 +51,15 @@ Defined in the ``<cuda/tma>`` header.
         bytes32,
         bytes64,
         bytes128,
-        bytes128_atom_32B,        // only CUDA Toolkit 12.8 and later
-        bytes128_atom_32B_flip_8B,// only CUDA Toolkit 12.8 and later
-        bytes128_atom_64B         // only CUDA Toolkit 12.8 and later
+        bytes128_atom_32B,        // only CUDA Toolkit 12.8 and later, compute capability >= 10
+        bytes128_atom_32B_flip_8B,// only CUDA Toolkit 12.8 and later, compute capability >= 10
+        bytes128_atom_64B         // only CUDA Toolkit 12.8 and later, compute capability >= 10
     };
 
     } // namespace cuda
 
 The functions construct a `CUDA Tensor Memory Accelerator (TMA) descriptor <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ from a ``DLTensor``. The resulting ``CUtensorMap`` can be bound to TMA-based copy instructions to efficiently stage multi-dimensional tiles in shared memory on Compute Capability 9.0 and newer GPUs.
 
-The API is available when ``dlpack/dlpack.h`` (`DLPack v1 <https://github.com/dmlc/dlpack>`__) is discovered at compile time.
 
 .. note::
 
@@ -85,7 +84,7 @@ Parameters
 Return value
 ------------
 
-- A ``CUtensorMap`` encoding all metadata required to launch TMA transfers.
+- ``CUtensorMap`` encoding all metadata required to launch TMA transfers.
 
 Preconditions
 -------------
@@ -93,62 +92,97 @@ Preconditions
 **General preconditions**:
 
 * Compute Capability 9.0 or newer is required.
-* ``dlpack/dlpack.h`` (DLPack v1) must be discoverable at compile time.
+* ``dlpack/dlpack.h`` (`DLPack v1 <https://github.com/dmlc/dlpack>`__) must be discoverable at compile time, namely available in the include path.
 
 **DLPack preconditions**:
 
-* ``tensor.device.device_type`` must be ``kDLCUDA`` or ``kDLCUDAManaged``.
-* ``tensor.device.device_id`` must be a valid GPU device ordinal and the device must have Compute Capability 9.0 or newer.
-* ``tensor.ndim`` (rank) must be greater than 0 and less than or equal to 5.
+``tensor.device.device_type``:
 
-  - ``tensor.ndim`` must be greater than or equal to ``3`` when an interleaved layout is requested.
+* Must be ``kDLCUDA`` or ``kDLCUDAManaged``.
 
-* The following data types are accepted for ``tensor.dtype``:
+``tensor.device.device_id``:
 
-  - ``kDLUInt``:
+* Must be a valid GPU device ordinal
+* The selected device must have Compute Capability 9.0 or newer.
 
-    - ``bits == 4``, ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available. Requires CUDA Toolkit 12.8 and later.
-    - ``bits == 8``, ``lanes == 1``, namely ``uint8_t``.
-    - ``bits == 16``, ``lanes == 1``, namely ``uint16_t``.
-    - ``bits == 32``, ``lanes == 1``, namely ``uint32_t``.
-    - ``bits == 64``, ``lanes == 1``, namely ``uint64_t``.
+``tensor.ndim`` (rank):
 
-  - ``kDLInt``
+* Must be greater than 0 and less than or equal to 5.
+* Must be greater than or equal to ``3`` when an interleaved layout is requested.
 
-    -  ``bits == 32``, ``lanes == 1``, namely ``int32_t``.
-    - ``bits == 64``, ``lanes == 1``, namely ``int64_t``.
+``tensor.dtype``:
 
-  - ``kDLFloat``
+* ``kDLUInt``:
 
-    - ``bits == 16``, ``lanes == 1``, namely ``__half``.
-    - ``bits == 32``, ``lanes == 1``, namely ``float``.
-    - ``bits == 64``, ``lanes == 1``, namely ``double``.
+  - ``bits == 4``, ``lanes == 16``, namely ``U4 x 16``. Additionally, the innermost dimension must be a multiple of ``2`` when only 16-byte alignment is available. Requires CUDA Toolkit 12.8 and later, and compute capability >= 10.
+  - ``bits == 8``, ``lanes == 1``, namely ``uint8_t``.
+  - ``bits == 16``, ``lanes == 1``, namely ``uint16_t``.
+  - ``bits == 32``, ``lanes == 1``, namely ``uint32_t``.
+  - ``bits == 64``, ``lanes == 1``, namely ``uint64_t``.
 
-  - ``kDLBfloat``
+* ``kDLInt``
 
-    - ``bits == 16``, ``lanes == 1``, namely ``__nv_bfloat16``.
+  - ``bits == 32``, ``lanes == 1``, namely ``int32_t``.
+  - ``bits == 64``, ``lanes == 1``, namely ``int64_t``.
 
-* ``tensor.data`` must be a valid GPU global address and aligned to at least 16 bytes; 32 bytes for ``tma_interleave_layout::bytes32``.
+* ``kDLFloat``
 
-* ``tensor.shape`` must be greater than 0 and not exceed ``2^32`` elements per dimension.
+  - ``bits == 16``, ``lanes == 1``, namely ``__half``.
+  - ``bits == 32``, ``lanes == 1``, namely ``float``.
+  - ``bits == 64``, ``lanes == 1``, namely ``double``.
 
-* ``tensor.strides`` must be greater than 0 and not exceed ``2^40`` bytes per dimension.
+* ``kDLBfloat``
 
-  - The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1]`` or equal to ``0``.
-  - ``tensor.strides[i]`` in bytes must be a multiple of the alignment (16 or 32 bytes) for the selected ``interleave_layout``.
+  - ``bits == 16``, ``lanes == 1``, namely ``__nv_bfloat16``.
+
+* ``kDLFloat4_e2m1fn``
+
+  - ``bits == 4``, ``lanes == 16``, mapped to ``U4 x 16``.  See ``kDLUInt`` for additional requirements.
+
+* ``kDLBool``, ``kDLFloat8_e3m4``, ``kDLFloat8_e4m3``, ``kDLFloat8_e4m3b11fnuz``, ``kDLFloat8_e4m3fn``, ``kDLFloat8_e4m3fnuz``, ``kDLFloat8_e5m2``, ``kDLFloat8_e5m2fnuz``, ``kDLFloat8_e8m0fnu``: mapped to ``uint8_t``.
+
+``tensor.data`` (pointer):
+ 
+* Must be a valid GPU global address.
+* Must be aligned to at least 16 bytes. Must be aligned to 32 bytes when ``interleave_layout`` is ``bytes32``.
+
+``tensor.shape``:
+
+* Must be greater than 0 and not exceed ``2^32`` elements per dimension.
+* The innermost dimension must be a multiple of ``2`` when ``kDLFloat4_e2m1fn`` or ``U4 x 16`` are used.
+
+``tensor.strides``:
+
+* Each stride in bytes, namely ``tensor.strides[i] * element_size``, must be greater than 0 and not exceed ``2^40`` bytes per dimension.
+* The tensor mapping must be unique, namely ``tensor.strides[i]`` must be greater than or equal to ``tensor.shape[i - 1] * strides[i - 1]`` or equal to ``0``.
+* Each stride in bytes must be a multiple of the alignment 16 bytes when ``interleave_layout`` is ``none`` or ``bytes16``. It must be a multiple of 32 bytes when ``interleave_layout`` is ``bytes32``.
+* ``tensor.strides`` can be ``nullptr`` to indicate that the tensor is contiguous in memory.
 
 **User parameter preconditions**:
 
-* ``box_sizes``, ``elem_strides``, and ``tensor.ndim`` must have the same rank.
+``box_sizes``, ``elem_strides``, and ``tensor.ndim`` must have the same rank.
 
-* ``box_sizes`` must be positive and not exceed ``256`` elements per dimension. The full size of ``box_sizes`` must fit in shared memory.
+``box_sizes``:
 
-  - The inner dimension in bytes, computed as ``box_sizes[rank - 1] * sizeof(data_type)``, must be a multiple of 16 bytes if ``interleave_layout`` is ``tma_interleave_layout::none``.
-  - Otherwise, the inner dimension in bytes must not exceed the byte-width of the selected ``swizzle`` pattern (``32``, ``64``, or ``128`` bytes).
+* Must be positive and not exceed ``256`` elements per dimension. 
+* ``box_sizes[i]`` must be less than or equal to ``tensor.shape[i]``.
+* The full size of ``box_sizes`` must fit in shared memory.
+* If the ``interleave_layout`` is ``tma_interleave_layout::none``, the inner dimension in bytes, computed as ``box_sizes[rank - 1] * element_size`` has the following additional requirements:
+   
+  - It must be a multiple of 16 bytes.
+  - It must not exceed the byte-width of the selected ``swizzle`` pattern (``32``, ``64``, or ``128`` bytes).
 
-* ``elem_strides`` must be positive and not exceed ``8`` elements per dimension.
+``elem_strides``:
 
-* ``oobfill`` must be ``tma_oob_fill::none`` for integer data types.
+* Must be positive and not exceed ``8`` elements per dimension.
+* ``elem_strides[i]`` must be less than or equal to ``tensor.shape[i]``.
+*  If the ``interleave_layout`` is ``tma_interleave_layout::none``, the innner dimension (``elem_strides[0]``) is ignored.
+
+``oobfill``: 
+
+* Must be ``tma_oob_fill::none`` for all integer data types.
+
+``interleave_layout``:
 
 * If ``interleave_layout`` is ``tma_interleave_layout::bytes32``, ``swizzle`` must be ``tma_swizzle::bytes32``.
 
@@ -157,7 +191,7 @@ References
 
 - `DLPack C API <https://dmlc.github.io/dlpack/latest/c_api.html>`__ documentation.
 - `CUDA Tensor Memory Accelerator (TMA) <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#using-tma-to-transfer-multi-dimensional-arrays>`__ documentation.
-- ``cuTensorMapEncodeTiled`` `CUDA driver API <https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html#group__CUDA__TENSOR__MEMORY_1ga7c7d2aaac9e49294304e755e6f341d7>`__ documentation.
+- ``cuTensorMapEncodeTiled()`` `CUDA driver API <https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html#group__CUDA__TENSOR__MEMORY_1ga7c7d2aaac9e49294304e755e6f341d7>`__ documentation.
 
 Example
 -------
