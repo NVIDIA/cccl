@@ -32,6 +32,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
+struct __no_init_tag
+{};
 
 // Threshold below which serial scan is faster than parallel
 // Benchmarking shows parallel overhead dominates for small arrays
@@ -53,9 +55,10 @@ OutputIterator scan_impl(
 {
   using namespace thrust::detail;
 
-  using ValueType =
-    typename ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
-  using Size = thrust::detail::it_difference_t<InputIterator>;
+  static constexpr bool has_init = !::cuda::std::is_same_v<InitialValueType, __no_init_tag>;
+  // Use logic from https://wg21.link/P0571
+  using accum_t = ::cuda::std::conditional_t<has_init, InitialValueType, it_value_t<InputIterator>>;
+  using Size    = it_difference_t<InputIterator>;
 
   const Size n = ::cuda::std::distance(first, last);
 
@@ -71,16 +74,22 @@ OutputIterator scan_impl(
   {
     if constexpr (IsInclusive)
     {
-      ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
+      if constexpr (has_init)
+      {
+        return ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
+      }
+      else
+      {
+        return ::cuda::std::inclusive_scan(first, last, result, binary_op);
+      }
     }
     else
     {
-      ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
+      return ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
     }
-    return result;
   }
 
-  thrust::detail::temporary_array<ValueType, DerivedPolicy> block_sums(exec, num_threads);
+  temporary_array<accum_t, DerivedPolicy> block_sums(exec, num_threads);
 
   // Step 1: Reduce each block (N reads)
   THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
@@ -92,12 +101,19 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, tid == 0 ? init : ValueType{}, binary_op);
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, binary_op);
     }
   }
 
-  // Step 2: Scan block sums using cuda::std::exclusive_scan
-  ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), ValueType{}, binary_op);
+  // Step 2: Scan block sums
+  if constexpr (has_init)
+  {
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), init, binary_op);
+  }
+  else
+  {
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), accum_t{}, binary_op);
+  }
 
   // Step 3: Scan each block with offset (N reads/writes)
   THRUST_PRAGMA_OMP(parallel num_threads(num_threads))
@@ -109,14 +125,14 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      const ValueType offset = block_sums[tid];
+      const accum_t prefix = block_sums[tid];
       if constexpr (IsInclusive)
       {
-        ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, offset);
+        ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, prefix);
       }
       else
       {
-        ::cuda::std::exclusive_scan(first + start, first + end, result + start, offset, binary_op);
+        ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, binary_op);
       }
     }
   }
@@ -132,8 +148,7 @@ OutputIterator inclusive_scan(
   OutputIterator result,
   BinaryFunction binary_op)
 {
-  using ValueType = thrust::detail::it_value_t<InputIterator>;
-  return inclusive_scan(exec, first, last, result, ValueType{}, binary_op);
+  return inclusive_scan(exec, first, last, result, __no_init_tag{}, binary_op);
 }
 
 template <typename DerivedPolicy,
