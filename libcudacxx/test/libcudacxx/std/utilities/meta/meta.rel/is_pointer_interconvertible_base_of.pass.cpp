@@ -32,7 +32,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES C
   float m;
 };
 
-// Disable struct due to compiler bugs in 13.0+
 struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
     : BaseA
     , BaseB
