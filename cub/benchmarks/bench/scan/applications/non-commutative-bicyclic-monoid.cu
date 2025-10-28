@@ -50,6 +50,9 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
+namespace impl
+{
+
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
  * Elements of this algebra are ``q^m * p^n``, identified by a pair of integral exponents. The identity
  * element is ``1 == q^0 * p^0``, which maps to pair of zeros ``e = (0, 0)``.
@@ -75,7 +78,7 @@ struct BicyclicMonoidOp
   using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
   using min_t  = cuda::minimum<>;
 
-  pair_t __host__ __device__ operator()(pair_t v1, pair_t v2)
+  pair_t __host__ __device__ operator()(pair_t v1, pair_t v2) const
   {
     auto [m, n] = v1;
     auto [r, s] = v2;
@@ -87,11 +90,13 @@ struct BicyclicMonoidOp
 template <typename T>
 class RepackPair
 {
-  cuda::std::pair<T, T> __host__ __device__ operator()(T v1, T v2)
+  cuda::std::pair<T, T> __host__ __device__ operator()(T v1, T v2) const
   {
     return {v1, v2};
   };
 };
+
+}; // namespace impl
 
 template <typename T, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
@@ -99,7 +104,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
   using wrapped_init_t = cub::NullType;
   using pair_t         = cuda::std::pair<T, T>;
-  using op_t           = BicyclicMonoidOp<T>;
+  using op_t           = impl::BicyclicMonoidOp<T>;
   using accum_t        = pair_t;
   using input_it_t     = const pair_t*;
   using output_it_t    = pair_t*;
@@ -123,7 +128,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     thrust::device_vector<T> q_exponents = generate(elements);
     thrust::device_vector<T> p_exponents = generate(elements);
 
-    RepackPair<T> repack_op{};
+    impl::RepackPair<T> repack_op{};
 
     cub::DeviceTransform::Transform(
       cuda::std::tuple{q_exponents.begin(), p_exponents.begin()}, input.begin(), elements, repack_op);

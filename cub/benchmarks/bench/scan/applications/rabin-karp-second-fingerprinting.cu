@@ -55,6 +55,9 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
+namespace impl
+{
+
 /* Denote epsilon, the identity element, be an empty sequence, and consider
  * set of sequences of {0, 1} bits, with binary operation of concatenation.
  *
@@ -247,18 +250,22 @@ public:
   }
 };
 
+}; // namespace impl
+
 template <typename BitsetT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
 {
   using wrapped_init_t = cub::NullType;
-  using op_t           = RabinKarpOp;
+  using op_t           = impl::RabinKarpOp;
   using input_t        = BitsetT;
   using raw_it_t       = const input_t*;
-  using input_it_t     = cuda::transform_iterator<ChunkToMat<input_t>, raw_it_t>;
-  using accum_t        = MatT;
-  using output_ptr_t   = MatT*;
-  using output_it_t    = write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
+  using input_it_t     = cuda::transform_iterator<impl::ChunkToMat<input_t>, raw_it_t>;
+  using accum_t        = impl::MatT;
+  using output_ptr_t   = impl::MatT*;
+  using output_it_t    = impl::write_at_specific_index_or_discard<OffsetT, output_ptr_t>;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+
+  using ZpT = impl::ZpT;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
@@ -281,7 +288,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   raw_it_t d_input      = thrust::raw_pointer_cast(input.data());
   output_ptr_t d_output = thrust::raw_pointer_cast(output.data());
 
-  input_it_t inp_it(d_input, ChunkToMat<input_t>(p));
+  input_it_t inp_it(d_input, impl::ChunkToMat<input_t>(p));
   output_it_t out_it(static_cast<OffsetT>(elements - 1), d_output);
 
   state.add_element_count(elements);
@@ -311,37 +318,37 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   {
     cudaStreamSynchronize(state.get_cuda_stream());
 
-    thrust::host_vector<MatT> h_out(output);
+    thrust::host_vector<accum_t> h_out(output);
 
     thrust::host_vector<input_t> h_inp(input);
 
-    MatT ref_mat = {1, 0, 0, 1};
+    accum_t ref_mat = {1, 0, 0, 1};
 
-    static constexpr MatT mat_0 = {1, 0, 1, 1}; // lower diagonal
-    static constexpr MatT mat_1 = {1, 1, 0, 1}; // upper diagonal
-    cuda::fast_mod_div<WideT> mod(p);
+    static constexpr accum_t mat_0 = {1, 0, 1, 1}; // lower diagonal
+    static constexpr accum_t mat_1 = {1, 1, 0, 1}; // upper diagonal
+    cuda::fast_mod_div<impl::WideT> mod(p);
     for (auto&& el : h_inp)
     {
       input_t v = el;
 
-      MatT word_mat = {1, 0, 0, 1};
+      accum_t word_mat = {1, 0, 0, 1};
       for (int i = 0; i < sizeof(input_t) * 8; ++i)
       {
         if (v & 1)
         {
-          word_mat = Zp_matmul(mat_1, word_mat, mod);
+          word_mat = impl::Zp_matmul(mat_1, word_mat, mod);
         }
         else
         {
-          word_mat = Zp_matmul(mat_0, word_mat, mod);
+          word_mat = impl::Zp_matmul(mat_0, word_mat, mod);
         }
         v >>= 1;
       }
 
-      ref_mat = Zp_matmul(ref_mat, word_mat, mod);
+      ref_mat = impl::Zp_matmul(ref_mat, word_mat, mod);
     }
 
-    const MatT& res = h_out[0];
+    const accum_t& res = h_out[0];
     if (ref_mat != res)
     {
       std::cout << "FAILED: ";

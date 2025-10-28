@@ -57,6 +57,8 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
+namespace impl
+{
 /* Given input sequence of values, compute sequence of
  * pairs corresponding to running minimum and running maximum values.
  */
@@ -70,7 +72,7 @@ private:
   T m_max{cuda::std::numeric_limits<T>::min()};
 
 public:
-  __host__ __device__ MinMax() = default;
+  MinMax() = default;
   __host__ __device__ MinMax(T minimum, T maximum)
       : m_min(minimum)
       , m_max(maximum)
@@ -125,16 +127,18 @@ struct ExtractMax
   }
 };
 
+}; // namespace impl
+
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using wrapped_init_t = cub::NullType;
   using value_t        = T;
-  using pair_t         = MinMax<value_t>;
-  using op_t           = ScanOp;
+  using pair_t         = impl::MinMax<value_t>;
+  using op_t           = impl::ScanOp;
   using accum_t        = pair_t;
   using input_raw_t    = const value_t*;
-  using input_it_t     = cuda::transform_iterator<EmbedOp<value_t>, input_raw_t>;
+  using input_it_t     = cuda::transform_iterator<impl::EmbedOp<value_t>, input_raw_t>;
   using output_it_t    = pair_t*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
@@ -155,7 +159,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   input_raw_t d_input  = thrust::raw_pointer_cast(input.data());
   output_it_t d_output = thrust::raw_pointer_cast(output.data());
 
-  input_it_t inp_it(d_input, EmbedOp<value_t>{});
+  input_it_t inp_it(d_input, impl::EmbedOp<value_t>{});
 
   state.add_element_count(elements);
   state.add_global_memory_reads<value_t>(elements, "Size");
@@ -227,9 +231,9 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<value_t> computed_maxs(elements);
 
   cub::DeviceTransform::Transform(
-    d_output, computed_mins.begin(), input.size(), ExtractMin<T>{}, state.get_cuda_stream().get_stream());
+    d_output, computed_mins.begin(), input.size(), impl::ExtractMin<T>{}, state.get_cuda_stream().get_stream());
   cub::DeviceTransform::Transform(
-    d_output, computed_maxs.begin(), input.size(), ExtractMax<T>{}, state.get_cuda_stream().get_stream());
+    d_output, computed_maxs.begin(), input.size(), impl::ExtractMax<T>{}, state.get_cuda_stream().get_stream());
 
   assert(computed_mins == ref_mins);
   assert(computed_maxs == ref_maxs);
