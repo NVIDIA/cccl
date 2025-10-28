@@ -142,7 +142,7 @@ Preconditions
 * ``kDLBool``, ``kDLFloat8_e3m4``, ``kDLFloat8_e4m3``, ``kDLFloat8_e4m3b11fnuz``, ``kDLFloat8_e4m3fn``, ``kDLFloat8_e4m3fnuz``, ``kDLFloat8_e5m2``, ``kDLFloat8_e5m2fnuz``, ``kDLFloat8_e8m0fnu``: mapped to ``uint8_t``.
 
 ``tensor.data`` (pointer):
- 
+
 * Must be a valid GPU global address.
 * Must be aligned to at least 16 bytes. Must be aligned to 32 bytes when ``interleave_layout`` is ``bytes32``.
 
@@ -164,11 +164,11 @@ Preconditions
 
 ``box_sizes``:
 
-* Must be positive and not exceed ``256`` elements per dimension. 
+* Must be positive and not exceed ``256`` elements per dimension.
 * ``box_sizes[i]`` must be less than or equal to ``tensor.shape[i]``.
 * The full size of ``box_sizes`` must fit in shared memory.
 * If the ``interleave_layout`` is ``tma_interleave_layout::none``, the inner dimension in bytes, computed as ``box_sizes[rank - 1] * element_size`` has the following additional requirements:
-   
+
   - It must be a multiple of 16 bytes.
   - It must not exceed the byte-width of the selected ``swizzle`` pattern (``32``, ``64``, or ``128`` bytes).
 
@@ -178,7 +178,7 @@ Preconditions
 * ``elem_strides[i]`` must be less than or equal to ``tensor.shape[i]``.
 *  If the ``interleave_layout`` is ``tma_interleave_layout::none``, the innner dimension (``elem_strides[0]``) is ignored.
 
-``oobfill``: 
+``oobfill``:
 
 * Must be ``tma_oob_fill::none`` for all integer data types.
 
