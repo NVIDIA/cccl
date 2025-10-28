@@ -65,7 +65,7 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     )
     set_target_properties(${target_name} PROPERTIES
       CUDA_CUBIN_COMPILATION ON
-      CUDA_ARCHITECTURES "80-virtual"
+      CUDA_ARCHITECTURES "80-real"
     )
 
     add_test(NAME ${target_name}
