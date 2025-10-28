@@ -255,6 +255,7 @@ struct memory_pool_properties
   size_t initial_pool_size                           = 0;
   size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
   cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  size_t max_pool_size                               = 0;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
@@ -267,6 +268,11 @@ struct memory_pool_properties
   __pool_properties.allocType   = __allocation_type;
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
+  __pool_properties.maxSize     = __properties.max_pool_size;
+
+  if (__properties.max_pool_size != 0 && __properties.initial_pool_size > __properties.max_pool_size ){
+    ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+  }
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
