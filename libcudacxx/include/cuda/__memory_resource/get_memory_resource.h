@@ -23,11 +23,11 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/stream_ref>
 
 #include <cuda/std/__cccl/prologue.h>
 

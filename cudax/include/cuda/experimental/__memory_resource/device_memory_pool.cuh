@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH
-#define _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH
+#ifndef _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
+#define _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -28,80 +28,124 @@
 
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__new_>
-#include <cuda/std/span>
-#include <cuda/stream_ref>
 
-#include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
-#include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
-//! The \c device_memory_pool class provides a wrapper around a `cudaMempool_t`.
+//! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
+//! order.
 namespace cuda::experimental
 {
 
-class device_memory_resource;
-
-//! @brief \c device_memory_pool is an owning wrapper around a
-//! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
+//! @rst
+//! .. _cudax-memory-resource-async:
 //!
-//! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
-class device_memory_pool : public __memory_pool_base
+//! Stream ordered memory pool
+//! ------------------------------
+//!
+//! ``device_memory_pool_ref`` allocates device memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! ``device_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
+//! cudaMemLocationTypeDevice.
+//!
+//! .. warning::
+//!
+//!    ``device_memory_pool_ref`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``device_memory_pool_ref``.
+//!
+//! @endrst
+class device_memory_pool_ref : public __memory_resource_base
 {
-  //! @brief Constructs a \c device_memory_pool from a handle taking ownership of the pool
-  //! @param __handle The handle to the existing pool
-  _CCCL_HOST_API explicit device_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
-      : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
+public:
+  //! @brief  Constructs the device_memory_pool_ref from a \c cudaMemPool_t.
+  //! @param __pool The \c cudaMemPool_t used to allocate memory.
+  _CCCL_HOST_API explicit device_memory_pool_ref(::cudaMemPool_t __pool) noexcept
+      : __memory_resource_base(__pool)
   {}
 
-public:
-  //! @brief Constructs a \c device_memory_pool with the optionally specified initial pool size and release threshold.
-  //! If the pool size grows beyond the release threshold, unused memory held by the pool will be released at the next
-  //! synchronization event.
+  device_memory_pool_ref(int)                    = delete;
+  device_memory_pool_ref(::cuda::std::nullptr_t) = delete;
+
+  //! @brief Enables the \c device_accessible property for \c device_memory_pool_ref.
+  //! @relates device_memory_pool_ref
+  _CCCL_HOST_API friend constexpr void
+  get_property(device_memory_pool_ref const&, ::cuda::mr::device_accessible) noexcept
+  {}
+
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
+};
+
+//! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
+//! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
+//! @returns The default memory pool of the specified device.
+[[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
+{
+  ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__device.get());
+
+  ::cudaMemPool_t __pool;
+  _CCCL_TRY_CUDA_API(
+    ::cudaDeviceGetDefaultMemPool, "Failed to call cudaDeviceGetDefaultMemPool", &__pool, __device.get());
+  return device_memory_pool_ref{__pool};
+}
+
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``device_memory_pool`` allocates device memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! When constructed it creates an underlying \c cudaMemPool_t with the location type set to \c
+//! cudaMemLocationTypeDevice and owns it.
+//!
+//! @endrst
+struct device_memory_pool : device_memory_pool_ref
+{
+  using reference_type = device_memory_pool_ref;
+
+  //! @brief Constructs a \c device_memory_pool with the optionally specified initial pool size and release
+  //! threshold. If the pool size grows beyond the release threshold, unused memory held by the pool will be released at
+  //! the next synchronization event.
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  _CCCL_HOST_API explicit device_memory_pool(const ::cuda::device_ref __device_id,
-                                             memory_pool_properties __properties = {})
-      : __memory_pool_base(__properties,
-                           ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_id.get()},
-                           ::CU_MEM_ALLOCATION_TYPE_PINNED)
+  _CCCL_HOST_API device_memory_pool(::cuda::device_ref __device_id, memory_pool_properties __properties = {})
+      : device_memory_pool_ref(__create_cuda_mempool(
+          __properties,
+          ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_id.get()},
+          ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {}
 
-  //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
-  device_memory_pool(::cudaMemPool_t) = delete;
-
-  device_memory_pool(device_memory_pool const&)            = delete;
-  device_memory_pool(device_memory_pool&&)                 = delete;
-  device_memory_pool& operator=(device_memory_pool const&) = delete;
-  device_memory_pool& operator=(device_memory_pool&&)      = delete;
-
-  //! @brief Construct an `device_memory_pool` object from a native `cudaMemPool_t` handle.
-  //!
-  //! @param __handle The native handle
-  //!
-  //! @return The constructed `device_memory_pool` object
-  //!
-  //! @note The constructed `device_memory_pool` object takes ownership of the native handle.
-  [[nodiscard]] static device_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
+  ~device_memory_pool() noexcept
   {
-    return device_memory_pool(__memory_pool_base::__from_handle_t{}, __handle);
+    ::cuda::__driver::__mempoolDestroy(__pool_);
   }
 
-  // Disallow construction from an `int`, e.g., `0`.
-  static device_memory_pool from_native_handle(int) = delete;
+  _CCCL_HOST_API static device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  {
+    return device_memory_pool(__pool);
+  }
 
-  // Disallow construction from `nullptr`.
-  static device_memory_pool from_native_handle(::cuda::std::nullptr_t) = delete;
+  device_memory_pool(const device_memory_pool&)            = delete;
+  device_memory_pool& operator=(const device_memory_pool&) = delete;
 
-  using resource_type = device_memory_resource;
+private:
+  device_memory_pool(::cudaMemPool_t __pool) noexcept
+      : device_memory_pool_ref(__pool)
+  {}
 };
+
+static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+
+static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
 
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH
+#endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH

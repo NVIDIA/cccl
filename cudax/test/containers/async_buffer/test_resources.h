@@ -11,9 +11,9 @@
 #ifndef CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
 #define CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -29,11 +29,11 @@ struct other_property
 {};
 
 // make the cudax resources have that property for tests
-inline void get_property(const cuda::experimental::device_memory_resource&, other_property) {}
+inline void get_property(const cuda::experimental::device_memory_pool_ref&, other_property) {}
 inline void get_property(const cuda::experimental::legacy_pinned_memory_resource&, other_property) {}
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-inline void get_property(const cuda::experimental::pinned_memory_resource&, other_property) {}
-#endif
+#if _CCCL_CTK_AT_LEAST(12, 6)
+inline void get_property(const cuda::experimental::pinned_memory_pool_ref&, other_property) {}
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 //! @brief Simple wrapper around a memory resource to ensure that it compares differently and we can test those code
 //! paths

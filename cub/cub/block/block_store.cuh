@@ -616,6 +616,7 @@ enum BlockStoreAlgorithm
 //!
 //!        // Store items to linear memory
 //!        BlockStore(temp_storage).Store(d_data, thread_data);
+//!    }
 //!
 //! Suppose the set of ``thread_data`` across the block of threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1156,8 +1157,8 @@ public:
   //!        ...
   //!
   //!        // Store items to linear memory
-  //!        int thread_data[4];
   //!        BlockStore(temp_storage).Store(d_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1208,8 +1209,8 @@ public:
   //!        ...
   //!
   //!        // Store items to linear memory
-  //!        int thread_data[4];
   //!        BlockStore(temp_storage).Store(d_data, thread_data, valid_items);
+  //!    }
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }`` and ``valid_items`` is ``5``.

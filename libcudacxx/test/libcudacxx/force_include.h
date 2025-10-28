@@ -72,14 +72,15 @@ int main(int argc, char** argv)
   cudaError_t err;
   CUDA_CALL(err, cudaDeviceSynchronize());
 
-  list_devices();
-
+  printf("Testing on host:\n");
+  fflush(stdout);
   int ret = fake_main(argc, argv);
   if (ret != 0)
   {
     return ret;
   }
 
+  list_devices();
   int* cuda_ret = 0;
   CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
 

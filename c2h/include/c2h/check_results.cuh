@@ -67,7 +67,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
       REQUIRE_THAT(expected_imag, Catch::Matchers::WithinRel(test_imag, rel_err));
     }
   }
-  else if constexpr (cuda::std::__is_complex_v<T>)
+  else if constexpr (cuda::std::__is_cuda_std_complex_v<T>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {

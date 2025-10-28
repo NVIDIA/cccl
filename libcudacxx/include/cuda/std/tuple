@@ -21,6 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/tuple>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__tuple_dir/structured_bindings.h>
+#include <cuda/std/__tuple_dir/tie.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_cat.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/vector_types.h>
+
+// standard-mandated includes
+#include <cuda/std/version>
+
+// [tuple.syn]
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  include <cuda/std/compare>
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #endif // _CUDA_STD_TUPLE

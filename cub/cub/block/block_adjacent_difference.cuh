@@ -111,10 +111,9 @@ CUB_NAMESPACE_BEGIN
 //!        // Collectively compute adjacent_difference
 //!        int result[4];
 //!
-//!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
-//!            thread_data,
-//!            result,
-//!            CustomDifference());
+//!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, result,
+//!                                                            CustomDifference());
+//!    }
 //!
 //! Suppose the set of input `thread_data` across the block of threads is
 //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -283,10 +282,9 @@ public:
   //!        ...
   //!
   //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
-  //!            thread_data,
-  //!            thread_data,
-  //!            CustomDifference());
+  //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, thread_data,
+  //!                                                            CustomDifference());
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.

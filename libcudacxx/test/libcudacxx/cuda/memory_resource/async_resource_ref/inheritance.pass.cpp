@@ -147,32 +147,6 @@ void test_async_resource_ref()
   assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
 }
 
-template <class... Properties>
-cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...>
-indirection(async_resource_base<cuda::mr::host_accessible, Properties...>* res)
-{
-  return {res};
-}
-
-template <class... Properties>
-void test_async_resource_ref_from_pointer()
-{
-  some_data input{1337};
-  async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
-  async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
-
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
-
-  // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
-  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == second.allocate(::cudaStream_t{}, 0, 0));
-
-  // Ensure that assignment still works
-  ref_second = ref_first;
-  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
-}
-
 // clang complains about pure virtual functions being called, so ensure that we properly crash if so
 extern "C" void __cxa_pure_virtual()
 {
@@ -188,11 +162,7 @@ int main(int, char**)
       // Test some basic combinations of properties w/o state
       test_async_resource_ref<property_with_value<short>, property_with_value<int>>();
       test_async_resource_ref<property_with_value<short>, property_without_value<int>>();
-      test_async_resource_ref<property_without_value<short>, property_without_value<int>>();
-
-      test_async_resource_ref_from_pointer<property_with_value<short>, property_with_value<int>>();
-      test_async_resource_ref_from_pointer<property_with_value<short>, property_without_value<int>>();
-      test_async_resource_ref_from_pointer<property_without_value<short>, property_without_value<int>>();))
+      test_async_resource_ref<property_without_value<short>, property_without_value<int>>();))
 
   return 0;
 }

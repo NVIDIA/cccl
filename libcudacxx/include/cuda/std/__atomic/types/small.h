@@ -60,13 +60,21 @@ _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __
   return __temp;
 }
 
+_CCCL_DIAG_PUSH
+#if _CCCL_COMPILER(GCC, >=, 8)
+_CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
+#endif
+
 template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
+  // GCC starting with GCC8 warns about our extended floating point types having protected data members
   _Tp __temp{};
   ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
+
+_CCCL_DIAG_POP
 
 template <typename _Tp>
 struct __atomic_small_storage
@@ -207,6 +215,7 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
+  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>, "");
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
     __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
@@ -216,6 +225,7 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
+  static_assert(is_floating_point_v<__atomic_underlying_t<_Sto>> || is_integral_v<__atomic_underlying_t<_Sto>>, "");
   using _Tp = __atomic_underlying_t<_Sto>;
   return __atomic_small_from_32<_Tp>(
     __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
