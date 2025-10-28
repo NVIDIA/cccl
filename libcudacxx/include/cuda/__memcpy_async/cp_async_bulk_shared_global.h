@@ -54,15 +54,20 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
   const _Group& __g, char* __dest, const char* __src, ::cuda::std::size_t __size, ::cuda::std::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+#    if __cccl_ptx_isa >= 860
+#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_shared
+#    else // __cccl_ptx_isa >= 860
+#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_cluster
+#    endif // __cccl_ptx_isa >= 860
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (if (__elect_from_group(__g)) {
-      ::cuda::ptx::cp_async_bulk(
-        ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
+      ::cuda::ptx::cp_async_bulk(_CCCL_BULK_COPY_SPACE, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
       ::cuda::ptx::mbarrier_expect_tx(
         ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, __bar_handle, __size);
     }),
     (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
+#    undef _CCCL_BULK_COPY_SPACE
 }
 
 _CCCL_END_NAMESPACE_CUDA
