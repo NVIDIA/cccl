@@ -40,7 +40,7 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
-#include <cuda/std/detail/libcxx/include/tuple>
+#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 
