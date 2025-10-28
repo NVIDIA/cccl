@@ -9,16 +9,16 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cpu-only")]
-    [switch]$CPU_ONLY = $false
+    [switch]$CPU_ONLY = $false,
+    [Parameter(Mandatory = $false)]
+    [Alias("gpu-only")]
+    [switch]$GPU_ONLY = $false,
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
-
-# if not cpu-only, emit an error. GPU tests are not yet supported.
-if (-not $CPU_ONLY) {
-    Write-Error "Thrust tests require the -cpu-only flag"
-    exit 1
-}
 
 $CURRENT_PATH = Split-Path $pwd -leaf
 If($CURRENT_PATH -ne "ci") {
@@ -26,16 +26,31 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-# Execute the build script:
-$build_command = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch `"$CUDA_ARCH`""
-Write-Host "Executing: $build_command"
-Invoke-Expression $build_command
+if ($CPU_ONLY) {
+    $PRESET = "thrust-cpu-cpp$CXX_STANDARD"
+    $artifactTag = "test_cpu"
+} elseif ($GPU_ONLY) {
+    $PRESET = "thrust-gpu-cpp$CXX_STANDARD"
+    $artifactTag = "test_gpu"
+} else {
+    $PRESET = "thrust-cpp$CXX_STANDARD"
+    $artifactTag = ""
+}
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+if ($env:GITHUB_ACTIONS -and $artifactTag) {
+    $producerId = (& bash "./util/workflow/get_producer_id.sh").Trim()
+    $artifactName = "z_thrust-test-artifacts-$env:DEVCONTAINER_NAME-$producerId-$artifactTag"
+    Write-Host "Unpacking artifact '$artifactName'"
+    & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
+} else {
+    $cmd = "$PSScriptRoot/build_thrust.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+    Write-Host "Running: $cmd"
+    Invoke-Expression $cmd
+}
 
-$PRESET = "thrust-cpu-cpp$CXX_STANDARD"
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-test_preset "Thrust" "$PRESET"
+test_preset "Thrust ($PRESET)" "$PRESET"
 
 If($CURRENT_PATH -ne "ci") {
     popd

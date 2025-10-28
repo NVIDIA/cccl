@@ -15,6 +15,8 @@ Memory
    memory/is_address_from
    memory/is_aligned
    memory/ptr_rebind
+   memory/ptr_in_range
+   memory/ranges_overlap
 
 .. list-table::
    :widths: 25 45 30 30
@@ -64,3 +66,13 @@ Memory
      - Rebind a pointer to a different type
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`ptr_in_range <libcudacxx-extended-api-memory-ptr_in_range>`
+     - Check if a pointer is in a range
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`ranges_overlap <libcudacxx-extended-api-memory-ranges_overlap>`
+     - Check if two ranges overlap
+     - CCCL 3.2.0
+     - CUDA 13.2

@@ -31,6 +31,7 @@
 #include <cuda/std/__algorithm/rotate.h>
 #include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
@@ -40,6 +41,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -64,7 +66,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/initializer_list>
 #include <cuda/std/limits>
 
@@ -1525,8 +1526,8 @@ public:
   _CCCL_API constexpr iterator
   erase(const_iterator __cfirst, const_iterator __clast) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
-    const iterator __first = (iterator) __cfirst;
-    const iterator __last  = (iterator) __clast;
+    const iterator __first = this->begin() + (__cfirst - this->begin());
+    const iterator __last  = this->begin() + (__clast - this->begin());
     const iterator __end   = this->end();
     if (__first == __last)
     {
@@ -1638,8 +1639,8 @@ public:
     return ::cuda::std::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(::cuda::std::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return !::cuda::std::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
@@ -1654,8 +1655,8 @@ public:
     return ::cuda::std::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(::cuda::std::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return ::cuda::std::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
@@ -1736,7 +1737,7 @@ public:
     }
   }
 
-  _CCCL_API constexpr inplace_vector(const size_type __count, const _Tp& __value)
+  _CCCL_API constexpr inplace_vector(const size_type __count, const _Tp&)
       : __base()
   {
     if (__count > 0)
@@ -1973,7 +1974,7 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(::cuda::std::ranges::__container_compatible_range<_Range, _Tp>)
-  _CCCL_API constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  _CCCL_API constexpr iterator insert_range(const_iterator, _Range&& __range)
   {
     if (::cuda::std::ranges::begin(__range) != ::cuda::std::ranges::end(__range))
     {

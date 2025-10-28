@@ -43,9 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace segmented_sort
+namespace detail::segmented_sort
 {
 
 template <typename PolicyT, typename = void>
@@ -395,7 +393,6 @@ struct policy_hub
 
   using MaxPolicy = Policy860;
 };
-} // namespace segmented_sort
-} // namespace detail
+} // namespace detail::segmented_sort
 
 CUB_NAMESPACE_END

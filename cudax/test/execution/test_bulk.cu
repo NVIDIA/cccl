@@ -24,13 +24,6 @@
 
 namespace ex = cuda::experimental::execution;
 
-#if !defined(__CUDA_ARCH__)
-using _exception_ptr = ::std::exception_ptr;
-#else
-struct _exception_ptr
-{};
-#endif
-
 namespace
 {
 template <class Shape, int N>
@@ -185,14 +178,14 @@ void bulk_keeps_error_types_from_input_sender()
 #if !_CCCL_COMPILER(MSVC)
   constexpr int n = 42;
   dummy_scheduler sched1{};
-  error_scheduler<_exception_ptr> sched2{};
+  error_scheduler<ex::exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
   // MSVCBUG https://developercommunity.visualstudio.com/t/noexcept-expression-in-lambda-template-n/10718680
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
                       | ex::bulk(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
-  check_error_types<_exception_ptr>(
+  check_error_types<ex::exception_ptr>(
     ex::just() //
     | ex::continues_on(sched2) //
     | ex::bulk(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
@@ -202,21 +195,12 @@ void bulk_keeps_error_types_from_input_sender()
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
-#  if !defined(__CUDA_ARCH__)
-  check_error_types<::std::exception_ptr, int>(
+  check_error_types<ex::exception_ptr, int>(
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk(ex::par, n, [](int) {
         throw std::logic_error{"err"};
       }));
-#  else
-  check_error_types<int>(
-    ex::just() //
-    | ex::continues_on(sched3) //
-    | ex::bulk(ex::par, n, [] _CCCL_HOST_DEVICE(int) {
-        cuda::std::__cccl_terminate();
-      }));
-#  endif
 #endif
 }
 
@@ -224,13 +208,13 @@ void bulk_chunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
   dummy_scheduler sched1{};
-  error_scheduler<_exception_ptr> sched2{};
+  error_scheduler<ex::exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
                       | ex::bulk_chunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, int) noexcept {}));
-  check_error_types<_exception_ptr>(
+  check_error_types<ex::exception_ptr>(
     ex::just() //
     | ex::continues_on(sched2) //
     | ex::bulk_chunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, int) noexcept {}));
@@ -240,34 +224,25 @@ void bulk_chunked_keeps_error_types_from_input_sender()
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk_chunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, int) noexcept {}));
-#if !defined(__CUDA_ARCH__)
-  check_error_types<::std::exception_ptr, int>(
+  check_error_types<ex::exception_ptr, int>(
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk_chunked(ex::par, n, [](int, int) {
         throw std::logic_error{"err"};
       }));
-#else
-  check_error_types<int>(
-    ex::just() //
-    | ex::continues_on(sched3) //
-    | ex::bulk_chunked(ex::par, n, [] _CCCL_HOST_DEVICE(int, int) {
-        cuda::std::__cccl_terminate();
-      }));
-#endif
 }
 
 void bulk_unchunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
   dummy_scheduler sched1{};
-  error_scheduler<_exception_ptr> sched2{};
+  error_scheduler<ex::exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
                       | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
-  check_error_types<_exception_ptr>(
+  check_error_types<ex::exception_ptr>(
     ex::just() //
     | ex::continues_on(sched2) //
     | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
@@ -277,21 +252,12 @@ void bulk_unchunked_keeps_error_types_from_input_sender()
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) noexcept {}));
-#if !defined(__CUDA_ARCH__)
-  check_error_types<::std::exception_ptr, int>(
+  check_error_types<ex::exception_ptr, int>(
     ex::just() //
     | ex::continues_on(sched3) //
     | ex::bulk_unchunked(ex::par, n, [](int) {
         throw std::logic_error{"err"};
       }));
-#else
-  check_error_types<int>(
-    ex::just() //
-    | ex::continues_on(sched3) //
-    | ex::bulk_unchunked(ex::par, n, [] _CCCL_HOST_DEVICE(int) {
-        cuda::std::__cccl_terminate();
-      }));
-#endif
 }
 
 void bulk_can_be_used_with_a_function()

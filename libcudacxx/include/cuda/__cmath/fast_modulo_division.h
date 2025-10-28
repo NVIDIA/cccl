@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -30,7 +31,6 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -38,78 +38,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-/***********************************************************************************************************************
- * Extract higher bits after multiplication
- **********************************************************************************************************************/
-
-template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Lhs>
-__multiply_extract_higher_bits_fallback(_Tp __x, _Lhs __y)
-{
-  using __ret_t         = ::cuda::std::common_type_t<_Tp, _Lhs>;
-  constexpr int __shift = ::cuda::std::__num_bits_v<__ret_t> / 2;
-  using __half_bits_t   = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<__ret_t>>;
-  auto __x_high         = static_cast<__half_bits_t>(__x >> __shift);
-  auto __x_low          = static_cast<__half_bits_t>(__x);
-  auto __y_high         = static_cast<__half_bits_t>(__y >> __shift);
-  auto __y_low          = static_cast<__half_bits_t>(__y);
-  auto __p0             = __x_low * __y_low;
-  auto __p1             = __x_low * __y_high;
-  auto __p2             = __x_high * __y_low;
-  auto __p3             = __x_high * __y_high;
-  auto __mid            = __p1 + __p2;
-  __half_bits_t __carry = (__mid < __p1);
-  auto __po_half        = __p0 >> __shift;
-  __mid                 = __mid + __po_half;
-  __carry += (__mid < __po_half);
-  return __p3 + (__mid >> __shift) + (__carry << __shift);
-}
-
-template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Lhs> __multiply_extract_higher_bits(_Tp __x, _Lhs __y)
-{
-  using ::cuda::std::__cccl_is_integer_v;
-  using ::cuda::std::__num_bits_v;
-  using ::cuda::std::is_signed_v;
-  static_assert(__cccl_is_integer_v<_Tp>, "__multiply_extract_higher_bits: T is required to be an integer type");
-  static_assert(__cccl_is_integer_v<_Lhs>, "__multiply_extract_higher_bits: T is required to be an integer type");
-  if constexpr (is_signed_v<_Tp>)
-  {
-    _CCCL_ASSERT(__x >= 0, "__x must be non-negative");
-    _CCCL_ASSUME(__x >= 0);
-  }
-  if constexpr (is_signed_v<_Lhs>)
-  {
-    _CCCL_ASSERT(__y >= 0, "__y must be non-negative");
-    _CCCL_ASSUME(__y >= 0);
-  }
-  using __ret_t = ::cuda::std::common_type_t<_Tp, _Lhs>;
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    if constexpr (sizeof(_Tp) == sizeof(uint32_t) && sizeof(_Lhs) == sizeof(uint32_t))
-    {
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::__umulhi(static_cast<uint32_t>(__x), static_cast<uint32_t>(__y));));
-    }
-#if !_CCCL_HAS_INT128()
-    else if constexpr (sizeof(_Tp) == sizeof(uint64_t) && sizeof(_Lhs) == sizeof(uint64_t))
-    {
-      NV_DISPATCH_TARGET(NV_IS_DEVICE, (return ::__umul64hi(static_cast<uint64_t>(__x), static_cast<uint64_t>(__y));));
-    }
-#endif // !_CCCL_HAS_INT128()
-  }
-  if constexpr (sizeof(__ret_t) < sizeof(uint64_t) || (sizeof(__ret_t) == sizeof(uint64_t) && _CCCL_HAS_INT128()))
-  {
-    constexpr auto __mul_bits = ::cuda::next_power_of_two(__num_bits_v<_Tp> + __num_bits_v<_Lhs>);
-    using __larger_t          = ::cuda::std::__make_nbit_uint_t<__mul_bits>;
-    auto __ret                = (static_cast<__larger_t>(__x) * __y) >> (__mul_bits / 2);
-    return static_cast<__ret_t>(__ret);
-  }
-  else
-  {
-    return ::cuda::__multiply_extract_higher_bits_fallback(__x, __y);
-  }
-}
 
 /***********************************************************************************************************************
  * Fast Modulo/Division based on Precomputation
@@ -184,6 +112,7 @@ public:
       _CCCL_ASSERT(__dividend >= 0, "dividend must be non-negative");
     }
     using __common_t    = ::cuda::std::common_type_t<_Tp, _Lhs>;
+    using __ucommon_t   = ::cuda::std::make_unsigned_t<__common_t>;
     using _Up           = ::cuda::std::make_unsigned_t<_Lhs>;
     const auto __div    = __divisor1.__divisor; // cannot use structure binding because of clang-14
     const auto __mul    = __divisor1.__multiplier;
@@ -205,7 +134,7 @@ public:
     {
       return static_cast<__common_t>(__dividend);
     }
-    auto __higher_bits = ::cuda::__multiply_extract_higher_bits(__udividend, __mul);
+    auto __higher_bits = ::cuda::mul_hi(static_cast<__ucommon_t>(__udividend), static_cast<__ucommon_t>(__mul));
     auto __quotient    = static_cast<__common_t>(__higher_bits >> __shift_);
     _CCCL_ASSERT(__quotient == static_cast<__common_t>(__dividend / __div), "wrong __quotient");
     return __quotient;

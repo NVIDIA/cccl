@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // pair
-      cuda::zip_iterator iter{cuda::std::pair{buffer + 1, static_cast<const int*>(buffer + 3)}};
+      cuda::zip_iterator iter{cuda::std::tuple{buffer + 1, static_cast<const int*>(buffer + 3)}};
       static_assert(cuda::std::is_same_v<decltype(iter), cuda::zip_iterator<int*, const int*>>);
       assert(cuda::std::get<0>(*iter) == *(buffer + 1));
       assert(cuda::std::get<1>(*iter) == *(buffer + 3));
@@ -98,7 +98,7 @@ __host__ __device__ constexpr bool test()
     }
 
     { // pair
-      cuda::zip_iterator<int*, const int*> iter{cuda::std::pair{buffer + 1, buffer + 3}};
+      cuda::zip_iterator<int*, const int*> iter{cuda::std::tuple{buffer + 1, buffer + 3}};
       assert(cuda::std::get<0>(*iter) == *(buffer + 1));
       assert(cuda::std::get<1>(*iter) == *(buffer + 3));
     }

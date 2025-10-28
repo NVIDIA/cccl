@@ -24,6 +24,7 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -95,7 +96,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class _CvSndr, class _Context>
     requires(static_cast<int>(structured_binding_size<_CvSndr>) >= 2)
-  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
+  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
     auto&& [__tag, __data, ... __children] = static_cast<_CvSndr&&>(__sndr);
@@ -145,8 +146,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_TEMPLATE(class _Visitor, class _Sndr, class _Context)
   _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_Sndr>) >= 2))
-  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const
-    -> decltype(auto)
+  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const -> decltype(auto)
   {
     // This `if constexpr` shouldn't be needed given the `requires` clause above. It is
     // here because nvcc 12.0 has a bug where the full signature of the function template
@@ -167,6 +167,12 @@ _CCCL_GLOBAL_CONSTANT visit_t visit{};
 template <class _Visitor, class _CvSndr, class _Context>
 using __visit_result_t _CCCL_NODEBUG_ALIAS =
   decltype(execution::visit(declval<_Visitor&>(), declval<_CvSndr>(), declval<_Context&>()));
+
+// Returns the Nth child sender of a sender:
+// The +3 below is to skip the context, tag, and data arguments to the visitor
+template <class _CvSndr, size_t _Nth = 0>
+using __child_of_t _CCCL_NODEBUG_ALIAS =
+  __visit_result_t<::cuda::std::__detail::__get_fn<_Nth + 3>, _CvSndr, ::cuda::std::__ignore_t>;
 
 } // namespace cuda::experimental::execution
 

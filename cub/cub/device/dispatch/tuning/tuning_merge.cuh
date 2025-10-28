@@ -42,9 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace merge
+namespace detail::merge
 {
 template <typename KeyT, typename ValueT>
 struct policy_hub
@@ -73,7 +71,6 @@ struct policy_hub
 
   using max_policy = policy600;
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 
 CUB_NAMESPACE_END
