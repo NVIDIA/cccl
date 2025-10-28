@@ -50,7 +50,7 @@ OutputIterator scan_impl(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
-  InitialValueType init,
+  [[maybe_unused]] InitialValueType init,
   BinaryFunction binary_op)
 {
   using namespace thrust::detail;
