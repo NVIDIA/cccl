@@ -27,7 +27,6 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
-#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -59,53 +58,47 @@ public:
   /// @param __begin Iterator pointing to the first seed value.
   /// @param __end Iterator one-past-the-last seed value.
   template <class _InputIt>
-  _CCCL_API constexpr seed_seq(_InputIt __begin, _InputIt __end)
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(_InputIt __begin, _InputIt __end)
   {
     auto __n = ::cuda::std::distance(__begin, __end);
     if (__n <= 0)
     {
       return;
     }
-    auto* __ptr = new result_type[__n];
+    __data_ = new result_type[__n];
+    __size_ = __n;
     for (::cuda::std::size_t __i = 0; __i < static_cast<::cuda::std::size_t>(__n); ++__i, ++__begin)
     {
-      __ptr[__i] = static_cast<result_type>(*__begin) & 0xFFFFFFFF;
+      __data_[__i] = static_cast<result_type>(*__begin) & 0xFFFFFFFF;
     }
-    __v_ = ::cuda::std::span<result_type>(__ptr, __n);
   }
 
   /// @brief Construct from an initializer list of seed values.
   /// @tparam _InitT Element type convertible to `result_type`.
   /// @param __il The list of seed values.
   template <typename _InitT,
-            typename = typename ::cuda::std::enable_if<::cuda::std::is_convertible<_InitT, result_type>::value>::type>
-  _CCCL_API constexpr seed_seq(std::initializer_list<_InitT> __il)
+            typename = typename ::cuda::std::enable_if_t<
+              ::cuda::std::is_convertible_v<_InitT, result_type>&& ::cuda::std::is_integral_v<_InitT>>>
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(std::initializer_list<_InitT> __il)
       : seed_seq(__il.begin(), __il.end())
   {}
 
   /// @brief seed_seq is not copyable.
   seed_seq(const seed_seq&) = delete;
 
-  // Constexpr destructor from C++20 onwards
-#if _CCCL_STD_VER > 2017
-  constexpr
-#endif // _CCCL_STD_VER > 2017
-    _CCCL_API ~seed_seq()
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 ~seed_seq()
   {
-    if (!__v_.empty())
-    {
-      delete[] __v_.data();
-    }
+    delete[] __data_;
   }
 
   /// @brief seed_seq is not copy-assignable.
-  _CCCL_API auto operator=(const seed_seq&) = delete;
+  seed_seq& operator=(const seed_seq&) = delete;
 
   /// @brief Returns the number of seed values stored.
   /// @return Number of internal seed values (may be 0).
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size() const noexcept
   {
-    return __v_.size();
+    return __size_;
   }
 
   /// @brief Copy stored seed values into the output iterator `__dest`.
@@ -114,7 +107,7 @@ public:
   template <class _OutputIt>
   _CCCL_API constexpr void param(_OutputIt __dest) const
   {
-    ::cuda::std::copy(__v_.begin(), __v_.end(), __dest);
+    ::cuda::std::copy(__data_, __data_ + __size_, __dest);
   }
 
   /// @brief Generate unbiased seeds by filling the output range [begin, end) with 32-bit unsigned integer values, based
@@ -132,7 +125,7 @@ public:
       return;
     }
     // https://en.cppreference.com/w/cpp/numeric/random/seed_seq/generate.html
-    const result_type __z = __v_.size();
+    const result_type __z = __size_;
     const result_type __n = ::cuda::std::distance(__begin, __end);
     const result_type __m = ::cuda::std::max(__z + 1, __n);
     const result_type __t = (__n >= 623) ? 11 : (__n >= 68) ? 7 : (__n >= 39) ? 5 : (__n >= 7) ? 3 : (__n - 1) / 2;
@@ -151,7 +144,9 @@ public:
       // 2.1
       const result_type __r1 = 1664525 * __T(__begin[__k_mod_n] ^ __begin[__k_p_mod_n] ^ __begin[(__k - 1) % __n]);
       // 2.2
-      result_type __r2 = (__k == 0) ? __r1 + __z : (__k <= __z) ? __r1 + __k_mod_n + __v_[__k - 1] : __r1 + __k_mod_n;
+      result_type __r2 = (__k == 0)   ? __r1 + __z
+                       : (__k <= __z) ? __r1 + __k_mod_n + __data_[__k - 1]
+                                      : __r1 + __k_mod_n;
       // 2.3
       __begin[__k_p_mod_n] += __r1;
       __begin[__k_p_mod_n] &= 0xFFFFFFFF;
@@ -186,7 +181,8 @@ private:
   {
     return (__x ^ (__x >> 27));
   }
-  ::cuda::std::span<result_type> __v_{};
+  result_type* __data_        = nullptr;
+  ::cuda::std::size_t __size_ = 0;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
