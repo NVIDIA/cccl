@@ -69,13 +69,18 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   _CCCL_ASSERT(::cuda::device::is_address_from(__src, ::cuda::device::address_space::global),
                "src must point to global memory.");
 
+#    if __cccl_ptx_isa >= 860
+#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_shared
+#    else // __cccl_ptx_isa >= 860
+#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_cluster
+#    endif // __cccl_ptx_isa >= 860
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
       if (::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared)
           && ::cuda::device::is_address_from(__src, ::cuda::device::address_space::global)) {
         ::cuda::ptx::cp_async_bulk(
-          ::cuda::ptx::space_cluster,
+          _CCCL_BULK_COPY_SPACE,
           ::cuda::ptx::space_global,
           __dest,
           __src,
@@ -89,6 +94,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         _CCCL_UNREACHABLE();
       }),
     (::cuda::device::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
+#    undef _CCCL_BULK_COPY_SPACE
 
   return async_contract_fulfillment::async;
 }
