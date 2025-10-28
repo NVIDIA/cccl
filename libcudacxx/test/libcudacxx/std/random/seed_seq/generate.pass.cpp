@@ -10,25 +10,27 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/__random_>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <random>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include "test_macros.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  static_assert(noexcept(::cuda::std::seed_seq{}));
+  static_assert(noexcept(cuda::std::seed_seq{}));
   cuda::std::seed_seq seq{1, 2, 3, 4, 5};
   cuda::std::uint32_t out[5] = {};
-  seq.generate(::cuda::std::begin(out), ::cuda::std::end(out));
-  static_assert(cuda::std::is_void_v<decltype(seq.generate(::cuda::std::begin(out), ::cuda::std::end(out)))>);
+  seq.generate(cuda::std::begin(out), cuda::std::end(out));
+  static_assert(cuda::std::is_void_v<decltype(seq.generate(cuda::std::begin(out), cuda::std::end(out)))>);
   return true;
 }
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <random>
 void test_against_std()
 {
-  ::cuda::std::size_t n                                     = 100;
-  std::vector<std::vector<::cuda::std::uint32_t>> sequences = {
+  cuda::std::size_t n                                     = 100;
+  std::vector<std::vector<cuda::std::uint32_t>> sequences = {
     {1, 2, 3, 4, 5},
     {42, 43, 44, 45, 46, 47, 48, 49, 50},
     {123456789, 987654321, 555555555, 333333333, 111111111},
@@ -36,10 +38,10 @@ void test_against_std()
     {0}};
   for (const auto& seq_values : sequences)
   {
-    ::cuda::std::seed_seq cuda_seq{seq_values.data(), seq_values.data() + seq_values.size()};
+    cuda::std::seed_seq cuda_seq{seq_values.data(), seq_values.data() + seq_values.size()};
     std::seed_seq std_seq{std::begin(seq_values), std::end(seq_values)};
 
-    std::vector<::cuda::std::uint32_t> cuda_output(n);
+    std::vector<cuda::std::uint32_t> cuda_output(n);
     std::vector<std::uint32_t> std_output(n);
 
     cuda_seq.generate(cuda_output.data(), cuda_output.data() + n);
@@ -54,7 +56,7 @@ int main(int, char**)
   test();
 // Constexpr new/delete works from C++20 onwards
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
+  static_assert(test());
 #endif
   NV_IF_TARGET(NV_IS_HOST, ({ test_against_std(); }));
   return 0;

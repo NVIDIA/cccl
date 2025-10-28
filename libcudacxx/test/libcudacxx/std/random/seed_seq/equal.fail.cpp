@@ -15,7 +15,7 @@ __host__ __device__ void test()
 {
   ::cuda::std::seed_seq seq1{1, 2, 3};
   ::cuda::std::seed_seq seq2;
-  bool _ = (seq2 == seq1);
+  [[maybe_unused]] bool _ = (seq2 == seq1);
 }
 
 int main(int, char**)

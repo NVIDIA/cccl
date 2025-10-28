@@ -15,27 +15,33 @@
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  ::cuda::std::array<::cuda::std::uint32_t, 3> seeds_copy{};
-  ::cuda::std::array<::cuda::std::uint32_t, 3> seeds = {1, 2, 3};
-  // Iterator constructor
-  ::cuda::std::seed_seq seq1(seeds.begin(), seeds.end());
-  assert(seq1.size() == 3);
-  seq1.param(seeds_copy.begin());
-  assert(seeds_copy == seeds);
-  // Default constructor
-  ::cuda::std::seed_seq seq2{};
-  assert(seq2.size() == 0);
-  ::cuda::std::array<::cuda::std::uint32_t, 0> empty_seeds_copy{};
-  seq2.param(empty_seeds_copy.begin());
-  assert(empty_seeds_copy.empty());
+  cuda::std::array<cuda::std::uint32_t, 3> seeds{1, 2, 3};
 
-  // Initializer list constructor
-  ::cuda::std::seed_seq seq3{4, 5, 6, 7, 8};
-  assert(seq3.size() == 5);
-  ::cuda::std::array<::cuda::std::uint32_t, 5> init_seeds_copy{};
-  seq3.param(init_seeds_copy.begin());
-  ::cuda::std::array<::cuda::std::uint32_t, 5> reference = {4, 5, 6, 7, 8};
-  assert(init_seeds_copy == reference);
+  // 1. Default constructor
+  {
+    cuda::std::seed_seq seq;
+    assert(seq.size() == 0);
+  }
+
+  // 2. Iterator constructor
+  {
+    cuda::std::seed_seq seq(seeds.begin(), seeds.end());
+    assert(seq.size() == 3);
+
+    cuda::std::array<cuda::std::uint32_t, 3> seeds_copy{};
+    seq.param(seeds_copy.begin());
+    assert(seeds_copy == seeds);
+  }
+  // 3. Initializer list constructor
+  {
+    cuda::std::seed_seq seq{4, 5, 6, 7, 8};
+    assert(seq.size() == 5);
+
+    cuda::std::array<cuda::std::uint32_t, 5> init_seeds_copy{};
+    seq.param(init_seeds_copy.begin());
+    assert((init_seeds_copy == cuda::std::array<cuda::std::uint32_t, 5>{4, 5, 6, 7, 8}));
+  }
+
   return true;
 }
 
@@ -43,7 +49,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
+  static_assert(test());
 #endif
   return 0;
 }
