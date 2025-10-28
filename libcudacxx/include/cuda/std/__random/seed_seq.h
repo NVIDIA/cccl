@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/copy_n.h>
 #include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
@@ -51,7 +53,7 @@ public:
   /// @brief Default-construct an empty seed sequence.
   ///
   /// `size()` will return 0.
-  seed_seq() = default;
+  _CCCL_HIDE_FROM_ABI constexpr seed_seq() noexcept = default;
 
   /// @brief Construct from an iterator range of seed values.
   /// @tparam _InputIt Input iterator type yielding values convertible to `result_type`.
@@ -65,21 +67,20 @@ public:
     {
       return;
     }
-    __data_ = new result_type[__n];
-    __size_ = __n;
-    for (::cuda::std::size_t __i = 0; __i < static_cast<::cuda::std::size_t>(__n); ++__i, ++__begin)
+    __data_ = new result_type[__n]{};
+    __size_ = static_cast<size_t>(__n);
+    for (size_t __i = 0; __i < static_cast<size_t>(__n); ++__i, ++__begin)
     {
-      __data_[__i] = static_cast<result_type>(*__begin) & 0xFFFFFFFF;
+      __data_[__i] = static_cast<uint32_t>(*__begin);
     }
   }
 
   /// @brief Construct from an initializer list of seed values.
   /// @tparam _InitT Element type convertible to `result_type`.
   /// @param __il The list of seed values.
-  template <typename _InitT,
-            typename = typename ::cuda::std::enable_if_t<
-              ::cuda::std::is_convertible_v<_InitT, result_type>&& ::cuda::std::is_integral_v<_InitT>>>
-  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(std::initializer_list<_InitT> __il)
+  _CCCL_TEMPLATE(typename _InitT)
+  _CCCL_REQUIRES(__cccl_is_integer_v<_InitT>)
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(initializer_list<_InitT> __il)
       : seed_seq(__il.begin(), __il.end())
   {}
 
@@ -96,7 +97,7 @@ public:
 
   /// @brief Returns the number of seed values stored.
   /// @return Number of internal seed values (may be 0).
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size() const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t size() const noexcept
   {
     return __size_;
   }
@@ -107,7 +108,7 @@ public:
   template <class _OutputIt>
   _CCCL_API constexpr void param(_OutputIt __dest) const
   {
-    ::cuda::std::copy(__data_, __data_ + __size_, __dest);
+    ::cuda::std::copy_n(__data_, __size_, __dest);
   }
 
   /// @brief Generate unbiased seeds by filling the output range [begin, end) with 32-bit unsigned integer values, based
@@ -136,7 +137,7 @@ public:
     ::cuda::std::fill(__begin, __end, result_type{0x8b8b8b8b});
 
     // 2.
-    for (::cuda::std::size_t __k = 0; __k < __m; ++__k)
+    for (size_t __k = 0; __k < __m; ++__k)
     {
       result_type __k_mod_n   = __k % __n;
       result_type __k_p_mod_n = (__k + __p) % __n;
@@ -156,7 +157,7 @@ public:
     }
 
     // 3.
-    for (::cuda::std::size_t __k = __m; __k < __m + __n; ++__k)
+    for (size_t __k = __m; __k < __m + __n; ++__k)
     {
       result_type __k_mod_n   = __k % __n;
       result_type __k_p_mod_n = (__k + __p) % __n;
@@ -181,8 +182,8 @@ private:
   {
     return (__x ^ (__x >> 27));
   }
-  result_type* __data_        = nullptr;
-  ::cuda::std::size_t __size_ = 0;
+  result_type* __data_ = nullptr;
+  size_t __size_       = 0;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
