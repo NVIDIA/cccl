@@ -2,8 +2,6 @@
 
 #include <cuda/memory_resource>
 
-#include <cuda/experimental/stream.cuh>
-
 #include <cstddef>
 #include <cstdint>
 
