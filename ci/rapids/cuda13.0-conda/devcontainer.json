@@ -24,7 +24,6 @@
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_REPOSITORY": "rapidsai/sccache",
-    "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "SCCACHE_VERSION": "rapids",
     "CUDAARCHS": "75-real",
