@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H
-#define _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H
+#ifndef _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
+#define _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
@@ -40,52 +40,54 @@
 namespace cuda::experimental
 {
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 
 static ::cudaMemPool_t __get_default_host_pinned_pool();
 
 //! @rst
 //! .. _cudax-memory-resource-async:
 //!
-//! Stream ordered memory resource
+//! Stream ordered host pinned memory pool
 //! ------------------------------
 //!
-//! ``pinned_memory_resource`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! ``pinned_memory_pool_ref`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``pinned_memory_resource`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
+//! ``pinned_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
 //! cudaMemLocationTypeHost or \c cudaMemLocationTypeHostNuma.
 //!
 //! .. warning::
 //!
-//!    ``pinned_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
-//!    lifetime of the pool exceeds the lifetime of the ``pinned_memory_resource``.
+//!    ``pinned_memory_pool_ref`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``pinned_memory_pool_ref``.
 //!
 //! @endrst
-class pinned_memory_resource : public __memory_resource_base
+class pinned_memory_pool_ref : public __memory_resource_base
 {
 public:
-  //! @brief Default constructs the pinned_memory_resource using the default \c cudaMemPool_t for host pinned memory.
-  //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  _CCCL_HOST_API pinned_memory_resource()
-      : __memory_resource_base(::cuda::experimental::__get_default_host_pinned_pool())
-  {}
-
-  //! @brief  Constructs the pinned_memory_resource from a \c cudaMemPool_t.
+  //! @brief  Constructs the pinned_memory_pool_ref from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  _CCCL_HOST_API explicit pinned_memory_resource(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit pinned_memory_pool_ref(::cudaMemPool_t __pool) noexcept
       : __memory_resource_base(__pool)
   {}
 
   //! @brief Enables the \c device_accessible property
   _CCCL_HOST_API friend constexpr void
-  get_property(pinned_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  get_property(pinned_memory_pool_ref const&, ::cuda::mr::device_accessible) noexcept
   {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_pool_ref const&, ::cuda::mr::host_accessible) noexcept
   {}
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
+
+//! @brief Returns the default pinned memory pool.
+//! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+//! @returns The default pinned memory pool.
+[[nodiscard]] inline pinned_memory_pool_ref pinned_default_memory_pool()
+{
+  return pinned_memory_pool_ref{::cuda::experimental::__get_default_host_pinned_pool()};
+}
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -99,9 +101,9 @@ public:
 //! or \c cudaMemLocationTypeHostNuma and owns it.
 //!
 //! @endrst
-struct pinned_memory_pool : pinned_memory_resource
+struct pinned_memory_pool : pinned_memory_pool_ref
 {
-  using reference_type = pinned_memory_resource;
+  using reference_type = pinned_memory_pool_ref;
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Constructs a \c pinned_memory_pool with optional properties.
@@ -113,7 +115,7 @@ struct pinned_memory_pool : pinned_memory_resource
   //!
   //! @param __properties Optional, additional properties of the pool to be created.
   _CCCL_HOST_API pinned_memory_pool(memory_pool_properties __properties = {})
-      : pinned_memory_resource(__create_cuda_mempool(
+      : pinned_memory_pool_ref(__create_cuda_mempool(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {
     enable_access_from(cuda::devices);
@@ -130,7 +132,7 @@ struct pinned_memory_pool : pinned_memory_resource
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
-      : pinned_memory_resource(__create_cuda_mempool(
+      : pinned_memory_pool_ref(__create_cuda_mempool(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST_NUMA, __numa_id}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {
     enable_access_from(cuda::devices);
@@ -151,12 +153,12 @@ struct pinned_memory_pool : pinned_memory_resource
 
 private:
   pinned_memory_pool(::cudaMemPool_t __pool) noexcept
-      : pinned_memory_resource(__pool)
+      : pinned_memory_pool_ref(__pool)
   {}
 };
 
-static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_resource, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>, "");
 
 static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
@@ -173,16 +175,16 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
   }();
 
   return __default_pool;
-#  else // _CCCL_CTK_BELOW(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   static pinned_memory_pool __default_pool(0);
   return __default_pool.get();
-#  endif // _CCCL_CTK_BELOW(13, 0)
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 }
 
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H
+#endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H

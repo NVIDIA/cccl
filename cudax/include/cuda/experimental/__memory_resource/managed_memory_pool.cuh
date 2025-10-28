@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H
-#define _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H
+#ifndef _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
+#define _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
 
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
@@ -49,42 +49,44 @@ namespace cuda::experimental
 //! Stream ordered memory resource
 //! ------------------------------
 //!
-//! ``managed_memory_resource`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! ``managed_memory_pool_ref`` allocates managed memory using `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``managed_memory_resource`` is a thin wrapper around a \c cudaMemPool_t with the allocation type set to \c
+//! ``managed_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with the allocation type set to \c
 //! cudaMemAllocationTypeManaged.
 //!
 //! .. warning::
 //!
-//!    ``managed_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
-//!    lifetime of the pool exceeds the lifetime of the ``managed_memory_resource``.
+//!    ``managed_memory_pool_ref`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``managed_memory_pool_ref``.
 //!
 //! @endrst
-class managed_memory_resource : public __memory_resource_base
+class managed_memory_pool_ref : public __memory_resource_base
 {
 public:
-  //! @brief Default constructs the managed_memory_resource using the default \c cudaMemPool_t for host pinned memory.
-  //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  _CCCL_HOST_API managed_memory_resource()
-      : __memory_resource_base(::cuda::experimental::__get_default_managed_pool())
-  {}
-
-  //! @brief  Constructs the managed_memory_resource from a \c cudaMemPool_t.
+  //! @brief  Constructs the managed_memory_pool_ref from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  _CCCL_HOST_API explicit managed_memory_resource(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit managed_memory_pool_ref(::cudaMemPool_t __pool) noexcept
       : __memory_resource_base(__pool)
   {}
 
   //! @brief Enables the \c device_accessible property
   _CCCL_HOST_API friend constexpr void
-  get_property(managed_memory_resource const&, ::cuda::mr::device_accessible) noexcept
+  get_property(managed_memory_pool_ref const&, ::cuda::mr::device_accessible) noexcept
   {}
   //! @brief Enables the \c host_accessible property
-  _CCCL_HOST_API friend constexpr void get_property(managed_memory_resource const&, ::cuda::mr::host_accessible) noexcept
+  _CCCL_HOST_API friend constexpr void get_property(managed_memory_pool_ref const&, ::cuda::mr::host_accessible) noexcept
   {}
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 };
+
+//! @brief Returns the default managed memory pool.
+//! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+//! @returns The default managed memory pool.
+[[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
+{
+  return managed_memory_pool_ref{::cuda::experimental::__get_default_managed_pool()};
+}
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -98,16 +100,16 @@ public:
 //! cudaMemAllocationTypeManaged and owns it.
 //!
 //! @endrst
-struct managed_memory_pool : managed_memory_resource
+struct managed_memory_pool : managed_memory_pool_ref
 {
-  using reference_type = managed_memory_resource;
+  using reference_type = managed_memory_pool_ref;
 
   //! @brief Constructs a \c managed_memory_pool with optional properties.
   //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
   //! threshold, unused memory held by the pool will be released at the next synchronization event.
   //! @param __properties Optional, additional properties of the pool to be created.
   _CCCL_HOST_API managed_memory_pool(memory_pool_properties __properties = {})
-      : managed_memory_resource(__create_cuda_mempool(
+      : managed_memory_pool_ref(__create_cuda_mempool(
           __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED))
   {}
 
@@ -128,12 +130,12 @@ struct managed_memory_pool : managed_memory_resource
 
 private:
   managed_memory_pool(::cudaMemPool_t __pool) noexcept
-      : managed_memory_resource(__pool)
+      : managed_memory_pool_ref(__pool)
   {}
 };
 
-static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_resource, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>, "");
 
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
@@ -142,6 +144,6 @@ static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_ac
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_CUDACC_AT_LEAST(13, 0)
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H
+#endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H

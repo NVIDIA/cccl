@@ -41,16 +41,11 @@ static_assert(is_constructible<ref, matching_properties&>::value, "");
 static_assert(!is_constructible<ref, missing_stateful_property&>::value, "");
 static_assert(!is_constructible<ref, missing_stateless_property&>::value, "");
 
-static_assert(is_constructible<ref, matching_properties*>::value, "");
-static_assert(!is_constructible<ref, missing_stateful_property*>::value, "");
-static_assert(!is_constructible<ref, missing_stateless_property*>::value, "");
-
 static_assert(is_constructible<ref, ref&>::value, "");
 
 // Ensure we require a mutable valid reference and do not bind against rvalues
 static_assert(!is_constructible<ref, matching_properties>::value, "");
 static_assert(!is_constructible<ref, const matching_properties&>::value, "");
-static_assert(!is_constructible<ref, const matching_properties*>::value, "");
 
 static_assert(cuda::std::is_copy_constructible<ref>::value, "");
 static_assert(cuda::std::is_move_constructible<ref>::value, "");

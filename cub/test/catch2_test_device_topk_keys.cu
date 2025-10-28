@@ -18,6 +18,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include "cuda/__iterator/tabulate_output_iterator.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 
@@ -198,7 +199,7 @@ try
   using key_t              = cuda::std::uint32_t;
   using num_items_t        = cuda::std::uint64_t;
   using k_items_t          = c2h::get<0, TestType>;
-  constexpr auto direction = cub::detail::topk::select::max;
+  constexpr auto direction = cub::detail::topk::select::min;
   using comparator_t       = direction_to_comparator_t<direction>;
 
   // Set input size
@@ -213,18 +214,19 @@ try
   // Capture test parameters
   CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), c2h::type_name<k_items_t>(), num_items, k, direction);
 
-  // Prepare input and output
-  auto keys_in = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
-  c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
+  // Prepare input
+  auto counting_it = cuda::make_counting_iterator(num_items_t{});
+  auto keys_in     = cuda::std::make_reverse_iterator(counting_it + num_items);
+
+  // Prepare helper to check results
+  auto check_result_helper = check_unordered_output_helper(k);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator();
 
   // Run the top-k algorithm
-  topk_keys<direction>(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+  topk_keys<direction>(keys_in, check_result_it, num_items, k);
 
   // Verify results
-  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
-  auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
-  REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
+  check_result_helper.check_all_results_correct();
 }
 catch (std::bad_alloc& e)
 {

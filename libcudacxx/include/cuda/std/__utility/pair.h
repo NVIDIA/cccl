@@ -660,25 +660,25 @@ template <>
 struct __get_pair<0>
 {
   template <class _T1, class _T2>
-  static _CCCL_API constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr const _T1& get(const pair<_T1, _T2>& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr const _T1& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
   {
     return ::cuda::std::forward<_T1>(__p.first);
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return ::cuda::std::forward<const _T1>(__p.first);
   }
@@ -688,98 +688,98 @@ template <>
 struct __get_pair<1>
 {
   template <class _T1, class _T2>
-  static _CCCL_API constexpr _T2& get(pair<_T1, _T2>& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T2& get(pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr const _T2& get(const pair<_T1, _T2>& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr const _T2& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr _T2&& get(pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _T2&& get(pair<_T1, _T2>&& __p) noexcept
   {
     return ::cuda::std::forward<_T2>(__p.second);
   }
 
   template <class _T1, class _T2>
-  static _CCCL_API constexpr const _T2&& get(const pair<_T1, _T2>&& __p) noexcept
+  [[nodiscard]] _CCCL_API static constexpr const _T2&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return ::cuda::std::forward<const _T2>(__p.second);
   }
 };
 
 template <size_t _Ip, class _T1, class _T2>
-_CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
 {
   return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
 {
   return __get_pair<0>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1& get(pair<_T2, _T1>& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1& get(pair<_T2, _T1>& __p) noexcept
 {
   return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
 {
   return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
 {
   return __get_pair<1>::get(::cuda::std::move(__p));
 }
 
 template <class _T1, class _T2>
-_CCCL_API constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
+[[nodiscard]] _CCCL_API constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
 {
   return __get_pair<1>::get(::cuda::std::move(__p));
 }
