@@ -45,7 +45,7 @@ The function ``cuda::div_overflow`` performs integer division of ``lhs`` by ``rh
 
 **Notes**
 
-- For signed types, ``-1`` divided by ``numeric_limits<Rhs>::min()`` triggers overflow when ``Result`` matches the operand types.
+- For signed types, ``numeric_limits<Lhs>::min()`` divided by ``-1`` triggers overflow when ``Result`` matches the operand types.
 
 **Performance considerations**
 
