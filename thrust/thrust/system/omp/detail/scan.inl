@@ -67,6 +67,8 @@ OutputIterator scan_impl(
     return result;
   }
 
+  auto wrapped_binary_op = wrapped_function<BinaryFunction, accum_t>{binary_op};
+
   const int num_threads = omp_get_max_threads();
 
   // Use serial scan for small arrays where parallel overhead dominates
@@ -76,16 +78,16 @@ OutputIterator scan_impl(
     {
       if constexpr (has_init)
       {
-        return ::cuda::std::inclusive_scan(first, last, result, binary_op, init);
+        return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op, init);
       }
       else
       {
-        return ::cuda::std::inclusive_scan(first, last, result, binary_op);
+        return ::cuda::std::inclusive_scan(first, last, result, wrapped_binary_op);
       }
     }
     else
     {
-      return ::cuda::std::exclusive_scan(first, last, result, init, binary_op);
+      return ::cuda::std::exclusive_scan(first, last, result, init, wrapped_binary_op);
     }
   }
 
@@ -101,18 +103,18 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, binary_op);
+      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, wrapped_binary_op);
     }
   }
 
   // Step 2: Scan block sums
   if constexpr (has_init)
   {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), init, binary_op);
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), init, wrapped_binary_op);
   }
   else
   {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), accum_t{}, binary_op);
+    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), accum_t{}, wrapped_binary_op);
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
@@ -128,11 +130,11 @@ OutputIterator scan_impl(
       const accum_t prefix = block_sums[tid];
       if constexpr (IsInclusive)
       {
-        ::cuda::std::inclusive_scan(first + start, first + end, result + start, binary_op, prefix);
+        ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
       }
       else
       {
-        ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, binary_op);
+        ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, wrapped_binary_op);
       }
     }
   }
