@@ -11,11 +11,9 @@
 
 #include <cuda/std/__random_>
 
-#if _CCCL_STD_VER > 2017
-constexpr
-#endif // _CCCL_STD_VER > 2017
-  __host__ __device__ bool
-  test()
+#include "test_macros.h"
+
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   static_assert(noexcept(::cuda::std::seed_seq{}));
   cuda::std::seed_seq seq{1, 2, 3, 4, 5};
@@ -25,7 +23,8 @@ constexpr
   return true;
 }
 
-#include <random>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <random>
 void test_against_std()
 {
   ::cuda::std::size_t n                                     = 100;
@@ -48,14 +47,15 @@ void test_against_std()
     assert(cuda_output == std_output);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 int main(int, char**)
 {
   test();
 // Constexpr new/delete works from C++20 onwards
-#if _CCCL_STD_VER > 2017
+#if TEST_STD_VER >= 2020
   static_assert(test(), "");
-#endif // _CCCL_STD_VER > 2017
+#endif
   NV_IF_TARGET(NV_IS_HOST, ({ test_against_std(); }));
   return 0;
 }

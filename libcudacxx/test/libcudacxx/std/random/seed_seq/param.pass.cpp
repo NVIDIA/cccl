@@ -11,7 +11,9 @@
 #include <cuda/std/__random_>
 #include <cuda/std/cassert>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   ::cuda::std::array<::cuda::std::uint32_t, 3> seeds_copy{};
   ::cuda::std::array<::cuda::std::uint32_t, 3> seeds = {1, 2, 3};
@@ -19,10 +21,14 @@ __host__ __device__ void test()
   seq1.param(seeds_copy.begin());
   assert(seeds_copy == seeds);
   static_assert(cuda::std::is_void_v<decltype(seq1.param(seeds_copy.begin()))>);
+  return true;
 }
 
 int main(int, char**)
 {
   test();
+#if TEST_STD_VER >= 2020
+  static_assert(test(), "");
+#endif
   return 0;
 }
