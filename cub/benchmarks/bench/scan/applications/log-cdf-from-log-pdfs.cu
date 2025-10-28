@@ -54,6 +54,8 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
+namespace impl
+{
 /*
  * Given a sequence of logarithms of probability mass function values,
  * compute sequence of logarithms of cumulative distribution function values.
@@ -93,6 +95,8 @@ struct LogPDBuilder
   }
 };
 
+}; // namespace impl
+
 template <typename FloatingPointT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPointT, OffsetT>)
 {
@@ -101,7 +105,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
   using input_t        = const value_t*;
   using output_t       = value_t*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-  using op_t           = LogAddPlus;
+  using op_t           = impl::LogAddPlus;
   using accum_t        = value_t;
 
 #if !TUNE_BASE
@@ -126,7 +130,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
     ::cuda::std::make_tuple(cuda::counting_iterator(cuda::std::size_t{0})),
     input.begin(),
     elements,
-    LogPDBuilder<value_t>{mu, norm},
+    impl::LogPDBuilder<value_t>{mu, norm},
     bench_stream);
 
   thrust::device_vector<value_t> output(elements);
