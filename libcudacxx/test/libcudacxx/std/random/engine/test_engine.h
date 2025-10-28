@@ -7,6 +7,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 class SeedSequence
 {
@@ -156,7 +159,6 @@ __host__ __device__ constexpr bool test_min_max()
 }
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
 template <typename Engine>
 void test_save_restore()
 {
