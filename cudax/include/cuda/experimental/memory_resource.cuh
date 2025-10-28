@@ -31,5 +31,6 @@
 #include <cuda/experimental/__memory_resource/managed_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/shared_resource.cuh>
+#include <cuda/experimental/__memory_resource/resource.cuh>
 
 #endif // __CUDAX_MEMORY_RESOURCE___
