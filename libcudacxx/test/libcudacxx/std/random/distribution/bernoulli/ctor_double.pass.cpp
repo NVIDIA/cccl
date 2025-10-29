@@ -18,11 +18,9 @@
 
 #include <cassert>
 
+#include "make_implicit.h"
+#include "test_convertible.h"
 #include "test_macros.h"
-#if TEST_STD_VER >= 11
-#  include "make_implicit.h"
-#  include "test_convertible.h"
-#endif
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -42,14 +40,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(d.p() == 0.75);
   }
 
-#if TEST_STD_VER >= 11
   {
     typedef cuda::std::bernoulli_distribution D;
-    static_assert(test_convertible<D>(), "");
+    static_assert(test_convertible<D>());
     assert(D(0.5) == make_implicit<D>());
-    static_assert(!test_convertible<D, double>(), "");
+    static_assert(!test_convertible<D, double>());
   }
-#endif
 
   return true;
 }
@@ -58,7 +54,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
+  static_assert(test());
 #endif
 
   return 0;

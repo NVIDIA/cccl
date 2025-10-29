@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test1()
+__host__ __device__ TEST_CONSTEXPR_CXX20 void test1()
 {
   typedef cuda::std::bernoulli_distribution D;
   D d1(0.75);
@@ -29,6 +29,8 @@ __host__ __device__ void test1()
 int main(int, char**)
 {
   test1();
-
+#if TEST_STD_VER >= 2020
+  static_assert(test());
+#endif
   return 0;
 }
