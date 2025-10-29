@@ -9,6 +9,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/__random_>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include "test_macros.h"
 
@@ -147,7 +150,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_min_max()
 }
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <sstream>
 template <typename Engine>
 void test_save_restore()
 {

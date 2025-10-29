@@ -11,6 +11,7 @@
 #include <cuda/std/__random_>
 #include <cuda/std/cassert>
 
+#include "test_iterators.h"
 #include "test_macros.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
@@ -40,6 +41,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::array<cuda::std::uint32_t, 5> init_seeds_copy{};
     seq.param(init_seeds_copy.begin());
     assert((init_seeds_copy == cuda::std::array<cuda::std::uint32_t, 5>{4, 5, 6, 7, 8}));
+  }
+  // 4. InputIterator constructor
+  {
+    cuda::std::seed_seq seq(cpp17_input_iterator<cuda::std::uint32_t*>(seeds.begin()),
+                            cpp17_input_iterator<cuda::std::uint32_t*>(seeds.end()));
+    assert(seq.size() == 3);
+    cuda::std::array<cuda::std::uint32_t, 3> seeds_copy{};
+    seq.param(seeds_copy.begin());
+    assert(seeds_copy == seeds);
   }
 
   return true;

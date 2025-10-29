@@ -15,9 +15,9 @@
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  ::cuda::std::array<::cuda::std::uint32_t, 3> seeds_copy{};
-  ::cuda::std::array<::cuda::std::uint32_t, 3> seeds = {1, 2, 3};
-  ::cuda::std::seed_seq seq1(seeds.begin(), seeds.end());
+  cuda::std::array<cuda::std::uint32_t, 3> seeds = {1, 2, 3};
+  cuda::std::seed_seq seq1(seeds.begin(), seeds.end());
+  cuda::std::array<cuda::std::uint32_t, 3> seeds_copy{};
   seq1.param(seeds_copy.begin());
   assert(seeds_copy == seeds);
   static_assert(cuda::std::is_void_v<decltype(seq1.param(seeds_copy.begin()))>);

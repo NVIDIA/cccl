@@ -13,8 +13,10 @@
 
 __host__ __device__ void test()
 {
-  ::cuda::std::seed_seq seq1{1, 2, 3};
-  ::cuda::std::seed_seq seq2 = seq1;
+  static_assert(!cuda::std::is_copy_assignable_v<cuda::std::seed_seq>);
+  static_assert(!cuda::std::is_move_assignable_v<cuda::std::seed_seq>);
+  static_assert(!cuda::std::is_copy_constructible_v<cuda::std::seed_seq>);
+  static_assert(!cuda::std::is_move_constructible_v<cuda::std::seed_seq>);
 }
 
 int main(int, char**)

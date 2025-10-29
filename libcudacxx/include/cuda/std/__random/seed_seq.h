@@ -62,16 +62,24 @@ public:
   template <class _InputIt>
   _CCCL_API _CCCL_CONSTEXPR_CXX20 seed_seq(_InputIt __begin, _InputIt __end)
   {
-    auto __n = distance(__begin, __end);
+    auto __n = ::cuda::std::distance(__begin, __end);
     if (__n <= 0)
     {
       return;
     }
     __data_ = new result_type[__n]{};
     __size_ = static_cast<size_t>(__n);
-    for (size_t __i = 0; __i < __size_; ++__i, ++__begin)
+    _CCCL_TRY
     {
-      __data_[__i] = static_cast<uint32_t>(*__begin);
+      for (size_t __i = 0; __i < __size_; ++__i, ++__begin)
+      {
+        __data_[__i] = static_cast<uint32_t>(*__begin);
+      }
+    }
+    _CCCL_CATCH_ALL
+    {
+      delete[] __data_;
+      _CCCL_THROW();
     }
   }
 
@@ -108,7 +116,7 @@ public:
   template <class _OutputIt>
   _CCCL_API constexpr void param(_OutputIt __dest) const
   {
-    copy_n(__data_, __size_, __dest);
+    ::cuda::std::copy_n(__data_, __size_, __dest);
   }
 
   /// @brief Generate unbiased seeds by filling the output range [begin, end) with 32-bit unsigned integer values, based
@@ -127,14 +135,14 @@ public:
     }
     // https://en.cppreference.com/w/cpp/numeric/random/seed_seq/generate.html
     const result_type __z = __size_;
-    const result_type __n = distance(__begin, __end);
-    const result_type __m = max(__z + 1, __n);
+    const result_type __n = ::cuda::std::distance(__begin, __end);
+    const result_type __m = ::cuda::std::max(__z + 1, __n);
     const result_type __t = (__n >= 623) ? 11 : (__n >= 68) ? 7 : (__n >= 39) ? 5 : (__n >= 7) ? 3 : (__n - 1) / 2;
     const result_type __p = (__n - __t) / 2;
     const result_type __q = __p + __t;
 
     // 1.
-    fill(__begin, __end, result_type{0x8b8b8b8b});
+    ::cuda::std::fill(__begin, __end, result_type{0x8b8b8b8b});
 
     // 2.
     for (size_t __k = 0; __k < __m; ++__k)
