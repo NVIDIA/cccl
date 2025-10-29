@@ -47,6 +47,18 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<int*>>);
   }
 
+  { // <iterator> - <iterator> not random access
+    cuda::transform_input_output_iterator iter1{forward_sized_iterator{buffer + 6}, input_func, output_func};
+    cuda::transform_input_output_iterator iter2{forward_sized_iterator{buffer + 3}, input_func, output_func};
+    assert(iter1 - iter2 == 3);
+    assert(iter1 - iter1 == 0);
+    assert(iter2 - iter1 == -3);
+
+    static_assert(noexcept(iter1 - iter2));
+    static_assert(
+      cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<forward_sized_iterator<int*>>>);
+  }
+
   return true;
 }
 

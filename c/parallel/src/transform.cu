@@ -208,9 +208,17 @@ struct transform_kernel_source
     return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(it.ptr), align);
   }
 
-  static auto IsPointerAligned(indirect_iterator_t it, int alignment)
+private:
+  static auto is_pointer_aligned(const indirect_iterator_t& it, ::cuda::std::size_t alignment)
   {
     return it.value_size != 0 && ::cuda::is_aligned(*static_cast<char**>(it.ptr), alignment);
+  }
+
+public:
+  template <typename... Iterators>
+  static bool CanVectorize(int vec_size, Iterators... its)
+  {
+    return (is_pointer_aligned(its, its.value_size * vec_size) && ...);
   }
 };
 

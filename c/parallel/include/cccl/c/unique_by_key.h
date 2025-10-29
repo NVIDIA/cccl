@@ -32,6 +32,7 @@ typedef struct cccl_device_unique_by_key_build_result_t
   CUkernel sweep_kernel;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
+  void* runtime_policy;
 } cccl_device_unique_by_key_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unique_by_key_build(

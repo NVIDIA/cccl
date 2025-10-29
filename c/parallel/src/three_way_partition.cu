@@ -99,12 +99,12 @@ std::string get_three_way_partition_kernel_name(
   std::string_view select_second_part_op_name)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_three_way_partition_policy>(&chained_policy_t));
 
   constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   const std::string streaming_context_t =
     std::format("cub::detail::three_way_partition::streaming_context_t<{0}>", offset_t);

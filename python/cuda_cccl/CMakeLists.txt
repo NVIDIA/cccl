@@ -55,12 +55,12 @@ install(
 )
 
 # ensure the destination directory exists
-file(MAKE_DIRECTORY "cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR}/cccl")
+file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 
 # Install version-specific binaries
 install(
     TARGETS cccl.c.parallel
-    DESTINATION cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR}/cccl
+    DESTINATION cuda/compute/${CUDA_VERSION_DIR}/cccl
 )
 
 # Build and install Cython extension
@@ -99,7 +99,7 @@ set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_cccl_SOURCE_DIR}\"")
 string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
-set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/cccl/parallel/experimental/_bindings_impl.pyx")
+set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
 
 set(_generated_extension_src "${cuda_cccl_BINARY_DIR}/_bindings_impl.c")
 set(_depfile "${cuda_cccl_BINARY_DIR}/_bindings_impl.c.dep")
@@ -124,4 +124,4 @@ add_dependencies(_bindings_impl cythonize_bindings_impl)
 target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
-install(TARGETS _bindings_impl DESTINATION cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR})
+install(TARGETS _bindings_impl DESTINATION cuda/compute/${CUDA_VERSION_DIR})

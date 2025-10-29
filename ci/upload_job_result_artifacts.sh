@@ -7,6 +7,11 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
+readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+
+cd "$repo_root"
+
 usage=$(cat <<EOF
 Usage: $0 <job_id> <exit code>
 EOF
@@ -20,8 +25,6 @@ fi
 
 job_id="$1"
 exit_code="$2"
-
-cd /home/coder/cccl
 
 # Collect workflow-related artifacts -- success state, sccache info, etc.
 # These are unpacked and parsed in the workflow-results action.

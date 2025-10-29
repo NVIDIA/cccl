@@ -64,9 +64,7 @@ struct AgentAdjacentDifferencePolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
-{
-namespace adjacent_difference
+namespace detail::adjacent_difference
 {
 
 template <typename Policy,
@@ -256,7 +254,6 @@ struct AgentDifferenceInit
   }
 };
 
-} // namespace adjacent_difference
-} // namespace detail
+} // namespace detail::adjacent_difference
 
 CUB_NAMESPACE_END

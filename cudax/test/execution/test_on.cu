@@ -14,8 +14,6 @@
 
 namespace ex = cudax::execution;
 
-namespace
-{
 __host__ __device__ bool _on_device() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, //
@@ -59,10 +57,10 @@ void simple_start_on_stream_test()
 {
   cudax::stream str{cuda::device_ref(0)};
   auto sch  = cudax::stream_ref{str};
-  auto sndr = ex::on(sch, ex::just(42) | ex::then([] __host__ __device__(int i) -> int {
+  auto sndr = ex::on(sch, ex::just(42) | ex::then([] __host__ __device__(int i) noexcept -> int {
                             return _on_device() ? i : -i;
                           }))
-            | ex::then([] __host__ __device__(int i) -> int {
+            | ex::then([] __host__ __device__(int i) noexcept -> int {
                 return _on_device() ? -1 : i;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
@@ -73,16 +71,18 @@ void simple_continue_on_stream_test()
 {
   cudax::stream str{cuda::device_ref(0)};
   auto sch  = cudax::stream_ref{str};
-  auto sndr = ex::just(42) | ex::on(sch, ex::then([] __host__ __device__(int i) -> int {
+  auto sndr = ex::just(42) | ex::on(sch, ex::then([] __host__ __device__(int i) noexcept -> int {
                                       return _on_device() ? i : -i;
                                     }))
-            | ex::then([] __host__ __device__(int i) -> int {
+            | ex::then([] __host__ __device__(int i) noexcept -> int {
                 return _on_device() ? -1 : i;
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
   CUDAX_CHECK(result == 42);
 }
 
+namespace
+{
 C2H_TEST("simple on(sch, sndr) thread test", "[on]")
 {
   simple_start_on_thread_test();
