@@ -9,6 +9,8 @@
 //===----------------------------------------------------------------------===//
 #include <cuda/std/array>
 
+#include "test_macros.h"
+
 // Perform a chi-squared test, comparing the observed and expected frequencies
 // of outcomes from a discrete distribution. Tests to significance level 0.01. Accepts 2-10 buckets.
 template <class DiscreteDistribution, class URNG, std::size_t N>
@@ -22,6 +24,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_discrete_distribution(
   assert(expected_probabilities.size() >= 2 && expected_probabilities.size() <= 10);
   using result_type = typename DiscreteDistribution::result_type;
   cuda::std::array<cuda::std::size_t, N> observed_frequencies{};
+
+  // First check the operator with param is equivalent to the constructor param
+  {
+    DiscreteDistribution d2(param);
+    URNG g_1 = g;
+    URNG g_2 = g;
+    for (cuda::std::size_t i = 0; i < 100; ++i)
+    {
+      auto dist_val = dist(g_1, param);
+      auto d2_val   = d2(g_2);
+      assert(dist_val == d2_val);
+    }
+  }
 
   // Generate samples and record observed frequencies.
   for (cuda::std::size_t i = 0; i < num_samples; ++i)

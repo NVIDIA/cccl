@@ -20,21 +20,21 @@
 #include <cuda/std/numeric>
 #include <cuda/std/span>
 
-#include "test_discrete_distribution.h"
+#include "../test_discrete_distribution.h"
 #include "test_macros.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   typedef cuda::std::bernoulli_distribution D;
-  typedef cuda::std::minstd_rand G;
-  const int n = 10000;
+  typedef cuda::std::philox4x64 G;
+  const int n = 1000;
   G g;
   D d;
   auto result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.5}, {0.5, 0.5}, n);
   assert(result);
-  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.2}, {0.2, 0.8}, n);
+  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.2}, {0.8, 0.2}, n);
   assert(result);
-  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.99}, {0.99, 0.01}, n);
+  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.99}, {0.01, 0.99}, n);
   assert(result);
   return true;
 }
