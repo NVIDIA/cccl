@@ -1,5 +1,3 @@
-#define _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
-
 #include <cuda/algorithm>
 #include <cuda/devices>
 #include <cuda/std/ranges>
