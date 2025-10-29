@@ -1544,14 +1544,14 @@ rely on <code class="docutils literal notranslate"><span class="pre">cudaStream_
 <p>However, as this is just an alias for a plain pointer type it carries with it a lot of common pitfals around implicit
 conversions from e.g <code class="docutils literal notranslate"><span class="pre">nullptr</span></code> or a literal <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
 <p>These hard to spot bugs can be avoided through <code class="docutils literal notranslate"><span class="pre">cuda::stream_ref</span></code>, which is a simple wrapper around a <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code>
-that prevents implicit conversions. It also provides the <code class="docutils literal notranslate"><span class="pre">wait()</span></code> and <code class="docutils literal notranslate"><span class="pre">ready()</span></code> member functions to facilitate
+that prevents implicit conversions. It also provides the <code class="docutils literal notranslate"><span class="pre">sync()</span></code> and <code class="docutils literal notranslate"><span class="pre">is_done()</span></code> member functions to facilitate
 waiting for a stream to finish and checking whether it is finished.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="p">;</span>
 <span class="n">cudaStreamCreate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stream</span><span class="p">);</span>
 <span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">ref</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
 
-<span class="n">ref</span><span class="p">.</span><span class="n">wait</span><span class="p">();</span><span class="w">          </span><span class="c1">// synchronizes the stream via cudaStreamSynchronize</span>
-<span class="n">assert</span><span class="p">(</span><span class="n">ref</span><span class="p">.</span><span class="n">ready</span><span class="p">());</span><span class="w"> </span><span class="c1">// verifies that the stream has finished all operations via cudaStreamQuery</span>
+<span class="n">ref</span><span class="p">.</span><span class="n">sync</span><span class="p">();</span><span class="w">          </span><span class="c1">// synchronizes the stream via cudaStreamSynchronize</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">ref</span><span class="p">.</span><span class="n">is_done</span><span class="p">());</span><span class="w"> </span><span class="c1">// verifies that the stream has finished all operations via cudaStreamQuery</span>
 <span class="n">cudaStreamDestroy</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
 </pre></div>
 </div>
