@@ -78,8 +78,9 @@ public:
   {
     const auto blocks_per_grid_x = cuda::ceil_div(nx_, threads_per_side);
     const auto blocks_per_grid_y = cuda::ceil_div(ny_, threads_per_side);
-    return cudax::make_config(cudax::make_hierarchy(cudax::block_dims<threads_per_side, threads_per_side>(),
-                                                    cudax::grid_dims(dim3{blocks_per_grid_x, blocks_per_grid_y})));
+    return cudax::make_config(
+      cudax::block_dims<threads_per_side, threads_per_side>(),
+      cudax::grid_dims(dim3{static_cast<unsigned>(blocks_per_grid_x), static_cast<unsigned>(blocks_per_grid_y)}));
   }
 
   //! @brief Computes 1 step of heat diffusion simulation.
@@ -99,12 +100,12 @@ public:
     cuda::std::mdspan smem_view{smem, cuda::std::extents<int, threads_per_side + 2, threads_per_side + 2>{}};
 
     // The index of this thread in the grid.
-    const auto y_in_grid = config.dims.index(cudax::grid).y;
-    const auto x_in_grid = config.dims.index(cudax::grid).x;
+    const auto y_in_grid = config.dims.index(cudax::thread, cudax::grid).y;
+    const auto x_in_grid = config.dims.index(cudax::thread, cudax::grid).x;
 
     // The index of this thread in the block.
-    const auto y_in_block = config.dims.index(cudax::block).y;
-    const auto x_in_block = config.dims.index(cudax::block).x;
+    const auto y_in_block = config.dims.index(cudax::thread, cudax::block).y;
+    const auto x_in_block = config.dims.index(cudax::thread, cudax::block).x;
 
     // The index of the shared member owned by this thread.
     const auto y_in_smem = y_in_block + 1;
@@ -277,8 +278,13 @@ try
       copy_output_event.record(main_stream);
     }
 
-    // Enqueue the computation to the main stream.
-    cudax::launch(main_stream, {}, kernel_functor, device_buffer_1.data(), device_buffer_2.data());
+    // Enqueue the computation to the main stream. We use empty config, because the functor default config sets all of
+    // the properties we need.
+    cudax::launch(main_stream,
+                  cudax::make_config(),
+                  kernel_functor,
+                  const_cast<const float*>(device_buffer_1.data()),
+                  device_buffer_2.data());
 
     if (should_output(ti))
     {
