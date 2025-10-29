@@ -19,28 +19,19 @@
 
 #include "test_macros.h"
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
-void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
-{
-  std::chrono::milliseconds sleep_duration{1000};
-  std::this_thread::sleep_for(sleep_duration);
-  assert(!reinterpret_cast<std::atomic_flag*>(flag)->test_and_set());
-}
-
-void test_wait(cuda::stream_ref& ref)
+void test_is_done(cuda::stream_ref& ref)
 {
 #if TEST_HAS_EXCEPTIONS()
   try
   {
-    ref.wait();
+    assert(ref.is_done());
   }
   catch (...)
   {
     assert(false && "Should not have thrown");
   }
 #else
-  ref.wait();
+  assert(ref.is_done());
 #endif // TEST_HAS_EXCEPTIONS()
 }
 
@@ -48,11 +39,8 @@ bool test()
 {
   cudaStream_t stream;
   assert(cudaStreamCreate(&stream) == cudaSuccess);
-  std::atomic_flag flag = ATOMIC_FLAG_INIT;
-  assert(cudaStreamAddCallback(stream, callback, &flag, 0) == cudaSuccess);
   cuda::stream_ref ref{stream};
-  test_wait(ref);
-  assert(flag.test_and_set());
+  test_is_done(ref);
   assert(cudaStreamDestroy(stream) == cudaSuccess);
 
   return true;
