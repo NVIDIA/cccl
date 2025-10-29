@@ -66,12 +66,12 @@ CUB_NAMESPACE_BEGIN
 //!        initial arrangements of keys to function properly.
 enum RadixRankAlgorithm
 {
-  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == false`.
+  //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == false`.
   //! It uses thread-private histograms, and thus uses more shared memory.
   //! Requires blocked arrangement of keys. Does not support count callbacks.
   RADIX_RANK_BASIC,
 
-  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == true`.
+  //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == true`.
   //! Similar to RADIX_RANK BASIC, it requires blocked arrangement of keys and does not support count callbacks.
   RADIX_RANK_MEMOIZE,
 
@@ -137,7 +137,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
-//! - **Important**: BlockRadixRank ranks only ``RADIX_BITS`` bits at a time from the keys, not the entire key.
+//! - **Important**: BlockRadixRank ranks only ``RadixBits`` bits at a time from the keys, not the entire key.
 //!   The digit extractor determines which bits are ranked.
 //! - @blocked
 //!
@@ -187,41 +187,41 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //! @endrst
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam RADIX_BITS
+//! @tparam RadixBits
 //!   The number of radix bits per digit place
 //!
-//! @tparam IS_DESCENDING
+//! @tparam IsDescending
 //!   Whether or not the sorted-order is high-to-low
 //!
-//! @tparam MEMOIZE_OUTER_SCAN
+//! @tparam MemoizeOuterScan
 //!   **[optional]** Whether or not to buffer outer raking scan
 //!   partials to incur fewer shared memory reads at the expense of higher register pressure
 //!   (default: true for architectures SM35 and newer, false otherwise).
 //!   See `BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE` for more details.
 //!
-//! @tparam INNER_SCAN_ALGORITHM
+//! @tparam InnerScanAlgorithm
 //!   **[optional]** The cub::BlockScanAlgorithm algorithm to use (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
 //! @tparam SMEM_CONFIG
 //!   **[optional]** Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-template <int BLOCK_DIM_X,
-          int RADIX_BITS,
-          bool IS_DESCENDING,
-          bool MEMOIZE_OUTER_SCAN                 = true,
-          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-          cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
-          int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1>
+template <int BlockDimX,
+          int RadixBits,
+          bool IsDescending,
+          bool MemoizeOuterScan                 = true,
+          BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
+          cudaSharedMemConfig SmemConfig        = cudaSharedMemBankSizeFourByte,
+          int BlockDimY                         = 1,
+          int BlockDimZ                         = 1>
 class BlockRadixRank
 {
 private:
@@ -230,16 +230,16 @@ private:
 
   // Integer type for packing DigitCounters into columns of shared memory banks
   using PackedCounter =
-    ::cuda::std::_If<SMEM_CONFIG == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
+    ::cuda::std::_If<SmemConfig == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
 
   static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
 
   enum
   {
     // The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
 
-    RADIX_DIGITS = 1 << RADIX_BITS,
+    RADIX_DIGITS = 1 << RadixBits,
 
     LOG_WARP_THREADS = detail::log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
@@ -252,7 +252,7 @@ private:
     LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
 
     // Always at least one lane
-    LOG_COUNTER_LANES = ::cuda::std::max(RADIX_BITS - LOG_PACKING_RATIO, 0),
+    LOG_COUNTER_LANES = ::cuda::std::max(RadixBits - LOG_PACKING_RATIO, 0),
     COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
 
     // The number of packed counters per thread (plus one for padding)
@@ -269,7 +269,7 @@ public:
 
 private:
   /// BlockScan type
-  using BlockScan = BlockScan<PackedCounter, BLOCK_DIM_X, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using BlockScan = BlockScan<PackedCounter, BlockDimX, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   struct __align__(16) _TempStorage
@@ -310,7 +310,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter Upsweep()
   {
     auto& smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
-    if constexpr (MEMOIZE_OUTER_SCAN)
+    if constexpr (MemoizeOuterScan)
     {
       // Copy data into registers
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -331,12 +331,12 @@ private:
   {
     PackedCounter* smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
 
-    PackedCounter* raking_ptr = (MEMOIZE_OUTER_SCAN) ? cached_segment : smem_raking_ptr;
+    PackedCounter* raking_ptr = (MemoizeOuterScan) ? cached_segment : smem_raking_ptr;
 
     // Exclusive raking downsweep scan
     detail::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
 
-    if (MEMOIZE_OUTER_SCAN)
+    if (MemoizeOuterScan)
     {
       // Copy data back to smem
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -408,7 +408,7 @@ public:
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -419,7 +419,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @} end member group
@@ -465,7 +465,7 @@ public:
       // Get counter lane
       ::cuda::std::uint32_t counter_lane = digit & (COUNTER_LANES - 1);
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         sub_counter  = PACKING_RATIO - 1 - sub_counter;
         counter_lane = COUNTER_LANES - 1 - counter_lane;
@@ -537,7 +537,7 @@ public:
 
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           bin_idx = RADIX_DIGITS - bin_idx - 1;
         }
@@ -558,12 +558,12 @@ public:
 /**
  * Radix-rank using match.any
  */
-template <int BLOCK_DIM_X,
-          int RADIX_BITS,
-          bool IS_DESCENDING,
-          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-          int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1>
+template <int BlockDimX,
+          int RadixBits,
+          bool IsDescending,
+          BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
+          int BlockDimY                         = 1,
+          int BlockDimZ                         = 1>
 class BlockRadixRankMatch
 {
 private:
@@ -573,9 +573,9 @@ private:
   enum
   {
     // The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
 
-    RADIX_DIGITS = 1 << RADIX_BITS,
+    RADIX_DIGITS = 1 << RadixBits,
 
     LOG_WARP_THREADS     = detail::log2_warp_threads,
     WARP_THREADS         = 1 << LOG_WARP_THREADS,
@@ -598,7 +598,7 @@ public:
 
 private:
   /// BlockScan type
-  using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, InnerScanAlgorithm, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   struct __align__(16) _TempStorage
@@ -635,7 +635,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatch(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group
@@ -670,7 +670,7 @@ public:
 
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           bin_idx     = RADIX_DIGITS - bin_idx - 1;
           bins[track] = (bin_idx > 0 ? temp_storage.aliasable.warp_digit_counters[bin_idx - 1][0] : TILE_ITEMS)
@@ -728,14 +728,14 @@ public:
       // My digit
       ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
-      if (IS_DESCENDING)
+      if (IsDescending)
       {
         digit = RADIX_DIGITS - digit - 1;
       }
 
       // Mask of peers who have same digit as me
       uint32_t peer_mask =
-        detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
+        detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
 
       // Pointer to smem digit counter for this key
       digit_counters[ITEM] = &temp_storage.aliasable.warp_digit_counters[digit][warp_id];
@@ -843,7 +843,7 @@ public:
 
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           bin_idx = RADIX_DIGITS - bin_idx - 1;
         }
@@ -892,19 +892,19 @@ enum WarpMatchAlgorithm
  * decoupled look-back, where it reduces the time other thread blocks need to
  * wait for digit counts to become available.
  */
-template <int BLOCK_DIM_X,
-          int RADIX_BITS,
-          bool IS_DESCENDING,
-          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-          WarpMatchAlgorithm MATCH_ALGORITHM      = WARP_MATCH_ANY,
-          int NUM_PARTS                           = 1>
+template <int BlockDimX,
+          int RadixBits,
+          bool IsDescending,
+          BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
+          WarpMatchAlgorithm MATCH_ALGORITHM    = WARP_MATCH_ANY,
+          int NUM_PARTS                         = 1>
 struct BlockRadixRankMatchEarlyCounts
 {
   // constants
   enum
   {
-    BLOCK_THREADS           = BLOCK_DIM_X,
-    RADIX_DIGITS            = 1 << RADIX_BITS,
+    BLOCK_THREADS           = BlockDimX,
+    RADIX_DIGITS            = 1 << RadixBits,
     BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     BINS_TRACKED_PER_THREAD = BINS_PER_THREAD,
     FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
@@ -919,7 +919,7 @@ struct BlockRadixRankMatchEarlyCounts
   };
 
   // types
-  using BlockScan = cub::BlockScan<int, BLOCK_THREADS, INNER_SCAN_ALGORITHM>;
+  using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;
 
   struct TempStorage
   {
@@ -949,13 +949,13 @@ struct BlockRadixRankMatchEarlyCounts
     _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key)
     {
       ::cuda::std::uint32_t digit = digit_extractor.Digit(key);
-      return IS_DESCENDING ? RADIX_DIGITS - 1 - digit : digit;
+      return IsDescending ? RADIX_DIGITS - 1 - digit : digit;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
     {
       int bin = threadIdx.x * BINS_PER_THREAD + u;
-      return IS_DESCENDING ? RADIX_DIGITS - 1 - bin : bin;
+      return IsDescending ? RADIX_DIGITS - 1 - bin : bin;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeHistogramsWarp(UnsignedBits (&keys)[KEYS_PER_THREAD])
@@ -1107,7 +1107,7 @@ struct BlockRadixRankMatchEarlyCounts
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         int bin_mask =
-          detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
+          detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
         int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());

@@ -181,12 +181,12 @@ enum BlockHistogramAlgorithm
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          int BINS,
-          BlockHistogramAlgorithm ALGORITHM = BLOCK_HISTO_SORT,
-          int BLOCK_DIM_Y                   = 1,
-          int BLOCK_DIM_Z                   = 1>
+          int BlockDimX,
+          int ItemsPerThread,
+          int Bins,
+          BlockHistogramAlgorithm Algorithm = BLOCK_HISTO_SORT,
+          int BlockDimY                     = 1,
+          int BlockDimZ                     = 1>
 class BlockHistogram
 {
 private:
@@ -194,14 +194,14 @@ private:
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
   /// Internal specialization.
   using InternalBlockHistogram =
-    ::cuda::std::_If<ALGORITHM == BLOCK_HISTO_SORT,
-                     detail::BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
-                     detail::BlockHistogramAtomic<BINS>>;
+    ::cuda::std::_If<Algorithm == BLOCK_HISTO_SORT,
+                     detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
+                     detail::BlockHistogramAtomic<Bins>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;
@@ -230,7 +230,7 @@ public:
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -241,7 +241,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group
@@ -289,18 +289,18 @@ public:
   //! @tparam CounterT
   //!   **[inferred]** Histogram counter type
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
       histogram[histo_offset + linear_tid] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
       histogram[histo_offset + linear_tid] = 0;
     }
@@ -353,7 +353,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     InitHistogram(histogram);
@@ -415,7 +415,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     InternalBlockHistogram(temp_storage).Composite(items, histogram);
   }

@@ -58,46 +58,46 @@ namespace detail
  * @tparam T
  *   Sample type
  *
- * @tparam BLOCK_DIM_X
+ * @tparam BlockDimX
  *   The thread block length in threads along the X dimension
  *
- * @tparam ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   The number of samples per thread
  *
- * @tparam BINS
+ * @tparam Bins
  *   The number of bins into which histogram samples may fall
  *
- * @tparam BLOCK_DIM_Y
+ * @tparam BlockDimY
  *   The thread block length in threads along the Y dimension
  *
- * @tparam BLOCK_DIM_Z
+ * @tparam BlockDimZ
  *   The thread block length in threads along the Z dimension
  */
-template <typename T, int BLOCK_DIM_X, int ITEMS_PER_THREAD, int BINS, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
+template <typename T, int BlockDimX, int ItemsPerThread, int Bins, int BlockDimY, int BlockDimZ>
 struct BlockHistogramSort
 {
   /// Constants
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
   // Parameterize BlockRadixSort type for our thread block
   using BlockRadixSortT =
     BlockRadixSort<T,
-                   BLOCK_DIM_X,
-                   ITEMS_PER_THREAD,
+                   BlockDimX,
+                   ItemsPerThread,
                    NullType,
                    4,
                    true,
                    BLOCK_SCAN_WARP_SCANS,
                    cudaSharedMemBankSizeFourByte,
-                   BLOCK_DIM_Y,
-                   BLOCK_DIM_Z>;
+                   BlockDimY,
+                   BlockDimZ>;
 
   // Parameterize BlockDiscontinuity type for our thread block
-  using BlockDiscontinuityT = BlockDiscontinuity<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using BlockDiscontinuityT = BlockDiscontinuity<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Shared memory
   union _TempStorage
@@ -111,8 +111,8 @@ struct BlockHistogramSort
       typename BlockDiscontinuityT::TempStorage flag;
 
       // Storage for noting begin/end offsets of bin runs in the tile of sorted bin values
-      unsigned int run_begin[BINS];
-      unsigned int run_end[BINS];
+      unsigned int run_begin[Bins];
+      unsigned int run_end[Bins];
     } discontinuities;
   };
 
@@ -127,7 +127,7 @@ struct BlockHistogramSort
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   // Discontinuity functor
@@ -169,11 +169,11 @@ struct BlockHistogramSort
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     enum
     {
-      TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD
+      TILE_SIZE = BLOCK_THREADS * ItemsPerThread
     };
 
     // Sort bytes in blocked arrangement
@@ -185,13 +185,13 @@ struct BlockHistogramSort
     int histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
       temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
       temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
     }
     // Finish up with guarded initialization if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
       temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
       temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
@@ -199,7 +199,7 @@ struct BlockHistogramSort
 
     __syncthreads();
 
-    int flags[ITEMS_PER_THREAD]; // unused
+    int flags[ItemsPerThread]; // unused
 
     // Compute head flags to demarcate contiguous runs of the same bin in the sorted tile
     DiscontinuityOp flag_op(temp_storage);
@@ -217,7 +217,7 @@ struct BlockHistogramSort
     histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
       int thread_offset = histo_offset + linear_tid;
       CounterT count =
@@ -226,7 +226,7 @@ struct BlockHistogramSort
     }
 
     // Finish up with guarded composition if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
       int thread_offset = histo_offset + linear_tid;
       CounterT count =
