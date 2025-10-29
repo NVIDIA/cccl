@@ -205,7 +205,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! @tparam InnerScanAlgorithm
 //!   **[optional]** The cub::BlockScanAlgorithm algorithm to use (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
-//! @tparam SMEM_CONFIG
+//! @tparam SMemConfig
 //!   **[optional]** Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
 //! @tparam BlockDimY
@@ -219,7 +219,7 @@ template <int BlockDimX,
           bool IsDescending,
           bool MemoizeOuterScan                 = true,
           BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
-          cudaSharedMemConfig SmemConfig        = cudaSharedMemBankSizeFourByte,
+          cudaSharedMemConfig SMemConfig        = cudaSharedMemBankSizeFourByte,
           int BlockDimY                         = 1,
           int BlockDimZ                         = 1>
 class BlockRadixRank
@@ -230,7 +230,7 @@ private:
 
   // Integer type for packing DigitCounters into columns of shared memory banks
   using PackedCounter =
-    ::cuda::std::_If<SmemConfig == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
+    ::cuda::std::_If<SMemConfig == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
 
   static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
 

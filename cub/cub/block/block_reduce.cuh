@@ -255,7 +255,7 @@ enum BlockReduceAlgorithm
 //! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockReduceAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_REDUCE_WARP_REDUCTIONS)
 //!
