@@ -151,4 +151,11 @@ typedef enum cccl_sort_order_t
   CCCL_DESCENDING = 1,
 } cccl_sort_order_t;
 
+typedef enum cccl_init_kind_t
+{
+  CCCL_VALUE_INIT        = 0,
+  CCCL_FUTURE_VALUE_INIT = 1,
+  CCCL_NO_INIT           = 2,
+} cccl_init_kind_t;
+
 CCCL_C_EXTERN_C_END

@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -63,7 +64,7 @@ struct __decay_args
     }
     else if constexpr (!__nothrow_decay_copyable<_Ts...>)
     {
-      return completion_signatures<_Tag(decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<_Tag(decay_t<_Ts>...), set_error_t(exception_ptr)>{};
     }
     else
     {
@@ -186,7 +187,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
         // Avoid ODR-using this completion operation if this code path is not taken.
         if constexpr (!__nothrow_decay_copyable<_As...>)
         {
-          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), execution::current_exception());
         }
       }
     }

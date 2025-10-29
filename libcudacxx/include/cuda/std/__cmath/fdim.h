@@ -25,6 +25,10 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <math.h>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

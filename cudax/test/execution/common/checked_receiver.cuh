@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include <cuda/std/__cccl/rtti.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/string_view> // IWYU pragma: keep
 #include <cuda/std/type_traits>
 
@@ -75,7 +76,7 @@ struct checked_value_receiver
 template <class... Values>
 _CCCL_HOST_DEVICE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
 
-template <class Error = ::std::exception_ptr>
+template <class Error = cudax::execution::exception_ptr>
 struct checked_error_receiver
 {
   using receiver_concept = cudax_async::receiver_t;
@@ -91,7 +92,7 @@ struct checked_error_receiver
   {
     if constexpr (::cuda::std::is_same_v<Error, Ty>)
     {
-      if (!::cuda::std::is_same_v<Error, ::std::exception_ptr>)
+      if (!::cuda::std::is_same_v<Error, cudax::execution::exception_ptr>)
       {
         CUDAX_CHECK(ty == _error);
       }
@@ -102,14 +103,13 @@ struct checked_error_receiver
     }
   }
 
-#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
-  void set_error(::std::exception_ptr eptr) && noexcept
+  _CCCL_HOST_DEVICE void set_error(cudax::execution::exception_ptr eptr) && noexcept
   {
-    try
+    _CCCL_TRY
     {
-      ::std::rethrow_exception(eptr);
+      cudax::execution::rethrow_exception(eptr);
     }
-    catch (Error& e)
+    _CCCL_CATCH (Error & e)
     {
       if constexpr (cuda::std::derived_from<Error, ::std::exception>)
       {
@@ -120,22 +120,21 @@ struct checked_error_receiver
         SUCCEED();
       }
     }
-    catch (::std::exception& e)
+    _CCCL_CATCH (::std::exception & e)
     {
-#  ifndef _CCCL_NO_RTTI
-      INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
-#  else
+#if defined(_CCCL_NO_TYPEID)
       INFO("expected an error completion; got a different error. what: " << e.what());
-#  endif
-      CHECK(false);
+#else
+      INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
+#endif
+      CUDAX_CHECK(false);
     }
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       INFO("expected an error completion; got a different error");
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
   }
-#endif
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {

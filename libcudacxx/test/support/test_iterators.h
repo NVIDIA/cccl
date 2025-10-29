@@ -10,14 +10,10 @@
 #ifndef SUPPORT_TEST_ITERATORS_H
 #define SUPPORT_TEST_ITERATORS_H
 
-#include <cuda/std/iterator>
-
-#if defined(_LIBCUDACXX_HAS_STDEXCEPT)
-#  include <cuda/std/stdexcept>
-#endif
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

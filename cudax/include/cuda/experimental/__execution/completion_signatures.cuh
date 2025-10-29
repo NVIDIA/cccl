@@ -597,7 +597,7 @@ using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
 #if _CCCL_HAS_EXCEPTIONS()
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
 {
-  return completion_signatures<set_error_t(::std::exception_ptr)>{};
+  return completion_signatures<set_error_t(exception_ptr)>{};
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept

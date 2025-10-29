@@ -21,6 +21,14 @@
 
 //! \cond
 
+// Some build systems need a hint to know which files we actually include
+#if 0
+#  include <thrust/system/cpp/execution_policy.h>
+#  include <thrust/system/cuda/execution_policy.h>
+#  include <thrust/system/omp/execution_policy.h>
+#  include <thrust/system/tbb/execution_policy.h>
+#endif
+
 // #include the host system's execution_policy header
 #define __THRUST_HOST_SYSTEM_EXECUTION_POLICY_HEADER <__THRUST_HOST_SYSTEM_ROOT/execution_policy.h>
 #include __THRUST_HOST_SYSTEM_EXECUTION_POLICY_HEADER

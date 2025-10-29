@@ -32,9 +32,7 @@
 
 #include <thrust/system/detail/sequential/per_device_resource.h>
 
-// SCons can't see through the #defines below to figure out what this header
-// includes, so we fake it out by specifying all possible files we might end up
-// including inside an #if 0.
+// Some build systems need a hint to know which files we actually include
 #if 0
 #  include <thrust/system/cpp/detail/per_device_resource.h>
 #  include <thrust/system/cuda/detail/per_device_resource.h>

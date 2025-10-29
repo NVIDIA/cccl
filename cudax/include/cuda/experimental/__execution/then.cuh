@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -53,14 +54,14 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(exception_ptr)>;
 };
 
 template <>
@@ -109,10 +110,10 @@ struct __upon_t
     using receiver_concept = receiver_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    template <bool _CanThrow = false, class... _Ts>
-    _CCCL_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
+    template <class... _Ts>
+    _CCCL_API void __set(_Ts&&... __ts) noexcept
     {
-      if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
+      _CCCL_TRY
       {
         if constexpr (__same_as<void, __call_result_t<_Fn, _Ts...>>)
         {
@@ -126,15 +127,11 @@ struct __upon_t
                                static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...));
         }
       }
-      else
+      _CCCL_CATCH_ALL
       {
-        _CCCL_TRY
+        if constexpr (!__nothrow_callable<_Fn, _Ts...>)
         {
-          __set<true>(static_cast<_Ts&&>(__ts)...);
-        }
-        _CCCL_CATCH_ALL
-        {
-          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), execution::current_exception());
         }
       }
     }

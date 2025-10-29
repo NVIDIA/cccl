@@ -209,7 +209,7 @@ struct transform_kernel_source
   }
 
 private:
-  static auto is_pointer_aligned(const indirect_iterator_t& it, int alignment)
+  static auto is_pointer_aligned(const indirect_iterator_t& it, ::cuda::std::size_t alignment)
   {
     return it.value_size != 0 && ::cuda::is_aligned(*static_cast<char**>(it.ptr), alignment);
   }

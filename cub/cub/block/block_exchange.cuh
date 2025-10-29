@@ -101,6 +101,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!        // Collectively exchange data into a blocked arrangement across threads
 //!        BlockExchange(temp_storage).StripedToBlocked(thread_data);
+//!    }
 //!
 //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
 //! [1,129,257,385], ..., [127,255,383,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -883,6 +884,7 @@ public:
   //!
   //!        // Collectively exchange data into a blocked arrangement across threads
   //!        BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
   //! [1,129,257,385], ..., [127,255,383,511] }`` after loading from device-accessible memory. The corresponding output
@@ -933,6 +935,7 @@ public:
   //!
   //!        // Store data striped across block threads into an ordered tile
   //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -983,6 +986,7 @@ public:
   //!
   //!        // Collectively exchange data into a blocked arrangement across threads
   //!        BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
+  //!    }
   //!
   //! Suppose the set of warp-striped input ``thread_data`` across the block of threads is ``{ [0,32,64,96],
   //! [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }`` after loading from device-accessible memory. (The first 128
@@ -1037,6 +1041,7 @@ public:
   //!
   //!        // Store data striped across warp threads into an ordered tile
   //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be

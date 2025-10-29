@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
@@ -35,7 +36,6 @@
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -320,7 +320,7 @@ template <class... _Properties>
 class env_t
 {
 private:
-  using __resource   = any_resource<_Properties...>;
+  using __resource   = ::cuda::mr::any_resource<_Properties...>;
   using __stream_ref = stream_ref;
 
   __resource __mr_;

@@ -162,10 +162,11 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020
-#  if !TEST_COMPILER(MSVC)
+#  if !TEST_COMPILER(GCC, ==, 10) && !TEST_COMPILER(MSVC)
+  // GCC: internal compiler error: in cxx_eval_store_expression, at cp/constexpr.c:5137
   // MSVC: error: read of an uninitialized symbol
   static_assert(test());
-#  endif // !TEST_COMPILER(MSVC)
+#  endif // !TEST_COMPILER(GCC, ==, 10) && !TEST_COMPILER(MSVC)
 #endif // TEST_STD_VER >= 2020
 
   return 0;

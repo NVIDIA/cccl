@@ -29,6 +29,7 @@
 #include <cuda/atomic>
 #include <cuda/barrier>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/cstdint>
@@ -112,7 +113,7 @@ public:
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
       __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
-      __sub_count                 = ::__popc(__match_mask);
+      __sub_count                 = ::cuda::std::popcount(__match_mask);
       , __elected = true;
       __sub_count = 1;)
     bool __released = false;
@@ -301,7 +302,7 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
       __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
-      __add_count                 = ::__popc(__match_mask);
+      __add_count                 = ::cuda::std::popcount(__match_mask);
       , __elected = true;
       __add_count = 1;)
     if (__elected)

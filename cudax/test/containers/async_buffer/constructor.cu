@@ -23,13 +23,13 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
                                   cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
                                   cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_types)
 {
@@ -39,7 +39,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("Construction with explicit size")
   {
@@ -55,13 +55,13 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, Resource{}, 0, T{42});
+      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, Resource{}, 5, T{42});
+      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
     }

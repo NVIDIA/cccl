@@ -19,16 +19,11 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-//! \addtogroup execution_policies
-//! \{
-
-//! \p thrust::cpp::tag is a type representing Thrust's standard C++ backend system in C++'s type system.
-//! Iterators "tagged" with a type which is convertible to \p cpp::tag assert that they may be
-//! "dispatched" to algorithm implementations in the \p cpp system.
+namespace detail
+{
+// note: the tag and execution policy need to be defined in the same namespace as the algorithms for ADL to find them
 struct tag;
 
-//! \p thrust::cpp::execution_policy is the base class for all Thrust parallel execution
-//! policies which are derived from Thrust's standard C++ backend system.
 template <typename DerivedPolicy>
 struct execution_policy;
 
@@ -53,13 +48,23 @@ struct execution_policy : system::detail::sequential::execution_policy<Derived>
   }
 };
 
-namespace detail
-{
 struct par_t
     : execution_policy<par_t>
     , thrust::detail::allocator_aware_execution_policy<execution_policy>
 {};
 } // namespace detail
+
+//! \addtogroup execution_policies
+//! \{
+
+//! \p thrust::cpp::tag is a type representing Thrust's standard C++ backend system in C++'s type system.
+//! Iterators "tagged" with a type which is convertible to \p cpp::tag assert that they may be
+//! "dispatched" to algorithm implementations in the \p cpp system.
+using detail::tag;
+
+//! \p thrust::cpp::execution_policy is the base class for all Thrust parallel execution
+//! policies which are derived from Thrust's standard C++ backend system.
+using detail::execution_policy;
 
 //! \p thrust::system::cpp::par is the parallel execution policy associated with Thrust's standard C++ backend system.
 //!

@@ -285,6 +285,10 @@ struct RadixSortPolicyWrapper : PolicyT
   {}
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+using namespace radix_sort_runtime_policies;
+#endif
+
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
   StaticPolicyT,
@@ -332,6 +336,25 @@ struct RadixSortPolicyWrapper<
   CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
   CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
   CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<
+      key<"SingleTilePolicy">()     = SingleTile().EncodedPolicy(),
+      key<"OnesweepPolicy">()       = Onesweep().EncodedPolicy(),
+      key<"UpsweepPolicy">()        = Upsweep().EncodedPolicy(),
+      key<"AltUpsweepPolicy">()     = AltUpsweep().EncodedPolicy(),
+      key<"DownsweepPolicy">()      = Downsweep().EncodedPolicy(),
+      key<"AltDownsweepPolicy">()   = AltDownsweep().EncodedPolicy(),
+      key<"HistogramPolicy">()      = Histogram().EncodedPolicy(),
+      key<"ScanPolicy">()           = Scan().EncodedPolicy(),
+      key<"ScanDelayConstructor">() = StaticPolicyT::ScanPolicy::detail::delay_constructor_t::EncodedConstructor(),
+      key<"ExclusiveSumPolicy">()   = ExclusiveSum().EncodedPolicy(),
+      key<"Onesweep">()             = value<IsOnesweep()>()>();
+  }
+#endif
 };
 
 template <typename PolicyT>

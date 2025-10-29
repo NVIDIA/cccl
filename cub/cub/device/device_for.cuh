@@ -1019,7 +1019,7 @@ public:
   //! @return cudaError_t
   //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
-  _CCCL_REQUIRES(::cuda::std::__is_any_mdspan_layout_mapping_left_or_right_v<LayoutMapping>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream = {})
   {
@@ -1029,7 +1029,7 @@ public:
     using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    constexpr bool is_layout_right       = ::cuda::std::__is_any_mdspan_layout_mapping_right_v<LayoutMapping>;
+    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
     auto extents                         = layout_mapping.extents();
     fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
     fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
@@ -1041,7 +1041,7 @@ public:
 #ifndef _CCCL_DOXYGEN_INVOKED
 
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
-  _CCCL_REQUIRES(::cuda::std::__is_any_mdspan_layout_mapping_left_or_right_v<LayoutMapping>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

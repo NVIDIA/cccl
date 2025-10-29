@@ -120,6 +120,10 @@ cdef extern from "cccl/c/types.h":
         ASCENDING "CCCL_ASCENDING"
         DESCENDING "CCCL_DESCENDING"
 
+    cpdef enum cccl_init_kind_t:
+        VALUE_INIT "CCCL_VALUE_INIT"
+        FUTURE_VALUE_INIT "CCCL_FUTURE_VALUE_INIT"
+        NO_INIT "CCCL_NO_INIT"
 
 cdef void arg_type_check(
     str arg_name,
@@ -136,6 +140,7 @@ OpKind = cccl_op_kind_t
 TypeEnum = cccl_type_enum
 IteratorKind = cccl_iterator_kind_t
 SortOrder = cccl_sort_order_t
+InitKind = cccl_init_kind_t
 
 cdef void _validate_alignment(int alignment) except *:
     """
@@ -724,6 +729,11 @@ cdef class Iterator:
         else:
             return IteratorKind.ITERATOR
 
+    @property
+    def value_type(self):
+        cdef cccl_type_info type_info = self.iter_data.value_type
+        return TypeInfo(type_info.size, type_info.alignment, type_info.type)
+
     def is_kind_pointer(self):
         cdef cccl_iterator_kind_t it_kind = self.iter_data.type
         return (it_kind == cccl_iterator_kind_t.POINTER)
@@ -947,8 +957,9 @@ cdef extern from "cccl/c/scan.h":
         cccl_iterator_t,
         cccl_iterator_t,
         cccl_op_t,
-        cccl_value_t,
+        cccl_type_info,
         _Bool,
+        cccl_init_kind_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
@@ -976,6 +987,41 @@ cdef extern from "cccl/c/scan.h":
         CUstream
     ) nogil
 
+    cdef CUresult cccl_device_exclusive_scan_future_value(
+        cccl_device_scan_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_iterator_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_inclusive_scan_future_value(
+        cccl_device_scan_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_iterator_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_inclusive_scan_no_init(
+        cccl_device_scan_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        CUstream
+    ) nogil
+
     cdef CUresult cccl_device_scan_cleanup(
         cccl_device_scan_build_result_t*
     ) nogil
@@ -989,8 +1035,9 @@ cdef class DeviceScanBuildResult:
         Iterator d_in,
         Iterator d_out,
         Op op,
-        Value h_init,
+        TypeInfo init_type,
         bint force_inclusive,
+        cccl_init_kind_t init_kind,
         CommonData common_data
     ):
         cdef CUresult status = -1
@@ -1008,8 +1055,9 @@ cdef class DeviceScanBuildResult:
                 d_in.iter_data,
                 d_out.iter_data,
                 op.op_data,
-                h_init.value_data,
+                init_type.type_info,
                 force_inclusive,
+                init_kind,
                 cc_major,
                 cc_minor,
                 cub_path,
@@ -1035,7 +1083,7 @@ cdef class DeviceScanBuildResult:
         Iterator d_out,
         size_t num_items,
         Op op,
-        Value h_init,
+        Value init_value,
         stream
     ):
         cdef CUresult status = -1
@@ -1052,7 +1100,7 @@ cdef class DeviceScanBuildResult:
                 d_out.iter_data,
                 <uint64_t>num_items,
                 op.op_data,
-                h_init.value_data,
+                init_value.value_data,
                 c_stream
             )
         if status != 0:
@@ -1069,7 +1117,7 @@ cdef class DeviceScanBuildResult:
         Iterator d_out,
         size_t num_items,
         Op op,
-        Value h_init,
+        Value init_value,
         stream
     ):
         cdef CUresult status = -1
@@ -1086,12 +1134,113 @@ cdef class DeviceScanBuildResult:
                 d_out.iter_data,
                 <uint64_t>num_items,
                 op.op_data,
-                h_init.value_data,
+                init_value.value_data,
                 c_stream
             )
         if status != 0:
             raise RuntimeError(
                 f"Failed executing exclusive scan, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef int compute_inclusive_future_value(
+        DeviceScanBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        Iterator init_value,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_inclusive_scan_future_value(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                init_value.iter_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing inclusive scan, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef int compute_exclusive_future_value(
+        DeviceScanBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        Iterator init_value,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_exclusive_scan_future_value(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                init_value.iter_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing exclusive scan, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef int compute_inclusive_no_init(
+        DeviceScanBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        object init_value,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_inclusive_scan_no_init(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing inclusive scan, error code: {status}"
             )
         return storage_sz
 

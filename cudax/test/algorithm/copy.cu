@@ -16,7 +16,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource{cuda::device_ref{0}};
+    cudax::device_memory_pool_ref device_resource = cudax::device_default_memory_pool(cuda::device_ref{0});
     std::vector<int> host_vector(buffer_size);
 
     {

@@ -218,7 +218,11 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
 
   operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   const std::vector<int> int_input = generate<int>(num_items);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<key_t> input_keys(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
   pointer_t<key_t> input_keys_it(input_keys);

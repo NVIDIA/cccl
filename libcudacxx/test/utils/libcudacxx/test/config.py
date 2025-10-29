@@ -1464,7 +1464,7 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedef")
+                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()

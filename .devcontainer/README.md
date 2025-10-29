@@ -67,7 +67,7 @@ Follow the instructions in the prompt as below and enter the one-time code at ht
 
 To manually trigger this authentication, execute the `devcontainer-utils-vault-s3-init` script within the container.
 
-For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/branch-23.10/USAGE.md#build-caching-with-sccache).
+For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/main/USAGE.md#build-caching-with-sccache).
 
 ## Quickstart: VSCode on WSL (Recommended for Windows) <a name="wsl"></a>
 

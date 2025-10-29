@@ -24,13 +24,13 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
                                   cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
                                   cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buffer]", test_types)
 {
@@ -44,7 +44,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
   using const_pointer   = typename Buffer::const_pointer;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("cudax::async_buffer::get_unsynchronized")
   {

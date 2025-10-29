@@ -173,8 +173,10 @@ The following example shows how to use TMA to load two tiles of data from global
 
    // selects a single leader thread from the block
    __device__ bool elect_one() {
-     // elect_sync is important to help the optimizer generate a uniform datapath
-     return cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
+     const unsigned int tid = threadIdx.x;
+     const unsigned int warp_id = tid / 32;
+     const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
+     return uniform_warp_id == 0 && cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
    }
 
    __global__ void example_kernel(int* gmem1, double* gmem2) {
@@ -183,33 +185,33 @@ The following example shows how to use TMA to load two tiles of data from global
      __shared__ alignas(16) double smem2[tile_size];
 
      #pragma nv_diag_suppress static_var_with_dynamic_init
-     using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-     __shared__  barrier_t bar;
+     __shared__  cuda::barrier<cuda::thread_scope_block> bar;
 
      // setup the barrier where each thread in the block arrives at
-     if (elect_one()) {
+     if (threadIdx.x == 0) {
        init(&bar, blockDim.x);
      }
      __syncthreads(); // need to sync so other threads can arrive
 
-     barrier_t::arrival_token token;
-     if (elect_one()) {
-       // issue two TMA bulk copy operations
+     // select a single thread from the block and issue two TMA bulk copy operations
+     const auto elected = elect_one();
+     if (elected) {
        cuda::device::memcpy_async_tx(smem1, gmem1, cuda::aligned_size_t<16>(tile_size * sizeof(int)   ), bar);
        cuda::device::memcpy_async_tx(smem2, gmem2, cuda::aligned_size_t<16>(tile_size * sizeof(double)), bar);
-
-       // arrive and update the barrier's expect_tx with the **total** number of loaded bytes
-       token = cuda::device::barrier_arrive_tx(bar, 1, tile_size * (sizeof(int) + sizeof(double)));
-     } else {
-       token = bar.arrive();
      }
+
+     // arrive at the barrier
+     // the elected thread also updates the barrier's expect_tx with the **total** number of loaded bytes
+     const int tx_count = elected ? tile_size * (sizeof(int) + sizeof(double)) : 0;
+     auto token = cuda::device::barrier_arrive_tx(bar, 1, tx_count);
+
      // wait for TMA copies to complete
      bar.wait(cuda::std::move(token));
 
      // process data in smem ...
    }
 
-`See it on Godbolt <https://godbolt.org/z/nEKaMsT4P>`_
+`See it on Godbolt <https://godbolt.org/z/ddhzGeWPE>`_
 
 Data is loaded from the global memory pointers ``gmem1`` and ``gmem2``
 into the shared memory buffers ``smem1`` and ``smem2``.
@@ -233,8 +235,10 @@ Once ``wait`` returns, all data is available in shared memory.
 
    // selects a single leader thread from the block
    __device__ bool elect_one() {
-     // elect_sync is important to help the optimizer generate a uniform datapath
-     return cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
+     const unsigned int tid = threadIdx.x;
+     const unsigned int warp_id = tid / 32;
+     const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
+     return uniform_warp_id == 0 && cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
    }
 
    __global__ void example_kernel(int* gmem1, double* gmem2) {
@@ -243,8 +247,7 @@ Once ``wait`` returns, all data is available in shared memory.
      __shared__ alignas(16) double smem2[tile_size];
 
      #pragma nv_diag_suppress static_var_with_dynamic_init
-     using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-     __shared__  barrier_t bar;
+     __shared__  cuda::barrier<cuda::thread_scope_block> bar;
 
      // setup the barrier where only the leader thread arrives
      if (elect_one()) {
@@ -265,7 +268,7 @@ Once ``wait`` returns, all data is available in shared memory.
      // process data in smem ...
    }
 
-`See it on Godbolt <https://godbolt.org/z/xdzTzbE54>`_
+`See it on Godbolt <https://godbolt.org/z/oq85PoKKj>`_
 
 This is similar to the above example, but this time only the leader thread arrives at the barrier.
 This has the advantage that only one leader election is necessary
@@ -275,9 +278,8 @@ Because now we don't get an arrival token in each thread, we cannot use ``wait(t
 Instead, we just wait until the end of the barrier's current phase using ``wait_parity(0)``
 (0 is the parity of the current phase).
 
-Currently, ``bar.wait_parity(0);`` contains additional logic which may lead to unnecessary instructions.
-Until this is resolved (see `CCCL issue #6230 <https://github.com/NVIDIA/cccl/issues/6230>`_),
-users may replace this line with:
+Before CCCL 3.2, ``bar.wait_parity(0);`` contained additional logic which may have lead to unnecessary instructions.
+If you are using CCCL below 3.2, you may replace this line with:
 
 .. code:: cuda
 

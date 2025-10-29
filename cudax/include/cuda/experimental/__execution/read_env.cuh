@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
@@ -80,7 +81,7 @@ private:
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), execution::current_exception());
         }
       }
     }

@@ -136,6 +136,7 @@ CUB_NAMESPACE_BEGIN
 //!    {
 //!        int array[4] = {1, 2, 3, 4};
 //!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>{}); // sum = 10
+//!    }
 //!
 //! @endrst
 //!

@@ -91,7 +91,7 @@ template <class M, size_t... Idxs>
 __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
 {
   using E = typename M::extents_type;
-  static_assert(cuda::std::__mdspan_detail::__is_extents_v<E>);
+  static_assert(cuda::std::__is_cuda_std_extents_v<E>);
   static_assert(cuda::std::is_copy_constructible_v<M>);
   static_assert(cuda::std::is_nothrow_move_constructible_v<M>);
   static_assert(cuda::std::is_nothrow_move_assignable_v<M>);

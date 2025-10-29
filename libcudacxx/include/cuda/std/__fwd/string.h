@@ -98,6 +98,13 @@ class _CCCL_PREFERRED_NAME(string)
 // clang-format on
 #endif // 0
 
+template <class _Tp>
+inline constexpr bool __is_std_basic_string_v = false;
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _CharT, class _Traits, class _Alloc>
+inline constexpr bool __is_std_basic_string_v<::std::basic_string<_CharT, _Traits, _Alloc>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

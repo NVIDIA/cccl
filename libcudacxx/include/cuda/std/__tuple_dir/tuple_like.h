@@ -68,14 +68,13 @@ inline constexpr bool __tuple_like_impl<::cuda::std::ranges::subrange<_Ip, _Sp, 
 template <class... _Tp>
 inline constexpr bool __tuple_like_impl<__tuple_types<_Tp...>> = true;
 
-#if _CCCL_STD_VER >= 2014
 template <class _Tp>
 _CCCL_CONCEPT __tuple_like = __tuple_like_impl<remove_cvref_t<_Tp>>;
 
+// Not on line 74 because of __COUNTER__ missing in NVRTC
 template <class _Tp>
 _CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp)) //
   (requires(__tuple_like_impl<remove_cvref_t<_Tp>>), requires(tuple_size<remove_cvref_t<_Tp>>::value == 2));
-#endif // _CCCL_STD_VER >= 2014
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

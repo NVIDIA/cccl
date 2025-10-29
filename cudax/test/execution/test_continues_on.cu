@@ -202,13 +202,7 @@ C2H_TEST("continues_on sends an exception_ptr if value types are potentially thr
          "[adaptors][continues_on]")
 {
   dummy_scheduler<> sched{};
-
-#if _CCCL_HOST_COMPILATION()
-  check_error_types<std::exception_ptr>(ex::continues_on(ex::just(potentially_throwing{}), sched));
-#else
-  // No exceptions in device code:
-  check_error_types<>(ex::continues_on(ex::just(potentially_throwing{}), sched));
-#endif
+  check_error_types<ex::exception_ptr>(ex::continues_on(ex::just(potentially_throwing{}), sched));
 }
 
 C2H_TEST("continues_on keeps sends_stopped from scheduler's sender", "[adaptors][continues_on]")

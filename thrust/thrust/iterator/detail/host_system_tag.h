@@ -26,6 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
+// Some build systems need a hint to know which files we actually include
+#if 0
+#  include <thrust/system/cpp/detail/execution_policy.h>
+#  include <thrust/system/omp/detail/execution_policy.h>
+#  include <thrust/system/tbb/detail/execution_policy.h>
+#endif
+
 // #include the host system's execution_policy header
 #define __THRUST_HOST_SYSTEM_TAG_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/execution_policy.h>
 #include __THRUST_HOST_SYSTEM_TAG_HEADER
