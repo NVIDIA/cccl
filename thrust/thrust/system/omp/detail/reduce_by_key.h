@@ -29,6 +29,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/distance.h>
+#include <thrust/system/detail/generic/reduce_by_key.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -50,9 +52,12 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator1 keys_output,
   OutputIterator2 values_output,
   BinaryPredicate binary_pred,
-  BinaryFunction binary_op);
+  BinaryFunction binary_op)
+{
+  // omp prefers generic::reduce_by_key to cpp::reduce_by_key
+  return thrust::system::detail::generic::reduce_by_key(
+    exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
+} // end reduce_by_key()
 
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/omp/detail/reduce_by_key.inl>

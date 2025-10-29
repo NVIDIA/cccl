@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,9 +43,11 @@ OutputIterator copy_if(
   InputIterator1 last,
   InputIterator2 stencil,
   OutputIterator result,
-  Predicate pred);
+  Predicate pred)
+{
+  // omp prefers generic::copy_if to cpp::copy_if
+  return thrust::system::detail::generic::copy_if(exec, first, last, stencil, result, pred);
+} // end copy_if()
 
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/omp/detail/copy_if.inl>
