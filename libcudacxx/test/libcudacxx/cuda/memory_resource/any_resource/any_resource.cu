@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/memory_resource.cuh>
+#include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <testing.cuh>
 
@@ -27,7 +28,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -46,7 +47,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -81,7 +82,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -109,8 +110,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::stream stream{cuda::device_ref{0}};
-      cudax::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cuda::stream stream{cuda::device_ref{0}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -137,13 +138,13 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   {
     Counts expected{};
     {
-      cudax::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      cudax::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
+      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
       auto* ptr = ref.allocate_sync(bytes(100), align(8));
@@ -167,8 +168,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<::cuda::mr::host_accessible> mr =
-        cudax::make_any_resource<TestResource, ::cuda::mr::host_accessible>(42, this);
+      cuda::mr::any_resource<::cuda::mr::host_accessible> mr =
+        cuda::mr::make_any_resource<TestResource, ::cuda::mr::host_accessible>(42, this);
       expected.new_count += is_big;
       ++expected.object_count;
       CHECK(this->counts == expected);
@@ -179,6 +180,26 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   }
   // Reset the counters:
   this->counts = Counts();
+}
+
+TEMPLATE_TEST_CASE_METHOD(
+  test_fixture, "ref assignment operators", "[container][resource]", big_resource, small_resource)
+{
+  big_resource mr{42, this};
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref{mr};
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
+
+  big_resource mr2{43, this};
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref2{mr2};
+  ref = ref2;
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
+
+  cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
+  ref = ref3;
+  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 42);
 }
 
 #endif // __CUDA_ARCH__

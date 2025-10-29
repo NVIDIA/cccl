@@ -83,7 +83,7 @@ void stream_context_test2()
         return i + 1;
       })
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
-    | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
+    | ex::then([] __host__ __device__(int i) -> int { // run a lambda on the CPU
         CUDAX_CHECK(!_is_on_device());
         NV_IF_TARGET(NV_IS_HOST,
                      (printf("Hello from lambda on host! i = %d\n", i);),
@@ -134,8 +134,8 @@ void bulk_on_stream_scheduler()
   auto sch = sctx.get_scheduler();
 
   using _env_t = cudax::env_t<cuda::mr::device_accessible>;
-  auto mr      = cudax::device_memory_resource{_dev};
-  auto mr2     = cudax::any_resource<cuda::mr::device_accessible>(mr);
+  auto mr      = cudax::device_default_memory_pool(_dev);
+  auto mr2     = cuda::mr::any_resource<cuda::mr::device_accessible>(mr);
   _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
   auto buf = cudax::make_async_buffer<int>(sctx, mr2, 10, 40, env); // a device buffer of 10 integers, initialized to 40
   cuda::std::span data{buf};

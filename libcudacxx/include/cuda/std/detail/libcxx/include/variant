@@ -256,6 +256,7 @@ C++20
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/unreachable.h>
+#include <cuda/std/__variant/sfinae_helpers.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
@@ -995,9 +996,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == _CurrentIndex)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     __generic_construct_impl(
@@ -1010,9 +1012,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == 0)
     {
-      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-                     in_place,
-                     __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+        in_place,
+        __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1027,7 +1030,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API inline static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    __construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
@@ -1511,10 +1514,10 @@ struct __variant_constraints
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT variant
-    : private __sfinae_base<__all<is_copy_constructible_v<_Types>...>::value,
-                            __all<is_move_constructible_v<_Types>...>::value,
-                            __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
-                            __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
+    : private __variant_base<__all<is_copy_constructible_v<_Types>...>::value,
+                             __all<is_move_constructible_v<_Types>...>::value,
+                             __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
+                             __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
 {
   static_assert(0 < sizeof...(_Types), "variant must consist of at least one alternative.");
 
@@ -1540,8 +1543,8 @@ public:
 
   template <class _Arg>
   using __match_construct =
-    _If<!is_same_v<remove_cvref_t<_Arg>, variant> && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
-          && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
+    _If<!is_same_v<remove_cvref_t<_Arg>, variant> && !__is_cuda_std_inplace_type_v<remove_cvref_t<_Arg>> //
+          && !__is_cuda_std_inplace_index_v<remove_cvref_t<_Arg>>,
         typename __constraints::template __match_construct<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 

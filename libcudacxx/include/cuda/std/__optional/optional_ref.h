@@ -103,20 +103,20 @@ public:
 
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(
-    (!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
+    (!__is_cuda_std_optional_v<decay_t<_Up>>) _CCCL_AND is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND(!is_convertible_v<_Up, _Tp&>)
+  _CCCL_REQUIRES((!__is_cuda_std_optional_v<decay_t<_Up>>) _CCCL_AND(!is_convertible_v<_Up, _Tp&>)
                    _CCCL_AND is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(::cuda::std::declval<_Up>())))
       : __value_(::cuda::std::addressof(static_cast<_Tp&>(::cuda::std::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND __from_temporary<_Up>)
+  _CCCL_REQUIRES((!__is_cuda_std_optional_v<decay_t<_Up>>) _CCCL_AND __from_temporary<_Up>)
   _CCCL_API constexpr optional(_Up&&) = delete;
 
   _CCCL_TEMPLATE(class _Up)
@@ -263,7 +263,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) const
   {
     using _Up = invoke_result_t<_Func, _Tp&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "optional<T&>::and_then: Result of f(value()) must be a specialization of std::optional");
     if (__value_ != nullptr)
     {

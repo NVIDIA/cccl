@@ -81,9 +81,6 @@
 #      define TEST_HAS_TIMESPEC_GET
 #      define TEST_HAS_C11_FEATURES
 #    endif
-#  elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#    define TEST_HAS_C11_FEATURES
-#    define TEST_HAS_TIMESPEC_GET
 #  endif
 #endif
 

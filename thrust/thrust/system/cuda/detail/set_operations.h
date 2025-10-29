@@ -55,6 +55,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__bit/popcount.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -560,7 +561,7 @@ struct SetOpAgent
       Size tile_output_count    = 0;
       Size thread_output_prefix = 0;
       Size tile_output_prefix   = 0;
-      Size thread_output_count  = static_cast<Size>(__popc(active_mask));
+      Size thread_output_count  = static_cast<Size>(::cuda::std::popcount(static_cast<unsigned>(active_mask)));
 
       if (tile_idx == 0) // first tile
       {

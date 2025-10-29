@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
@@ -30,9 +32,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
-
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,7 +77,7 @@ private:
                 "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::any_resource<_Properties...>;
+  using __async_resource = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};

@@ -112,7 +112,7 @@ struct __cuda_atomic_bind_fetch_{0} {{
   }}
 }};
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {{
   {2}
   __op = __op * __skip_v;
@@ -128,7 +128,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Up __op,
   return __dst;
 }}
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {{
   {2}
   __op = __op * __skip_v;
@@ -204,12 +204,12 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
 
   out << R"XXX(
 template <class _Type, class _Up, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
   return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
 template <class _Type, class _Up, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
+[[nodiscard]] static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
   return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }

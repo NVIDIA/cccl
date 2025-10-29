@@ -25,7 +25,7 @@ C2H_TEST("Fill", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource{cuda::device_ref{0}};
+    cudax::device_memory_pool_ref device_resource = cudax::device_default_memory_pool(cuda::device_ref{0});
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(device_resource, buffer_size);
     cudax::fill_bytes(_stream, buffer, fill_byte);
 
