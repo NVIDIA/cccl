@@ -70,7 +70,7 @@ struct stream_ref : ::cuda::stream_ref
   //!
   //! Compared to `device()` member function the returned \c logical_device will
   //! hold a green context for streams created under one.
-  _CCCL_HOST_API logical_device logical_device() const
+  _CCCL_HOST_API ::cuda::experimental::logical_device logical_device() const
   {
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;

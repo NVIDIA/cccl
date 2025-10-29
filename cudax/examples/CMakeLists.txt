@@ -85,3 +85,5 @@ if (cudax_ENABLE_CUDASTF AND
   # STF examples are handled separately:
   add_subdirectory(stf)
 endif()
+
+add_subdirectory(cccl-rt)
