@@ -105,7 +105,7 @@ enum BlockHistogramAlgorithm
 //!   each of the disjoint categories (known as *bins*).
 //! - The ``T`` type must be implicitly castable to an integer type.
 //! - BlockHistogram expects each integral ``input[i]`` value to satisfy
-//!   ``0 <= input[i] < BINS``. Values outside of this range result in undefined behavior.
+//!   ``0 <= input[i] < Bins``. Values outside of this range result in undefined behavior.
 //! - BlockHistogram can be optionally specialized to use different algorithms:
 //!
 //!   #. :cpp:enumerator:`cub::BLOCK_HISTO_SORT`: Sorting followed by differentiation.
@@ -146,7 +146,7 @@ enum BlockHistogramAlgorithm
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - @granularity
-//! - All input values must fall between ``[0, BINS)``, or behavior is undefined.
+//! - All input values must fall between ``[0, Bins)``, or behavior is undefined.
 //! - The histogram output can be constructed in shared or device-accessible memory
 //! - See ``cub::BlockHistogramAlgorithm`` for performance details regarding algorithmic alternatives
 //!
@@ -161,23 +161,23 @@ enum BlockHistogramAlgorithm
 //! @tparam T
 //!   The sample type being histogrammed (must be castable to an integer bin identifier)
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of items per thread
 //!
-//! @tparam BINS
+//! @tparam Bins
 //!   The number bins within the histogram
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockHistogramAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_HISTO_SORT)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,

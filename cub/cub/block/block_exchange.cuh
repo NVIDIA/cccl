@@ -123,7 +123,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!    The data type to be exchanged
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!    The thread block length in threads along the X dimension
 //!
 //! @tparam ItemsPerThread
@@ -134,10 +134,10 @@ CUB_NAMESPACE_BEGIN
 //! tile data, time-slicing the block-wide exchange over multiple synchronized rounds. Yields a smaller memory footprint
 //! at the expense of decreased parallelism. (Default: false)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!    **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!    **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T, int BlockDimX, int ItemsPerThread, bool WarpTimeSlicing = false, int BlockDimY = 1, int BlockDimZ = 1>
