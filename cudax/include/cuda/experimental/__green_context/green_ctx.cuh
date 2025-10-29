@@ -23,7 +23,6 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__driver/driver_api.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -60,12 +59,11 @@ struct green_context
   // TODO this probably should be the runtime equivalent once available
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
-    int __id;
     CUcontext __transformed = ::cuda::__driver::__ctxFromGreenCtx(__gctx);
     ::cuda::__driver::__ctxPush(__transformed);
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get device ordinal from a green context", &__id);
+    CUdevice __device = ::cuda::__driver::__ctxGetDevice();
     ::cuda::__driver::__ctxPop();
-    return green_context(__id, __gctx, __transformed);
+    return green_context(::cuda::__driver::__cudevice_to_ordinal(__device), __gctx, __transformed);
   }
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
