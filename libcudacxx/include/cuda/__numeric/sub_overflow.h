@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 
@@ -230,10 +231,13 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
   // shortcut for the case where inputs are representable with the result type
   if constexpr (__is_sub_representable_v<_ActualResult, _Lhs, _Rhs>)
   {
-    const auto __lhs1 = static_cast<_ActualResult>(__lhs);
-    const auto __rhs1 = static_cast<_ActualResult>(__rhs);
-    const auto __sub  = static_cast<_ActualResult>(__lhs1 - __rhs1);
-    return overflow_result<_ActualResult>{__sub, false};
+    constexpr auto __max_lhs_rhs = sizeof(_Lhs) > sizeof(_Rhs) ? sizeof(_Lhs) : sizeof(_Rhs);
+    constexpr auto __max_bits = __max_lhs_rhs * 2 <= sizeof(_ActualResult) ? __max_lhs_rhs * 2 : sizeof(_ActualResult);
+    using _ComputeType        = ::cuda::std::__make_nbit_int_t<__max_bits * 8>;
+    const auto __lhs1         = static_cast<_ComputeType>(__lhs);
+    const auto __rhs1         = static_cast<_ComputeType>(__rhs);
+    const auto __sub          = static_cast<_ComputeType>(__lhs1 - __rhs1);
+    return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sub), false};
   }
   // all types have the same sign
   else if constexpr (is_signed_v<_Lhs> == is_signed_v<_Rhs> && is_signed_v<_Lhs> == is_signed_v<_ActualResult>)
