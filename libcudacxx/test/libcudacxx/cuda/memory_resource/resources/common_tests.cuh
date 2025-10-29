@@ -17,6 +17,7 @@
 template <typename ResourceType>
 void test_deallocate_async(ResourceType& resource)
 {
+  /* disable until we move the launch API to libcudacxx
   cudax::stream stream{cuda::device_ref{0}};
   test::pinned<int> i(0);
   cuda::atomic_ref atomic_i(*i);
@@ -31,4 +32,5 @@ void test_deallocate_async(ResourceType& resource)
 
   atomic_i.store(80);
   stream.sync();
+  */
 }

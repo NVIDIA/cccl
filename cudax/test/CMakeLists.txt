@@ -135,10 +135,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
-    memory_resource/memory_pools.cu
-    memory_resource/device_memory_resource.cu
-    memory_resource/managed_memory_resource.cu
-    memory_resource/pinned_memory_resource.cu
     memory_resource/shared_resource.cu
   )
 

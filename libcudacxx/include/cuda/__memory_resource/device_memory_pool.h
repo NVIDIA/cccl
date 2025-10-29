@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
-#define _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_DEVICE_MEMORY_POOL_H
+#define _CUDA___MEMORY_RESOURCE_DEVICE_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,19 +27,17 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-
-#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
 //! order.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -84,7 +82,7 @@ public:
 //! @returns The default memory pool of the specified device.
 [[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
 {
-  ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__device.get());
+  ::cuda::__verify_device_supports_stream_ordered_allocations(__device.get());
 
   ::cudaMemPool_t __pool;
   _CCCL_TRY_CUDA_API(
@@ -144,8 +142,8 @@ static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cu
 
 static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
+#endif //_CUDA___MEMORY_RESOURCE_DEVICE_MEMORY_POOL_H

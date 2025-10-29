@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
-#define _CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
+#ifndef _CUDA___MEMORY_RESOURCE_MANAGED_MEMORY_POOL_H
+#define _CUDA___MEMORY_RESOURCE_MANAGED_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,19 +23,17 @@
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__exception/throw_error.h>
 
-#  include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] static ::cudaMemPool_t __get_default_managed_pool()
 {
@@ -85,7 +83,7 @@ public:
 //! @returns The default managed memory pool.
 [[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
 {
-  return managed_memory_pool_ref{::cuda::experimental::__get_default_managed_pool()};
+  return managed_memory_pool_ref{::cuda::__get_default_managed_pool()};
 }
 
 //! @rst
@@ -140,10 +138,10 @@ static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::hos
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_POOL_H
+#endif //_CUDA___MEMORY_RESOURCE_MANAGED_MEMORY_POOL_H

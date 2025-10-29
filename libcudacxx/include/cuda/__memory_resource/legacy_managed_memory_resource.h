@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_CUH
-#define _CUDAX__MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,18 +29,16 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__stream/internal_streams.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/throw_error.h>
-
-#include <cuda/experimental/__stream/internal_streams.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
 class legacy_managed_memory_resource
@@ -143,8 +141,8 @@ private:
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::host_accessible>, "");
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_CUH
+#endif //_CUDA___MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_H
