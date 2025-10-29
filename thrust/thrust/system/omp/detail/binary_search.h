@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/system/detail/generic/binary_search.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 

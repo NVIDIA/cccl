@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/pair.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
 #include <thrust/system/omp/detail/execution_policy.h>

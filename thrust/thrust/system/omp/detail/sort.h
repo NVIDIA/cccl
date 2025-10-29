@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/system/omp/detail/execution_policy.h>
 
 // don't attempt to #include this file without omp support

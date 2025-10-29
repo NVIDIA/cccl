@@ -16,6 +16,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/function.h>
 #include <thrust/detail/static_assert.h> // for depend_on_instantiation
 #include <thrust/iterator/iterator_traits.h>
