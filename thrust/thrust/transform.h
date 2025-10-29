@@ -32,12 +32,23 @@
 
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/transform.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/generic/transform.h>
-#include <thrust/transform.h>
 
 #include <cuda/std/iterator>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/transform.h>
+#include <thrust/system/detail/sequential/transform.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / transform.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / transform.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/transform.h>
+#  include <thrust/system/cuda/detail/transform.h>
+#  include <thrust/system/omp/detail/transform.h>
+#  include <thrust/system/tbb/detail/transform.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

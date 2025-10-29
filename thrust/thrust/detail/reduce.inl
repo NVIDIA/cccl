@@ -28,11 +28,29 @@
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
-#include <thrust/system/detail/adl/reduce.h>
-#include <thrust/system/detail/adl/reduce_by_key.h>
+#include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/reduce.h>
 #include <thrust/system/detail/generic/reduce_by_key.h>
-#include <thrust/system/detail/generic/select_system.h>
+#include <thrust/system/detail/sequential/reduce.h>
+#include <thrust/system/detail/sequential/reduce_by_key.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce_by_key.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/reduce.h>
+#  include <thrust/system/cpp/detail/reduce_by_key.h>
+#  include <thrust/system/cuda/detail/reduce.h>
+#  include <thrust/system/cuda/detail/reduce_by_key.h>
+#  include <thrust/system/omp/detail/reduce.h>
+#  include <thrust/system/omp/detail/reduce_by_key.h>
+#  include <thrust/system/tbb/detail/reduce.h>
+#  include <thrust/system/tbb/detail/reduce_by_key.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

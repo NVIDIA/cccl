@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-// Some build systems need a hint to know which files we actually include
+// Some build systems need a hint to know which files we could include
 #if 0
 #  include <thrust/system/cpp/detail/execution_policy.h>
 #  include <thrust/system/omp/detail/execution_policy.h>

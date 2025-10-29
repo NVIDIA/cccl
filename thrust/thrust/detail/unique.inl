@@ -27,12 +27,30 @@
 #endif // no system header
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/unique.h>
-#include <thrust/system/detail/adl/unique_by_key.h>
 #include <thrust/system/detail/generic/select_system.h>
+#include <thrust/unique.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
-#include <thrust/unique.h>
+#include <thrust/system/detail/sequential/unique.h>
+#include <thrust/system/detail/sequential/unique_by_key.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique_by_key.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/unique.h>
+#  include <thrust/system/cpp/detail/unique_by_key.h>
+#  include <thrust/system/cuda/detail/unique.h>
+#  include <thrust/system/cuda/detail/unique_by_key.h>
+#  include <thrust/system/omp/detail/unique.h>
+#  include <thrust/system/omp/detail/unique_by_key.h>
+#  include <thrust/system/tbb/detail/unique.h>
+#  include <thrust/system/tbb/detail/unique_by_key.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
