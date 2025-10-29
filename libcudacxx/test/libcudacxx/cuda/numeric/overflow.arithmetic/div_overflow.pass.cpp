@@ -57,12 +57,31 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   }
 }
 
+// nvcc 12.0 doesn't support these two special cases in a constexpr context
+template <typename Lhs, typename Rhs, typename Result>
+__host__ __device__ constexpr void test_nvcc_12_0_special_cases()
+{
+  // 1 / -1 -> should overflow if the destination type is unsigned
+  if constexpr (cuda::std::is_signed_v<Rhs>)
+  {
+    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, cuda::std::is_unsigned_v<Result>);
+  }
+  // -1 / 1 -> should overflow if the destination type is unsigned
+  if constexpr (cuda::std::is_signed_v<Lhs>)
+  {
+    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>);
+  }
+}
+
 template <typename Lhs, typename Rhs, typename Result>
 __host__ __device__ constexpr void test_type()
 {
   using cuda::std::is_same_v;
   using cuda::std::is_signed_v;
   using cuda::std::is_unsigned_v;
+  static_assert(noexcept(cuda::div_overflow(Lhs{}, Rhs{})));
+  static_assert(noexcept(cuda::div_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})));
+  static_assert(is_same_v<decltype(cuda::div_overflow<Result>(cuda::std::declval<Result&>(), Lhs{}, Rhs{})), bool>);
   static_assert(is_same_v<decltype(cuda::div_overflow<Result>(Lhs{}, Rhs{})), cuda::overflow_result<Result>>);
   [[maybe_unused]] constexpr auto lhs_min     = cuda::std::numeric_limits<Lhs>::min();
   [[maybe_unused]] constexpr auto lhs_max     = cuda::std::numeric_limits<Lhs>::max();
@@ -77,21 +96,16 @@ __host__ __device__ constexpr void test_type()
   // 2. 1 / 1 -> should not overflow
   test_div_overflow<Result>(Lhs{1}, Rhs{1}, false);
 
-  // nvcc 12.0 doesn't support this case in a constexpr context
+  // nvcc 12.0 doesn't support these two special cases in a constexpr context
 #if _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   // 3. 1 / -1 -> should overflow if the destination type is unsigned
-  if constexpr (is_signed_v<Rhs>)
-  {
-    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, is_unsigned_v<Result>);
-  }
   // 4. -1 / 1 -> should overflow if the destination type is unsigned
-
-  if constexpr (is_signed_v<Lhs>)
-  {
-    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, is_unsigned_v<Result>);
-  }
+  test_nvcc_12_0_special_cases<Lhs, Rhs, Result>();
 #endif // _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
-
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    test_nvcc_12_0_special_cases<Lhs, Rhs, Result>();
+  }
   // 5. 0 / -1
   if constexpr (is_signed_v<Rhs>)
   {
@@ -158,11 +172,6 @@ __host__ __device__ constexpr void test_type()
 
 __host__ __device__ constexpr bool test()
 {
-  using cuda::std::is_same_v;
-  static_assert(noexcept(cuda::div_overflow(int{}, int{})));
-  static_assert(noexcept(cuda::div_overflow<unsigned>(cuda::std::declval<unsigned&>(), int{}, int{})));
-  static_assert(is_same_v<decltype(cuda::div_overflow<unsigned>(cuda::std::declval<unsigned&>(), int{}, int{})), bool>);
-
   test_type<signed char>();
   test_type<unsigned char>();
   test_type<short>();

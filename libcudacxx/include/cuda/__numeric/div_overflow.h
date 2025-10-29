@@ -83,9 +83,9 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     using ::cuda::std::is_unsigned_v;
     using ::cuda::std::make_unsigned_t;
     using ::cuda::std::numeric_limits;
-    constexpr bool __both_signed              = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
-    [[maybe_unused]] const bool __lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= _Lhs{0};
-    [[maybe_unused]] const bool __rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= _Rhs{0};
+    constexpr bool __both_signed = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
+    const bool __lhs_ge_zero     = is_unsigned_v<_Lhs> || __lhs >= _Lhs{0};
+    const bool __rhs_ge_zero     = is_unsigned_v<_Rhs> || __rhs >= _Rhs{0};
     if constexpr (__both_signed)
     {
       constexpr auto __lhs_min = numeric_limits<_Lhs>::min();
@@ -113,19 +113,20 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     }
     else // lhs and rhs are mixed positive/negative -> negative result
     {
+      const auto __lhs1   = ::cuda::uabs(__lhs);
+      const auto __rhs1   = ::cuda::uabs(__rhs);
+      const auto __div    = __lhs1 / __rhs1;
+      const auto __result = static_cast<_ActualResult>(::cuda::neg(__div));
       if constexpr (is_unsigned_v<_ActualResult>)
       {
-        return overflow_result<_ActualResult>{_ActualResult{}, __lhs != 0}; // the result is negative
+        return overflow_result<_ActualResult>{__result, __lhs != 0};
       }
       else
       {
         constexpr auto __result_min     = numeric_limits<_ActualResult>::min();
         constexpr auto __neg_result_min = ::cuda::uabs(__result_min);
-        const auto __lhs1               = ::cuda::uabs(__lhs);
-        const auto __rhs1               = ::cuda::uabs(__rhs);
-        const auto __result             = __lhs1 / __rhs1;
-        const auto __is_overflow        = ::cuda::std::cmp_greater(__result, __neg_result_min);
-        return overflow_result<_ActualResult>{static_cast<_ActualResult>(::cuda::neg(__result)), __is_overflow};
+        const auto __is_overflow        = ::cuda::std::cmp_greater(__div, __neg_result_min);
+        return overflow_result<_ActualResult>{__result, __is_overflow};
       }
     }
   }
