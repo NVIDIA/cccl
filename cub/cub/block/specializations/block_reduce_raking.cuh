@@ -69,13 +69,13 @@ namespace detail
  * @tparam T
  *   Data type being reduced
  *
- * @tparam BLOCK_DIM_X
+ * @tparam BlockDimX
  *   The thread block length in threads along the X dimension
  *
- * @tparam BLOCK_DIM_Y
+ * @tparam BlockDimY
  *   The thread block length in threads along the Y dimension
  *
- * @tparam BLOCK_DIM_Z
+ * @tparam BlockDimZ
  *   The thread block length in threads along the Z dimension
  */
 template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>

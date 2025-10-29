@@ -198,7 +198,7 @@ enum BlockScanAlgorithm
 //! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockScanAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_SCAN_RAKING)
 //!
