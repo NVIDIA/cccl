@@ -451,7 +451,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
 C2H_CCCLRT_TEST("Async memory resource access", "")
 {
-  /* diable until we move the launch API to libcudacxx
+  /* disable until we move the launch API to libcudacxx
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
