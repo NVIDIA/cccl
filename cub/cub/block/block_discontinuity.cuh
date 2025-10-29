@@ -114,13 +114,13 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The data type to be flagged.
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
