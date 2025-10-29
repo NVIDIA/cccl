@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>

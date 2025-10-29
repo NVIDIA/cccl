@@ -21,8 +21,8 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_scan.cuh>
-#include <cub/device/dispatch/kernels/scan.cuh>
-#include <cub/device/dispatch/kernels/unique_by_key.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
