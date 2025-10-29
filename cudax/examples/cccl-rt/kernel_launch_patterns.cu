@@ -207,6 +207,10 @@ try
 
   // Launch a kernel functor that takes a cudax::kernel_config. Note that the kernel config is passed automatically as
   // the first argument by the cudax::launch function.
+  //
+  // The kernel functor requires dynamic memory, so we need to create the kernel configuration with dynamic shared
+  // memory option. The config remembers the type passed inside the option and makes it the return type of the
+  // cudax::dynamic_smem_ref(config) call inside the device code. See demo_dynamic_shared_memory for more information.
   const auto config =
     cudax::make_config(hierarchy, cudax::dynamic_shared_memory<kernel_functor_with_config::dynamic_smem_layout>());
   cudax::launch(stream, config, kernel_functor_with_config{}, name_buffer{"kernel functor with config"});
