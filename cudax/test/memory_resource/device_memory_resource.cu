@@ -407,7 +407,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_pool_ref wrapped inside a synchronous_resource_ref<device_accessible>
     cudax::device_memory_pool_ref second = cudax::device_default_memory_pool(cuda::device_ref{0});
-    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -416,7 +416,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a device_memory_pool_ref wrapped inside a resource_ref
     cudax::device_memory_pool_ref second = cudax::device_default_memory_pool(cuda::device_ref{0});
-    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

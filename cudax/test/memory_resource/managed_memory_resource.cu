@@ -227,17 +227,25 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(first != second));
   }
 
-#if _CCCL_CTK_BELOW(13, 0)
-  { // comparison against a plain managed_memory_resource with a different pool
-    managed_resource second = get_resource<managed_resource>();
+  if constexpr (cuda::std::is_same_v<managed_resource, cudax::legacy_managed_memory_resource>)
+  { // comparison against a plain legacy_managed_memory_resource with a different flags
+    managed_resource second = cudax::legacy_managed_memory_resource{cudaMemAttachHost};
     CHECK((first != second));
     CHECK(!(first == second));
   }
-#endif // _CCCL_CTK_BELOW(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  else
+  {
+    // comparison against a managed_memory_pool_ref with a different pool
+    cudax::managed_memory_pool second{};
+    CHECK((first != second));
+    CHECK(!(first == second));
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   { // comparison against a managed_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     managed_resource second = get_resource<managed_resource>();
-    cudax::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
@@ -261,7 +269,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
   if constexpr (cuda::mr::resource<managed_resource>)
   { // comparison against a managed_memory_resource wrapped inside a resource_ref
     managed_resource second = get_resource<managed_resource>();
-    cudax::resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
