@@ -88,9 +88,9 @@ struct BicyclicMonoidOp
 };
 
 template <typename T>
-class RepackPair
+struct RepackPair
 {
-  cuda::std::pair<T, T> __host__ __device__ operator()(T v1, T v2) const
+  cuda::std::pair<T, T> __host__ __device__ operator()(const T& v1, const T& v2) const
   {
     return {v1, v2};
   };
@@ -143,17 +143,20 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   state.add_global_memory_reads<pair_t>(elements, "Size");
   state.add_global_memory_writes<pair_t>(elements);
 
-  size_t tmp_size;
-  dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), state.get_cuda_stream().get_stream());
+  cudaStream_t bench_stream = state.get_cuda_stream();
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  size_t tmp_size;
+  dispatch_t::Dispatch(nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), bench_stream);
+
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
+
+  cudaStreamSynchronize(bench_stream);
 }
 #if NVBENCH_HELPER_HAS_I128
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;

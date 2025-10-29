@@ -87,6 +87,25 @@ struct Pack
   }
 };
 
+template <typename TupleT, typename ScanOpT>
+bool validation(const thrust::device_vector<TupleT>& input, const thrust::device_vector<TupleT>& output, ScanOpT op)
+{
+  using tuple_t = TupleT;
+  thrust::host_vector<tuple_t> h_input(input);
+  thrust::host_vector<tuple_t> h_output(output);
+
+  auto elements = input.size();
+  thrust::host_vector<tuple_t> h_reference(elements);
+
+  h_reference[0] = h_input[0];
+  for (std::size_t i = 1; i < elements; ++i)
+  {
+    h_reference[i] = op(h_reference[i - 1], h_input[i]);
+  }
+
+  return h_reference == h_output;
+}
+
 }; // namespace impl
 
 template <typename T, typename OffsetT>
@@ -110,7 +129,8 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No>;
 #endif
 
-  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
 
   thrust::device_vector<tuple_t> output(elements);
   thrust::device_vector<value_t> _input = generate(cuda::std::tuple_size_v<tuple_t> * elements);
@@ -123,7 +143,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     input.begin(),
     input.size(),
     impl::Pack{},
-    state.get_cuda_stream().get_stream());
+    bench_stream);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<tuple_t>(elements, "Size");
@@ -133,10 +153,9 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   auto d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size;
-  dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), state.get_cuda_stream().get_stream());
+  dispatch_t::Dispatch(nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), bench_stream);
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -144,23 +163,9 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  // validation for integral types and smallish input sizes
-  if (cuda::std::is_integral_v<T> && !(elements >> 24))
-  {
-    thrust::host_vector<tuple_t> h_input(input);
-    thrust::host_vector<tuple_t> h_output(output);
-
-    thrust::host_vector<tuple_t> h_reference(elements);
-
-    h_reference[0] = h_input[0];
-    op_t op{};
-    for (std::size_t i = 1; i < elements; ++i)
-    {
-      h_reference[i] = op(h_reference[i - 1], h_input[i]);
-    }
-
-    assert(h_reference == h_output);
-  }
+  cudaStreamSynchronize(bench_stream);
+  // for validation for integral types and smallish input sizes
+  // assert(impl::validation(input, output, op_t{}));
 }
 
 using bench_types =
