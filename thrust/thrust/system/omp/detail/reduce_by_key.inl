@@ -30,11 +30,7 @@
 #include <thrust/system/omp/detail/reduce_by_key.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy,
@@ -59,7 +55,5 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
 } // end reduce_by_key()
 
-} // namespace detail
-} // namespace omp
-} // namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

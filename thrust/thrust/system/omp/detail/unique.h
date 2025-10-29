@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -52,9 +48,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 thrust::detail::it_difference_t<ForwardIterator> unique_count(
   execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/unique.inl>

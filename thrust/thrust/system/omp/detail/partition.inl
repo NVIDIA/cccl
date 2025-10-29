@@ -33,11 +33,7 @@
 #include <thrust/system/omp/detail/partition.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
@@ -96,7 +92,5 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return thrust::system::detail::generic::stable_partition_copy(exec, first, last, stencil, out_true, out_false, pred);
 } // end stable_partition_copy()
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/copy_if.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy,
@@ -53,7 +49,5 @@ OutputIterator copy_if(
   return thrust::system::detail::generic::copy_if(exec, first, last, stencil, result, pred);
 } // end copy_if()
 
-} // namespace detail
-} // namespace omp
-} // namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

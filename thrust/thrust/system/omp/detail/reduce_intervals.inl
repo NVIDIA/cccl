@@ -34,11 +34,7 @@
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy,
@@ -97,7 +93,5 @@ void reduce_intervals(
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 }
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

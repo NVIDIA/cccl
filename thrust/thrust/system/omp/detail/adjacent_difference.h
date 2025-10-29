@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
@@ -48,7 +44,5 @@ OutputIterator adjacent_difference(
   return thrust::system::detail::generic::adjacent_difference(exec, first, last, result, binary_op);
 } // end adjacent_difference()
 
-} // namespace detail
-} // namespace omp
-} // namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

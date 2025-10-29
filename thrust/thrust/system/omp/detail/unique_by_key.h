@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
@@ -59,9 +55,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred);
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/unique_by_key.inl>

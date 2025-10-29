@@ -33,11 +33,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
@@ -47,7 +43,5 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first
   return thrust::system::detail::generic::find_if(exec, first, last, pred);
 }
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

@@ -32,9 +32,7 @@
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
+namespace system::omp
 {
 namespace detail
 {
@@ -88,6 +86,5 @@ inline void free(pointer<void> ptr)
   detail::free_workaround(cpp::tag(), ptr);
 } // end free()
 
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 THRUST_NAMESPACE_END

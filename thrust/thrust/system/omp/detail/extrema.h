@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -60,7 +56,5 @@ minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, For
   return thrust::system::detail::generic::minmax_element(exec, first, last, comp);
 } // end minmax_element()
 
-} // namespace detail
-} // namespace omp
-} // namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

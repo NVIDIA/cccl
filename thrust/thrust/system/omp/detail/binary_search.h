@@ -29,11 +29,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
@@ -71,7 +67,5 @@ bool binary_search(execution_policy<DerivedPolicy>& exec,
   return thrust::system::detail::generic::binary_search(exec, begin, end, value, comp);
 }
 
-} // namespace detail
-} // namespace omp
-} // namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END

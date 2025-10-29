@@ -33,11 +33,7 @@
 #include <thrust/system/omp/detail/pragma_omp.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
-{
-namespace detail
+namespace system::omp::detail
 {
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename Size, typename UnaryFunction>
@@ -81,7 +77,5 @@ for_each(execution_policy<DerivedPolicy>& s, RandomAccessIterator first, RandomA
   return omp::detail::for_each_n(s, first, ::cuda::std::distance(first, last), f);
 } // end for_each()
 
-} // end namespace detail
-} // end namespace omp
-} // end namespace system
+} // end namespace system::omp::detail
 THRUST_NAMESPACE_END
