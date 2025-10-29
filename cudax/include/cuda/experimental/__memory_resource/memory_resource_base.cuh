@@ -268,11 +268,26 @@ struct memory_pool_properties
   __pool_properties.allocType   = __allocation_type;
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
-  __pool_properties.maxSize     = __properties.max_pool_size;
 
-  if (__properties.max_pool_size != 0 && __properties.initial_pool_size > __properties.max_pool_size ){
-    ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+#if _CCCL_CTK_AT_LEAST(12, 2)
+  if (__properties.max_pool_size != 0)
+  {
+    if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
+    {
+      ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
+    }
+    if (__properties.initial_pool_size > __properties.max_pool_size)
+    {
+      ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+    }
   }
+  __pool_properties.maxSize = __properties.max_pool_size;
+#else
+  if (__properties.max_pool_size != 0)
+  {
+    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA driver version");
+  }
+#endif
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {

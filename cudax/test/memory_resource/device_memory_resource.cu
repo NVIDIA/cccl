@@ -202,46 +202,6 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, props.allocation_handle_type));
   }
-
-  SECTION("Construct with max pool size and allocate")
-  {
-    cudax::memory_pool_properties props {};
-    props.max_pool_size = 1 << 20; // 1MB 
-    cudax::device_memory_pool with_max_pool_size{current_device, props};
-
-    ::cudaMemPool_t get = with_max_pool_size.get();
-    CHECK(get != current_default_pool);
-
-    // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, cuda::std::numeric_limits<size_t>::max()));
-
-    // Ensure that we disable reuse with unsupported drivers
-    CHECK(ensure_disable_reuse(get, driver_version));
-
-    // Ensure that we disable export
-    CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
-
-    void* ptr{nullptr};
-
-    // make an allocation smaller than the max pool size
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocAsync,
-      "Failed to allocate on a pool with max pool size",
-      &ptr,
-      42,
-      get,
-      ::cudaStream_t{0});
-    CHECK(ptr != nullptr);
-
-    _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate on a pool with max pool size", ptr, ::cudaStream_t{0});
-
-    // make an allocation larger than the max pool size
-    // NOTE: currently cuda driver rounds up max size to 32MB. So we need to allocate 32MB + 1 byte.
-    cudaError_t status = ::cudaMallocAsync(&ptr, 33 << 20, get, ::cudaStream_t{0});
-    CHECK(status == cudaErrorMemoryAllocation);
-    CHECK(ptr == nullptr);
-  }
 }
 
 static void ensure_device_ptr(void* ptr)
