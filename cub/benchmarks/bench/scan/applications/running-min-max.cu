@@ -127,6 +127,77 @@ struct ExtractMax
   }
 };
 
+template <typename ValueT, typename PairT>
+void validate(const thrust::device_vector<ValueT>& input,
+              const thrust::device_vector<PairT>& output,
+              cudaStream_t stream)
+{
+  using value_t = ValueT;
+  auto elements = input.size();
+
+  thrust::device_vector<value_t> ref_mins(elements, thrust::no_init);
+  thrust::device_vector<value_t> ref_maxs(elements, thrust::no_init);
+
+  size_t tmp_size{};
+  auto d_input  = thrust::raw_pointer_cast(input.data());
+  auto d_output = thrust::raw_pointer_cast(output.data());
+
+  cub::DeviceScan::InclusiveScanInit(
+    nullptr,
+    tmp_size,
+    d_input,
+    ref_mins.begin(),
+    cuda::minimum<>{},
+    cuda::std::numeric_limits<value_t>::max(),
+    input.size(),
+    stream);
+
+  thrust::device_vector<nvbench::uint8_t> tmp1(tmp_size, thrust::no_init);
+  nvbench::uint8_t* d_tmp1 = thrust::raw_pointer_cast(tmp1.data());
+
+  cub::DeviceScan::InclusiveScanInit(
+    d_tmp1,
+    tmp_size,
+    d_input,
+    ref_mins.begin(),
+    cuda::minimum<>{},
+    cuda::std::numeric_limits<value_t>::max(),
+    input.size(),
+    stream);
+
+  cub::DeviceScan::InclusiveScanInit(
+    nullptr,
+    tmp_size,
+    d_input,
+    ref_maxs.begin(),
+    cuda::minimum<>{},
+    cuda::std::numeric_limits<value_t>::max(),
+    input.size(),
+    stream);
+
+  thrust::device_vector<nvbench::uint8_t> tmp2(tmp_size, thrust::no_init);
+  nvbench::uint8_t* d_tmp2 = thrust::raw_pointer_cast(tmp2.data());
+
+  cub::DeviceScan::InclusiveScanInit(
+    d_tmp2,
+    tmp_size,
+    d_input,
+    ref_maxs.begin(),
+    cuda::maximum<>{},
+    cuda::std::numeric_limits<value_t>::min(),
+    input.size(),
+    stream);
+
+  thrust::device_vector<value_t> computed_mins(elements, thrust::no_init);
+  thrust::device_vector<value_t> computed_maxs(elements, thrust::no_init);
+
+  cub::DeviceTransform::Transform(d_output, computed_mins.begin(), input.size(), impl::ExtractMin<value_t>{}, stream);
+  cub::DeviceTransform::Transform(d_output, computed_maxs.begin(), input.size(), impl::ExtractMax<value_t>{}, stream);
+
+  assert(computed_mins == ref_mins);
+  assert(computed_maxs == ref_maxs);
+}
+
 }; // namespace impl
 
 template <typename T, typename OffsetT>
@@ -165,78 +236,21 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<value_t>(elements, "Size");
   state.add_global_memory_writes<pair_t>(elements);
 
-  size_t tmp_size;
-  dispatch_t::Dispatch(
-    nullptr, tmp_size, inp_it, d_output, op_t{}, wrapped_init_t{}, input.size(), state.get_cuda_stream().get_stream());
+  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  size_t tmp_size;
+  dispatch_t::Dispatch(nullptr, tmp_size, inp_it, d_output, op_t{}, wrapped_init_t{}, input.size(), bench_stream);
+
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(d_tmp, tmp_size, inp_it, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  // verification
-
-  thrust::device_vector<value_t> ref_mins(elements);
-  thrust::device_vector<value_t> ref_maxs(elements);
-
-  cub::DeviceScan::InclusiveScanInit(
-    nullptr,
-    tmp_size,
-    d_input,
-    ref_mins.begin(),
-    cuda::minimum<>{},
-    cuda::std::numeric_limits<value_t>::max(),
-    input.size(),
-    state.get_cuda_stream().get_stream());
-
-  thrust::device_vector<nvbench::uint8_t> tmp1(tmp_size);
-  nvbench::uint8_t* d_tmp1 = thrust::raw_pointer_cast(tmp1.data());
-
-  cub::DeviceScan::InclusiveScanInit(
-    d_tmp1,
-    tmp_size,
-    d_input,
-    ref_mins.begin(),
-    cuda::minimum<>{},
-    cuda::std::numeric_limits<value_t>::max(),
-    input.size(),
-    state.get_cuda_stream().get_stream());
-
-  cub::DeviceScan::InclusiveScanInit(
-    nullptr,
-    tmp_size,
-    d_input,
-    ref_maxs.begin(),
-    cuda::minimum<>{},
-    cuda::std::numeric_limits<value_t>::max(),
-    input.size(),
-    state.get_cuda_stream().get_stream());
-
-  thrust::device_vector<nvbench::uint8_t> tmp2(tmp_size);
-  nvbench::uint8_t* d_tmp2 = thrust::raw_pointer_cast(tmp2.data());
-
-  cub::DeviceScan::InclusiveScanInit(
-    d_tmp2,
-    tmp_size,
-    d_input,
-    ref_maxs.begin(),
-    cuda::maximum<>{},
-    cuda::std::numeric_limits<value_t>::min(),
-    input.size(),
-    state.get_cuda_stream().get_stream());
-
-  thrust::device_vector<value_t> computed_mins(elements);
-  thrust::device_vector<value_t> computed_maxs(elements);
-
-  cub::DeviceTransform::Transform(
-    d_output, computed_mins.begin(), input.size(), impl::ExtractMin<T>{}, state.get_cuda_stream().get_stream());
-  cub::DeviceTransform::Transform(
-    d_output, computed_maxs.begin(), input.size(), impl::ExtractMax<T>{}, state.get_cuda_stream().get_stream());
-
-  assert(computed_mins == ref_mins);
-  assert(computed_maxs == ref_maxs);
+  cudaStreamSynchronize(bench_stream);
+  // for verification use
+  // impl::validate(input, output, state_stream);
 }
 
 using bench_types =

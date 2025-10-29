@@ -88,12 +88,25 @@ struct LogPDBuilder
 {
   T mu;
   T norm;
+  cuda::std::size_t n;
 
   T __host__ __device__ operator()(cuda::std::size_t i) const
   {
-    return -mu * static_cast<T>(i) + norm;
+    return -mu * static_cast<T>(n - i) + norm;
   }
 };
+
+template <typename T>
+[[nodiscard]] bool validate(const thrust::device_vector<T>& output)
+{
+  thrust::host_vector<T> h_output(output);
+  auto elements = h_output.size();
+  // test is designed so that last element of prefix scan sequence should be close to log(1.0) == 0.0
+  bool check = cuda::std::abs(h_output[elements - 1])
+             < cuda::std::sqrt(static_cast<T>(1 + elements)) * cuda::std::numeric_limits<T>::epsilon();
+
+  return check;
+}
 
 }; // namespace impl
 
@@ -122,18 +135,18 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
 
   auto norm = cuda::std::log1p(-cuda::std::exp(-mu)) - cuda::std::log1p(-cuda::std::exp(-mu * elements));
 
-  thrust::device_vector<value_t> input(elements);
+  thrust::device_vector<value_t> input(elements, thrust::no_init);
 
   cudaStream_t bench_stream = state.get_cuda_stream();
 
   cub::DeviceTransform::Transform(
-    ::cuda::std::make_tuple(cuda::counting_iterator(cuda::std::size_t{0})),
+    cuda::std::make_tuple(cuda::counting_iterator(cuda::std::size_t{0})),
     input.begin(),
     elements,
-    impl::LogPDBuilder<value_t>{mu, norm},
+    impl::LogPDBuilder<value_t>{mu, norm, elements},
     bench_stream);
 
-  thrust::device_vector<value_t> output(elements);
+  thrust::device_vector<value_t> output(elements, thrust::no_init);
 
   input_t d_input   = thrust::raw_pointer_cast(input.data());
   output_t d_output = thrust::raw_pointer_cast(output.data());
@@ -145,7 +158,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
   size_t tmp_size;
   dispatch_t::Dispatch(nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), bench_stream);
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -153,13 +166,9 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  cudaStreamSynchronize(state.get_cuda_stream());
-
-  thrust::host_vector<value_t> h_output(output);
-  // test is designed so that last element of prefix scan sequence should be close to log(1.0) == 0.0
-  bool check = cuda::std::abs(h_output[elements - 1])
-             < cuda::std::sqrt(static_cast<value_t>(1 + elements)) * cuda::std::numeric_limits<value_t>::epsilon();
-  assert(check);
+  cudaStreamSynchronize(bench_stream);
+  // for validation, use
+  // assert(impl::validate(output));
 }
 
 using fp_types = nvbench::type_list<float, double>;
@@ -168,4 +177,4 @@ NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
   .set_name("app-logcdf-from-logpdf")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_float64_axis("Mu{io}", {1e-4f, 0.1f, 0.2f, 0.5f});
+  .add_float64_axis("Mu{io}", {1e-4f});

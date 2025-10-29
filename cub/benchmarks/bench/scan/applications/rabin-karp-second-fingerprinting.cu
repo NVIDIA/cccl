@@ -146,40 +146,32 @@ struct ChunkToMat
   MatT __host__ __device__ operator()(const T& bits) const
   {
     static constexpr int n_bits = cuda::std::numeric_limits<T>::digits;
-    static constexpr MatT _id   = {ZpT{1}, ZpT{0}, ZpT{0}, ZpT{1}}; // [[1, 0], [0, 1]]
-    static constexpr MatT _0    = {ZpT{1}, ZpT{0}, ZpT{1}, ZpT{1}}; // [[1, 0], [1, 1]]
-    static constexpr MatT _1    = {ZpT{1}, ZpT{1}, ZpT{0}, ZpT{1}}; // [[1, 1], [0, 1]]
+    static_assert(n_bits >= 1, "Type must have non-zero bitwidth");
+
+    static constexpr MatT _0 = {ZpT{1}, ZpT{0}, ZpT{1}, ZpT{1}}; // [[1, 0], [1, 1]]
+    static constexpr MatT _1 = {ZpT{1}, ZpT{1}, ZpT{0}, ZpT{1}}; // [[1, 1], [0, 1]]
 
     // initialize with identity matrix
-    MatT m  = _id;
-    T _bits = bits;
+    MatT m  = (bits & 1) ? _1 : _0;
+    T _bits = bits >> 1;
 
-    if constexpr (false)
+    // use of cuda::static_for here results in performance regression due to increased register pressure
+    for (int i = 1; i < n_bits; ++i)
     {
-      cuda::static_for<n_bits>([&](int) {
-        m = Zp_matmul((_bits & 1) ? _1 : _0, m, m_p);
-        _bits >>= 1;
-      });
-    }
-    else
-    {
-      for (int i = 0; i < n_bits; ++i)
-      {
-        (void) i;
-        m = Zp_matmul((_bits & 1) ? _1 : _0, m, m_p);
-        _bits >>= 1;
-      }
+      (void) i;
+      m = Zp_matmul((_bits & 1) ? _1 : _0, m, m_p);
+      _bits >>= 1;
     }
 
     return m;
   }
 };
 
-/*! @brief Iterator that performs assignment at specific index only, discards otherwise
-
-    This iterator allows tp use inclusive_scan to perform reduction with non-commutative,
-    but associative binary operator
-  */
+// Iterator that performs assignment at specific index only, discards otherwise
+//
+// This iterator allows tp use inclusive_scan to perform reduction with non-commutative,
+// but associative binary operator
+//
 template <typename OffsetT, typename Iter>
 struct write_at_specific_index_or_discard
 {
@@ -217,14 +209,12 @@ public:
     }
   };
 
-  using iterator_concept  = typename cuda::std::iterator_traits<Iter>::iterator_concept;
-  using iterator_category = typename cuda::std::iterator_traits<Iter>::iterator_category;
-  // using iterator_concept  = cuda::std::random_access_iterator_tag;
-  //  using iterator_category = cuda::std::random_access_iterator_tag;
-  using value_type      = cuda::std::iter_value_t<Iter>;
-  using difference_type = cuda::std::iter_difference_t<Iter>;
-  using pointer         = void;
-  using reference       = void;
+  using iterator_concept  = cuda::std::random_access_iterator_tag;
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = cuda::std::iter_value_t<Iter>;
+  using difference_type   = cuda::std::iter_difference_t<Iter>;
+  using pointer           = void;
+  using reference         = void;
 
   write_at_specific_index_or_discard() = delete;
   explicit __host__ __device__ write_at_specific_index_or_discard(OffsetT offset, Iter iter)
@@ -249,6 +239,55 @@ public:
     return r;
   }
 };
+
+template <typename InputT, typename OutputT>
+[[nodiscard]] bool
+validate(const thrust::device_vector<InputT>& input, const thrust::device_vector<OutputT>& output, ZpT p)
+{
+  using accum_t = OutputT;
+  using input_t = InputT;
+
+  thrust::host_vector<accum_t> h_out(output);
+  thrust::host_vector<input_t> h_inp(input);
+
+  accum_t ref_mat = {1, 0, 0, 1};
+
+  static constexpr accum_t mat_0 = {1, 0, 1, 1}; // lower diagonal
+  static constexpr accum_t mat_1 = {1, 1, 0, 1}; // upper diagonal
+  cuda::fast_mod_div<impl::WideT> mod(p);
+  for (auto&& el : h_inp)
+  {
+    input_t v = el;
+
+    accum_t word_mat = {1, 0, 0, 1};
+    for (int i = 0; i < sizeof(input_t) * 8; ++i)
+    {
+      if (v & 1)
+      {
+        word_mat = impl::Zp_matmul(mat_1, word_mat, mod);
+      }
+      else
+      {
+        word_mat = impl::Zp_matmul(mat_0, word_mat, mod);
+      }
+      v >>= 1;
+    }
+
+    ref_mat = impl::Zp_matmul(ref_mat, word_mat, mod);
+  }
+
+  const accum_t& res = h_out[0];
+  if (ref_mat != res)
+  {
+    std::cout << "FAILED: ";
+    std::cout << "cub_computed([[" << res[0] << ", " << res[1] << "], [" << res[2] << ", " << res[3] << "]]) != ";
+    std::cout
+      << "reference([[" << ref_mat[0] << ", " << ref_mat[1] << "], [" << ref_mat[2] << ", " << ref_mat[3] << "]])\n";
+    return false;
+  }
+
+  return true;
+}
 
 }; // namespace impl
 
@@ -279,8 +318,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<input_t> input = generate(elements);
-  thrust::device_vector<accum_t> output(
-    1, accum_t{static_cast<ZpT>(-1), static_cast<ZpT>(-2), static_cast<ZpT>(-3), static_cast<ZpT>(-4)});
+  thrust::device_vector<accum_t> output(1, thrust::no_init);
 
   // a large prime
   ZpT p = static_cast<ZpT>(state.get_int64("Modulus"));
@@ -295,10 +333,12 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   state.add_global_memory_reads<input_t>(elements, "Sequence Size");
   state.add_global_memory_writes<accum_t>(1, "Hash Size");
 
-  size_t tmp_size;
-  dispatch_t::Dispatch(nullptr, tmp_size, inp_it, out_it, op_t{p}, wrapped_init_t{}, input.size(), 0 /* stream */);
+  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  size_t tmp_size;
+  dispatch_t::Dispatch(nullptr, tmp_size, inp_it, out_it, op_t{p}, wrapped_init_t{}, input.size(), bench_stream);
+
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -313,54 +353,9 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
       launch.get_stream());
   });
 
-  // Test correctness if the input size is not too large
-  if (elements < 0x100000u)
-  {
-    cudaStreamSynchronize(state.get_cuda_stream());
-
-    thrust::host_vector<accum_t> h_out(output);
-
-    thrust::host_vector<input_t> h_inp(input);
-
-    accum_t ref_mat = {1, 0, 0, 1};
-
-    static constexpr accum_t mat_0 = {1, 0, 1, 1}; // lower diagonal
-    static constexpr accum_t mat_1 = {1, 1, 0, 1}; // upper diagonal
-    cuda::fast_mod_div<impl::WideT> mod(p);
-    for (auto&& el : h_inp)
-    {
-      input_t v = el;
-
-      accum_t word_mat = {1, 0, 0, 1};
-      for (int i = 0; i < sizeof(input_t) * 8; ++i)
-      {
-        if (v & 1)
-        {
-          word_mat = impl::Zp_matmul(mat_1, word_mat, mod);
-        }
-        else
-        {
-          word_mat = impl::Zp_matmul(mat_0, word_mat, mod);
-        }
-        v >>= 1;
-      }
-
-      ref_mat = impl::Zp_matmul(ref_mat, word_mat, mod);
-    }
-
-    const accum_t& res = h_out[0];
-    if (ref_mat != res)
-    {
-      std::cout << "FAILED: ";
-      std::cout << "cub_computed([[" << res[0] << ", " << res[1] << "], [" << res[2] << ", " << res[3] << "]]) != ";
-      std::cout
-        << "reference([[" << ref_mat[0] << ", " << ref_mat[1] << "], [" << ref_mat[2] << ", " << ref_mat[3] << "]])\n";
-    }
-    else
-    {
-      std::cout << "PASSED\n";
-    }
-  }
+  cudaStreamSynchronize(bench_stream);
+  // for validation uncomment these two lines
+  // assert(impl::validate(input, output, p));
 }
 
 using type_list = nvbench::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint32_t, cuda::std::uint64_t>;
