@@ -62,9 +62,9 @@ Example
 
         // cuda::add_overflow(lhs, rhs) returning common type of lhs and rhs
         // 'result' is evaluated to true if an overflow occurred, false otherwise
-        if (auto result = cuda::add_overflow(1, 2))
+        if (auto result = cuda::add_overflow(1, int_max))
         {
-            assert(result.value == 3);
+            assert(result.value == int_min);
         }
 
         // cuda::add_overflow<Result>(lhs, rhs) with explicit return type
@@ -86,4 +86,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/KTGPKjbdv>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/PPT17ozx6>`_
