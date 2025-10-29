@@ -165,7 +165,6 @@ set_tests_properties(libcudacxx.test.lit PROPERTIES
 # Add c2h tests:
 cccl_get_c2h()
 
-
 file(GLOB_RECURSE test_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
