@@ -33,7 +33,7 @@ The function ``cuda::sub_overflow`` performs subtraction of two values ``lhs`` a
 **Return value**
 
 1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object containing the computed  difference and a boolean flag indicating whether an overflow or underflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
-2. Returns ``true`` if an overflow or underflow occurred. When ``false`` is returned, the computed difference is stored in ``result``.
+2. Returns ``true`` if an overflow or underflow occurred, ``false`` otherwise.
 
 **Constraints**
 

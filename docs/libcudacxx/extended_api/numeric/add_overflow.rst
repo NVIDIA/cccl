@@ -33,7 +33,7 @@ The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and 
 **Return value**
 
 1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object  containing the result of the addition and a boolean indicating whether an overflow or underflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
-2. Returns ``true`` if an overflow or underflow occurred. When ``false`` is returned, the computed difference is stored in ``result``.
+2. Returns ``true`` if an overflow or underflow occurred, ``false`` otherwise.
 
 **Constraints**
 
