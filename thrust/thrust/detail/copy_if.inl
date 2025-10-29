@@ -32,8 +32,8 @@
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/system/detail/sequential/copy_if.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / copy_if.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / copy_if.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy_if.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy_if.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

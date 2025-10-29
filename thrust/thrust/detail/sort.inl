@@ -32,8 +32,8 @@
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/sort.h>
 #include <thrust/system/detail/sequential/sort.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / sort.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / sort.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sort.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sort.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

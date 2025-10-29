@@ -43,12 +43,12 @@
 #include <thrust/system/detail/sequential/assign_value.h>
 #include <thrust/system/detail/sequential/get_value.h>
 #include <thrust/system/detail/sequential/iter_swap.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / assign_value.h)
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / get_value.h)
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / iter_swap.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / assign_value.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / get_value.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / iter_swap.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

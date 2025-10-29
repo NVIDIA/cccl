@@ -32,8 +32,8 @@
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/mismatch.h>
 #include <thrust/system/detail/sequential/mismatch.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / mismatch.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / mismatch.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(mismatch.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(mismatch.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

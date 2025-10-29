@@ -35,10 +35,10 @@
 #include <thrust/system/detail/generic/reduce_by_key.h>
 #include <thrust/system/detail/sequential/reduce.h>
 #include <thrust/system/detail/sequential/reduce_by_key.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce.h)
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce_by_key.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / reduce_by_key.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reduce.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reduce.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reduce_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reduce_by_key.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

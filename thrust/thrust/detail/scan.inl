@@ -34,10 +34,10 @@
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/system/detail/sequential/scan.h>
 #include <thrust/system/detail/sequential/scan_by_key.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / scan.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / scan.h)
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / scan_by_key.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / scan_by_key.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(scan.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(scan.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(scan_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(scan_by_key.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

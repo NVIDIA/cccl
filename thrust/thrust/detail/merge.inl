@@ -33,8 +33,8 @@
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/merge.h>
 #include <thrust/system/detail/sequential/merge.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / merge.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / merge.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(merge.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(merge.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0

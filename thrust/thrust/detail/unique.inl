@@ -35,10 +35,10 @@
 #include <thrust/system/detail/generic/unique_by_key.h>
 #include <thrust/system/detail/sequential/unique.h>
 #include <thrust/system/detail/sequential/unique_by_key.h>
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique.h)
-#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique_by_key.h)
-#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(detail / unique_by_key.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
 
 // Some build systems need a hint to know which files we could include
 #if 0
