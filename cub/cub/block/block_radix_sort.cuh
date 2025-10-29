@@ -224,16 +224,16 @@ CUB_NAMESPACE_BEGIN
 //! @tparam RadixBits
 //!   **[optional]** The number of radix bits per digit place (default: 4 bits)
 //!
-//! @tparam MEMOIZE_OUTER_SCAN
+//! @tparam MemoizeOuterScan
 //!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory
 //!  reads at the expense of higher register pressure (default: true for architectures SM35 and
 //!  newer, false otherwise).
 //!
-//! @tparam INNER_SCAN_ALGORITHM
+//! @tparam InnerScanAlgorithm
 //!   **[optional]** The cub::BlockScanAlgorithm algorithm to use
 //!   (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
-//! @tparam SMEM_CONFIG
+//! @tparam SMemConfig
 //!   **[optional]*8 Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
 //! @tparam BlockDimY
@@ -249,7 +249,7 @@ template <typename KeyT,
           int RadixBits                         = 4,
           bool MemoizeOuterScan                 = true,
           BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
-          cudaSharedMemConfig SmemConfig        = cudaSharedMemBankSizeFourByte,
+          cudaSharedMemConfig SMemConfig        = cudaSharedMemBankSizeFourByte,
           int BlockDimY                         = 1,
           int BlockDimZ                         = 1>
 class BlockRadixSort
@@ -275,11 +275,11 @@ private:
 
   /// Ascending BlockRadixRank utility type
   using AscendingBlockRadixRank =
-    BlockRadixRank<BlockDimX, RadixBits, false, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig, BlockDimY, BlockDimZ>;
+    BlockRadixRank<BlockDimX, RadixBits, false, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
 
   /// Descending BlockRadixRank utility type
   using DescendingBlockRadixRank =
-    BlockRadixRank<BlockDimX, RadixBits, true, MemoizeOuterScan, InnerScanAlgorithm, SmemConfig, BlockDimY, BlockDimZ>;
+    BlockRadixRank<BlockDimX, RadixBits, true, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
 
   /// Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
