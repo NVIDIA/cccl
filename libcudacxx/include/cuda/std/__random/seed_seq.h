@@ -79,7 +79,7 @@ public:
     _CCCL_CATCH_ALL
     {
       delete[] __data_;
-      _CCCL_THROW();
+      _CCCL_RETHROW();
     }
   }
 
