@@ -26,6 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(execution_policy.h)
+
 // Some build systems need a hint to know which files we could include
 #if 0
 #  include <thrust/system/cpp/detail/execution_policy.h>
@@ -33,11 +35,6 @@
 #  include <thrust/system/omp/detail/execution_policy.h>
 #  include <thrust/system/tbb/detail/execution_policy.h>
 #endif
-
-// #include the device system's execution_policy header
-#define __THRUST_DEVICE_SYSTEM_TAG_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/execution_policy.h>
-#include __THRUST_DEVICE_SYSTEM_TAG_HEADER
-#undef __THRUST_DEVICE_SYSTEM_TAG_HEADER
 
 THRUST_NAMESPACE_BEGIN
 
