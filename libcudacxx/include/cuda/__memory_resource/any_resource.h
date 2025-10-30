@@ -26,6 +26,7 @@
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__utility/basic_any.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/optional>
 
@@ -208,7 +209,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
     , __with_try_get_property<any_synchronous_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_synchronous_resource, ::cuda::__basic_any, __iresource<_Properties...>);
+  _CCCL_DELEGATE_CONSTRUCTORS(any_synchronous_resource, ::cuda::__basic_any, __iresource<_Properties...>);
 
   // any_resource is convertible to any_synchronous_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
@@ -238,7 +239,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
     , __with_try_get_property<any_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, __iasync_resource<_Properties...>);
+  _CCCL_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, __iasync_resource<_Properties...>);
 
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
@@ -266,7 +267,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
     , __with_try_get_property<synchronous_resource_ref<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
 
   synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
 
@@ -327,7 +328,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     , __with_try_get_property<resource_ref<_Properties...>>
 {
   // Inherit other constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
 
   resource_ref(const resource_ref& __other) noexcept = default;
 

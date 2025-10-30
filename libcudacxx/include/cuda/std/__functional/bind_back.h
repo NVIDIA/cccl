@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/tuple>
@@ -56,7 +57,7 @@ struct __bind_back_op<_NBound, index_sequence<_Ip...>>
 template <class _Fn, class _BoundArgs>
 struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+  _CCCL_DELEGATE_CONSTRUCTORS(
     __bind_back_t, __perfect_forward, __bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs);
 };
 

@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,7 +50,7 @@ struct __bind_front_op
 template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__bind_front_t, __perfect_forward, __bind_front_op, _Fn, _BoundArgs...);
+  _CCCL_DELEGATE_CONSTRUCTORS(__bind_front_t, __perfect_forward, __bind_front_op, _Fn, _BoundArgs...);
 };
 
 template <class _Fn, class... _Args>
