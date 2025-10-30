@@ -25,6 +25,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/pair.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -64,7 +65,7 @@ private:
   _ForwardIterator __last_;
   _BinaryPredicate __pred_;
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 
 #endif // __cuda_std__
 

@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
@@ -59,7 +60,7 @@ struct __pipeable
       : _Fn(::cuda::std::move(__f))
   {}
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 
 template <class _Tp>
 _CCCL_HOST_DEVICE _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);

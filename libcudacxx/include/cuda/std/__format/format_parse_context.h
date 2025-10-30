@@ -24,6 +24,7 @@
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -115,7 +116,7 @@ private:
   size_t __num_args_;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
