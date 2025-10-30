@@ -27,9 +27,21 @@
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/sequence.h>
-#include <thrust/system/detail/adl/sequence.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/sequence.h>
+#include <thrust/system/detail/sequential/sequence.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sequence.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(sequence.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/sequence.h>
+#  include <thrust/system/cuda/detail/sequence.h>
+#  include <thrust/system/omp/detail/sequence.h>
+#  include <thrust/system/tbb/detail/sequence.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

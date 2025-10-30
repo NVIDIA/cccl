@@ -10,41 +10,42 @@
 
 // UNSUPPORTED: nvrtc
 
+#define CCCL_DISABLE_EXCEPTIONS
+
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cassert>
-#include <cuda/stream>
 
-#include "test_macros.h"
+#include <nv/target>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
-void test_ready(cuda::stream_ref& ref)
+__host__ __device__ constexpr int exception_value()
 {
-#if TEST_HAS_EXCEPTIONS()
-  try
-  {
-    assert(ref.ready());
-  }
-  catch (...)
-  {
-    assert(false && "Should not have thrown");
-  }
-#else
-  assert(ref.ready());
-#endif // TEST_HAS_EXCEPTIONS()
+  return 42;
 }
 
-bool test()
+struct ExceptionBase
 {
-  cudaStream_t stream;
-  assert(cudaStreamCreate(&stream) == cudaSuccess);
-  cuda::stream_ref ref{stream};
-  test_ready(ref);
-  assert(cudaStreamDestroy(stream) == cudaSuccess);
+  int value = exception_value();
+};
 
-  return true;
+struct Exception : ExceptionBase
+{};
+
+__host__ __device__ void test()
+{
+  _CCCL_TRY
+  {
+    _CCCL_THROW(Exception());
+  }
+  _CCCL_CATCH ([[maybe_unused]] Exception e)
+  {
+  }
+  _CCCL_CATCH ([[maybe_unused]] ExceptionBase e)
+  {
+  }
+  _CCCL_CATCH_ALL {}
 }
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, (test();))
   return 0;
