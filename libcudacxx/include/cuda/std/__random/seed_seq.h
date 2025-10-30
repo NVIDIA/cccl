@@ -136,7 +136,7 @@ public:
     }
     // https://en.cppreference.com/w/cpp/numeric/random/seed_seq/generate.html
     const result_type __z = static_cast<result_type>(__size_);
-    const result_type __n = ::cuda::std::distance(__begin, __end);
+    const result_type __n = static_cast<result_type>(::cuda::std::distance(__begin, __end));
     const result_type __m = ::cuda::std::max(__z + 1, __n);
     const result_type __t = (__n >= 623) ? 11 : (__n >= 68) ? 7 : (__n >= 39) ? 5 : (__n >= 7) ? 3 : (__n - 1) / 2;
     const result_type __p = (__n - __t) / 2;
