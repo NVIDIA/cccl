@@ -15,10 +15,8 @@ Inclusive scan using zip iterator and output transform iterator to compute runni
 """
 
 
-@gpu_struct
-class SumAndCount:  # data type to store the running sum and the count
-    sum: np.float32
-    count: np.int32
+# data type to store the running sum and the count
+SumAndCount = gpu_struct({"sum": np.float32, "count": np.int32})
 
 
 # binary operation for the scan computes the running sum and running count

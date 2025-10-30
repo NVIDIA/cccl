@@ -18,11 +18,7 @@ from cuda.compute import (
     gpu_struct,
 )
 
-
-@gpu_struct
-class IndexValuePair:
-    index: np.int32
-    value: np.int32
+IndexValuePair = gpu_struct({"index": np.int32, "value": np.int32})
 
 
 def max_by_value(p1, p2):

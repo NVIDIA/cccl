@@ -155,10 +155,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
 )
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
-    @gpu_struct
-    class XY:
-        x: np.int32
-        y: np.int32
+    XY = gpu_struct({"x": np.int32, "y": np.int32})
 
     def op(a, b):
         return XY(a.x + b.x, a.y + b.y)

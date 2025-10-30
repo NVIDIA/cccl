@@ -36,10 +36,7 @@ def unary_transform_iterator(size, out, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
+MyStruct = gpu_struct({"x": np.int32, "y": np.int32})
 
 
 def unary_transform_struct(inp, out, build_only):

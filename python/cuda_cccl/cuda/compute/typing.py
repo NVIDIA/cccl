@@ -30,8 +30,8 @@ class StreamLike(Protocol):
 
 
 # TODO: type GpuStruct appropriately. It should be any type that has
-# been decorated with `@gpu_struct`.
+# been created with `gpu_struct()`.
 GpuStruct = Any
 GpuStruct.__doc__ = """\
-    Type of instances of classes decorated with @gpu_struct.
+    Type of instances of structs created with gpu_struct().
 """

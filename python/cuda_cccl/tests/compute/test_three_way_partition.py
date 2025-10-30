@@ -184,10 +184,7 @@ def test_three_way_partition_with_iterators():
 
 
 def test_three_way_partition_struct_type():
-    @gpu_struct
-    class pair_type:
-        a: np.int32
-        b: np.uint64
+    pair_type = gpu_struct({"a": np.int32, "b": np.uint64})
 
     comparison_value = np.int32(42)
 

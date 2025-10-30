@@ -70,11 +70,7 @@ def test_segmented_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    @gpu_struct
-    class Pixel:
-        r: np.int32
-        g: np.int32
-        b: np.int32
+    Pixel = gpu_struct({"r": np.int32, "g": np.int32, "b": np.int32})
 
     def max_g_value(x, y):
         return x if x.g > y.g else y

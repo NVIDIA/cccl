@@ -72,10 +72,7 @@ def test_binary_transform(input_array):
 def test_unary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
-    class MyStruct:
-        x: np.int16
-        y: np.uint64
+    MyStruct = gpu_struct({"x": np.int16, "y": np.uint64})
 
     def op(a):
         return MyStruct(a.x * 2, a.y + 10)
@@ -107,10 +104,7 @@ def test_unary_transform_struct_type():
 def test_binary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
-    class MyStruct:
-        x: np.int16
-        y: np.uint64
+    MyStruct = gpu_struct({"x": np.int16, "y": np.uint64})
 
     def op(a, b):
         return MyStruct(a.x + b.x, a.y + b.y)

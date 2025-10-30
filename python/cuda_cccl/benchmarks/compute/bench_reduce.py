@@ -75,10 +75,7 @@ def reduce_iterator(inp, size, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
+MyStruct = gpu_struct({"x": np.int32, "y": np.int32})
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])

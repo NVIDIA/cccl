@@ -51,10 +51,7 @@ def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
+MyStruct = gpu_struct({"x": np.int32, "y": np.int32})
 
 
 def merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only):
