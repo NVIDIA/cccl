@@ -17,7 +17,7 @@
 #ifdef _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
 # error <atomic> is not implemented
 #endif
-#ifdef _LIBCUDACXX_UNSUPPORTED_THREAD_API
+#ifdef _CCCL_UNSUPPORTED_THREAD_API
 # error "<atomic> is not supported on this system"
 #endif
 #ifdef kill_dependency
