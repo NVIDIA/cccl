@@ -1520,7 +1520,7 @@ public:
   template <int ITEMS_PER_THREAD>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0]);
     }
@@ -1597,7 +1597,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0], block_aggregate);
     }
@@ -1678,7 +1678,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0], block_prefix_callback_op);
     }
@@ -1951,7 +1951,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveScan(input[0], output[0], scan_op);
     }
