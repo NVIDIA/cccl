@@ -27,9 +27,21 @@
 #endif // no system header
 #include <thrust/binary_search.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/binary_search.h>
-#include <thrust/system/detail/generic/binary_search.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/binary_search.h>
+#include <thrust/system/detail/sequential/binary_search.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(binary_search.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(binary_search.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/binary_search.h>
+#  include <thrust/system/cuda/detail/binary_search.h>
+#  include <thrust/system/omp/detail/binary_search.h>
+#  include <thrust/system/tbb/detail/binary_search.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

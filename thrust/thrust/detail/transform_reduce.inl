@@ -26,9 +26,21 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/transform_reduce.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/transform_reduce.h>
+#include <thrust/system/detail/sequential/transform_reduce.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_reduce.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform_reduce.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/transform_reduce.h>
+#  include <thrust/system/cuda/detail/transform_reduce.h>
+#  include <thrust/system/omp/detail/transform_reduce.h>
+#  include <thrust/system/tbb/detail/transform_reduce.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
