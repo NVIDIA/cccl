@@ -28,18 +28,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                              \
-  _LIBCUDACXX_DIAGNOSE_WARNING(                                                                \
-    __m == memory_order_consume || __m == memory_order_acquire || __m == memory_order_acq_rel, \
-    "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                                                   \
+  _CCCL_DIAGNOSE_WARNING(__m == memory_order_consume || __m == memory_order_acquire || __m == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
-#define _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)                                           \
-  _LIBCUDACXX_DIAGNOSE_WARNING(__m == memory_order_release || __m == memory_order_acq_rel, \
-                               "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_LOAD_MEMORY_ORDER(__m)                                     \
+  _CCCL_DIAGNOSE_WARNING(__m == memory_order_release || __m == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
-#define _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__m, __f)                                  \
-  _LIBCUDACXX_DIAGNOSE_WARNING(__f == memory_order_release || __f == memory_order_acq_rel, \
-                               "memory order argument to atomic operation is invalid")
+#define _LIBCUDACXX_CHECK_EXCHANGE_MEMORY_ORDER(__m, __f)                            \
+  _CCCL_DIAGNOSE_WARNING(__f == memory_order_release || __f == memory_order_acq_rel, \
+                         "memory order argument to atomic operation is invalid")
 
 #ifndef __ATOMIC_RELAXED
 #  define __ATOMIC_RELAXED 0
