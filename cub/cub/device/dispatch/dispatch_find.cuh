@@ -32,6 +32,9 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+
 template <typename ValueType, typename OutputIteratorT>
 __launch_bounds__(1) __global__
   void write_final_result_in_output_iterator_already(ValueType* d_temp_storage, OutputIteratorT d_out)
@@ -51,16 +54,18 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceFindKernel(
     InputIteratorT d_in, OutputIteratorT d_out, OffsetT num_items, OffsetT* value_temp_storage, ScanOpT scan_op)
 {
-  using AgentFindT =
-    AgentFind<typename ChainedPolicyT::ActivePolicy::FindPolicy, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>;
+  using agent_find_t =
+    find::agent_t<typename ChainedPolicyT::ActivePolicy::FindPolicy, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>;
 
-  __shared__ typename AgentFindT::TempStorage sresult;
+  __shared__ typename agent_find_t::TempStorage sresult;
   // Process tiles
-  AgentFindT agent(sresult, d_in, scan_op); // Seems like sresult can be defined and initialized in agent_find.cuh
-                                            // directly without having to pass it here as an argument.
+  agent_find_t agent(sresult, d_in, scan_op); // Seems like sresult can be defined and initialized in agent_find.cuh
+                                              // directly without having to pass it here as an argument.
 
   agent.Process(value_temp_storage, num_items);
 }
+
+} // namespace detail
 
 template <typename InputIt>
 struct DeviceFindPolicy
@@ -74,11 +79,11 @@ struct DeviceFindPolicy
 
     // FindPolicy (GTX670: 154.0 @ 48M 4B items)
     using FindPolicy =
-      AgentFindPolicy<threads_per_block,
-                      items_per_thread,
-                      typename ::cuda::std::iterator_traits<InputIt>::value_type,
-                      items_per_vec_load,
-                      LOAD_LDG>;
+      detail::find::agent_find_policy<threads_per_block,
+                                      items_per_thread,
+                                      typename ::cuda::std::iterator_traits<InputIt>::value_type,
+                                      items_per_vec_load,
+                                      LOAD_LDG>;
 
     // // SingleTilePolicy
     // using SingleTilePolicy = FindPolicy;
@@ -202,7 +207,7 @@ struct DispatchFind : SelectedPolicy
       // to read and write from. Then store the final result in the output iterator.
 
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
-        .doit(cuda_mem_set_async_dtemp_storage<OffsetT, OffsetT>, value_temp_storage, num_items);
+        .doit(detail::cuda_mem_set_async_dtemp_storage<OffsetT, OffsetT>, value_temp_storage, num_items);
 
       // Invoke FindIfKernel
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -210,7 +215,8 @@ struct DispatchFind : SelectedPolicy
         .doit(find_kernel, d_in, d_out, num_items, value_temp_storage, scan_op);
 
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
-        .doit(write_final_result_in_output_iterator_already<OffsetT, OutputIteratorT>, value_temp_storage, d_out);
+        .doit(
+          detail::write_final_result_in_output_iterator_already<OffsetT, OutputIteratorT>, value_temp_storage, d_out);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -235,9 +241,10 @@ struct DispatchFind : SelectedPolicy
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      DeviceFindKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>); // include the surrounding two
-                                                                                        // init and write back kernels
-                                                                                        // here.
+      detail::DeviceFindKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>); // include the
+                                                                                                // surrounding two init
+                                                                                                // and write back
+                                                                                                // kernels here.
   }
 
   /**
