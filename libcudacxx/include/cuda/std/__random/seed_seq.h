@@ -80,7 +80,7 @@ public:
     _CCCL_CATCH_ALL
     {
       delete[] __data_;
-      _CCCL_RETHROW();
+      _CCCL_RETHROW;
     }
   }
 
