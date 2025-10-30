@@ -44,16 +44,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
 #  endif // _CCCL_CUDA_COMPILER
 
-#  ifdef _LIBCUDACXX_DEBUG
-#    if _LIBCUDACXX_DEBUG == 0
-#      define _LIBCUDACXX_DEBUG_LEVEL 1
-#    elif _LIBCUDACXX_DEBUG == 1
-#      define _LIBCUDACXX_DEBUG_LEVEL 2
-#    else
-#      error Supported values for _LIBCUDACXX_DEBUG are 0 and 1
-#    endif
-#  endif
-
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 #    if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__)
