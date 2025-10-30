@@ -38,6 +38,22 @@ struct DeviceFind
   //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
   //! - @devicestorage
   //!
+  //! Snippet
+  //! ==========================================================================
+  //!
+  //! The code snippet below illustrates the finding of the first element that satisfies the predicate.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin  find-if-predicate
+  //!     :end-before: example-end  find-if-predicate
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin  device-find-if
+  //!     :end-before: example-end  device-find-if
   //! @endrst
   //!
   //! @tparam InputIteratorT
