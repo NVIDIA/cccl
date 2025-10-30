@@ -15,12 +15,14 @@
 #include <nv/target>
 
 #include "catch2_test_device_reduce.cuh"
+#include "catch2_test_launch_helper.h"
 #include "thrust/detail/raw_pointer_cast.h"
 #include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1
+// %PARAM% TEST_TYPES types 0:1:2:3
 
-// DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_findif);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, find_if);
 
 // List of types to test
 using custom_t =
@@ -29,8 +31,33 @@ using custom_t =
                      c2h::lexicographical_less_comparable_t,
                      c2h::lexicographical_greater_comparable_t>;
 
-using full_type_list = c2h::type_list<type_pair<std::uint8_t, std::int32_t>, type_pair<std::int16_t>>;
+#if TEST_TYPES == 0
+using full_type_list = c2h::type_list<type_pair<std::uint8_t, std::int32_t>, type_pair<std::int8_t, std::int32_t>>;
+#elif TEST_TYPES == 1
+using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t, std::int32_t>>;
+#elif TEST_TYPES == 2
+using full_type_list =
+  c2h::type_list<type_pair<uchar3, std::int32_t>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   std::int32_t>>;
+#elif TEST_TYPES == 3
+// clang-format off
+using full_type_list = c2h::type_list<
+type_pair<custom_t, std::int32_t>
+#if TEST_HALF_T()
+, type_pair<half_t, std::int32_t> // testing half
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+, type_pair<bfloat16_t, std::int32_t> // testing bf16
+#endif // TEST_BF_T()
+>;
 // clang-format on
+#endif
 
 enum class gen_data_t : int
 {
@@ -52,9 +79,16 @@ struct equals
 {
   T val;
 
-  __device__ __host__ bool operator()(T i)
+  __device__ __host__ bool operator()(T i) const
   {
     return i == val;
+  }
+
+  // Accept any type convertible to T (for half_t/__half, bfloat16_t/__nv_bfloat16 compatibility)
+  template <typename U, typename = typename ::cuda::std::enable_if<!::cuda::std::is_same<T, U>::value>::type>
+  __device__ __host__ bool operator()(U i) const
+  {
+    return T(i) == val;
   }
 };
 
@@ -93,8 +127,17 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
-  using op_t          = equals<input_t>;
-  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  using op_t = equals<input_t>;
+  input_t val_to_find{};
+  if constexpr (::cuda::std::is_arithmetic_v<input_t>)
+  {
+    val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  }
+  else
+  {
+    // For vector types, use a default constant value
+    init_default_constant(val_to_find);
+  }
 
   SECTION("Generic find if case")
   {
@@ -103,21 +146,11 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
     c2h::host_vector<output_t> expected_result(1);
     compute_find_if_reference(host_items.begin(), host_items.end(), expected_result[0], op_t{val_to_find});
 
-    void* d_temp_storage = nullptr;
-    size_t temp_storage_bytes{};
-
     // Run test
     c2h::device_vector<output_t> out_result(1);
     output_t* d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    cub::DeviceFind::FindIf(
-      d_temp_storage, temp_storage_bytes, unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{val_to_find}, num_items);
-
-    thrust::device_vector<char> temp_storage(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-    cub::DeviceFind::FindIf(
-      d_temp_storage, temp_storage_bytes, unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{val_to_find}, num_items);
+    find_if(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{val_to_find}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -130,20 +163,10 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
     c2h::host_vector<output_t> expected_result(1);
     compute_find_if_reference(host_items.begin(), host_items.end(), expected_result[0], op_t{val_to_find});
 
-    void* d_temp_storage = nullptr;
-    size_t temp_storage_bytes{};
-
     // Run test
     c2h::device_vector<output_t> out_result(1);
 
-    cub::DeviceFind::FindIf(
-      d_temp_storage, temp_storage_bytes, in_items.begin(), out_result.begin(), op_t{val_to_find}, num_items);
-
-    thrust::device_vector<char> temp_storage(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-    cub::DeviceFind::FindIf(
-      d_temp_storage, temp_storage_bytes, in_items.begin(), out_result.begin(), op_t{val_to_find}, num_items);
+    find_if(in_items.begin(), out_result.begin(), op_t{val_to_find}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -160,37 +183,40 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
         c2h::host_vector<output_t> expected_result(1);
         compute_find_if_reference(host_items.begin() + offset, host_items.end(), expected_result[0], op_t{val_to_find});
 
-        void* d_temp_storage = nullptr;
-        size_t temp_storage_bytes{};
-
         // Run test
         c2h::device_vector<output_t> out_result(1);
         auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-        cub::DeviceFind::FindIf(
-          d_temp_storage,
-          temp_storage_bytes,
-          unwrap_it(d_in_it + offset),
-          unwrap_it(d_out_it),
-          op_t{val_to_find},
-          num_items - offset);
-
-        thrust::device_vector<char> temp_storage(temp_storage_bytes);
-        d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-        cub::DeviceFind::FindIf(
-          d_temp_storage,
-          temp_storage_bytes,
-          unwrap_it(d_in_it + offset),
-          unwrap_it(d_out_it),
-          op_t{val_to_find},
-          num_items - offset);
+        find_if(unwrap_it(d_in_it + offset), unwrap_it(d_out_it), op_t{val_to_find}, num_items - offset);
 
         // Verify result
         REQUIRE(expected_result == out_result);
       }
     }
   }
+}
+
+C2H_TEST("Device find_if works with non primitive iterator",
+         "[device]",
+         c2h::type_list<type_pair<std::uint8_t, std::int32_t>>)
+{
+  using params   = params_t<TestType>;
+  using input_t  = typename params::item_t;
+  using output_t = typename params::output_t;
+  using offset_t = output_t;
+
+  constexpr offset_t min_items = 1;
+  constexpr offset_t max_items = std::numeric_limits<offset_t>::max() / 5; // make test run faster
+
+  using op_t          = equals<input_t>;
+  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  // Generate the input sizes to test for
+  const offset_t num_items = GENERATE_COPY(
+    take(2, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
 
   SECTION("find_if works with non primitive iterator")
   {
@@ -199,19 +225,11 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
     c2h::host_vector<output_t> expected_result(1);
     compute_find_if_reference(it, it + num_items, expected_result[0], op_t{val_to_find});
 
-    void* d_temp_storage = nullptr;
-    size_t temp_storage_bytes{};
-
     // Run test
     c2h::device_vector<output_t> out_result(1);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    cub::DeviceFind::FindIf(d_temp_storage, temp_storage_bytes, it, unwrap_it(d_out_it), op_t{val_to_find}, num_items);
-
-    thrust::device_vector<char> temp_storage(temp_storage_bytes);
-    d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
-
-    cub::DeviceFind::FindIf(d_temp_storage, temp_storage_bytes, it, unwrap_it(d_out_it), op_t{val_to_find}, num_items);
+    find_if(it, unwrap_it(d_out_it), op_t{val_to_find}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
