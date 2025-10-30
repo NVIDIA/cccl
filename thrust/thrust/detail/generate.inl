@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/nvtx_policy.h>
 #include <thrust/generate.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -54,7 +55,7 @@ generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator last,
          Generator gen)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::generate");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::generate");
   using thrust::system::detail::generic::generate;
   return generate(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, gen);
 } // end generate()
@@ -64,7 +65,7 @@ template <typename DerivedPolicy, typename OutputIterator, typename Size, typena
 _CCCL_HOST_DEVICE OutputIterator generate_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, Generator gen)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::generate_n");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::generate_n");
   using thrust::system::detail::generic::generate_n;
   return generate_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, gen);
 } // end generate_n()
@@ -72,10 +73,9 @@ _CCCL_HOST_DEVICE OutputIterator generate_n(
 template <typename ForwardIterator, typename Generator>
 void generate(ForwardIterator first, ForwardIterator last, Generator gen)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::generate");
-  using thrust::system::detail::generic::select_system;
-
   using System = typename thrust::iterator_system<ForwardIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::generate");
+  using thrust::system::detail::generic::select_system;
 
   System system;
 
@@ -85,10 +85,9 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen)
 template <typename OutputIterator, typename Size, typename Generator>
 OutputIterator generate_n(OutputIterator first, Size n, Generator gen)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::generate_n");
-  using thrust::system::detail::generic::select_system;
-
   using System = typename thrust::iterator_system<OutputIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::generate_n");
+  using thrust::system::detail::generic::select_system;
 
   System system;
 

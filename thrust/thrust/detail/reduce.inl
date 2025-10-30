@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/nvtx_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -59,7 +60,7 @@ template <typename DerivedPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::reduce");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::reduce");
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end reduce()

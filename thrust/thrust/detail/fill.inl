@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/nvtx_policy.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -54,7 +55,7 @@ fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      ForwardIterator last,
      const T& value)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::fill");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::fill");
   using thrust::system::detail::generic::fill;
   return fill(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 } // end fill()
@@ -64,7 +65,7 @@ template <typename DerivedPolicy, typename OutputIterator, typename Size, typena
 _CCCL_HOST_DEVICE OutputIterator
 fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::fill_n");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::fill_n");
   using thrust::system::detail::generic::fill_n;
   return fill_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, value);
 } // end fill_n()
@@ -72,10 +73,9 @@ fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputI
 template <typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T& value)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::fill");
-  using thrust::system::detail::generic::select_system;
-
   using System = typename thrust::iterator_system<ForwardIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::fill");
+  using thrust::system::detail::generic::select_system;
 
   System system;
 
@@ -85,10 +85,9 @@ _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T
 template <typename OutputIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::fill_n");
-  using thrust::system::detail::generic::select_system;
-
   using System = typename thrust::iterator_system<OutputIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<System>(), "thrust::fill_n");
+  using thrust::system::detail::generic::select_system;
 
   System system;
 
