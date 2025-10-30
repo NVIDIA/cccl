@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
-#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
+#ifndef _CUDA_STD___FWD_VARIANT_H
+#define _CUDA_STD___FWD_VARIANT_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,31 +20,32 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/reference_wrapper.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-inline constexpr bool __cccl_is_reference_wrapper_v = false;
+template <class... _Types>
+class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
 
 template <class _Tp>
-inline constexpr bool __cccl_is_reference_wrapper_v<reference_wrapper<_Tp>> = true;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size;
 
 template <class _Tp>
-inline constexpr bool __cccl_is_reference_wrapper_v<const reference_wrapper<_Tp>> = true;
+inline constexpr size_t variant_size_v = variant_size<_Tp>::value;
 
-template <class _Tp>
-inline constexpr bool __cccl_is_reference_wrapper_v<volatile reference_wrapper<_Tp>> = true;
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative;
 
-template <class _Tp>
-inline constexpr bool __cccl_is_reference_wrapper_v<const volatile reference_wrapper<_Tp>> = true;
+template <size_t _Ip, class _Tp>
+using variant_alternative_t = typename variant_alternative<_Ip, _Tp>::type;
+
+inline constexpr size_t variant_npos = static_cast<size_t>(-1);
+
+template <class _IndexType>
+inline constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___TYPE_TRAITS_ENABLE_IF_H
+#endif // _CUDA_STD___FWD_VARIANT_H

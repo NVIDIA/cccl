@@ -600,32 +600,18 @@ namespace detail
     ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
       static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
 
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
-    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
-
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
-
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                                  \
-    struct Runtime##concept_name                                                                                     \
-    {                                                                                                                \
-      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                                \
-      static std::pair<Runtime##concept_name, std::string>                                                           \
-      from_json(const nlohmann::json& json,                                                                          \
-                std::string_view subpolicy_name,                                                                     \
-                std::optional<std::string_view> delay_cons_type = std::nullopt)                                      \
-      {                                                                                                              \
-        auto subpolicy = json[subpolicy_name];                                                                       \
-        assert(!subpolicy.is_null());                                                                                \
-        Runtime##concept_name ap;                                                                                    \
-        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                          \
-        return std::make_pair(                                                                                       \
-          ap,                                                                                                        \
-          std::format(                                                                                               \
-            "struct {} {{\n" _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING, __VA_ARGS__) "{} }};\n",      \
-            subpolicy_name _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE, __VA_ARGS__),                    \
-            delay_cons_type ? std::format("struct detail {{ using delay_constructor_t = {}; }}; ", *delay_cons_type) \
-                            : ""));                                                                                  \
-      }                                                                                                              \
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                       \
+    struct Runtime##concept_name                                                                          \
+    {                                                                                                     \
+      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                     \
+      static Runtime##concept_name from_json(const nlohmann::json& json, std::string_view subpolicy_name) \
+      {                                                                                                   \
+        auto subpolicy = json[subpolicy_name];                                                            \
+        assert(!subpolicy.is_null());                                                                     \
+        Runtime##concept_name ap;                                                                         \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                               \
+        return ap;                                                                                        \
+      }                                                                                                   \
     };
 #else
 #  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)

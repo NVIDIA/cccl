@@ -373,7 +373,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
   out_offsets.front() = magic_number;
   out_lengths.front() = magic_number;
 
-  if (type::value)
+  if constexpr (type::value)
   {
     run_length_encode_293_true(
       in.begin(), out_offsets.begin() + 1, out_lengths.begin() + 1, out_num_runs.begin(), num_items);

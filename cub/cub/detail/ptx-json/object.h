@@ -37,11 +37,9 @@ namespace ptx_json
 template <auto K, typename V>
 struct keyed_value
 {
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    value<K>::emit();
-    asm volatile(":" ::: "memory");
-    V::emit();
+    return string(value<K>::emit(), ":", V::emit());
   }
 };
 
@@ -62,21 +60,18 @@ struct object;
 template <>
 struct object<>
 {
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    asm volatile("{}" ::: "memory");
+    return string("{}");
   }
 };
 
 template <a_keyed_value auto First, a_keyed_value auto... KVs>
 struct object<First, KVs...>
 {
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    asm volatile("{" ::: "memory");
-    First.emit();
-    ((comma(), KVs.emit()), ...);
-    asm volatile("}" ::: "memory");
+    return string("{", First.emit(), string(comma(), KVs.emit())..., "}");
   }
 };
 
@@ -92,7 +87,7 @@ template <string V>
 struct key
 {
   template <typename U>
-  __forceinline__ __device__ constexpr keyed_value<V, U> operator=(U)
+  __device__ consteval keyed_value<V, U> operator=(U u)
   {
     return {};
   }

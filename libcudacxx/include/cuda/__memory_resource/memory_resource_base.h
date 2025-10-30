@@ -30,11 +30,11 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/internal_streams.h>
 #include <cuda/__stream/stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>

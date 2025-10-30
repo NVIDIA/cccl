@@ -406,8 +406,8 @@ public:
     if (__function::__not_null(__f))
     {
       _FunAlloc __af(__a);
-      if (sizeof(_Fun) <= sizeof(__buf_)
-          && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
+      if constexpr (sizeof(_Fun) <= sizeof(__buf_)
+                    && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
       {
         __f_ = ::new ((void*) &__buf_) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }

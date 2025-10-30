@@ -50,7 +50,7 @@ namespace reduce
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE ReducePolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -61,7 +61,7 @@ struct ReducePolicyWrapper<StaticPolicyT,
                                                typename StaticPolicyT::SingleTilePolicy,
                                                typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
@@ -83,10 +83,11 @@ struct ReducePolicyWrapper<StaticPolicyT,
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
 {
   return ReducePolicyWrapper<PolicyT>{policy};
 }
+
 enum class offset_size
 {
   _4,
@@ -109,7 +110,7 @@ enum class accum_size
   unknown
 };
 template <class AccumT>
-constexpr accum_size classify_accum_size()
+_CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -120,7 +121,7 @@ constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 template <class OffsetT>
-constexpr offset_size classify_offset_size()
+_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -153,7 +154,7 @@ struct is_min_or_max<::cuda::maximum<T>>
 };
 
 template <class ScanOpT>
-constexpr op_type classify_op()
+_CCCL_HOST_DEVICE constexpr op_type classify_op()
 {
   return is_plus<ScanOpT>::value
          ? op_type::plus
@@ -270,7 +271,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy600
     template <typename Tuning>
-    static auto select_agent_policy(int)
+    static _CCCL_HOST_DEVICE auto select_agent_policy(int)
       -> AgentReducePolicy<Tuning::threads,
                            Tuning::items,
                            AccumT,
@@ -279,7 +280,7 @@ struct policy_hub
                            LOAD_LDG>;
     // use Policy600 as DefaultPolicy
     template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+    static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
 
     using ReducePolicy =
       decltype(select_agent_policy<sm100_tuning<AccumT,
@@ -404,12 +405,12 @@ struct policy_hub
 
     // Use values from tuning if a specialization exists, otherwise pick Policy600
     template <typename Tuning>
-    static auto select_agent_policy(int)
+    static _CCCL_HOST_DEVICE auto select_agent_policy(int)
       -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
 
     // use Policy600 as DefaultPolicy
     template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
+    static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
 
     using ReducePolicy = decltype(select_agent_policy<sm86_tuning<AccumT>>(0));
 
@@ -423,12 +424,12 @@ struct policy_hub
 
     // Use values from tuning if a specialization exists, otherwise pick Policy860
     template <typename Tuning>
-    static auto select_agent_policy(int)
+    static _CCCL_HOST_DEVICE auto select_agent_policy(int)
       -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
 
     // use Policy860 as DefaultPolicy
     template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
+    static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
 
     using ReducePolicy = decltype(select_agent_policy<sm90_tuning<AccumT>>(0));
 

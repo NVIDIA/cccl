@@ -29,9 +29,9 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/internal_streams.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -1,14 +1,14 @@
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_IOSFWD
-#define _LIBCUDACXX_IOSFWD
+#ifndef _CUDA_STD___FWD_IOS_H
+#define _CUDA_STD___FWD_IOS_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,6 @@
 
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__fwd/char_traits.h>
-#include <cuda/std/version>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -117,12 +116,8 @@ using streamoff = long int; // for char_traits in <string>
 using streamoff = long long; // for char_traits in <string>
 #endif
 
-// Include other forward declarations here
-template <class _Tp, class _Alloc = allocator<_Tp>>
-class _CCCL_TYPE_VISIBILITY_DEFAULT vector;
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX_IOSFWD
+#endif // _CUDA_STD___FWD_IOS_H
