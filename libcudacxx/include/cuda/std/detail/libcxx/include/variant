@@ -259,6 +259,7 @@ C++20
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/get.h>
+#include <cuda/std/__variant/hash.h>
 #include <cuda/std/__variant/sfinae_helpers.h>
 #include <cuda/std/__variant/variant.h>
 #include <cuda/std/__variant/variant_access.h>
@@ -276,46 +277,6 @@ C++20
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-#ifndef __cuda_std__
-template <class... _Types>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...>, remove_const_t<_Types>...>>
-{
-  using argument_type = variant<_Types...>;
-  using result_type   = size_t;
-
-  template <size_t _CurrentIndex>
-  _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static size_t
-  __hash(integral_constant<size_t, _CurrentIndex>, const size_t __index_, const argument_type& __v) noexcept
-  {
-    if (__index_ == _CurrentIndex)
-    {
-      using __value_type = remove_const_t<__type_index_c<_CurrentIndex, _Types...>>;
-      return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
-    }
-    __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index_, __v);
-  }
-  _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static size_t
-  __hash(integral_constant<size_t, 0>, const size_t __index_, const argument_type& __v) noexcept
-  {
-    if (__index_ == 0)
-    {
-      using __value_type = remove_const_t<__type_index_c<0, _Types...>>;
-      return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
-    }
-    // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
-  }
-
-  _CCCL_API inline _CCCL_VISIBILITY_HIDDEN result_type operator()(const argument_type& __v) const
-  {
-    size_t __res = __v.valueless_by_exception()
-                   ? 299792458 // Random value chosen by the universe upon creation
-                   : __hash(integral_constant<size_t, sizeof...(_Types) - 1>{}, __v.index(), __v);
-    return ::cuda::std::__hash_combine(__res, hash<size_t>{}(__v.index()));
-  }
-};
-#endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
