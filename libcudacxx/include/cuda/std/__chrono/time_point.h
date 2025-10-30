@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD___CHRONO_TIME_POINT_H
 #define _CUDA_STD___CHRONO_TIME_POINT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -165,8 +165,8 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _Duration2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
   {
     return __lhs.time_since_epoch() != __rhs.time_since_epoch();
   }
@@ -182,8 +182,8 @@ public:
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   template <class _Duration2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator<(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
   {
     return __lhs.time_since_epoch() < __rhs.time_since_epoch();
   }

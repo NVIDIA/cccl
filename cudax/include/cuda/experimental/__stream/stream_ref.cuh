@@ -11,7 +11,7 @@
 #ifndef _CUDAX__STREAM_STREAM_REF_CUH
 #define _CUDAX__STREAM_STREAM_REF_CUH
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)

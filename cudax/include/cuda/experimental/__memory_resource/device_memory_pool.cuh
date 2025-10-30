@@ -11,7 +11,7 @@
 #ifndef _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
 #define _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_POOL_CUH
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

@@ -11,7 +11,7 @@
 #ifndef _CUDAX__GRAPH_PATH_BUILDER_CUH
 #define _CUDAX__GRAPH_PATH_BUILDER_CUH
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>

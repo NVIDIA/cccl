@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___CONCEPTS_CONVERTIBLE_TO_H
 #define _CUDA_STD___CONCEPTS_CONVERTIBLE_TO_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

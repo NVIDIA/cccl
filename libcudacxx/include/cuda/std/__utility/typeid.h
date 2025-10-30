@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___UTILITY_TYPEID_H
 #define _CUDA_STD___UTILITY_TYPEID_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -377,8 +377,8 @@ struct __type_info
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_HIDE_FROM_ABI friend constexpr bool operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

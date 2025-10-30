@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD__FORMAT_FORMAT_SPEC_PARSER_H
 #define _CUDA_STD__FORMAT_FORMAT_SPEC_PARSER_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

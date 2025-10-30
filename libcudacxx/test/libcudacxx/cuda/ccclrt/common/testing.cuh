@@ -11,7 +11,7 @@
 #ifndef __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 #define __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #include <cuda/__driver/driver_api.h>
 

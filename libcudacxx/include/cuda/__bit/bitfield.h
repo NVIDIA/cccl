@@ -11,7 +11,7 @@
 #ifndef _CUDA___BIT_BITFILED_INSERT_EXTRACT_H
 #define _CUDA___BIT_BITFILED_INSERT_EXTRACT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,8 +66,8 @@ __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 #endif // __cccl_ptx_isa >= 200
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp
-bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
+[[nodiscard]]
+_CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
   [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;

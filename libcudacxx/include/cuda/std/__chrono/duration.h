@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD___CHRONO_DURATION_H
 #define _CUDA_STD___CHRONO_DURATION_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -342,7 +342,8 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _Rep2, class _Period2>
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const duration& __lhs, const duration<_Rep2, _Period2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const duration& __lhs, const duration<_Rep2, _Period2>& __rhs)
   {
     if constexpr (is_same_v<duration, duration<_Rep2, _Period2>>)
     {

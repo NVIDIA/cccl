@@ -74,7 +74,7 @@ def add_src(ptx_instr):
 #ifndef _CUDA_PTX_{cpp_instr.upper()}_H_
 #define _CUDA_PTX_{cpp_instr.upper()}_H_
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
