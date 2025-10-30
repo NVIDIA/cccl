@@ -113,7 +113,7 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
     cub::DeviceFind::FindIf(
       d_temp_storage, temp_storage_bytes, unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{val_to_find}, num_items);
 
-    thrust::device_vector<output_t> temp_storage(temp_storage_bytes);
+    thrust::device_vector<char> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceFind::FindIf(
@@ -139,7 +139,7 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
     cub::DeviceFind::FindIf(
       d_temp_storage, temp_storage_bytes, in_items.begin(), out_result.begin(), op_t{val_to_find}, num_items);
 
-    thrust::device_vector<output_t> temp_storage(temp_storage_bytes);
+    thrust::device_vector<char> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceFind::FindIf(
@@ -175,7 +175,7 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
           op_t{val_to_find},
           num_items - offset);
 
-        thrust::device_vector<output_t> temp_storage(temp_storage_bytes);
+        thrust::device_vector<char> temp_storage(temp_storage_bytes);
         d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
         cub::DeviceFind::FindIf(
@@ -208,7 +208,7 @@ C2H_TEST("Device find_if works", "[device]", full_type_list)
 
     cub::DeviceFind::FindIf(d_temp_storage, temp_storage_bytes, it, unwrap_it(d_out_it), op_t{val_to_find}, num_items);
 
-    thrust::device_vector<output_t> temp_storage(temp_storage_bytes);
+    thrust::device_vector<char> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceFind::FindIf(d_temp_storage, temp_storage_bytes, it, unwrap_it(d_out_it), op_t{val_to_find}, num_items);
