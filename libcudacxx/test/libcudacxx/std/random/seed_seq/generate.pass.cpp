@@ -30,12 +30,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 #if !_CCCL_COMPILER(NVRTC)
 void test_against_std()
 {
-  ::std::size_t n                                     = 100;
-  std::vector<std::vector<::std::uint32_t>> sequences = {
+  cuda::std::size_t n                                     = 100;
+  std::vector<std::vector<cuda::std::uint32_t>> sequences = {
     {1, 2, 3, 4, 5},
     {42, 43, 44, 45, 46, 47, 48, 49, 50},
     {123456789, 987654321, 555555555, 333333333, 111111111},
-    {::std::numeric_limits<::std::uint32_t>::max()},
+    {cuda::std::numeric_limits<cuda::std::uint32_t>::max()},
     {0}};
   for (const auto& seq_values : sequences)
   {
