@@ -12,13 +12,15 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
+namespace detail::find
+{
 template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
           CacheLoadModifier _LOAD_MODIFIER,
           typename ScalingType = cub::detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentFindPolicy : ScalingType
+struct agent_find_policy : ScalingType
 {
   // Number of items per vectorized load
   static constexpr int vector_load_length = VectorLoadLength;
@@ -27,27 +29,27 @@ struct AgentFindPolicy : ScalingType
   static constexpr CacheLoadModifier load_modifier = _LOAD_MODIFIER;
 };
 
-template <typename AgentFindPolicy, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
-struct AgentFind
+template <typename agent_find_policy_t, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
+struct agent_t
 {
   // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
   // Vector type of InputT for data movement
-  using VectorT = typename CubVector<InputT, AgentFindPolicy::vector_load_length>::Type;
+  using VectorT = typename CubVector<InputT, agent_find_policy_t::vector_load_length>::Type;
 
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
     ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
-                     CacheModifiedInputIterator<AgentFindPolicy::load_modifier, InputT, OffsetT>,
+                     CacheModifiedInputIterator<agent_find_policy_t::load_modifier, InputT, OffsetT>,
                      InputIteratorT>;
 
-  static constexpr int BLOCK_THREADS      = AgentFindPolicy::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD   = AgentFindPolicy::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS      = agent_find_policy_t::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD   = agent_find_policy_t::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int vector_load_length = ::cuda::std::min(ITEMS_PER_THREAD, AgentFindPolicy::vector_load_length);
+  static constexpr int vector_load_length = ::cuda::std::min(ITEMS_PER_THREAD, agent_find_policy_t::vector_load_length);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
@@ -55,7 +57,7 @@ struct AgentFind
     (vector_load_length > 1) && (ITEMS_PER_THREAD % vector_load_length == 0)
     && (::cuda::std::is_pointer<InputIteratorT>::value) && detail::is_primitive<InputT>::value;
 
-  static constexpr CacheLoadModifier load_modifier = AgentFindPolicy::load_modifier;
+  static constexpr CacheLoadModifier load_modifier = agent_find_policy_t::load_modifier;
 
   // Shared memory type required by this thread block
   using _TempStorage = OffsetT;
@@ -75,7 +77,7 @@ struct AgentFind
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
-    // Create an AgentFindIf and extract these two as type member in the encapsulating struct
+    // Create an agent_t and extract these two as type member in the encapsulating struct
     using InputT  = T;
     using VectorT = typename CubVector<InputT, vector_load_length>::Type;
     //
@@ -95,7 +97,7 @@ struct AgentFind
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentFind(TempStorage& sresult, InputIteratorT d_in, ScanOpT scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE agent_t(TempStorage& sresult, InputIteratorT d_in, ScanOpT scan_op)
       : sresult(sresult.Alias())
       , d_in(d_in)
       , scan_op(scan_op)
@@ -125,7 +127,7 @@ struct AgentFind
     // vectorized loads begin
     InputT* d_in_unqualified = const_cast<InputT*>(d_in) + tile_offset + (threadIdx.x * vector_load_length);
 
-    cub::CacheModifiedInputIterator<AgentFindPolicy::load_modifier, VectorT> d_vec_in(
+    cub::CacheModifiedInputIterator<agent_find_policy_t::load_modifier, VectorT> d_vec_in(
       reinterpret_cast<VectorT*>(d_in_unqualified));
 
     InputT input_items[ITEMS_PER_THREAD];
@@ -246,5 +248,6 @@ struct AgentFind
     }
   }
 };
+} // namespace detail::find
 
 CUB_NAMESPACE_END
