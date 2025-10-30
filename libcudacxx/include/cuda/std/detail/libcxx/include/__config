@@ -36,14 +36,6 @@ extern "C++" {
 
 #  define _LIBCUDACXX_VERSION 10000
 
-#  if !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
-#    define _LIBCUDACXX_DIAGNOSE_WARNING(_COND, _MSG) _CCCL_DIAGNOSE_IF(_COND, _MSG, "warning")
-#    define _LIBCUDACXX_DIAGNOSE_ERROR(_COND, _MSG)   _CCCL_DIAGNOSE_IF(_COND, _MSG, "error")
-#  else
-#    define _LIBCUDACXX_DIAGNOSE_WARNING(_COND, _MSG)
-#    define _LIBCUDACXX_DIAGNOSE_ERROR(_COND, _MSG)
-#  endif
-
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if _CCCL_COMPILER(NVRTC, <, 12, 6)
