@@ -83,4 +83,15 @@
 #  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
 #endif
 
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      __declspec(align(x))
+#elif _CCCL_HAS_FEATURE(cxx_alignas)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      alignas(x)
+#else
+#  define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(alignof(x))))
+#  define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
+#endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
+
 #endif // _CUDA_STD___INTERNAL_FEATURES_H
