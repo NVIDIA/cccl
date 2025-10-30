@@ -35,11 +35,7 @@
 #include <tbb/parallel_reduce.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace reduce_detail
 {
@@ -131,7 +127,5 @@ OutputType reduce(
   }
 }
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

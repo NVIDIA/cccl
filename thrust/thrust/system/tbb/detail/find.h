@@ -29,11 +29,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
@@ -43,7 +39,5 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first
   return thrust::system::detail::generic::find_if(exec, first, last, pred);
 }
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

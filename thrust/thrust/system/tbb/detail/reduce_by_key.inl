@@ -45,11 +45,7 @@
 #include <tbb/parallel_for.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace reduce_by_key_detail
 {
@@ -394,7 +390,5 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   return thrust::make_pair(keys_result + size_of_result, values_result + size_of_result);
 }
 
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END

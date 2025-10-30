@@ -28,20 +28,14 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator
 copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred);
 
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/copy_if.inl>

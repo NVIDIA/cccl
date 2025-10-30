@@ -29,11 +29,7 @@
 #include <thrust/system/tbb/detail/remove.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
@@ -81,7 +77,5 @@ OutputIterator remove_copy_if(
   return thrust::system::detail::generic::remove_copy_if(exec, first, last, stencil, result, pred);
 }
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

@@ -30,11 +30,7 @@
 #include <thrust/system/tbb/detail/unique.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -65,7 +61,5 @@ thrust::detail::it_difference_t<ForwardIterator> unique_count(
   return thrust::system::detail::generic::unique_count(exec, first, last, binary_pred);
 } // end unique_count()
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

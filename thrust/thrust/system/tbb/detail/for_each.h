@@ -28,11 +28,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename UnaryFunction>
@@ -43,9 +39,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator, typename Size, 
 RandomAccessIterator
 for_each_n(execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, Size n, UnaryFunction f);
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/for_each.inl>

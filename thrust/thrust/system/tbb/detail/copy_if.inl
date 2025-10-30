@@ -34,11 +34,7 @@
 #include <tbb/parallel_scan.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace copy_if_detail
 {
@@ -130,7 +126,5 @@ copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, 
   return result;
 } // end copy_if()
 
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END

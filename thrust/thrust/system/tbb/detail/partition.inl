@@ -29,11 +29,7 @@
 #include <thrust/system/tbb/detail/partition.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
@@ -92,7 +88,5 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   return thrust::system::detail::generic::stable_partition_copy(exec, first, last, stencil, out_true, out_false, pred);
 } // end stable_partition_copy()
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

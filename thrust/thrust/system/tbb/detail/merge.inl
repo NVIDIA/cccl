@@ -36,11 +36,7 @@
 #include <tbb/parallel_for.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace merge_detail
 {
@@ -321,7 +317,5 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   return thrust::make_pair(keys_result, values_result);
 }
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

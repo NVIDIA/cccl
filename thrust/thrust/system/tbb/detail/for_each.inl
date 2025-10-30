@@ -34,11 +34,7 @@
 #include <tbb/parallel_for.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace for_each_detail
 {
@@ -85,7 +81,5 @@ for_each(execution_policy<DerivedPolicy>& s, RandomAccessIterator first, RandomA
   return tbb::detail::for_each_n(s, first, ::cuda::std::distance(first, last), f);
 } // end for_each()
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

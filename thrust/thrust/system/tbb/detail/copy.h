@@ -28,11 +28,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
@@ -42,9 +38,7 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/copy.inl>

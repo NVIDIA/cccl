@@ -37,9 +37,7 @@
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
+namespace system::tbb
 {
 
 /*! Allocates an area of memory available to Thrust's <tt>tbb</tt> system.
@@ -91,8 +89,7 @@ using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::
 template <typename T>
 using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::tbb::universal_host_pinned_memory_resource>;
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb
 
 /*! \namespace thrust::tbb
  *  \brief \p thrust::tbb is a top-level alias for thrust::system::tbb.

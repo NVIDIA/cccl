@@ -38,11 +38,7 @@
 #include <tbb/parallel_scan.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace scan_detail
 {
@@ -306,7 +302,5 @@ OutputIterator exclusive_scan(
   return result;
 }
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

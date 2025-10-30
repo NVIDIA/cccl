@@ -30,11 +30,7 @@
 #include <thrust/system/tbb/detail/unique_by_key.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
@@ -69,7 +65,5 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
 } // end unique_by_key_copy()
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

@@ -38,11 +38,7 @@
 #include <tbb/parallel_for.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace reduce_intervals_detail
 {
@@ -134,7 +130,5 @@ void reduce_intervals(
     exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
 
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END
