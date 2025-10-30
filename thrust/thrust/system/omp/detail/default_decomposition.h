@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file default_decomposition.h
  *  \brief Return a decomposition that is appropriate for the OpenMP backend.

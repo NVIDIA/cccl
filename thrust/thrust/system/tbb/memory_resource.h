@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2018-2020, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file tbb/memory_resource.h
  *  \brief Memory resources for the TBB system.

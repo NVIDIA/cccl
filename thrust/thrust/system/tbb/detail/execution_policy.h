@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include <thrust/detail/config.h>

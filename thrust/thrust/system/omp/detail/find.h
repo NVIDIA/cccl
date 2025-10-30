@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file find.h
  *  \brief OpenMP implementation of find_if.

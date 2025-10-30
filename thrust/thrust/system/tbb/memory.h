@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/tbb/memory.h
  *  \brief Managing memory associated with Thrust's TBB system.
