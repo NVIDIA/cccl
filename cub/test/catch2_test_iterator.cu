@@ -9,9 +9,8 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/transform_iterator.h>
-
 #include <cuda/__cccl_config>
+#include <cuda/iterator>
 #include <cuda/std/__cccl/dialect.h>
 
 #include <cstdint>
@@ -163,7 +162,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  thrust::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }
