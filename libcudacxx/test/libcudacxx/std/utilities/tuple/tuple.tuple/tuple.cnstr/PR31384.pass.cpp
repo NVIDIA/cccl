@@ -82,7 +82,7 @@ int main(int, char**)
   count = 0;
   {
     // FIXME: Libc++ incorrectly rejects this code.
-#ifndef _LIBCUDACXX_VERSION
+#ifndef _CUDA_STD_VERSION
     cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42};
     static_assert(cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
                   "correct STLs accept this");

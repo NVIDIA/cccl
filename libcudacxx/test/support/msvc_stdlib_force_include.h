@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <vcruntime.h>
 
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
 #  error This header may not be used when targeting libc++
 #endif
 

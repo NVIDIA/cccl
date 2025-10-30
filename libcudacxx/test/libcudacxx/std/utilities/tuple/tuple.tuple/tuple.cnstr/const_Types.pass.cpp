@@ -152,7 +152,7 @@ int main(int, char**)
   // extensions
   // cuda::std::string not supported
   /*
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   {
       cuda::std::tuple<int, char*, cuda::std::string> t(2);
       assert(cuda::std::get<0>(t) == 2);
