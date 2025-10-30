@@ -39,7 +39,7 @@
 // standard-mandated includes
 
 // [bitset.syn]
-#include <cuda/std/detail/libcxx/include/iosfwd>
+#include <cuda/std/__fwd/ios.h>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING

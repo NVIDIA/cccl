@@ -293,7 +293,6 @@ def test_segmented_reduce_well_known_plus():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
 def test_segmented_reduce_well_known_maximum():
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)

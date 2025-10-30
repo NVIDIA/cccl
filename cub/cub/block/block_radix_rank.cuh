@@ -973,7 +973,7 @@ struct BlockRadixRankMatchEarlyCounts
           warp_histograms[bin][part] = 0;
         }
       }
-      if (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
+      if constexpr (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
       {
         int* match_masks = &s.match_masks[warp][0];
 
@@ -996,7 +996,7 @@ struct BlockRadixRankMatchEarlyCounts
 
       // sum different parts;
       // no extra work is necessary if NUM_PARTS == 1
-      if (NUM_PARTS > 1)
+      if constexpr (NUM_PARTS > 1)
       {
         __syncwarp(WARP_MASK);
         // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in ctbbliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file thrust/system/tbb/memory.h
  *  \brief Managing memory associated with Thrust's TBB system.
@@ -37,9 +24,7 @@
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
+namespace system::tbb
 {
 
 /*! Allocates an area of memory available to Thrust's <tt>tbb</tt> system.
@@ -91,8 +76,7 @@ using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::
 template <typename T>
 using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::tbb::universal_host_pinned_memory_resource>;
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb
 
 /*! \namespace thrust::tbb
  *  \brief \p thrust::tbb is a top-level alias for thrust::system::tbb.

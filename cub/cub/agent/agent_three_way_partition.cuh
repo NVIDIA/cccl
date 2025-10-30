@@ -417,7 +417,7 @@ struct AgentThreeWayPartition
     AccumPackT items_selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockLoadT(temp_storage.load_items)
         .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);

@@ -22,11 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/char_traits.h>
+#include <cuda/std/__fwd/ios.h>
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/iosfwd>
 
 #include <cuda/std/__cccl/prologue.h>
 

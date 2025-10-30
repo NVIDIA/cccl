@@ -344,7 +344,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -359,7 +359,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -396,14 +396,14 @@ struct AgentUniqueByKey
     if (threadIdx.x == 0)
     {
       // Update tile status if this is not the last tile
-      if (!IS_LAST_TILE)
+      if constexpr (!IS_LAST_TILE)
       {
         tile_state.SetInclusive(0, num_tile_selections);
       }
     }
 
     // Do not count any out-of-bounds selections
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
@@ -462,7 +462,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -477,7 +477,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -518,7 +518,7 @@ struct AgentUniqueByKey
     num_tile_selections   = prefix_cb.GetBlockAggregate();
     num_selections_prefix = prefix_cb.GetExclusivePrefix();
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;

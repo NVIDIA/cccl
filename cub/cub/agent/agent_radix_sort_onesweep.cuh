@@ -589,7 +589,7 @@ struct AgentRadixSortOnesweep
     // write block data to global memory
     if (full_block)
     {
-      if (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
+      if constexpr (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
       {
         ScatterKeysGlobalAligned();
       }
