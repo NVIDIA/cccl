@@ -344,7 +344,11 @@ template <
   class CompareOp,
   ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
-  execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+  execution_policy<Policy>& policy,
+  KeysIt keys_first,
+  KeysIt keys_last,
+  [[maybe_unused]] ItemsIt items_first,
+  CompareOp compare_op)
 {
   // ensure sequences have trivial iterators
   thrust::detail::trivial_sequence<KeysIt, Policy> keys(policy, keys_first, keys_last);
