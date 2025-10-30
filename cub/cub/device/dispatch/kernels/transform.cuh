@@ -757,7 +757,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   if (inner_blocks)
   {
     // use one thread to setup the entire bulk copy
-    if (cuda::device::__elect_one())
+    if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
       // an update to the CUDA memory model blesses skipping the following fence
@@ -811,7 +811,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
   else
   {
-    const bool elected = cuda::device::__elect_one();
+    const bool elected = cuda::device::__block_elect_one();
     if (elected)
     {
       ptx::mbarrier_init(&bar, 1);
