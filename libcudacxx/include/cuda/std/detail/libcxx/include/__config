@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/atomic.h>
 #include <cuda/std/__internal/cpp_dialect.h>
 #include <cuda/std/__internal/features.h>
 #include <cuda/std/__internal/namespaces.h>
@@ -34,53 +35,6 @@ extern "C++" {
 }
 
 #  define _LIBCUDACXX_VERSION 10000
-
-#  ifndef __has_extension
-#    define __has_extension(__x) 0
-#  endif
-
-#  if _CCCL_HAS_CUDA_COMPILER()
-#    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
-#  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
-#    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
-#  endif // _CCCL_CUDA_COMPILER
-
-// TODO: Support C11 Atomics?
-// #if _CCCL_HAS_FEATURE(cxx_atomic) || __has_extension(c_atomic) || _CCCL_HAS_KEYWORD(_Atomic)
-// #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
-#  if _CCCL_COMPILER(CLANG)
-#    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif _CCCL_COMPILER(GCC)
-#    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif _CCCL_COMPILER(NVHPC)
-#    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif _CCCL_COMPILER(MSVC)
-#    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
-#  endif
-
-// Enable bypassing automatic storage checks in atomics when using CTK 12.2 and below and if NDEBUG is defined.
-// A compiler bug prevents the safe use of `__is_local` and PTX spacep until after 13.0.
-#  if _CCCL_CUDACC_BELOW(13, 1) && !defined(NDEBUG)
-#    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
-#  endif // _CCCL_CUDACC_BELOW(13, 1)
-
-// CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
-#    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
-#  endif // _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
-
-#  if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && !defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP) \
-       && !_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP())
-#    define _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
-#  else
-#    ifdef __cuda_std__
-#      undef _LIBCUDACXX_ATOMIC_FLAG_TYPE
-#      define _LIBCUDACXX_ATOMIC_FLAG_TYPE int
-#    endif
-#    ifndef _LIBCUDACXX_ATOMIC_FLAG_TYPE
-#      define _LIBCUDACXX_ATOMIC_FLAG_TYPE bool
-#    endif
-#  endif
 
 #  if !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
 #    define _LIBCUDACXX_DIAGNOSE_WARNING(_COND, _MSG) _CCCL_DIAGNOSE_IF(_COND, _MSG, "warning")
