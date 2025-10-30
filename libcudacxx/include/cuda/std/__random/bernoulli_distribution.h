@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-//===----------------------------------------------------------------------===////===----------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA_STD___BERNOULLI_DISTRIBUTION_H
 #define _CUDA_STD___BERNOULLI_DISTRIBUTION_H
@@ -34,16 +34,16 @@ class bernoulli_distribution
 {
 public:
   // types
-  typedef bool result_type;
+  using result_type = bool;
 
   class param_type
   {
     double __p_;
 
   public:
-    typedef bernoulli_distribution distribution_type;
+    using distribution_type = bernoulli_distribution;
 
-    constexpr _CCCL_API explicit param_type(double __p = 0.5)
+    _CCCL_API constexpr explicit param_type(double __p = 0.5) noexcept
         : __p_(__p)
     {}
 
@@ -52,44 +52,45 @@ public:
       return __p_;
     }
 
-    friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__p_ == __y.__p_;
     }
-    friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+#if _CCCL_STD_VER <= 2017
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
+#endif // _CCCL_STD_VER <= 2017
   };
 
 private:
-  param_type __p_;
+  param_type __p_{};
 
 public:
   // constructors and reset functions
-  constexpr _CCCL_API bernoulli_distribution()
+  _CCCL_API constexpr bernoulli_distribution() noexcept
       : bernoulli_distribution(0.5)
   {}
-  constexpr _CCCL_API explicit bernoulli_distribution(double __p)
+  _CCCL_API constexpr explicit bernoulli_distribution(double __p) noexcept
       : __p_(param_type(__p))
   {}
-  constexpr _CCCL_API explicit bernoulli_distribution(const param_type& __p)
+  _CCCL_API constexpr explicit bernoulli_distribution(const param_type& __p) noexcept
       : __p_(__p)
   {}
-  constexpr _CCCL_API void reset() noexcept {}
+  _CCCL_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URNG>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g)
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
   template <class _URNG>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g, const param_type& __p) noexcept
   {
-    static_assert(__cccl_random_is_valid_urng<_URNG>, "");
-    uniform_real_distribution<double> __gen;
-    return __gen(__g) < __p.p();
+    static_assert(__cccl_random_is_valid_urng<_URNG>);
+    return ::cuda::std::generate_canonical<double, numeric_limits<double>::digits>(__g) < __p.p();
   }
 
   // property functions
@@ -115,14 +116,18 @@ public:
     return true;
   }
 
-  friend _CCCL_API bool operator==(const bernoulli_distribution& __x, const bernoulli_distribution& __y)
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const bernoulli_distribution& __x, const bernoulli_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
-  friend _CCCL_API bool operator!=(const bernoulli_distribution& __x, const bernoulli_distribution& __y)
+#if _CCCL_STD_VER <= 2017
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(const bernoulli_distribution& __x, const bernoulli_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
+#endif // _CCCL_STD_VER <= 2017
 #if !_CCCL_COMPILER(NVRTC)
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
@@ -145,8 +150,8 @@ public:
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;
     using ios_base                            = typename istream_type::ios_base;
     const typename ios_base::fmtflags __flags = __is.flags();
-    typedef bernoulli_distribution _Eng;
-    typedef typename _Eng::param_type param_type;
+    using _Eng                                = bernoulli_distribution;
+    using param_type                          = typename _Eng::param_type;
     __is.flags(ios_base::dec | ios_base::skipws);
     double __p;
     __is >> __p;

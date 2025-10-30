@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,27 +24,23 @@
 #include "../test_discrete_distribution.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+__host__ __device__ void test()
 {
-  typedef cuda::std::bernoulli_distribution D;
-  typedef cuda::std::philox4x64 G;
+  using D     = cuda::std::bernoulli_distribution;
+  using G     = cuda::std::philox4x64;
   const int n = 1000;
-  G g;
-  D d;
-  auto result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.5}, {0.5, 0.5}, n);
+  auto result = test_discrete_distribution<D, G, 2>(D::param_type{0.5}, {0.5, 0.5}, n);
   assert(result);
-  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.2}, {0.8, 0.2}, n);
+  result = test_discrete_distribution<D, G, 2>(D::param_type{0.2}, {0.8, 0.2}, n);
   assert(result);
-  result = test_discrete_distribution<D, G, 2>(g, d, D::param_type{0.99}, {0.01, 0.99}, n);
+  result = test_discrete_distribution<D, G, 2>(D::param_type{0.99}, {0.01, 0.99}, n);
   assert(result);
-  return true;
+  result = test_discrete_distribution<D, G, 2>(D::param_type{0.0}, {1.0, 0.0}, n);
+  assert(result);
 }
 
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2020
-  static_assert(test());
-#endif
   return 0;
 }

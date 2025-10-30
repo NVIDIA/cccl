@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,15 +15,13 @@
 
 #include <cuda/std/__random_>
 
-#include <cassert>
-
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
-    typedef cuda::std::bernoulli_distribution D;
-    typedef D::param_type P;
+    using D = cuda::std::bernoulli_distribution;
+    using P = D::param_type;
     P p(0.25);
     D d(p);
     assert(d.p() == 0.25);
@@ -34,9 +33,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2020
   static_assert(test());
-#endif
-
   return 0;
 }
