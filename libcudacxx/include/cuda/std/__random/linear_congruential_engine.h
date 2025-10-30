@@ -288,6 +288,34 @@ public:
     return !(__x == __y);
   }
 
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine& __e)
+  {
+    using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
+    const typename _Ostream::fmtflags __flags = __os.flags();
+    __os.flags(_Ostream::dec | _Ostream::left);
+    __os.fill(__os.widen(' '));
+    __os.flags(__flags);
+    return __os << __e.__x_;
+  }
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine& __e)
+  {
+    using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
+    const typename _Istream::fmtflags __flags = __is.flags();
+    __is.flags(_Istream::dec | _Istream::skipws);
+    _UIntType __t;
+    __is >> __t;
+    if (!__is.fail())
+    {
+      __e.__x_ = __t;
+    }
+    __is.flags(__flags);
+    return __is;
+  }
+
 private:
   _CCCL_API constexpr void seed(true_type, true_type, result_type __s) noexcept
   {
@@ -310,31 +338,7 @@ private:
   _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
   template <class _Sseq>
   _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
-
-  template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-  friend ::std::basic_ostream<_CharT, _Traits>&
-  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_Up, _Ap, _Cp, _Np>&);
-
-  template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-  friend ::std::basic_istream<_CharT, _Traits>&
-  operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_Up, _Ap, _Cp, _Np>& __x);
 };
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::multiplier;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::increment;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::modulus;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::default_seed;
 
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 template <class _Sseq>
@@ -358,35 +362,6 @@ linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integra
   __q.generate(__ar, __ar + __k + 3);
   result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % __m);
   __x_            = __c == 0 && __s == 0 ? result_type(1) : __s;
-}
-
-template <class _CharT, class _Traits, class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-_CCCL_API ::std::basic_ostream<_CharT, _Traits>&
-operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_UIntType, __a, __c, __m>& __x)
-{
-  using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
-  const typename _Ostream::fmtflags __flags = __os.flags();
-  __os.flags(_Ostream::dec | _Ostream::left);
-  __os.fill(__os.widen(' '));
-  __os.flags(__flags);
-  return __os << __x.__x_;
-}
-
-template <class _CharT, class _Traits, class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-_CCCL_API ::std::basic_istream<_CharT, _Traits>&
-operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_UIntType, __a, __c, __m>& __x)
-{
-  using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
-  const typename _Istream::fmtflags __flags = __is.flags();
-  __is.flags(_Istream::dec | _Istream::skipws);
-  _UIntType __t;
-  __is >> __t;
-  if (!__is.fail())
-  {
-    __x.__x_ = __t;
-  }
-  __is.flags(__flags);
-  return __is;
 }
 
 using minstd_rand0 = linear_congruential_engine<uint_fast32_t, 16807, 0, 2147483647>;
