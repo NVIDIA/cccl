@@ -40,7 +40,7 @@ void test_against_std()
   for (const auto& seq_values : sequences)
   {
     cuda::std::seed_seq cuda_seq{seq_values.data(), seq_values.data() + seq_values.size()};
-    std::seed_seq std_seq{std::begin(seq_values), std::end(seq_values)};
+    std::seed_seq std_seq(seq_values.begin(), seq_values.end());
 
     std::vector<::std::uint32_t> cuda_output(n);
     std::vector<std::uint32_t> std_output(n);
