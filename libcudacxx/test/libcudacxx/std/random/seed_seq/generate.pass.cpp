@@ -42,8 +42,8 @@ void test_against_std()
     cuda::std::seed_seq cuda_seq{seq_values.data(), seq_values.data() + seq_values.size()};
     std::seed_seq std_seq(seq_values.begin(), seq_values.end());
 
-    std::vector<::std::uint32_t> cuda_output(n);
-    std::vector<std::uint32_t> std_output(n);
+    std::vector<cuda::std::uint32_t> cuda_output(n);
+    std::vector<cuda::std::uint32_t> std_output(n);
 
     cuda_seq.generate(cuda_output.data(), cuda_output.data() + n);
     std_seq.generate(std_output.data(), std_output.data() + n);
