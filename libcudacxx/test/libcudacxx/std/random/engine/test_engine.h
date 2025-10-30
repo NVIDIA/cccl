@@ -7,6 +7,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__random_>
 #if !_CCCL_COMPILER(NVRTC)

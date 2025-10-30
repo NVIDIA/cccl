@@ -150,6 +150,7 @@ PREDEFINED             = __device__= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \
+                        "_CCCL_CATCH_FALLTHROUGH=" \
                         _CCCL_PUBLIC_API=inline \
                         _CCCL_PUBLIC_DEVICE_API=inline \
                         _CCCL_PUBLIC_HOST_API=inline \

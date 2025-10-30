@@ -314,7 +314,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
   if (is_descending)
   {
     std::sort(expected_keys.begin(), expected_keys.end(), std::greater<KeyT>());
-    std::sort(expected_items.begin(), expected_items.end(), std::greater<KeyT>());
+    std::sort(expected_items.begin(), expected_items.end(), std::greater<ItemT>());
   }
   else
   {
