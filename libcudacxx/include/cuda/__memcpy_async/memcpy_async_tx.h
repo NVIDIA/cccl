@@ -34,6 +34,7 @@
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
@@ -69,18 +70,13 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   _CCCL_ASSERT(::cuda::device::is_address_from(__src, ::cuda::device::address_space::global),
                "src must point to global memory.");
 
-#    if __cccl_ptx_isa >= 860
-#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_shared
-#    else // __cccl_ptx_isa >= 860
-#      define _CCCL_BULK_COPY_SPACE ::cuda::ptx::space_cluster
-#    endif // __cccl_ptx_isa >= 860
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
       if (::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared)
           && ::cuda::device::is_address_from(__src, ::cuda::device::address_space::global)) {
         ::cuda::ptx::cp_async_bulk(
-          _CCCL_BULK_COPY_SPACE,
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared, ::cuda::ptx::space_cluster>,
           ::cuda::ptx::space_global,
           __dest,
           __src,
@@ -89,12 +85,10 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
       } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
-        // dsmem, we need to arrive on a cluster-scoped barrier, which
         // is not yet implemented. So we trap in this case as well.
         _CCCL_UNREACHABLE();
       }),
     (::cuda::device::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
-#    undef _CCCL_BULK_COPY_SPACE
 
   return async_contract_fulfillment::async;
 }
