@@ -1,11 +1,12 @@
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #ifndef _CUDA_STD___INTERNAL_NAMESPACES_H
 #define _CUDA_STD___INTERNAL_NAMESPACES_H
@@ -19,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__internal/version.h>
 
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
 #if defined(_CCCL_HEADER_TEST)

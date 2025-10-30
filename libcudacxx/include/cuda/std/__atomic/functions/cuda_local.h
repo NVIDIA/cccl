@@ -10,7 +10,7 @@
 #ifndef __CUDA_STD___ATOMIC_FUNCTIONS_CUDA_LOCAL_H
 #define __CUDA_STD___ATOMIC_FUNCTIONS_CUDA_LOCAL_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -41,13 +41,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
-#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE) && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
+#  if defined(_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE) && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
   return false;
-#  else // ^^^ _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH) ^^^
-        // / vvv !_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
+#  else // ^^^ _CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH) ^^^
+        // / vvv !_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
         // vvv
   return ::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::local);
-#  endif // ^^^ !_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
+#  endif // ^^^ !_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
          // ^^^
 }
 

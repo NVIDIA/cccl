@@ -1893,7 +1893,7 @@ Building wheels for collected packages: cuda-cccl
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/__format/parse_arg_id.h
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/ctime
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/detail
-  -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/detail/__config
+  -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/__internal/config.h
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/detail/libcxx
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/detail/libcxx/include
   -- Installing: /tmp/tmpmn1usaza/wheel/platlib/cuda/cccl/headers/include/cuda/std/detail/libcxx/include/__config

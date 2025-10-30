@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD___FUNCTIONAL_COMPOSE_H
 #define _CUDA_STD___FUNCTIONAL_COMPOSE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +24,7 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/perfect_forward.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -49,7 +50,7 @@ struct __compose_op
 template <class _Fn1, class _Fn2>
 struct __compose_t : __perfect_forward<__compose_op, _Fn1, _Fn2>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compose_t, __perfect_forward, __compose_op, _Fn1, _Fn2);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compose_t, __perfect_forward, __compose_op, _Fn1, _Fn2);
 };
 
 template <class _Fn1, class _Fn2>

@@ -11,7 +11,7 @@
 #ifndef __CUDA_STD___ATOMIC_PLATFORM_H
 #define __CUDA_STD___ATOMIC_PLATFORM_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,13 +66,13 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 template <typename _Tp>
 struct __atomic_is_always_lock_free
 {
   enum
   {
-    __value = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0)
+    __value = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0)
   };
 };
 #else
@@ -84,7 +84,7 @@ struct __atomic_is_always_lock_free
     __value = sizeof(_Tp) <= 8
   };
 };
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

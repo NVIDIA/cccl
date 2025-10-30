@@ -11,7 +11,7 @@
 #define TEST_SUPPORT_CONTAINER_DEBUG_TESTS_H
 
 #include <ciso646>
-#ifndef _LIBCUDACXX_VERSION
+#ifndef _CUDA_STD_VERSION
 #  error This header may only be used for libc++ tests
 #endif
 

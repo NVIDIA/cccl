@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
 #define _CUDA_STD___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

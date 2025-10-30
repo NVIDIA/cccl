@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
 #define _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_CCCL_HAS_THREAD_API_CUDA)
 
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/climits>
@@ -42,6 +42,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
+#endif // _CCCL_HAS_THREAD_API_CUDA
 
 #endif // _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H

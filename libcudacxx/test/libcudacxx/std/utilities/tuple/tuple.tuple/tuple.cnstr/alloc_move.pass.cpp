@@ -52,7 +52,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 1);
   }
 // testing extensions
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   {
     using T = cuda::std::tuple<MoveOnly, alloc_first>;
     T t0(0, 1);

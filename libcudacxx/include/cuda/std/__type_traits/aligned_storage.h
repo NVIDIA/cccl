@@ -9,7 +9,7 @@
 #ifndef _CUDA_STD___TYPE_TRAITS_ALIGNED_STORAGE_H
 #define _CUDA_STD___TYPE_TRAITS_ALIGNED_STORAGE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,12 +27,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  define _CCCL_PREFERRED_ALIGNOF(_T) __alignof(_T)
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#  define _CCCL_PREFERRED_ALIGNOF(_T) alignof(_T)
+#endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __align_type
 {
-  static const size_t value = _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp);
+  static const size_t value = _CCCL_PREFERRED_ALIGNOF(_Tp);
   using type                = _Tp;
 };
 

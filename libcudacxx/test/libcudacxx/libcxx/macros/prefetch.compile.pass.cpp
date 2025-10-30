@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #include <test_macros.h>
 

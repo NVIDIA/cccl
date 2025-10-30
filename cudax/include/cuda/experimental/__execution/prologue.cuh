@@ -10,7 +10,7 @@
 
 // IMPORTANT: This file intionally lacks a header guard.
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
 #  error multiple inclusion of prologue.cuh

@@ -141,7 +141,7 @@ Issues Fixed
 
    -  Thanks Daniel Jünger for this contribution.
 
--  #291: Remove usage of find_path to locate cuda/std/detail/__config.
+-  #291: Remove usage of find_path to locate cuda/std/__internal/config.h.
 
    -  Thanks Robert Maynard for this contribution.
 

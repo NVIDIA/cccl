@@ -64,7 +64,7 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   test<char>();
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   test<char const>(); // extension
 #endif
   return 0;

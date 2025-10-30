@@ -11,7 +11,7 @@
 #ifndef _CUDA___FUNCTIONAL_PROCLAIM_RETURN_TYPE_H
 #define _CUDA___FUNCTIONAL_PROCLAIM_RETURN_TYPE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

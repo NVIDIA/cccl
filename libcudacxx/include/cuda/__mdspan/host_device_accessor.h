@@ -11,7 +11,7 @@
 #ifndef _CUDA___MDSPAN_HOST_DEVICE_ACCESSOR_H
 #define _CUDA___MDSPAN_HOST_DEVICE_ACCESSOR_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -107,8 +107,8 @@ class __host_accessor : public _Accessor
     noexcept(::cuda::std::declval<_Accessor>().offset(::cuda::std::declval<__data_handle_type>(), 0));
 
 #if !_CCCL_COMPILER(NVRTC)
-  [[nodiscard]] _CCCL_HOST_API static constexpr bool
-  __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  [[nodiscard]]
+  _CCCL_HOST_API static constexpr bool __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
 #  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)

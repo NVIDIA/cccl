@@ -4,12 +4,22 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __cuda_std__
-#define __cuda_std__
+#ifndef _CUDA_STD___INTERNAL_VERSION_H
+#define _CUDA_STD___INTERNAL_VERSION_H
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__cccl/version.h> // IWYU pragma: export
 
@@ -40,6 +50,4 @@
 #  endif
 #endif
 
-#include <cuda/std/detail/libcxx/include/__config> // IWYU pragma: export
-
-#endif //__cuda_std__
+#endif // _CUDA_STD___INTERNAL_VERSION_H

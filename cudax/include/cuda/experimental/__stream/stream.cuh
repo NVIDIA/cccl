@@ -11,7 +11,7 @@
 #ifndef _CUDAX__STREAM_STREAM_CUH
 #define _CUDAX__STREAM_STREAM_CUH
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #include <cuda_runtime_api.h>
 

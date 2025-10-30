@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_H
 #define _CUDA_STD___THREAD_THREADING_SUPPORT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,17 +23,17 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 #  include <cuda/std/__thread/threading_support_external.h>
-#endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#endif // _CCCL_HAS_THREAD_API_EXTERNAL
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_CCCL_HAS_THREAD_API_CUDA)
 #  include <cuda/std/__thread/threading_support_cuda.h>
-#elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
+#elif defined(_CCCL_HAS_THREAD_API_PTHREAD)
 #  include <cuda/std/__thread/threading_support_pthread.h>
-#elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#elif defined(_CCCL_HAS_THREAD_API_WIN32)
 #  include <cuda/std/__thread/threading_support_win32.h>
-#else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 

@@ -10,7 +10,7 @@
 #ifndef _CUDA_STD___RANGES_OWNING_VIEW_H
 #define _CUDA_STD___RANGES_OWNING_VIEW_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
 
@@ -150,7 +151,7 @@ public:
     return ::cuda::std::ranges::data(__r_);
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;

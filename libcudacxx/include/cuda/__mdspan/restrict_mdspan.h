@@ -11,7 +11,7 @@
 #ifndef _CUDA___MDSPAN_RESTRICT_MDSPAN_H
 #define _CUDA___MDSPAN_RESTRICT_MDSPAN_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -46,7 +47,7 @@ class restrict_mdspan
     : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, restrict_accessor<_AccessorPolicy>>
 {
 public:
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+  _CCCL_DELEGATE_CONSTRUCTORS(
     restrict_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, restrict_accessor<_AccessorPolicy>);
 
   _CCCL_API friend constexpr void swap(restrict_mdspan& __x, restrict_mdspan& __y) noexcept

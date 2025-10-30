@@ -11,7 +11,7 @@
 #ifndef _CUDA_BARRIER
 #define _CUDA_BARRIER
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

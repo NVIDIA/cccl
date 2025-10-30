@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD___ITERATOR_BACK_INSERT_ITERATOR_H
 #define _CUDA_STD___ITERATOR_BACK_INSERT_ITERATOR_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,6 +25,7 @@
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
@@ -148,7 +149,7 @@ public:
   }
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
 [[nodiscard]] _CCCL_API constexpr back_insert_iterator<_Container> back_inserter(_Container& __x) noexcept
