@@ -1623,22 +1623,6 @@ Currently, <code class="docutils literal notranslate"><span class="pre">memcpy_a
 </pre></div>
 </div>
 <p><a class="reference external" href="https://godbolt.org/z/M8zqnrz9b">See it on Godbolt</a></p>
-<p>We previously recommended the following pattern to launch the async copy from a single thread
-and wait for its completion, but it’s less efficient than the above pattern:</p>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="c1">// LESS EFFICIENT: issue the async copy from a single thread and wait for completion</span>
-<span class="n">barrier</span><span class="o">::</span><span class="n">arrival_token</span><span class="w"> </span><span class="n">token</span><span class="p">;</span>
-<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">memcpy_async_tx</span><span class="p">(</span><span class="n">smem_x</span><span class="p">,</span><span class="w"> </span><span class="n">gmem_x</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">aligned_size_t</span><span class="o">&lt;</span><span class="mi">16</span><span class="o">&gt;</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">smem_x</span><span class="p">)),</span><span class="w"> </span><span class="n">bar</span><span class="p">);</span>
-<span class="w">  </span><span class="n">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">barrier_arrive_tx</span><span class="p">(</span><span class="n">bar</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">smem_x</span><span class="p">));</span>
-<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bar</span><span class="p">.</span><span class="n">arrive</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="n">bar</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">token</span><span class="p">));</span>
-</pre></div>
-</div>
-<p>This generates worse code, since it branches the program for the barrier arrival
-(the elected thread arrives in a different code path and the rest).
-Please use the better pattern shown in the main example above.</p>
 </section>
 </section>
 
