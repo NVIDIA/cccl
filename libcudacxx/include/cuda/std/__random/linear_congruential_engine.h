@@ -210,7 +210,7 @@ public:
   using result_type = _UIntType;
 
 private:
-  result_type __x_;
+  result_type __x_{};
 
   static constexpr const result_type _Mp = result_type(~0);
 
@@ -279,9 +279,34 @@ public:
 
   _CCCL_API constexpr void discard(uint64_t __z) noexcept
   {
-    for (; __z; --__z)
+    constexpr bool __can_overflow = (__a != 0 && __m != 0 && __m - 1 > (_Mp - __c) / __a);
+    // Fallback implementation
+    if constexpr (__can_overflow)
     {
-      (void) operator()();
+      for (; __z; --__z)
+      {
+        (void) operator()();
+      }
+    }
+    else
+    {
+      // minstd_rand and minstd_rand0 can use this efficient implementation
+      uint64_t __acc_mult = 1;
+      uint64_t __acc_plus = 0;
+      uint64_t __cur_mult = multiplier;
+      uint64_t __cur_plus = increment;
+      while (__z > 0)
+      {
+        if (__z & 1)
+        {
+          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+          __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+        }
+        __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __z >>= 1;
+      }
+      __x_ = (__acc_mult * __x_ + __acc_plus) % modulus;
     }
   }
 
