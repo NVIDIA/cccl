@@ -29,6 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/mr/fancy_pointer_resource.h>
 #include <thrust/mr/new.h>
 #include <thrust/system/omp/pointer.h>
