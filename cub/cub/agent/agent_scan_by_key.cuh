@@ -69,22 +69,22 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                = 1,
-          BlockLoadAlgorithm _LOAD_ALGORITHM   = BLOCK_LOAD_DIRECT,
-          CacheLoadModifier _LOAD_MODIFIER     = LOAD_DEFAULT,
-          BlockScanAlgorithm _SCAN_ALGORITHM   = BLOCK_SCAN_WARP_SCANS,
-          BlockStoreAlgorithm _STORE_ALGORITHM = BLOCK_STORE_DIRECT,
-          typename DelayConstructorT           = detail::fixed_delay_constructor_t<350, 450>>
+template <int BlockThreads,
+          int ItemsPerThread                 = 1,
+          BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
+          CacheLoadModifier LoadModifier     = LOAD_DEFAULT,
+          BlockScanAlgorithm ScanAlgorithm   = BLOCK_SCAN_WARP_SCANS,
+          BlockStoreAlgorithm StoreAlgorithm = BLOCK_STORE_DIRECT,
+          typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentScanByKeyPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 
   struct detail
   {
@@ -96,9 +96,7 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace scan_by_key
+namespace detail::scan_by_key
 {
 
 /**
@@ -471,7 +469,6 @@ struct AgentScanByKey
   }
 };
 
-} // namespace scan_by_key
-} // namespace detail
+} // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

@@ -31,8 +31,9 @@
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
 
+// todo: find a way to get rid of this include
 #  if !_CCCL_COMPILER(NVRTC)
-#    include <sstream> // for std::basic_ostringstream
+#    include <complex> // for std::complex stream operators
 #  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -294,7 +295,7 @@ struct __get_complex_impl<__half>
   }
 };
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) && !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
 {
@@ -310,7 +311,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& _
 {
   return __os << complex<float>{__x};
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

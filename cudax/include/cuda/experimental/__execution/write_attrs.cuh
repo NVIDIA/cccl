@@ -136,7 +136,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_attrs_t::__sndr_t
     return {{__env_ref(__attrs_), __fwd_env(execution::get_env(__sndr_))}};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS write_attrs_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ write_attrs_t __tag_;
   _Attrs __attrs_;
   _Sndr __sndr_;
 };

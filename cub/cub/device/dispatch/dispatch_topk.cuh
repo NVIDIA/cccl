@@ -387,15 +387,13 @@ struct DispatchTopK
         return error;
       }
 
-      _CubLog("Invoking topk_kernel<<<{%d,%d,%d}, %d, 0, "
+      _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              topk_grid_size.x,
-              topk_grid_size.y,
-              topk_grid_size.z,
+              topk_grid_size,
               block_threads,
               (long long) stream,
               items_per_thread,
-              topk_blocks_per_sm);
+              main_kernel_blocks_per_sm);
     }
 #endif // CUB_DEBUG_LOG
 

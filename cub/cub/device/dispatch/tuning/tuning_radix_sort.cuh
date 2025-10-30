@@ -46,9 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace radix
+namespace detail::radix
 {
 // sm90 default
 template <size_t KeySize, size_t ValueSize, size_t OffsetSize>
@@ -282,10 +280,14 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  16, 8> : sm
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+using namespace radix_sort_runtime_policies;
+#endif
 
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
@@ -302,23 +304,23 @@ struct RadixSortPolicyWrapper<
                       typename StaticPolicyT::SegmentedPolicy,
                       typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr bool IsOnesweep()
+  _CCCL_HOST_DEVICE static constexpr bool IsOnesweep()
   {
     return StaticPolicyT::ONESWEEP;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int RadixBits(PolicyT /*policy*/)
   {
     return PolicyT::RADIX_BITS;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -334,10 +336,29 @@ struct RadixSortPolicyWrapper<
   CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
   CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
   CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<
+      key<"SingleTilePolicy">()     = SingleTile().EncodedPolicy(),
+      key<"OnesweepPolicy">()       = Onesweep().EncodedPolicy(),
+      key<"UpsweepPolicy">()        = Upsweep().EncodedPolicy(),
+      key<"AltUpsweepPolicy">()     = AltUpsweep().EncodedPolicy(),
+      key<"DownsweepPolicy">()      = Downsweep().EncodedPolicy(),
+      key<"AltDownsweepPolicy">()   = AltDownsweep().EncodedPolicy(),
+      key<"HistogramPolicy">()      = Histogram().EncodedPolicy(),
+      key<"ScanPolicy">()           = Scan().EncodedPolicy(),
+      key<"ScanDelayConstructor">() = StaticPolicyT::ScanPolicy::detail::delay_constructor_t::EncodedConstructor(),
+      key<"ExclusiveSumPolicy">()   = ExclusiveSum().EncodedPolicy(),
+      key<"Onesweep">()             = value<IsOnesweep()>()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
@@ -1062,7 +1083,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-} // namespace radix
-} // namespace detail
+} // namespace detail::radix
 
 CUB_NAMESPACE_END

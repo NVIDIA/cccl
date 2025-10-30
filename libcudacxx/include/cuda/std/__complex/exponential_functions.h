@@ -379,7 +379,7 @@ template <class _Tp, class _Up>
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES((!__is_complex_v<_Up>) )
+_CCCL_REQUIRES((!__is_cuda_std_complex_v<_Up>) )
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
@@ -387,7 +387,7 @@ _CCCL_REQUIRES((!__is_complex_v<_Up>) )
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES((!__is_complex_v<_Tp>) )
+_CCCL_REQUIRES((!__is_cuda_std_complex_v<_Tp>) )
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;

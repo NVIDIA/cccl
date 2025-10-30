@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH
-#define _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH
+#ifndef _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
+#define _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,94 +21,169 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  include <cuda_runtime.h>
+#  include <cuda_runtime_api.h>
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#  if _CCCL_CUDA_COMPILER(CLANG)
-#    include <cuda_runtime.h>
-#    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER(CLANG)
+#include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/throw_error.h>
 
-#  include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
-#  include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file
-//! The \c pinned_memory_pool class provides a wrapper around a `cudaMempool_t`.
+//! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
 {
 
-//! @brief \c pinned_memory_pool is an owning wrapper around a
-//! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
+#if _CCCL_CTK_AT_LEAST(12, 6)
+
+static ::cudaMemPool_t __get_default_host_pinned_pool();
+
+//! @rst
+//! .. _cudax-memory-resource-async:
 //!
-//! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
-class pinned_memory_pool : public __memory_pool_base
+//! Stream ordered host pinned memory pool
+//! ------------------------------
+//!
+//! ``pinned_memory_pool_ref`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
+//! ``pinned_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
+//! cudaMemLocationTypeHost or \c cudaMemLocationTypeHostNuma.
+//!
+//! .. warning::
+//!
+//!    ``pinned_memory_pool_ref`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``pinned_memory_pool_ref``.
+//!
+//! @endrst
+class pinned_memory_pool_ref : public __memory_resource_base
 {
-private:
-  //! @brief Constructs a \c pinned_memory_pool from a handle taking ownership of the pool
-  //! @param __handle The handle to the existing pool
-  explicit pinned_memory_pool(__memory_pool_base::__from_handle_t, ::cudaMemPool_t __handle) noexcept
-      : __memory_pool_base(__memory_pool_base::__from_handle_t{}, __handle)
+public:
+  //! @brief  Constructs the pinned_memory_pool_ref from a \c cudaMemPool_t.
+  //! @param __pool The \c cudaMemPool_t used to allocate memory.
+  _CCCL_HOST_API explicit pinned_memory_pool_ref(::cudaMemPool_t __pool) noexcept
+      : __memory_resource_base(__pool)
   {}
 
-public:
-  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and initial pool size and release
-  //! threshold. If the pool size grows beyond the release threshold, unused memory held by the pool will be released at
-  //! the next synchronization event.
+  //! @brief Enables the \c device_accessible property
+  _CCCL_HOST_API friend constexpr void
+  get_property(pinned_memory_pool_ref const&, ::cuda::mr::device_accessible) noexcept
+  {}
+  //! @brief Enables the \c host_accessible property
+  _CCCL_HOST_API friend constexpr void get_property(pinned_memory_pool_ref const&, ::cuda::mr::host_accessible) noexcept
+  {}
+
+  using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
+};
+
+//! @brief Returns the default pinned memory pool.
+//! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
+//! @returns The default pinned memory pool.
+[[nodiscard]] inline pinned_memory_pool_ref pinned_default_memory_pool()
+{
+  return pinned_memory_pool_ref{::cuda::experimental::__get_default_host_pinned_pool()};
+}
+
+//! @rst
+//! .. _cudax-memory-resource-async:
+//!
+//! Stream ordered memory resource
+//! ------------------------------
+//!
+//! ``pinned_memory_pool`` allocates pinned memory using `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation.
+//! When constructed it creates an underlying \c cudaMemPool_t with the location type set to \c cudaMemLocationTypeHost
+//! or \c cudaMemLocationTypeHostNuma and owns it.
+//!
+//! @endrst
+struct pinned_memory_pool : pinned_memory_pool_ref
+{
+  using reference_type = pinned_memory_pool_ref;
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  //! @brief Constructs a \c pinned_memory_pool with optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
+
+  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
+  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
+  //!
+  //! @param __properties Optional, additional properties of the pool to be created.
+  _CCCL_HOST_API pinned_memory_pool(memory_pool_properties __properties = {})
+      : pinned_memory_pool_ref(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
+  {
+    enable_access_from(cuda::devices);
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id and optional properties.
+  //! Properties include the initial pool size and the release threshold. If the pool size grows beyond the release
+  //! threshold, unused memory held by the pool will be released at the next synchronization event.
   //!
   //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
   //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
   //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit pinned_memory_pool(int __numa_id, memory_pool_properties __properties)
-      : __memory_pool_base(__memory_location_type::__host, __properties, __numa_id)
+  _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
+      : pinned_memory_pool_ref(__create_cuda_mempool(
+          __properties, ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST_NUMA, __numa_id}, ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {
-    enable_access_from(devices);
+    enable_access_from(cuda::devices);
   }
 
-  //! @brief Constructs a \c pinned_memory_pool on the host with the specified NUMA node id.
-  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
-  //!
-  //! @note Memory from this pool is accessible from all devices right away, which differs from the default behavior of
-  //! pinned memory pools where memory is not accessible from devices until `cudaMemPoolSetAccess` is called.
-  //!
-  //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed on.
-  explicit pinned_memory_pool(int __numa_id = 0)
-      : pinned_memory_pool(__numa_id, {})
+  ~pinned_memory_pool() noexcept
+  {
+    ::cuda::__driver::__mempoolDestroy(__pool_);
+  }
+
+  _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
+  {
+    return pinned_memory_pool(__pool);
+  }
+
+  pinned_memory_pool(const pinned_memory_pool&)            = delete;
+  pinned_memory_pool& operator=(const pinned_memory_pool&) = delete;
+
+private:
+  pinned_memory_pool(::cudaMemPool_t __pool) noexcept
+      : pinned_memory_pool_ref(__pool)
   {}
-
-  //! @brief Disables construction from a plain `cudaMemPool_t`. We want to ensure clean ownership semantics.
-  pinned_memory_pool(::cudaMemPool_t) = delete;
-
-  pinned_memory_pool(pinned_memory_pool const&)            = delete;
-  pinned_memory_pool(pinned_memory_pool&&)                 = delete;
-  pinned_memory_pool& operator=(pinned_memory_pool const&) = delete;
-  pinned_memory_pool& operator=(pinned_memory_pool&&)      = delete;
-
-  //! @brief Construct an `pinned_memory_pool` object from a native `cudaMemPool_t` handle.
-  //!
-  //! @param __handle The native handle
-  //!
-  //! @return The constructed `pinned_memory_pool` object
-  //!
-  //! @note The constructed `pinned_memory_pool` object takes ownership of the native handle.
-  [[nodiscard]] static pinned_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
-  {
-    return pinned_memory_pool(__memory_pool_base::__from_handle_t{}, __handle);
-  }
-
-  // Disallow construction from an `int`, e.g., `0`.
-  static pinned_memory_pool from_native_handle(int) = delete;
-
-  // Disallow construction from `nullptr`.
-  static pinned_memory_pool from_native_handle(::cuda::std::nullptr_t) = delete;
 };
 
-} // namespace cuda::experimental
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>, "");
 
-#  include <cuda/std/__cccl/epilogue.h>
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
+
+[[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
+{
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  static ::cudaMemPool_t __default_pool = []() {
+    ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
+      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
+    ::cuda::experimental::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    return __pool;
+  }();
+
+  return __default_pool;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  static pinned_memory_pool __default_pool(0);
+  return __default_pool.get();
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
-#endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH
+} // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H

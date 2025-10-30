@@ -63,5 +63,5 @@ Next Steps
 
 Now that you have ``cuda-cccl`` installed, check out:
 
-* :doc:`parallel` - Device-level parallel algorithms
-* :doc:`cooperative` - Block and warp-level cooperative primitives
+* :doc:`compute` - Parallel computing primitives for operations on arrays or data ranges
+* :doc:`coop` - Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba

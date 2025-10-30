@@ -1,4 +1,4 @@
-Param(
+﻿Param(
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$PassthroughArgs
 )

@@ -38,17 +38,17 @@ namespace resource_test
 static_assert(
   sizeof(
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
-    == (4 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
-    == (3 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
-    == (3 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(sizeof(cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible,
                                                         property_without_value<short>,

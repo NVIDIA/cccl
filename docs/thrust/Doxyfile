@@ -126,6 +126,7 @@ PREDEFINED             = __device__= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \
+                        "_CCCL_CATCH_FALLTHROUGH=" \
                         "_LIBCUDACXX_NOEXCEPT_RETURN(...)=noexcept(noexcept(...)) { return ...; }" \
                         LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE \
                         "THRUST_NAMESPACE_BEGIN=namespace thrust {" \

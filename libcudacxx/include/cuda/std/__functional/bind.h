@@ -29,6 +29,7 @@
 #  include <cuda/std/__functional/reference_wrapper.h>
 #  include <cuda/std/__functional/weak_result_type.h>
 #  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__fwd/reference_wrapper.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
 #  include <cuda/std/__tuple_dir/tuple_indices.h>
 #  include <cuda/std/__tuple_dir/tuple_size.h>
@@ -40,6 +41,7 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/remove_reference.h>
 #  include <cuda/std/__utility/forward.h>
@@ -97,14 +99,13 @@ _CCCL_API inline _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
 }
 
 template <class _Ti, class... _Uj, size_t... _Indx>
-_CCCL_API inline typename __invoke_of<_Ti&, _Uj...>::type
-__mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
+_CCCL_API inline invoke_result_t<_Ti&, _Uj...> __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
   return __ti(::cuda::std::forward<_Uj>(::cuda::std::get<_Indx>(__uj))...);
 }
 
 template <class _Ti, class... _Uj>
-_CCCL_API inline enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
+_CCCL_API inline enable_if_t<is_bind_expression<_Ti>::value, invoke_result<_Ti&, _Uj...>>
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
   using __indices = __make_tuple_indices_t<sizeof...(_Uj)>;
@@ -131,9 +132,9 @@ __mu(_Ti&, _Uj& __uj)
 }
 
 template <class _Ti, class _Uj>
-_CCCL_API inline enable_if_t<
-  !is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__cccl_is_reference_wrapper_v<_Ti>,
-  _Ti&>
+_CCCL_API inline enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0
+                               && !__is_cuda_std_reference_wrapper_v<remove_cv_t<_Ti>>,
+                             _Ti&>
 __mu(_Ti& __ti, _Uj&)
 {
   return __ti;
@@ -151,12 +152,12 @@ struct __mu_return_invocable // false
 template <class _Ti, class... _Uj>
 struct __mu_return_invocable<true, _Ti, _Uj...>
 {
-  using type = typename __invoke_of<_Ti&, _Uj...>::type;
+  using type = invoke_result_t<_Ti&, _Uj...>;
 };
 
 template <class _Ti, class... _Uj>
 struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
-    : public __mu_return_invocable<__invocable<_Ti&, _Uj...>::value, _Ti, _Uj...>
+    : public __mu_return_invocable<is_invocable_v<_Ti&, _Uj...>, _Ti, _Uj...>
 {};
 
 template <class _Ti, class _TupleUj>
@@ -181,7 +182,7 @@ template <class _Ti, class _TupleUj>
 struct __mu_return
     : public __mu_return_impl<
         _Ti,
-        __cccl_is_reference_wrapper_v<_Ti>,
+        __is_cuda_std_reference_wrapper_v<remove_cv_t<_Ti>>,
         is_bind_expression<_Ti>::value,
         0 < is_placeholder<_Ti>::value && is_placeholder<_Ti>::value <= tuple_size<_TupleUj>::value,
         _TupleUj>
@@ -196,13 +197,13 @@ struct __is_valid_bind_return
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invocable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = is_invocable_v<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invocable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = is_invocable_v<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj, bool = __is_valid_bind_return<_Fp, _BoundArgs, _TupleUj>::value>
@@ -211,13 +212,13 @@ struct __bind_return;
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj, true>
 {
-  using type = typename __invoke_of<_Fp&, typename __mu_return<_BoundArgs, _TupleUj>::type...>::type;
+  using type = invoke_result_t<_Fp&, typename __mu_return<_BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj, true>
 {
-  using type = typename __invoke_of<_Fp&, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::type;
+  using type = invoke_result_t<_Fp&, typename __mu_return<const _BoundArgs, _TupleUj>::type...>;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj>
@@ -295,8 +296,7 @@ public:
               result_type>
   operator()(_Args&&... __args)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base&>(*this), ::cuda::std::forward<_Args>(__args)...);
+    return ::cuda::std::invoke_r<_Rp>(static_cast<base&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 
   template <class... _Args>
@@ -305,8 +305,7 @@ public:
     result_type>
   operator()(_Args&&... __args) const
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base const&>(*this), ::cuda::std::forward<_Args>(__args)...);
+    return ::cuda::std::invoke_r<_Rp>(static_cast<base const&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 };
 

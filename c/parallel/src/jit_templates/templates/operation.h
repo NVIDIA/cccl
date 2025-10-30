@@ -277,7 +277,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
       case cccl_op_kind_t::CCCL_BIT_NOT:
         return well_known_description{"::cuda::std::bit_not<{}>", unary_matcher, "~"};
       case cccl_op_kind_t::CCCL_IDENTITY:
-        return well_known_description{"::cuda::std::identity<{}>", unary_matcher};
+        return well_known_description{"::cuda::std::identity", unary_matcher};
       case cccl_op_kind_t::CCCL_NEGATE:
         return well_known_description{"::cuda::std::negate<{}>", unary_matcher, "-"};
       case cccl_op_kind_t::CCCL_MINIMUM:

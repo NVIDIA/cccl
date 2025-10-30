@@ -49,6 +49,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/agent/agent_radix_sort_histogram.cuh>
+#endif
+
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -74,35 +78,54 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  /** \brief Number of private histograms to use in the ranker;
-      ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
-  int _RANK_NUM_PARTS,
-  /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
-    support warp-strided key arrangement and count callbacks are supported. */
-  RadixRankAlgorithm _RANK_ALGORITHM,
-  BlockScanAlgorithm _SCAN_ALGORITHM,
-  RadixSortStoreAlgorithm _STORE_ALGORITHM,
-  int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          /** \brief Number of private histograms to use in the ranker;
+              ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
+          int RankNumParts,
+          /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
+            support warp-strided key arrangement and count callbacks are supported. */
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          RadixSortStoreAlgorithm StoreAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
   {
-    RANK_NUM_PARTS = _RANK_NUM_PARTS,
-    RADIX_BITS     = _RADIX_BITS,
+    RANK_NUM_PARTS = RankNumParts,
+    RADIX_BITS     = RadixBits,
   };
-  static constexpr RadixRankAlgorithm RANK_ALGORITHM       = _RANK_ALGORITHM;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = _SCAN_ALGORITHM;
-  static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr RadixRankAlgorithm RANK_ALGORITHM       = RankAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
+  static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
-namespace detail
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail::radix_sort_runtime_policies
 {
-namespace radix_sort
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  RadixSortOnesweepAgentPolicy,
+  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (RANK_NUM_PARTS, RankNumParts, int),
+  (RADIX_BITS, RadixBits, int),
+  (RANK_ALGORITHM, RankAlgorithm, cub::RadixRankAlgorithm),
+  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::RadixSortStoreAlgorithm))
+} // namespace detail::radix_sort_runtime_policies
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+namespace detail::radix_sort
 {
 
 template <typename AgentRadixSortOnesweepPolicy,
@@ -565,7 +588,7 @@ struct AgentRadixSortOnesweep
     // write block data to global memory
     if (full_block)
     {
-      if (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
+      if constexpr (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
       {
         ScatterKeysGlobalAligned();
       }
@@ -700,7 +723,6 @@ struct AgentRadixSortOnesweep
   }
 };
 
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END
