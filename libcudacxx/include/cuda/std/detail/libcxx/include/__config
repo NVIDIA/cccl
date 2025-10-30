@@ -38,12 +38,6 @@ extern "C++" {
 #    define __has_extension(__x) 0
 #  endif
 
-#  if !_CCCL_COMPILER(NVRTC)
-#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
-#  else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
-#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) alignof(_Tp)
-#  endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
-
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      __declspec(align(x))
