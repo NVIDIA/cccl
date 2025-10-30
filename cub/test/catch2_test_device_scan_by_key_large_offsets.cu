@@ -29,6 +29,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/iterator>
+
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
@@ -112,9 +114,9 @@ try
 
   // Prepare input (generate a series of: 0, 1, 2, ..., <segment_size-1>,  1, 1, 2, ..., <segment_size-1>, 2, 1, ...)
   const index_t segment_size = GENERATE_COPY(values({offset_t{1000}, offset_t{1}}));
-  auto index_it              = thrust::make_counting_iterator(index_t{});
-  auto keys_it               = thrust::make_transform_iterator(index_it, div_op<key_t>{segment_size});
-  auto items_it              = thrust::make_transform_iterator(index_it, mod_op<item_t>{segment_size});
+  auto index_it              = cuda::counting_iterator(index_t{});
+  auto keys_it               = cuda::transform_iterator(index_it, div_op<key_t>{segment_size});
+  auto items_it              = cuda::transform_iterator(index_it, mod_op<item_t>{segment_size});
 
   // Output memory allocation
   c2h::device_vector<item_t> d_items_out(num_items);
@@ -129,7 +131,7 @@ try
       keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
-    auto expected_out_it = thrust::make_transform_iterator(
+    auto expected_out_it = cuda::transform_iterator(
       index_it, expected_sum_op<item_t, is_exclusive>{static_cast<index_t>(segment_size), initial_value});
     bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
     REQUIRE(all_results_correct == true);
@@ -141,7 +143,7 @@ try
     device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
-    auto expected_out_it = thrust::make_transform_iterator(
+    auto expected_out_it = cuda::transform_iterator(
       index_it, expected_sum_op<item_t, is_exclusive>{static_cast<index_t>(segment_size), initial_value});
     bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
     REQUIRE(all_results_correct == true);
