@@ -44,13 +44,6 @@ extern "C++" {
 #    define _LIBCUDACXX_DIAGNOSE_ERROR(_COND, _MSG)
 #  endif
 
-#  if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
-#    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR
-#    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS
-#    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
-#    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
-#  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
-
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if _CCCL_COMPILER(NVRTC, <, 12, 6)
