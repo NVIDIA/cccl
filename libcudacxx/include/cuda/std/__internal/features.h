@@ -21,7 +21,6 @@
 #endif // no system header
 
 #define _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS() (!_CCCL_COMPILER(CLANG) || _CCCL_STD_VER >= 2020)
-#define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP()   1
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
@@ -68,20 +67,6 @@
 #else
 #  define _LIBCUDACXX_HAS_NVBF16() 0
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
-
-// Clang provides 128b atomics as a builtin
-#if defined(CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B)
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 1
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
-// GCC does not provide 128b atomics, but they may be available as a library, this requires opt-in usage.
-// See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html "-mcx16" for more
-#elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 0
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   1
-#else
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 0
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
-#endif
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_ALIGNAS_TYPE(x) alignas(x)

@@ -32,7 +32,7 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
         atomic_codegen_${test_name}
         PROPERTIES
           CUDA_ARCHITECTURES "${atomic_codegen_cuda_arch}"
-          COMPILE_DEFINITIONS "_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1"
+          COMPILE_DEFINITIONS "_CCCL_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1"
     )
 
     # Clang stopped emitting PTX in clang20. Add flags to re-enable it.
