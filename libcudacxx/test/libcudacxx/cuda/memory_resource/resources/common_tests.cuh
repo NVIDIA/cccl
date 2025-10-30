@@ -15,7 +15,7 @@
 #include <utility.cuh>
 
 template <typename ResourceType>
-void test_deallocate_async(ResourceType& resource)
+void test_deallocate_async([[maybe_unused]] ResourceType& resource)
 {
   /* disable until we move the launch API to libcudacxx
   cudax::stream stream{cuda::device_ref{0}};
