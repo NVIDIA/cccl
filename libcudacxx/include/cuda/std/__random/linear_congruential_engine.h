@@ -253,7 +253,15 @@ public:
   }
   _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
   {
-    seed(integral_constant<bool, __m == 0>(), integral_constant<bool, __c == 0>(), __s);
+    auto __mod = __s % __m;
+    if constexpr (__c % __m == 0)
+    {
+      if (__mod == 0)
+      {
+        __mod = 1;
+      }
+    }
+    __x_ = __mod;
   }
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
   _CCCL_API constexpr void seed(_Sseq& __q) noexcept
@@ -317,23 +325,6 @@ public:
   }
 
 private:
-  _CCCL_API constexpr void seed(true_type, true_type, result_type __s) noexcept
-  {
-    __x_ = __s == 0 ? 1 : __s;
-  }
-  _CCCL_API constexpr void seed(true_type, false_type, result_type __s) noexcept
-  {
-    __x_ = __s;
-  }
-  _CCCL_API constexpr void seed(false_type, true_type, result_type __s) noexcept
-  {
-    __x_ = __s % __m == 0 ? 1 : __s % __m;
-  }
-  _CCCL_API constexpr void seed(false_type, false_type, result_type __s) noexcept
-  {
-    __x_ = __s % __m;
-  }
-
   template <class _Sseq>
   _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
   template <class _Sseq>
