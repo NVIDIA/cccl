@@ -236,6 +236,13 @@ private:
   friend struct __variant_detail::__visitation::__variant;
 };
 
+template <class... _Types>
+_CCCL_API inline auto swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(noexcept(__lhs.swap(__rhs)))
+  -> decltype(__lhs.swap(__rhs))
+{
+  return __lhs.swap(__rhs);
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
