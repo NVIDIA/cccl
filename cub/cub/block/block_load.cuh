@@ -1260,7 +1260,7 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockLoadType
 {
-  using type = cub::BlockLoad<T, Policy::BlockThreads, Policy::ItemsPerThread, Policy::LOAD_ALGORITHM>;
+  using type = cub::BlockLoad<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::LOAD_ALGORITHM>;
 };
 
 CUB_NAMESPACE_END

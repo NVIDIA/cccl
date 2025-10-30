@@ -1240,7 +1240,7 @@ public:
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
-  using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ItemsPerThread, Policy::STORE_ALGORITHM>;
+  using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 
