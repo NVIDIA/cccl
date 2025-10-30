@@ -28,7 +28,6 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/throw_error.h>
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>

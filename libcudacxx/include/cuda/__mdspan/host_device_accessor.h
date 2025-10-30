@@ -24,7 +24,6 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/always_false.h>

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__STD__CUDA_API_WRAPPER_H
-#define _CUDA__STD__CUDA_API_WRAPPER_H
+#ifndef _CUDA___RUNTIME_API_WRAPPER_H
+#define _CUDA___RUNTIME_API_WRAPPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -59,4 +59,4 @@
     return __status;                                                               \
   }()
 
-#endif //_CUDA__STD__CUDA_API_WRAPPER_H
+#endif //_CUDA___RUNTIME_API_WRAPPER_H
