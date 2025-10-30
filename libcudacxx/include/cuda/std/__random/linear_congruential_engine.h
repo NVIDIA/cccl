@@ -280,9 +280,24 @@ public:
         (void) operator()();
       }
     }
-    else
+    else if constexpr (increment == 0)
     {
       // minstd_rand and minstd_rand0 can use this efficient implementation
+      uint64_t __acc_mult = 1;
+      uint64_t __cur_mult = multiplier;
+      while (__z > 0)
+      {
+        if (__z & 1)
+        {
+          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+        }
+        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __z >>= 1;
+      }
+      __x_ = (__acc_mult * __x_) % modulus;
+    }
+    else
+    {
       uint64_t __acc_mult = 1;
       uint64_t __acc_plus = 0;
       uint64_t __cur_mult = multiplier;
