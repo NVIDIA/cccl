@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -437,7 +438,7 @@ _CCCL_DIAG_POP
 template <class _Tp, class _Err>
 struct __expected_storage : __expected_destruct<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
@@ -532,13 +533,13 @@ inline constexpr __smf_availability __expected_can_copy_construct =
 template <class _Tp, class _Err, __smf_availability = __expected_can_copy_construct<_Tp, _Err>>
 struct __expected_copy : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __expected_copy(const __expected_copy& __other) noexcept(
     is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_constructible_v<_Err>)
@@ -562,7 +563,7 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_
 template <class _Tp, class _Err>
 struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   __expected_copy(const __expected_copy&)                                = delete;
   _CCCL_HIDE_FROM_ABI __expected_copy(__expected_copy&&)                 = default;
@@ -581,13 +582,13 @@ inline constexpr __smf_availability __expected_can_move_construct =
 template <class _Tp, class _Err, __smf_availability = __expected_can_move_construct<_Tp, _Err>>
 struct __expected_move : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&) = default;
 
@@ -614,7 +615,7 @@ struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_
 template <class _Tp, class _Err>
 struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&)            = default;
   __expected_move(__expected_move&&)                                     = delete;
@@ -639,13 +640,13 @@ inline constexpr __smf_availability __expected_can_copy_assign =
 template <class _Tp, class _Err, __smf_availability = __expected_can_copy_assign<_Tp, _Err>>
 struct __expected_copy_assign : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
@@ -683,7 +684,7 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __ex
 template <class _Tp, class _Err>
 struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&)       = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)            = default;
@@ -706,13 +707,13 @@ inline constexpr __smf_availability __expected_can_move_assign =
 template <class _Tp, class _Err, __smf_availability = __expected_can_move_assign<_Tp, _Err>>
 struct __expected_move_assign : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
@@ -749,7 +750,7 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __ex
 template <class _Tp, class _Err>
 struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
@@ -914,7 +915,7 @@ _CCCL_DIAG_POP
 template <class _Err>
 struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
   static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
@@ -931,7 +932,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 template <class _Err>
 struct __expected_copy<void, _Err, __smf_availability::__available> : __expected_storage<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20
   __expected_copy(const __expected_copy& __other) noexcept(is_nothrow_copy_constructible_v<_Err>)
@@ -951,7 +952,7 @@ struct __expected_copy<void, _Err, __smf_availability::__available> : __expected
 template <class _Err>
 struct __expected_move<void, _Err, __smf_availability::__available> : __expected_copy<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&) = default;
 
@@ -973,7 +974,7 @@ struct __expected_move<void, _Err, __smf_availability::__available> : __expected
 template <class _Err>
 struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __expected_move<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
@@ -1010,7 +1011,7 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
 template <class _Err>
 struct __expected_move_assign<void, _Err, __smf_availability::__available> : __expected_copy_assign<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
