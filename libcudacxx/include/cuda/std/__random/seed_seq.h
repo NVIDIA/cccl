@@ -152,7 +152,8 @@ public:
       result_type __k_p_mod_n = (__k + __p) % __n;
       result_type __k_q_mod_n = (__k + __q) % __n;
       // 2.1
-      const result_type __r1 = 1664525 * __T(__begin[__k_mod_n] ^ __begin[__k_p_mod_n] ^ __begin[(__k - 1) % __n]);
+      const result_type __r1 =
+        1664525 * __generate_T(__begin[__k_mod_n] ^ __begin[__k_p_mod_n] ^ __begin[(__k - 1) % __n]);
       // 2.2
       result_type __r2 = (__k == 0)   ? __r1 + __z
                        : (__k <= __z) ? __r1 + __k_mod_n + __data_[__k - 1]
@@ -172,7 +173,8 @@ public:
       result_type __k_p_mod_n = (__k + __p) % __n;
       result_type __k_q_mod_n = (__k + __q) % __n;
       // 3.1
-      const result_type __r3 = 1566083941 * __T(__begin[__k_mod_n] + __begin[__k_p_mod_n] + __begin[(__k - 1) % __n]);
+      const result_type __r3 =
+        1566083941 * __generate_T(__begin[__k_mod_n] + __begin[__k_p_mod_n] + __begin[(__k - 1) % __n]);
       // 3.2
       const result_type __r4 = __r3 - __k_mod_n;
       // 3.3
@@ -187,7 +189,7 @@ public:
   }
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr result_type __T(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type __generate_T(result_type __x) noexcept
   {
     return (__x ^ (__x >> 27));
   }
