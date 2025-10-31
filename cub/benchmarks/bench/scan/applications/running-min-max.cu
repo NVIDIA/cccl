@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
@@ -88,7 +88,7 @@ public:
   }
 };
 
-/*! @brief Scan operator combining min-max pairs */
+/* Scan operator combining min-max pairs. It is commutative and associative */
 struct ScanOp
 {
   template <typename T>
@@ -248,15 +248,14 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     dispatch_t::Dispatch(d_tmp, tmp_size, inp_it, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  cudaStreamSynchronize(bench_stream);
   // for verification use
-  // impl::validate(input, output, state_stream);
+  // impl::validate(input, output, bench_stream);
 }
 
 using bench_types =
-  nvbench::type_list<cuda::std::uint32_t,
+  nvbench::type_list<nvbench::uint32_t,
                      nvbench::int32_t,
-                     cuda::std::uint64_t,
+                     nvbench::uint64_t,
                      nvbench::int64_t,
                      nvbench::float32_t,
                      nvbench::float64_t>;

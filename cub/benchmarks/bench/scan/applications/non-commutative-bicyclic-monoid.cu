@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
@@ -78,6 +78,7 @@ struct BicyclicMonoidOp
   using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
   using min_t  = cuda::minimum<>;
 
+  // Operator is associative but non-commutative
   pair_t __host__ __device__ operator()(pair_t v1, pair_t v2) const
   {
     auto [m, n] = v1;
@@ -155,8 +156,6 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     dispatch_t::Dispatch(
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
-
-  cudaStreamSynchronize(bench_stream);
 }
 #if NVBENCH_HELPER_HAS_I128
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;
