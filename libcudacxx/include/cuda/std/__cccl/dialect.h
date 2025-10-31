@@ -132,7 +132,7 @@
 // if consteval requires C++23, but most compilers support it even in C++20 mode while emitting some warnings. Those are
 // silenced in prologue/epilogue. nvcc is happy about using it in C++20 since 13.0.
 #if _CCCL_STD_VER == 2020 && (_CCCL_CUDA_COMPILER(NVCC, >=, 13) || !_CCCL_CUDA_COMPILATION()) \
-  && (_CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC))
+  && (_CCCL_COMPILER(GCC, >=, 12) || (_CCCL_COMPILER(CLANG) && !_CCCL_CUDA_COMPILER(NVCC)) || _CCCL_COMPILER(NVHPC))
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 1
 #else
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
