@@ -26,10 +26,7 @@
 
 #include <cufile.h>
 
-namespace cuda::experimental
-{
-
-namespace cufile_driver_attributes
+namespace cuda::experimental::cufile_driver_attributes
 {
 
 template <class _ParamEnum>
@@ -175,6 +172,4 @@ inline constexpr has_batch_io_support_t has_batch_io_support{};
 inline constexpr has_streams_support_t has_streams_support{};
 inline constexpr has_parallel_io_support_t has_parallel_io_support{};
 
-} // namespace cufile_driver_attributes
-
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile_driver_attributes
