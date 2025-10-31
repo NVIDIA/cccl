@@ -63,13 +63,13 @@ update_devcontainer() {
        --arg container_name "\${localEnv:USER:anon}-\${localWorkspaceFolderBasename}-${name}" \
        '.image = $image |
         .name = $name |
-        .runArgs = ["--init", "--name", $container_name] |
+        .runArgs = ["--init", "--name", $container_name, "--ulimit", "nofile=500000"] |
         .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
         .containerEnv.CCCL_CUDA_EXTENDED = $cuda_ext |
         .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version '\
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version' \
        "$input_file" > "$output_file"
 }
 
