@@ -263,6 +263,7 @@
 #endif // defined(clang)
 
 _CCCL_DIAG_PUSH
+_CCCL_NV_DIAG_PUSH()
 
 // disable some msvc warnings
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
@@ -291,7 +292,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wc++2b-extensions")
 #  endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
 _CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
+_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
 #endif // _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
 
 // NO include guards here (this file is included multiple times)
