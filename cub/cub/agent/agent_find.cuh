@@ -18,7 +18,7 @@ template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,
           typename ComputeT,
           int VectorLoadLength,
-          CacheLoadModifier _LOAD_MODIFIER,
+          CacheLoadModifier LoadModifier,
           typename ScalingType = cub::detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct agent_find_policy : ScalingType
 {
@@ -26,7 +26,7 @@ struct agent_find_policy : ScalingType
   static constexpr int vector_load_length = VectorLoadLength;
 
   // Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier load_modifier = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier load_modifier = LoadModifier;
 };
 
 template <typename agent_find_policy_t, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
@@ -46,15 +46,15 @@ struct agent_t
                      CacheModifiedInputIterator<agent_find_policy_t::load_modifier, InputT, OffsetT>,
                      InputIteratorT>;
 
-  static constexpr int BLOCK_THREADS      = agent_find_policy_t::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD   = agent_find_policy_t::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int vector_load_length = ::cuda::std::min(ITEMS_PER_THREAD, agent_find_policy_t::vector_load_length);
+  static constexpr int block_threads      = agent_find_policy_t::BLOCK_THREADS;
+  static constexpr int items_per_thread   = agent_find_policy_t::ITEMS_PER_THREAD;
+  static constexpr int tile_items         = block_threads * items_per_thread;
+  static constexpr int vector_load_length = ::cuda::std::min(items_per_thread, agent_find_policy_t::vector_load_length);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (vector_load_length > 1) && (ITEMS_PER_THREAD % vector_load_length == 0)
+    (vector_load_length > 1) && (items_per_thread % vector_load_length == 0)
     && (::cuda::std::is_pointer<InputIteratorT>::value) && detail::is_primitive<InputT>::value;
 
   static constexpr CacheLoadModifier load_modifier = agent_find_policy_t::load_modifier;
@@ -123,53 +123,47 @@ struct agent_t
 
     __syncthreads();
 
-    constexpr int NUMBER_OF_VECTORS = ITEMS_PER_THREAD / vector_load_length;
+    constexpr int NUMBER_OF_VECTORS = items_per_thread / vector_load_length;
     // vectorized loads begin
     InputT* d_in_unqualified = const_cast<InputT*>(d_in) + tile_offset + (threadIdx.x * vector_load_length);
 
     cub::CacheModifiedInputIterator<agent_find_policy_t::load_modifier, VectorT> d_vec_in(
       reinterpret_cast<VectorT*>(d_in_unqualified));
 
-    InputT input_items[ITEMS_PER_THREAD];
+    InputT input_items[items_per_thread];
     VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < NUMBER_OF_VECTORS; ++i)
     {
-      vec_items[i] = d_vec_in[BLOCK_THREADS * i];
+      vec_items[i] = d_vec_in[block_threads * i];
     }
     // vectorized loads end
 
     bool found = false;
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < items_per_thread; ++i)
     {
       OffsetT nth_vector_of_thread = i / vector_load_length;
       OffsetT element_in_vector    = i % vector_load_length;
-      OffsetT vector_of_tile       = nth_vector_of_thread * BLOCK_THREADS + threadIdx.x;
+      OffsetT vector_of_tile       = nth_vector_of_thread * block_threads + threadIdx.x;
 
       OffsetT index = tile_offset + vector_of_tile * vector_load_length + element_in_vector;
 
-      if (index < num_items)
+      if (index < num_items && pred(input_items[i]))
       {
-        if (pred(input_items[i]))
-        {
-          found = true;
-          atomicMin(&block_result, index);
-          break; // every thread goes over multiple elements per thread
-                 // for every tile. If a thread finds a local minimum it doesn't
-                 // need to proceed further (inner early exit).
-        }
+        found = true;
+        atomicMin(&block_result, index);
+        break; // every thread goes over multiple elements per thread
+               // for every tile. If a thread finds a local minimum it doesn't
+               // need to proceed further (inner early exit).
       }
     }
 
     if (syncthreads_or(found))
     {
-      if (threadIdx.x == 0)
+      if (threadIdx.x == 0 && block_result < num_items)
       {
-        if (block_result < num_items)
-        {
-          atomicMin(result, block_result);
-        }
+        atomicMin(result, block_result);
       }
     }
   }
@@ -192,7 +186,7 @@ struct agent_t
     __syncthreads();
 
     bool found = false;
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    for (int i = 0; i < items_per_thread; ++i)
     {
       auto index = tile_offset + threadIdx.x + i * blockDim.x;
 
@@ -208,19 +202,16 @@ struct agent_t
     }
     if (syncthreads_or(found))
     {
-      if (threadIdx.x == 0)
+      if (threadIdx.x == 0 && block_result < num_items)
       {
-        if (block_result < num_items)
-        {
-          atomicMin(result, block_result);
-        }
+        atomicMin(result, block_result);
       }
     }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* value_temp_storage, OffsetT num_items)
   {
-    for (int tile_offset = blockIdx.x * TILE_ITEMS; tile_offset < num_items; tile_offset += TILE_ITEMS * gridDim.x)
+    for (int tile_offset = blockIdx.x * tile_items; tile_offset < num_items; tile_offset += tile_items * gridDim.x)
     {
       // Only one thread reads atomically and propagates it to the
       // the other threads of the block through shared memory
@@ -237,7 +228,7 @@ struct agent_t
       }
 
       IsAlignedAndFullTile(
-        d_in, tile_offset, TILE_ITEMS, num_items, ::cuda::std::integral_constant<bool, ATTEMPT_VECTORIZATION>())
+        d_in, tile_offset, tile_items, num_items, ::cuda::std::integral_constant<bool, ATTEMPT_VECTORIZATION>())
         ? ConsumeTile(tile_offset,
                       scan_op,
                       value_temp_storage,
