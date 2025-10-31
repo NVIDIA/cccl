@@ -52,7 +52,7 @@ namespace detail::radix_sort
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
  * https://github.com/NVIDIA/cub/issues/383 is addressed.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam SegmentedPolicyT
@@ -67,7 +67,7 @@ namespace detail::radix_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING,
+template <bool IsDescending,
           typename SegmentedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -89,7 +89,7 @@ struct AgentSegmentedRadixSort
   // Huge segment handlers
   using BlockUpsweepT   = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
   using DigitScanT      = BlockScan<OffsetT, BLOCK_THREADS>;
-  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IsDescending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
@@ -150,7 +150,7 @@ struct AgentSegmentedRadixSort
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
     bit_ordered_type default_key_bits =
-      IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+      IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT&>(default_key_bits);
 
     if (!KEYS_ONLY)
@@ -172,7 +172,7 @@ struct AgentSegmentedRadixSort
         thread_values,
         begin_bit,
         end_bit,
-        bool_constant_v<IS_DESCENDING>,
+        bool_constant_v<IsDescending>,
         bool_constant_v<KEYS_ONLY>,
         decomposer);
 
@@ -204,7 +204,7 @@ struct AgentSegmentedRadixSort
 
     __syncthreads();
 
-    if (IS_DESCENDING)
+    if (IsDescending)
     {
       // Reverse bin counts
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -238,7 +238,7 @@ struct AgentSegmentedRadixSort
     OffsetT bin_offset[BINS_TRACKED_PER_THREAD];
     DigitScanT(temp_storage.unbound_sort.scan).ExclusiveSum(bin_count, bin_offset);
 
-    if (IS_DESCENDING)
+    if (IsDescending)
     {
       // Reverse bin offsets
       _CCCL_PRAGMA_UNROLL_FULL()

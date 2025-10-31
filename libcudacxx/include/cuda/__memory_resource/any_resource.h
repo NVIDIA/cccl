@@ -217,7 +217,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
@@ -353,7 +353,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     return *this;
   }
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,

@@ -85,25 +85,23 @@ jobs:
           role-duration-seconds: 43200 # 12h
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
-          # TODO: Temporarily hardcoding the override while RAPIDS gets updated
-          # for the various breaking changes in cudax between 3.0/3.1/3.2
-          CCCL_TAG: branch/3.1.x
-          CCCL_VERSION: 3.1.0
+          CCCL_TAG: ${{ inputs.override_cccl_tag }}
+          CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.12"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.47"}'
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
