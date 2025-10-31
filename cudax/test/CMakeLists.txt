@@ -68,6 +68,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
   )
 
+  cudax_add_catch2_test(test_target host_launch ${cn_target}
+    launch/host_launch.cu
+  )
+
   cudax_add_catch2_test(test_target launch_configuration ${cn_target}
     launch/configuration.cu
   )
