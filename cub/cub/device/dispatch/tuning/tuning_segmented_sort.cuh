@@ -43,15 +43,13 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace segmented_sort
+namespace detail::segmented_sort
 {
 
 template <typename PolicyT, typename = void>
 struct SegmentedSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -62,81 +60,81 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
                                                      typename StaticPolicyT::SmallSegmentPolicy,
                                                      typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto LargeSegment()
+  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto SmallSegment()
+  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto MediumSegment()
+  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int PartitioningThreshold()
+  _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int LargeSegmentRadixBits()
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerSmallBlock()
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()
   {
     return StaticPolicyT::SmallSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerMediumBlock()
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerMediumBlock()
   {
     return StaticPolicyT::MediumSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SmallPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE static constexpr int SmallPolicyItemsPerTile()
   {
     return StaticPolicyT::SmallSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int MediumPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE static constexpr int MediumPolicyItemsPerTile()
   {
     return StaticPolicyT::MediumSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LargeSegmentLoadModifier()
+  _CCCL_HOST_DEVICE static constexpr CacheLoadModifier LargeSegmentLoadModifier()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
@@ -154,7 +152,7 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
 {
   return SegmentedSortPolicyWrapper<PolicyT>{policy};
 }
@@ -395,7 +393,6 @@ struct policy_hub
 
   using MaxPolicy = Policy860;
 };
-} // namespace segmented_sort
-} // namespace detail
+} // namespace detail::segmented_sort
 
 CUB_NAMESPACE_END

@@ -18,6 +18,7 @@
 #include <type_traits>
 
 #include <c2h/catch2_main.h>
+#include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
@@ -387,6 +388,13 @@ class nvtx_fixture
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
+#define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
+  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+
+#define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
+
 #define C2H_TEST_STR(a) #a
 
 namespace c2h
@@ -396,8 +404,8 @@ inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static const char* override_str = std::getenv("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds = override_str ? std::atoi(override_str) : 0;
+  static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
+  static const int override_seeds                = override_str ? std::atoi(override_str->c_str()) : 0;
   return override_seeds;
 }
 

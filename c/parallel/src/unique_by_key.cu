@@ -11,6 +11,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_select.cuh>
 
 #include <format>
@@ -39,34 +40,22 @@ namespace unique_by_key
 {
 struct unique_by_key_runtime_tuning_policy
 {
-  int block_size;
-  int items_per_thread;
-  cub::BlockLoadAlgorithm load_algorithm;
-  cub::CacheLoadModifier load_modifier;
-  cub::BlockScanAlgorithm scan_algorithm;
+  cub::detail::RuntimeUniqueByKeyAgentPolicy unique_by_key;
 
-  unique_by_key_runtime_tuning_policy UniqueByKey() const
+  auto UniqueByKey() const
   {
-    return *this;
+    return unique_by_key;
   }
 
-  using UniqueByKeyPolicyT = unique_by_key_runtime_tuning_policy;
-};
+  using UniqueByKeyPolicyT = cub::detail::RuntimeUniqueByKeyAgentPolicy;
+  using MaxPolicy          = unique_by_key_runtime_tuning_policy;
 
-struct unique_by_key_tuning_t
-{
-  int cc;
-  int block_size;
-  int items_per_thread;
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
+  {
+    return op.template Invoke<unique_by_key_runtime_tuning_policy>(*this);
+  }
 };
-
-unique_by_key_runtime_tuning_policy get_policy(int /*cc*/, int /*key_size*/)
-{
-  // TODO: we should update this once we figure out a way to reuse
-  // tuning logic from C++. Alternately, we should implement
-  // something better than a hardcoded default:
-  return {128, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS};
-}
 
 enum class unique_by_key_iterator_t
 {
@@ -163,21 +152,6 @@ std::string get_sweep_kernel_name(
     offset_t);
 }
 
-template <auto* GetPolicy>
-struct dynamic_unique_by_key_policy_t
-{
-  using MaxPolicy = dynamic_unique_by_key_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<unique_by_key_runtime_tuning_policy>(
-      GetPolicy(device_ptx_version, static_cast<int>(key_size)));
-  }
-
-  uint64_t key_size;
-};
-
 struct unique_by_key_kernel_source
 {
   cccl_device_unique_by_key_build_result_t& build;
@@ -203,13 +177,13 @@ struct dynamic_vsmem_helper_t
   template <typename PolicyT, typename... Ts>
   static int BlockThreads(PolicyT policy)
   {
-    return policy.block_size;
+    return policy.BlockThreads();
   }
 
   template <typename PolicyT, typename... Ts>
   static int ItemsPerThread(PolicyT policy)
   {
-    return policy.items_per_thread;
+    return policy.ItemsPerThread();
   }
 
   template <typename PolicyT, typename... Ts>
@@ -243,9 +217,7 @@ CUresult cccl_device_unique_by_key_build_ex(
   {
     const char* name = "test";
 
-    const int cc      = cc_major * 10 + cc_minor;
-    const auto policy = unique_by_key::get_policy(cc, static_cast<int>(input_keys_it.value_type.size));
-
+    const int cc                              = cc_major * 10 + cc_minor;
     const auto input_keys_it_value_t          = cccl_type_enum_to_name(input_keys_it.value_type.type);
     const auto input_values_it_value_t        = cccl_type_enum_to_name(input_values_it.value_type.type);
     const auto output_keys_it_value_t         = cccl_type_enum_to_name(output_keys_it.value_type.type);
@@ -282,7 +254,12 @@ CUresult cccl_device_unique_by_key_build_ex(
 
     const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
-    constexpr std::string_view src_template = R"XXX(
+    std::string policy_hub_expr =
+      std::format("cub::detail::unique_by_key::policy_hub<{}, {}>", input_keys_it_value_t, input_values_it_value_t);
+
+    std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/device/dispatch/kernels/scan.cuh>
 #include <cub/device/dispatch/kernels/unique_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
@@ -295,30 +272,18 @@ struct __align__({3}) items_storage_t {{
 struct __align__({5}) num_out_storage_t {{
   char data[{4}];
 }};
+{6}
+{7}
 {8}
 {9}
 {10}
 {11}
-{12}
-struct agent_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {7};
-  static constexpr int BLOCK_THREADS = {6};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
-  struct detail {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<unsigned long long>;
-  }};
-}};
-struct device_unique_by_key_policy {{
-  struct ActivePolicy {{
-    using UniqueByKeyPolicyT = agent_policy_t;
-  }};
-}};
+using device_unique_by_key_policy = {12}::MaxPolicy;
+
 struct device_unique_by_key_vsmem_helper {{
   template<typename ActivePolicyT, typename... Ts>
   struct VSMemHelperDefaultFallbackPolicyT {{
-    using agent_policy_t = agent_policy_t;
+    using agent_policy_t = device_unique_by_key_policy::ActivePolicy::UniqueByKeyPolicyT;
     using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
     using static_temp_storage_t = typename cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
     static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
@@ -333,29 +298,30 @@ struct device_unique_by_key_vsmem_helper {{
     }}
   }};
 }};
-{13}
-)XXX";
 
-    const std::string src = std::format(
-      src_template,
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_unique_by_key_policy")>()
+    = cub::detail::unique_by_key::UniqueByKeyPolicyWrapper<device_unique_by_key_policy::ActivePolicy>::EncodedPolicy();
+}}
+)XXX",
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_values_it.value_type.size, // 2
       input_values_it.value_type.alignment, // 3
       output_values_it.value_type.size, // 4
       output_values_it.value_type.alignment, // 5
-      policy.block_size, // 6
-      policy.items_per_thread, // 7
-      input_keys_iterator_src, // 8
-      input_values_iterator_src, // 9
-      output_keys_iterator_src, // 10
-      output_values_iterator_src, // 11
-      output_num_selected_iterator_src, // 12
-      op_src); // 13
+      input_keys_iterator_src, // 6
+      input_values_iterator_src, // 7
+      output_keys_iterator_src, // 8
+      output_values_iterator_src, // 9
+      output_num_selected_iterator_src, // 10
+      op_src, // 11
+      policy_hub_expr); // 12
 
 #if false // CCCL_DEBUGGING_SWITCH
       fflush(stderr);
-      printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+      printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
       fflush(stdout);
 #endif
 
@@ -368,7 +334,16 @@ struct device_unique_by_key_vsmem_helper {{
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -388,7 +363,7 @@ struct device_unique_by_key_vsmem_helper {{
 
     nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
         ->add_expression({compact_init_kernel_name})
         ->add_expression({sweep_kernel_name})
         ->compile_program({args.data(), args.size()})
@@ -406,11 +381,18 @@ struct device_unique_by_key_vsmem_helper {{
     auto [description_bytes_per_tile,
           payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
 
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_unique_by_key_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeUniqueByKeyAgentPolicy;
+    auto ubk_policy = RuntimeUniqueByKeyAgentPolicy::from_json(runtime_policy, "UniqueByKeyPolicyT");
+
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
     build_ptr->description_bytes_per_tile = description_bytes_per_tile;
     build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->runtime_policy             = new unique_by_key::unique_by_key_runtime_tuning_policy{ubk_policy};
   }
   catch (const std::exception& exc)
   {
@@ -453,24 +435,26 @@ CUresult cccl_device_unique_by_key(
       indirect_arg_t,
       indirect_arg_t,
       OffsetT,
-      unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
+      unique_by_key::unique_by_key_runtime_tuning_policy,
       unique_by_key::unique_by_key_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
       unique_by_key::dynamic_vsmem_helper_t,
       indirect_arg_t,
-      indirect_arg_t>::Dispatch(d_temp_storage,
-                                *temp_storage_bytes,
-                                d_keys_in,
-                                d_values_in,
-                                d_keys_out,
-                                d_values_out,
-                                d_num_selected_out,
-                                op,
-                                num_items,
-                                stream,
-                                {build},
-                                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                {d_keys_in.value_type.size});
+      indirect_arg_t>::
+      Dispatch(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_keys_in,
+        d_values_in,
+        d_keys_out,
+        d_values_out,
+        d_num_selected_out,
+        op,
+        num_items,
+        stream,
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        *reinterpret_cast<unique_by_key::unique_by_key_runtime_tuning_policy*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -533,6 +517,7 @@ CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_resul
     }
 
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

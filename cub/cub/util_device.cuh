@@ -47,7 +47,6 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -104,7 +103,34 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
-using SwitchDevice = ::cuda::__ensure_current_device;
+class SwitchDevice
+{
+  int target_device_;
+  int original_device_;
+
+public:
+  //! @brief Queries the current device and if that is different than @p target_device sets the current device to
+  //! @p target_device
+  SwitchDevice(const int target_device)
+      : target_device_(target_device)
+  {
+    CubDebug(cudaGetDevice(&original_device_));
+    if (original_device_ != target_device_)
+    {
+      CubDebug(cudaSetDevice(target_device_));
+    }
+  }
+
+  //! @brief If the @p original_device was not equal to @p target_device sets the current device back to
+  //! @p original_device
+  ~SwitchDevice()
+  {
+    if (original_device_ != target_device_)
+    {
+      CubDebug(cudaSetDevice(original_device_));
+    }
+  }
+};
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
@@ -574,32 +600,18 @@ namespace detail
     ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
       static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
 
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
-    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
-
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
-
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                                  \
-    struct Runtime##concept_name                                                                                     \
-    {                                                                                                                \
-      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                                \
-      static std::pair<Runtime##concept_name, std::string>                                                           \
-      from_json(const nlohmann::json& json,                                                                          \
-                std::string_view subpolicy_name,                                                                     \
-                std::optional<std::string_view> delay_cons_type = std::nullopt)                                      \
-      {                                                                                                              \
-        auto subpolicy = json[subpolicy_name];                                                                       \
-        assert(!subpolicy.is_null());                                                                                \
-        Runtime##concept_name ap;                                                                                    \
-        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                          \
-        return std::make_pair(                                                                                       \
-          ap,                                                                                                        \
-          std::format(                                                                                               \
-            "struct {} {{\n" _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING, __VA_ARGS__) "{} }};\n",      \
-            subpolicy_name _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE, __VA_ARGS__),                    \
-            delay_cons_type ? std::format("struct detail {{ using delay_constructor_t = {}; }}; ", *delay_cons_type) \
-                            : ""));                                                                                  \
-      }                                                                                                              \
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                       \
+    struct Runtime##concept_name                                                                          \
+    {                                                                                                     \
+      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                     \
+      static Runtime##concept_name from_json(const nlohmann::json& json, std::string_view subpolicy_name) \
+      {                                                                                                   \
+        auto subpolicy = json[subpolicy_name];                                                            \
+        assert(!subpolicy.is_null());                                                                     \
+        Runtime##concept_name ap;                                                                         \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                               \
+        return ap;                                                                                        \
+      }                                                                                                   \
     };
 #else
 #  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
@@ -634,7 +646,9 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 _CCCL_TEMPLATE(typename PolicyT)
-_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) )
+#if _CCCL_STD_VER < 2020
+_CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
+#endif
 __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;

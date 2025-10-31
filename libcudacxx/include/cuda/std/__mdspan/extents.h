@@ -239,14 +239,14 @@ public:
 
   // constructors from dynamic values only -- this covers the case for rank() == 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals) noexcept
       : _DynamicValues{static_cast<_TDynamic>(__vals)...}
   {}
 
   // constructors from all values -- here rank will be greater than 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals)
       : _DynamicValues{}
   {
@@ -281,6 +281,9 @@ public:
     return _StaticValues::__get(__i);
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+
   [[nodiscard]] _CCCL_API constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
@@ -293,7 +296,10 @@ public:
            : static_cast<_TDynamic>(__static_val);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _TDynamic operator[](size_t __i) const
+  _CCCL_DIAG_POP // MSVC(4702) Unreachable code
+
+    [[nodiscard]] _CCCL_API constexpr _TDynamic
+    operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -685,11 +691,6 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 
 namespace __mdspan_detail
 {
-
-//! NOTE we define __is_extents_v through __is_extents because nvrtc fails otherwise.
-//! Specializing __is_extents_v is valid, because all other cases remain as false
-template <class _IndexType, size_t... _ExtentsPack>
-inline constexpr bool __is_extents_v<extents<_IndexType, _ExtentsPack...>> = true;
 
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard

@@ -43,9 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 /// Normalize input iterator to segment offset
@@ -318,7 +316,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
 }
 
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END

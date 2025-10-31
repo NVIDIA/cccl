@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
 #include <cub/device/dispatch/kernels/segmented_sort.cuh> // DeviceSegmentedSort kernels
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh> // policy_hub
@@ -28,7 +29,6 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/segmented_sort.h>
 #include <cccl/c/types.h> // cccl_type_info
@@ -574,7 +574,7 @@ CUresult cccl_device_segmented_sort_build_ex(
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    std::vector<const char*> args = {
+    std::vector<const char*> selector_compilation_args = {
       arch.c_str(),
       cub_path,
       thrust_path,
@@ -585,7 +585,7 @@ CUresult cccl_device_segmented_sort_build_ex(
       "-DCUB_DISABLE_CDP",
       "-std=c++20"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+    cccl::detail::extend_args_with_build_config(selector_compilation_args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -596,8 +596,8 @@ CUresult cccl_device_segmented_sort_build_ex(
       end_offset_it,
       "cccl_large_segments_selector_op",
       ">",
-      args.data(),
-      args.size(),
+      selector_compilation_args.data(),
+      selector_compilation_args.size(),
       lopts,
       num_lto_args);
     cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
@@ -606,8 +606,8 @@ CUresult cccl_device_segmented_sort_build_ex(
       end_offset_it,
       "cccl_small_segments_selector_op",
       "<",
-      args.data(),
-      args.size(),
+      selector_compilation_args.data(),
+      selector_compilation_args.size(),
       lopts,
       num_lto_args);
 
@@ -623,123 +623,80 @@ CUresult cccl_device_segmented_sort_build_ex(
     const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
       template_id<user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
 
-    const std::string dependent_definitions_src = std::format(
+    const auto segmented_sort_policy_hub_expr = std::format(
+      "cub::detail::segmented_sort::policy_hub<{0}, {1}>",
+      key_t, // 0
+      value_t); // 1
+
+    static constexpr std::string_view three_way_partition_policy_hub_expr =
+      "cub::detail::three_way_partition::policy_hub<cub::detail::segmented_sort::local_segment_index_t, "
+      "cub::detail::three_way_partition::per_partition_offset_t>";
+
+    const std::string final_src = std::format(
       R"XXX(
-struct __align__({1}) storage_t {{
-  char data[{0}];
+#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/three_way_partition.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+
+{0}
+
+#include <thrust/iterator/counting_iterator.h> // used in three_way_partition kernel
+#include <thrust/iterator/reverse_iterator.h> // used in three_way_partition kernel
+#include <cub/detail/choose_offset.cuh> // used in three_way_partition kernel
+
+struct __align__({2}) storage_t {{
+  char data[{1}];
 }};
-struct __align__({3}) items_storage_t {{
-  char data[{2}];
+struct __align__({4}) items_storage_t {{
+  char data[{3}];
 }};
-{4}
 {5}
 {6}
 {7}
 {8}
 {9}
+{10}
+using device_segmented_sort_policy = {11}::MaxPolicy;
+using device_three_way_partition_policy = {12}::MaxPolicy;
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& segmented_sort_policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_segmented_sort_policy")>()
+    = cub::detail::segmented_sort::SegmentedSortPolicyWrapper<device_segmented_sort_policy::ActivePolicy>::EncodedPolicy();
+}}
+__device__ consteval auto& three_way_partition_policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_three_way_partition_policy")>()
+    = cub::detail::three_way_partition::ThreeWayPartitionPolicyWrapper<device_three_way_partition_policy::ActivePolicy>::EncodedPolicy();
+}}
 )XXX",
-      keys_in_it.value_type.size, // 0
-      keys_in_it.value_type.alignment, // 1
-      values_in_it.value_type.size, // 2
-      values_in_it.value_type.alignment, // 3
-      keys_in_iterator_src, // 4
-      values_in_iterator_src, // 5
-      start_offset_iterator_src, // 6
-      end_offset_iterator_src, // 7
-      large_selector_src, // 8
-      small_selector_src); // 9
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    constexpr size_t ptx_num_args      = 6;
-    const char* ptx_args[ptx_num_args] = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    static constexpr std::string_view policy_wrapper_expr_tmpl =
-      R"XXXX(cub::detail::segmented_sort::MakeSegmentedSortPolicyWrapper(cub::detail::segmented_sort::policy_hub<{0}, {1}>::MaxPolicy::ActivePolicy{{}}))XXXX";
-
-    const auto policy_wrapper_expr = std::format(
-      policy_wrapper_expr_tmpl,
-      key_t, // 0
-      value_t); // 1
-
-    static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
-#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
-#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
-{0}
-{1}
-)XXXX";
-
-    const auto ptx_query_tu_src =
-      std::format(ptx_query_tu_src_tmpl, jit_template_header_contents, dependent_definitions_src);
-
-    nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
-
-    using cub::detail::RuntimeRadixSortDownsweepAgentPolicy;
-    auto [large_segment_policy, large_segment_policy_str] =
-      RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "LargeSegmentPolicy");
-
-    using cub::detail::RuntimeSubWarpMergeSortAgentPolicy;
-    auto [small_segment_policy, small_segment_policy_str] =
-      RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "SmallSegmentPolicy");
-
-    auto [medium_segment_policy, medium_segment_policy_str] =
-      RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "MediumSegmentPolicy");
-
-    auto partitioning_threshold = runtime_policy["PartitioningThreshold"].get<int>();
-
-    static constexpr std::string_view partition_policy_wrapper_expr_tmpl =
-      R"XXXX(cub::detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(cub::detail::three_way_partition::policy_hub<{0}, {1}>::MaxPolicy::ActivePolicy{{}}))XXXX";
-    const auto partition_policy_wrapper_expr = std::format(
-      partition_policy_wrapper_expr_tmpl,
-      "cub::detail::segmented_sort::local_segment_index_t",
-      "cub::detail::three_way_partition::per_partition_offset_t");
-
-    nlohmann::json partition_policy = get_policy(partition_policy_wrapper_expr, ptx_query_tu_src, ptx_args);
-
-    using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
-    auto [three_way_partition_policy, three_way_partition_policy_str] =
-      RuntimeThreeWayPartitionAgentPolicy::from_json(partition_policy, "ThreeWayPartitionPolicy");
-
-    const std::string three_way_partition_policy_delay_constructor =
-      segmented_sort::get_three_way_partition_policy_delay_constructor(partition_policy);
-
-    const std::string injected_three_way_partition_policy_str =
-      segmented_sort::inject_delay_constructor_into_three_way_policy(
-        three_way_partition_policy_str, three_way_partition_policy_delay_constructor);
-
-    static constexpr std::string_view program_preamble_template = R"XXX(
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
-#include <thrust/iterator/counting_iterator.h> // used in three_way_partition kernel
-#include <thrust/iterator/reverse_iterator.h> // used in three_way_partition kernel
-#include <cub/detail/choose_offset.cuh> // used in three_way_partition kernel
-{0}
-{1}
-struct device_segmented_sort_policy {{
-  struct ActivePolicy {{
-    {2}
-    {3}
-    {4}
-  }};
-}};
-struct device_three_way_partition_policy {{
-  struct ActivePolicy {{
-    {5}
-  }};
-}};
-)XXX";
-
-    std::string final_src = std::format(
-      program_preamble_template,
       jit_template_header_contents, // 0
-      dependent_definitions_src, // 1
-      large_segment_policy_str, // 2
-      small_segment_policy_str, // 3
-      medium_segment_policy_str, // 4
-      injected_three_way_partition_policy_str); // 5
+      keys_in_it.value_type.size, // 1
+      keys_in_it.value_type.alignment, // 2
+      values_in_it.value_type.size, // 3
+      values_in_it.value_type.alignment, // 4
+      keys_in_iterator_src, // 5
+      values_in_iterator_src, // 6
+      start_offset_iterator_src, // 7
+      end_offset_iterator_src, // 8
+      large_selector_src, // 9
+      small_selector_src, // 10
+      segmented_sort_policy_hub_expr, // 11
+      three_way_partition_policy_hub_expr); // 12
+
+    std::vector<const char*> args = {
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     std::string segmented_sort_fallback_kernel_name = segmented_sort::get_device_segmented_sort_fallback_kernel_name(
       start_offset_iterator_name, end_offset_iterator_name, key_t, value_t, sort_order);
@@ -809,6 +766,25 @@ struct device_three_way_partition_policy {{
                              three_way_partition_init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
       &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_segmented_sort_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeRadixSortDownsweepAgentPolicy;
+    auto large_segment_policy = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "LargeSegmentPolicy");
+
+    using cub::detail::RuntimeSubWarpMergeSortAgentPolicy;
+    auto small_segment_policy = RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "SmallSegmentPolicy");
+
+    auto medium_segment_policy = RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "MediumSegmentPolicy");
+
+    int partitioning_threshold = runtime_policy["PartitioningThreshold"].get<int>();
+    nlohmann::json partition_policy =
+      cub::detail::ptx_json::parse("device_three_way_partition_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
+    auto three_way_partition_policy =
+      RuntimeThreeWayPartitionAgentPolicy::from_json(partition_policy, "ThreeWayPartitionPolicy");
 
     build_ptr->cc                         = cc;
     build_ptr->large_segments_selector_op = large_selector_op;

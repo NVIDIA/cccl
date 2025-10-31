@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -115,7 +116,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_NODEBUG_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -123,7 +124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
@@ -201,7 +202,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           }
           _CCCL_CATCH_ALL
           {
-            __set_error(::std::current_exception());
+            __set_error(execution::current_exception());
           }
         }
       }
@@ -228,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           }
           _CCCL_CATCH_ALL
           {
-            __errors_.template __emplace<::std::exception_ptr>(::std::current_exception());
+            __errors_.template __emplace<exception_ptr>(execution::current_exception());
           }
         }
       }
@@ -293,7 +294,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_NODEBUG_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -390,7 +391,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
 public:
   template <class... _Sndrs>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -521,7 +522,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 };
 
 template <class... _Sndrs>
-_CCCL_NODEBUG_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {

@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
@@ -217,6 +218,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 {
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
+  constexpr int vec_size         = VectorizedPolicy::vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_dim * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -241,23 +243,13 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     out += offset;
   }
 
-  constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
-  using load_store_t            = decltype(load_store_type<load_store_size>());
-  using output_t                = it_value_t<RandomAccessIteratorOut>;
+  using output_t = it_value_t<RandomAccessIteratorOut>;
   using result_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, const it_value_t<RandomAccessIteratorsIn>&...>>;
-  // picks output type size if there are no inputs
-  constexpr int element_size     = int{first_nonzero_value(
-    (sizeof(it_value_t<RandomAccessIteratorsIn>)
-     * THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn>) ...,
-    size_of<output_t>)};
-  constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
+  constexpr int load_store_count = items_per_thread / vec_size;
+  static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
 
-  static_assert((items_per_thread * element_size) % load_store_size == 0);
-  static_assert(load_store_size % element_size == 0);
-
-  constexpr bool can_vectorize_store =
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == element_size;
+  constexpr bool can_vectorize_store = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+                                    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
@@ -266,10 +258,15 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   auto provide_array = [&](auto... inputs) {
     // load inputs
     [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
+      using it_t    = decltype(in);
+      using value_t = it_value_t<it_t>;
       if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
       {
-        auto in_vec    = reinterpret_cast<const load_store_t*>(in) + threadIdx.x;
-        auto input_vec = reinterpret_cast<load_store_t*>(input.data());
+        // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
+        // requirements
+        using load_t   = decltype(load_store_type<sizeof(value_t) * vec_size>());
+        auto in_vec    = reinterpret_cast<const load_t*>(in) + threadIdx.x;
+        auto input_vec = reinterpret_cast<load_t*>(input.data());
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
@@ -278,15 +275,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       }
       else
       {
-        constexpr int elems = load_store_size / element_size;
-        in += threadIdx.x * elems;
+        in += threadIdx.x * vec_size;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int j = 0; j < elems; ++j)
+          for (int j = 0; j < vec_size; ++j)
           {
-            input[i * elems + j] = in[i * elems * VectorizedPolicy::block_threads + j];
+            input[i * vec_size + j] = in[i * vec_size * VectorizedPolicy::block_threads + j];
           }
         }
       }
@@ -310,8 +306,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   if constexpr (can_vectorize_store)
   {
     // vector path
-    auto output_vec = reinterpret_cast<const load_store_t*>(output.data());
-    auto out_vec    = reinterpret_cast<load_store_t*>(out) + threadIdx.x;
+    using store_t   = decltype(load_store_type<sizeof(output_t) * vec_size>());
+    auto output_vec = reinterpret_cast<const store_t*>(output.data());
+    auto out_vec    = reinterpret_cast<store_t*>(out) + threadIdx.x;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
@@ -321,15 +318,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   else
   {
     // serial path
-    constexpr int elems = load_store_size / element_size;
-    out += threadIdx.x * elems;
+    out += threadIdx.x * vec_size;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int j = 0; j < elems; ++j)
+      for (int j = 0; j < vec_size; ++j)
       {
-        out[i * elems * VectorizedPolicy::block_threads + j] = output[i * elems + j];
+        out[i * vec_size * VectorizedPolicy::block_threads + j] = output[i * vec_size + j];
       }
     }
   }
@@ -619,11 +615,6 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   }
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
-{
-  return ::cuda::ptx::elect_sync(~0) && threadIdx.x < 32;
-}
-
 template <int BulkCopyAlignment>
 _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   void* dst,
@@ -766,7 +757,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   if (inner_blocks)
   {
     // use one thread to setup the entire bulk copy
-    if (elect_one())
+    if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
       // an update to the CUDA memory model blesses skipping the following fence
@@ -820,7 +811,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
   else
   {
-    const bool elected = elect_one();
+    const bool elected = cuda::device::__block_elect_one();
     if (elected)
     {
       ptx::mbarrier_init(&bar, 1);

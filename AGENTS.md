@@ -188,8 +188,8 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 ### Modules
 
-* **cuda.cccl.parallel** — Device-level algorithms, iterators, custom GPU types
-* **cuda.cccl.cooperative** — Block/warp-level primitives
+* **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.coop** — Block/warp-level primitives
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -218,13 +218,13 @@ Requirements:
 ### Usage Examples
 
 ```python
-import cuda.cccl.parallel.experimental as parallel
-result = parallel.reduce_into(input_array, output_scalar, init_val, binary_op)
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.cccl.cooperative.experimental as cooperative
+from cuda import coop
 @cuda.jit
 def kernel(data):
-    cooperative.block.reduce(data, binary_op)
+    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
@@ -303,7 +303,9 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
+* `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 

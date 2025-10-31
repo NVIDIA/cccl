@@ -61,13 +61,20 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{
+  static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b exchange is not supported until PTX ISA version 840");
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_90, (),
+    NV_ANY_TARGET, (__atomic_exchange_128b_unsupported_before_SM_90();)
+  )
   asm volatile(R"YYY(
-    .reg .b128 _d;
-    .reg .b128 _v;
-    mov.b128 {{%3, %4}}, _v;
-    atom.exch{3}{5}.b128 _d,[%2],_v;
-    mov.b128 _d, {{%0, %1}};
-)YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
+    {{
+      .reg .b128 _d;
+      .reg .b128 _v;
+      mov.b128 _v, {{%3, %4}};
+      atom.exch{3}{5}.b128 _d,[%2],_v;
+      mov.b128 {{%0, %1}}, _d;
+    }}
+  )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }})XXX";
 
   const std::string asm_intrinsic_format = R"XXX(

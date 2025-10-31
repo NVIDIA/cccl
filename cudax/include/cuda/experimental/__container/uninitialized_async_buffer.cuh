@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
@@ -30,10 +32,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
-
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -79,7 +77,7 @@ private:
                 "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::any_resource<_Properties...>;
+  using __async_resource = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
@@ -119,7 +117,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -131,7 +129,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   transform_device_argument(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -390,7 +388,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device_accessible>;
+using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, ::cuda::mr::device_accessible>;
 
 } // namespace cuda::experimental
 

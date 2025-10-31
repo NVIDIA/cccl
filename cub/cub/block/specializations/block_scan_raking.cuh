@@ -222,7 +222,7 @@ struct BlockScanRaking
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
     // Read data back into registers
-    if (!MEMOIZE)
+    if constexpr (!MEMOIZE)
     {
       CopySegment(cached_segment, smem_raking_ptr, constant_v<0>);
     }
@@ -240,7 +240,7 @@ struct BlockScanRaking
     T* smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
     // Read data back into registers
-    if (!MEMOIZE)
+    if constexpr (!MEMOIZE)
     {
       CopySegment(cached_segment, smem_raking_ptr, constant_v<0>);
     }

@@ -50,6 +50,8 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -135,6 +137,8 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
+//! - **Important**: BlockRadixRank ranks only ``RADIX_BITS`` bits at a time from the keys, not the entire key.
+//!   The digit extractor determines which bits are ranked.
 //! - @blocked
 //!
 //! Performance Considerations
@@ -152,24 +156,26 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!      constexpr int radix_bits = 5;
 //!
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      // Specialize BlockRadixRank for a 1D block of 2 threads
 //!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
 //!      using storage_t = typename block_radix_rank::TempStorage;
 //!
-//!      // Allocate shared memory for BlockRadixSort
+//!      // Allocate shared memory for BlockRadixRank
 //!      __shared__ storage_t temp_storage;
 //!
 //!      // Obtain a segment of consecutive items that are blocked across threads
-//!      int keys[2];
+//!      unsigned int keys[2];
 //!      int ranks[2];
 //!      ...
 //!
-//!      cub::BFEDigitExtractor<int> extractor(0, radix_bits);
+//!      // Extract the lowest radix_bits from each key
+//!      cub::BFEDigitExtractor<unsigned> extractor(0, radix_bits);
 //!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
 //!
 //!      ...
+//!    }
 //!
 //! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
+//! The extractor will rank only the lowest 5 bits: ``{ [16,10], [9,11] }`` (bits 0-4).
 //! The corresponding output ``ranks`` in those threads will be ``{ [3,1], [0,2] }``.
 //!
 //! Re-using dynamically allocating shared memory
@@ -741,10 +747,10 @@ public:
       __syncwarp(0xFFFFFFFF);
 
       // Number of peers having same digit as me
-      int32_t digit_count = __popc(peer_mask);
+      int32_t digit_count = ::cuda::std::popcount(peer_mask);
 
       // Number of lower-ranked peers having same digit seen so far
-      int32_t peer_digit_prefix = __popc(peer_mask & lane_mask_lt);
+      int32_t peer_digit_prefix = ::cuda::std::popcount(peer_mask & lane_mask_lt);
 
       if (peer_digit_prefix == 0)
       {
@@ -967,7 +973,7 @@ struct BlockRadixRankMatchEarlyCounts
           warp_histograms[bin][part] = 0;
         }
       }
-      if (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
+      if constexpr (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
       {
         int* match_masks = &s.match_masks[warp][0];
 
@@ -990,7 +996,7 @@ struct BlockRadixRankMatchEarlyCounts
 
       // sum different parts;
       // no extra work is necessary if NUM_PARTS == 1
-      if (NUM_PARTS > 1)
+      if constexpr (NUM_PARTS > 1)
       {
         __syncwarp(WARP_MASK);
         // TODO: handle RADIX_DIGITS % WARP_THREADS != 0 if it becomes necessary
@@ -1072,9 +1078,9 @@ struct BlockRadixRankMatchEarlyCounts
         atomicOr(p_match_mask, lane_mask);
         __syncwarp(WARP_MASK);
         int bin_mask    = *p_match_mask;
-        int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
+        int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster
@@ -1102,9 +1108,9 @@ struct BlockRadixRankMatchEarlyCounts
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         int bin_mask =
           detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
-        int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
+        int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
-        int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
+        int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
         {
           // atomic is a bit faster

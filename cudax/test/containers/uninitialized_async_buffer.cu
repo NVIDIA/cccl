@@ -17,7 +17,7 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -41,7 +41,7 @@ constexpr int get_property(
 {
   return 42;
 }
-constexpr int get_property(const cuda::experimental::device_memory_resource&, my_property)
+constexpr int get_property(const cuda::experimental::device_memory_pool_ref&, my_property)
 {
   return 42;
 }
@@ -55,7 +55,8 @@ C2H_TEST_LIST(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
-  cuda::experimental::device_memory_resource resource{cuda::device_ref{0}};
+  cuda::experimental::device_memory_pool_ref resource =
+    cuda::experimental::device_default_memory_pool(cuda::device_ref{0});
   cuda::experimental::stream stream{cuda::device_ref{0}};
 
   SECTION("construction")
@@ -226,51 +227,51 @@ C2H_TEST_LIST(
 
 // A test resource that keeps track of the number of resources are
 // currently alive.
-struct test_async_device_memory_resource : cudax::device_memory_resource
+struct test_async_device_memory_pool_ref : cudax::device_memory_pool_ref
 {
   static int count;
 
-  test_async_device_memory_resource()
-      : cudax::device_memory_resource{cuda::device_ref{0}}
+  test_async_device_memory_pool_ref()
+      : cudax::device_memory_pool_ref(cudax::device_default_memory_pool(cuda::device_ref{0}))
   {
     ++count;
   }
 
-  test_async_device_memory_resource(const test_async_device_memory_resource& other)
-      : cudax::device_memory_resource{other}
+  test_async_device_memory_pool_ref(const test_async_device_memory_pool_ref& other)
+      : cudax::device_memory_pool_ref{other}
   {
     ++count;
   }
 
-  ~test_async_device_memory_resource()
+  ~test_async_device_memory_pool_ref()
   {
     --count;
   }
 };
 
-int test_async_device_memory_resource::count = 0;
+int test_async_device_memory_pool_ref::count = 0;
 
 C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
   cuda::experimental::stream stream{cuda::device_ref{0}};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
-    cudax::device_memory_resource{cuda::device_ref{0}}, stream, 0};
+    cudax::device_default_memory_pool(cuda::device_ref{0}), stream, 0};
 
   {
-    CHECK(test_async_device_memory_resource::count == 0);
+    CHECK(test_async_device_memory_pool_ref::count == 0);
 
     cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> src_buffer{
-      test_async_device_memory_resource{}, stream, 1024};
+      test_async_device_memory_pool_ref{}, stream, 1024};
 
-    CHECK(test_async_device_memory_resource::count == 1);
+    CHECK(test_async_device_memory_pool_ref::count == 1);
 
     cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> dst_buffer{
       src_buffer.memory_resource(), stream, 1024};
 
-    CHECK(test_async_device_memory_resource::count == 2);
+    CHECK(test_async_device_memory_pool_ref::count == 2);
 
     buffer = ::cuda::std::move(dst_buffer);
   }
 
-  CHECK(test_async_device_memory_resource::count == 1);
+  CHECK(test_async_device_memory_pool_ref::count == 1);
 }

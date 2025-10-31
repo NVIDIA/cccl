@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 
 #include <exception> // IWYU pragma: keep
-#include <new> // IWYU pragma: keep
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -62,7 +62,7 @@ public:
     _CCCL_ASSERT(false, "cannot visit a stateless variant");
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr size_t __index() noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t __index() noexcept
   {
     return __npos;
   }
@@ -112,12 +112,12 @@ public:
     __destroy();
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_API size_t __index() const noexcept
   {
     return __index_;
   }

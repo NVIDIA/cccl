@@ -47,15 +47,13 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace three_way_partition
+namespace detail::three_way_partition
 {
 
 template <typename PolicyT, typename = void>
 struct ThreeWayPartitionPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -64,7 +62,7 @@ template <typename StaticPolicyT>
 struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
     : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
@@ -82,7 +80,7 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
 {
   return ThreeWayPartitionPolicyWrapper<PolicyT>{policy};
 }
@@ -105,7 +103,7 @@ enum class offset_size
 };
 
 template <class InputT>
-constexpr input_size classify_input_size()
+_CCCL_HOST_DEVICE constexpr input_size classify_input_size()
 {
   return sizeof(InputT) == 1 ? input_size::_1
        : sizeof(InputT) == 2 ? input_size::_2
@@ -117,7 +115,7 @@ constexpr input_size classify_input_size()
 }
 
 template <class OffsetT>
-constexpr offset_size classify_offset_size()
+_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -390,7 +388,7 @@ struct policy_hub
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
-  static auto select_agent_policy(int)
+  static _CCCL_HOST_DEVICE auto select_agent_policy(int)
     -> AgentThreeWayPartitionPolicy<Tuning::threads,
                                     Tuning::items,
                                     Tuning::load_algorithm,
@@ -399,7 +397,7 @@ struct policy_hub
                                     typename Tuning::delay_constructor>;
 
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy<
+  static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<
     default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy500>
@@ -421,7 +419,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    static auto select_agent_policy100(int)
+    static _CCCL_HOST_DEVICE auto select_agent_policy100(int)
       -> AgentThreeWayPartitionPolicy<Tuning::threads,
                                       Tuning::items,
                                       Tuning::load_algorithm,
@@ -430,14 +428,13 @@ struct policy_hub
                                       typename Tuning::delay_constructor>;
 
     template <typename Tuning>
-    static auto select_agent_policy100(long) -> typename Policy900::ThreeWayPartitionPolicy;
+    static _CCCL_HOST_DEVICE auto select_agent_policy100(long) -> typename Policy900::ThreeWayPartitionPolicy;
 
     using ThreeWayPartitionPolicy = decltype(select_agent_policy100<sm100_tuning<InputT, OffsetT>>(0));
   };
 
   using MaxPolicy = Policy1000;
 };
-} // namespace three_way_partition
-} // namespace detail
+} // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

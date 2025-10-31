@@ -48,7 +48,7 @@ namespace detail::merge_sort
 template <typename PolicyT, typename = void>
 struct MergeSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE MergeSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -57,15 +57,23 @@ template <typename StaticPolicyT>
 struct MergeSortPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::MergeSortPolicy::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE MergeSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
   CUB_DEFINE_SUB_POLICY_GETTER(MergeSort);
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"MergeSortPolicy">() = MergeSort().EncodedPolicy()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper<PolicyT> MakeMergeSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE MergeSortPolicyWrapper<PolicyT> MakeMergeSortPolicyWrapper(PolicyT policy)
 {
   return MergeSortPolicyWrapper<PolicyT>{policy};
 }

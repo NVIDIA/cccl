@@ -22,10 +22,11 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__event/timed_event.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/stream_ref>
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -48,7 +49,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Converting constructor from \c ::cuda::stream_ref
   //!
   //! @post `*this == __other`
-  _CCCL_HOST_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
+  _CCCL_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
       : ::cuda::stream_ref(__other)
   {}
 
@@ -63,7 +64,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Returns a \c execution::sender that completes on this stream.
   //!
   //! @note Equivalent to `execution::schedule(execution::stream_scheduler{*this})`.
-  _CCCL_HOST_API auto schedule() const noexcept;
+  _CCCL_API auto schedule() const noexcept;
 
   //! @brief Get the logical device under which this stream was created.
   //!
@@ -108,8 +109,26 @@ struct stream_ref : ::cuda::stream_ref
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_domain_t&) const noexcept
-    -> execution::stream_domain;
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_completion_behavior_t&) const noexcept
+  {
+    return execution::completion_behavior::asynchronous;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> execution::__scheduler_of_t<const _Env&>;
+
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept -> execution::stream_domain;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> __call_result_t<execution::get_domain_t, const _Env&>;
 };
 
 } // namespace cuda::experimental

@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 
 #include <cuda/experimental/__graph/concepts.cuh>
