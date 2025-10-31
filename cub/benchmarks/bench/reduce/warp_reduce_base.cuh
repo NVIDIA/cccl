@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#pragma once
+
 #include <cub/config.cuh>
 
 #include <cuda/cmath>
@@ -12,8 +14,6 @@
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
-
-using value_types = nvbench::type_list<int32_t>;
 
 struct benchmark_op_t
 {
@@ -31,8 +31,8 @@ struct benchmark_op_t
 template <typename T>
 void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
-  constexpr int block_size    = 128;
-  constexpr int unroll_factor = 128;
+  constexpr int block_size    = 256;
+  constexpr int unroll_factor = 128; // compromise between compile time and noise
   const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T>;
   int num_SMs                 = state.get_device().value().get_number_of_sms();
   int device                  = state.get_device().value().get_id();

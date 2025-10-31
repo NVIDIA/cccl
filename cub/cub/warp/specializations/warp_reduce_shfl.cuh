@@ -71,9 +71,9 @@ template <class A = int, class = A>
 struct reduce_add_exists : ::cuda::std::false_type
 {};
 
-//template <class T>
-//struct reduce_add_exists<T, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-//{};
+template <class T>
+struct reduce_add_exists<T, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
+{};
 
 template <class T = int, class = T>
 struct reduce_min_exists : ::cuda::std::false_type

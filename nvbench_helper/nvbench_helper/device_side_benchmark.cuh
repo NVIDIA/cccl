@@ -3,8 +3,8 @@
 
 #include <cuda/cmath>
 #include <cuda/ptx>
-#include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 #include <cuda/utility>
 
 template <typename T>
@@ -16,7 +16,9 @@ __device__ __forceinline__ static T generate_random_data()
   {
     data[i] = cuda::ptx::get_sreg_clock();
   }
-  return cuda::std::bit_cast<T>(data);
+  T ret;
+  ::cuda::std::memcpy(&ret, data.data(), sizeof(T));
+  return ret;
 }
 
 __device__ static int device_var[16];
