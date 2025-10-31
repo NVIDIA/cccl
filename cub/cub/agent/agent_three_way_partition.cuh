@@ -46,6 +46,10 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
+#endif
+
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -82,7 +86,7 @@ namespace detail
 {
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   ThreeWayPartitionAgentPolicy,
-  (GenericAgentPolicy),
+  (UniqueByKeyAgentPolicy),
   (BLOCK_THREADS, BlockThreads, int),
   (ITEMS_PER_THREAD, ItemsPerThread, int),
   (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
