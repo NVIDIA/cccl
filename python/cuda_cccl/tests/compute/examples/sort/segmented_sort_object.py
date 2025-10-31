@@ -10,7 +10,7 @@ Example showing how to use segmented_sort with the object API.
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
 
 # Prepare the input and segment offsets.
 dtype = np.int32
@@ -25,14 +25,14 @@ d_output_keys = cp.empty_like(d_input_keys)
 d_output_vals = cp.empty_like(d_input_vals)
 
 # Create the segmented sort object.
-sorter = parallel.make_segmented_sort(
+sorter = cuda.compute.make_segmented_sort(
     d_input_keys,
     d_output_keys,
     d_input_vals,
     d_output_vals,
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
-    parallel.SortOrder.ASCENDING,
+    cuda.compute.SortOrder.ASCENDING,
 )
 
 # Get the temporary storage size.

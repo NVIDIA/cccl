@@ -10,7 +10,7 @@ Example showing how to use segmented_sort to sort keys and values within segment
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
 
 # Prepare input keys and values, and segment offsets.
 h_in_keys = np.array([9, 1, 5, 4, 2, 8, 7, 3, 6], dtype="int32")
@@ -26,7 +26,7 @@ d_out_keys = cp.empty_like(d_in_keys)
 d_out_vals = cp.empty_like(d_in_vals)
 
 # Perform the segmented sort (ascending within each segment).
-parallel.segmented_sort(
+cuda.compute.segmented_sort(
     d_in_keys,
     d_out_keys,
     d_in_vals,
@@ -35,7 +35,7 @@ parallel.segmented_sort(
     start_offsets.size,
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
-    parallel.SortOrder.ASCENDING,
+    cuda.compute.SortOrder.ASCENDING,
 )
 
 # Verify the result.

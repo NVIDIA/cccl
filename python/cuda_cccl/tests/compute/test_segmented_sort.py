@@ -9,7 +9,7 @@ import numba
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
 
 DTYPE_LIST = [
     np.uint8,
@@ -68,7 +68,7 @@ def host_segmented_sort(
     h_vals: np.ndarray | None,
     start_offsets: np.ndarray,
     end_offsets: np.ndarray,
-    order: parallel.SortOrder,
+    order: cuda.compute.SortOrder,
 ) -> Tuple[np.ndarray, np.ndarray | None]:
     assert start_offsets.shape == end_offsets.shape
     keys = h_keys.copy()
@@ -78,7 +78,7 @@ def host_segmented_sort(
         if e <= s:
             continue
         if vals is None:
-            if order is parallel.SortOrder.DESCENDING:
+            if order is cuda.compute.SortOrder.DESCENDING:
                 # stable descending
                 signed_dtype = (
                     np.dtype(keys.dtype.name.replace("uint", "int"))
@@ -92,7 +92,7 @@ def host_segmented_sort(
         else:
             # build pairs for stable sort
             pairs = list(zip(keys[s:e], vals[s:e]))
-            if order is parallel.SortOrder.DESCENDING:
+            if order is cuda.compute.SortOrder.DESCENDING:
                 pairs.sort(key=lambda kv: kv[0], reverse=True)
             else:
                 pairs.sort(key=lambda kv: kv[0])
@@ -107,14 +107,12 @@ def host_segmented_sort(
 def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
     # Disable SASS verification only for this test when dtype is int64
     if np.dtype(dtype) == np.dtype(np.int64):
-        import cuda.cccl.parallel.experimental._cccl_interop
-
         monkeypatch.setattr(
-            cuda.cccl.parallel.experimental._cccl_interop,
+            cuda.compute._cccl_interop,
             "_check_sass",
             False,
         )
-    order = parallel.SortOrder.ASCENDING
+    order = cuda.compute.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 
     h_in_keys = random_array(num_items, dtype, max_value=50)
@@ -123,7 +121,7 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
 
-    parallel.segmented_sort(
+    cuda.compute.segmented_sort(
         d_in_keys,
         d_out_keys,
         None,
@@ -145,7 +143,7 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
 def test_segmented_sort_pairs(dtype, num_segments, segment_size):
-    order = parallel.SortOrder.DESCENDING
+    order = cuda.compute.SortOrder.DESCENDING
     num_items = num_segments * segment_size
 
     h_in_keys = random_array(
@@ -160,7 +158,7 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
-    parallel.segmented_sort(
+    cuda.compute.segmented_sort(
         d_in_keys,
         d_out_keys,
         d_in_vals,
@@ -185,7 +183,7 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
 def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
-    order = parallel.SortOrder.ASCENDING
+    order = cuda.compute.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 
     h_in_keys = random_array(num_items, dtype, max_value=20)
@@ -193,9 +191,9 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
-    keys_db = parallel.DoubleBuffer(d_in_keys, d_tmp_keys)
+    keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
 
-    parallel.segmented_sort(
+    cuda.compute.segmented_sort(
         keys_db,
         None,
         None,
@@ -216,7 +214,7 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
 
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
 def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
-    order = parallel.SortOrder.DESCENDING
+    order = cuda.compute.SortOrder.DESCENDING
     num_items = num_segments * segment_size
 
     h_in_keys = random_array(
@@ -231,10 +229,10 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
     d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     d_tmp_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
-    keys_db = parallel.DoubleBuffer(d_in_keys, d_tmp_keys)
-    vals_db = parallel.DoubleBuffer(d_in_vals, d_tmp_vals)
+    keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
+    vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
 
-    parallel.segmented_sort(
+    cuda.compute.segmented_sort(
         keys_db,
         None,
         vals_db,
@@ -258,7 +256,7 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
 
 @pytest.mark.parametrize("num_segments", [20, 600])
 def test_segmented_sort_variable_segment_sizes(num_segments):
-    order = parallel.SortOrder.ASCENDING
+    order = cuda.compute.SortOrder.ASCENDING
     base_pattern = [
         1,
         5,
@@ -304,7 +302,7 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
-    parallel.segmented_sort(
+    cuda.compute.segmented_sort(
         d_in_keys,
         d_out_keys,
         d_in_vals,

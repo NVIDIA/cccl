@@ -10,7 +10,7 @@ Example showing how to use segmented_sort with DoubleBuffer for reduced temporar
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental as parallel
+import cuda.compute
 
 # Prepare input keys and values, and segment offsets.
 h_in_keys = np.array([9, 1, 5, 4, 2, 8, 7, 3, 6], dtype="int32")
@@ -26,11 +26,11 @@ d_tmp_keys = cp.empty_like(d_in_keys)
 d_tmp_vals = cp.empty_like(d_in_vals)
 
 # Create double buffers for keys and values.
-keys_db = parallel.DoubleBuffer(d_in_keys, d_tmp_keys)
-vals_db = parallel.DoubleBuffer(d_in_vals, d_tmp_vals)
+keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
+vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
 
 # Perform the segmented sort (descending within each segment).
-parallel.segmented_sort(
+cuda.compute.segmented_sort(
     keys_db,
     None,
     vals_db,
@@ -39,7 +39,7 @@ parallel.segmented_sort(
     start_offsets.size,
     cp.asarray(start_offsets),
     cp.asarray(end_offsets),
-    parallel.SortOrder.DESCENDING,
+    cuda.compute.SortOrder.DESCENDING,
 )
 
 # Verify the result.
