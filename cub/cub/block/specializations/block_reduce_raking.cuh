@@ -69,20 +69,20 @@ namespace detail
  * @tparam T
  *   Data type being reduced
  *
- * @tparam BLOCK_DIM_X
+ * @tparam BlockDimX
  *   The thread block length in threads along the X dimension
  *
- * @tparam BLOCK_DIM_Y
+ * @tparam BlockDimY
  *   The thread block length in threads along the Y dimension
  *
- * @tparam BLOCK_DIM_Z
+ * @tparam BlockDimZ
  *   The thread block length in threads along the Z dimension
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
+template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceRaking
 {
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Layout type for padded thread block raking grid
   using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
@@ -128,7 +128,7 @@ struct BlockReduceRaking
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**

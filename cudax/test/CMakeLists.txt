@@ -68,6 +68,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
   )
 
+  cudax_add_catch2_test(test_target host_launch ${cn_target}
+    launch/host_launch.cu
+  )
+
   cudax_add_catch2_test(test_target launch_configuration ${cn_target}
     launch/configuration.cu
   )
@@ -135,12 +139,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
-    memory_resource/any_async_resource.cu
-    memory_resource/any_resource.cu
-    memory_resource/memory_pools.cu
-    memory_resource/device_memory_resource.cu
-    memory_resource/managed_memory_resource.cu
-    memory_resource/pinned_memory_resource.cu
     memory_resource/shared_resource.cu
   )
 

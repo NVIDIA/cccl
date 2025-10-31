@@ -29,11 +29,11 @@ struct other_property
 {};
 
 // make the cudax resources have that property for tests
-inline void get_property(const cuda::experimental::device_memory_resource&, other_property) {}
-inline void get_property(const cuda::experimental::legacy_pinned_memory_resource&, other_property) {}
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-inline void get_property(const cuda::experimental::pinned_memory_resource&, other_property) {}
-#endif
+inline void get_property(const cuda::device_memory_pool_ref&, other_property) {}
+inline void get_property(const cuda::legacy_pinned_memory_resource&, other_property) {}
+#if _CCCL_CTK_AT_LEAST(12, 6)
+inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 //! @brief Simple wrapper around a memory resource to ensure that it compares differently and we can test those code
 //! paths
@@ -42,7 +42,7 @@ struct memory_resource_wrapper
 {
   // Not a resource_ref, because it can't be used to create any_resource (yet)
   // https://github.com/NVIDIA/cccl/issues/4166
-  cudax::any_resource<Properties...> resource_;
+  cuda::mr::any_resource<Properties...> resource_;
 
   void* allocate_sync(std::size_t size, std::size_t alignment)
   {

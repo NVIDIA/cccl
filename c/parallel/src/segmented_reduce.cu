@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
@@ -34,7 +35,6 @@
 #include <util/context.h>
 #include <util/errors.h>
 #include <util/indirect_arg.h>
-#include <util/runtime_policy.h>
 #include <util/types.h>
 
 struct device_segmented_reduce_policy;
@@ -181,76 +181,40 @@ CUresult cccl_device_segmented_reduce_build_ex(
     // OffsetT is checked to match have 64-bit size
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    const std::string dependent_definitions_src = std::format(
+    const auto policy_hub_expr =
+      std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
+
+    const auto final_src = std::format(
       R"XXX(
-struct __align__({1}) storage_t {{
-  char data[{0}];
+#include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+{0}
+struct __align__({2}) storage_t {{
+  char data[{1}];
 }};
-{2}
 {3}
 {4}
 {5}
 {6}
-)XXX",
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      input_iterator_src, // 2
-      output_iterator_src, // 3
-      op_src, // 4
-      start_offset_iterator_src, // 5
-      end_offset_iterator_src); // 6
+{7}
+using device_segmented_reduce_policy = {8}::MaxPolicy;
 
-    // Runtime parameter tuning
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    constexpr size_t ptx_num_args      = 6;
-    const char* ptx_args[ptx_num_args] = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    static constexpr std::string_view policy_wrapper_expr_tmpl =
-      R"XXXX(cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{0}, {1}, {2}>::MaxPolicy::ActivePolicy{{}}))XXXX";
-
-    const auto policy_wrapper_expr = std::format(
-      policy_wrapper_expr_tmpl,
-      accum_cpp, // 0
-      offset_t, // 1
-      op_name); // 2
-
-    static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
-#include <cub/block/block_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-{0}
-{1}
-)XXXX";
-
-    const auto ptx_query_tu_src =
-      std::format(ptx_query_tu_src_tmpl, jit_template_header_contents, dependent_definitions_src);
-
-    nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
-
-    using cub::detail::RuntimeReduceAgentPolicy;
-    auto [segmented_reduce_policy,
-          segmented_reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
-
-    // agent_policy_t is to specify parameters like policy_hub does in dispatch_reduce.cuh
-    constexpr std::string_view program_preamble_template = R"XXX(
-#include <cub/block/block_reduce.cuh>
-#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
-{0}
-{1}
-struct device_segmented_reduce_policy {{
-  struct ActivePolicy {{
-    {2}
-  }};
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_segmented_reduce_policy")>()
+    = cub::detail::reduce::ReducePolicyWrapper<device_segmented_reduce_policy::ActivePolicy>::EncodedPolicy();
 }};
-)XXX";
-
-    std::string final_src = std::format(
-      program_preamble_template,
+)XXX",
       jit_template_header_contents, // 0
-      dependent_definitions_src, // 1
-      segmented_reduce_policy_str); // 2
+      input_it.value_type.size, // 1
+      input_it.value_type.alignment, // 2
+      input_iterator_src, // 3
+      output_iterator_src, // 4
+      op_src, // 5
+      start_offset_iterator_src, // 6
+      end_offset_iterator_src, // 7
+      policy_hub_expr); // 8
 
     std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
       op_name,
@@ -273,6 +237,7 @@ struct device_segmented_reduce_policy {{
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
@@ -306,6 +271,12 @@ struct device_segmented_reduce_policy {{
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(
       &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_segmented_reduce_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto segmented_reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SegmentedReducePolicy");
 
     build_ptr->cc               = cc;
     build_ptr->cubin            = (void*) result.data.release();

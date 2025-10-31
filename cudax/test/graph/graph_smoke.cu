@@ -159,7 +159,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  cudax::legacy_managed_memory_resource mr;
+  cuda::legacy_managed_memory_resource mr{};
   int* ptr = static_cast<int*>(mr.allocate_sync(sizeof(int)));
   *ptr     = 0;
 
@@ -275,10 +275,10 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
   {
     SECTION("Multi-device graph")
     {
-      cudax::device_memory_resource dev0_mr(cuda::devices[0]);
-      int* dev0_ptr = static_cast<int*>(dev0_mr.allocate_sync(sizeof(int)));
-      cudax::device_memory_resource dev1_mr(cuda::devices[1]);
-      int* dev1_ptr = static_cast<int*>(dev1_mr.allocate_sync(sizeof(int)));
+      cuda::device_memory_pool_ref dev0_mr = cuda::device_default_memory_pool(cuda::devices[0]);
+      int* dev0_ptr                        = static_cast<int*>(dev0_mr.allocate_sync(sizeof(int)));
+      cuda::device_memory_pool_ref dev1_mr = cuda::device_default_memory_pool(cuda::devices[1]);
+      int* dev1_ptr                        = static_cast<int*>(dev1_mr.allocate_sync(sizeof(int)));
 
       cudax::graph_builder g(cuda::devices[0]);
       cudax::path_builder dev0_pb = cudax::start_path(g);

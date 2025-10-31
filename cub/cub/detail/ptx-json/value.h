@@ -36,21 +36,7 @@
 namespace ptx_json
 {
 template <auto V>
-struct value_traits
-{
-  using type = void;
-};
-
-template <auto V, typename = value_traits<V>::type>
 struct value;
-
-#pragma nv_diag_suppress 177
-template <int N, string<N> V>
-struct value_traits<V>
-{
-  using type = cuda::std::make_index_sequence<N>;
-};
-#pragma nv_diag_default 177
 
 template <typename T>
 struct is_value : cuda::std::false_type
@@ -64,32 +50,70 @@ template <typename T>
 concept a_value = is_value<T>::value;
 
 template <a_value auto Nested>
-struct value<Nested, void>
+struct value<Nested>
 {
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    Nested.emit();
+    value<Nested>::emit();
   }
 };
 
-template <cuda::std::integral auto V>
-struct value<V, void>
+__device__ constexpr int len10(int V)
 {
-  __forceinline__ __device__ static void emit()
+  int count = 0;
+  do
   {
-    asm volatile("%0" ::"n"(V) : "memory");
+    V /= 10;
+    ++count;
+  } while (V != 0);
+  return count;
+}
+
+template <cuda::std::integral auto V>
+struct value<V>
+{
+  __device__ consteval static auto emit()
+  {
+    static_assert(V >= 0, "Only non-negative integers are supported");
+    constexpr auto l10   = len10(V);
+    char buffer[l10 + 1] = {};
+    auto buffer_ptr      = buffer + l10;
+    auto init            = V;
+    do
+    {
+      *--buffer_ptr = '0' + init % 10;
+      init /= 10;
+    } while (init != 0);
+    return string(buffer);
+  }
+};
+
+template <>
+struct value<true>
+{
+  __device__ consteval static auto emit()
+  {
+    return string("true");
+  }
+};
+
+template <>
+struct value<false>
+{
+  __device__ consteval static auto emit()
+  {
+    return string("false");
   }
 };
 
 #pragma nv_diag_suppress 842
-template <int N, string<N> V, cuda::std::size_t... Is>
-struct value<V, cuda::std::index_sequence<Is...>>
+template <int N, string<N> V>
+struct value<V>
 {
 #pragma nv_diag_default 842
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    static constexpr char str[]{V.str[Is]...};
-    asm volatile("\"%0\"" ::"C"(str) : "memory");
+    return string("\"", V, "\"");
   }
 };
 }; // namespace ptx_json

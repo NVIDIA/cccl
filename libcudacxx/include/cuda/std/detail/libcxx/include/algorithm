@@ -1710,11 +1710,8 @@ nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomA
 }
 
 #endif
-_CCCL_END_NAMESPACE_CUDA_STD
 
-#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
-#  include <__pstl_algorithm>
-#endif
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
