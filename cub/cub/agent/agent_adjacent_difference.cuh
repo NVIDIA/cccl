@@ -48,20 +48,20 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                     = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
-          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
+template <int BlockThreads,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
 struct AgentAdjacentDifferencePolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
 namespace detail::adjacent_difference

@@ -57,19 +57,19 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
-  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr int BLOCK_THREADS                 = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {
@@ -417,7 +417,7 @@ struct AgentThreeWayPartition
     AccumPackT items_selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockLoadT(temp_storage.load_items)
         .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);

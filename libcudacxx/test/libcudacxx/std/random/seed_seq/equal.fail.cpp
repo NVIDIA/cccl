@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,12 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#pragma once
+#include <cuda/std/__random_>
+#include <cuda/std/cassert>
 
-#include <span>
-#include <string_view>
+__host__ __device__ void test()
+{
+  ::cuda::std::seed_seq seq1{1, 2, 3};
+  ::cuda::std::seed_seq seq2;
+  [[maybe_unused]] bool _ = (seq2 == seq1);
+}
 
-#include <nlohmann/json.hpp>
-
-nlohmann::json
-get_policy(std::string_view policy_wrapper_expr, std::string_view translation_unit, std::span<const char*> args);
+int main(int, char**)
+{
+  test();
+  return 0;
+}

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
-#define _CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
+#ifndef _CUDA___MEMORY_RESOURCE_PINNED_MEMORY_POOL_H
+#define _CUDA___MEMORY_RESOURCE_PINNED_MEMORY_POOL_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,19 +26,17 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__device/all_devices.h>
+#include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/throw_error.h>
-
-#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
 
@@ -86,7 +84,7 @@ public:
 //! @returns The default pinned memory pool.
 [[nodiscard]] inline pinned_memory_pool_ref pinned_default_memory_pool()
 {
-  return pinned_memory_pool_ref{::cuda::experimental::__get_default_host_pinned_pool()};
+  return pinned_memory_pool_ref{::cuda::__get_default_host_pinned_pool()};
 }
 
 //! @rst
@@ -170,7 +168,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
     ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
       ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
     // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
-    ::cuda::experimental::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
     return __pool;
   }();
 
@@ -183,8 +181,8 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_POOL_H
+#endif //_CUDA___MEMORY_RESOURCE_PINNED_MEMORY_POOL_H

@@ -134,7 +134,7 @@ void bulk_on_stream_scheduler()
   auto sch = sctx.get_scheduler();
 
   using _env_t = cudax::env_t<cuda::mr::device_accessible>;
-  auto mr      = cudax::device_default_memory_pool(_dev);
+  auto mr      = cuda::device_default_memory_pool(_dev);
   auto mr2     = cuda::mr::any_resource<cuda::mr::device_accessible>(mr);
   _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
   auto buf = cudax::make_async_buffer<int>(sctx, mr2, 10, 40, env); // a device buffer of 10 integers, initialized to 40

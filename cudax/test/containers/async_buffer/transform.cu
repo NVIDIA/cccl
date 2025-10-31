@@ -33,7 +33,7 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   const int num_items = 1 << 24;
 
   cudax::stream stream{cuda::device_ref{0}};
-  cudax::device_memory_pool_ref resource = cudax::device_default_memory_pool(cuda::device_ref{0});
+  cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   cudax::async_device_buffer<type> a{stream, resource, num_items, cudax::no_init};
   cudax::async_device_buffer<type> b{stream, resource, num_items, cudax::no_init};
@@ -80,7 +80,7 @@ struct add_kernel
 C2H_CCCLRT_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 {
   cudax::stream stream{cuda::device_ref{0}};
-  cudax::device_memory_pool_ref resource = cudax::device_default_memory_pool(cuda::device_ref{0});
+  cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 

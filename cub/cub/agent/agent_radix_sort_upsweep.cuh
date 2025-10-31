@@ -70,38 +70,37 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
- * @tparam NOMINAL_BLOCK_THREADS_4B
+ * @tparam NominalBlockThreads4B
  *   Threads per thread block
  *
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ * @tparam NominalItemsPerThread4B
  *   Items per thread (per tile of input)
  *
  * @tparam ComputeT
  *   Dominant compute type
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading keys
  *
- * @tparam _RADIX_BITS
+ * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  CacheLoadModifier _LOAD_MODIFIER,
-  int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          CacheLoadModifier LoadModifier,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   enum
   {
     /// The number of radix bits, i.e., log2(bins)
-    RADIX_BITS = _RADIX_BITS,
+    RADIX_BITS = RadixBits,
   };
 
   /// Cache load modifier for reading keys
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)

@@ -42,19 +42,16 @@ struct array<>
 {
   __forceinline__ __device__ static void emit()
   {
-    asm volatile("[]" ::: "memory");
+    asm volatile("[]");
   }
 };
 
 template <not_a_keyed_value auto First, not_a_keyed_value auto... NKVs>
 struct array<First, NKVs...>
 {
-  __forceinline__ __device__ static void emit()
+  __device__ consteval static auto emit()
   {
-    asm volatile("[" ::: "memory");
-    value<First>::emit();
-    ((comma(), value<NKVs>::emit()), ...);
-    asm volatile("]" ::: "memory");
+    return string("[", value<First>::emit(), string(comma(), value<NKVs>::emit())..., "]");
   }
 };
 
@@ -63,6 +60,6 @@ struct is_array : cuda::std::false_type
 {};
 
 template <auto... NKV>
-struct is_array<array<NKV...>> : cuda::std::true_type
+struct is_array<object<NKV...>> : cuda::std::true_type
 {};
 } // namespace ptx_json
