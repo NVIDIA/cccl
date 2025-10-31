@@ -158,7 +158,7 @@ public:
 
   //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
-  _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
+  _CCCL_HIDE_FROM_ABI explicit async_buffer(const async_buffer& __other)
       : __buf_(__other.memory_resource(), __other.stream().value(), __other.size())
   {
     this->__copy_cross<const_pointer>(
