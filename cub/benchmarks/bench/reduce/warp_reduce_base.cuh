@@ -5,12 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/cmath>
-#include <cuda/ptx>
-#include <cuda/std/bit>
-#include <cuda/std/cstdint>
-#include <cuda/utility>
-
 #include <cuda_runtime_api.h>
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>

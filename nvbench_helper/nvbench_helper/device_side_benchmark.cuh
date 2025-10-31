@@ -11,13 +11,13 @@ template <typename T>
 __device__ __forceinline__ static T generate_random_data()
 {
   constexpr auto size = cuda::ceil_div(sizeof(T), sizeof(uint32_t));
-  cuda::std::array<uint32_t, size> data;
+  uint32_t data[size];
   for (int i = 0; i < size; i++)
   {
     data[i] = cuda::ptx::get_sreg_clock();
   }
   T ret;
-  ::cuda::std::memcpy(&ret, data.data(), sizeof(T));
+  ::cuda::std::memcpy(&ret, data, sizeof(T));
   return ret;
 }
 
