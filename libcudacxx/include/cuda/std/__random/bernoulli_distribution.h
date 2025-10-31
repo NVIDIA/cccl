@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
-#include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/limits>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ios>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -70,7 +71,7 @@ private:
 public:
   // constructors and reset functions
   _CCCL_API constexpr bernoulli_distribution() noexcept
-      : bernoulli_distribution(0.5)
+      : bernoulli_distribution{0.5}
   {}
   _CCCL_API constexpr explicit bernoulli_distribution(double __p) noexcept
       : __p_(param_type(__p))
@@ -81,15 +82,15 @@ public:
   _CCCL_API constexpr void reset() noexcept {}
 
   // generating functions
-  template <class _URNG>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g) noexcept
+  template <class _URng>
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
-  template <class _URNG>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URNG& __g, const param_type& __p) noexcept
+  template <class _URng>
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__cccl_random_is_valid_urng<_URNG>);
+    static_assert(__cccl_random_is_valid_urng<_URng>);
     return ::cuda::std::generate_canonical<double, numeric_limits<double>::digits>(__g) < __p.p();
   }
 

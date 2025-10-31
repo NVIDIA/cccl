@@ -11,7 +11,7 @@
 
 // class bernoulli_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g);
+// template<class _URng> result_type operator()(_URNG& g);
 
 #include <cuda/std/__memory_>
 #include <cuda/std/__random_>
