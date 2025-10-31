@@ -285,7 +285,7 @@ CUresult cccl_device_unary_transform_build_ex(
     std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
-#include <cub/device/dispatch/kernels/transform.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 struct __align__({1}) input_storage_t {{
   char data[{0}];
 }};
