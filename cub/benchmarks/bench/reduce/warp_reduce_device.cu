@@ -1,0 +1,47 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
+#include <cub/config.cuh>
+
+#include <cuda/cmath>
+#include <cuda/ptx>
+#include <cuda/std/bit>
+#include <cuda/std/cstdint>
+#include <cuda/utility>
+
+#include <cuda_runtime_api.h>
+#include <device_side_benchmark.cuh>
+#include <nvbench_helper.cuh>
+
+using value_types = nvbench::type_list<int32_t>;
+
+struct benchmark_op_t
+{
+  template <typename T>
+  __device__ __forceinline__ T operator()(T thread_data) const
+  {
+    using WarpReduce  = cub::WarpReduce<T>;
+    using TempStorage = typename WarpReduce::TempStorage;
+    __shared__ TempStorage temp_storage[32];
+    auto warp_id = threadIdx.x / 32;
+    return WarpReduce{temp_storage[warp_id]}.Reduce(thread_data, cuda::std::plus<>{});
+  }
+};
+
+template <typename T>
+void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
+{
+  constexpr int block_size    = 128;
+  constexpr int unroll_factor = 128;
+  const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T>;
+  int num_SMs                 = state.get_device().value().get_number_of_sms();
+  int device                  = state.get_device().value().get_id();
+  int max_blocks_per_SM       = 0;
+  NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
+  int grid_size = max_blocks_per_SM * num_SMs;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
+    kernel<<<grid_size, block_size>>>(benchmark_op_t{});
+  });
+}
+
+NVBENCH_BENCH_TYPES(warp_reduce, NVBENCH_TYPE_AXES(value_types)).set_name("warp_reduce").set_type_axes_names({"T{ct}"});
