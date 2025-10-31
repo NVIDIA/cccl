@@ -149,7 +149,7 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
     ::cuda::__driver::__memcpyAsync(
-      __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
+      __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().value().get());
   }
 
 public:
@@ -159,7 +159,7 @@ public:
   //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
-      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream().value(), __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -176,8 +176,8 @@ public:
   //! @param __other The other async_buffer.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI explicit async_buffer(const async_buffer<_Tp, _OtherProperties...>& __other)
-      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
+  _CCCL_HIDE_FROM_ABI async_buffer(::cuda::stream_ref __stream, const async_buffer<_Tp, _OtherProperties...>& __other)
+      : __buf_(__other.memory_resource(), __stream, __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -477,15 +477,16 @@ public:
 
   //! @brief Returns the stored stream
   //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::optional<::cuda::stream_ref> stream() const noexcept
   {
     return __buf_.stream();
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
-  //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
+  //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
+  //! to ensure proper stream order going forward
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(const ::cuda::std::optional<::cuda::stream_ref>& __new_stream)
   {
     __buf_.set_stream_unsynchronized(__new_stream);
   }
@@ -570,7 +571,7 @@ using __buffer_type_for_props =
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
-  __stream.wait(__from.stream());
+  __stream.wait(__from.stream().value());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),

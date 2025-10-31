@@ -47,14 +47,14 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
   {
     { // can be copy constructed from empty input
       const MatchingBuffer input{stream, resource, 0, cudax::no_init};
-      Buffer buf(input);
+      Buffer buf(stream, input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
       const MatchingBuffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Buffer buf(input);
+      Buffer buf(stream, input);
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
       CUDAX_CHECK(equal_range(input));
@@ -62,7 +62,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
 
     { // can be move constructed with empty input
       MatchingBuffer input{stream, resource, 0, cudax::no_init};
-      Buffer buf(cuda::std::move(input));
+      Buffer buf(stream, cuda::std::move(input));
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(input.empty());
     }
@@ -72,7 +72,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
 
       // ensure that we steal the data
       const auto* allocation = input.data();
-      Buffer buf(cuda::std::move(input));
+      Buffer buf(stream, cuda::std::move(input));
       CUDAX_CHECK(buf.size() == 6);
       CUDAX_CHECK(buf.data() == allocation);
       CUDAX_CHECK(input.size() == 0);

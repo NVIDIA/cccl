@@ -34,15 +34,17 @@ bool equal_range(const Buffer& buf)
 {
   if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
-    buf.stream().sync();
+    buf.stream().value().sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
   {
     cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(
-             thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
+        && thrust::equal(thrust::cuda::par.on(buf.stream().value().get()),
+                         buf.begin(),
+                         buf.end(),
+                         cuda::get_device_address(device_data[0]));
   }
 }
 
@@ -111,7 +113,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
   if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
-    buf.stream().sync();
+    buf.stream().value().sync();
     return buf.size() == size
         && cuda::std::equal(buf.begin(),
                             buf.end(),
@@ -122,7 +124,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   {
     cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
+        && thrust::equal(thrust::cuda::par.on(buf.stream().value().get()),
                          buf.begin(),
                          buf.end(),
                          cuda::std::begin(device_data),
@@ -136,14 +138,15 @@ bool equal_range(const Range1& range1, const Range2& range2)
 {
   if constexpr (!Range1::properties_list::has_property(cuda::mr::device_accessible{}))
   {
-    range1.stream().sync();
+    range1.stream().value().sync();
     return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
   }
   else
   {
     cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return range1.size() == range2.size()
-        && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
+        && thrust::equal(
+             thrust::cuda::par.on(range1.stream().value().get()), range1.begin(), range1.end(), range2.begin());
   }
 }
 

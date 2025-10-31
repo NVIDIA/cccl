@@ -31,6 +31,7 @@
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/optional>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -80,9 +81,9 @@ private:
   using __async_resource = ::cuda::mr::any_resource<_Properties...>;
 
   __async_resource __mr_;
-  ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
-  size_t __count_              = 0;
-  void* __buf_                 = nullptr;
+  ::cuda::std::optional<::cuda::stream_ref> __stream_ = {::cudaStream_t{}};
+  size_t __count_                                     = 0;
+  void* __buf_                                        = nullptr;
 
   template <class, class...>
   friend class uninitialized_async_buffer;
@@ -195,9 +196,9 @@ public:
   _CCCL_HIDE_FROM_ABI
   uninitialized_async_buffer(__async_resource __mr, const ::cuda::stream_ref __stream, const size_t __count)
       : __mr_(::cuda::std::move(__mr))
-      , __stream_(__stream)
+      , __stream_({__stream})
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_)))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream, __get_allocation_size(__count_)))
   {}
 
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(const uninitialized_async_buffer&)            = delete;
@@ -208,7 +209,7 @@ public:
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer&& __other) noexcept
       : __mr_(::cuda::std::move(__other.__mr_))
-      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
+      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::std::nullopt))
       , __count_(::cuda::std::exchange(__other.__count_, 0))
       , __buf_(::cuda::std::exchange(__other.__buf_, nullptr))
   {}
@@ -220,10 +221,31 @@ public:
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(::cuda::std::move(__other.__mr_))
-      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
+      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::std::nullopt))
       , __count_(::cuda::std::exchange(__other.__count_, 0))
       , __buf_(::cuda::std::exchange(__other.__buf_, nullptr))
   {}
+
+  _CCCL_HIDE_FROM_ABI void __destroy_impl(const ::cuda::std::optional<::cuda::stream_ref>& __stream)
+  {
+    if (__buf_)
+    {
+      if (__stream)
+      {
+        __mr_.deallocate(__stream.value(), __buf_, __get_allocation_size(__count_));
+      }
+      else
+      {
+        __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_));
+      }
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+
+    // TODO should we make sure we move the mr only once by moving it to the if above?
+    // It won't work for 0 count buffers, so we would probably need a separate bool to track it
+    __mr_ = ::cuda::std::move(__mr_);
+  }
 
   //! @brief Move-assigns a \c uninitialized_async_buffer from \p __other
   //! @param __other Another \c uninitialized_async_buffer
@@ -235,12 +257,9 @@ public:
       return *this;
     }
 
-    if (__buf_)
-    {
-      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
-    }
+    __destroy_impl(__stream_);
     __mr_     = ::cuda::std::move(__other.__mr_);
-    __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
+    __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::std::nullopt);
     __count_  = ::cuda::std::exchange(__other.__count_, 0);
     __buf_    = ::cuda::std::exchange(__other.__buf_, nullptr);
     return *this;
@@ -253,15 +272,7 @@ public:
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
   {
-    if (__buf_)
-    {
-      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
-      __buf_   = nullptr;
-      __count_ = 0;
-    }
-    // TODO should we make sure we move the mr only once by moving it to the if above?
-    // It won't work for 0 count buffers, so we would probably need a separate bool to track it
-    auto __tmp_mr = ::cuda::std::move(__mr_);
+    __destroy_impl(__stream);
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
@@ -270,7 +281,7 @@ public:
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
-    destroy(__stream_);
+    __destroy_impl(__stream_);
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
@@ -342,7 +353,7 @@ public:
 
   //! @brief Returns the stored stream
   //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::optional<::cuda::stream_ref> stream() const noexcept
   {
     return __stream_;
   }
@@ -350,11 +361,11 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void set_stream(::cuda::stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(const ::cuda::std::optional<::cuda::stream_ref>& __new_stream)
   {
-    if (__new_stream != __stream_)
+    if (__new_stream != __stream_ && __stream_)
     {
-      __stream_.sync();
+      __stream_.value().sync();
     }
     __stream_ = __new_stream;
   }
@@ -363,7 +374,8 @@ public:
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void
+  set_stream_unsynchronized(const ::cuda::std::optional<::cuda::stream_ref>& __new_stream) noexcept
   {
     __stream_ = __new_stream;
   }
@@ -380,7 +392,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_async_buffer __ret{__fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream_, __count};
+    uninitialized_async_buffer __ret{__fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream_.value(), __count};
     ::cuda::std::swap(__count_, __ret.__count_);
     ::cuda::std::swap(__buf_, __ret.__buf_);
     return __ret;
