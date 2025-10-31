@@ -23,7 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
-#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__memory/addressof.h>
 
 #  include <nv/target>

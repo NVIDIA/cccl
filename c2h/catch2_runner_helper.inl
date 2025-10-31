@@ -32,7 +32,7 @@
 //! include all the tests into a single executable, this file is only included into catch2_runner_helper.cu. When CMake
 //! is configured to compile each test as a separate binary, this file is included into each test.
 
-#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/__runtime/api_wrapper.h>
 
 #include <iostream>
 

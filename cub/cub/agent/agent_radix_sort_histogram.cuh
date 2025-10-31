@@ -58,30 +58,30 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int _RADIX_BITS>
+template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct AgentRadixSortHistogramPolicy
 {
   enum
   {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+    BLOCK_THREADS    = BlockThreads,
+    ITEMS_PER_THREAD = ItemsPerThread,
     /** NUM_PARTS is the number of private histograms (parts) each histogram is split
      * into. Each warp lane is assigned to a specific part based on the lane
      * ID. However, lanes with the same ID in different warp use the same private
      * histogram. This arrangement helps reduce the degree of conflicts in atomic
      * operations. */
     NUM_PARTS  = ::cuda::std::max(1, NOMINAL_4B_NUM_PARTS * 4 / ::cuda::std::max(int{sizeof(ComputeT)}, 4)),
-    RADIX_BITS = _RADIX_BITS,
+    RADIX_BITS = RadixBits,
   };
 };
 
-template <int _BLOCK_THREADS, int _RADIX_BITS>
+template <int BlockThreads, int RadixBits>
 struct AgentRadixSortExclusiveSumPolicy
 {
   enum
   {
-    BLOCK_THREADS = _BLOCK_THREADS,
-    RADIX_BITS    = _RADIX_BITS,
+    BLOCK_THREADS = BlockThreads,
+    RADIX_BITS    = RadixBits,
   };
 };
 

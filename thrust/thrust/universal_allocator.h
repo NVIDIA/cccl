@@ -31,7 +31,7 @@
 #  pragma system_header
 #endif // no system header
 
-// Some build systems need a hint to know which files we actually include
+// Some build systems need a hint to know which files we could include
 #if 0
 #  include <thrust/system/cpp/memory.h>
 #  include <thrust/system/cuda/memory.h>

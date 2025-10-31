@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/__fwd/barrier.h>
-#include <cuda/__fwd/barrier_native_handle.h>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#  include <cuda/__ptx/instructions/mbarrier_init.h>
 #  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -52,6 +52,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 // Needed for pipeline.arrive_on
@@ -65,7 +69,12 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    barrier<thread_scope_block>& b);
+    barrier<thread_scope_block>& __b);
+
+  _CCCL_DEVICE ::cuda::std::uint64_t* __native_handle() const
+  {
+    return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
+  }
 
   template <typename _Barrier>
   friend class ::cuda::std::__barrier_poll_tester_phase;
@@ -89,139 +98,184 @@ public:
 
   _CCCL_API inline ~barrier()
   {
-    NV_DISPATCH_TARGET(
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                   // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
+                   asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+                     ::__cvta_generic_to_shared(&__barrier)))
+                                : "memory");
+                   return;
+                 }))
+
+    NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-            ::__cvta_generic_to_shared(&__barrier)))
-                       : "memory");
-        } else if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          ::__trap();
-        }),
-      NV_PROVIDES_SM_80,
-      (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-        asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-          ::__cvta_generic_to_shared(&__barrier)))
-                     : "memory");
-      }))
+      (_CCCL_ASSERT(!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared),
+                    "barrier must not be in cluster shared memory");))
   }
 
   _CCCL_API inline friend void init(barrier* __b,
                                     ::cuda::std::ptrdiff_t __expected,
                                     ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {
-    NV_DISPATCH_TARGET(
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
+                   ::cuda::ptx::mbarrier_init(__b->__native_handle(), static_cast<::cuda::std::uint32_t>(__expected));
+                   return;
+                 }))
+
+    NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
-                         static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
-                       "r"(static_cast<::cuda::std::uint32_t>(__expected))
-                       : "memory");
-        } else if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared)) {
-          ::__trap();
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
-      NV_PROVIDES_SM_80,
-      (
-        if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
-          asm volatile("mbarrier.init.shared.b64 [%0], %1;" ::"r"(
-                         static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__b->__barrier))),
-                       "r"(static_cast<::cuda::std::uint32_t>(__expected))
-                       : "memory");
-        } else { new (&__b->__barrier) __barrier_base(__expected); }),
-      NV_ANY_TARGET,
-      (new (&__b->__barrier) __barrier_base(__expected);))
-  }
+      (_CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
+                    "barrier must not be in cluster shared memory");))
 
-  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
-  {
-    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
-    arrival_token __token = {};
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return __barrier.arrive(__update);
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) { ::__trap(); }
-        // Cannot use cuda::device::barrier_native_handle here, as it is
-        // only defined for block-scope barriers. This barrier may be a
-        // non-block scoped barrier.
-        auto __bh = reinterpret_cast<::cuda::std::uint64_t*>(&__barrier);
-        __token   = ::cuda::ptx::mbarrier_arrive(__bh, __update);),
-      NV_PROVIDES_SM_80,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return __barrier.arrive(__update);
-        } auto __bh = reinterpret_cast<::cuda::std::uint64_t*>(&__barrier);
-        // Need 2 instructions, can't finish barrier with arrive > 1
-        if (__update > 1) { ::cuda::ptx::mbarrier_arrive_no_complete(__bh, __update - 1); } __token =
-          ::cuda::ptx::mbarrier_arrive(__bh);),
-      NV_PROVIDES_SM_70,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return __barrier.arrive(__update);
-        }
-
-        unsigned int __mask    = ::__activemask();
-        unsigned int __activeA = ::__match_any_sync(__mask, __update);
-        unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
-        unsigned int __active  = __activeA & __activeB;
-        int __inc              = ::cuda::std::popcount(__active) * __update;
-
-        int __leader = ::__ffs(__active) - 1;
-        // All threads in mask synchronize here, establishing cummulativity to the __leader:
-        ::__syncwarp(__mask);
-        if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid())) {
-          __token = __barrier.arrive(__inc);
-        } __token = ::__shfl_sync(__active, __token, __leader);),
-      NV_IS_HOST,
-      (__token = __barrier.arrive(__update);))
-    return __token;
+    new (&__b->__barrier) __barrier_base(__expected);
   }
 
 private:
-  _CCCL_API inline bool __test_wait_sm_80([[maybe_unused]] arrival_token __token) const
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE arrival_token __arrive_sm90(::cuda::std::ptrdiff_t __update)
   {
-    int32_t __ready = 0;
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_80,
-      (asm volatile(
-         "{\n\t"
-         ".reg .pred p;\n\t"
-         "mbarrier.test_wait.shared.b64 p, [%1], %2;\n\t"
-         "selp.b32 %0, 1, 0, p;\n\t"
-         "}" : "=r"(__ready) : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-         "l"(__token) : "memory");))
-    return __ready;
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return __barrier.arrive(__update);
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+    return ::cuda::ptx::mbarrier_arrive(__native_handle(), __update);
   }
 
-  // Document de drop > uint32_t for __nanosec on public for APIs
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE arrival_token __arrive_sm80(::cuda::std::ptrdiff_t __update)
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return __barrier.arrive(__update);
+    }
+    // Need 2 instructions, can't finish barrier with arrive > 1
+    if (__update > 1)
+    {
+      ::cuda::ptx::mbarrier_arrive_no_complete(__native_handle(), __update - 1);
+    }
+    return ::cuda::ptx::mbarrier_arrive(__native_handle());
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE arrival_token __arrive_sm70(::cuda::std::ptrdiff_t __update)
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return __barrier.arrive(__update);
+    }
+
+    unsigned int __mask    = ::__activemask();
+    unsigned int __activeA = ::__match_any_sync(__mask, __update);
+    unsigned int __activeB = ::__match_any_sync(__mask, reinterpret_cast<::cuda::std::uintptr_t>(&__barrier));
+    unsigned int __active  = __activeA & __activeB;
+    int __inc              = ::cuda::std::popcount(__active) * __update;
+
+    int __leader = ::__ffs(__active) - 1;
+    // All threads in mask synchronize here, establishing cummulativity to the __leader:
+    ::__syncwarp(__mask);
+    arrival_token __token = {};
+    if (__leader == static_cast<int>(::cuda::ptx::get_sreg_laneid()))
+    {
+      __token = __barrier.arrive(__inc);
+    }
+    return ::__shfl_sync(__active, __token, __leader);
+  }
+#endif // _CCCL_CUDA_COMPILATION()
+
+public:
+  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
+  {
+    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_90,
+      (return __arrive_sm90(__update);),
+      NV_PROVIDES_SM_80,
+      (return __arrive_sm80(__update);),
+      NV_PROVIDES_SM_70,
+      (return __arrive_sm70(__update);),
+      NV_IS_HOST,
+      (return __barrier.arrive(__update);))
+  }
+
+private:
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm90(arrival_token __token) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+    return ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token);
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm80(arrival_token __token) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+    }
+    return ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
+  }
+#endif // _CCCL_CUDA_COMPILATION()
+
   _CCCL_API inline bool __try_wait([[maybe_unused]] arrival_token __token) const
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        int32_t __ready = 0;
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          ::__trap();
-        } asm volatile("{\n\t"
-                       ".reg .pred p;\n\t"
-                       "mbarrier.try_wait.shared.b64 p, [%1], %2;\n\t"
-                       "selp.b32 %0, 1, 0, p;\n\t"
-                       "}" : "=r"(__ready) : "r"(
-                         static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-                       "l"(__token) : "memory");
-        return __ready;),
+      (return __try_wait_sm90(__token);),
       NV_PROVIDES_SM_80,
-      (if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-        return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
-      } return __test_wait_sm_80(__token);),
+      (return __try_wait_sm80(__token);),
       NV_ANY_TARGET,
       (return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));))
   }
+
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __try_wait_sm90(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must not be in cluster shared memory");
+
+    bool __ready = 0;
+    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    ::cuda::std::chrono::nanoseconds __elapsed;
+    do
+    {
+      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+      ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
+      __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    } while (!__ready && (__nanosec > __elapsed));
+    return __ready;
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __try_wait_sm80(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
+    }
+
+    bool __ready = false;
+    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    do
+    {
+      __ready = ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
+    } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
+    return __ready;
+  }
+#endif // _CCCL_CUDA_COMPILATION()
 
   // Document de drop > uint32_t for __nanosec on public for APIs
   _CCCL_API inline bool __try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
@@ -233,95 +287,95 @@ private:
 
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        int32_t __ready = 0;
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return ::cuda::std::__cccl_thread_poll_with_backoff(
-            ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) { ::__trap(); }
-
-        ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-          ::cuda::std::chrono::high_resolution_clock::now();
-        ::cuda::std::chrono::nanoseconds __elapsed;
-        do {
-          const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-          asm volatile(
-            "{\n\t"
-            ".reg .pred p;\n\t"
-            "mbarrier.try_wait.shared.b64 p, [%1], %2, %3;\n\t"
-            "selp.b32 %0, 1, 0, p;\n\t"
-            "}"
-            : "=r"(__ready)
-            : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-              "l"(__token),
-              "r"(__wait_nsec)
-            : "memory");
-          __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-        } while (!__ready && (__nanosec > __elapsed));
-        return __ready;),
+      (return __try_wait_sm90(__token, __nanosec);),
       NV_PROVIDES_SM_80,
-      (
-        bool __ready = 0;
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return ::cuda::std::__cccl_thread_poll_with_backoff(
-            ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
-        }
-
-        ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-          ::cuda::std::chrono::high_resolution_clock::now();
-        do {
-          __ready = __test_wait_sm_80(__token);
-        } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
-        return __ready;),
+      (return __try_wait_sm80(__token, __nanosec);),
       NV_ANY_TARGET,
       (return ::cuda::std::__cccl_thread_poll_with_backoff(
                 ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)),
                 ::cuda::std::chrono::nanoseconds(__nanosec));))
   }
 
-  _CCCL_API inline bool __test_wait_parity_sm_80([[maybe_unused]] bool __phase_parity) const
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm90(bool __phase_parity) const
   {
-    uint16_t __ready = 0;
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_80,
-      (asm volatile("{"
-                    ".reg .pred %%p;"
-                    "mbarrier.test_wait.parity.shared.b64 %%p, [%1], %2;"
-                    "selp.u16 %0, 1, 0, %%p;"
-                    "}" : "=h"(__ready) : "r"(static_cast<uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-                    "r"(static_cast<uint32_t>(__phase_parity)) : "memory");))
-    return __ready;
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+
+    return ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity);
   }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm80(bool __phase_parity) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+    }
+    return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
+  }
+#endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_API inline bool __try_wait_parity(bool __phase_parity) const
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          ::__trap();
-        } int32_t __ready = 0;
-
-        asm volatile(
-          "{\n\t"
-          ".reg .pred p;\n\t"
-          "mbarrier.try_wait.parity.shared.b64 p, [%1], %2;\n\t"
-          "selp.b32 %0, 1, 0, p;\n\t"
-          "}" : "=r"(__ready) : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-          "r"(static_cast<::cuda::std::uint32_t>(__phase_parity)) :);
-
-        return __ready;),
+      (return __try_wait_parity_sm90(__phase_parity);),
       NV_PROVIDES_SM_80,
-      (if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-        return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
-      }
-
-       return __test_wait_parity_sm_80(__phase_parity);),
+      (return __try_wait_parity_sm80(__phase_parity);),
       NV_ANY_TARGET,
       (return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);))
   }
+
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __try_wait_parity_sm90(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+
+    int32_t __ready = 0;
+    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    ::cuda::std::chrono::nanoseconds __elapsed;
+    do
+    {
+      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+      ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
+      __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    } while (!__ready && (__nanosec > __elapsed));
+
+    return __ready;
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
+  __try_wait_parity_sm80(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      return ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
+    }
+
+    bool __ready = 0;
+    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+      ::cuda::std::chrono::high_resolution_clock::now();
+    do
+    {
+      __ready = ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
+    } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
+
+    return __ready;
+  }
+#endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_API inline bool __try_wait_parity(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
@@ -332,48 +386,9 @@ private:
 
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        int32_t __ready = 0;
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return ::cuda::std::__cccl_thread_poll_with_backoff(
-            ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) { ::__trap(); }
-
-        ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-          ::cuda::std::chrono::high_resolution_clock::now();
-        ::cuda::std::chrono::nanoseconds __elapsed;
-        do {
-          const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-          asm volatile(
-            "{\n\t"
-            ".reg .pred p;\n\t"
-            "mbarrier.try_wait.parity.shared.b64 p, [%1], %2, %3;\n\t"
-            "selp.b32 %0, 1, 0, p;\n\t"
-            "}"
-            : "=r"(__ready)
-            : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))),
-              "r"(static_cast<::cuda::std::uint32_t>(__phase_parity)),
-              "r"(__wait_nsec)
-            : "memory");
-          __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-        } while (!__ready && (__nanosec > __elapsed));
-
-        return __ready;),
+      (__try_wait_parity_sm90(__phase_parity, __nanosec);),
       NV_PROVIDES_SM_80,
-      (
-        bool __ready = 0;
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          return ::cuda::std::__cccl_thread_poll_with_backoff(
-            ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
-        }
-
-        ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-          ::cuda::std::chrono::high_resolution_clock::now();
-        do {
-          __ready = __test_wait_parity_sm_80(__phase_parity);
-        } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
-
-        return __ready;),
+      (__try_wait_parity_sm80(__phase_parity, __nanosec);),
       NV_ANY_TARGET,
       (return ::cuda::std::__cccl_thread_poll_with_backoff(
                 ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
@@ -416,31 +431,50 @@ public:
     wait(arrive());
   }
 
+private:
+#if _CCCL_CUDA_COMPILATION()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm90()
+  {
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    {
+      return __barrier.arrive_and_drop();
+    }
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                 "barrier must be in shared memory, not cluster shared memory");
+
+    // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
+    asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+      ::__cvta_generic_to_shared(&__barrier)))
+                 : "memory");
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm80()
+  {
+    // Fallback to slowpath on device
+    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    {
+      __barrier.arrive_and_drop();
+      return;
+    }
+
+    // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
+    asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+      ::__cvta_generic_to_shared(&__barrier)))
+                 : "memory");
+  }
+#endif // _CCCL_CUDA_COMPILATION()
+
+public:
   _CCCL_API inline void arrive_and_drop()
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared)) {
-          return __barrier.arrive_and_drop();
-        } else if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) { ::__trap(); }
-
-        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
-          static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))) : "memory");),
+      (__arrive_and_drop_sm90();),
       NV_PROVIDES_SM_80,
-      (
-        // Fallback to slowpath on device
-        if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-          __barrier.arrive_and_drop();
-          return;
-        }
-
-        asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(
-          static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(&__barrier))) : "memory");),
+      (__arrive_and_drop_sm80();),
+      // Fallback to slowpath on device
       NV_ANY_TARGET,
-      (
-        // Fallback to slowpath on device
-        __barrier.arrive_and_drop();))
+      (__barrier.arrive_and_drop();))
   }
 
   _CCCL_API static constexpr ptrdiff_t max() noexcept
@@ -482,6 +516,13 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+{
+  return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
+}
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #include <cuda/std/__cccl/epilogue.h>
 

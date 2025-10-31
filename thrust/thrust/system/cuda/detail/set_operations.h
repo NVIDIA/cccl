@@ -596,7 +596,7 @@ struct SetOpAgent
               tile_output_prefix,
               tile_output_count);
 
-      if (HAS_VALUES::value)
+      if constexpr (HAS_VALUES::value)
       {
         value_type values_loc[ITEMS_PER_THREAD];
         gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);

@@ -252,24 +252,24 @@ enum BlockReduceAlgorithm
 //! @tparam T
 //!   Data type being reduced
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockReduceAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_REDUCE_WARP_REDUCTIONS)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
-          int BLOCK_DIM_Y                = 1,
-          int BLOCK_DIM_Z                = 1>
+          int BlockDimX,
+          BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
+          int BlockDimY                  = 1,
+          int BlockDimZ                  = 1>
 class BlockReduce
 {
 private:
@@ -277,22 +277,21 @@ private:
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
-  using WarpReductions = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using WarpReductionsNondeterministic =
-    detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, false>;
-  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
+  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
-    ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+    ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS,
                      WarpReductions,
-                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                     ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
                                       WarpReductionsNondeterministic,
-                                      ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                      ::cuda::std::_If<Algorithm == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
                                                        RakingCommutativeOnly,
                                                        Raking>>>; // BlockReduceRaking
 
@@ -324,7 +323,7 @@ public:
   //! storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -335,7 +334,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group

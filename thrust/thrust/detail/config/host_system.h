@@ -45,4 +45,6 @@
 
 // clang-format off
 #define __THRUST_HOST_SYSTEM_ROOT thrust/system/__THRUST_HOST_SYSTEM_NAMESPACE
+#define __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(filename) <__THRUST_HOST_SYSTEM_ROOT/filename>
+#define __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(filename) <__THRUST_HOST_SYSTEM_ROOT/detail/filename>
 // clang-format on

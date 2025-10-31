@@ -14,10 +14,10 @@
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/atomic>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
 
 #include <new> // IWYU pragma: keep (needed for placement new)

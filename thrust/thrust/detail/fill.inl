@@ -28,9 +28,21 @@
 
 #include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/fill.h>
-#include <thrust/system/detail/generic/fill.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/fill.h>
+#include <thrust/system/detail/sequential/fill.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(fill.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(fill.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/fill.h>
+#  include <thrust/system/cuda/detail/fill.h>
+#  include <thrust/system/omp/detail/fill.h>
+#  include <thrust/system/tbb/detail/fill.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

@@ -22,8 +22,8 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__event/timed_event.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>

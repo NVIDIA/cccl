@@ -27,7 +27,6 @@
 
 #    include <cuda/__barrier/async_contract_fulfillment.h>
 #    include <cuda/__barrier/barrier_block_scope.h>
-#    include <cuda/__barrier/barrier_native_handle.h>
 #    include <cuda/__memcpy_async/check_preconditions.h>
 #    include <cuda/__memory/address_space.h>
 #    include <cuda/__memory/aligned_size.h>

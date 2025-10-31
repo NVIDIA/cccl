@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/swap.h>
 

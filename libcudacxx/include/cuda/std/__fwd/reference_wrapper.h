@@ -27,6 +27,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_std_reference_wrapper_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_reference_wrapper_v<reference_wrapper<_Tp>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

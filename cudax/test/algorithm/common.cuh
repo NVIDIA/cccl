@@ -47,7 +47,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
-  cudax::legacy_pinned_memory_resource host_resource;
+  cuda::legacy_pinned_memory_resource host_resource;
   auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());

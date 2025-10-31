@@ -25,10 +25,10 @@
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
 #include <cuda/experimental/__execution/stream/bulk.cuh>
 #include <cuda/experimental/__execution/stream/context.cuh>
-#include <cuda/experimental/__execution/stream/continues_on.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/stream/launch.cuh>
 #include <cuda/experimental/__execution/stream/let_value.cuh>
+#include <cuda/experimental/__execution/stream/schedule_from.cuh>
 #include <cuda/experimental/__execution/stream/sequence.cuh>
 #include <cuda/experimental/__execution/stream/sync_wait.cuh>
 // IWYU pragma: end_exports

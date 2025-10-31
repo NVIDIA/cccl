@@ -11,6 +11,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_select.cuh>
 
 #include <format>
@@ -24,7 +25,6 @@
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/indirect_arg.h>
-#include <util/runtime_policy.h>
 #include <util/scan_tile_state.h>
 #include <util/tuning.h>
 #include <util/types.h>
@@ -254,7 +254,12 @@ CUresult cccl_device_unique_by_key_build_ex(
 
     const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
-    constexpr std::string_view src_template = R"XXX(
+    std::string policy_hub_expr =
+      std::format("cub::detail::unique_by_key::policy_hub<{}, {}>", input_keys_it_value_t, input_values_it_value_t);
+
+    std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/device/dispatch/kernels/scan.cuh>
 #include <cub/device/dispatch/kernels/unique_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
@@ -273,61 +278,8 @@ struct __align__({5}) num_out_storage_t {{
 {9}
 {10}
 {11}
-)XXX";
+using device_unique_by_key_policy = {12}::MaxPolicy;
 
-    const std::string src = std::format(
-      src_template,
-      input_keys_it.value_type.size, // 0
-      input_keys_it.value_type.alignment, // 1
-      input_values_it.value_type.size, // 2
-      input_values_it.value_type.alignment, // 3
-      output_values_it.value_type.size, // 4
-      output_values_it.value_type.alignment, // 5
-      input_keys_iterator_src, // 6
-      input_values_iterator_src, // 7
-      output_keys_iterator_src, // 8
-      output_values_iterator_src, // 9
-      output_num_selected_iterator_src, // 10
-      op_src); // 11
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    std::vector<const char*> ptx_args = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    cccl::detail::extend_args_with_build_config(ptx_args, config);
-
-    std::string policy_hub_expr =
-      std::format("cub::detail::unique_by_key::policy_hub<{}, {}>", input_keys_it_value_t, input_values_it_value_t);
-
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::unique_by_key::MakeUniqueByKeyPolicyWrapper({}::MaxPolicy::ActivePolicy{{}})",
-                  policy_hub_expr),
-      "#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>\n" + src,
-      ptx_args);
-
-    auto delay_ctor_info = runtime_policy["DelayConstructor"];
-    std::string delay_ctor_params;
-    for (auto&& param : delay_ctor_info["params"])
-    {
-      delay_ctor_params.append(to_string(param) + ", ");
-    }
-    delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
-    auto delay_ctor_t =
-      std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
-
-    using cub::detail::RuntimeUniqueByKeyAgentPolicy;
-    auto [ubk_policy, ubk_policy_str] =
-      RuntimeUniqueByKeyAgentPolicy::from_json(runtime_policy, "UniqueByKeyPolicyT", delay_ctor_t);
-
-    std::string final_src = std::format(
-      R"XXX(
-{0}
-struct device_unique_by_key_policy {{
-  struct ActivePolicy {{
-    {1}
-  }};
-}};
 struct device_unique_by_key_vsmem_helper {{
   template<typename ActivePolicyT, typename... Ts>
   struct VSMemHelperDefaultFallbackPolicyT {{
@@ -346,9 +298,26 @@ struct device_unique_by_key_vsmem_helper {{
     }}
   }};
 }};
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_unique_by_key_policy")>()
+    = cub::detail::unique_by_key::UniqueByKeyPolicyWrapper<device_unique_by_key_policy::ActivePolicy>::EncodedPolicy();
+}}
 )XXX",
-      src,
-      ubk_policy_str);
+      input_keys_it.value_type.size, // 0
+      input_keys_it.value_type.alignment, // 1
+      input_values_it.value_type.size, // 2
+      input_values_it.value_type.alignment, // 3
+      output_values_it.value_type.size, // 4
+      output_values_it.value_type.alignment, // 5
+      input_keys_iterator_src, // 6
+      input_values_iterator_src, // 7
+      output_keys_iterator_src, // 8
+      output_values_iterator_src, // 9
+      output_num_selected_iterator_src, // 10
+      op_src, // 11
+      policy_hub_expr); // 12
 
 #if false // CCCL_DEBUGGING_SWITCH
       fflush(stderr);
@@ -365,7 +334,16 @@ struct device_unique_by_key_vsmem_helper {{
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -402,6 +380,12 @@ struct device_unique_by_key_vsmem_helper {{
 
     auto [description_bytes_per_tile,
           payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_unique_by_key_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeUniqueByKeyAgentPolicy;
+    auto ubk_policy = RuntimeUniqueByKeyAgentPolicy::from_json(runtime_policy, "UniqueByKeyPolicyT");
 
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();

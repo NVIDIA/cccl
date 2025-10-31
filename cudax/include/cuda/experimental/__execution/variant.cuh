@@ -49,6 +49,9 @@ namespace cuda::experimental::execution
 /* the need for a default constructor for each alternative type.                */
 /********************************************************************************/
 
+struct __monostate
+{};
+
 template <class _Idx, class... _Ts>
 class __variant_impl;
 
@@ -209,7 +212,13 @@ struct __variant : __variant_impl<::cuda::std::index_sequence_for<_Ts...>, _Ts..
 {};
 
 template <class... _Ts>
+using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, _Ts...>;
+
+template <class... _Ts>
 using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
+
+template <class... _Ts>
+using __nullable_decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_reference.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -56,10 +57,7 @@ concept equality_comparable_with =
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__with_lvalue_reference_, requires()(typename(__make_const_lvalue_ref<_Tp>)));
-
-template <class _Tp>
-_CCCL_CONCEPT _With_lvalue_reference = _CCCL_FRAGMENT(__with_lvalue_reference_, _Tp);
+_CCCL_CONCEPT _With_lvalue_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__make_const_lvalue_ref<_Tp>));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(

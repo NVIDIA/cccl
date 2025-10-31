@@ -109,7 +109,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
     return;
   }
 
-  cccl_device_transform_build_result_t build;
+  cccl_device_transform_build_result_t build{};
   operation_t op = make_operation("op", get_unary_op(get_type_info<int>().type));
   REQUIRE(
     CUDA_SUCCESS
@@ -254,10 +254,12 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus on unsigned type
   std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
     return -x;
   });
-
+  _CCCL_DIAG_POP
   if (num_items > 0)
   {
     REQUIRE(expected == std::vector<T>(output_ptr));
@@ -536,7 +538,11 @@ C2H_TEST("Transform works with floating point types", "[transform]", floating_po
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
   const std::vector<int> int_input = generate<int>(num_items);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);

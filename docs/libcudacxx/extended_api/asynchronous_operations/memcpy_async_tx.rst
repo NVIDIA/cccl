@@ -43,7 +43,7 @@ It gives more control over the synchronization with a barrier than ``memcpy_asyn
 Currently, ``memcpy_async_tx`` has no synchronous fallback mechanism., i.e., it currently does not work on older hardware
 (pre-CUDA Compute Capability 9.0, i.e., Hopper).
 
- .. _libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx-example:
+.. _libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx-example:
 
 Example
 -------
@@ -91,22 +91,3 @@ Example
    }
 
 `See it on Godbolt <https://godbolt.org/z/M8zqnrz9b>`_
-
-We previously recommended the following pattern to launch the async copy from a single thread
-and wait for its completion, but it's less efficient than the above pattern:
-
-.. code:: cuda
-
-     // LESS EFFICIENT: issue the async copy from a single thread and wait for completion
-     barrier::arrival_token token;
-     if (threadIdx.x == 0) {
-       cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
-       token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
-     } else {
-       token = bar.arrive(1);
-     }
-     bar.wait(cuda::std::move(token));
-
-This generates worse code, since it branches the program for the barrier arrival
-(the elected thread arrives in a different code path and the rest).
-Please use the better pattern shown in the main example above.

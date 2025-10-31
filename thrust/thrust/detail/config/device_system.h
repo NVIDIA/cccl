@@ -52,4 +52,6 @@
 
 // clang-format off
 #define __THRUST_DEVICE_SYSTEM_ROOT thrust/system/__THRUST_DEVICE_SYSTEM_NAMESPACE
+#define __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(filename) <__THRUST_DEVICE_SYSTEM_ROOT/filename>
+#define __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(filename) <__THRUST_DEVICE_SYSTEM_ROOT/detail/filename>
 // clang-format on

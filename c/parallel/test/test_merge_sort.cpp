@@ -386,7 +386,7 @@ struct DeviceMergeSort_SortPairs_Iterators_Fixture_Tag;
 C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]")
 {
   using key_t         = int;
-  using item_t        = int;
+  using int_item_t    = int;
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
 
   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<key_t>().type));
@@ -396,13 +396,13 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
     make_random_access_iterator<key_t>(iterator_kind::INPUT, "int", "item");
 
   std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
-  std::vector<item_t> input_items(num_items);
+  std::vector<int_item_t> input_items(num_items);
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](key_t key) {
-    return static_cast<item_t>(key);
+    return static_cast<int_item_t>(key);
   });
 
-  std::vector<key_t> expected_keys   = input_keys;
-  std::vector<item_t> expected_items = input_items;
+  std::vector<key_t> expected_keys       = input_keys;
+  std::vector<int_item_t> expected_items = input_items;
 
   pointer_t<key_t> input_keys_ptr(input_keys);
   input_keys_it.state.data = input_keys_ptr.ptr;
@@ -410,14 +410,14 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
   input_items_it.state.data = input_items_ptr.ptr;
 
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Iterators_Fixture_Tag>();
-  const auto& test_key = make_key<key_t, item_t>();
+  const auto& test_key = make_key<key_t, int_item_t>();
 
   merge_sort(input_keys_it, input_items_it, input_keys_ptr, input_items_ptr, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
   REQUIRE(expected_keys == std::vector<key_t>(input_keys_ptr));
-  REQUIRE(expected_items == std::vector<item_t>(input_items_ptr));
+  REQUIRE(expected_items == std::vector<int_item_t>(input_items_ptr));
 }
 
 // These tests with output iterators are currently failing https://github.com/NVIDIA/cccl/issues/3722

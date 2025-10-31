@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -29,7 +30,6 @@
 #include <cuda/std/__type_traits/is_core_convertible.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_member_object_pointer.h>
-#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
@@ -67,7 +67,7 @@ using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> &
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -75,7 +75,7 @@ template <class _Fp,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -86,7 +86,7 @@ using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && 
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -94,7 +94,7 @@ template <class _Fp,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
