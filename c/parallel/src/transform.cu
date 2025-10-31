@@ -171,15 +171,40 @@ runtime_tuning_policy* make_runtime_tuning_policy(cdt::Algorithm algorithm, int 
     algo_policy));
 }
 
+struct cache
+{
+  cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::async_config>> async_config{};
+  cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>> prefetch_config{};
+};
+
 template <int NumInputs>
 struct transform_kernel_source
 {
   cccl_device_transform_build_result_t& build;
   std::array<cuda::std::pair<cuda::std::size_t, cuda::std::size_t>, NumInputs> it_value_sizes_alignments;
 
-  static constexpr bool CanCacheConfiguration()
+  template <class ActionT>
+  cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
+  CacheAsyncConfiguration(const ActionT& action)
   {
-    return false;
+    auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (!cache->async_config.has_value())
+    {
+      cache->async_config = action();
+    }
+    return *cache->async_config;
+  }
+
+  template <class ActionT>
+  cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>
+  CachePrefetchConfiguration(const ActionT& action)
+  {
+    auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (!cache->prefetch_config.has_value())
+    {
+      cache->prefetch_config = action();
+    }
+    return *cache->prefetch_config;
   }
 
   CUkernel TransformKernel() const
@@ -372,6 +397,7 @@ __device__ consteval auto& policy_generator() {{
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
     build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
+    build_ptr->cache                      = new transform::cache();
   }
   catch (const std::exception& exc)
   {
@@ -599,6 +625,7 @@ __device__ consteval auto& policy_generator() {{
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
     build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
+    build_ptr->cache                      = new transform::cache();
   }
   catch (const std::exception& exc)
   {
@@ -715,6 +742,7 @@ CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* bui
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
     std::unique_ptr<transform::runtime_tuning_policy> rtp(
       reinterpret_cast<transform::runtime_tuning_policy*>(build_ptr->runtime_policy));
+    std::unique_ptr<transform::cache> cache(reinterpret_cast<transform::cache*>(build_ptr->cache));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
