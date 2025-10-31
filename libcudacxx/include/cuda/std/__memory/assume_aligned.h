@@ -24,7 +24,6 @@
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
 
@@ -40,7 +39,7 @@ template <size_t _Align, class _Tp>
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __ptr;
 #else
-  if (!::cuda::std::is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
     _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");

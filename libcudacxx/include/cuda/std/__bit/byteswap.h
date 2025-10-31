@@ -25,7 +25,6 @@
 #  include <cuda/__ptx/instructions/prmt.h>
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -110,7 +109,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP16)
   return _CCCL_BUILTIN_BSWAP16(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
@@ -126,7 +125,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP32)
   return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
@@ -142,7 +141,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP64)
   return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
