@@ -28,7 +28,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
-#include <cuda/experimental/__execution/continues_on.cuh>
+#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
@@ -45,15 +45,15 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
-//! The customization of continues_on, when transferring back to the CPU, involves
+//! The customization of schedule_from, when transferring back to the CPU, involves
 //! adapting the sender and receiver types.
 //!
-//! A continues_on sender such as continues_on(sndr, sch), where sndr completes on the GPU,
+//! A schedule_from sender such as schedule_from(sndr), where sndr completes on the GPU,
 //! needs to synchronize the CUDA stream to ensure that all queued GPU work is finished.
 //! Only then can the schedule operation be safely invoked -- from the CPU.
 //!
-//! To effect this, continues_on(sndr, sch) is transformed into
-//! continues_on(SYNC-STREAM-ADAPTOR(sndr), sch), where SYNC-STREAM-ADAPTOR(sndr) is a
+//! To effect this, schedule_from(sndr) is transformed into
+//! schedule_from(SYNC-STREAM-ADAPTOR(sndr)), where SYNC-STREAM-ADAPTOR(sndr) is a
 //! sender that does the following:
 //!
 //! 1. In connect (called on host): Connects sndr with a sink receiver that ignores values
@@ -64,7 +64,7 @@ namespace __stream
 //!    predecessor operations, and then synchronizes the CUDA stream to ensure all queued
 //!    GPU work is finished. Then, it pulls the results from sndr's operation state and
 //!    passes them to the receiver on the host.
-struct __continues_on_t
+struct __schedule_from_t
 {
   // Transition from the GPU to the CPU domain
   template <class _Rcvr>
@@ -131,7 +131,7 @@ struct __continues_on_t
       {
         // __opstate_ is an instance of __stream::__opstate_t, and it has a __set_results
         // member function that will pass the results to the receiver on the host. __rcvr_
-        // is the receiver of the parent default continues_on operation. That receiver
+        // is the receiver of the parent default schedule_from operation. That receiver
         // will then start the schedule operation on the host.
         __opstate_.__set_results(__rcvr_);
       }
@@ -139,7 +139,7 @@ struct __continues_on_t
 
     [[noreturn]] _CCCL_DEVICE_API void __device_start() noexcept
     {
-      _CCCL_ASSERT(false, "internal error: stream::continues_on opstate started on device");
+      _CCCL_ASSERT(false, "internal error: stream::schedule_from opstate started on device");
       ::cuda::std::terminate();
 
       // We do not want the following to be called, but we need these code paths to be
@@ -185,7 +185,7 @@ struct __continues_on_t
 
     // The use of __tag_t here instructs the stream_domain not to apply any further
     // transformations to this sender. See stream/domain.cuh.
-    /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<continues_on_t> __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<schedule_from_t> __tag_;
     /*_CCCL_NO_UNIQUE_ADDRESS*/ ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
@@ -196,14 +196,15 @@ struct __continues_on_t
     return __sndr_t<_Sndr>{{}, {}, static_cast<_Sndr&&>(__sndr)};
   }
 
-  // This function is called when a continues_on sender, with a predecessor that completes
+  // This function is called when a schedule_from sender, with a predecessor that completes
   // on the stream scheduler, is being connected. It wraps the child sender so that it
   // synchronizes the stream after launching the child.
   template <class _Sndr>
   [[nodiscard]] _CCCL_API auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
-    [[maybe_unused]] auto& [__tag, __sched, __child] = __sndr;
-    using __child_t                                  = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
+    static_assert(sender_for<_Sndr, schedule_from_t>);
+    [[maybe_unused]] auto& [__tag, __ign, __child] = __sndr;
+    using __child_t                                = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
     if constexpr (::cuda::__is_specialization_of_v<decltype(__child), __sndr_t>)
     {
@@ -211,18 +212,18 @@ struct __continues_on_t
     }
     else
     {
-      return execution::continues_on(__mk_sndr(static_cast<__child_t&&>(__child)), __sched);
+      return execution::schedule_from(__mk_sndr(static_cast<__child_t&&>(__child)));
     }
   }
 };
 } // namespace __stream
 
 template <>
-struct stream_domain::__apply_t<continues_on_t> : __stream::__continues_on_t
+struct stream_domain::__apply_t<schedule_from_t> : __stream::__schedule_from_t
 {};
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<__stream::__continues_on_t::__sndr_t<_Sndr>> = 3;
+inline constexpr size_t structured_binding_size<__stream::__schedule_from_t::__sndr_t<_Sndr>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
