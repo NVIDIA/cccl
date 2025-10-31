@@ -182,6 +182,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_unchunked_t;
@@ -199,7 +200,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT get_forward_progress_guarantee_t;
 template <class _Tag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_t;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_override_t;
 template <class _Tag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_domain_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_behavior_t;

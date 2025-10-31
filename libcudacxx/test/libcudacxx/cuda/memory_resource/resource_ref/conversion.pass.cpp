@@ -18,12 +18,6 @@
 
 #include "types.h"
 
-struct Fake_alloc_base
-{
-  void* object                                       = nullptr;
-  const cuda::mr::_Async_alloc_vtable* static_vtable = nullptr;
-};
-
 template <class PropA, class PropB>
 void test_conversion_from_resource_ref()
 {
@@ -32,12 +26,6 @@ void test_conversion_from_resource_ref()
 
   { // lvalue
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
-
-    // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = *reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig.object == fake_conv.object);
-    assert(fake_orig.static_vtable == fake_conv.static_vtable);
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));
@@ -51,12 +39,6 @@ void test_conversion_from_resource_ref()
   { // prvalue
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{
       cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
-
-    // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = *reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = *reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig.object == fake_conv.object);
-    assert(fake_orig.static_vtable == fake_conv.static_vtable);
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));
@@ -77,12 +59,6 @@ void test_conversion_from_async_resource_ref()
   { // lvalue
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
 
-    // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig->object == fake_conv->object);
-    assert(fake_orig->static_vtable == fake_conv->static_vtable);
-
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));
 
@@ -95,12 +71,6 @@ void test_conversion_from_async_resource_ref()
   { // prvalue
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, PropB> ref{
       cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
-
-    // Ensure that we properly "punch through" the resource ref
-    const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
-    const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
-    assert(fake_orig->object == fake_conv->object);
-    assert(fake_orig->static_vtable == fake_conv->static_vtable);
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));

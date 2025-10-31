@@ -344,12 +344,16 @@ template <
   class CompareOp,
   ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
-  execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+  execution_policy<Policy>& policy,
+  KeysIt keys_first,
+  KeysIt keys_last,
+  [[maybe_unused]] ItemsIt items_first,
+  CompareOp compare_op)
 {
   // ensure sequences have trivial iterators
   thrust::detail::trivial_sequence<KeysIt, Policy> keys(policy, keys_first, keys_last);
 
-  if (SORT_ITEMS::value)
+  if constexpr (SORT_ITEMS::value)
   {
     thrust::detail::trivial_sequence<ItemsIt, Policy> values(
       policy, items_first, items_first + (keys_last - keys_first));
@@ -361,7 +365,7 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
       keys_last - keys_first,
       compare_op);
 
-    if (!is_contiguous_iterator_v<ItemsIt>)
+    if constexpr (!is_contiguous_iterator_v<ItemsIt>)
     {
       cuda_cub::copy(policy, values.begin(), values.end(), items_first);
     }
@@ -377,7 +381,7 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   }
 
   // copy results back, if necessary
-  if (!is_contiguous_iterator_v<KeysIt>)
+  if constexpr (!is_contiguous_iterator_v<KeysIt>)
   {
     cuda_cub::copy(policy, keys.begin(), keys.end(), keys_first);
   }

@@ -35,7 +35,7 @@ The functions provide utilities to determine if an integer value is a power of t
 
 **Constraints**
 
-- ``T`` is an integer types. Contrary to ``cuda::std::has_single_bit``, ``cuda::bit_floor``, and ``cuda::bit_ceil``, ``T`` can be both signed and unsigned.
+- ``T`` is an integer types. Contrary to ``cuda::std::has_single_bit``, ``cuda::std::bit_floor``, and ``cuda::std::bit_ceil``, ``T`` can be both signed and unsigned.
 
 **Preconditions**
 

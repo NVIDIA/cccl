@@ -71,50 +71,50 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentSelectIf
  *
- * @tparam _BLOCK_THREADS
+ * @tparam BlockThreads
  *   Threads per thread block
  *
- * @tparam _ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   Items per thread (per tile of input)
  *
- * @tparam _LOAD_ALGORITHM
+ * @tparam LoadAlgorithm
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading input elements
  *
- * @tparam _SCAN_ALGORITHM
+ * @tparam ScanAlgorithm
  *   The BlockScan algorithm to use
  *
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentSelectIfPolicy
 {
   enum
   {
     /// Threads per thread block
-    BLOCK_THREADS = _BLOCK_THREADS,
+    BLOCK_THREADS = BlockThreads,
 
     /// Items per thread (per tile of input)
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+    ITEMS_PER_THREAD = ItemsPerThread,
   };
 
   /// The BlockLoad algorithm to use
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   /// The BlockScan algorithm to use
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {

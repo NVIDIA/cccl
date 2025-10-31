@@ -120,4 +120,11 @@
 #  define _CCCL_CONSTINIT _CCCL_REQUIRE_CONSTANT_INITIALIZATION
 #endif // ^^^ no constinit ^^^
 
+// nvcc and nvrtc don't implement multiarg operator[] even in C++23 mode
+#if __cpp_multidimensional_subscript >= 202211L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
+#  define _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() 1
+#else // ^^^ has multiarg operator[] ^^^ / vvv no multiarg operator[] vvv
+#  define _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() 0
+#endif // ^^^ no mutiarg operator[] ^^^
+
 #endif // __CCCL_DIALECT_H

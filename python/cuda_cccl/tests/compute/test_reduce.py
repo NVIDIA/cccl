@@ -625,7 +625,6 @@ def test_device_reduce_well_known_plus():
     assert (d_output == expected_output).all()
 
 
-@pytest.mark.xfail(reason="MINIMUM op is not implemented. See GH #5515")
 def test_device_reduce_well_known_minimum():
     dtype = np.int32
     h_init = np.array([100], dtype=dtype)
@@ -638,7 +637,6 @@ def test_device_reduce_well_known_minimum():
     assert (d_output == expected_output).all()
 
 
-@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
 def test_device_reduce_well_known_maximum():
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)

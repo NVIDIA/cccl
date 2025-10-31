@@ -38,24 +38,25 @@
 
 namespace ptx_json
 {
-template <auto T, typename = value_traits<T>::type>
-struct tagged_json;
+template <auto V, typename = cuda::std::make_index_sequence<V.Length>>
+const char reify[V.Length] = {};
 
-template <int N, string<N> T, cuda::std::size_t... Is>
-struct tagged_json<T, cuda::std::index_sequence<Is...>>
+template <int N, string<N> V, cuda::std::size_t... Is>
+__device__ const char reify<V, cuda::std::index_sequence<Is...>>[] = {V.str[Is]...};
+
+template <auto Tag>
+struct tagged_json
 {
   template <typename V, typename = cuda::std::enable_if_t<is_object<V>::value || is_array<V>::value>>
-  __noinline__ __device__ void operator=(V)
+  __device__ consteval auto& operator=(V v)
   {
-    static constexpr char str[]{T.str[Is]...};
-    asm volatile("cccl.ptx_json.begin(%0)\n\n" ::"C"(str) : "memory");
-    V::emit();
-    asm volatile("\ncccl.ptx_json.end(%0)" ::"C"(str) : "memory");
+    return reify<string(
+      "\ncccl.ptx_json.begin(", value<Tag>::emit(), ")", V::emit(), "cccl.ptx_json.end(", value<Tag>::emit(), ")\n")>;
   }
 };
 
 template <auto T>
-__forceinline__ __device__ tagged_json<T> id()
+__device__ consteval tagged_json<T> id()
 {
   return {};
 }
