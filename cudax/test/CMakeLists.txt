@@ -78,6 +78,16 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     launch/dynamic_shared_memory.cu
   )
 
+  # Unified memory is not supported on Windows:
+  set(execution_unified_memory_tests)
+  if (NOT _CCCL_WINDOWS)
+    list(
+      APPEND execution_unified_memory_tests
+      execution/test_on.cu
+      execution/test_stream_context.cu
+    )
+  endif()
+
   cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/env.cu
     execution/policies/policies.cu
@@ -89,15 +99,14 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     execution/test_continues_on.cu
     execution/test_just.cu
     execution/test_let_value.cu
-    execution/test_on.cu
     execution/test_sequence.cu
     execution/test_starts_on.cu
-    execution/test_stream_context.cu
     execution/test_then.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
     execution/test_write_env.cu
+    ${execution_unified_memory_tests}
   )
 
   target_compile_options(
