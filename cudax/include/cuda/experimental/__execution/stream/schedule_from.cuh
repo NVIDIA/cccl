@@ -28,9 +28,9 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
-#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
