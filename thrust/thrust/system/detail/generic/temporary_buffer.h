@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/pair.h>
 #include <thrust/system/detail/generic/tag.h>
@@ -37,18 +38,45 @@ template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
 thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
-                     typename thrust::pointer<T, DerivedPolicy>::difference_type n);
+                     typename thrust::pointer<T, DerivedPolicy>::difference_type n)
+{
+  thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
+
+  // check for a failed malloc
+  if (!ptr.get())
+  {
+    n = 0;
+  } // end if
+
+  return thrust::make_pair(ptr, n);
+} // end get_temporary_buffer()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void
-return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t n);
+_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t)
+{
+  // If we are here, no user customization of the three-argument signature with
+  // a size parameter of `return_temporary_buffer` was found. There may be an
+  // old two-argument signature `return_temporary_buffer` though, so we make
+  // another ADL call to try and find one.
+  //
+  // The interface layer downcast and then did ADL dispatch - there were no
+  // matches for DerivedPolicy (aka no one customized the three-argument
+  // signature), so this overload got found an implicit upcast to
+  // `execution_policy<DerivedPolicy>` was done. Now, we're looking for a
+  // customization of the two-argument signature so we need to downcast again.
+  return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), p);
+} // end return_temporary_buffer()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p);
+_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p)
+{
+  // If we are here, no user customization of either the old two-argument
+  // signature or the new three-argument signature with a size parameter of
+  // `return_temporary_buffer` was found.
+  thrust::free(exec, p);
+} // end return_temporary_buffer()
 
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/temporary_buffer.inl>

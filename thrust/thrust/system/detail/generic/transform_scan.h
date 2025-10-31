@@ -25,7 +25,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/type_traits.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/scan.h>
 #include <thrust/system/detail/generic/tag.h>
+
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -42,13 +47,24 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InputIterator last,
   OutputIterator result,
   UnaryFunction unary_op,
-  BinaryFunction binary_op);
+  BinaryFunction binary_op)
+{
+  // Use the input iterator's value type per https://wg21.link/P0571
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
+  using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
+  using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
+
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
+
+  return thrust::inclusive_scan(exec, _first, _last, result, binary_op);
+} // end transform_inclusive_scan()
 
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename UnaryFunction,
-          typename T,
+          typename InitialValueType,
           typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
@@ -56,14 +72,24 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InputIterator last,
   OutputIterator result,
   UnaryFunction unary_op,
-  T init,
-  BinaryFunction binary_op);
+  InitialValueType init,
+  BinaryFunction binary_op)
+{
+  using InputType  = thrust::detail::it_value_t<InputIterator>;
+  using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
+  using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
+
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
+
+  return thrust::inclusive_scan(exec, _first, _last, result, init, binary_op);
+} // end transform_inclusive_scan()
 
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename OutputIterator,
           typename UnaryFunction,
-          typename T,
+          typename InitialValueType,
           typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
@@ -71,10 +97,17 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   InputIterator last,
   OutputIterator result,
   UnaryFunction unary_op,
-  T init,
-  AssociativeOperator binary_op);
+  InitialValueType init,
+  AssociativeOperator binary_op)
+{
+  // Use the initial value type per https://wg21.link/P0571
+  using ValueType = ::cuda::std::remove_cvref_t<InitialValueType>;
+
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
+
+  return thrust::exclusive_scan(exec, _first, _last, result, init, binary_op);
+} // end transform_exclusive_scan()
 
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/transform_scan.inl>
