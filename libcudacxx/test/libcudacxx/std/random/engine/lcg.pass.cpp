@@ -45,6 +45,15 @@ void test_std_engines()
       }
     }
   }
+  cuda::std::seed_seq seq({42, 43, 44, 45});
+  E1 e1(seq);
+  E2 e2(seq);
+  for (int i = 0; i < 100; ++i)
+  {
+    auto v1 = e1();
+    auto v2 = e2();
+    assert(v1 == v2);
+  }
 }
 
 void test_against_std()
