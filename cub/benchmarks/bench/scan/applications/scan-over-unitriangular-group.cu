@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
@@ -68,6 +68,7 @@ using triplet_t = cuda::std::tuple<T, T, T>;
 */
 struct Unitriangular3_Op
 {
+  // Scan operation: associative and non-commutative
   template <typename T>
   triplet_t<T> __host__ __device__ operator()(triplet_t<T> a, triplet_t<T> b) const
   {
@@ -78,6 +79,7 @@ struct Unitriangular3_Op
   }
 };
 
+// Utility operation to pack arguments into a triplet_t instance
 struct Pack
 {
   template <typename T>
@@ -88,8 +90,13 @@ struct Pack
 };
 
 template <typename TupleT, typename ScanOpT>
-bool validation(const thrust::device_vector<TupleT>& input, const thrust::device_vector<TupleT>& output, ScanOpT op)
+bool validation(const thrust::device_vector<TupleT>& input,
+                const thrust::device_vector<TupleT>& output,
+                ScanOpT op,
+                cudaStream_t stream)
 {
+  cudaStreamSynchronize(stream);
+
   using tuple_t = TupleT;
   thrust::host_vector<tuple_t> h_input(input);
   thrust::host_vector<tuple_t> h_output(output);
@@ -163,15 +170,14 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  cudaStreamSynchronize(bench_stream);
-  // for validation for integral types and smallish input sizes
-  // assert(impl::validation(input, output, op_t{}));
+  // for validation use (recommended for integral types and smallish input sizes)
+  // assert(impl::validation(input, output, op_t{}, bench_stream));
 }
 
 using bench_types =
-  nvbench::type_list<cuda::std::uint32_t,
+  nvbench::type_list<nvbench::uint32_t,
                      nvbench::int32_t,
-                     cuda::std::uint64_t,
+                     nvbench::uint64_t,
                      nvbench::int64_t,
                      nvbench::float32_t,
                      nvbench::float64_t>;

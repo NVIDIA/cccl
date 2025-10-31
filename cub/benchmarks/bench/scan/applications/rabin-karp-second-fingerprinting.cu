@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
@@ -126,6 +126,7 @@ struct RabinKarpOp
       : m_p(static_cast<WideT>(p))
   {}
 
+  // scan operator: non-commutative and associative
   MatT __host__ __device__ operator()(MatT v1, MatT v2) const
   {
     return Zp_matmul(v1, v2, m_p);
@@ -169,8 +170,8 @@ struct ChunkToMat
 
 // Iterator that performs assignment at specific index only, discards otherwise
 //
-// This iterator allows tp use inclusive_scan to perform reduction with non-commutative,
-// but associative binary operator
+// This iterator allows tp use inclusive_scan to perform reduction with
+// non-commutative associative binary operator
 //
 template <typename OffsetT, typename Iter>
 struct write_at_specific_index_or_discard
@@ -241,11 +242,13 @@ public:
 };
 
 template <typename InputT, typename OutputT>
-[[nodiscard]] bool
-validate(const thrust::device_vector<InputT>& input, const thrust::device_vector<OutputT>& output, ZpT p)
+[[nodiscard]] bool validate(
+  const thrust::device_vector<InputT>& input, const thrust::device_vector<OutputT>& output, ZpT p, cudaStream_t stream)
 {
   using accum_t = OutputT;
   using input_t = InputT;
+
+  cudaStreamSynchronize(stream);
 
   thrust::host_vector<accum_t> h_out(output);
   thrust::host_vector<input_t> h_inp(input);
@@ -353,9 +356,8 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
       launch.get_stream());
   });
 
-  cudaStreamSynchronize(bench_stream);
   // for validation uncomment these two lines
-  // assert(impl::validate(input, output, p));
+  // assert(impl::validate(input, output, p, bench_stream));
 }
 
 using type_list = nvbench::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint32_t, cuda::std::uint64_t>;

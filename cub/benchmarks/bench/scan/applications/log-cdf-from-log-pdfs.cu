@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
@@ -73,6 +73,7 @@ namespace impl
 
 struct LogAddPlus
 {
+  /* Operator is commutative and associative */
   template <typename T>
   T __host__ __device__ operator()(T v1, T v2)
   {
@@ -97,8 +98,10 @@ struct LogPDBuilder
 };
 
 template <typename T>
-[[nodiscard]] bool validate(const thrust::device_vector<T>& output)
+[[nodiscard]] bool validate(const thrust::device_vector<T>& output, cudaStream_t stream)
 {
+  cudaStreamSynchronize(stream);
+
   thrust::host_vector<T> h_output(output);
   auto elements = h_output.size();
   // test is designed so that last element of prefix scan sequence should be close to log(1.0) == 0.0
@@ -166,9 +169,8 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 
-  cudaStreamSynchronize(bench_stream);
   // for validation, use
-  // assert(impl::validate(output));
+  // assert(impl::validate(output, bench_stream));
 }
 
 using fp_types = nvbench::type_list<float, double>;
