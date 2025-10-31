@@ -183,7 +183,8 @@ struct transform_kernel_source
   std::array<cuda::std::pair<cuda::std::size_t, cuda::std::size_t>, NumInputs> it_value_sizes_alignments;
 
   template <class ActionT>
-  cub::detail::transform::cuda_expected<cub::detail::transform::async_config> CacheConfiguration(const ActionT& action)
+  cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
+  CacheAsyncConfiguration(const ActionT& action)
   {
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
     if (!cache->async_config.has_value())

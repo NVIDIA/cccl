@@ -99,7 +99,7 @@ struct TransformKernelSource<Offset,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
   template <class ActionT>
-  CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheConfiguration(const ActionT& action)
+  CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheAsyncConfiguration(const ActionT& action)
   {
     NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
@@ -289,7 +289,7 @@ struct dispatch_t<StableAddress,
       }
       return last_config;
     };
-    cuda_expected<async_config> config = kernel_source.CacheConfiguration(determine_element_counts);
+    cuda_expected<async_config> config = kernel_source.CacheAsyncConfiguration(determine_element_counts);
     if (!config)
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(config.error());
