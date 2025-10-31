@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/**
- * @file cub::DeviceFind provides device-wide, parallel operations for
- *       computing search across a sequence of data items residing within
- *       device-accessible memory.
- */
-
+//! @file
+//! cub::DeviceFind provides device-wide, parallel operations for
+//! computing search across a sequence of data items residing within
+//! device-accessible memory.
+//! @endrst
 #pragma once
 
 #include <cub/config.cuh>
 #include <thrust/detail/config.h>
 
+#include <cub/device/dispatch/tuning/tuning_find.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -48,7 +48,6 @@ __global__ void cuda_mem_set_async_dtemp_storage(ValueType* d_temp_storage, NumI
   *d_temp_storage = num_items;
 }
 
-/** ENTER DOCUMENTATION */
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceFindKernel(
@@ -67,36 +66,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
 
 } // namespace detail
 
-template <typename InputIt>
-struct DeviceFindPolicy
-{
-  /// SM30
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 128;
-    static constexpr int items_per_thread   = 16;
-    static constexpr int items_per_vec_load = 4;
-
-    // FindPolicy (GTX670: 154.0 @ 48M 4B items)
-    using FindPolicy =
-      detail::find::agent_find_policy<threads_per_block,
-                                      items_per_thread,
-                                      typename ::cuda::std::iterator_traits<InputIt>::value_type,
-                                      items_per_vec_load,
-                                      LOAD_LDG>;
-
-    // // SingleTilePolicy
-    // using SingleTilePolicy = FindPolicy;
-  };
-
-  using MaxPolicy = Policy300;
-};
-
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ScanOpT,
-          typename SelectedPolicy = DeviceFindPolicy<InputIteratorT>>
+          typename SelectedPolicy = detail::find::policy_hub_t<InputIteratorT>>
 struct DispatchFind : SelectedPolicy
 {
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -246,10 +220,6 @@ struct DispatchFind : SelectedPolicy
                                                                                                 // and write back
                                                                                                 // kernels here.
   }
-
-  /**
-   * Internal dispatch routine
-   */
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
