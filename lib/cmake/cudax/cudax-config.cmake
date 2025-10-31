@@ -6,21 +6,21 @@ endif()
 # Setup dependencies
 #
 
-set(cn_quiet_flag "")
+set(cudax_quiet_flag "")
 if (${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
-  set(cn_quiet_flag "QUIET")
+  set(cudax_quiet_flag "QUIET")
 endif()
 
-set(cn_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
-set(cn_prefix_dir "${cn_cmake_dir}/../../..")
-find_path(cn_include_dir "cuda/experimental/version.cuh"
+set(cudax_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
+set(cudax_prefix_dir "${cudax_cmake_dir}/../../..")
+find_path(cudax_include_dir "cuda/experimental/version.cuh"
   REQUIRED
   NO_CACHE
   NO_CMAKE_FIND_ROOT_PATH # Don't allow CMake to re-root the search
   NO_DEFAULT_PATH # Only search explicit paths below:
   HINTS
-    "${cn_prefix_dir}/cudax/include" # Source
-    "${cn_prefix_dir}/include"       # Install
+    "${cudax_prefix_dir}/cudax/include" # Source
+    "${cudax_prefix_dir}/include"       # Install
 )
 
 if (NOT TARGET cudax::libcudacxx)
@@ -28,16 +28,16 @@ if (NOT TARGET cudax::libcudacxx)
     # First do a non-required search for any co-packaged versions.
     # These are preferred.
     find_package(libcudacxx ${cudax_VERSION} CONFIG
-      ${cn_quiet_flag}
+      ${cudax_quiet_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS "${cn_cmake_dir}/../libcudacxx"
+      HINTS "${cudax_cmake_dir}/../libcudacxx"
     )
 
     # A second required search allows externally packaged to be used and fails if
     # no suitable package exists.
     find_package(libcudacxx ${cudax_VERSION} CONFIG
       REQUIRED
-      ${cn_quiet_flag}
+      ${cudax_quiet_flag}
     )
   endif()
   add_library(cudax::libcudacxx ALIAS libcudacxx::libcudacxx)
@@ -49,15 +49,15 @@ if (cudax_NO_IMPORTED_TARGETS)
   # INTERFACE libraries cannot be namespaced; ALIAS libraries can.
   add_library(_cudax_cudax INTERFACE)
   add_library(cudax::cudax ALIAS _cudax_cudax)
-  set(cn_target_name _cudax_cudax)
+  set(cudax_target_name _cudax_cudax)
 else()
   add_library(cudax::cudax INTERFACE IMPORTED GLOBAL)
-  set(cn_target_name cudax::cudax)
+  set(cudax_target_name cudax::cudax)
 endif()
 
-target_compile_features(${cn_target_name} INTERFACE cxx_std_17)
-target_include_directories(${cn_target_name} INTERFACE "${cn_include_dir}")
-target_link_libraries(${cn_target_name} INTERFACE cudax::libcudacxx)
+target_compile_features(${cudax_target_name} INTERFACE cxx_std_17)
+target_include_directories(${cudax_target_name} INTERFACE "${cudax_include_dir}")
+target_link_libraries(${cudax_target_name} INTERFACE cudax::libcudacxx)
 
 # Expose version info globally through cache variables:
 set(cudax_VERSION       ${${CMAKE_FIND_PACKAGE_NAME}_VERSION}       CACHE INTERNAL "" FORCE)

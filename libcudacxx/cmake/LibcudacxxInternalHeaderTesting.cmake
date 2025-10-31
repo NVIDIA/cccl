@@ -52,16 +52,6 @@ function(libcudacxx_create_internal_header_test header_name headertest_src)
     )
   endif()
 
-  # Ensure that if this is an atomic header, we only include the right architectures
-  string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
-  if(match)
-    # Ensure that we only compile the header when we have some architectures enabled
-    if (NOT architectures_at_least_sm70)
-      return()
-    endif()
-    set_target_properties(internal_headertest_${header_name} PROPERTIES CUDA_ARCHITECTURES "${architectures_at_least_sm70}")
-  endif()
-
   add_dependencies(libcudacxx.test.internal_headers internal_headertest_${header_name})
 endfunction()
 

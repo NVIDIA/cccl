@@ -209,11 +209,11 @@ find_package(CUDAToolkit REQUIRED)
 # target_name_var: Variable name to overwrite with the name of the test
 #   target. Useful for post-processing target information.
 # source: The source file for the test.
-# cn_target: The reference cudax target with configuration information.
+# cudax_target: The reference cudax target with configuration information.
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_test target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+function(cudax_add_stf_test target_name_var source cudax_target)
+  cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   get_filename_component(dir ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
@@ -226,8 +226,9 @@ function(cudax_add_stf_test target_name_var source cn_target)
 
   add_executable(${test_target} ${source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${test_target} ${cn_target})
+  cudax_clone_target_properties(${test_target} ${cudax_target})
   cudax_stf_configure_target(${test_target} ${ARGN})
+  target_link_libraries(${test_target} PRIVATE ${cudax_target})
 
   set(stf_meta_target ${config_prefix}.tests.stf)
   add_dependencies(${stf_meta_target} ${test_target})
@@ -247,11 +248,11 @@ endfunction()
 # target_name_var: Variable name to overwrite with the name of the test
 #   target. Useful for post-processing target information.
 # source: The source file for the test.
-# cn_target: The reference cudax target with configuration information.
+# cudax_target: The reference cudax target with configuration information.
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_unittest_header target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+function(cudax_add_stf_unittest_header target_name_var source cudax_target)
+  cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   get_filename_component(relative_path ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
@@ -270,8 +271,9 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
 
   add_executable(${test_target} ${ut_source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${test_target} ${cn_target})
+  cudax_clone_target_properties(${test_target} ${cudax_target})
   cudax_stf_configure_target(${test_target} ${ARGN})
+  target_link_libraries(${test_target} PRIVATE ${cudax_target})
 
   set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
   add_dependencies(${stf_unittest_headers_meta_target} ${test_target})
@@ -282,8 +284,8 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
 endfunction()
 
 # Create tests for each enabled configuration:
-foreach(cn_target IN LISTS cudax_TARGETS)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+foreach(cudax_target IN LISTS cudax_TARGETS)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   # Metatargets for the current configuration's tests:
   set(config_meta_target ${config_prefix}.tests)
@@ -296,25 +298,25 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   # Basic tests:
   foreach(source IN LISTS stf_test_sources)
-    cudax_add_stf_test(test_target "${source}" ${cn_target})
+    cudax_add_stf_test(test_target "${source}" ${cudax_target})
   endforeach()
 
   if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
     foreach(source IN LISTS stf_test_codegen_sources)
-      cudax_add_stf_test(test_target "${source}" ${cn_target})
+      cudax_add_stf_test(test_target "${source}" ${cudax_target})
     endforeach()
   endif()
 
   # Tests with mathlib deps:
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_test_mathlib_sources)
-      cudax_add_stf_test(test_target "${source}" ${cn_target} LINK_MATHLIBS)
+      cudax_add_stf_test(test_target "${source}" ${cudax_target} LINK_MATHLIBS)
     endforeach()
   endif()
 
   # Unittested headers
   foreach(source IN LISTS stf_unittested_headers)
-    cudax_add_stf_unittest_header(test_target "${source}" ${cn_target})
+    cudax_add_stf_unittest_header(test_target "${source}" ${cudax_target})
   endforeach()
 endforeach()
 
