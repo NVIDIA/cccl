@@ -108,12 +108,7 @@ template <class _Tp>
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
 
-  // Some needed constants:
-  constexpr __uint_t __mant_mask = __fp_mant_mask_of_v<_Tp>;
-  constexpr __uint_t __exp_mask  = __fp_exp_mask_of_v<_Tp>;
-
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
-  constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_max    = __fp_exp_max_v<__fp_format_of_v<_Tp>>;
 
   constexpr _Tp __pi  = __numbers<_Tp>::__pi();
@@ -161,25 +156,23 @@ template <class _Tp>
     // If z is (NaN,+inf), the result is (±INF,NaN) (the sign of the real part is unspecified)
     if (::cuda::std::isnan(__realx) && ::cuda::std::isinf(__imagx))
     {
-      return complex<_Tp>(__x.imag(), NAN);
+      return complex<_Tp>(__x.imag(), numeric_limits<_Tp>::quiet_NaN());
     }
   }
 
-  // A case that for various reasons does not pass
+  // Special case that for various reasons does not pass
   // easily through the algorithm below:
   if ((__realx == _Tp(0)) && (__imagx == _Tp(1)))
   {
     return complex<_Tp>(__x.real(), ::cuda::std::copysign(_Tp(0.5) * __pi, __x.imag()));
   }
 
-  // It is a little involved to account for large inputs in an
-  // inlined-into-existing-code fashion. The easiest place to
-  // account for large values appears to be here at the start.
-  // Uses asinh(x) ~ log(2x) for large x.
-  // Largest exponent that passes through the algorithm without issue:
-  // ~(max_exponent / 4) works, with a small bias to make sure edge cases get caught
-  // This is ~254 for double
-  // This is ~30 for float
+  // It is a little involved to account for large inputs in an inlined-into-existing-code fashion.
+  // The easiest place to account for large values appears to be here at the start.
+  // Use asinh(x) ~ log(2x) for large x.
+  // Get the largest exponent that passes through the algorithm without issue.
+  // This is ~(max_exponent / 4), with a small bias to make sure edge cases get caught
+  // ~254 for double, ~30 for float
   constexpr int32_t __max_allowed_exponent     = (__exp_max / 4) - 2;
   constexpr __uint_t __max_allowed_val_as_uint = __uint_t(__max_allowed_exponent + __exp_max) << __mant_nbits;
 
@@ -192,15 +185,16 @@ template <class _Tp>
   {
     // We need __max to be <= ~(2^__max_allowed_exponent),
     // but not small enough that the asinh(x) ~ log(2x) estimate does
-    // not break down. We are not able to reduce with a single simple reduction
-    // for the relevant double range, so we do a fast/inlined frexp/ldexp:
+    // not break down. We are not able to reduce this with a single simple reduction,
+    // so we do a fast/inlined frexp/ldexp:
     const int32_t __exp_biased = int32_t(::cuda::std::bit_cast<__uint_t>(__max) >> __mant_nbits);
 
-    // Get a factor such that (__max * __exp_mul_factor) <= 2^254
+    // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =
       __uint_t((2 * __exp_max) + __max_allowed_exponent - __exp_biased) << __mant_nbits;
     const _Tp __exp_mul_factor = ::cuda::std::bit_cast<_Tp>(__exp_reduce_factor);
 
+    // Scale down to a working range.
     __realx *= __exp_mul_factor;
     __imagx *= __exp_mul_factor;
 
@@ -260,15 +254,15 @@ template <class _Tp>
   {
     // Get (real^2 + (1 - imag)^2) * (real^2 + (1 + imag)^2) in double-double:
     // term1 = (real^2 + (1 - imag)^2)
-    _Tp __term1_hi = (_Tp(1) - __imagx) * (_Tp(1) - __imagx);
-    _Tp __term1_lo = ::cuda::std::fma(_Tp(1) - __imagx, _Tp(1) - __imagx, -__term1_hi) + __realx * __realx;
+    const _Tp __term1_hi = (_Tp(1) - __imagx) * (_Tp(1) - __imagx);
+    const _Tp __term1_lo = ::cuda::std::fma(_Tp(1) - __imagx, _Tp(1) - __imagx, -__term1_hi) + __realx * __realx;
 
     // Need (1.0 + __imagx)^2 with nearly full accuracy.
-    _Tp __term2_sum_hi = (_Tp(1) + __imagx);
-    _Tp __term2_sum_lo = ((_Tp(1) - __term2_sum_hi) + __imagx);
+    const _Tp __term2_sum_hi = (_Tp(1) + __imagx);
+    const _Tp __term2_sum_lo = ((_Tp(1) - __term2_sum_hi) + __imagx);
 
-    _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
-    _Tp __term2_sq_lo = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
+    const _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
+    _Tp __term2_sq_lo       = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
     __term2_sq_lo += _Tp(2) * __term2_sum_hi * __term2_sum_lo;
 
     // Multiple __term1_hi/lo and __term2_sq_hi/lo:
@@ -307,7 +301,7 @@ template <class _Tp>
   // We instead use the equivalent
   //     (__realx*__imagx) / sqrt(0.5*(__extended_sqrt_hi - __diffx_m1))
 
-  _Tp __inside_sqrt_term = _Tp(0.5) * (::cuda::std::fabs(__diffx_m1) + __extended_sqrt_hi);
+  const _Tp __inside_sqrt_term = _Tp(0.5) * (::cuda::std::fabs(__diffx_m1) + __extended_sqrt_hi);
 
   // Allow for rsqrt optimization:
   // We can have two slightly different paths depending on whether rsqrt is available
@@ -326,34 +320,34 @@ template <class _Tp>
   // as you would obtain from the Taylor expansion of asinh. (~ real/sqrt(1 - imag^2)).
   // The following parts of the calculation result in bad catastrophic cancellation for
   // this case, so we save this intermediate value:
-  _Tp __small_x_real_return_val = __realx * __recip_sqrt;
-  _Tp __pos_evaluation_imag     = __imagx * __small_x_real_return_val;
+  const _Tp __small_x_real_return_val = __realx * __recip_sqrt;
+  const _Tp __pos_evaluation_imag     = __imagx * __small_x_real_return_val;
 
-  _Tp __sqrt_real_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_real : __pos_evaluation_imag;
-  _Tp __sqrt_imag_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_imag : __pos_evaluation_real;
+  const _Tp __sqrt_real_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_real : __pos_evaluation_imag;
+  const _Tp __sqrt_imag_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_imag : __pos_evaluation_real;
 
   // For an accurate log, we calculate |(__sqrt_real_part + i*__sqrt_imag_part)| - 1 and use log1p.
   // This can normally have bad catastrophic cancellation, however
   // we have a lot of retained enough accuracy to subtract fairly simply:
-  _Tp __m1  = __extended_sqrt_hi - _Tp(1);
-  _Tp __rem = -((__m1 + _Tp(1)) - __extended_sqrt_hi);
+  const _Tp __m1  = __extended_sqrt_hi - _Tp(1);
+  const _Tp __rem = -((__m1 + _Tp(1)) - __extended_sqrt_hi);
 
   __extended_sqrt_hi = __m1;
   __extended_sqrt_lo += __rem;
 
   // Final sum before sending it to log1p, all terms needed.
   // Add our sum via three terms, adding equally sized components.
-  _Tp __sum1 = (__x_abs_sq_hi + __extended_sqrt_hi);
-  _Tp __sum2 = _Tp(2) * (__realx * __sqrt_real_part + __imagx * __sqrt_imag_part);
-  _Tp __sum3 = (__extended_sqrt_lo + __x_abs_sq_lo);
+  const _Tp __sum1 = (__x_abs_sq_hi + __extended_sqrt_hi);
+  const _Tp __sum2 = _Tp(2) * (__realx * __sqrt_real_part + __imagx * __sqrt_imag_part);
+  const _Tp __sum3 = (__extended_sqrt_lo + __x_abs_sq_lo);
 
-  _Tp __abs_sqrt_part_sq = __sum1 + (__sum2 + __sum3);
+  const _Tp __abs_sqrt_part_sq = __sum1 + (__sum2 + __sum3);
 
-  _Tp __atan2_input1 = __imagx + __sqrt_imag_part;
-  _Tp __atan2_input2 = __realx + __sqrt_real_part;
+  const _Tp __atan2_input1 = __imagx + __sqrt_imag_part;
+  const _Tp __atan2_input2 = __realx + __sqrt_real_part;
 
-  _Tp __ans_real = _Tp(0.5) * ::cuda::std::log1p(__abs_sqrt_part_sq);
-  _Tp __ans_imag = ::cuda::std::atan2(__atan2_input1, __atan2_input2);
+  _Tp __ans_real       = _Tp(0.5) * ::cuda::std::log1p(__abs_sqrt_part_sq);
+  const _Tp __ans_imag = ::cuda::std::atan2(__atan2_input1, __atan2_input2);
 
   // The small |real| case, as mentioned above.
   // Bounds found by testing.
