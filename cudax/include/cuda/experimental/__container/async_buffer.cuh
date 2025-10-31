@@ -605,12 +605,13 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     }
     else
     {
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
       ::cuda::experimental::__ensure_current_device __guard(__stream);
       ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
-#else
-      static_assert(0, "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
-#endif
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+      static_assert(_IsHostOnly && sizeof(_Tp) <= 4,
+                    "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
     }
   }
 }
