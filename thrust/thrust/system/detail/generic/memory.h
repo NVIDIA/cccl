@@ -31,34 +31,64 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
+#include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/detail/pointer.h>
+#include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/pair.h>
 #include <thrust/system/detail/generic/tag.h>
+
+#include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename Size>
-_CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size);
+_CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size)
+{
+  static_assert(thrust::detail::depend_on_instantiation<Size, false>::value, "unimplemented for this system");
+}
 
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& s, std::size_t n);
+_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n)
+{
+  if constexpr (::cuda::std::is_void_v<T>)
+  {
+    // We cannot determine sizeof(void), but if void is the target type we are allocating bytes anyway
+    return pointer<void, DerivedPolicy>(thrust::malloc(exec, n).get());
+  }
+  else
+  {
+    return pointer<T, DerivedPolicy>(static_cast<T*>(thrust::malloc(exec, sizeof(T) * n).get()));
+  }
+
+} // end malloc()
 
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer);
-
-template <typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(tag, Pointer1, Pointer2);
-
-template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer);
+_CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer)
+{
+  static_assert(thrust::detail::depend_on_instantiation<Pointer, false>::value, "unimplemented for this system");
+}
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2);
+_CCCL_HOST_DEVICE void assign_value(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
+{
+  static_assert(thrust::detail::depend_on_instantiation<Pointer1, false>::value, "unimplemented for this system");
+}
+
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer)
+{
+  static_assert(thrust::detail::depend_on_instantiation<Pointer, false>::value, "unimplemented for this system");
+}
+
+template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
+_CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
+{
+  static_assert(thrust::detail::depend_on_instantiation<Pointer1, false>::value, "unimplemented for this system");
+}
 
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/memory.inl>

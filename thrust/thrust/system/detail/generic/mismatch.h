@@ -25,6 +25,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/internal_functional.h>
+#include <thrust/find.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -33,7 +36,12 @@ namespace system::detail::generic
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
 _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
-  thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+{
+  using namespace thrust::placeholders;
+
+  return thrust::mismatch(exec, first1, last1, first2, _1 == _2);
+} // end mismatch()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
@@ -41,9 +49,20 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
-  BinaryPredicate pred);
+  BinaryPredicate pred)
+{
+  // Contributed by Erich Elsen
+  using IteratorTuple = thrust::tuple<InputIterator1, InputIterator2>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
+
+  ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
+  ZipIterator zipped_last  = thrust::make_zip_iterator(last1, first2);
+
+  ZipIterator result =
+    thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
+
+  return thrust::make_pair(thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
+} // end mismatch()
 
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/mismatch.inl>

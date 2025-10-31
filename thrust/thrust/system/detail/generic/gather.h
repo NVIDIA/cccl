@@ -25,7 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/functional.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/tag.h>
+#include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -37,7 +41,15 @@ _CCCL_HOST_DEVICE OutputIterator gather(
   InputIterator map_first,
   InputIterator map_last,
   RandomAccessIterator input_first,
-  OutputIterator result);
+  OutputIterator result)
+{
+  return thrust::transform(
+    exec,
+    thrust::make_permutation_iterator(input_first, map_first),
+    thrust::make_permutation_iterator(input_first, map_last),
+    result,
+    ::cuda::std::identity{});
+} // end gather()
 
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -50,7 +62,10 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
   InputIterator1 map_last,
   InputIterator2 stencil,
   RandomAccessIterator input_first,
-  OutputIterator result);
+  OutputIterator result)
+{
+  return thrust::gather_if(exec, map_first, map_last, stencil, input_first, result, ::cuda::std::identity{});
+} // end gather_if()
 
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -65,9 +80,17 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
   InputIterator2 stencil,
   RandomAccessIterator input_first,
   OutputIterator result,
-  Predicate pred);
+  Predicate pred)
+{
+  return thrust::transform_if(
+    exec,
+    thrust::make_permutation_iterator(input_first, map_first),
+    thrust::make_permutation_iterator(input_first, map_last),
+    stencil,
+    result,
+    ::cuda::std::identity{},
+    pred);
+} // end gather_if()
 
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/gather.inl>
