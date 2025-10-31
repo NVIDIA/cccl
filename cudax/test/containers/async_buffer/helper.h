@@ -147,6 +147,12 @@ bool equal_range(const Range1& range1, const Range2& range2)
   }
 }
 
+template <bool IsLegacy>
+struct is_legacy_resource
+{
+  static constexpr bool value = IsLegacy;
+};
+
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
 struct extract_properties;
