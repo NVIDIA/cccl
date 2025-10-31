@@ -191,7 +191,7 @@ template <class _Tp>
     __x_big_factor = _Tp((__exp_biased - __exp_max) - __max_allowed_exponent) * __ln2;
   }
 
-  // let compiler pick which way to fma this, accuray stays the same.
+  // let compiler pick which way to fma this, accuracy stays the same.
   const _Tp __diffx_m1 = __realx * __realx - (__imagx - _Tp(1)) * (__imagx + _Tp(1));
 
   // Get the real and imag parts of |sqrt(z^2 + 1)|^2
@@ -230,7 +230,7 @@ template <class _Tp>
   // We can have some slightly bad cases here due to catastrohip cancellation that can't be fixed easily.
   // We still need to to the extended-sqrt on these values, so we fix them now.
   // It occurs around "real ~= small" and "imag ~= (1 - small)", and imag < 1.
-  // Worked out through targetted testing on fp64 and fp32.
+  // Worked out through targeted testing on fp64 and fp32.
   _Tp __realx_small_bound = _Tp(1.0e-13);
   _Tp __imagx_close_bound = _Tp(0.98);
 
