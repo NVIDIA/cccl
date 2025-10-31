@@ -22,6 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/dialect.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 // Determine the C++ standard dialect
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,5 +128,31 @@
 #else // ^^^ has multiarg operator[] ^^^ / vvv no multiarg operator[] vvv
 #  define _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() 0
 #endif // ^^^ no mutiarg operator[] ^^^
+
+// if consteval requires C++23, but most compilers support it even in C++20 mode while emitting some warnings. Those are
+// silenced in prologue/epilogue. nvcc is happy about using it in C++20 since 13.0.
+#if _CCCL_STD_VER == 2020 && (_CCCL_CUDA_COMPILER(NVCC, >=, 13) || !_CCCL_CUDA_COMPILATION()) \
+  && (_CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC))
+#  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 1
+#else
+#  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
+#endif
+
+#if __cpp_if_consteval >= 202106L || _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
+#  define _CCCL_IF_CONSTEVAL             if consteval
+#  define _CCCL_IF_CONSTEVAL_DEFAULT     _CCCL_IF_CONSTEVAL
+#  define _CCCL_IF_NOT_CONSTEVAL         if !consteval
+#  define _CCCL_IF_NOT_CONSTEVAL_DEFAULT _CCCL_IF_NOT_CONSTEVAL
+#elif defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#  define _CCCL_IF_CONSTEVAL             if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
+#  define _CCCL_IF_CONSTEVAL_DEFAULT     _CCCL_IF_CONSTEVAL
+#  define _CCCL_IF_NOT_CONSTEVAL         if (!_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
+#  define _CCCL_IF_NOT_CONSTEVAL_DEFAULT _CCCL_IF_NOT_CONSTEVAL
+#else // ^^^ has is constant evaluated ^^^ / vvv no is constant evaluated vvv
+#  define _CCCL_IF_CONSTEVAL             if (false)
+#  define _CCCL_IF_CONSTEVAL_DEFAULT     if (true)
+#  define _CCCL_IF_NOT_CONSTEVAL         if (true)
+#  define _CCCL_IF_NOT_CONSTEVAL_DEFAULT if (false)
+#endif // ^^^ no is constant evaluated ^^^
 
 #endif // __CCCL_DIALECT_H

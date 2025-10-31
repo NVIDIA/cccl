@@ -19,6 +19,7 @@
 #undef _CCCL_PROLOGUE_INCLUDED
 
 // warnings pop
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 // __declspec modifiers
