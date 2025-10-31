@@ -51,6 +51,10 @@ get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
   return thrust::make_pair(ptr, n);
 } // end get_temporary_buffer()
 
+// forward declare the two argument version, so the three argument version can ADL-call it below
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p);
+
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t)
