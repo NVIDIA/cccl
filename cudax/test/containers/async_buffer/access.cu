@@ -54,7 +54,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
 
     {
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
-      buf.stream().sync();
+      stream.sync();
       auto& res = buf.get_unsynchronized(2);
       CUDAX_CHECK(compare_value<Buffer>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
@@ -73,14 +73,14 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
 
     { // Works without allocation
       Buffer buf{stream, resource};
-      buf.stream().sync();
+      stream.sync();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
-      buf.stream().sync();
+      stream.sync();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());
@@ -89,17 +89,32 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
 
   SECTION("cudax::async_buffer::stream")
   {
-    Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
-    CUDAX_CHECK(buf.stream() == stream);
-
     {
-      cudax::stream other_stream{cuda::device_ref{0}};
-      buf.set_stream(other_stream);
-      CUDAX_CHECK(buf.stream() == other_stream);
-      buf.set_stream(stream);
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      CUDAX_CHECK(buf.stream().value() == stream);
+
+      {
+        cudax::stream other_stream{cuda::device_ref{0}};
+        buf.set_stream(other_stream);
+        CUDAX_CHECK(buf.stream().value() == other_stream);
+        buf.set_stream(stream);
+      }
+
+      CUDAX_CHECK(buf.stream().value() == stream);
+      buf.destroy(stream);
+
+      buf = cudax::make_async_buffer(stream, resource, {T(1), T(42), T(1337), T(0)});
+      CUDAX_CHECK(buf.stream().value() == stream);
     }
 
-    CUDAX_CHECK(buf.stream() == stream);
-    buf.destroy(stream);
+    {
+      Buffer buf = cudax::make_async_buffer(stream, resource, {T(1), T(42), T(1337), T(0)});
+      CUDAX_CHECK(buf.stream().value() == stream);
+
+      stream.sync();
+      buf.set_stream(cuda::std::nullopt);
+      CUDAX_CHECK(buf.stream() == cuda::std::nullopt);
+      // Buffer should handle destruction when stream is nullopt
+    }
   }
 }
