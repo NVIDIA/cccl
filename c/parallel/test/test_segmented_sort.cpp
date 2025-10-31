@@ -567,7 +567,8 @@ C2H_TEST("SegmentedSort works with custom types as values", "[segmented_sort][cu
 struct SegmentedSort_VariableSegments_Fixture_Tag;
 C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][variable_segments]", test_params_tuple)
 {
-  using T = c2h::get<0, TestType>;
+  using T     = c2h::get<0, TestType>;
+  using key_t = typename T::KeyT;
 
   constexpr auto this_test_params  = T();
   constexpr bool is_descending     = this_test_params.is_descending();
