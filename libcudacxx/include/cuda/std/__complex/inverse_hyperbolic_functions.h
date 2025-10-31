@@ -50,7 +50,7 @@ template <class _Tp>
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
 static void __device__ __host__ __forceinline__
-__internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_lo)
+__internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_lo) noexcept
 {
   // rsqrt
   const _Tp __initial_guess = __internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
