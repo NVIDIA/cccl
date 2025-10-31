@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_INTERNAL_STREAMS_CUH
-#define _CUDAX__STREAM_INTERNAL_STREAMS_CUH
+#ifndef _CUDA___STREAM_INTERNAL_STREAMS_H
+#define _CUDA___STREAM_INTERNAL_STREAMS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,24 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stream/stream.cuh>
+#include <cuda/__stream/stream.h>
 
 #include <cuda_runtime_api.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief internal stream used for memory allocations, no real blocking work
 //! should ever be pushed into it
-inline ::cuda::experimental::stream_ref __cccl_allocation_stream()
+inline ::cuda::stream_ref __cccl_allocation_stream()
 {
-  static ::cuda::experimental::stream __stream{device_ref{0}};
+  static ::cuda::stream __stream{device_ref{0}};
   return __stream;
 }
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_INTERNAL_STREAMS_CUH
+#endif // _CUDA___STREAM_INTERNAL_STREAMS_H
