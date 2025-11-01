@@ -76,7 +76,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
       if (::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared)
           && ::cuda::device::is_address_from(__src, ::cuda::device::address_space::global)) {
         ::cuda::ptx::cp_async_bulk(
-          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared, ::cuda::ptx::space_cluster>,
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
           ::cuda::ptx::space_global,
           __dest,
           __src,
