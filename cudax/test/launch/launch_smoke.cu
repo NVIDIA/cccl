@@ -264,7 +264,12 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     auto test = [&](const auto& input_config) {
       // Single element
       {
-        auto config = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t>());
+        auto option = cudax::dynamic_shared_memory<my_dynamic_smem_t, 1>();
+        auto config = input_config.add(option);
+        auto result = config.query(cudax::dynamic_shared_memory<>);
+        static_assert(cuda::std::is_same_v<decltype(result), decltype(option)>);
+        auto result2 = config.query(cudax::dynamic_shared_memory<my_dynamic_smem_t, 1>);
+        static_assert(cuda::std::is_same_v<decltype(result2), decltype(option)>);
 
         cudax::launch(dst, config, dynamic_smem_single<my_dynamic_smem_t>());
         check_kernel_run(dst);
@@ -273,7 +278,13 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Dynamic span
       {
         const int size = 2;
-        auto config    = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t>(size));
+        auto option    = cudax::dynamic_shared_memory<my_dynamic_smem_t>(size);
+        auto config    = input_config.add(option);
+        auto result    = config.query(cudax::dynamic_shared_memory<>);
+        static_assert(cuda::std::is_same_v<decltype(result), decltype(option)>);
+        auto result2 = config.query(cudax::dynamic_shared_memory<my_dynamic_smem_t, ::cuda::std::dynamic_extent>);
+        static_assert(cuda::std::is_same_v<decltype(result2), decltype(option)>);
+
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
         check_kernel_run(dst);
       }
@@ -281,7 +292,13 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Static span
       {
         constexpr int size = 3;
-        auto config        = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t, size>());
+        auto option        = cudax::dynamic_shared_memory<my_dynamic_smem_t, size>();
+        auto config        = input_config.add(option);
+        auto result        = config.query(cudax::dynamic_shared_memory<>);
+        static_assert(cuda::std::is_same_v<decltype(result), decltype(option)>);
+        auto result2 = config.query(cudax::dynamic_shared_memory<my_dynamic_smem_t, size>);
+        static_assert(cuda::std::is_same_v<decltype(result2), decltype(option)>);
+
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
         check_kernel_run(dst);
       }
