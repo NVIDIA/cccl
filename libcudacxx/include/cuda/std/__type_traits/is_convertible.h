@@ -33,7 +33,8 @@
 
 #if _CCCL_CHECK_BUILTIN(is_convertible_to) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
-#elif _CCCL_CHECK_BUILTIN(is_convertible)
+// gcc 13's builin doesn't properly implement some function conversions
+#elif _CCCL_CHECK_BUILTIN(is_convertible) && !_CCCL_COMPILER(GCC, <, 14)
 #  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible(__VA_ARGS__)
 #endif // ^^^ has builtin is_convertible_to
 
