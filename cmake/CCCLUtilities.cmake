@@ -65,3 +65,40 @@ function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
   )
   set(${full_test_name_var} ${test_name} PARENT_SCOPE)
 endfunction()
+
+# cccl_add_xfail_compile_target_test(
+#   <target_name>
+#   [REGEX <regex>]
+# )
+#
+# Given a configured build target that is expected to fail to compile:
+# - Mark the target as excluded from the `all` target.
+# - Add a CTest that attempts to build it and expects one of the following:
+#   - If REGEX is provided, the compilation output must match the regex. Exit code is not checked.
+#   - If REGEX is not provided, the compilation step must fail (non-zero exit code).
+function(cccl_add_xfail_compile_target_test target_name)
+  set(options)
+  set(oneValueArgs REGEX)
+  set(multiValueArgs)
+  cmake_parse_arguments(cccl_xfail "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  message(VERBOSE "CCCL: Adding XFAIL compile target test: ${target_name}")
+  if (DEFINED cccl_xfail_REGEX)
+    message(VERBOSE "CCCL:   with expected regex: '${cccl_xfail_REGEX}'")
+  endif()
+
+  set_target_properties(${test_target} PROPERTIES
+    EXCLUDE_FROM_ALL true
+  )
+  add_test(NAME ${test_target}
+           COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
+                                    --target ${test_target}
+                                    --config $<CONFIGURATION>)
+
+  if (DEFINED cccl_xfail_REGEX)
+    set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${cccl_xfail_REGEX}")
+  else()
+    set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+  endif()
+
+endfunction()
