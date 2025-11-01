@@ -25,7 +25,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_bounded_array)
+#  define _CCCL_BUILTIN_IS_BOUNDED_ARRAY(...) __is_bounded_array(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_bounded_array)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_BOUNDED_ARRAY)
+
+template <class _Tp>
+inline constexpr bool is_bounded_array_v = _CCCL_BUILTIN_IS_BOUNDED_ARRAY(_Tp);
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : bool_constant<_CCCL_BUILTIN_IS_BOUNDED_ARRAY(_Tp)>
+{};
+
+#else // ^^^ _CCCL_BUILTIN_IS_BOUNDED_ARRAY ^^^ / vvv !_CCCL_BUILTIN_IS_BOUNDED_ARRAY vvv
 
 template <class _Tp>
 inline constexpr bool is_bounded_array_v = false;
@@ -34,8 +49,10 @@ template <class _Tp, size_t _Np>
 inline constexpr bool is_bounded_array_v<_Tp[_Np]> = true;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : public bool_constant<is_bounded_array_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : bool_constant<is_bounded_array_v<_Tp>>
 {};
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_BOUNDED_ARRAY ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

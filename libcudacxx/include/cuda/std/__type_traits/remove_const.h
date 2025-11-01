@@ -22,9 +22,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_const)
+#  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_const)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_CONST)
+
 template <class _Tp>
 struct remove_const
 {
@@ -34,7 +39,7 @@ struct remove_const
 template <class _Tp>
 using remove_const_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_REMOVE_CONST ^^^ / vvv !_CCCL_BUILTIN_REMOVE_CONST vvv
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const
@@ -50,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const<const _Tp>
 template <class _Tp>
 using remove_const_t _CCCL_NODEBUG_ALIAS = typename remove_const<_Tp>::type;
 
-#endif // defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_REMOVE_CONST ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
