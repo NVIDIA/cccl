@@ -103,7 +103,7 @@ reduce_by_key_with_carry(
   // XXX is there an elegant way to pose this such that we don't need to default construct carry?
   thrust::pair<thrust::detail::it_value_t<InputIterator1>,
                typename partial_sum_type<InputIterator2, BinaryFunction>::type>
-    carry;
+    carry{};
 
   thrust::tie(keys_last, carry) =
     reduce_last_segment_backward(keys_first, keys_last, values_first, binary_pred, binary_op);
@@ -196,7 +196,7 @@ struct serial_reduce_by_key_body
     using value_type = typename partial_sum_type<Iterator2, BinaryFunction>::type;
 
     // XXX is there a way to pose this so that we don't require default construction of carry?
-    thrust::pair<key_type, value_type> carry;
+    thrust::pair<key_type, value_type> carry{};
 
     thrust::tie(my_keys_result, my_values_result, carry.first, carry.second) = reduce_by_key_with_carry(
       my_keys_first, my_keys_last, my_values_first, my_keys_result, my_values_result, binary_pred, binary_op);

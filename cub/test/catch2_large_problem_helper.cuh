@@ -6,7 +6,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/equal.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
@@ -109,7 +108,7 @@ struct large_problem_test_helper
   {
     auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
     const bool all_correct =
-      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
+      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, cuda::make_constant_iterator(0xFFFFFFFFU));
 
     if (!all_correct)
     {
