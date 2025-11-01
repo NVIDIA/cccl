@@ -31,35 +31,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_convertible_to) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
+#elif _CCCL_CHECK_BUILTIN(is_convertible)
+#  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible(__VA_ARGS__)
+#endif // ^^^ has builtin is_convertible_to
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
-template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_convertible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
-{};
-
-template <class _T1, class _T2>
-inline constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
+template <class _Tp, class _Up>
+inline constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_Tp, _Up);
 
 #  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
-template <class _Ty>
-struct is_convertible<_Ty&, volatile _Ty&> : true_type
-{};
-
-template <class _Ty>
-struct is_convertible<volatile _Ty&, volatile _Ty&> : true_type
-{};
-
-template <class _Ty>
-struct is_convertible<_Ty&, const volatile _Ty&> : true_type
-{};
-
-template <class _Ty>
-struct is_convertible<volatile _Ty&, const volatile _Ty&> : true_type
-{};
-
 template <class _Ty>
 inline constexpr bool is_convertible_v<_Ty&, volatile _Ty&> = true;
 
@@ -90,120 +75,65 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 template <class _From, class _To, class = void>
-struct __is_convertible_test : public false_type
-{};
+inline constexpr bool __is_convertible_test_v = false;
 
 template <class _From, class _To>
-struct __is_convertible_test<
+inline constexpr bool __is_convertible_test_v<
   _From,
   _To,
-  decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
-{};
+  decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> = true;
 
 template <class _Tp, bool _IsArray = is_array_v<_Tp>, bool _IsFunction = is_function_v<_Tp>, bool _IsVoid = is_void_v<_Tp>>
-struct __is_array_function_or_void
-{
-  enum
-  {
-    value = 0
-  };
-};
+inline constexpr int __is_array_function_or_void_v = 0;
 template <class _Tp>
-struct __is_array_function_or_void<_Tp, true, false, false>
-{
-  enum
-  {
-    value = 1
-  };
-};
+inline constexpr int __is_array_function_or_void_v<_Tp, true, false, false> = 1;
 template <class _Tp>
-struct __is_array_function_or_void<_Tp, false, true, false>
-{
-  enum
-  {
-    value = 2
-  };
-};
+inline constexpr int __is_array_function_or_void_v<_Tp, false, true, false> = 2;
 template <class _Tp>
-struct __is_array_function_or_void<_Tp, false, false, true>
-{
-  enum
-  {
-    value = 3
-  };
-};
+inline constexpr int __is_array_function_or_void_v<_Tp, false, false, true> = 3;
 } // namespace __is_convertible_imp
 
-template <class _Tp, unsigned = __is_convertible_imp::__is_array_function_or_void<remove_reference_t<_Tp>>::value>
-struct __is_convertible_check
-{
-  static const size_t __v = 0;
-};
+template <class _Tp,
+          class _Up,
+          unsigned _Tp_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_Tp>,
+          unsigned _Up_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_Up>>
+inline constexpr bool __is_convertible_fallback_v = __is_convertible_imp::__is_convertible_test_v<_Tp, _Up>;
 
-template <class _Tp>
-struct __is_convertible_check<_Tp, 0>
-{
-  static const size_t __v = sizeof(_Tp);
-};
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 0, 1> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 1, 1> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 2, 1> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 3, 1> = false;
 
-template <class _T1,
-          class _T2,
-          unsigned _T1_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void<_T1>::value,
-          unsigned _T2_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void<_T2>::value>
-struct __is_convertible_fallback
-    : public integral_constant<bool, __is_convertible_imp::__is_convertible_test<_T1, _T2>::value>
-{};
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 0, 2> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 1, 2> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 2, 2> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 3, 2> = false;
 
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 0, 1> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 1, 1> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 2, 1> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 3, 1> : public false_type
-{};
-
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 0, 2> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 1, 2> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 2, 2> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 3, 2> : public false_type
-{};
-
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 0, 3> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 1, 3> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 2, 3> : public false_type
-{};
-template <class _T1, class _T2>
-struct __is_convertible_fallback<_T1, _T2, 3, 3> : public true_type
-{};
-
-template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : public __is_convertible_fallback<_T1, _T2>
-{
-  static const size_t __complete_check1 = __is_convertible_check<_T1>::__v;
-  static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;
-};
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 0, 3> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 1, 3> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 2, 3> = false;
+template <class _Tp, class _Up>
+inline constexpr bool __is_convertible_fallback_v<_Tp, _Up, 3, 3> = true;
 
 template <class _From, class _To>
-inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
+inline constexpr bool is_convertible_v = __is_convertible_fallback_v<_From, _To>;
 
-#endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
+#endif // ^^^ !_CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^
+
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : bool_constant<is_convertible_v<_Tp, _Up>>
+{};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
