@@ -30,6 +30,7 @@
 #    include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target>
@@ -58,7 +59,12 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
     NV_PROVIDES_SM_90,
     (if (__elect_from_group(__g)) {
       ::cuda::ptx::cp_async_bulk(
-        ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+        ::cuda::ptx::space_global,
+        __dest,
+        __src,
+        __size,
+        __bar_handle);
       ::cuda::ptx::mbarrier_expect_tx(
         ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, __bar_handle, __size);
     }),

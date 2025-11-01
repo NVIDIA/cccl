@@ -653,7 +653,11 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
       _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
 
       ::cuda::ptx::cp_async_bulk(
+#if __cccl_ptx_isa >= 860
+        ::cuda::ptx::space_shared,
+#else // __cccl_ptx_isa >= 860
         ::cuda::ptx::space_cluster,
+#endif // __cccl_ptx_isa >= 860
         ::cuda::ptx::space_global,
         dst_ptr + head_bytes,
         src_ptr + head_bytes,
@@ -787,7 +791,17 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           bytes_to_copy = int{sizeof(T)} * tile_size;
         }
 
-        ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+        ::cuda::ptx::cp_async_bulk(
+#if __cccl_ptx_isa >= 860
+          ::cuda::ptx::space_shared,
+#else // __cccl_ptx_isa >= 860
+          ::cuda::ptx::space_cluster,
+#endif // __cccl_ptx_isa >= 860
+          ::cuda::ptx::space_global,
+          dst,
+          src,
+          bytes_to_copy,
+          &bar);
         total_copied += bytes_to_copy;
 
         smem += tile_padding + int{sizeof(T)} * tile_size;
