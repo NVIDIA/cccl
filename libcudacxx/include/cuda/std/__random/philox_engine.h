@@ -533,14 +533,14 @@ private:
 
 }; // end philox_engine
 
-//! @typedef philox4x32
+//! @using philox4x32
 //! @brief A random number engine with predefined parameters which implements the
 //!        Philox counter based random number generation algorithm.
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x32
 //!       shall produce the value 1955073260.
 using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xCD9E8D57, 0x9E3779B9, 0xD2511F53, 0xBB67AE85>;
 
-//! @typedef philox4x64
+//! @using philox4x64
 //! @brief A random number engine with predefined parameters which implements the
 //!        Philox counter based random number generation algorithm.
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x64
