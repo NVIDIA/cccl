@@ -37,7 +37,7 @@ struct __launch_option_wrapper
       : __option_(__option)
   {}
 
-  constexpr _Option _CCCL_HOST_DEVICE query(const typename _Option::__tag&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Option query(const typename _Option::__tag&) const noexcept
   {
     return __option_;
   }
@@ -120,10 +120,10 @@ struct cooperative_launch_option : public __detail::launch_option
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::cooperative_launch;
   using __tag                                        = cooperative_launch_option;
 
-  constexpr cooperative_launch_option() = default;
-  constexpr _CCCL_HOST_DEVICE cooperative_launch_option(const cooperative_launch_option&) noexcept {}
+  _CCCL_HIDE_FROM_ABI constexpr cooperative_launch_option() = default;
+  _CCCL_API constexpr cooperative_launch_option(const cooperative_launch_option&) noexcept {}
 
-  constexpr cooperative_launch_option operator()() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr cooperative_launch_option operator()() const noexcept
   {
     return cooperative_launch_option();
   }
@@ -133,7 +133,7 @@ struct cooperative_launch_option : public __detail::launch_option
     const kernel_config<_Dimensions, _Options...>& __config, CUlaunchConfig& __cuda_config, CUfunction __kernel) noexcept;
 
 private:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig& __config, CUfunction) const noexcept
+  [[nodiscard]] _CCCL_API cudaError_t apply(CUlaunchConfig& __config, CUfunction) const noexcept
   {
     CUlaunchAttribute __attr;
     __attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
@@ -205,13 +205,13 @@ struct dynamic_shared_memory_option : public __detail::launch_option
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
   const std::size_t size                             = _Extent == ::cuda::std::dynamic_extent ? 0 : _Extent;
 
-  constexpr dynamic_shared_memory_option() = default;
+  _CCCL_HIDE_FROM_ABI constexpr dynamic_shared_memory_option() = default;
 
-  constexpr _CCCL_HOST_DEVICE dynamic_shared_memory_option(const dynamic_shared_memory_option& __other) noexcept
+  _CCCL_API constexpr dynamic_shared_memory_option(const dynamic_shared_memory_option& __other) noexcept
       : size(__other.size)
   {}
 
-  constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
+  _CCCL_HOST_API constexpr dynamic_shared_memory_option(std::size_t __set_size) noexcept
       : size(__set_size)
   {}
 
@@ -220,7 +220,7 @@ struct dynamic_shared_memory_option : public __detail::launch_option
     const kernel_config<_Dimensions, _Options...>& __config, CUlaunchConfig& __cuda_config, CUfunction __kernel) noexcept;
 
 private:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig& __config, CUfunction __kernel) const noexcept
+  [[nodiscard]] _CCCL_API cudaError_t apply(CUlaunchConfig& __config, CUfunction __kernel) const noexcept
   {
     ::cudaError_t __status = cudaSuccess;
 
@@ -254,7 +254,7 @@ private:
 template <typename _Content, std::size_t _Extent, bool _NonPortableSize>
 struct __dynamic_shared_memory_t
 {
-  constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize> operator()() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize> operator()() const noexcept
   {
     return dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>();
   }
@@ -267,7 +267,7 @@ struct __dynamic_shared_memory_t<void, ::cuda::std::dynamic_extent, false>
 template <typename _Content, bool _NonPortableSize>
 struct __dynamic_shared_memory_t<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
 {
-  constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
+  [[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>
   operator()(std::size_t __size) const noexcept
   {
     return dynamic_shared_memory_option<_Content, ::cuda::std::dynamic_extent, _NonPortableSize>(__size);
@@ -284,13 +284,13 @@ struct __launch_option_wrapper<dynamic_shared_memory_option<_Content, _Extent, _
       : __option_(__option)
   {}
 
-  constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize> _CCCL_HOST_DEVICE
+  [[nodiscard]] _CCCL_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
   query(const __dynamic_shared_memory_t<_Content, _Extent, _NonPortableSize>&) const noexcept
   {
     return __option_;
   }
 
-  constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize> _CCCL_HOST_DEVICE
+  [[nodiscard]] _CCCL_API constexpr dynamic_shared_memory_option<_Content, _Extent, _NonPortableSize>
   query(const __dynamic_shared_memory_t<void, ::cuda::std::dynamic_extent, _NonPortableSize>&) const noexcept
   {
     return __option_;
