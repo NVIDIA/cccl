@@ -258,9 +258,9 @@ int main(int, char**)
   // This test requires access control SFINAE which we only have on non-MSVC
   // compilers or when we are using the compiler builtin for
   // is_convertible.
-#if !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
   test_is_not_convertible<NonCopyable&, NonCopyable>();
-#endif // !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
   // Ensure that CannotInstantiate is not instantiated by is_convertible when it is not needed.
   // For example CannotInstantiate is instantiated as a part of ADL lookup for arguments of type CannotInstantiate*.
