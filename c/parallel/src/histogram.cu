@@ -75,6 +75,7 @@ struct histogram_kernel_source
 {
   cccl_device_histogram_build_result_t& build;
 
+  template <typename PolicyT>
   CUkernel HistogramInitKernel() const
   {
     return build.init_kernel;
