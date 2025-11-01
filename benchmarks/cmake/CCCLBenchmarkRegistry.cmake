@@ -20,11 +20,10 @@ if(GIT_FOUND)
 endif()
 
 # Sometimes this script is used outside of a Git repository.
-# In this case, we read the revision from cccl/cccl_version instead.
+# In this case, we read the revision from cccl/cccl-version.json instead.
 if ("${cccl_revision}" STREQUAL "")
-  file(READ "${CMAKE_SOURCE_DIR}/cccl_version" cccl_revision)
-  string(STRIP "${cccl_revision}" cccl_revision)
-  string(REPLACE "\n" "" cccl_revision "${cccl_revision}")
+  file(READ "${CMAKE_SOURCE_DIR}/cccl-version.json" cccl_revision_json)
+  string(JSON cccl_revision GET "${cccl_revision_json}" "full")
 endif()
 message(STATUS "Git revision: ${cccl_revision}")
 
