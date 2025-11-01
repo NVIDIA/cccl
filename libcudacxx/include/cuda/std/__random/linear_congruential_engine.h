@@ -28,6 +28,10 @@
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ios>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -61,7 +65,7 @@ template <uint64_t __a, uint64_t __c, uint64_t __m>
 struct __lce_ta<__a, __c, __m, ~uint64_t{0}, true>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
     constexpr result_type __q = __m / __a;
@@ -78,7 +82,7 @@ template <uint64_t __a, uint64_t __m>
 struct __lce_ta<__a, 0, __m, ~uint64_t{0}, true>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
     constexpr result_type __q = __m / __a;
@@ -94,7 +98,7 @@ template <uint64_t __a, uint64_t __c, uint64_t __m>
 struct __lce_ta<__a, __c, __m, ~uint64_t{0}, false>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     return (__a * __x + __c) % __m;
   }
@@ -104,7 +108,7 @@ template <uint64_t __a, uint64_t __c>
 struct __lce_ta<__a, __c, 0, ~uint64_t{0}, false>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     return __a * __x + __c;
   }
@@ -116,7 +120,7 @@ template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
 struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     constexpr auto __a = static_cast<result_type>(_Ap);
     constexpr auto __c = static_cast<result_type>(_Cp);
@@ -136,7 +140,7 @@ template <uint64_t _Ap, uint64_t _Mp>
 struct __lce_ta<_Ap, 0, _Mp, ~uint32_t{0}, true>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __m = static_cast<result_type>(_Mp);
@@ -154,7 +158,7 @@ template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
 struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
@@ -167,7 +171,7 @@ template <uint64_t _Ap, uint64_t _Cp>
 struct __lce_ta<_Ap, _Cp, 0, ~uint32_t{0}, false>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     constexpr result_type __a = static_cast<result_type>(_Ap);
     constexpr result_type __c = static_cast<result_type>(_Cp);
@@ -181,7 +185,7 @@ template <uint64_t __a, uint64_t __c, uint64_t __m, bool __b>
 struct __lce_ta<__a, __c, __m, static_cast<uint16_t>(~0), __b>
 {
   using result_type = uint16_t;
-  [[nodiscard]] _CCCL_API static result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     return static_cast<result_type>(__lce_ta<__a, __c, __m, ~uint32_t{0}>::next(__x));
   }
@@ -190,15 +194,13 @@ struct __lce_ta<__a, __c, __m, static_cast<uint16_t>(~0), __b>
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 class _CCCL_TYPE_VISIBILITY_DEFAULT linear_congruential_engine;
 
-#if 0 // Not Implemented
 template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-_CCCL_API basic_ostream<_CharT, _Traits>&
-operator<<(basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_Up, _Ap, _Cp, _Np>&);
+_CCCL_API ::std::basic_ostream<_CharT, _Traits>&
+operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_Up, _Ap, _Cp, _Np>&);
 
 template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-_CCCL_API basic_istream<_CharT, _Traits>&
-operator>>(basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_Up, _Ap, _Cp, _Np>& __x);
-#endif //
+_CCCL_API ::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_Up, _Ap, _Cp, _Np>& __x);
 
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 class _CCCL_TYPE_VISIBILITY_DEFAULT linear_congruential_engine
@@ -208,7 +210,7 @@ public:
   using result_type = _UIntType;
 
 private:
-  result_type __x_;
+  result_type __x_{};
 
   static constexpr const result_type _Mp = result_type(~0);
 
@@ -236,25 +238,25 @@ public:
   static constexpr const result_type default_seed = 1u;
 
   // constructors and seeding functions
-  _CCCL_API linear_congruential_engine() noexcept
+  _CCCL_API constexpr linear_congruential_engine() noexcept
       : linear_congruential_engine(default_seed)
   {}
-  _CCCL_API explicit linear_congruential_engine(result_type __s) noexcept
+  _CCCL_API explicit constexpr linear_congruential_engine(result_type __s) noexcept
   {
     seed(__s);
   }
 
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API explicit linear_congruential_engine(_Sseq& __q) noexcept
+  _CCCL_API explicit constexpr linear_congruential_engine(_Sseq& __q) noexcept
   {
     seed(__q);
   }
-  _CCCL_API void seed(result_type __s = default_seed)
+  _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
   {
     seed(integral_constant<bool, __m == 0>(), integral_constant<bool, __c == 0>(), __s);
   }
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API void seed(_Sseq& __q) noexcept
+  _CCCL_API constexpr void seed(_Sseq& __q) noexcept
   {
     __seed(__q,
            integral_constant<uint32_t,
@@ -262,82 +264,125 @@ public:
   }
 
   // generating functions
-  [[nodiscard]] _CCCL_API result_type operator()() noexcept
+  _CCCL_API constexpr result_type operator()() noexcept
   {
     return __x_ = static_cast<result_type>(__lce_ta<__a, __c, __m, _Mp>::next(__x_));
   }
-  _CCCL_API void discard(uint64_t __z) noexcept
+
+  _CCCL_API constexpr void discard(uint64_t __z) noexcept
   {
-    for (; __z; --__z)
+    constexpr bool __can_overflow = (__a != 0 && __m != 0 && __m - 1 > (_Mp - __c) / __a);
+    // Fallback implementation
+    if constexpr (__can_overflow)
     {
-      (void) operator()();
+      for (; __z; --__z)
+      {
+        (void) operator()();
+      }
+    }
+    else if constexpr (increment == 0)
+    {
+      // minstd_rand and minstd_rand0 can use this efficient implementation
+      uint64_t __acc_mult = 1;
+      uint64_t __cur_mult = multiplier;
+      while (__z > 0)
+      {
+        if (__z & 1)
+        {
+          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+        }
+        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __z >>= 1;
+      }
+      __x_ = (__acc_mult * __x_) % modulus;
+    }
+    else
+    {
+      uint64_t __acc_mult = 1;
+      uint64_t __acc_plus = 0;
+      uint64_t __cur_mult = multiplier;
+      uint64_t __cur_plus = increment;
+      while (__z > 0)
+      {
+        if (__z & 1)
+        {
+          __acc_mult = (__acc_mult * __cur_mult) % modulus;
+          __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+        }
+        __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+        __cur_mult = (__cur_mult * __cur_mult) % modulus;
+        __z >>= 1;
+      }
+      __x_ = (__acc_mult * __x_ + __acc_plus) % modulus;
     }
   }
 
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const linear_congruential_engine& __x, const linear_congruential_engine& __y) noexcept
   {
     return __x.__x_ == __y.__x_;
   }
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const linear_congruential_engine& __x, const linear_congruential_engine& __y) noexcept
   {
     return !(__x == __y);
   }
 
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine& __e)
+  {
+    using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
+    const typename _Ostream::fmtflags __flags = __os.flags();
+    __os.flags(_Ostream::dec | _Ostream::left);
+    __os.fill(__os.widen(' '));
+    __os.flags(__flags);
+    return __os << __e.__x_;
+  }
+  template <typename _CharT, typename _Traits>
+  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine& __e)
+  {
+    using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
+    const typename _Istream::fmtflags __flags = __is.flags();
+    __is.flags(_Istream::dec | _Istream::skipws);
+    _UIntType __t;
+    __is >> __t;
+    if (!__is.fail())
+    {
+      __e.__x_ = __t;
+    }
+    __is.flags(__flags);
+    return __is;
+  }
+
 private:
-  _CCCL_API void seed(true_type, true_type, result_type __s) noexcept
+  _CCCL_API constexpr void seed(true_type, true_type, result_type __s) noexcept
   {
     __x_ = __s == 0 ? 1 : __s;
   }
-  _CCCL_API void seed(true_type, false_type, result_type __s) noexcept
+  _CCCL_API constexpr void seed(true_type, false_type, result_type __s) noexcept
   {
     __x_ = __s;
   }
-  _CCCL_API void seed(false_type, true_type, result_type __s) noexcept
+  _CCCL_API constexpr void seed(false_type, true_type, result_type __s) noexcept
   {
     __x_ = __s % __m == 0 ? 1 : __s % __m;
   }
-  _CCCL_API void seed(false_type, false_type, result_type __s) noexcept
+  _CCCL_API constexpr void seed(false_type, false_type, result_type __s) noexcept
   {
     __x_ = __s % __m;
   }
 
   template <class _Sseq>
-  _CCCL_API void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
+  _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
   template <class _Sseq>
-  _CCCL_API void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
-
-#if 0 // Not Implemented
-  template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-  friend basic_ostream<_CharT, _Traits>&
-  operator<<(basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_Up, _Ap, _Cp, _Np>&);
-
-  template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-  friend basic_istream<_CharT, _Traits>&
-  operator>>(basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_Up, _Ap, _Cp, _Np>& __x);
-#endif // Not Implemented
+  _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
 };
 
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::multiplier;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::increment;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::modulus;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::result_type
-  linear_congruential_engine<_UIntType, __a, __c, __m>::default_seed;
-
-template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 template <class _Sseq>
-_CCCL_API void
+_CCCL_API constexpr void
 linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept
 {
   constexpr uint32_t __k = 1;
@@ -349,7 +394,7 @@ linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integra
 
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 template <class _Sseq>
-_CCCL_API void
+_CCCL_API constexpr void
 linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept
 {
   constexpr uint32_t __k = 2;
@@ -358,35 +403,6 @@ linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integra
   result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % __m);
   __x_            = __c == 0 && __s == 0 ? result_type(1) : __s;
 }
-
-#if 0 // Not Implemented
-template <class _CharT, class _Traits, class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-_CCCL_API basic_ostream<_CharT, _Traits>&
-operator<<(basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_UIntType, __a, __c, __m>& __x)
-{
-  __save_flags<_CharT, _Traits> __lx(__os);
-  using _Ostream = basic_ostream<_CharT, _Traits>;
-  __os.flags(_Ostream::dec | _Ostream::left);
-  __os.fill(__os.widen(' '));
-  return __os << __x.__x_;
-}
-
-template <class _CharT, class _Traits, class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
-_CCCL_API basic_istream<_CharT, _Traits>&
-operator>>(basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_UIntType, __a, __c, __m>& __x)
-{
-  __save_flags<_CharT, _Traits> __lx(__is);
-  using _Istream = basic_istream<_CharT, _Traits>;
-  __is.flags(_Istream::dec | _Istream::skipws);
-  _UIntType __t;
-  __is >> __t;
-  if (!__is.fail())
-  {
-    __x.__x_ = __t;
-  }
-  return __is;
-}
-#endif // Not Implemented
 
 using minstd_rand0 = linear_congruential_engine<uint_fast32_t, 16807, 0, 2147483647>;
 using minstd_rand  = linear_congruential_engine<uint_fast32_t, 48271, 0, 2147483647>;
