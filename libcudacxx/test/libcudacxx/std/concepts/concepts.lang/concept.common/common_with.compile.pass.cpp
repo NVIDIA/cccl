@@ -283,9 +283,7 @@ struct BadBasicCommonType
   // should be placed so the test doesn't get deleted.
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<BadBasicCommonType, int>
@@ -298,8 +296,8 @@ struct common_type<int, BadBasicCommonType>
 {
   using type = int;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 #if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::common_type_t<BadBasicCommonType, int>; });
 static_assert(requires { typename cuda::std::common_type_t<int, BadBasicCommonType>; });
@@ -320,9 +318,7 @@ struct T1
 {};
 static_assert(!cuda::std::convertible_to<DullCommonType, T1>, "");
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T1, int>
@@ -335,8 +331,8 @@ struct common_type<int, T1>
 {
   using type = DullCommonType;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 #if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::common_type_t<BadBasicCommonType, int>; });
 static_assert(requires { typename cuda::std::common_type_t<int, BadBasicCommonType>; });
@@ -475,9 +471,7 @@ struct CommonTypeNoCommonReference
   __host__ __device__ CommonTypeNoCommonReference(int);
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T6, int>
@@ -618,8 +612,7 @@ struct common_type<const volatile T6&, const volatile int&>
 template <>
 struct common_type<const volatile int&, const volatile T6&>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 template <typename T, typename U>
 __host__ __device__ constexpr bool HasCommonReference() noexcept
@@ -643,9 +636,7 @@ struct CommonTypeNoMetaCommonReference
   __host__ __device__ CommonTypeNoMetaCommonReference(int);
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T7, int>
@@ -850,8 +841,8 @@ struct common_type<const volatile int&, const volatile T7&>
 {
   using type = void;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(HasValidCommonType<T7, int>(), "");
 static_assert(HasValidCommonType<const T7&, const int&>(), "");
 static_assert(HasCommonReference<const T7&, const int&>(), "");
@@ -866,9 +857,7 @@ struct CommonWithInt
   __host__ __device__ operator int() const volatile;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<CommonWithInt, int>
@@ -1007,8 +996,8 @@ struct common_type<const volatile CommonWithInt&, const volatile int&> : common_
 template <>
 struct common_type<const volatile int&, const volatile CommonWithInt&> : common_type<CommonWithInt, int>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(CheckCommonWith<CommonWithInt, int>(), "");
 
 struct CommonWithIntButRefLong
@@ -1016,9 +1005,7 @@ struct CommonWithIntButRefLong
   __host__ __device__ operator int() const volatile;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<CommonWithIntButRefLong, int>
@@ -1161,8 +1148,8 @@ template <>
 struct common_type<const volatile int&, const volatile CommonWithIntButRefLong&>
     : common_type<CommonWithIntButRefLong&, int&>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(CheckCommonWith<CommonWithIntButRefLong, int>(), "");
 
 int main(int, char**)

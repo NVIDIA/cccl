@@ -45,15 +45,12 @@ struct Dummy1
 struct Dummy2
 {};
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct tuple_size<Dummy1> : public integral_constant<size_t, 0>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 template <class T>
 __host__ __device__ void test_complete()
