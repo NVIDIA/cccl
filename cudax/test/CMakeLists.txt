@@ -1,6 +1,7 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit REQUIRED)
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -29,7 +30,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
-    cudart
+    CUDA::cudart
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -174,6 +175,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     endforeach()
   endif()
 endforeach()
+
+# On windows, cu++filt library is compiled with static runtime which causes problems when linking it with cccl.c2h.main
+# which is compiled with dynamic runtime. So, we do everything by hand in binutils directory.
+add_subdirectory(binutils)
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
