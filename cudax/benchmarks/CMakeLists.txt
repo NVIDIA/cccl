@@ -7,14 +7,15 @@ set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
 function(get_recursive_subdirs subdirs)
   set(dirs)
-  file(GLOB_RECURSE contents
+  file(
+    GLOB_RECURSE contents
     CONFIGURE_DEPENDS
     LIST_DIRECTORIES ON
     "${CMAKE_CURRENT_LIST_DIR}/bench/*"
   )
 
-  foreach(bench_dir IN LISTS contents)
-    if(IS_DIRECTORY "${bench_dir}")
+  foreach (bench_dir IN LISTS contents)
+    if (IS_DIRECTORY "${bench_dir}")
       list(APPEND dirs "${bench_dir}")
     endif()
   endforeach()
@@ -28,7 +29,12 @@ function(add_bench target_name bench_name bench_src)
 
   add_executable(${bench_target} "${bench_src}")
   cccl_configure_target(${bench_target} DIALECT 17)
-  target_link_libraries(${bench_target} PRIVATE cccl.nvbench_helper nvbench::main)
+  target_link_libraries(
+    ${bench_target}
+    PRIVATE #
+      cccl.nvbench_helper
+      nvbench::main
+  )
 endfunction()
 
 function(add_bench_dir bench_dir)
@@ -37,9 +43,9 @@ function(add_bench_dir bench_dir)
   file(TO_CMAKE_PATH "${bench_prefix}" bench_prefix)
   string(REPLACE "/" "." bench_prefix "${bench_prefix}")
 
-  foreach(bench_src IN LISTS bench_srcs)
-    foreach(cudax_target IN LISTS cudax_TARGETS)
-        cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
+  foreach (bench_src IN LISTS bench_srcs)
+    foreach (cudax_target IN LISTS cudax_TARGETS)
+      cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
       get_filename_component(bench_name "${bench_src}" NAME_WLE)
       string(PREPEND bench_name "${config_prefix}.${bench_prefix}.")
@@ -58,6 +64,6 @@ endfunction()
 
 get_recursive_subdirs(subdirs)
 
-foreach(subdir IN LISTS subdirs)
+foreach (subdir IN LISTS subdirs)
   add_bench_dir("${subdir}")
 endforeach()

@@ -1,4 +1,5 @@
-file(GLOB_RECURSE example_srcs
+file(
+  GLOB_RECURSE example_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
   example_*.cu
@@ -7,9 +8,12 @@ file(GLOB_RECURSE example_srcs
 foreach (cub_target IN LISTS CUB_TARGETS)
   foreach (example_src IN LISTS example_srcs)
     get_filename_component(example_name "${example_src}" NAME_WE)
-    string(REGEX REPLACE
-      "^example_block_" "block."
-      example_name "${example_name}"
+    string(
+      REGEX REPLACE
+      "^example_block_"
+      "block."
+      example_name
+      "${example_name}"
     )
     cub_add_example(target_name ${example_name} "${example_src}" ${cub_target})
   endforeach()

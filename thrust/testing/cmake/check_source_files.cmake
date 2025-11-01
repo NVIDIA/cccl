@@ -14,7 +14,8 @@ function(count_substrings input search_regex output_var)
 endfunction()
 
 set(found_errors 0)
-file(GLOB_RECURSE thrust_srcs
+file(
+  GLOB_RECURSE thrust_srcs
   RELATIVE "${Thrust_SOURCE_DIR}"
   "${Thrust_SOURCE_DIR}/thrust/*.h"
   "${Thrust_SOURCE_DIR}/thrust/*.inl"
@@ -24,7 +25,8 @@ file(GLOB_RECURSE thrust_srcs
 # Namespace checks.
 # Check all files in thrust to make sure that they use
 # THRUST_NAMESPACE_BEGIN/END instead of bare `namespace thrust {}` declarations.
-set(namespace_exclusions
+set(
+  namespace_exclusions
   # This defines the macros and must have bare namespace declarations:
   thrust/detail/config/namespace.h
 )
@@ -43,10 +45,14 @@ namespace
 thrust
 {
 ]=]
-  ${bare_ns_regex} valid_count)
+  ${bare_ns_regex} valid_count
+)
 if (NOT valid_count EQUAL 6)
-  message(FATAL_ERROR "Validation of bare namespace regex failed: "
-                      "Matched ${valid_count} times, expected 6.")
+  message(
+    FATAL_ERROR
+    "Validation of bare namespace regex failed: "
+    "Matched ${valid_count} times, expected 6."
+  )
 endif()
 
 ################################################################################
@@ -60,13 +66,14 @@ endif()
 # <memory>    -> <cuda/std/__cccl/memory_wrapper.h>
 # <numeric>   -> <cuda/std/__cccl/numeric_wrapper.h>
 #
-set(stdpar_header_exclusions
+set(
+  stdpar_header_exclusions
   # Placeholder -- none yet.
 )
 
 set(algorithm_regex "#[ \t]*include[ \t]+<algorithm>")
-set(memory_regex    "#[ \t]*include[ \t]+<memory>")
-set(numeric_regex   "#[ \t]*include[ \t]+<numeric>")
+set(memory_regex "#[ \t]*include[ \t]+<memory>")
+set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
 count_substrings([=[
@@ -76,15 +83,19 @@ count_substrings([=[
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count)
+  ${algorithm_regex} valid_count
+)
 if (NOT valid_count EQUAL 5)
-  message(FATAL_ERROR "Validation of stdpar header regex failed: "
-    "Matched ${valid_count} times, expected 5.")
+  message(
+    FATAL_ERROR
+    "Validation of stdpar header regex failed: "
+    "Matched ${valid_count} times, expected 5."
+  )
 endif()
 
 ################################################################################
 # Read source files:
-foreach(src ${thrust_srcs})
+foreach (src ${thrust_srcs})
   file(READ "${Thrust_SOURCE_DIR}/${src}" src_contents)
 
   if (NOT ${src} IN_LIST namespace_exclusions)
@@ -93,20 +104,27 @@ foreach(src ${thrust_srcs})
     count_substrings("${src_contents}" THRUST_NS_POSTFIX postfix_count)
     count_substrings("${src_contents}" THRUST_NAMESPACE_BEGIN begin_count)
     count_substrings("${src_contents}" THRUST_NAMESPACE_END end_count)
-    count_substrings("${src_contents}" "#include <thrust/detail/config.h>" header_count)
+    count_substrings("${src_contents}" "#include <thrust/detail/config.h>" header_count
+    )
 
     if (NOT bare_ns_count EQUAL 0)
-      message("'${src}' contains 'namespace thrust {...}'. Replace with THRUST_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'namespace thrust {...}'. Replace with THRUST_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT prefix_count EQUAL 0)
-      message("'${src}' contains 'THRUST_NS_PREFIX'. Replace with THRUST_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'THRUST_NS_PREFIX'. Replace with THRUST_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT postfix_count EQUAL 0)
-      message("'${src}' contains 'THRUST_NS_POSTFIX'. Replace with THRUST_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'THRUST_NS_POSTFIX'. Replace with THRUST_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
@@ -118,7 +136,9 @@ foreach(src ${thrust_srcs})
     endif()
 
     if (begin_count GREATER 0 AND header_count EQUAL 0)
-      message("'${src}' uses Thrust namespace macros, but does not (directly) `#include <thrust/detail/config.h>`.")
+      message(
+        "'${src}' uses Thrust namespace macros, but does not (directly) `#include <thrust/detail/config.h>`."
+      )
       set(found_errors 1)
     endif()
   endif()
@@ -129,17 +149,23 @@ foreach(src ${thrust_srcs})
     count_substrings("${src_contents}" "${numeric_regex}" numeric_count)
 
     if (NOT algorithm_count EQUAL 0)
-      message("'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>.")
+      message(
+        "'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT memory_count EQUAL 0)
-      message("'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>.")
+      message(
+        "'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT numeric_count EQUAL 0)
-      message("'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>.")
+      message(
+        "'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
   endif()
