@@ -46,7 +46,7 @@ using ::cuda::std::uint64_t;
 #endif // _CCCL_HAS_BUILTIN(__builtin_ffs) || _CCCL_COMPILER(GCC)
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr int __ffs_impl_constexpr(_Tp __v) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr int __ffs_impl_constexpr(_Tp __v) noexcept
 {
   static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "_Tp must be unsigned");
   if (__v == 0)
@@ -89,7 +89,7 @@ template <typename _Tp>
   }
   return __res ? (static_cast<int>(__where) + 1) : 0;
 #  else
-  return ::cuda::__ffs_impl_constexpr(__v);
+  return __ffs_impl_constexpr(__v);
 #  endif // _CCCL_COMPILER(MSVC)
 }
 
@@ -122,11 +122,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
     const auto __lo = static_cast<uint64_t>(__v);
     const auto __hi = static_cast<uint64_t>(static_cast<__uint128_t>(__v) >> 64);
 
-    if (const auto __result = ::cuda::ffs(__lo))
+    if (const auto __result = ffs(__lo))
     {
       return __result;
     }
-    if (const auto __result = ::cuda::ffs(__hi))
+    if (const auto __result = ffs(__hi))
     {
       return __result + 64;
     }
@@ -141,19 +141,17 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
       if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
       {
         const uint32_t __vu = static_cast<uint32_t>(__v);
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__vu);), (__result = ::cuda::__ffs_impl_device(__vu);));
+        NV_IF_ELSE_TARGET(NV_IS_HOST, (__result = __ffs_impl_host(__vu);), (__result = __ffs_impl_device(__vu);));
       }
       else
       {
         const uint64_t __vu = static_cast<uint64_t>(__v);
-        NV_IF_ELSE_TARGET(
-          NV_IS_HOST, (__result = ::cuda::__ffs_impl_host(__vu);), (__result = ::cuda::__ffs_impl_device(__vu);));
+        NV_IF_ELSE_TARGET(NV_IS_HOST, (__result = __ffs_impl_host(__vu);), (__result = __ffs_impl_device(__vu);));
       }
     }
     else
     {
-      __result = ::cuda::__ffs_impl_constexpr(__v);
+      __result = __ffs_impl_constexpr(__v);
     }
     _CCCL_ASSUME(__result >= 0 && __result <= ::cuda::std::numeric_limits<_Tp>::digits);
     return __result;
