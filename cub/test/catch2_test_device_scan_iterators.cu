@@ -32,6 +32,7 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <cstdint>
@@ -294,7 +295,7 @@ C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
   c2h::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
   c2h::device_vector<int> d_ok_count(1);
 
-  auto index_it = thrust::make_counting_iterator(0);
+  auto index_it = cuda::make_counting_iterator(0);
   thrust::transform(
     c2h::device_policy,
     index_it,

@@ -3,6 +3,7 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -49,14 +50,14 @@ struct random_to_vec_item_t
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                                   \
-    template <>                                                                                                   \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
-    {                                                                                                             \
-      const auto* dist = generator.prepare_random_generator(seed, data.size());                                   \
-      auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
-      thrust::for_each(                                                                                           \
-        device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \
+#  define VEC_SPECIALIZATION(T)                                                                               \
+    template <>                                                                                               \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                             \
+    {                                                                                                         \
+      const auto* dist = generator.prepare_random_generator(seed, data.size());                               \
+      auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};  \
+      thrust::for_each(                                                                                       \
+        device_policy, cuda::counting_iterator<size_t>{0}, cuda::counting_iterator<size_t>{data.size()}, op); \
     }
 
 VEC_SPECIALIZATION(char2);

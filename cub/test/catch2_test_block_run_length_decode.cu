@@ -31,9 +31,9 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_allocator.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
@@ -332,11 +332,11 @@ void TestAlgorithmSpecialisation()
 
   using RunItemT      = float;
   using RunLengthT    = uint32_t;
-  using ItemItT       = thrust::counting_iterator<RunItemT>;
-  using RunLengthsItT = thrust::transform_iterator<ModOp, thrust::counting_iterator<RunLengthT>>;
+  using ItemItT       = cuda::counting_iterator<RunItemT>;
+  using RunLengthsItT = thrust::transform_iterator<ModOp, cuda::counting_iterator<RunLengthT>>;
 
   ItemItT d_unique_items(1000U);
-  RunLengthsItT d_run_lengths(thrust::counting_iterator<RunLengthT>(0), ModOp{});
+  RunLengthsItT d_run_lengths(cuda::counting_iterator<RunLengthT>(0), ModOp{});
 
   constexpr uint32_t num_runs   = 10000;
   constexpr uint32_t num_blocks = (num_runs + (RUNS_PER_BLOCK - 1U)) / RUNS_PER_BLOCK;

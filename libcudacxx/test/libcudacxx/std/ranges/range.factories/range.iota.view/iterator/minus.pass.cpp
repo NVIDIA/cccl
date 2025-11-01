@@ -20,14 +20,6 @@
 #include "../types.h"
 #include "test_macros.h"
 
-// If we're compiling for 32 bit or windows, int and long are the same size, so long long is the correct difference
-// type.
-#if INTPTR_MAX == INT32_MAX || defined(_WIN32)
-using IntDiffT = long long;
-#else
-using IntDiffT = long;
-#endif
-
 __host__ __device__ constexpr bool test()
 {
   // <iterator> - difference_type
@@ -95,7 +87,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 5);
       assert(iter1 - iter2 == 5);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
     {
       cuda::std::ranges::iota_view<int> io(0);
@@ -103,7 +95,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == 0);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
     {
       cuda::std::ranges::iota_view<int> io(0);
@@ -111,7 +103,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == -5);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     // When "_Start" is unsigned integer like and y > x.
@@ -121,7 +113,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == -5);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     // When "_Start" is unsigned integer like and x >= y.
@@ -131,7 +123,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 5);
       assert(iter1 - iter2 == 5);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
     {
       cuda::std::ranges::iota_view<unsigned> io(0);
@@ -139,7 +131,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == 0);
 
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     // When "_Start" is not integer like.
