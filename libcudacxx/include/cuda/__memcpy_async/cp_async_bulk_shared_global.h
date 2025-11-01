@@ -59,7 +59,7 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
     NV_PROVIDES_SM_90,
     (if (__elect_from_group(__g)) {
       ::cuda::ptx::cp_async_bulk(
-        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared, ::cuda::ptx::space_cluster>,
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
         ::cuda::ptx::space_global,
         __dest,
         __src,
