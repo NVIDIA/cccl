@@ -6,11 +6,10 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -36,7 +35,7 @@ struct offset_to_transform_it
   template <typename OffsetT>
   __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
   {
-    return thrust::make_transform_output_iterator(base_it + offset, cuda::std::identity{});
+    return cuda::transform_output_iterator(base_it + offset, cuda::std::identity{});
   }
   IteratorT base_it;
 };
@@ -47,7 +46,7 @@ struct offset_to_constant_it
   template <typename OffsetT>
   __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
   {
-    return thrust::make_constant_iterator(static_cast<T>(offset));
+    return cuda::constant_iterator(static_cast<T>(offset));
   }
 };
 
@@ -155,13 +154,12 @@ try
 
   // Prepare d_range_srcs
   offset_to_constant_it<std::uint8_t> offset_to_index_op{};
-  auto d_range_srcs =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), offset_to_index_op);
+  auto d_range_srcs = cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), offset_to_index_op);
 
   // Prepare d_range_dsts
   offset_to_transform_it<std::uint8_t*> dst_transform_op{
     static_cast<std::uint8_t*>(thrust::raw_pointer_cast(d_out.data()))};
-  auto d_range_dsts = thrust::make_transform_iterator(d_range_dst_offsets.begin(), dst_transform_op);
+  auto d_range_dsts = cuda::transform_iterator(d_range_dst_offsets.begin(), dst_transform_op);
 
   // Invoke device-side algorithm
   copy_batched(d_range_srcs, d_range_dsts, d_range_sizes.begin(), num_ranges);
@@ -193,7 +191,7 @@ try
   byte_offset_t num_items              = large_target_copy_size;
 
   // Input iterator for the items of a single range
-  auto input_data_it = thrust::make_counting_iterator(data_t{42});
+  auto input_data_it = cuda::counting_iterator(data_t{42});
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);
@@ -201,9 +199,9 @@ try
 
   // Run test
   const auto num_buffers = 1;
-  auto d_buffer_srcs     = thrust::make_constant_iterator(input_data_it);
-  auto d_buffer_dsts     = thrust::make_constant_iterator(check_result_it);
-  auto d_buffer_sizes    = thrust::make_constant_iterator(num_items);
+  auto d_buffer_srcs     = cuda::constant_iterator(input_data_it);
+  auto d_buffer_dsts     = cuda::constant_iterator(check_result_it);
+  auto d_buffer_sizes    = cuda::constant_iterator(num_items);
   copy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes, num_buffers);
 
   // Verify result
@@ -225,7 +223,7 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
   c2h::device_vector<iterator> in_iter{in.begin(), in.begin() + 1, in.begin() + 2};
   c2h::device_vector<iterator> out_iter{out.begin(), out.begin() + 1, out.begin() + 2};
 
-  auto sizes = thrust::make_constant_iterator(1);
+  auto sizes = cuda::constant_iterator(1);
 
   copy_batched(in_iter.begin(), out_iter.begin(), sizes, num_buffers);
 
@@ -254,10 +252,10 @@ try
   prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
     d_range_sizes.cbegin(), range_size_t{0}, num_empty_ranges};
   auto d_range_sizes_it_skipped =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
+    cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
 
   // Iterator to be used to provide input data
-  auto in_it = thrust::make_transform_iterator(thrust::make_counting_iterator(item_offset_t{42}), mod_n<item_t>{200});
+  auto in_it       = cuda::transform_iterator(cuda::counting_iterator(item_offset_t{42}), mod_n<item_t>{200});
   using range_it_t = decltype(in_it);
 
   // Generate the offsets into in_it from range_sizes
@@ -266,14 +264,13 @@ try
 
   // Use the offsets to generate an iterator over the ranges, where each range is an iterator into in_it
   offset_to_ptr_op<range_it_t> src_transform_op{in_it};
-  auto d_ranges_src_it =
-    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_range_offsets.data()), src_transform_op);
+  auto d_ranges_src_it = cuda::transform_iterator(thrust::raw_pointer_cast(d_range_offsets.data()), src_transform_op);
 
   // Wrap the iterator into an iterator that returns empty ranges for the first num_empty_ranges
   prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
     d_ranges_src_it, in_it, num_empty_ranges};
   auto d_ranges_src_it_skipped =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
+    cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), src_skip_first_n_op);
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_total_items);
@@ -282,11 +279,11 @@ try
 
   // Helper iterator that offsets the checking output iterator by the offset for a given range
   offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
-  auto ranges_dst_it = thrust::make_transform_iterator(d_range_offsets.cbegin(), dst_transform_op);
+  auto ranges_dst_it = cuda::transform_iterator(d_range_offsets.cbegin(), dst_transform_op);
   prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
     ranges_dst_it, check_result_it, num_empty_ranges};
   auto d_ranges_dst_it_skipped =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
+    cuda::transform_iterator(cuda::counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
 
   // Invoke device-side algorithm
   copy_batched(d_ranges_src_it_skipped, d_ranges_dst_it_skipped, d_range_sizes_it_skipped, num_ranges);

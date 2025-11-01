@@ -5,6 +5,7 @@
 
 #include <cub/device/dispatch/dispatch_topk.cuh> // topk::select::{min, max}
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 // Function object to generate monotonically non-decreasing values for small key types
@@ -87,7 +88,7 @@ class check_unordered_output_helper
   {
     auto correctness_flags_end = flag_vector.cbegin() + (num_elements / bits_per_element);
     const bool all_correct =
-      thrust::equal(flag_vector.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
+      thrust::equal(flag_vector.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
     if (!all_correct)
     {
