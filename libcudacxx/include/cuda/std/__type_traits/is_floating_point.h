@@ -21,29 +21,37 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__is_floating_point)
+#  define _CCCL_BUILTIN_IS_FLOATING_POINT(...) __is_floating_point(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_floating_point)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if defined(_CCCL_BUILTIN_IS_FLOATING_POINT)
 template <class _Tp>
-inline constexpr bool __cccl_is_floating_point_helper_v = false;
-
+inline constexpr bool is_floating_point_v = _CCCL_BUILTIN_IS_FLOATING_POINT(_Tp);
+#else // ^^^ _CCCL_BUILTIN_IS_FLOATING_POINT ^^^ / vvv !_CCCL_BUILTIN_IS_FLOATING_POINT vvv
+template <class _Tp>
+inline constexpr bool is_floating_point_v = false;
+template <class _Tp>
+inline constexpr bool is_floating_point_v<const _Tp> = is_floating_point_v<_Tp>;
+template <class _Tp>
+inline constexpr bool is_floating_point_v<volatile _Tp> = is_floating_point_v<_Tp>;
+template <class _Tp>
+inline constexpr bool is_floating_point_v<const volatile _Tp> = is_floating_point_v<_Tp>;
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<float> = true;
-
+inline constexpr bool is_floating_point_v<float> = true;
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<double> = true;
-
+inline constexpr bool is_floating_point_v<double> = true;
 template <>
-inline constexpr bool __cccl_is_floating_point_helper_v<long double> = true;
+inline constexpr bool is_floating_point_v<long double> = true;
+#endif // ^^^ !_CCCL_BUILTIN_IS_FLOATING_POINT ^^^
 
 template <class _Tp>
-inline constexpr bool is_floating_point_v = __cccl_is_floating_point_helper_v<remove_cv_t<_Tp>>;
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public bool_constant<is_floating_point_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : bool_constant<is_floating_point_v<_Tp>>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD
