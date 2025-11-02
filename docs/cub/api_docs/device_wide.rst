@@ -24,8 +24,8 @@ Most CUB device-wide algorithms follow a two-phase usage pattern:
 **What arguments are needed during the query phase?**
 
 * **Required**: Data types (via template parameters and iterator types) and problem size (``num_items``)
-* **Can be nullptr/uninitialized**: All input/output pointers (``d_in``, ``d_out``, etc.)
-* **Note**: The algorithm does not access input data during the query phase
+* **Can be ``nullptr``/dummy**: All device pointers (``d_in``, ``d_out``, etc.).
+* **Why this is safe**: Each device-wide dispatcher checks ``if (d_temp_storage == nullptr)`` and returns before launching kernels or dereferencing user pointers. We verified this pattern in ``dispatch_reduce*.cuh``, ``dispatch_scan*.cuh``, ``dispatch_select_if.cuh``, ``dispatch_histogram.cuh``, ``dispatch_radix_sort.cuh``, ``dispatch_merge*.cuh``, ``dispatch_rle.cuh``, ``dispatch_unique_by_key.cuh``, ``dispatch_three_way_partition.cuh``, ``dispatch_topk.cuh``, ``dispatch_adjacent_difference.cuh``, and ``dispatch_batch_memcpy.cuh``.
 
 Example pattern:
 
