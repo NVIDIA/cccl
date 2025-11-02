@@ -308,6 +308,25 @@ struct min_prefix_op_t
   }
 };
 
+struct wider_returning_op
+{
+  __host__ __device__ long long operator()(int lhs, int rhs) const
+  {
+    return static_cast<long long>(lhs + rhs);
+  }
+
+  __host__ __device__ long long operator()(long long, int) const = delete;
+};
+
+struct exclusive_wider_scan_op_t
+{
+  template <int ItemsPerThread, class BlockScanT>
+  __device__ void operator()(BlockScanT& scan, int (&thread_data)[ItemsPerThread]) const
+  {
+    scan.ExclusiveScan(thread_data, thread_data, 0, wider_returning_op{});
+  }
+};
+
 template <class T, class ScanOpT>
 T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, T initial_value = T{})
 {
@@ -348,6 +367,35 @@ T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, T init
 
 // %PARAM% ALGO_TYPE alg 0:1:2
 // %PARAM% TEST_MODE mode 0:1
+
+C2H_TEST("Block scan handles operators returning wider type", "[scan][block]")
+{
+  using type                                  = int;
+  constexpr int items_per_thread              = 3;
+  constexpr int block_dim_x                   = 64;
+  constexpr int block_dim_y                   = 1;
+  constexpr int block_dim_z                   = 1;
+  constexpr cub::BlockScanAlgorithm algorithm = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING;
+  constexpr int tile_size                     = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
+
+  c2h::host_vector<type> h_in(tile_size);
+  for (int i = 0; i < tile_size; ++i)
+  {
+    h_in[i] = static_cast<type>((i % 7) - 3);
+  }
+
+  c2h::device_vector<type> d_in = h_in;
+  c2h::device_vector<type> d_out(tile_size);
+
+  c2h::host_vector<type> h_expected = h_in;
+  host_scan(scan_mode::exclusive, h_expected, wider_returning_op{}, type{0});
+
+  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z, type>(
+    d_in, d_out, exclusive_wider_scan_op_t{});
+
+  c2h::host_vector<type> h_out = d_out;
+  REQUIRE(h_out == h_expected);
+}
 
 using types = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 // FIXME(bgruber): uchar3 fails the test, see #3835
