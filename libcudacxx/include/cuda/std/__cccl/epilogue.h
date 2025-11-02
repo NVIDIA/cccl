@@ -323,12 +323,22 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_interface
 #endif
 
+// sal.h on Windows
+
 #if defined(__valid)
 #  error \
     "cccl internal error: macro `__valid` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO___valid)
 #  pragma pop_macro("__valid")
 #  undef _CCCL_POP_MACRO___valid
+#endif
+
+#if defined(__callback)
+#  error \
+    "cccl internal error: macro `__callback` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO___callback)
+#  pragma pop_macro("__callback")
+#  undef _CCCL_POP_MACRO___callback
 #endif
 
 // other macros

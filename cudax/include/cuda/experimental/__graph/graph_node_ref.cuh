@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__algorithm/fill.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__utility/swap.h>

@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/unexpected.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -40,20 +41,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Err>
-class unexpected;
-
 namespace __unexpected
 {
-template <class _Tp>
-inline constexpr bool __is_unexpected = false;
-
-template <class _Err>
-inline constexpr bool __is_unexpected<unexpected<_Err>> = true;
 
 template <class _Tp>
 inline constexpr bool __valid_unexpected =
-  is_object_v<_Tp> && !is_array_v<_Tp> && !__is_unexpected<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
+  is_object_v<_Tp> && !is_array_v<_Tp> && !__is_cuda_std_unexpected<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 } // namespace __unexpected
 
 // [expected.un.general]

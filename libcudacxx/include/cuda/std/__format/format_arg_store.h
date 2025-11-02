@@ -100,8 +100,8 @@ template <class _Context, class _Tp>
     __ret = __fmt_arg_t::__const_char_type_ptr;
   }
   // todo: add std::string and std::string_view support
-  // - add `|| __cccl_is_std_string_view_v<_Tp> || __cccl_is_std_string_v<_Tp>` to the condition
-  else if constexpr (__cccl_is_string_view_v<_Tp>)
+  // - add `|| __is_std_basic_string_view_v<_Tp> || __is_std_basic_string_v<_Tp>` to the condition
+  else if constexpr (__is_cuda_std_basic_string_view_v<_Tp>)
   {
     __ret = (is_same_v<_CtxCharT, typename _Tp::value_type>) ? __fmt_arg_t::__string_view : __ret;
   }

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/string_view> // IWYU pragma: keep
 #include <cuda/std/type_traits>

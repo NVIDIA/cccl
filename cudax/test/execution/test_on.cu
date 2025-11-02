@@ -81,6 +81,21 @@ void simple_continue_on_stream_test()
   CUDAX_CHECK(result == 42);
 }
 
+void test_continues_on_updates_env()
+{
+  ex::thread_context ctx;
+  auto sch  = ctx.get_scheduler();
+  auto sndr = ex::just() | ex::on(sch, ex::let_value([] {
+                                    return ex::read_env(ex::get_scheduler);
+                                  }))
+            | ex::then([](auto sch2) -> int {
+                STATIC_REQUIRE(cuda::std::same_as<decltype(sch2), decltype(sch)>);
+                return 42;
+              });
+  auto [result] = ex::sync_wait(std::move(sndr)).value();
+  CUDAX_CHECK(result == 42);
+}
+
 namespace
 {
 C2H_TEST("simple on(sch, sndr) thread test", "[on]")
@@ -103,4 +118,8 @@ C2H_TEST("simple on(sndr, sch, closure) stream test", "[on][stream]")
   simple_continue_on_stream_test();
 }
 
+C2H_TEST("test that on(sndr, sch, closure) updates the env for closure", "[on][stream]")
+{
+  test_continues_on_updates_env();
+}
 } // namespace

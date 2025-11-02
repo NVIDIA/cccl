@@ -74,6 +74,7 @@ PREDEFINED = \
     "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
     "_CCCL_CATCH=catch" \
     "_CCCL_CATCH_ALL=catch (...)" \
+    "_CCCL_CATCH_FALLTHROUGH=" \
     "_CCCL_CONCEPT=constexpr bool " \
     "_CCCL_CONSTEXPR_FRIEND=friend " \
     "_CCCL_CTK_AT_LEAST(x, y)=1" \

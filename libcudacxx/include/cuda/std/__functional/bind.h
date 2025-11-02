@@ -29,6 +29,7 @@
 #  include <cuda/std/__functional/reference_wrapper.h>
 #  include <cuda/std/__functional/weak_result_type.h>
 #  include <cuda/std/__fwd/get.h>
+#  include <cuda/std/__fwd/reference_wrapper.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
 #  include <cuda/std/__tuple_dir/tuple_indices.h>
 #  include <cuda/std/__tuple_dir/tuple_size.h>
@@ -40,6 +41,7 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/remove_reference.h>
 #  include <cuda/std/__utility/forward.h>
@@ -130,9 +132,9 @@ __mu(_Ti&, _Uj& __uj)
 }
 
 template <class _Ti, class _Uj>
-_CCCL_API inline enable_if_t<
-  !is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__cccl_is_reference_wrapper_v<_Ti>,
-  _Ti&>
+_CCCL_API inline enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0
+                               && !__is_cuda_std_reference_wrapper_v<remove_cv_t<_Ti>>,
+                             _Ti&>
 __mu(_Ti& __ti, _Uj&)
 {
   return __ti;
@@ -180,7 +182,7 @@ template <class _Ti, class _TupleUj>
 struct __mu_return
     : public __mu_return_impl<
         _Ti,
-        __cccl_is_reference_wrapper_v<_Ti>,
+        __is_cuda_std_reference_wrapper_v<remove_cv_t<_Ti>>,
         is_bind_expression<_Ti>::value,
         0 < is_placeholder<_Ti>::value && is_placeholder<_Ti>::value <= tuple_size<_TupleUj>::value,
         _TupleUj>

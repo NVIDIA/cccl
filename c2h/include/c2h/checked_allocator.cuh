@@ -36,6 +36,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+#include <optional>
+#include <string>
 
 #include <cuda_runtime_api.h>
 
@@ -43,6 +45,27 @@ namespace c2h
 {
 namespace detail
 {
+
+inline std::optional<std::string> get_env(const char* name)
+{
+#ifdef _WIN32
+  char* buf       = nullptr;
+  std::size_t len = 0;
+  if (_dupenv_s(&buf, &len, name) || !buf)
+  {
+    return std::nullopt;
+  }
+  std::string val(buf);
+  free(buf);
+  return val;
+#else
+  if (const char* v = std::getenv(name))
+  {
+    return std::string(v);
+  }
+  return std::nullopt;
+#endif
+}
 
 struct memory_info
 {
@@ -55,15 +78,15 @@ struct memory_info
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static const char* override_str = std::getenv("C2H_DEVICE_MEMORY_LIMIT");
-  static std::size_t result       = override_str ? static_cast<std::size_t>(std::atoll(override_str)) : 0;
+  static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
+  static std::size_t result = override_str ? static_cast<std::size_t>(std::atoll(override_str->c_str())) : 0;
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static const char* debug_checked_allocs = std::getenv("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static bool result                      = debug_checked_allocs && (std::atoi(debug_checked_allocs) != 0);
+  static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
+  static bool result = debug_checked_allocs && (std::atoi(debug_checked_allocs->c_str()) != 0);
   return result;
 }
 

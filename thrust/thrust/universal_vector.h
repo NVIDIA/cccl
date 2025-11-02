@@ -30,7 +30,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/universal_allocator.h>
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/vector.h>
+#  include <thrust/system/cuda/vector.h>
+#  include <thrust/system/omp/vector.h>
+#  include <thrust/system/tbb/vector.h>
+#endif
 
 // #include the device system's vector header
 #define __THRUST_DEVICE_SYSTEM_VECTOR_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/vector.h>

@@ -89,10 +89,10 @@ if [[ " ${preset_variants[@]} " =~ " no_lid " ]]; then
       "$artifact_prefix-no_lid" \
       "$build_dir_regex/.*\.headers\..*" > /dev/null || :
 
-  # These ptx outputs are needed for FileCheck tests in test/ptx-json
+  # These cubin outputs are needed for FileCheck tests in test/ptx-json
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-no_lid" \
-      "$build_dir_regex/cub/test/ptx-json/.*\.ptx$" > /dev/null
+      "$build_dir_regex/cub/test/ptx-json/.*\.cubin$" > /dev/null
 
   ci/util/artifacts/upload_stage_packed.sh "$artifact_prefix-no_lid"
 fi

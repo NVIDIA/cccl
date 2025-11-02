@@ -48,23 +48,23 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int BLOCK_THREADS_ARG,
-          int WARP_THREADS_ARG,
-          int ITEMS_PER_THREAD_ARG,
-          cub::WarpLoadAlgorithm LOAD_ALGORITHM_ARG   = cub::WARP_LOAD_DIRECT,
-          cub::CacheLoadModifier LOAD_MODIFIER_ARG    = cub::LOAD_LDG,
-          cub::WarpStoreAlgorithm STORE_ALGORITHM_ARG = cub::WARP_STORE_DIRECT>
+template <int BlockThreadsArg,
+          int WarpThreadsArg,
+          int ItemsPerThreadArg,
+          cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
+          cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
-  static constexpr int BLOCK_THREADS      = BLOCK_THREADS_ARG;
-  static constexpr int WARP_THREADS       = WARP_THREADS_ARG;
-  static constexpr int ITEMS_PER_THREAD   = ITEMS_PER_THREAD_ARG;
+  static constexpr int BLOCK_THREADS      = BlockThreadsArg;
+  static constexpr int WARP_THREADS       = WarpThreadsArg;
+  static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
   static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
   static constexpr int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
 
-  static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LOAD_ALGORITHM_ARG;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LOAD_MODIFIER_ARG;
-  static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = STORE_ALGORITHM_ARG;
+  static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithmArg;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
+  static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)

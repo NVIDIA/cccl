@@ -45,10 +45,7 @@ int main(int, char**)
 {
   test_is_nothrow_assignable<int&, int&>();
   test_is_nothrow_assignable<int&, int>();
-#if !defined(_LIBCUDACXX_HAS_NOEXCEPT_SFINAE)
-  // The `__has_nothrow_assign`-based fallback for can't handle this case.
   test_is_nothrow_assignable<int&, double>();
-#endif
 
   test_is_not_nothrow_assignable<int, int&>();
   test_is_not_nothrow_assignable<int, int>();

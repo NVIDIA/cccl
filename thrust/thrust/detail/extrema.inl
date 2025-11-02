@@ -27,9 +27,21 @@
 #endif // no system header
 #include <thrust/extrema.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/extrema.h>
-#include <thrust/system/detail/generic/extrema.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/extrema.h>
+#include <thrust/system/detail/sequential/extrema.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(extrema.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(extrema.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/extrema.h>
+#  include <thrust/system/cuda/detail/extrema.h>
+#  include <thrust/system/omp/detail/extrema.h>
+#  include <thrust/system/tbb/detail/extrema.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

@@ -541,15 +541,23 @@ struct only_set_when_expected_it
   {
     return *this;
   }
+
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator++(int) const
+  {
+    return *this;
+  }
+
   _CCCL_HOST_DEVICE only_set_when_expected_it operator*() const
   {
     return *this;
   }
+
   template <typename Difference>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator+(Difference) const
   {
     return *this;
   }
+
   template <typename Index>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator[](Index) const
   {

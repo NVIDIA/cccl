@@ -30,10 +30,10 @@ template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array;
 
 template <class _Tp>
-inline constexpr bool __is_std_array_v = false;
+inline constexpr bool __is_cuda_std_array_v = false;
 
 template <class _Tp, size_t _Sz>
-inline constexpr bool __is_std_array_v<array<_Tp, _Sz>> = true;
+inline constexpr bool __is_cuda_std_array_v<array<_Tp, _Sz>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -43,19 +43,19 @@ template <class _Rep, class _Period = ratio<1>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT duration;
 
 template <class _Tp>
-inline constexpr bool __is_duration_v = false;
+inline constexpr bool __is_cuda_std_duration_v = false;
 
 template <class _Rep, class _Period>
-inline constexpr bool __is_duration_v<duration<_Rep, _Period>> = true;
+inline constexpr bool __is_cuda_std_duration_v<duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline constexpr bool __is_duration_v<const duration<_Rep, _Period>> = true;
+inline constexpr bool __is_cuda_std_duration_v<const duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline constexpr bool __is_duration_v<volatile duration<_Rep, _Period>> = true;
+inline constexpr bool __is_cuda_std_duration_v<volatile duration<_Rep, _Period>> = true;
 
 template <class _Rep, class _Period>
-inline constexpr bool __is_duration_v<const volatile duration<_Rep, _Period>> = true;
+inline constexpr bool __is_cuda_std_duration_v<const volatile duration<_Rep, _Period>> = true;
 
 } // namespace chrono
 
@@ -73,7 +73,7 @@ namespace chrono
 // duration_cast
 
 _CCCL_TEMPLATE(class _ToDuration, class _Rep, class _Period)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr _ToDuration duration_cast(const duration<_Rep, _Period>& __fd)
 {
   using _FromDuration = duration<_Rep, _Period>;
@@ -128,7 +128,7 @@ public:
 };
 
 _CCCL_TEMPLATE(class _ToDuration, class _Rep, class _Period)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr _ToDuration floor(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = ::cuda::std::chrono::duration_cast<_ToDuration>(__d);
@@ -140,7 +140,7 @@ _CCCL_REQUIRES(__is_duration_v<_ToDuration>)
 }
 
 _CCCL_TEMPLATE(class _ToDuration, class _Rep, class _Period)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr _ToDuration ceil(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = ::cuda::std::chrono::duration_cast<_ToDuration>(__d);
@@ -152,7 +152,7 @@ _CCCL_REQUIRES(__is_duration_v<_ToDuration>)
 }
 
 _CCCL_TEMPLATE(class _ToDuration, class _Rep, class _Period)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr _ToDuration round(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __lower = ::cuda::std::chrono::floor<_ToDuration>(__d);
@@ -182,8 +182,8 @@ _CCCL_REQUIRES(numeric_limits<_Rep>::is_signed)
 template <class _Rep, class _Period>
 class _CCCL_TYPE_VISIBILITY_DEFAULT duration
 {
-  static_assert(!__is_duration_v<_Rep>, "A duration representation can not be a duration");
-  static_assert(__is_ratio_v<_Period>, "Second template parameter of duration must be a std::ratio");
+  static_assert(!__is_cuda_std_duration_v<_Rep>, "A duration representation can not be a duration");
+  static_assert(__is_cuda_std_ratio_v<_Period>, "Second template parameter of duration must be a std::ratio");
   static_assert(_Period::num > 0, "duration period must be positive");
 
   template <class _R1, class _R2>
@@ -445,7 +445,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Rep2)
-  _CCCL_REQUIRES((!__is_duration_v<_Rep2>) _CCCL_AND is_convertible_v<const _Rep2&, common_type_t<_Rep, _Rep2>>)
+  _CCCL_REQUIRES((!__is_cuda_std_duration_v<_Rep2>) _CCCL_AND is_convertible_v<const _Rep2&, common_type_t<_Rep, _Rep2>>)
   [[nodiscard]] _CCCL_API friend constexpr duration<common_type_t<_Rep, _Rep2>, _Period>
   operator/(const duration& __d, const _Rep2& __s)
   {
@@ -463,7 +463,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Rep2)
-  _CCCL_REQUIRES((!__is_duration_v<_Rep2>) _CCCL_AND is_convertible_v<const _Rep2&, common_type_t<_Rep, _Rep2>>)
+  _CCCL_REQUIRES((!__is_cuda_std_duration_v<_Rep2>) _CCCL_AND is_convertible_v<const _Rep2&, common_type_t<_Rep, _Rep2>>)
   [[nodiscard]] _CCCL_API friend constexpr duration<common_type_t<_Rep, _Rep2>, _Period>
   operator%(const duration& __d, const _Rep2& __s)
   {

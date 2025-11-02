@@ -269,7 +269,7 @@ C2H_TEST("Reduce works with input iterators", "[reduce]")
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
   const int output   = output_it[0];
-  const int expected = init.value + num_items * (num_items - 1) / 2;
+  const int expected = init.value + static_cast<int>(num_items * (num_items - 1) / 2);
   REQUIRE(output == expected);
 }
 

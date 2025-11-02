@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 
 #include <exception> // IWYU pragma: keep
-#include <new> // IWYU pragma: keep
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -48,6 +48,9 @@ namespace cuda::experimental::execution
 /* first alternative. This is done to simplify the implementation and to avoid  */
 /* the need for a default constructor for each alternative type.                */
 /********************************************************************************/
+
+struct __monostate
+{};
 
 template <class _Idx, class... _Ts>
 class __variant_impl;
@@ -209,7 +212,13 @@ struct __variant : __variant_impl<::cuda::std::index_sequence_for<_Ts...>, _Ts..
 {};
 
 template <class... _Ts>
+using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, _Ts...>;
+
+template <class... _Ts>
 using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
+
+template <class... _Ts>
+using __nullable_decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

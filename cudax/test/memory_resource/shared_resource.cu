@@ -110,7 +110,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      cudax::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
+      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
       auto* ptr = ref.allocate_sync(bytes(100), align(8));

@@ -51,7 +51,7 @@ namespace detail
  * @brief The BlockHistogramAtomic class provides atomic-based methods for constructing block-wide
  *        histograms from data samples partitioned across a CUDA thread block.
  */
-template <int BINS>
+template <int Bins>
 struct BlockHistogramAtomic
 {
   /// Shared memory storage layout type
@@ -71,7 +71,7 @@ struct BlockHistogramAtomic
    *   Reference to shared/device-accessible memory histogram
    */
   template <typename T, typename CounterT, int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[Bins])
   {
     // Update histogram
     _CCCL_PRAGMA_UNROLL_FULL()

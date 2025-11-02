@@ -112,7 +112,6 @@
 #include <cuda/std/__type_traits/is_polymorphic.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_scalar.h>

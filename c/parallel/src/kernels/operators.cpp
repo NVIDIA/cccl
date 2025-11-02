@@ -82,7 +82,7 @@ std::string make_kernel_binary_operator_full_source(
   if (lhs_t == rhs_t && (return_type == lhs_t || return_type == "bool"))
   {
     auto desc = user_operation_traits::well_known_operation_description(operation.type);
-    if (desc && desc->symbol)
+    if (desc && (desc->symbol || primitive_types.contains(lhs_t)))
     {
       if (desc->check != user_operation_traits::binary_predicate_matcher
           && desc->check != user_operation_traits::binary_matcher)
@@ -181,7 +181,7 @@ struct op_wrapper
   if (output_t == input_t || output_t == "bool")
   {
     auto desc = user_operation_traits::well_known_operation_description(operation.type);
-    if (desc && desc->symbol)
+    if (desc && (desc->symbol || primitive_types.contains(input_t)))
     {
       if (desc->check != user_operation_traits::unary_predicate_matcher
           && desc->check != user_operation_traits::unary_matcher)

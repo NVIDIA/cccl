@@ -106,13 +106,6 @@ private:
   State state{State::ready_to_copy};
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
-  /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& __private_storage()
-  {
-    __shared__ _TempStorage private_storage;
-    return private_storage;
-  }
-
   _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_thread() const
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
@@ -222,13 +215,6 @@ public:
 
   //! @name Collective constructors
   //! @{
-
-  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoadToShared()
-      : temp_storage(__private_storage())
-  {
-    __init_mbarrier();
-  }
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage.
   //!

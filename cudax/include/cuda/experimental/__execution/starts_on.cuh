@@ -89,7 +89,7 @@ private:
   template <class _Sch, class... _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Sch __sch, _Env&&... __env)
   {
-    return __join_env(__mk_sch_env(__sch, __env...), static_cast<_Env&&>(__env)...);
+    return __join_env(__mk_sch_env(__sch, __env...), __fwd_env(static_cast<_Env&&>(__env))...);
   }
 
   template <class _Sch, class... _Env>

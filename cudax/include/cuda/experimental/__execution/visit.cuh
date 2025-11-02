@@ -90,19 +90,24 @@ inline constexpr size_t structured_binding_size<_Sndr const&> = structured_bindi
 // implementation. Otherwise, we need an `__unpack` function template specialized for
 #if __cpp_structured_bindings >= 202411L
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++2c-extensions")
+
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Visitor, class _CvSndr, class _Context>
-    requires(static_cast<int>(structured_binding_size<_CvSndr>) >= 2)
-  _CCCL_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
+  _CCCL_TEMPLATE(class _Visitor, class _CvSndr, class _Context)
+  _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_CvSndr>) >= 2))
+  _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
     auto&& [__tag, __data, ... __children] = static_cast<_CvSndr&&>(__sndr);
     return __visitor(__context, __tag, _CCCL_FWD_LIKE(_CvSndr, __data), _CCCL_FWD_LIKE(_CvSndr, __children)...);
   }
 };
+
+_CCCL_DIAG_POP
 
 #else // ^^^ __cpp_structured_bindings >= 202411L / !__cpp_structured_bindings >= 202411L vvv
 

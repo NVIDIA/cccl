@@ -108,7 +108,7 @@ class mdspan
                             _AccessorPolicy>
 {
 private:
-  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
+  static_assert(__is_cuda_std_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
   static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
   static_assert(!is_abstract_v<_ElementType>, "mdspan: ElementType template parameter may not be an abstract class");
@@ -291,7 +291,7 @@ public:
   //--------------------------------------------------------------------------------
   // [mdspan.mdspan.members], members
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == extents_type::rank())
                    _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
@@ -311,7 +311,7 @@ public:
   {
     return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__index))));
   }
-#endif // _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS
 
   template <class _OtherIndexType, size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr decltype(auto)

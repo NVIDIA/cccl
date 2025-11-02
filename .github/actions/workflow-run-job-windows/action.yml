@@ -165,6 +165,12 @@ runs:
 
         git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
 
+        # We've been seeing intermittent sccache auth issues on Windows. Make a few attempts to
+        # start the server and authenticate:
+        sccache --version
+        try { sccache --stop-server *>&1 | Out-Null } catch {}
+        & bash -c 'ci/util/retry.sh 5 30 sccache --start-server'
+
         $exitCode = 0
         try {
           Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"

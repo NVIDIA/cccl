@@ -24,13 +24,13 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
                                   cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
                                   cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_types)
 {
@@ -47,7 +47,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
   cudax::stream stream{cuda::device_ref{0}};
-  Resource resource{};
+  Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("cudax::async_buffer::begin/end properties")
   {
@@ -78,7 +78,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
 
   SECTION("cudax::async_buffer::begin/end no allocation")
   {
-    Buffer buf = make_async_buffer(stream, Resource{}, 0, T());
+    Buffer buf = make_async_buffer(stream, extract_properties<TestT>::get_resource(), 0, T());
     CUDAX_CHECK(buf.begin() == iterator{nullptr});
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
     CUDAX_CHECK(buf.cbegin() == const_iterator{nullptr});
@@ -131,7 +131,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
 
   SECTION("cudax::async_buffer::rbegin/rend no allocation")
   {
-    Buffer buf = make_async_buffer(stream, Resource{}, 0, T());
+    Buffer buf = make_async_buffer(stream, extract_properties<TestT>::get_resource(), 0, T());
     CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
     CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
     CUDAX_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});

@@ -484,6 +484,13 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
 
 // Stream management
 
+_CCCL_HOST_API inline void
+__streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, unsigned __flags = 0)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamAddCallback);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to add a stream callback", __stream, __cb, __data, __flags);
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUstream __streamCreateWithPriority(unsigned __flags, int __priority)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamCreateWithPriority);
@@ -746,6 +753,12 @@ __functionSetAttributeNoThrow(::CUfunction __kernel, ::CUfunction_attribute __at
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuFuncSetAttribute);
   return static_cast<::cudaError_t>(__driver_fn(__kernel, __attr, __value));
+}
+
+_CCCL_HOST_API inline void __launchHostFunc(::CUstream __stream, ::CUhostFn __fn, void* __data)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLaunchHostFunc);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to launch host function", __stream, __fn, __data);
 }
 
 _CCCL_HOST_API inline void

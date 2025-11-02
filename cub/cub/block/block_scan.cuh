@@ -195,25 +195,21 @@ enum BlockScanAlgorithm
 //! @tparam T
 //!   Data type being scanned
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockScanAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_SCAN_RAKING)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension
 //!   (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-template <typename T,
-          int BLOCK_DIM_X,
-          BlockScanAlgorithm ALGORITHM = BLOCK_SCAN_RAKING,
-          int BLOCK_DIM_Y              = 1,
-          int BLOCK_DIM_Z              = 1>
+template <typename T, int BlockDimX, BlockScanAlgorithm Algorithm = BLOCK_SCAN_RAKING, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockScan
 {
 private:
@@ -221,7 +217,7 @@ private:
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
   /**
@@ -231,13 +227,13 @@ private:
    * architectural warp size.
    */
   static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
-    ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % detail::warp_threads != 0))
+    ((Algorithm == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % detail::warp_threads != 0))
       ? BLOCK_SCAN_RAKING
-      : ALGORITHM;
+      : Algorithm;
 
-  using WarpScans = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpScans = detail::BlockScanWarpScans<T, BlockDimX, BlockDimY, BlockDimZ>;
   using Raking =
-    detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
+    detail::BlockScanRaking<T, BlockDimX, BlockDimY, BlockDimZ, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
@@ -269,7 +265,7 @@ public:
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -280,7 +276,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group
@@ -1520,7 +1516,7 @@ public:
   template <int ITEMS_PER_THREAD>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD])
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0]);
     }
@@ -1597,7 +1593,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveSum(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T& block_aggregate)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0], block_aggregate);
     }
@@ -1678,7 +1674,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveSum(input[0], output[0], block_prefix_callback_op);
     }
@@ -1951,7 +1947,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
   {
-    if (ITEMS_PER_THREAD == 1)
+    if constexpr (ITEMS_PER_THREAD == 1)
     {
       InclusiveScan(input[0], output[0], scan_op);
     }

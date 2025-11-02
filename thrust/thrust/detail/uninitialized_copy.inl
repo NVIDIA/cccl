@@ -27,10 +27,22 @@
 #endif // no system header
 
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/uninitialized_copy.h>
 #include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/generic/uninitialized_copy.h>
 #include <thrust/uninitialized_copy.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/uninitialized_copy.h>
+#include <thrust/system/detail/sequential/uninitialized_copy.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_copy.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(uninitialized_copy.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/uninitialized_copy.h>
+#  include <thrust/system/cuda/detail/uninitialized_copy.h>
+#  include <thrust/system/omp/detail/uninitialized_copy.h>
+#  include <thrust/system/tbb/detail/uninitialized_copy.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

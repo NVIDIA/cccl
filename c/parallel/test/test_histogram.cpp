@@ -8,7 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <array>
 #include <cstdint>
+#include <vector>
 
 #include <cuda_runtime.h>
 
@@ -206,7 +208,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   using counter_t = int;
 
   int num_samples = 10;
-  std::vector<float> d_samples{2.2, 6.1, 7.1, 2.9, 3.5, 0.3, 2.9, 2.1, 6.1, 999.5};
+  std::vector<float> d_samples{2.2f, 6.1f, 7.1f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f, 6.1f, 999.5f};
 
   int num_rows = 1;
 

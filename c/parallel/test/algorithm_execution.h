@@ -109,7 +109,7 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  BuildResultT build;
+  BuildResultT build{};
 
   bool found               = false;
   const bool cache_and_key = bool(cache) && bool(lookup_key);
