@@ -36,6 +36,7 @@ enum class __atomic_tag
   __atomic_base_tag,
   __atomic_locked_tag,
   __atomic_small_tag,
+  __atomic_ref_small_tag,
 };
 
 // Helpers to SFINAE on the tag inside the storage object
@@ -45,6 +46,9 @@ template <typename _Sto>
 using __atomic_storage_is_locked = enable_if_t<__atomic_tag::__atomic_locked_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
 using __atomic_storage_is_small = enable_if_t<__atomic_tag::__atomic_small_tag == remove_cvref_t<_Sto>::__tag, int>;
+template <typename _Sto>
+using __atomic_storage_is_ref_small =
+  enable_if_t<__atomic_tag::__atomic_ref_small_tag == remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Tp>
 using __atomic_underlying_t = typename _Tp::__underlying_t;

@@ -28,9 +28,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// Reference is compatible with __atomic_base_tag and uses the default dispatch
+template <typename _Tp, bool _IsSmall>
+struct __atomic_ref_storage_impl;
+
 template <typename _Tp>
-struct __atomic_ref_storage
+struct __atomic_ref_storage_impl<_Tp, false>
 {
   using __underlying_t                = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
@@ -41,9 +43,9 @@ struct __atomic_ref_storage
 
   _Tp* __a_value;
 
-  __atomic_ref_storage() = delete;
+  __atomic_ref_storage_impl() = delete;
 
-  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_ref_storage(_Tp* value) noexcept
+  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_ref_storage_impl(_Tp* value) noexcept
       : __a_value(value)
   {}
 
@@ -64,6 +66,45 @@ struct __atomic_ref_storage
     return __a_value;
   }
 };
+
+template <typename _Tp>
+struct __atomic_ref_storage_impl<_Tp, true>
+{
+  using __underlying_t                = _Tp;
+  static constexpr __atomic_tag __tag = __atomic_tag::__atomic_ref_small_tag;
+
+#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
+  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
+#endif
+
+  _Tp* __a_value;
+
+  __atomic_ref_storage_impl() = delete;
+
+  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_ref_storage_impl(_Tp* value) noexcept
+      : __a_value(value)
+  {}
+
+  _CCCL_HOST_DEVICE inline auto get() noexcept -> __underlying_t*
+  {
+    return __a_value;
+  }
+  _CCCL_HOST_DEVICE inline auto get() const noexcept -> __underlying_t*
+  {
+    return __a_value;
+  }
+  _CCCL_HOST_DEVICE inline auto get() volatile noexcept -> volatile __underlying_t*
+  {
+    return __a_value;
+  }
+  _CCCL_HOST_DEVICE inline auto get() const volatile noexcept -> volatile __underlying_t*
+  {
+    return __a_value;
+  }
+};
+
+template <typename _Tp>
+using __atomic_ref_storage = __atomic_ref_storage_impl<_Tp, (sizeof(_Tp) < 4)>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
