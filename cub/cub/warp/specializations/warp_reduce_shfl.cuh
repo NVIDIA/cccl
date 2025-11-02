@@ -66,7 +66,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <class A = int, class = A>
 struct reduce_add_exists : ::cuda::std::false_type
 {};

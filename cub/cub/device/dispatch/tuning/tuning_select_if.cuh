@@ -52,7 +52,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::select
 {
-
 enum class may_alias
 {
   no,

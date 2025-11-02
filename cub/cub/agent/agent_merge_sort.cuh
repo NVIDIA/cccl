@@ -89,7 +89,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::merge_sort
 {
-
 template <typename Policy,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -742,7 +741,6 @@ struct AgentMerge
     }
   }
 };
-
 } // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

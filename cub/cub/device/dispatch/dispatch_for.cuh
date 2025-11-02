@@ -54,7 +54,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
 {
-
 // The dispatch layer is in the detail namespace until we figure out tuning API
 template <class OffsetT, class OpT, class PolicyHubT = policy_hub_t>
 struct dispatch_t
@@ -192,7 +191,6 @@ struct dispatch_t
     return error;
   }
 };
-
 } // namespace detail::for_each
 
 CUB_NAMESPACE_END

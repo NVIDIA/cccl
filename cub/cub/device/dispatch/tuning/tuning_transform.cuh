@@ -475,7 +475,6 @@ struct policy_hub<RequiresStableAddress,
 
   using max_policy = policy1000;
 };
-
 } // namespace detail::transform
 
 CUB_NAMESPACE_END

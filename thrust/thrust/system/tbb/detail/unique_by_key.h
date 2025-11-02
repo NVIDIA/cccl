@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   execution_policy<DerivedPolicy>& exec,
@@ -51,6 +50,5 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   return thrust::system::detail::generic::unique_by_key_copy(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
 } // end unique_by_key_copy()
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

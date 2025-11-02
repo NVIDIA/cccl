@@ -417,7 +417,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-
 /**
  * Implementation detail for `MatchAny`. It provides specializations for full and partial warps.
  * For partial warps, inactive threads must be masked out. This is done in the partial warp
@@ -496,7 +495,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
   return ret;
 }
-
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 

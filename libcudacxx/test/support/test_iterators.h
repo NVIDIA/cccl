@@ -1442,7 +1442,6 @@ private:
 
 namespace adl
 {
-
 class Iterator
 {
 public:
@@ -1597,7 +1596,6 @@ public:
   }
 #endif // TEST_STD_VER< 2020
 };
-
 } // namespace adl
 
 // Proxy

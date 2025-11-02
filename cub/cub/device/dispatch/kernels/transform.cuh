@@ -57,7 +57,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
-
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
@@ -1018,7 +1017,6 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     static_assert(!sizeof(Offset), "Algorithm not implemented");
   }
 }
-
 } // namespace detail::transform
 
 CUB_NAMESPACE_END

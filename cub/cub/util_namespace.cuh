@@ -76,7 +76,6 @@
 #  define CUB_NS_PREFIX             \
     namespace CUB_WRAPPED_NAMESPACE \
     {
-
 #  define CUB_NS_POSTFIX }
 
 #  define CUB_NS_QUALIFIER ::CUB_WRAPPED_NAMESPACE::cub

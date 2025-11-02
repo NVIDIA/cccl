@@ -111,7 +111,6 @@ constexpr length_size classify_length_size()
 
 namespace encode
 {
-
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -381,7 +380,6 @@ struct policy_hub
 
 namespace non_trivial_runs
 {
-
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),

@@ -45,7 +45,6 @@ namespace c2h
 {
 namespace detail
 {
-
 inline std::optional<std::string> get_env(const char* name)
 {
 #ifdef _WIN32
@@ -227,5 +226,4 @@ struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_
 
 template <typename T>
 using checked_host_allocator = THRUST_NS_QUALIFIER::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
-
 } // namespace c2h

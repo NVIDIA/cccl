@@ -34,7 +34,6 @@
 
 namespace c2h
 {
-
 struct custom_type_state_t
 {
   std::size_t key{};
@@ -176,7 +175,6 @@ public:
     return result;
   }
 };
-
 } // namespace c2h
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

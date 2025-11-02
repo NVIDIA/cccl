@@ -306,7 +306,6 @@ DECLARE_UNITTEST(TestFindWithBigIndexes);
 
 namespace
 {
-
 class Weird
 {
   int value;
@@ -321,7 +320,6 @@ public:
     return x == y.value;
   }
 };
-
 } // namespace
 
 void TestFindAsymmetricEquality()

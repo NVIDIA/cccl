@@ -154,7 +154,6 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-
 template <bool... Bs>
 struct logic_helper_t;
 
@@ -569,9 +568,7 @@ struct traits_t<T, false /* is_fundamental */>
     return custom_digit_extractor_t<DecomposerT>(decomposer, begin_bit, num_bits);
   }
 };
-
 } // namespace radix
-
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 

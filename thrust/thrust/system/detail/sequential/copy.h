@@ -42,7 +42,6 @@ namespace system::detail::sequential
 {
 namespace copy_detail
 {
-
 // returns the raw pointer associated with a Pointer-like thing
 template <typename Pointer>
 _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer get(Pointer ptr)
@@ -98,7 +97,6 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
 {
   return thrust::system::detail::sequential::general_copy_n(first, n, result);
 } // end copy_n()
-
 } // end namespace copy_detail
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -118,6 +116,5 @@ copy_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n
   return thrust::system::detail::sequential::copy_detail::copy_n(
     first, n, result, typename thrust::is_indirectly_trivially_relocatable_to<InputIterator, OutputIterator>::type());
 } // end copy_n()
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -54,7 +54,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 using is_integral_or_enum =
   ::cuda::std::integral_constant<bool, ::cuda::std::is_integral_v<T> || ::cuda::std::is_enum_v<T>>;
@@ -74,7 +73,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
   auto const capped_operand_rhs = (::cuda::std::min) (rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
   return lhs + capped_operand_rhs;
 }
-
 } // namespace detail
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)

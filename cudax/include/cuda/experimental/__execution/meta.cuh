@@ -289,7 +289,6 @@ using __type_call_or =
   typename ::cuda::std::_If<__is_instantiable_with<_Fn::template __call, _Ts...>,
                             _Fn,
                             ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

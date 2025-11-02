@@ -26,7 +26,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename IndexType>
 thrust::system::detail::internal::uniform_decomposition<IndexType> default_decomposition(IndexType n)
 {
@@ -45,6 +44,5 @@ thrust::system::detail::internal::uniform_decomposition<IndexType> default_decom
   return thrust::system::detail::internal::uniform_decomposition<IndexType>(n, 1, 1);
 #endif
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

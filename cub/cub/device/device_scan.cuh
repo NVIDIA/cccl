@@ -78,7 +78,6 @@ struct default_tuning : tuning<default_tuning>
   template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
   using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
 };
-
 } // namespace detail::scan
 
 //! @rst

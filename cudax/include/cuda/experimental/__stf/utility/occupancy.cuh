@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 struct compute_occupancy_result
 {
   int min_grid_size;
@@ -111,5 +110,4 @@ cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem
 
   return res;
 }
-
 } // namespace cuda::experimental::stf::reserved

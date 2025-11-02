@@ -74,7 +74,6 @@ enum class ForceInclusive
 
 namespace detail::scan
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -111,7 +110,6 @@ struct DeviceScanKernelSource
     return ScanTileStateT();
   }
 };
-
 } // namespace detail::scan
 
 /******************************************************************************

@@ -47,7 +47,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 {
   using Size = size_t;

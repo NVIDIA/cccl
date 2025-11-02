@@ -303,12 +303,10 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace reduce
 
 namespace rfa
 {
-
 template <class AccumT>
 struct sm90_tuning;
 

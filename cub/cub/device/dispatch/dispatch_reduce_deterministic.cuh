@@ -72,10 +72,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 namespace rfa
 {
-
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
@@ -112,7 +110,6 @@ struct deterministic_sum_t
     return lhs + rhs;
   }
 };
-
 } // namespace rfa
 
 /******************************************************************************

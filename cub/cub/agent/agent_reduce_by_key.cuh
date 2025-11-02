@@ -117,7 +117,6 @@ struct AgentReduceByKeyPolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide reduce-value-by-key
@@ -800,7 +799,6 @@ struct AgentReduceByKey
     }
   }
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

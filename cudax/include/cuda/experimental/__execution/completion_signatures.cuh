@@ -651,7 +651,6 @@ template <class... _What, class... _Values>
 }
 
 #endif // ^^^ no constexpr exceptions ^^^
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

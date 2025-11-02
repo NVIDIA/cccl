@@ -49,7 +49,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-
 enum class primitive_key
 {
   no,
@@ -878,7 +877,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

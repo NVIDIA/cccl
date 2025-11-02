@@ -57,7 +57,6 @@ using __make_indices_imp _CCCL_NODEBUG_ALIAS =
 
 namespace __detail
 {
-
 template <typename _Tp, size_t... _Extra>
 struct __repeat;
 template <typename _Tp, _Tp... _Np, size_t... _Extra>
@@ -181,7 +180,6 @@ struct __parity<7>
       : __repeat<typename __make<_Np / 8>::type, _Np - 7, _Np - 6, _Np - 5, _Np - 4, _Np - 3, _Np - 2, _Np - 1>
   {};
 };
-
 } // namespace __detail
 
 template <size_t _Ep, size_t _Sp>

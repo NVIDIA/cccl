@@ -44,7 +44,6 @@ namespace system::detail::sequential
 {
 namespace radix_sort_detail
 {
-
 template <typename T>
 struct RadixEncoder
 {
@@ -549,7 +548,6 @@ _CCCL_HOST_DEVICE void radix_sort(
   using KeyType = thrust::detail::it_value_t<RandomAccessIterator1>;
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, vals1, vals2, N);
 }
-
 } // end namespace radix_sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
@@ -582,6 +580,5 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
 
   radix_sort_detail::radix_sort(exec, first1, temp1.begin(), first2, temp2.begin(), N);
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

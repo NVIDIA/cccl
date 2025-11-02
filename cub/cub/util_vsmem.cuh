@@ -58,7 +58,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 /**
  * @brief Helper struct to wrap all the information needed to implement virtual shared memory that's passed to a kernel.
  *
@@ -245,7 +244,6 @@ using vsmem_helper_fallback_policy_t =
 template <typename DefaultPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
 using vsmem_helper_default_fallback_policy_t =
   vsmem_helper_fallback_policy_t<DefaultPolicyT, policy_wrapper_t<DefaultPolicyT, 64, 1>, AgentT, AgentParamsT...>;
-
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED

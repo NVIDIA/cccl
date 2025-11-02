@@ -55,7 +55,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::adjacent_difference
 {
-
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceAdjacentDifferenceInitKernel(InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)
@@ -105,7 +104,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
   agent.Process(tile_idx, tile_base);
 }
-
 } // namespace detail::adjacent_difference
 
 enum class ReadOption

@@ -51,7 +51,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
-
 // ------------------------------------------------------------------
 // ------------ __static_array --------------------------------------
 // ------------------------------------------------------------------
@@ -398,7 +397,6 @@ _CCCL_REQUIRES(integral<_To>)
   }
   return true;
 }
-
 } // namespace __mdspan_detail
 
 // ------------------------------------------------------------------
@@ -650,7 +648,6 @@ public:
 // Recursive helper classes to implement dextents alias for extents
 namespace __mdspan_detail
 {
-
 template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
 struct __make_dextents;
 
@@ -668,7 +665,6 @@ struct __make_dextents<_IndexType, 0, extents<_IndexType, _ExtentsPack...>>
 {
   using type = extents<_IndexType, _ExtentsPack...>;
 };
-
 } // end namespace __mdspan_detail
 
 // [mdspan.extents.dextents], alias template
@@ -691,7 +687,6 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 
 namespace __mdspan_detail
 {
-
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
 // requiring that the indices are larger than 0 and smaller than
@@ -749,7 +744,6 @@ template <class _Extents, class... _From>
   return __mdspan_detail::__is_multidimensional_index_in_impl(
     make_index_sequence<_Extents::rank()>(), __ext, __values...);
 }
-
 } // namespace __mdspan_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

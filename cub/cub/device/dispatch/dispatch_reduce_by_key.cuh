@@ -61,7 +61,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename PrecedingKeyItT, typename AccumT, typename GlobalOffsetT>
 struct streaming_context
 {
@@ -259,7 +258,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
   // If applicable, hints to discard modified cache lines for vsmem
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
-
 } // namespace detail::reduce
 
 /******************************************************************************

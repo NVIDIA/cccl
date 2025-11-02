@@ -47,7 +47,6 @@
 
 namespace cuda::experimental::execution
 {
-
 struct schedule_from_t
 {
   _CUDAX_SEMI_PRIVATE:
@@ -98,7 +97,6 @@ template <class _Sndr>
 inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT schedule_from_t schedule_from{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

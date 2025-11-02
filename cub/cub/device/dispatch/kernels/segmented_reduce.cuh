@@ -45,7 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
@@ -315,7 +314,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     }
   }
 }
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

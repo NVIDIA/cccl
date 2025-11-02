@@ -136,7 +136,6 @@ struct AgentRlePolicy
 
 namespace detail::rle
 {
-
 /**
  * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide
  * run-length-encode
@@ -1118,7 +1117,6 @@ struct AgentRle
     }
   }
 };
-
 } // namespace detail::rle
 
 CUB_NAMESPACE_END

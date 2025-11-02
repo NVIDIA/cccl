@@ -37,7 +37,6 @@
 
 namespace c2h
 {
-
 // TODO(bgruber): duplicated version of thrust/testing/unittest/system.h
 inline std::string demangle(const char* name)
 {
@@ -58,5 +57,4 @@ std::string type_name()
 {
   return demangle(typeid(T).name());
 }
-
 } // namespace c2h

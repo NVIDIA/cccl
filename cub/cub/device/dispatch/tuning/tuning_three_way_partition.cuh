@@ -49,7 +49,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
-
 template <typename PolicyT, typename = void>
 struct ThreeWayPartitionPolicyWrapper : PolicyT
 {

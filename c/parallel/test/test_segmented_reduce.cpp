@@ -717,7 +717,6 @@ void host_advance_transform_it_state(void* state, cccl_increment_t offset)
 
 namespace validate
 {
-
 using BuildResultT = cccl_device_reduce_build_result_t;
 
 struct reduce_cleanup
@@ -768,7 +767,6 @@ void reduce_for_pointer_inputs(
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run>(
     build_cache, test_key, input, output, num_items, op, init);
 }
-
 } // namespace validate
 
 struct SegmentedReduce_LargeNumSegments_Fixture_Tag;

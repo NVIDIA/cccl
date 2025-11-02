@@ -25,7 +25,6 @@ namespace system::tbb::detail
 {
 namespace copy_if_detail
 {
-
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename Size>
 struct body
 {
@@ -91,7 +90,6 @@ struct body
     sum = b.sum;
   }
 }; // end body
-
 } // namespace copy_if_detail
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
@@ -112,6 +110,5 @@ copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, 
 
   return result;
 } // end copy_if()
-
 } // namespace system::tbb::detail
 THRUST_NAMESPACE_END

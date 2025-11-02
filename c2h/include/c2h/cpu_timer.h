@@ -49,7 +49,6 @@
 
 namespace c2h
 {
-
 class cpu_timer
 {
   std::chrono::high_resolution_clock::time_point m_start;
@@ -105,5 +104,4 @@ public:
     m_timer.print_elapsed_seconds(m_label);
   }
 };
-
 } // namespace c2h

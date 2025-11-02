@@ -37,7 +37,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-
 /*! \p cpp::pointer stores a pointer to an object allocated in memory accessible
  *  by the \p cpp system. This type provides type safety when dispatching
  *  algorithms on ranges resident in \p cpp memory.
@@ -99,7 +98,6 @@ using universal_host_pinned_pointer = universal_pointer<T>;
  */
 template <typename T>
 using reference = thrust::reference<T, thrust::system::cpp::tag>;
-
 } // namespace system::cpp
 
 /*! \addtogroup system_backends Systems

@@ -187,5 +187,4 @@ void init_key_segments(const device_vector<OffsetT>& segment_offsets, device_vec
     static_cast<custom_type_state_t*>(THRUST_NS_QUALIFIER::raw_pointer_cast(keys_out.data())),
     sizeof(custom_type_t<Ps...>));
 }
-
 } // namespace c2h

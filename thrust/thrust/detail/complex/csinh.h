@@ -60,7 +60,6 @@ namespace detail
 {
 namespace complex
 {
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
@@ -192,9 +191,7 @@ _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
   z = csinh(complex<double>(-z.imag(), z.real()));
   return (complex<double>(z.imag(), -z.real()));
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <typename ValueType>

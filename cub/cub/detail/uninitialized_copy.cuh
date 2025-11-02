@@ -46,7 +46,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 #if _CCCL_CUDA_COMPILER(NVHPC)
 template <typename T, typename U>
 _CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
@@ -68,7 +67,6 @@ _CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
   new (ptr) T(::cuda::std::forward<U>(val));
 }
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
-
 } // namespace detail
 
 CUB_NAMESPACE_END

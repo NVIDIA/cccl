@@ -58,7 +58,6 @@ namespace detail
 {
 namespace complex
 {
-
 /*
  * Hyperbolic cosine of a complex argument z = x + i y.
  *
@@ -197,9 +196,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<doub
   /* ccos(z) = ccosh(I * z) */
   return (ccosh(thrust::complex<double>(-z.imag(), z.real())));
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <typename ValueType>

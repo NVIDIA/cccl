@@ -198,5 +198,4 @@ struct proxy_value_receiver
 
 template <class Ty>
 _CCCL_HOST_DEVICE proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
-
 } // namespace

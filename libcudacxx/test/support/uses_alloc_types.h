@@ -118,7 +118,6 @@ bool checkConstructionEquiv(TestType& T, TestType& U)
 ////////////////////////////////////////////////////////////////////////////////
 namespace detail
 {
-
 template <bool IsZero, size_t N, class ArgList, class... Args>
 struct TakeNImp;
 
@@ -147,7 +146,6 @@ using IdentityT = typename Identity<T>::type;
 
 template <bool Value>
 using EnableIfB = typename std::enable_if<Value, bool>::type;
-
 } // end namespace detail
 
 // FIXME: UsesAllocatorTestBase needs some special logic to deal with

@@ -75,14 +75,12 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename DeterminismT>
 inline constexpr bool is_non_deterministic_v =
   ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
 
 namespace reduce
 {
-
 struct get_tuning_query_t
 {};
 

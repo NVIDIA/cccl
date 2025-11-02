@@ -53,7 +53,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rfa
 {
-
 // jump table for indexing into data
 inline constexpr int cub_rfa_max_jump = 5;
 static_assert(cub_rfa_max_jump <= 5, "cub_rfa_max_jump must be less than or equal to 5");

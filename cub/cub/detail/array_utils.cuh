@@ -48,7 +48,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /***********************************************************************************************************************
@@ -73,6 +72,5 @@ to_array(const Input& input)
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
-
 } // namespace detail
 CUB_NAMESPACE_END

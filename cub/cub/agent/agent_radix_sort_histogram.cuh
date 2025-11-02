@@ -109,7 +109,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::radix_sort
 {
-
 template <typename AgentRadixSortHistogramPolicy,
           bool IS_DESCENDING,
           typename KeyT,
@@ -302,7 +301,6 @@ struct AgentRadixSortHistogram
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

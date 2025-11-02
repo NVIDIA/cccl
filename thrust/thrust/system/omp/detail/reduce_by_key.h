@@ -24,7 +24,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -46,6 +45,5 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   return thrust::system::detail::generic::reduce_by_key(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
 } // end reduce_by_key()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

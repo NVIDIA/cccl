@@ -116,6 +116,5 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
       // the compilation time of stable_primitive_sort is too expensive to use within a single CUDA thread
       thrust::system::detail::sequential::stable_merge_sort_by_key(exec, first1, last1, first2, comp);));
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

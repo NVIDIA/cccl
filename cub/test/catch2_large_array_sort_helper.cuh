@@ -62,7 +62,6 @@
 
 namespace detail
 {
-
 template <typename KeyType>
 class key_sort_ref_key_transform
 {
@@ -157,7 +156,6 @@ struct index_to_value
     return static_cast<ValueType>(index);
   }
 };
-
 } // namespace detail
 
 template <typename KeyType, typename ValueType = cub::NullType>

@@ -80,7 +80,6 @@ namespace detail
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
-
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -494,7 +493,6 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
   has_uva = uva == 1;
   return error;
 }
-
 } // namespace detail
 
 /**
@@ -557,7 +555,6 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 
 namespace detail
 {
-
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
@@ -653,7 +650,6 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
-
 } // namespace detail
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -663,7 +659,6 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 
 namespace detail
 {
-
 // Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
 
