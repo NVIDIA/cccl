@@ -199,329 +199,329 @@ public:
 
 private:
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm90(arrival_token __token) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm90(arrival_token __token) const
     {
-      return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+      {
+        return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+      }
+      _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                   "barrier must be in shared memory, not cluster shared memory");
+      return ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token);
     }
-    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
-                 "barrier must be in shared memory, not cluster shared memory");
-    return ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token);
-  }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm80(arrival_token __token) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm80(arrival_token __token) const
     {
-      return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+      {
+        return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));
+      }
+      return ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
     }
-    return ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
-  }
 #endif // _CCCL_CUDA_COMPILATION()
 
-  _CCCL_API inline bool __try_wait([[maybe_unused]] arrival_token __token) const
-  {
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (return __try_wait_sm90(__token);),
-      NV_PROVIDES_SM_80,
-      (return __try_wait_sm80(__token);),
-      NV_ANY_TARGET,
-      (return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));))
-  }
+    _CCCL_API inline bool __try_wait([[maybe_unused]] arrival_token __token) const
+    {
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90,
+        (return __try_wait_sm90(__token);),
+        NV_PROVIDES_SM_80,
+        (return __try_wait_sm80(__token);),
+        NV_ANY_TARGET,
+        (return ::cuda::std::__call_try_wait(__barrier, ::cuda::std::move(__token));))
+    }
 
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_sm90(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm90(
+      arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      return ::cuda::std::__cccl_thread_poll_with_backoff(
-        ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
-    }
-    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
-                 "barrier must not be in cluster shared memory");
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+      {
+        return ::cuda::std::__cccl_thread_poll_with_backoff(
+          ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
+      }
+      _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                   "barrier must not be in cluster shared memory");
 
-    bool __ready = 0;
-    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-      ::cuda::std::chrono::high_resolution_clock::now();
-    ::cuda::std::chrono::nanoseconds __elapsed;
-    do
-    {
-      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-      ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
-      __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-    } while (!__ready && (__nanosec > __elapsed));
-    return __ready;
-  }
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_sm80(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      return ::cuda::std::__cccl_thread_poll_with_backoff(
-        ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
+      bool __ready = 0;
+      ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+        ::cuda::std::chrono::high_resolution_clock::now();
+      ::cuda::std::chrono::nanoseconds __elapsed;
+      do
+      {
+        const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+        ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
+        __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+      } while (!__ready && (__nanosec > __elapsed));
+      return __ready;
     }
 
-    bool __ready = false;
-    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-      ::cuda::std::chrono::high_resolution_clock::now();
-    do
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_sm80(
+      arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      __ready = ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
-    } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
-    return __ready;
-  }
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+      {
+        return ::cuda::std::__cccl_thread_poll_with_backoff(
+          ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)), __nanosec);
+      }
+
+      bool __ready = false;
+      ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+        ::cuda::std::chrono::high_resolution_clock::now();
+      do
+      {
+        __ready = ::cuda::ptx::mbarrier_test_wait(__native_handle(), __token);
+      } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
+      return __ready;
+    }
 #endif // _CCCL_CUDA_COMPILATION()
 
-  // Document de drop > uint32_t for __nanosec on public for APIs
-  _CCCL_API inline bool __try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (__nanosec.count() < 1)
+    // Document de drop > uint32_t for __nanosec on public for APIs
+    _CCCL_API inline bool __try_wait(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      return __try_wait(::cuda::std::move(__token));
-    }
+      if (__nanosec.count() < 1)
+      {
+        return __try_wait(::cuda::std::move(__token));
+      }
 
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (return __try_wait_sm90(__token, __nanosec);),
-      NV_PROVIDES_SM_80,
-      (return __try_wait_sm80(__token, __nanosec);),
-      NV_ANY_TARGET,
-      (return ::cuda::std::__cccl_thread_poll_with_backoff(
-                ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)),
-                ::cuda::std::chrono::nanoseconds(__nanosec));))
-  }
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90,
+        (return __try_wait_sm90(__token, __nanosec);),
+        NV_PROVIDES_SM_80,
+        (return __try_wait_sm80(__token, __nanosec);),
+        NV_ANY_TARGET,
+        (return ::cuda::std::__cccl_thread_poll_with_backoff(
+                  ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__token)),
+                  ::cuda::std::chrono::nanoseconds(__nanosec));))
+    }
 
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm90(bool __phase_parity) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm90(bool __phase_parity) const
     {
-      return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+      {
+        return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+      }
+      _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                   "barrier must be in shared memory, not cluster shared memory");
+
+      return ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity);
     }
-    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
-                 "barrier must be in shared memory, not cluster shared memory");
 
-    return ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity);
-  }
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm80(bool __phase_parity) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm80(bool __phase_parity) const
     {
-      return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+      {
+        return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);
+      }
+      return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
     }
-    return ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
-  }
 #endif // _CCCL_CUDA_COMPILATION()
 
-  _CCCL_API inline bool __try_wait_parity(bool __phase_parity) const
-  {
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (return __try_wait_parity_sm90(__phase_parity);),
-      NV_PROVIDES_SM_80,
-      (return __try_wait_parity_sm80(__phase_parity);),
-      NV_ANY_TARGET,
-      (return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);))
-  }
+    _CCCL_API inline bool __try_wait_parity(bool __phase_parity) const
+    {
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90,
+        (return __try_wait_parity_sm90(__phase_parity);),
+        NV_PROVIDES_SM_80,
+        (return __try_wait_parity_sm80(__phase_parity);),
+        NV_ANY_TARGET,
+        (return ::cuda::std::__call_try_wait_parity(__barrier, __phase_parity);))
+    }
 
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_parity_sm90(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm90(
+      bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      return ::cuda::std::__cccl_thread_poll_with_backoff(
-        ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
-    }
-    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
-                 "barrier must be in shared memory, not cluster shared memory");
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+      {
+        return ::cuda::std::__cccl_thread_poll_with_backoff(
+          ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
+      }
+      _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                   "barrier must be in shared memory, not cluster shared memory");
 
-    int32_t __ready = 0;
-    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-      ::cuda::std::chrono::high_resolution_clock::now();
-    ::cuda::std::chrono::nanoseconds __elapsed;
-    do
-    {
-      const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-      ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
-      __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-    } while (!__ready && (__nanosec > __elapsed));
+      int32_t __ready = 0;
+      ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+        ::cuda::std::chrono::high_resolution_clock::now();
+      ::cuda::std::chrono::nanoseconds __elapsed;
+      do
+      {
+        const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
+        ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
+        __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+      } while (!__ready && (__nanosec > __elapsed));
 
-    return __ready;
-  }
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_parity_sm80(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      return ::cuda::std::__cccl_thread_poll_with_backoff(
-        ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
+      return __ready;
     }
 
-    bool __ready = 0;
-    ::cuda::std::chrono::high_resolution_clock::time_point const __start =
-      ::cuda::std::chrono::high_resolution_clock::now();
-    do
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_parity_sm80(
+      bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      __ready = ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
-    } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+      {
+        return ::cuda::std::__cccl_thread_poll_with_backoff(
+          ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
+      }
 
-    return __ready;
-  }
+      bool __ready = 0;
+      ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+        ::cuda::std::chrono::high_resolution_clock::now();
+      do
+      {
+        __ready = ::cuda::ptx::mbarrier_test_wait_parity(__native_handle(), __phase_parity);
+      } while (!__ready && __nanosec > (::cuda::std::chrono::high_resolution_clock::now() - __start));
+
+      return __ready;
+    }
 #endif // _CCCL_CUDA_COMPILATION()
 
-  _CCCL_API inline bool __try_wait_parity(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
-  {
-    if (__nanosec.count() < 1)
+    _CCCL_API inline bool __try_wait_parity(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
     {
-      return __try_wait_parity(__phase_parity);
+      if (__nanosec.count() < 1)
+      {
+        return __try_wait_parity(__phase_parity);
+      }
+
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90,
+        (__try_wait_parity_sm90(__phase_parity, __nanosec);),
+        NV_PROVIDES_SM_80,
+        (__try_wait_parity_sm80(__phase_parity, __nanosec);),
+        NV_ANY_TARGET,
+        (return ::cuda::std::__cccl_thread_poll_with_backoff(
+                  ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
+      _CCCL_UNREACHABLE();
     }
 
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (__try_wait_parity_sm90(__phase_parity, __nanosec);),
-      NV_PROVIDES_SM_80,
-      (__try_wait_parity_sm80(__phase_parity, __nanosec);),
-      NV_ANY_TARGET,
-      (return ::cuda::std::__cccl_thread_poll_with_backoff(
-                ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
-    _CCCL_UNREACHABLE();
-  }
+  public:
+    _CCCL_API inline void wait(arrival_token && __phase) const
+    {
+      // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
+      NV_IF_TARGET(NV_PROVIDES_SM_90,
+                   (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                     while (!::cuda::ptx::mbarrier_try_wait(
+                       reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase))
+                       ;
+                     return;
+                   }))
+      // fallback implementation
+      ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__phase)));
+    }
 
-public:
-  _CCCL_API inline void wait(arrival_token&& __phase) const
-  {
-    // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   while (!::cuda::ptx::mbarrier_try_wait(
-                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase))
-                     ;
-                   return;
-                 }))
-    // fallback implementation
-    ::cuda::std::__cccl_thread_poll_with_backoff(
-      ::cuda::std::__barrier_poll_tester_phase<barrier>(this, ::cuda::std::move(__phase)));
-  }
+    _CCCL_API inline void wait_parity(bool __phase_parity) const
+    {
+      // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
+      NV_IF_TARGET(NV_PROVIDES_SM_90,
+                   (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
+                     while (!::cuda::ptx::mbarrier_try_wait_parity(
+                       reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase_parity))
+                       ;
+                     return;
+                   }))
+      // fallback implementation
+      ::cuda::std::__cccl_thread_poll_with_backoff(
+        ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
+    }
 
-  _CCCL_API inline void wait_parity(bool __phase_parity) const
-  {
-    // no need to back off on a barrier in SMEM on SM90+, SYNCS unit is taking care of this
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   while (!::cuda::ptx::mbarrier_try_wait_parity(
-                     reinterpret_cast<uint64_t*>(const_cast<__barrier_base*>(&__barrier)), __phase_parity))
-                     ;
-                   return;
-                 }))
-    // fallback implementation
-    ::cuda::std::__cccl_thread_poll_with_backoff(
-      ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
-  }
+    _CCCL_API inline void arrive_and_wait()
+    {
+      wait(arrive());
+    }
 
-  _CCCL_API inline void arrive_and_wait()
-  {
-    wait(arrive());
-  }
-
-private:
+  private:
 #if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm90()
-  {
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm90()
     {
-      return __barrier.arrive_and_drop();
-    }
-    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
-                 "barrier must be in shared memory, not cluster shared memory");
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::cluster_shared))
+      {
+        return __barrier.arrive_and_drop();
+      }
+      _CCCL_ASSERT(::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared),
+                   "barrier must be in shared memory, not cluster shared memory");
 
-    // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
-    asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-      ::__cvta_generic_to_shared(&__barrier)))
-                 : "memory");
-  }
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm80()
-  {
-    // Fallback to slowpath on device
-    if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
-    {
-      __barrier.arrive_and_drop();
-      return;
+      // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
+      asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+        ::__cvta_generic_to_shared(&__barrier)))
+                   : "memory");
     }
 
-    // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
-    asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-      ::__cvta_generic_to_shared(&__barrier)))
-                 : "memory");
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-
-public:
-  _CCCL_API inline void arrive_and_drop()
-  {
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (__arrive_and_drop_sm90();),
-      NV_PROVIDES_SM_80,
-      (__arrive_and_drop_sm80();),
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop_sm80()
+    {
       // Fallback to slowpath on device
-      NV_ANY_TARGET,
-      (__barrier.arrive_and_drop();))
-  }
+      if (!::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
+      {
+        __barrier.arrive_and_drop();
+        return;
+      }
 
-  _CCCL_API static constexpr ptrdiff_t max() noexcept
+      // TODO(bgruber): expose mbarrier.arrive_drop.shared in cuda::ptx
+      asm volatile("mbarrier.arrive_drop.shared.b64 _, [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
+        ::__cvta_generic_to_shared(&__barrier)))
+                   : "memory");
+    }
+#endif // _CCCL_CUDA_COMPILATION()
+
+  public:
+    _CCCL_API inline void arrive_and_drop()
+    {
+      NV_DISPATCH_TARGET(
+        NV_PROVIDES_SM_90,
+        (__arrive_and_drop_sm90();),
+        NV_PROVIDES_SM_80,
+        (__arrive_and_drop_sm80();),
+        // Fallback to slowpath on device
+        NV_ANY_TARGET,
+        (__barrier.arrive_and_drop();))
+    }
+
+    _CCCL_API static constexpr ptrdiff_t max() noexcept
+    {
+      return (1 << 20) - 1;
+    }
+
+    template <class _Rep, class _Period>
+    [[nodiscard]] _CCCL_API inline bool try_wait_for(
+      arrival_token && __token, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur)
+    {
+      auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
+
+      return __try_wait(::cuda::std::move(__token), __nanosec);
+    }
+
+    template <class _Clock, class _Duration>
+    [[nodiscard]] _CCCL_API inline bool try_wait_until(
+      arrival_token && __token, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time)
+    {
+      return try_wait_for(::cuda::std::move(__token), (__time - _Clock::now()));
+    }
+
+    template <class _Rep, class _Period>
+    [[nodiscard]] _CCCL_API inline bool try_wait_parity_for(
+      bool __phase_parity, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur)
+    {
+      auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
+
+      return __try_wait_parity(__phase_parity, __nanosec);
+    }
+
+    template <class _Clock, class _Duration>
+    [[nodiscard]] _CCCL_API inline bool try_wait_parity_until(
+      bool __phase_parity, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time)
+    {
+      return try_wait_parity_for(__phase_parity, (__time - _Clock::now()));
+    }
+  };
+
+  _CCCL_END_NAMESPACE_CUDA
+
+  _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+  _CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
   {
-    return (1 << 20) - 1;
+    return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
   }
-
-  template <class _Rep, class _Period>
-  [[nodiscard]] _CCCL_API inline bool
-  try_wait_for(arrival_token&& __token, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur)
-  {
-    auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
-
-    return __try_wait(::cuda::std::move(__token), __nanosec);
-  }
-
-  template <class _Clock, class _Duration>
-  [[nodiscard]] _CCCL_API inline bool
-  try_wait_until(arrival_token&& __token, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time)
-  {
-    return try_wait_for(::cuda::std::move(__token), (__time - _Clock::now()));
-  }
-
-  template <class _Rep, class _Period>
-  [[nodiscard]] _CCCL_API inline bool
-  try_wait_parity_for(bool __phase_parity, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur)
-  {
-    auto __nanosec = ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__dur);
-
-    return __try_wait_parity(__phase_parity, __nanosec);
-  }
-
-  template <class _Clock, class _Duration>
-  [[nodiscard]] _CCCL_API inline bool
-  try_wait_parity_until(bool __phase_parity, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time)
-  {
-    return try_wait_parity_for(__phase_parity, (__time - _Clock::now()));
-  }
-};
-
-_CCCL_END_NAMESPACE_CUDA
-
-_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
-{
-  return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
-}
-_CCCL_END_NAMESPACE_CUDA_DEVICE
+  _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #include <cuda/std/__cccl/epilogue.h>
 
