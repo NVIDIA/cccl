@@ -128,7 +128,9 @@ auto configuration_test(
   SECTION("Simple cooperative launch")
   {
     CUlaunchAttribute attrs[2];
-    auto config                               = cudax::make_config(dims, cudax::cooperative_launch());
+    auto config              = cudax::make_config(dims, cudax::cooperative_launch);
+    auto query_cooperative = config.query(cudax::cooperative_launch);
+    static_assert(cuda::std::is_same_v<decltype(query_cooperative), decltype(cudax::cooperative_launch())>);
     expectedConfig.numAttrs                   = 1 + HasCluster;
     expectedConfig.attrs                      = &attrs[0];
     expectedConfig.attrs[0].id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
@@ -147,6 +149,11 @@ auto configuration_test(
     const int num_ints = 128;
     auto config =
       cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int>(num_ints));
+    auto query_priority = config.query(cudax::launch_priority);
+    static_assert(cuda::std::is_same_v<decltype(query_priority), decltype(cudax::launch_priority(priority))>);
+    auto query_dynamic_smem = config.query(cudax::dynamic_shared_memory<int>);
+    static_assert(
+      cuda::std::is_same_v<decltype(query_dynamic_smem), decltype(cudax::dynamic_shared_memory<int>(num_ints))>);
     expectedConfig.sharedMemBytes          = num_ints * sizeof(int);
     expectedConfig.numAttrs                = 1 + HasCluster;
     expectedConfig.attrs                   = &attrs[0];
@@ -239,15 +246,14 @@ C2H_TEST("Configuration combine", "[launch]")
     auto config_part2 = make_config(cudax::cluster_dims<256>, block, cudax::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
     CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 2048);
-    CUDAX_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
+    CUDAX_REQUIRE(combined.query(cudax::launch_priority).priority == 2);
 
     auto replaced_one_option = cudax::make_config(cudax::launch_priority(3)).combine(combined);
     CUDAX_REQUIRE(replaced_one_option.dims.count(cudax::thread) == 2048);
-    CUDAX_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
+    CUDAX_REQUIRE(replaced_one_option.query(cudax::launch_priority).priority == 3);
 
-    [[maybe_unused]] auto combined_with_extra_option =
-      combined.combine(cudax::make_config(cudax::cooperative_launch()));
+    auto combined_with_extra_option = combined.combine(cudax::make_config(cudax::cooperative_launch()));
     static_assert(cuda::std::is_same_v<decltype(combined.dims), decltype(combined_with_extra_option.dims)>);
-    static_assert(cuda::std::tuple_size_v<decltype(combined_with_extra_option.options)> == 2);
+    [[maybe_unused]] auto option = combined_with_extra_option.query(cudax::cooperative_launch);
   }
 }
