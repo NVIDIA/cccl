@@ -840,7 +840,7 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
@@ -927,7 +927,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
@@ -1011,7 +1011,7 @@ public:
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
@@ -1121,7 +1121,8 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial =
+      cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op);
@@ -1165,7 +1166,8 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = cub::ThreadReduce(input, scan_op);
+    T thread_partial =
+      cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
@@ -1400,7 +1402,8 @@ public:
     {
       // Reduce consecutive thread items in registers
       ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, decltype(scan_op), T, T>(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix);
@@ -1463,7 +1466,8 @@ public:
     {
       // Reduce consecutive thread items in registers
       ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, decltype(scan_op), T, T>(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
@@ -1544,7 +1548,8 @@ public:
     {
       // Reduce consecutive thread items in registers
       ::cuda::std::plus<> scan_op;
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, decltype(scan_op), T, T>(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
@@ -1790,7 +1795,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, decltype(scan_op), T, T>(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
@@ -1847,7 +1853,7 @@ public:
   InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
@@ -1929,7 +1935,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
       // Exclusive thread block-scan (with no initial value)
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
@@ -1996,7 +2003,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = cub::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
@@ -2131,7 +2138,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = cub::ThreadReduce(input, scan_op);
+      T thread_prefix =
+        cub::ThreadReduce<::cuda::std::remove_reference_t<decltype(input)>, ScanOp, T, T>(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
