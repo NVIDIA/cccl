@@ -289,12 +289,12 @@ private:
 
 _CCCL_TEMPLATE(template <class...> class _Interface, class _Super)
 _CCCL_REQUIRES(__is_interface<_Interface<_Super>>)
-_CCCL_PUBLIC_API __basic_any(_Interface<_Super>*) //
+_CCCL_HOST_DEVICE __basic_any(_Interface<_Super>*) //
   -> __basic_any<__normalized_interface_of<__basic_any<_Super>*>>;
 
 _CCCL_TEMPLATE(template <class...> class _Interface, class _Super)
 _CCCL_REQUIRES(__is_interface<_Interface<_Super>>)
-_CCCL_PUBLIC_API __basic_any(_Interface<_Super> const*) //
+_CCCL_HOST_DEVICE __basic_any(_Interface<_Super> const*) //
   -> __basic_any<__normalized_interface_of<__basic_any<_Super> const*>>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
