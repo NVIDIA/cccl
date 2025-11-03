@@ -159,7 +159,6 @@ namespace detail
 {
 namespace complex
 {
-
 _CCCL_HOST_DEVICE inline float abs(const thrust::complex<float>& z)
 {
   return hypotf(z.real(), z.imag());
@@ -169,7 +168,6 @@ _CCCL_HOST_DEVICE inline double abs(const thrust::complex<double>& z)
 {
   return hypot(z.real(), z.imag());
 }
-
 } // end namespace complex
 } // end namespace detail
 

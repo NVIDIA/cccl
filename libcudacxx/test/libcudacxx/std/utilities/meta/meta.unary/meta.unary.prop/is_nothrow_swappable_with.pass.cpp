@@ -17,7 +17,6 @@
 
 namespace MyNS
 {
-
 struct A
 {
   A(A const&)            = delete;
@@ -47,7 +46,6 @@ struct M
 {};
 
 __host__ __device__ void swap(M&&, M&&) noexcept {}
-
 } // namespace MyNS
 
 int main(int, char**)

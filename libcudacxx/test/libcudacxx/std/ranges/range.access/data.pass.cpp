@@ -153,17 +153,12 @@ struct EnabledBorrowingDataMember
     return &globalBuff[0];
   }
 };
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
 }
-} // namespace std
-} // namespace cuda
 
 struct DataMemberAndBegin
 {
@@ -284,17 +279,12 @@ struct BeginMemberBorrowingEnabled
     return contiguous_iterator<const int*>{&globalBuff[1]};
   }
 };
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
 }
-} // namespace std
-} // namespace cuda
 
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&>, "");
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&&>, "");

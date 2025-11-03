@@ -30,6 +30,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/vector_base.h>
 #include <thrust/system/omp/memory.h>
 
@@ -40,7 +41,6 @@ namespace system
 {
 namespace omp
 {
-
 /*! \p omp::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
  *  and removal of elements at the beginning or in the middle. The number of

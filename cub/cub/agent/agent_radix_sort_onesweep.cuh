@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2020, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2020, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -78,30 +54,29 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  /** \brief Number of private histograms to use in the ranker;
-      ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
-  int _RANK_NUM_PARTS,
-  /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
-    support warp-strided key arrangement and count callbacks are supported. */
-  RadixRankAlgorithm _RANK_ALGORITHM,
-  BlockScanAlgorithm _SCAN_ALGORITHM,
-  RadixSortStoreAlgorithm _STORE_ALGORITHM,
-  int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          /** \brief Number of private histograms to use in the ranker;
+              ignored if the ranking algorithm is not one of RADIX_RANK_MATCH_EARLY_COUNTS_* */
+          int RankNumParts,
+          /** \brief Ranking algorithm used in the onesweep kernel. Only algorithms that
+            support warp-strided key arrangement and count callbacks are supported. */
+          RadixRankAlgorithm RankAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          RadixSortStoreAlgorithm StoreAlgorithm,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
   {
-    RANK_NUM_PARTS = _RANK_NUM_PARTS,
-    RADIX_BITS     = _RADIX_BITS,
+    RANK_NUM_PARTS = RankNumParts,
+    RADIX_BITS     = RadixBits,
   };
-  static constexpr RadixRankAlgorithm RANK_ALGORITHM       = _RANK_ALGORITHM;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = _SCAN_ALGORITHM;
-  static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr RadixRankAlgorithm RANK_ALGORITHM       = RankAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
+  static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
@@ -128,7 +103,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::radix_sort
 {
-
 template <typename AgentRadixSortOnesweepPolicy,
           bool IS_DESCENDING,
           typename KeyT,
@@ -589,7 +563,7 @@ struct AgentRadixSortOnesweep
     // write block data to global memory
     if (full_block)
     {
-      if (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
+      if constexpr (STORE_ALGORITHM == RADIX_SORT_STORE_ALIGNED)
       {
         ScatterKeysGlobalAligned();
       }
@@ -723,7 +697,6 @@ struct AgentRadixSortOnesweep
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

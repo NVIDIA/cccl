@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -57,19 +33,19 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
-  static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD              = _ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr int BLOCK_THREADS                 = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {
@@ -93,7 +69,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::three_way_partition
 {
-
 template <class OffsetT>
 struct pair_pack_t
 {
@@ -417,7 +392,7 @@ struct AgentThreeWayPartition
     AccumPackT items_selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       BlockLoadT(temp_storage.load_items)
         .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);
@@ -600,7 +575,6 @@ struct AgentThreeWayPartition
     }
   }
 };
-
 } // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

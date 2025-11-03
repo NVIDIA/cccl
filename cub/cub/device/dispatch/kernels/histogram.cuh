@@ -19,7 +19,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {

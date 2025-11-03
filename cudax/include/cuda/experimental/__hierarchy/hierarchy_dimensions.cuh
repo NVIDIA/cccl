@@ -30,7 +30,6 @@
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 /* TODO right now operator stacking can end up with a wrong unit, we could use below type, but we would need an explicit
  thread_level inserter
 struct unknown_unit : public hierarchy_level
@@ -944,7 +943,6 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions<Unit, Levels...>& 
       ::cuda::std::tuple_cat(hierarchy.levels, ::cuda::std::make_tuple(new_level)));
   }
 }
-
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 

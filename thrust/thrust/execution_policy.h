@@ -21,23 +21,16 @@
 
 //! \cond
 
-// Some build systems need a hint to know which files we actually include
+#include __THRUST_HOST_SYSTEM_ALGORITH_HEADER_INCLUDE(execution_policy.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_HEADER_INCLUDE(execution_policy.h)
+
+// Some build systems need a hint to know which files we could include
 #if 0
 #  include <thrust/system/cpp/execution_policy.h>
 #  include <thrust/system/cuda/execution_policy.h>
 #  include <thrust/system/omp/execution_policy.h>
 #  include <thrust/system/tbb/execution_policy.h>
 #endif
-
-// #include the host system's execution_policy header
-#define __THRUST_HOST_SYSTEM_EXECUTION_POLICY_HEADER <__THRUST_HOST_SYSTEM_ROOT/execution_policy.h>
-#include __THRUST_HOST_SYSTEM_EXECUTION_POLICY_HEADER
-#undef __THRUST_HOST_SYSTEM_EXECUTION_POLICY_HEADER
-
-// #include the device system's execution_policy.h header
-#define __THRUST_DEVICE_SYSTEM_EXECUTION_POLICY_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/execution_policy.h>
-#include __THRUST_DEVICE_SYSTEM_EXECUTION_POLICY_HEADER
-#undef __THRUST_DEVICE_SYSTEM_EXECUTION_POLICY_HEADER
 
 //! \endcond
 

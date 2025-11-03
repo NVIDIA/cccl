@@ -74,7 +74,6 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
                 swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));));
 
 } // end iter_swap()
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

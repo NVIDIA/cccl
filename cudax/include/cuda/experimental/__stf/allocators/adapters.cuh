@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Allocator which defers allocations to the CUDA asynchronous memory
  * allocations APIs (cudaMallocAsync, cudaFreeAsync)
@@ -284,5 +283,4 @@ private:
   // We need to call clear() before destroying the object, unless it was moved
   bool cleared_or_moved = false;
 };
-
 } // end namespace cuda::experimental::stf

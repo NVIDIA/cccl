@@ -1,7 +1,8 @@
 cccl_get_c2h()
 
 function(cccl_c_parallel_add_test target_name_var source)
-  string(REGEX REPLACE "test_([^.]*)" "cccl.c.parallel.test.\\1" target_name "${source}")
+  get_filename_component(target_name "${source}" NAME_WE)
+  string(REGEX REPLACE "test_([^.]*)" "cccl.c.parallel.test.\\1" target_name "${target_name}")
   set(target_name_var ${target_name} PARENT_SCOPE)
 
   add_executable(${target_name} "${source}")
