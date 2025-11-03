@@ -87,16 +87,16 @@ struct agent_t
     && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter1>>
     && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter2>>;
 
-  static constexpr bool keys_use_block_load_to_shared  = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
-  static constexpr bool items_use_block_load_to_shared = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
-  static constexpr int load2sh_minimum_align           = block_load_to_shared::template SharedBufferAlignBytes<char>();
+  static constexpr bool keys_use_bl2sh     = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
+  static constexpr bool items_use_bl2sh    = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
+  static constexpr int bl2sh_minimum_align = block_load_to_shared::template SharedBufferAlignBytes<char>();
 
   template <typename ValueT>
   struct alignas(block_load_to_shared::template SharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
     static constexpr int bytes_needed = block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
-                                      + (alignof(ValueT) < load2sh_minimum_align ? 2 * load2sh_minimum_align : 0);
+                                      + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
   };
@@ -107,14 +107,10 @@ struct agent_t
   };
 
   // add the BlockLoadToShared temp storage only if needed
-  struct temp_storages
-      : ::cuda::std::
-          conditional_t<keys_use_block_load_to_shared || items_use_block_load_to_shared, bl2sh_temp_storage, NullType>
+  struct temp_storages : ::cuda::std::conditional_t<keys_use_bl2sh || items_use_bl2sh, bl2sh_temp_storage, NullType>
   {
-    using keys_smem =
-      ::cuda::std::conditional_t<keys_use_block_load_to_shared, buffer_t<key_type>, key_type[items_per_tile + 1]>;
-    using items_smem =
-      ::cuda::std::conditional_t<items_use_block_load_to_shared, buffer_t<item_type>, item_type[items_per_tile + 1]>;
+    using keys_smem  = ::cuda::std::conditional_t<keys_use_bl2sh, buffer_t<key_type>, key_type[items_per_tile + 1]>;
+    using items_smem = ::cuda::std::conditional_t<items_use_bl2sh, buffer_t<item_type>, item_type[items_per_tile + 1]>;
 
     union
     {
@@ -173,7 +169,7 @@ struct agent_t
     }
 
     auto load2sh = [&] {
-      if constexpr (keys_use_block_load_to_shared || items_use_block_load_to_shared)
+      if constexpr (keys_use_bl2sh || items_use_bl2sh)
       {
         return block_load_to_shared{storage.load2sh};
       }
@@ -187,7 +183,7 @@ struct agent_t
     key_type* keys1_shared;
     key_type* keys2_shared;
     int keys2_offset;
-    if constexpr (keys_use_block_load_to_shared)
+    if constexpr (keys_use_bl2sh)
     {
       ::cuda::std::span keys1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys1_in + keys1_beg),
                                   static_cast<::cuda::std::size_t>(keys1_count_tile)};
@@ -271,7 +267,7 @@ struct agent_t
       item_type items_loc[items_per_thread];
       item_type* items1_shared;
       int items2_offset;
-      if constexpr (items_use_block_load_to_shared)
+      if constexpr (items_use_bl2sh)
       {
         ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
                                      static_cast<::cuda::std::size_t>(keys1_count_tile)};
@@ -301,7 +297,7 @@ struct agent_t
             items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
           __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
           items1_shared = &storage.items_shared[0];
-          if constexpr (keys_use_block_load_to_shared)
+          if constexpr (keys_use_bl2sh)
           {
             items2_offset = keys1_count_tile;
           }
@@ -311,7 +307,7 @@ struct agent_t
       }
 
       // gather items from shared mem
-      static constexpr bool must_translate_indices = items_use_block_load_to_shared || keys_use_block_load_to_shared;
+      static constexpr bool must_translate_indices = items_use_bl2sh || keys_use_bl2sh;
       int diff;
       if constexpr (must_translate_indices)
       {
