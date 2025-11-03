@@ -49,10 +49,17 @@ template <class _Tp>
   return _Tp{1} / ::cuda::std::sqrt(__x);
 }
 
+template <class _Tp>
+struct _CCCL_ALIGNAS(2 * sizeof(_Tp)) __cccl_asinh_sqrt_return_hilo
+{
+  _Tp __hi;
+  _Tp __lo;
+};
+
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-static void _CCCL_API _CCCL_FORCEINLINE
-__internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_lo) noexcept
+static _CCCL_API _CCCL_FORCEINLINE __cccl_asinh_sqrt_return_hilo<_Tp>
+__internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 {
   // rsqrt
   const _Tp __initial_guess = __internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
@@ -86,10 +93,11 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_l
   // optimize this to fma, same accuracy.
   __ans_hi_lo += __initial_guess * __lo + __correction_term * __hi;
 
-  *__out_hi = __ans_hi_hi;
-  *__out_lo = __ans_hi_lo;
+  __cccl_asinh_sqrt_return_hilo<_Tp> __retval_hilo;
+  __retval_hilo.__hi = __ans_hi_hi;
+  __retval_hilo.__lo = __ans_hi_lo;
 
-  return;
+  return __retval_hilo;
 }
 
 // asinh
@@ -272,10 +280,11 @@ template <class _Tp>
 
   // Extended sqrt function:
   // (__extended_sqrt_hi + __extended_sqrt_lo) = sqrt(__inner_most_term_hi + __inner_most_term_lo)
-  _Tp __extended_sqrt_hi;
-  _Tp __extended_sqrt_lo;
-  __internal_double_Tp_sqrt_unsafe<_Tp>(
-    __inner_most_term_hi, __inner_most_term_lo, &__extended_sqrt_hi, &__extended_sqrt_lo);
+  const __cccl_asinh_sqrt_return_hilo<_Tp> __extended_sqrt_hilo =
+    __internal_double_Tp_sqrt_unsafe<_Tp>(__inner_most_term_hi, __inner_most_term_lo);
+
+  _Tp __extended_sqrt_hi = __extended_sqrt_hilo.__hi;
+  _Tp __extended_sqrt_lo = __extended_sqrt_hilo.__lo;
 
   // 0.0, and some very particular values, do not survive this unsafe sqrt function.
   // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
@@ -305,7 +314,9 @@ template <class _Tp>
   // This reuses the sqrt calculated on CPU already in __recip_sqrt,
   // And gets sqrt quickly on device using the rsqrt already calculated.
 #if _CCCL_CUDA_COMPILATION()
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);), (__pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (__pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);),
+                    (__pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);))
 #else
   __pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);
 #endif // _CCCL_CUDA_COMPILATION()
