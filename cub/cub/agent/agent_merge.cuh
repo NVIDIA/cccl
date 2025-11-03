@@ -268,24 +268,9 @@ struct agent_t
     static constexpr bool have_items = !::cuda::std::is_same_v<item_type, NullType>;
     if constexpr (have_items)
     {
-      // Both of these are only needed when either keys or items or both use BlockLoadToShared introducing padding (that
-      // can differ between the keys and items)
-      [[maybe_unsused]] const auto translate_indices = [&](int items2_offset) -> void {
-        const int diff = items2_offset - keys2_offset;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < items_per_thread; ++i)
-        {
-          if (indices[i] >= keys2_offset)
-          {
-            indices[i] += diff;
-          }
-        }
-      };
-      // WAR for MSVC erroring ("declared but never referenced") despite [[maybe_unused]]
-      (void) translate_indices;
-
       item_type items_loc[items_per_thread];
       item_type* items1_shared;
+      int items2_offset;
       if constexpr (items_use_block_load_to_shared)
       {
         ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
@@ -304,8 +289,7 @@ struct agent_t
         items1_shared            = data(load2sh.CopyAsync(items1_buffer, items1_src));
         item_type* items2_shared = data(load2sh.CopyAsync(items2_buffer, items2_src));
         load2sh.Commit();
-        const int items2_offset = static_cast<int>(items2_shared - items1_shared);
-        translate_indices(items2_offset);
+        items2_offset = static_cast<int>(items2_shared - items1_shared);
         load2sh.Wait();
       }
       else
@@ -319,8 +303,7 @@ struct agent_t
           items1_shared = &storage.items_shared[0];
           if constexpr (keys_use_block_load_to_shared)
           {
-            const int items2_offset = keys1_count_tile;
-            translate_indices(items2_offset);
+            items2_offset = keys1_count_tile;
           }
           merge_sort::reg_to_shared<threads_per_block>(items1_shared, items_loc);
           __syncthreads();
@@ -328,10 +311,25 @@ struct agent_t
       }
 
       // gather items from shared mem
+      static constexpr bool must_translate_indices = items_use_block_load_to_shared || keys_use_block_load_to_shared;
+      int diff;
+      if constexpr (must_translate_indices)
+      {
+        diff = items2_offset - keys2_offset;
+      }
+
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
-        items_loc[i] = items1_shared[indices[i]];
+        auto index = indices[i];
+        if constexpr (must_translate_indices)
+        {
+          if (index >= keys2_offset)
+          {
+            index += diff;
+          }
+        }
+        items_loc[i] = items1_shared[index];
       }
       __syncthreads();
 
