@@ -590,6 +590,10 @@ CUresult cccl_device_segmented_sort_build_ex(
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
+    // TODO: we currently compile each selector op separately from the main TU.
+    // We do this because we need to pass the selector ops to
+    // DispatchThreeWayPartition eventually. This causes increased compilation
+    // times, which might be avoidable.
     cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
       0,
       start_offset_it,
