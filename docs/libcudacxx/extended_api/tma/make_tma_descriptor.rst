@@ -12,8 +12,8 @@ Defined in the ``<cuda/tma>`` header.
     namespace cuda {
 
     template <size_t BoxDimSize, size_t ElemStrideSize>
-    [[nodiscard]] inline CUtensorMap
-    make_tma_descriptor(
+    [[nodiscard]] inline __host__
+    CUtensorMapmake_tma_descriptor(
       const DLTensor&                            tensor,
       cuda::std::span<const int, BoxDimSize>     box_sizes,
       cuda::std::span<const int, ElemStrideSize> elem_strides,
