@@ -266,7 +266,6 @@ template <class _Ty>
 inline constexpr __disposition __signature_disposition<set_error_t(_Ty)> = __disposition::__error;
 template <>
 inline constexpr __disposition __signature_disposition<set_stopped_t()> = __disposition::__stopped;
-
 } // namespace __detail
 
 struct inline_scheduler;
@@ -274,9 +273,7 @@ struct inline_scheduler;
 struct stream_domain;
 struct stream_context;
 struct stream_scheduler;
-
 } // namespace execution
-
 } // namespace cuda::experimental
 
 _CCCL_END_NV_DIAG_SUPPRESS()

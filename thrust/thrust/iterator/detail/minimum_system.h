@@ -53,6 +53,5 @@ _CCCL_HOST_DEVICE auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
 // otherwise, collect the arguments and report them as unrelated
 template <typename... Ts>
 using minimum_system_t = decltype(minimum_system_impl<Ts...>(0));
-
 } // namespace detail
 THRUST_NAMESPACE_END

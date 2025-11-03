@@ -19,7 +19,6 @@
 
 namespace detail
 {
-
 // Helper that concatenates two iterators into a single iterator
 template <typename FirstSegmentItT, typename SecondSegmentItT>
 struct concat_iterators_op
@@ -154,5 +153,4 @@ auto make_large_offset(::cuda::std::size_t num_extra_items = 2000000ULL) -> Offs
     ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + num_extra_items);
   return static_cast<Offset>(num_items_max_ull);
 }
-
 } // namespace detail

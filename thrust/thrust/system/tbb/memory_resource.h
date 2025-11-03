@@ -23,7 +23,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb
 {
-
 //! \cond
 namespace detail
 {
@@ -53,7 +52,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \} // memory_resources
  */
-
 } // namespace system::tbb
 
 THRUST_NAMESPACE_END

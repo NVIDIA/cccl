@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class backend_ctx_untyped;
 
 /**
@@ -182,5 +181,4 @@ public:
       : block_allocator_untyped(mv(ptr))
   {}
 };
-
 } // end namespace cuda::experimental::stf

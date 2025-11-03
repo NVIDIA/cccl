@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 OutputIterator adjacent_difference(
   execution_policy<DerivedPolicy>& exec,
@@ -31,6 +30,5 @@ OutputIterator adjacent_difference(
   // omp prefers generic::adjacent_difference to cpp::adjacent_difference
   return thrust::system::detail::generic::adjacent_difference(exec, first, last, result, binary_op);
 } // end adjacent_difference()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

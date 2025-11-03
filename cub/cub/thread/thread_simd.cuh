@@ -42,7 +42,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm80();
 
@@ -450,7 +449,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
     return op;
   }
 }
-
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

@@ -157,7 +157,6 @@ std::string get_sweep_kernel_name(
     output_decode_op_t,
     offset_t);
 }
-
 } // namespace histogram
 
 CUresult cccl_device_histogram_build_ex(

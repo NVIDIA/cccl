@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /* Get the unique ID associated with a context (overloaded) */
 inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
@@ -293,7 +292,6 @@ inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_he
   }
   return h;
 }
-
 } // end namespace cuda::experimental::stf
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

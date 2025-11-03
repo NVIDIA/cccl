@@ -299,7 +299,6 @@ _CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_d
 {
   return query(get_completion_domain<set_value_t>);
 }
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

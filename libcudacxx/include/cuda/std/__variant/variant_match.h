@@ -36,7 +36,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __variant_detail
 {
-
 struct __no_narrowing_check
 {
   template <class _Dest, class _Source>
@@ -118,7 +117,6 @@ using _MakeOverloads _CCCL_NODEBUG_ALIAS =
 
 template <class _Tp, class... _Types>
 using __best_match_t = typename invoke_result_t<_MakeOverloads<_Types...>, _Tp, _Tp>::type;
-
 } // namespace __variant_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

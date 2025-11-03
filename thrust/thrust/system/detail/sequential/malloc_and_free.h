@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 template <typename DerivedPolicy>
 inline _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
@@ -45,6 +44,5 @@ inline _CCCL_HOST_DEVICE void free(sequential::execution_policy<DerivedPolicy>&,
 {
   ::cuda::std::free(thrust::raw_pointer_cast(ptr));
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

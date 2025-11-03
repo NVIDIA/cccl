@@ -55,9 +55,7 @@ _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
     return complex<double>(::cuda::std::numeric_limits<double>::infinity(), copysign(0.0, z.imag()));
   }
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <typename T>

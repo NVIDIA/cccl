@@ -95,7 +95,6 @@ public:
     return false;
   }
 };
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

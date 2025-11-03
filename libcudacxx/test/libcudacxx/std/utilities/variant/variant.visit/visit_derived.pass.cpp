@@ -42,17 +42,14 @@ struct MyVariant : cuda::std::variant<short, long, float>
   using cuda::std::variant<short, long, float>::variant;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <size_t Index>
 __host__ __device__ void get(const MyVariant&)
 {
   assert(false);
 }
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 struct visitor_42
 {

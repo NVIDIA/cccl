@@ -77,7 +77,6 @@ inline constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = tru
 
 namespace __is_convertible_imp
 {
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)

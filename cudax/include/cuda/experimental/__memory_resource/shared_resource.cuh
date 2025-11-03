@@ -35,7 +35,6 @@
 
 namespace cuda::experimental
 {
-
 //! @rst
 //! .. _cudax-memory-resource-shared-resource:
 //!
@@ -256,7 +255,6 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
   return shared_resource<_Resource>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

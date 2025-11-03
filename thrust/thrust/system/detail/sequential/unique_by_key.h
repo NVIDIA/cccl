@@ -36,7 +36,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -101,6 +100,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   return sequential::unique_by_key_copy(
     exec, keys_first, keys_last, values_first, keys_first, values_first, binary_pred);
 } // end unique_by_key()
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

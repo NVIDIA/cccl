@@ -29,10 +29,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace reduce_detail
 {
-
 template <typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
 struct body
 {
@@ -96,7 +94,6 @@ struct body
     sum = binary_op(sum, b.sum);
   }
 }; // end body
-
 } // namespace reduce_detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
@@ -119,6 +116,5 @@ OutputType reduce(
     return binary_op(init, reduce_body.sum);
   }
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

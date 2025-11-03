@@ -450,7 +450,6 @@ inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr, _Clo
 
 template <class _Sndr, class _NewSch, class _OldSch, class... _Closure>
 inline constexpr size_t structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _OldSch, _Closure...>> = 3;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

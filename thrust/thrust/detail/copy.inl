@@ -69,7 +69,6 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
 
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator two_system_copy(
@@ -109,7 +108,6 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
     n,
     result);
 } // end two_system_copy_n()
-
 } // namespace detail
 
 template <typename InputIterator, typename OutputIterator>
