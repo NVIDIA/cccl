@@ -30,7 +30,7 @@ void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
   const auto& kernel          = benchmark_kernel<block_size, unroll_factor, benchmark_op_t, T>;
   const int num_SMs           = state.get_device().value().get_number_of_sms();
   const int device            = state.get_device().value().get_id();
-  const int max_blocks_per_SM = 0;
+  int max_blocks_per_SM       = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
   const int grid_size = max_blocks_per_SM * num_SMs;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
