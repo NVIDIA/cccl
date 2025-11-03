@@ -285,7 +285,7 @@ struct memory_pool_properties
 #else
   if (__properties.max_pool_size != 0)
   {
-    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA driver version");
+    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
 
