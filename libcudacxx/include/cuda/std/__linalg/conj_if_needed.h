@@ -41,6 +41,7 @@ namespace linalg
 {
 _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
+// Need newline for concept emulation :_(
 template <class _Type>
 _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
