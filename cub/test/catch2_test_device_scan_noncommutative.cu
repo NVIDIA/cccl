@@ -3,9 +3,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <c2h/catch2_test_helper.h>
 #include <catch2_test_device_scan.cuh>
 
@@ -33,8 +30,11 @@ namespace impl
 
 // bicyclid monoid operator is associative and non-commutative
 template <typename UnsignedIntegralT>
-struct BicyclicMonoidOp
+struct bicyclic_monoid_op
 {
+  static_assert(cuda::std::is_integral_v<UnsignedIntegralT>);
+  static_assert(cuda::std::is_unsigned_v<UnsignedIntegralT>);
+
   using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
   using min_t  = cuda::minimum<>;
 
@@ -52,12 +52,12 @@ struct BicyclicMonoidOp
 C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]")
 {
   using pair_t = cuda::std::pair<unsigned, unsigned>;
-  using op_t   = impl::BicyclicMonoidOp<unsigned>;
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
 
-  thrust::device_vector<pair_t> input{
+  c2h::device_vector<pair_t> input{
     {0, 1}, {2, 3}, {4, 1}, {2, 5}, {7, 1}, {1, 1}, {0, 4}, {3, 1}, {1, 2}, {3, 2}, {4, 5}, {3, 5},
     {1, 9}, {0, 1}, {0, 1}, {0, 1}, {1, 0}, {1, 0}, {1, 0}, {2, 2}, {2, 2}, {0, 0}, {1, 1}, {2, 3}};
-  thrust::device_vector<pair_t> output(input.size());
+  c2h::device_vector<pair_t> output(input.size());
 
   pair_t* d_input  = thrust::raw_pointer_cast(input.data());
   pair_t* d_output = thrust::raw_pointer_cast(output.data());
@@ -67,10 +67,10 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
 
-  using _byte_t = cuda::std::uint8_t;
+  using cuda::std::byte;
 
-  thrust::device_vector<_byte_t> tmp(tmp_size);
-  _byte_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
+  c2h::device_vector<byte> tmp(tmp_size);
+  byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   REQUIRE(d_tmp != nullptr);
 
@@ -78,9 +78,9 @@ C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][de
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  thrust::host_vector<pair_t> h_output(output);
-  thrust::host_vector<pair_t> h_input(input);
-  thrust::host_vector<pair_t> h_expected(input.size());
+  c2h::host_vector<pair_t> h_output(output);
+  c2h::host_vector<pair_t> h_input(input);
+  c2h::host_vector<pair_t> h_expected(input.size());
 
   compute_inclusive_scan_reference(h_input.begin(), h_input.end(), h_expected.begin(), op_t{}, pair_t{0, 0});
 

@@ -360,7 +360,13 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   // assert(impl::validate(input, output, p, bench_stream));
 }
 
+#ifdef TUNE_T
+using type_list = nvbench::type_list<TUNE_T>;
+#else
+// we can split stream of bits into 8-bit, 16-bit, etc. chunks, effectively
+// serving as the number of bits processed by a thread
 using type_list = nvbench::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint32_t, cuda::std::uint64_t>;
+#endif
 
 NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(type_list, offset_types))
   .set_name("rabin-karp-fingerprinting-monoid")

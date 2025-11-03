@@ -73,8 +73,11 @@ namespace impl
  */
 
 template <typename UnsignedIntegralT>
-struct BicyclicMonoidOp
+struct bicyclic_monoid_op
 {
+  static_assert(cuda::std::is_integral_v<UnsignedIntegralT>);
+  static_assert(cuda::std::is_unsigned_v<UnsignedIntegralT>);
+
   using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
   using min_t  = cuda::minimum<>;
 
@@ -89,7 +92,7 @@ struct BicyclicMonoidOp
 };
 
 template <typename T>
-struct RepackPair
+struct repack_pair
 {
   cuda::std::pair<T, T> __host__ __device__ operator()(const T& v1, const T& v2) const
   {
@@ -105,7 +108,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
   using wrapped_init_t = cub::NullType;
   using pair_t         = cuda::std::pair<T, T>;
-  using op_t           = impl::BicyclicMonoidOp<T>;
+  using op_t           = impl::bicyclic_monoid_op<T>;
   using accum_t        = pair_t;
   using input_it_t     = const pair_t*;
   using output_it_t    = pair_t*;
@@ -129,7 +132,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     thrust::device_vector<T> q_exponents = generate(elements);
     thrust::device_vector<T> p_exponents = generate(elements);
 
-    impl::RepackPair<T> repack_op{};
+    impl::repack_pair<T> repack_op{};
 
     cub::DeviceTransform::Transform(
       cuda::std::tuple{q_exponents.begin(), p_exponents.begin()}, input.begin(), elements, repack_op);
@@ -157,10 +160,15 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
       d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
   });
 }
-#if NVBENCH_HELPER_HAS_I128
-using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;
+
+#ifdef TUNE_T
+using uint_types = nvbench::type_list<TUNE_T>;
 #else
+#  if NVBENCH_HELPER_HAS_I128
+using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;
+#  else
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+#  endif
 #endif
 
 NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(uint_types, offset_types))

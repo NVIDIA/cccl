@@ -65,15 +65,15 @@ namespace impl
 
 /*! @brief Structure to hold minimum and maximum */
 template <typename T>
-struct MinMax
+struct min_max_t
 {
 private:
   T m_min{cuda::std::numeric_limits<T>::max()};
   T m_max{cuda::std::numeric_limits<T>::min()};
 
 public:
-  MinMax() = default;
-  __host__ __device__ MinMax(T minimum, T maximum)
+  min_max_t() = default;
+  __host__ __device__ min_max_t(T minimum, T maximum)
       : m_min(minimum)
       , m_max(maximum)
   {}
@@ -89,10 +89,10 @@ public:
 };
 
 /* Scan operator combining min-max pairs. It is commutative and associative */
-struct ScanOp
+struct scan_op
 {
   template <typename T>
-  MinMax<T> __host__ __device__ operator()(MinMax<T> v1, MinMax<T> v2) const
+  min_max_t<T> __host__ __device__ operator()(min_max_t<T> v1, min_max_t<T> v2) const
   {
     auto min_r = cuda::minimum{}(v1.minimum(), v2.minimum());
     auto max_r = cuda::maximum{}(v1.maximum(), v2.maximum());
@@ -101,27 +101,27 @@ struct ScanOp
 };
 
 template <typename T>
-struct EmbedOp
+struct embed_op
 {
-  MinMax<T> __host__ __device__ operator()(T v) const
+  min_max_t<T> __host__ __device__ operator()(T v) const
   {
     return {v, v};
   }
 };
 
 template <typename T>
-struct ExtractMin
+struct extract_min
 {
-  T __host__ __device__ operator()(MinMax<T> pair) const
+  T __host__ __device__ operator()(min_max_t<T> pair) const
   {
     return pair.minimum();
   }
 };
 
 template <typename T>
-struct ExtractMax
+struct extract_max
 {
-  T __host__ __device__ operator()(MinMax<T> pair) const
+  T __host__ __device__ operator()(min_max_t<T> pair) const
   {
     return pair.maximum();
   }
@@ -191,8 +191,11 @@ void validate(const thrust::device_vector<ValueT>& input,
   thrust::device_vector<value_t> computed_mins(elements, thrust::no_init);
   thrust::device_vector<value_t> computed_maxs(elements, thrust::no_init);
 
-  cub::DeviceTransform::Transform(d_output, computed_mins.begin(), input.size(), impl::ExtractMin<value_t>{}, stream);
-  cub::DeviceTransform::Transform(d_output, computed_maxs.begin(), input.size(), impl::ExtractMax<value_t>{}, stream);
+  impl::extract_min<value_t> extract_min_op{};
+  cub::DeviceTransform::Transform(d_output, computed_mins.begin(), input.size(), extract_min_op, stream);
+
+  impl::extract_max<value_t> extract_max_op{};
+  cub::DeviceTransform::Transform(d_output, computed_maxs.begin(), input.size(), extract_max_op, stream);
 
   assert(computed_mins == ref_mins);
   assert(computed_maxs == ref_maxs);
@@ -205,11 +208,11 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using wrapped_init_t = cub::NullType;
   using value_t        = T;
-  using pair_t         = impl::MinMax<value_t>;
-  using op_t           = impl::ScanOp;
+  using pair_t         = impl::min_max_t<value_t>;
+  using op_t           = impl::scan_op;
   using accum_t        = pair_t;
   using input_raw_t    = const value_t*;
-  using input_it_t     = cuda::transform_iterator<impl::EmbedOp<value_t>, input_raw_t>;
+  using input_it_t     = cuda::transform_iterator<impl::embed_op<value_t>, input_raw_t>;
   using output_it_t    = pair_t*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
@@ -230,7 +233,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   input_raw_t d_input  = thrust::raw_pointer_cast(input.data());
   output_it_t d_output = thrust::raw_pointer_cast(output.data());
 
-  input_it_t inp_it(d_input, impl::EmbedOp<value_t>{});
+  input_it_t inp_it(d_input, impl::embed_op<value_t>{});
 
   state.add_element_count(elements);
   state.add_global_memory_reads<value_t>(elements, "Size");
@@ -252,13 +255,11 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // impl::validate(input, output, bench_stream);
 }
 
-using bench_types =
-  nvbench::type_list<nvbench::uint32_t,
-                     nvbench::int32_t,
-                     nvbench::uint64_t,
-                     nvbench::int64_t,
-                     nvbench::float32_t,
-                     nvbench::float64_t>;
+#ifdef TUNE_T
+using bench_types = nvbench::type_list<TUNE_T>;
+#else
+using bench_types = nvbench::type_list<nvbench::uint32_t, nvbench::int64_t, nvbench::float32_t, nvbench::float64_t>;
+#endif
 
 NVBENCH_BENCH_TYPES(benchmark_impl, NVBENCH_TYPE_AXES(bench_types, offset_types))
   .set_name("running-min-max")

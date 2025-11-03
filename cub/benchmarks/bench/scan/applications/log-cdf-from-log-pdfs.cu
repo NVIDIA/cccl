@@ -71,7 +71,7 @@ namespace impl
  *
  */
 
-struct LogAddPlus
+struct log_add_plus
 {
   /* Operator is commutative and associative */
   template <typename T>
@@ -85,7 +85,7 @@ struct LogAddPlus
 };
 
 template <typename T>
-struct LogPDBuilder
+struct log_pdf_builder
 {
   T mu;
   T norm;
@@ -116,12 +116,14 @@ template <typename T>
 template <typename FloatingPointT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPointT, OffsetT>)
 {
+  static_assert(cuda::std::is_floating_point_v<FloatingPointT>);
+
   using wrapped_init_t = cub::NullType;
   using value_t        = FloatingPointT;
   using input_t        = const value_t*;
   using output_t       = value_t*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-  using op_t           = impl::LogAddPlus;
+  using op_t           = impl::log_add_plus;
   using accum_t        = value_t;
 
 #if !TUNE_BASE
@@ -142,11 +144,12 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
 
   cudaStream_t bench_stream = state.get_cuda_stream();
 
+  auto naturals_it = cuda::counting_iterator(cuda::std::size_t{0});
   cub::DeviceTransform::Transform(
-    cuda::std::make_tuple(cuda::counting_iterator(cuda::std::size_t{0})),
+    cuda::std::make_tuple(naturals_it),
     input.begin(),
     elements,
-    impl::LogPDBuilder<value_t>{mu, norm, elements},
+    impl::log_pdf_builder<value_t>{mu, norm, elements},
     bench_stream);
 
   thrust::device_vector<value_t> output(elements, thrust::no_init);
@@ -173,7 +176,11 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
   // assert(impl::validate(output, bench_stream));
 }
 
+#ifdef TUNE_T
+using fp_types = nvbench::type_list<TUNE_T>;
+#else
 using fp_types = nvbench::type_list<float, double>;
+#endif
 
 NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
   .set_name("app-logcdf-from-logpdf")

@@ -66,7 +66,7 @@ using triplet_t = cuda::std::tuple<T, T, T>;
    The set of unitriangular matrix forms a group, with product induced by matrix multiplication,
    and the identity element corresponding to zero triplet.
 */
-struct Unitriangular3_Op
+struct unitriangular_dim3_op
 {
   // Scan operation: associative and non-commutative
   template <typename T>
@@ -80,13 +80,13 @@ struct Unitriangular3_Op
 };
 
 // Utility operation to pack arguments into a triplet_t instance
-struct Pack
+struct pack_op
 {
   template <typename T>
   triplet_t<T> __host__ __device__ operator()(T a1, T a2, T a12) const
   {
     return {a1, a2, a12};
-  }
+  } // namespace impl
 };
 
 template <typename TupleT, typename ScanOpT>
@@ -112,7 +112,6 @@ bool validation(const thrust::device_vector<TupleT>& input,
 
   return h_reference == h_output;
 }
-
 }; // namespace impl
 
 template <typename T, typename OffsetT>
@@ -121,7 +120,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using wrapped_init_t = cub::NullType;
   using value_t        = T;
   using tuple_t        = impl::triplet_t<value_t>;
-  using op_t           = impl::Unitriangular3_Op;
+  using op_t           = impl::unitriangular_dim3_op;
   using accum_t        = tuple_t;
   using input_it_t     = const tuple_t*;
   using output_it_t    = tuple_t*;
@@ -149,7 +148,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
                           cuda::strided_iterator(_input.begin() + 2, std::size_t{3})),
     input.begin(),
     input.size(),
-    impl::Pack{},
+    impl::pack_op{},
     bench_stream);
 
   state.add_element_count(elements);
@@ -174,13 +173,11 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // assert(impl::validation(input, output, op_t{}, bench_stream));
 }
 
-using bench_types =
-  nvbench::type_list<nvbench::uint32_t,
-                     nvbench::int32_t,
-                     nvbench::uint64_t,
-                     nvbench::int64_t,
-                     nvbench::float32_t,
-                     nvbench::float64_t>;
+#ifdef TUNE_T
+using bench_types = nvbench::type_list<TUNE_T>;
+#else
+using bench_types = nvbench::type_list<nvbench::int32_t, nvbench::uint64_t, nvbench::float32_t, nvbench::float64_t>;
+#endif
 
 NVBENCH_BENCH_TYPES(benchmark_impl, NVBENCH_TYPE_AXES(bench_types, offset_types))
   .set_name("unitriangular-monoid")
