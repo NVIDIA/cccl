@@ -41,6 +41,7 @@
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN

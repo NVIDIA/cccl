@@ -28,6 +28,7 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__new/device_new.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__type_traits/type_set.h>
