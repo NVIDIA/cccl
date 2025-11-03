@@ -173,7 +173,7 @@ struct agent_t
     }
 
     auto load2sh = [&] {
-      if constexpr (keys_use_block_load_to_shared)
+      if constexpr (keys_use_block_load_to_shared || items_use_block_load_to_shared)
       {
         return block_load_to_shared{storage.load2sh};
       }
@@ -286,7 +286,7 @@ struct agent_t
 
       item_type items_loc[items_per_thread];
       item_type* items1_shared;
-      if constexpr (keys_use_block_load_to_shared)
+      if constexpr (items_use_block_load_to_shared)
       {
         ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
                                      static_cast<::cuda::std::size_t>(keys1_count_tile)};
