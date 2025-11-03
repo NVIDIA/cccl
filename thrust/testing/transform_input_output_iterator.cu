@@ -1,6 +1,5 @@
 #include <thrust/copy.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_input_output_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
