@@ -97,9 +97,10 @@ struct agent_t
                                       : alignof(ValueT)) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    char c_array[UseBlockLoadToShared ? (block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
-                                         + (alignof(ValueT) < load2sh_minimum_align ? 2 * load2sh_minimum_align : 0))
-                                      : sizeof(ValueT) * (items_per_tile + 1)];
+    static constexpr int bytes_needed = block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
+                                      + (alignof(ValueT) < load2sh_minimum_align ? 2 * load2sh_minimum_align : 0);
+
+    char c_array[UseBlockLoadToShared ? bytes_needed : sizeof(ValueT) * (items_per_tile + 1)];
   };
 
   struct bl2sh_temp_storage
