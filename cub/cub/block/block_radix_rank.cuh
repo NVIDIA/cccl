@@ -26,6 +26,7 @@
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__functional/operations.h>
@@ -1056,7 +1057,7 @@ struct BlockRadixRankMatchEarlyCounts
         int bin_mask = *p_match_mask;
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
         // int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
-        int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
+        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
         int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
@@ -1088,7 +1089,7 @@ struct BlockRadixRankMatchEarlyCounts
           detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
         // int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
-        int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
+        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(static_cast<unsigned>(bin_mask));
         int warp_offset = 0;
         int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
