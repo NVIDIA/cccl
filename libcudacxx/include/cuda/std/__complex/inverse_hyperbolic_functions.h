@@ -305,8 +305,7 @@ template <class _Tp>
   // This reuses the sqrt calculated on CPU already in __recip_sqrt,
   // And gets sqrt quickly on device using the rsqrt already calculated.
 #if _CCCL_CUDA_COMPILATION()
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, __pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);
-                    , __pos_evaluation_real             = ::cuda::std::sqrt(__inside_sqrt_term);)
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);), (__pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);))
 #else
   __pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);
 #endif // _CCCL_CUDA_COMPILATION()
