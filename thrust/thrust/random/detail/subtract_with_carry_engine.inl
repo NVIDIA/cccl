@@ -35,7 +35,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename UIntType, size_t w, size_t s, size_t r>
 _CCCL_HOST_DEVICE subtract_with_carry_engine<UIntType, w, s, r>::subtract_with_carry_engine(result_type value)
 {
@@ -195,7 +194,6 @@ _CCCL_HOST_DEVICE bool operator!=(const subtract_with_carry_engine<UIntType, w, 
 {
   return !(lhs == rhs);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

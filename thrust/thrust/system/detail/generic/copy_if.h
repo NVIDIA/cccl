@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
 _CCCL_HOST_DEVICE OutputIterator copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -51,7 +50,6 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   InputIterator2 stencil,
   OutputIterator result,
   Predicate pred);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

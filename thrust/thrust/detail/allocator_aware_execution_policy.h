@@ -34,15 +34,12 @@ THRUST_NAMESPACE_BEGIN
 
 namespace mr
 {
-
 template <typename T, class MR>
 class allocator;
-
 }
 
 namespace detail
 {
-
 template <template <typename> class ExecutionPolicyCRTPBase>
 struct allocator_aware_execution_policy
 {
@@ -93,7 +90,6 @@ struct allocator_aware_execution_policy
     return typename execute_with_allocator_type<Allocator>::type(::cuda::std::move(alloc));
   }
 };
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

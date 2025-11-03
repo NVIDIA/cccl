@@ -56,7 +56,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
-
 // [mdspan.layout.stride.expo]/3
 
 // [mdspan.layout.general]/2
@@ -118,7 +117,6 @@ static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic()
 
 template <class _Extent, size_t _Size>
 static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
-
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>

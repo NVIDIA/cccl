@@ -53,7 +53,6 @@ struct ID
 
 namespace flat_impl
 {
-
 struct OverloadBase
 {
   void operator()() const;
@@ -83,12 +82,10 @@ struct MakeOverloads<cuda::std::__tuple_indices<_Idx...>>
 
 template <class... Types>
 using Overloads = typename MakeOverloads<cuda::std::__make_indices_imp<sizeof...(Types), 0>>::template Apply<Types...>;
-
 } // namespace flat_impl
 
 namespace rec_impl
 {
-
 template <class... Types>
 struct Overload;
 
@@ -107,7 +104,6 @@ struct Overload<Tp, Types...> : Overload<Types...>
 
 template <class... Types>
 using Overloads = Overload<Types...>;
-
 } // namespace rec_impl
 
 namespace variant_impl

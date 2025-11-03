@@ -7,6 +7,12 @@
 
 struct detect_wrong_difference
 {
+  using difference_type   = void;
+  using value_type        = long long;
+  using pointer           = void;
+  using reference         = detect_wrong_difference;
+  using iterator_category = ::cuda::std::output_iterator_tag;
+
   bool* flag;
 
   _CCCL_HOST_DEVICE detect_wrong_difference operator++() const

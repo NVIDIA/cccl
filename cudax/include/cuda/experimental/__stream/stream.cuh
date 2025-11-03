@@ -34,7 +34,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
 {
@@ -154,7 +153,6 @@ private:
       : stream_ref(__handle)
   {}
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

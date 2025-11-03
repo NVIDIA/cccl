@@ -47,7 +47,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // forward declaration for has_member_system
 template <typename Alloc>
 struct allocator_system;
@@ -621,6 +620,5 @@ struct allocator_system
     return allocator_traits_detail::system(a);
   }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END

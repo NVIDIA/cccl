@@ -61,7 +61,6 @@ namespace detail
 {
 namespace complex
 {
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
@@ -160,9 +159,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
     return (result);
   }
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <>

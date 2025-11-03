@@ -29,7 +29,6 @@ namespace detail
 {
 namespace complex
 {
-
 // Define basic arithmetic functions so we can use them without explicit scope
 // keeping the code as close as possible to FreeBSDs for ease of maintenance.
 // It also provides an easy way to support compilers with missing C99 functions.
@@ -56,9 +55,7 @@ using ::cuda::std::sin;
 using ::cuda::std::sinh;
 using ::cuda::std::sqrt;
 using ::cuda::std::tan;
-
 } // namespace complex
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

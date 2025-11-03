@@ -80,6 +80,5 @@ struct policy_hub
 
   using max_policy = Policy900;
 };
-
 } // namespace detail::topk
 CUB_NAMESPACE_END

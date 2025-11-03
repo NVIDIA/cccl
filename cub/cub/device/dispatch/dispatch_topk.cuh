@@ -621,7 +621,6 @@ struct DispatchTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::topk
 
 CUB_NAMESPACE_END

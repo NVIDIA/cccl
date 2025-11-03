@@ -39,7 +39,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 /*! Allocates an area of memory available to Thrust's <tt>cuda</tt> system.
  *  \param n Number of bytes to allocate.
  *  \return A <tt>cuda::pointer<void></tt> pointing to the beginning of the newly

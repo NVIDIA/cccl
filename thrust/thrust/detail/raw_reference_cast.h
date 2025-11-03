@@ -42,7 +42,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename... Ts>
 class tuple_of_iterator_references;
 
@@ -65,7 +64,6 @@ inline constexpr bool can_unwrap<tuple_of_iterator_references<Ts...>> = (can_unw
 
 namespace raw_reference_detail
 {
-
 template <typename T, typename SFINAE = void>
 struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 {};
@@ -80,7 +78,6 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cud
 {
   using type = T;
 };
-
 } // namespace raw_reference_detail
 
 template <typename T>
@@ -92,7 +89,6 @@ using raw_reference_t = typename raw_reference<T>::type;
 
 namespace raw_reference_detail
 {
-
 // unlike raw_reference,
 // raw_reference_tuple_helper needs to return a value
 // when it encounters one, rather than a reference
@@ -123,7 +119,6 @@ struct raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>
 {
   using type = tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
-
 } // namespace raw_reference_detail
 
 // a couple of specializations of raw_reference for tuples follow
@@ -148,7 +143,6 @@ struct raw_reference<tuple_of_iterator_references<Ts...>>
 {
   using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_of_iterator_references<Ts...>>::type;
 };
-
 } // namespace detail
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below

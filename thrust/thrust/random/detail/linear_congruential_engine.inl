@@ -34,7 +34,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename UIntType, UIntType a, UIntType c, UIntType m>
 _CCCL_HOST_DEVICE linear_congruential_engine<UIntType, a, c, m>::linear_congruential_engine(result_type s)
 {
@@ -149,7 +148,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIn
 {
   return detail::random_core_access::stream_in(is, e);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

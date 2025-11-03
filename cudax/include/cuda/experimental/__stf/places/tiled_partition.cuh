@@ -29,10 +29,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 /*
  * Define a tiled transformation to a shape of mdspan
  */
@@ -105,7 +103,6 @@ private:
   size_t part_id;
   size_t nparts;
 };
-
 } // end namespace reserved
 
 /**
@@ -187,5 +184,4 @@ UNITTEST("tiled partition with large 1D data")
 };
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

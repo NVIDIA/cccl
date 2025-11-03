@@ -109,7 +109,6 @@ using ::std::exception_ptr;
 using ::std::rethrow_exception;
 
 #endif // !_CCCL_COMPILER(NVRTC) && _CCCL_HOST_COMPILATION()
-
 } // namespace cuda::experimental::execution
 
 #endif // __CUDAX_EXECUTION_EXCEPTION

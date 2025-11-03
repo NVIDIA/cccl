@@ -240,7 +240,6 @@ _test_int_literal_impl(const char (&cs)[N]) noexcept
 
 namespace test_integer_literals
 {
-
 // nvcc passes operator""_x to the host compiler as operator "" _x, which was deprecated in CWG 2521 (nvbug 5507437)
 // clang 20 already warns about this, so we need to suppress the warning here
 _CCCL_DIAG_PUSH
@@ -271,7 +270,6 @@ template <char... Cs>
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_DIAG_POP
-
 } // namespace test_integer_literals
 
 #endif // TEST_SUPPORT_LITERAL_H

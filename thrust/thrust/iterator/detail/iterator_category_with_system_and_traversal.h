@@ -52,6 +52,5 @@ struct iterator_category_to_traversal<iterator_category_with_system_and_traversa
 {
   using type = Traversal;
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END

@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // TODO(gevtushenko/srinivasyadav18): move cudax `device_memory_resource` to `cuda::__device_memory_resource` and remove
 // this implementation
 struct device_memory_resource
@@ -56,7 +55,6 @@ struct device_memory_resource
     _CCCL_TRY_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

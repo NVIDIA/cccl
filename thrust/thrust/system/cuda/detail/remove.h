@@ -42,7 +42,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 // in-place
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -101,7 +100,6 @@ remove_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, Outp
   thrust::detail::equal_to_value<T> pred{value};
   return cuda_cub::remove_copy_if(policy, first, last, result, pred);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

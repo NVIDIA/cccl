@@ -8,7 +8,6 @@
 
 namespace unittest
 {
-
 inline unsigned int hash(unsigned int a)
 {
   a = (a + 0x7ed55d16) + (a << 12);
@@ -95,5 +94,4 @@ THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
 
   return vec;
 }
-
 }; // end namespace unittest

@@ -178,7 +178,6 @@ using __visit_result_t _CCCL_NODEBUG_ALIAS =
 template <class _CvSndr, size_t _Nth = 0>
 using __child_of_t _CCCL_NODEBUG_ALIAS =
   __visit_result_t<::cuda::std::__detail::__get_fn<_Nth + 3>, _CvSndr, ::cuda::std::__ignore_t>;
-
 } // namespace cuda::experimental::execution
 
 #undef _CCCL_FWD_LIKE

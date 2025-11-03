@@ -114,7 +114,6 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::~temporary_array()
   // note that super_t::destroy will ignore trivial destructors automatically
   super_t::destroy(super_t::begin(), super_t::end());
 } // end temporary_array::~temporary_array()
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

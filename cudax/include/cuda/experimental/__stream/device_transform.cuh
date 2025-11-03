@@ -182,7 +182,6 @@ _CCCL_GLOBAL_CONSTANT auto device_transform = __tfx::__device_transform_t{};
 template <typename _Arg>
 using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
   __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__device_transform_t, ::cuda::stream_ref, _Arg>>;
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

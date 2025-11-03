@@ -53,7 +53,6 @@ struct output_storage_t;
 
 namespace transform
 {
-
 constexpr auto input_iterator_name  = "input_iterator_t";
 constexpr auto input1_iterator_name = "input1_iterator_t";
 constexpr auto input2_iterator_name = "input2_iterator_t";
@@ -247,7 +246,6 @@ public:
     return (is_pointer_aligned(its, its.value_size * vec_size) && ...);
   }
 };
-
 } // namespace transform
 
 CUresult cccl_device_unary_transform_build_ex(

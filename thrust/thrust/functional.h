@@ -343,7 +343,6 @@ _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
  */
 namespace placeholders
 {
-
 /*! \p thrust::placeholders::_1 is the placeholder for the first function parameter.
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
@@ -383,7 +382,6 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
 /*! \p thrust::placeholders::_10 is the placeholder for the tenth function parameter.
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
-
 } // namespace placeholders
 
 /*! \} // placeholder_objects

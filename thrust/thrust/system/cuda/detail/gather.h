@@ -45,7 +45,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 template <class Derived, class MapIt, class ItemsIt, class ResultIt>
 ResultIt _CCCL_HOST_DEVICE
 gather(execution_policy<Derived>& policy, MapIt map_first, MapIt map_last, ItemsIt items, ResultIt result)
@@ -84,7 +83,6 @@ ResultIt _CCCL_HOST_DEVICE gather_if(
 {
   return cuda_cub::gather_if(policy, map_first, map_last, stencil, items, result, ::cuda::std::identity{});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

@@ -11,7 +11,6 @@
 
 namespace unittest
 {
-
 template <typename T>
 std::string type_name()
 {
@@ -35,7 +34,6 @@ truncate_to_max_representable(std::size_t n)
 {
   return THRUST_NS_QUALIFIER::min<T>(static_cast<T>(n), ::cuda::std::numeric_limits<T>::max());
 }
-
 } // namespace unittest
 
 template <typename Iterator>

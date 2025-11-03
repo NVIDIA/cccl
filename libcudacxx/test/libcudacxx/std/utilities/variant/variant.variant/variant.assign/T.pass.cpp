@@ -31,7 +31,6 @@
 
 namespace MetaHelpers
 {
-
 struct Dummy
 {
   Dummy() = default;
@@ -63,7 +62,6 @@ struct NoThrowT
     return *this;
   }
 };
-
 } // namespace MetaHelpers
 
 namespace RuntimeHelpers

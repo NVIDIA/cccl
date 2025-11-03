@@ -162,7 +162,6 @@ template <class _Query>
 inline constexpr size_t structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
 
 _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

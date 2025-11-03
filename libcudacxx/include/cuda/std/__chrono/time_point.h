@@ -36,7 +36,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 template <class _Clock, class _Duration = typename _Clock::duration>
 class _CCCL_TYPE_VISIBILITY_DEFAULT time_point
 {
@@ -209,7 +208,6 @@ public:
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
-
 } // namespace chrono
 
 template <class _Clock, class _Duration1, class _Duration2>
@@ -221,7 +219,6 @@ common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _
 
 namespace chrono
 {
-
 template <class _ToDuration, class _Clock, class _Duration>
 [[nodiscard]] _CCCL_API constexpr time_point<_Clock, _ToDuration>
 time_point_cast(const time_point<_Clock, _Duration>& __t)
@@ -249,7 +246,6 @@ _CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 {
   return time_point<_Clock, _ToDuration>{::cuda::std::chrono::round<_ToDuration>(__t.time_since_epoch())};
 }
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

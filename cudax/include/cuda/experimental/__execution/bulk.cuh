@@ -447,7 +447,6 @@ inline constexpr size_t structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, 
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
 inline constexpr size_t structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

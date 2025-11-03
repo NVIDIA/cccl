@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -73,7 +72,6 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   UnaryFunction unary_op,
   T init,
   AssociativeOperator binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

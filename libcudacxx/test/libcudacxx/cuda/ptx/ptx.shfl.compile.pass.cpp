@@ -45,7 +45,7 @@ __host__ __device__ void test_shfl_full_mask()
   }
 
   auto res4 = cuda::ptx::shfl_sync_bfly(data, pred4, 2 /*offset*/, 0b11111 /*clamp*/, FullMask);
-  assert(res4 == threadIdx.x ^ 2 && pred4);
+  assert(res4 == (threadIdx.x ^ 2) && pred4);
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
@@ -78,7 +78,7 @@ __host__ __device__ void test_shfl_full_mask_no_pred()
   }
 
   auto res4 = cuda::ptx::shfl_sync_bfly(data, 2 /*offset*/, 0b11111 /*clamp*/, FullMask);
-  assert(res4 == threadIdx.x ^ 2);
+  assert(res4 == (threadIdx.x ^ 2));
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
@@ -136,7 +136,7 @@ __host__ __device__ void test_shfl_partial_warp()
   }
 
   auto res4 = cuda::ptx::shfl_sync_bfly(data, pred4, 2 /*offset*/, clamp_segmark, FullMask);
-  assert(res4 == threadIdx.x ^ 2 && pred4);
+  assert(res4 == (threadIdx.x ^ 2) && pred4);
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 

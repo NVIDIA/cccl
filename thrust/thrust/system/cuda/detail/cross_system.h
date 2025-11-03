@@ -43,7 +43,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 template <class Sys1, class Sys2>
 struct cross_system : execution_policy<cross_system<Sys1, Sys2>>
 {
@@ -238,6 +237,5 @@ select_system(thrust::cpp::execution_policy<Sys1> const& sys1, execution_policy<
   thrust::execution_policy<Sys2>& non_const_sys2      = const_cast<execution_policy<Sys2>&>(sys2);
   return cross_system<Sys1, Sys2>(non_const_sys1, non_const_sys2);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

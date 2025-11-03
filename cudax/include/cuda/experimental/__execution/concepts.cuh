@@ -147,7 +147,6 @@ _CCCL_CONCEPT dependent_sender = //
     requires(sender<_Sndr>), //
     requires(__is_dependent_sender<_Sndr>()) //
   );
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

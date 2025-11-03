@@ -34,10 +34,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 // host-allocated pool, modeled as a hashtable keyed by size
 inline auto& host_pool()
 {
@@ -57,7 +55,6 @@ enum : size_t
 {
   maxPoolEntries = 16 * 1024
 };
-
 } // namespace reserved
 
 /**
@@ -1033,7 +1030,6 @@ UNITTEST("small_vector basics")
 
 namespace reserved
 {
-
 /*!
  * @brief A simple object pool with linear search for managing objects of type `T`.
  *
@@ -1119,7 +1115,5 @@ private:
    */
   ::std::vector<::std::unique_ptr<T>> payload;
 };
-
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

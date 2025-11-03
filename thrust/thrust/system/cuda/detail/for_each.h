@@ -51,7 +51,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 // for_each_n
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Input, class Size, class UnaryOp>

@@ -42,7 +42,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& alloc)
@@ -267,7 +266,6 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
 
   return *this;
 }
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

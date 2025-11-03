@@ -177,6 +177,5 @@ using iterator_facade_category_t =
   typename ::cuda::std::_If<is_iterator_category<CategoryOrTraversal>,
                             ::cuda::std::type_identity<CategoryOrTraversal>,
                             iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal>>::type;
-
 } // namespace detail
 THRUST_NAMESPACE_END

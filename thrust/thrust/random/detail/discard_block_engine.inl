@@ -32,7 +32,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename Engine, size_t p, size_t r>
 _CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine()
     : m_e()
@@ -178,7 +177,6 @@ operator!=(const discard_block_engine<Engine, p, r>& lhs, const discard_block_en
 {
   return !(lhs == rhs);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

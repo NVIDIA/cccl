@@ -883,7 +883,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class weekday_indexed;
 class weekday_last;
 
@@ -2359,7 +2358,6 @@ _CCCL_API constexpr hours make24(const hours& __h, bool __is_pm) noexcept
     return __h == hours(12) ? hours(0) : __h;
   }
 }
-
 } // namespace chrono
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
@@ -2382,7 +2380,6 @@ inline namespace literals
 {
 inline namespace chrono_literals
 {
-
 _CCCL_API constexpr chrono::hours operator""h(unsigned long long __h)
 {
   return chrono::hours(static_cast<chrono::hours::rep>(__h));

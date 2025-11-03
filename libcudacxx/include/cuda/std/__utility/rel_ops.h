@@ -29,7 +29,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace rel_ops
 {
-
 template <class _Tp>
 _CCCL_API inline bool operator!=(const _Tp& __x, const _Tp& __y)
 {
@@ -53,7 +52,6 @@ _CCCL_API inline bool operator>=(const _Tp& __x, const _Tp& __y)
 {
   return !(__x < __y);
 }
-
 } // namespace rel_ops
 
 _CCCL_END_NAMESPACE_CUDA_STD

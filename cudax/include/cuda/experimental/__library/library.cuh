@@ -36,7 +36,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief An owning wrapper for a CUDA library handle
 struct library : public library_ref
 {
@@ -116,7 +115,6 @@ private:
       : library_ref{__handle}
   {}
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

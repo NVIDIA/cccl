@@ -51,7 +51,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
-
 template <typename T>
 using cuda_expected = ::cuda::std::expected<T, cudaError_t>;
 
@@ -536,7 +535,6 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::transform
 CUB_NAMESPACE_END
 

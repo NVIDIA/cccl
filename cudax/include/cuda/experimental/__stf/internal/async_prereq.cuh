@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class event_impl;
 using event = reserved::handle<event_impl>;
 
@@ -502,5 +501,4 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
     prereq_in.dot_declare_prereqs(dot, to.unique_prereq_id, reserved::edge_type::prereqs);
   }
 }
-
 } // namespace cuda::experimental::stf

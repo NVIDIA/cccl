@@ -46,7 +46,6 @@ namespace system::omp
 {
 namespace detail
 {
-
 // XXX circular #inclusion problems cause the compiler to believe that cpp::malloc
 //     is not defined
 //     WAR the problem by using adl to call cpp::malloc, which requires it to depend
@@ -66,7 +65,6 @@ void free_workaround(Tag t, pointer<void> ptr)
 {
   free(t, ptr.get());
 } // end free_workaround()
-
 } // namespace detail
 
 /*! Allocates an area of memory available to Thrust's <tt>omp</tt> system.

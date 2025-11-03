@@ -212,7 +212,6 @@ template <class _Sndr, class _Env>
 inline constexpr size_t structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
 
 _CCCL_GLOBAL_CONSTANT write_env_t write_env{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

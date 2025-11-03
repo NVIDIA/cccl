@@ -116,7 +116,6 @@ OutputIt _CCCL_HOST_DEVICE replace_copy(
 {
   return cuda_cub::replace_copy_if(policy, first, last, result, thrust::detail::equal_to_value<T>{old_value}, new_value);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -32,7 +32,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class day
 {
 private:
@@ -152,7 +151,6 @@ public:
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

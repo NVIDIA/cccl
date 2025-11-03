@@ -31,10 +31,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 namespace sort_detail
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 void inplace_merge(execution_policy<DerivedPolicy>& exec,
                    RandomAccessIterator first,
@@ -76,7 +74,6 @@ void inplace_merge_by_key(
   thrust::merge_by_key(
     thrust::seq, lhs1.begin(), lhs1.end(), rhs1.begin(), rhs1.end(), lhs2.begin(), rhs2.begin(), first1, first2, comp);
 }
-
 } // namespace sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
@@ -244,6 +241,5 @@ void stable_sort_by_key(
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

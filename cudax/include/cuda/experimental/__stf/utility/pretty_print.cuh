@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Convert a size into a human readable string
  */
@@ -87,7 +86,6 @@ struct FormatSpecifier<uint64_t>
   static constexpr const char* value = "%llu "; // For uint64_t, assuming LLP64 or LP64 model
   static constexpr const char* name  = "uint64_t";
 };
-
 } // end namespace reserved
 
 /**
@@ -262,5 +260,4 @@ void mdspan_print(mdspan_like s, const ::std::string& text, FILE* f = stderr)
     }
   }
 }
-
 } // end namespace cuda::experimental::stf

@@ -33,7 +33,6 @@ using namespace ImplicitTypes; // Get implicitly archetypes
 
 namespace ConstructorTest
 {
-
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
 __host__ __device__ void test()
 {
@@ -44,7 +43,6 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_copy_constructible<P2>::value == CanCopy, "");
   static_assert(cuda::std::is_move_constructible<P2>::value == CanMove, "");
 };
-
 } // namespace ConstructorTest
 
 __host__ __device__ void test_constructors_exist()
@@ -85,7 +83,6 @@ __host__ __device__ void test_constructors_exist()
 
 namespace AssignmentOperatorTest
 {
-
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
 __host__ __device__ void test()
 {
@@ -96,7 +93,6 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_copy_assignable<P2>::value == CanCopy, "");
   static_assert(cuda::std::is_move_assignable<P2>::value == CanMove, "");
 };
-
 } // namespace AssignmentOperatorTest
 
 __host__ __device__ void test_assignment_operator_exists()

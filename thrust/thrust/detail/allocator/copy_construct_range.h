@@ -187,6 +187,5 @@ _CCCL_HOST_DEVICE Pointer copy_construct_range_n(
     return thrust::detail::two_system_copy_n(from_system, allocator_system<Allocator>::get(a), first, n, result);
   }
 }
-
 } // namespace detail
 THRUST_NAMESPACE_END

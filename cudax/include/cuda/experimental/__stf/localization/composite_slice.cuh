@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief An allocator that takes a mapping function to dispatch an allocation over multiple data places.
  *
@@ -372,5 +371,4 @@ public:
 private:
   reserved::linear_pool<localized_array> cache;
 };
-
 } // end namespace cuda::experimental::stf::reserved

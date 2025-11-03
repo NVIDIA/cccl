@@ -177,7 +177,6 @@ public:
 template <class _Tag>
 struct stream_domain::__apply_t<__stream::__tag_t<_Tag>> : stream_domain::__apply_passthru_t
 {};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

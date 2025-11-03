@@ -24,7 +24,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
 
@@ -109,6 +108,5 @@ template <typename MappingTypeLhs, typename MappingTypeRhs>
   }
   return true;
 }
-
 } // namespace detail
 CUB_NAMESPACE_END

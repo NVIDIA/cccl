@@ -32,10 +32,8 @@
 
 namespace cuda::experimental
 {
-
 namespace __detail
 {
-
 template <::CUfunction_attribute _Attr, typename _Type>
 struct __kernel_attr_impl
 {
@@ -86,7 +84,6 @@ template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_CLUSTER_SIZE_MUST_BE_SET> //
     : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_CLUSTER_SIZE_MUST_BE_SET, bool>
 {};
-
 } // namespace __detail
 
 namespace kernel_attributes

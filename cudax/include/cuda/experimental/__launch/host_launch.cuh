@@ -33,7 +33,6 @@
 
 namespace cuda::experimental
 {
-
 template <class _Callable, class... _Args>
 struct __stream_callback_data
 {
@@ -105,7 +104,6 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, ::cuda::std::reference_wrap
   ::cuda::__driver::__launchHostFunc(
     __stream.get(), __host_func_launcher<_Callable>, ::cuda::std::addressof(__callable.get()));
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

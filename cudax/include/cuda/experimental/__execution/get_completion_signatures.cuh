@@ -35,7 +35,6 @@
 
 namespace cuda::experimental::execution
 {
-
 #if __cpp_lib_constexpr_exceptions >= 202502L // constexpr exception types, https://wg21.link/p3378
 
 using __exception = ::std::exception;
@@ -346,7 +345,6 @@ _CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, varia
     typename(completion_signatures_of_t<_Sndr, _Env...>),
     requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) != 0) //
   );
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

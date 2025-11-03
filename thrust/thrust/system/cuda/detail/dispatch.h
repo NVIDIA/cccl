@@ -41,7 +41,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 _CCCL_TEMPLATE(typename T)
 _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
 [[nodiscard]] _CCCL_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
@@ -55,7 +54,6 @@ _CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
     return x < 0;
   }
 }
-
 } // namespace detail
 THRUST_NAMESPACE_END
 

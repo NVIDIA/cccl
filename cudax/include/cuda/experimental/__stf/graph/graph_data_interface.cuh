@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Data interface for the CUDA graph backend
  */
@@ -85,5 +84,4 @@ public:
     reserved::fork_from_graph_node(ctx_, out, graph, graph_stage, prereqs, "copy");
   }
 };
-
 } // end namespace cuda::experimental::stf

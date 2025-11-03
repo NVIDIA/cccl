@@ -62,10 +62,8 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 namespace __set_operations
 {
-
 template <bool UpperBound, class IntT, class Size, class It, class T, class Comp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
@@ -1729,7 +1727,6 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items_result,
     ::cuda::std::less<value_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

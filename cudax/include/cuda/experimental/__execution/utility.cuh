@@ -407,7 +407,6 @@ using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

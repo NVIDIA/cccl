@@ -49,7 +49,6 @@ struct output_iterator_t;
 
 namespace scan
 {
-
 enum class InitKind
 {
   Value,

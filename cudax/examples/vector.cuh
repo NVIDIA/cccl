@@ -141,7 +141,6 @@ private:
   mutable device_vector<_Ty> __d_{};
   mutable bool __dirty_ = true;
 };
-
 } // namespace cuda::experimental
 
 #endif

@@ -43,11 +43,9 @@ namespace system
 {
 namespace cuda
 {
-
 //! \cond
 namespace detail
 {
-
 using allocation_fn   = cudaError_t (*)(void**, std::size_t);
 using deallocation_fn = cudaError_t (*)(void*);
 
@@ -90,7 +88,6 @@ using managed_memory_resource =
   detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
 using pinned_memory_resource =
   detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_host_pinned_pointer<void>>;
-
 } // namespace detail
 //! \endcond
 
@@ -108,7 +105,6 @@ using universal_memory_resource = detail::managed_memory_resource;
  *  cuda::universal_pointer.
  */
 using universal_host_pinned_memory_resource = detail::pinned_memory_resource;
-
 } // namespace cuda
 } // namespace system
 

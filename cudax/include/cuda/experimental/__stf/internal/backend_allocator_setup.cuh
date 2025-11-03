@@ -35,7 +35,6 @@ class block_allocator_untyped;
 
 namespace cuda::experimental::stf::reserved
 {
-
 template <typename T, typename ctx_impl_t, typename... Args>
 auto allocators_create_and_attach(ctx_impl_t& i, Args&&... args)
 {
@@ -121,5 +120,4 @@ void backend_ctx_update_uncached_allocator(ctx_impl_t& i, block_allocator_untype
 
   backend_ctx_set_default_allocator(i, uncached_allocator);
 }
-
 } // namespace cuda::experimental::stf::reserved

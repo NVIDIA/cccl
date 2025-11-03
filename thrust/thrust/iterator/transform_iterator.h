@@ -58,7 +58,6 @@ class transform_iterator;
 
 namespace detail
 {
-
 template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
@@ -97,7 +96,6 @@ public:
                      use_default, // pick traversal from Iterator
                      reference>;
 };
-
 } // namespace detail
 
 //! \addtogroup iterators

@@ -95,7 +95,6 @@ enum class graph_node_type : int
   conditional = cudaGraphNodeTypeConditional
 #endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

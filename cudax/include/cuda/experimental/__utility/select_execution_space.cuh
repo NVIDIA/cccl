@@ -27,7 +27,6 @@
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 namespace cuda::experimental
 {
-
 enum class _ExecutionSpace
 {
   __host,
@@ -41,7 +40,6 @@ inline constexpr _ExecutionSpace __select_execution_space =
   : ::cuda::mr::__is_device_accessible<_Properties...>
     ? _ExecutionSpace::__device
     : _ExecutionSpace::__host;
-
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE

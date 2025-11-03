@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 // If par_nosync does not have a user provided allocator attached, these
 // overloads should be selected.
 
@@ -127,6 +126,5 @@ _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointe
     }
   }
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

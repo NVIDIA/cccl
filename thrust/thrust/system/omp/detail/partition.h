@@ -24,7 +24,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 ForwardIterator
 stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -80,6 +79,5 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   // omp prefers generic::stable_partition_copy to cpp::stable_partition_copy
   return thrust::system::detail::generic::stable_partition_copy(exec, first, last, stencil, out_true, out_false, pred);
 } // end stable_partition_copy()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

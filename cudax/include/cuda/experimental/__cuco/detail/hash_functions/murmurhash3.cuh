@@ -46,7 +46,6 @@
 
 namespace cuda::experimental::cuco::__detail
 {
-
 template <typename _Key>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
 {
@@ -842,7 +841,6 @@ private:
 };
 
 #endif // _CCCL_HAS_INT128()
-
 } // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>

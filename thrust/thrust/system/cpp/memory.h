@@ -39,7 +39,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-
 /*! Allocates an area of memory available to Thrust's <tt>cpp</tt> system.
  *  \param n Number of bytes to allocate.
  *  \return A <tt>cpp::pointer<void></tt> pointing to the beginning of the newly

@@ -41,7 +41,6 @@ using ::cuda::std::mdspan;
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Abstraction for the shape of a structure such as a multidimensional view, i.e. everything but the data
  * itself. A type to be used with cudastf must specialize this template.
@@ -194,13 +193,11 @@ _CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
 
 namespace reserved
 {
-
 template <typename View, typename... Whatevs>
 auto make_mdview(Whatevs&&... whatevs)
 {
   return make_slice(::std::forward<Whatevs>(whatevs)...);
 }
-
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
@@ -1215,5 +1212,4 @@ UNITTEST("shape_of<slice> basics")
 };
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

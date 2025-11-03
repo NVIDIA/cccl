@@ -45,5 +45,4 @@ C2H_TEST("simple use of sequence executes both child operations", "[adaptors][se
   CHECK(flag1);
   CHECK(flag2);
 }
-
 } // namespace

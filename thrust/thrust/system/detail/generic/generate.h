@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename ForwardIterator, typename Generator>
 _CCCL_HOST_DEVICE void
 generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen);
@@ -38,7 +37,6 @@ generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first,
 template <typename ExecutionPolicy, typename OutputIterator, typename Size, typename Generator>
 _CCCL_HOST_DEVICE OutputIterator
 generate_n(thrust::execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

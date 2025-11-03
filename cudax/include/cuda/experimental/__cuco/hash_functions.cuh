@@ -28,7 +28,6 @@
 
 namespace cuda::experimental::cuco
 {
-
 enum class hash_algorithm
 {
   xxhash_32,
@@ -91,7 +90,6 @@ public:
 };
 
 #endif // _CCCL_HAS_INT128()
-
 } // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>

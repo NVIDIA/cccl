@@ -41,7 +41,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
-
 namespace __detail
 {
 // This struct helps us impose the rank constraint on the __type alias itself.
@@ -88,7 +87,6 @@ _CCCL_API constexpr __transpose_extents_t<_Extents> __transpose_extents(const _E
   }
   _CCCL_UNREACHABLE(); // GCC9 workaround
 }
-
 } // namespace __detail
 
 template <class _Layout>
@@ -202,7 +200,6 @@ public:
 
 namespace __detail
 {
-
 template <class _ElementType, class _Accessor>
 struct __transposed_element_accessor
 {
@@ -297,7 +294,6 @@ struct __transposed_layout<layout_transpose<_NestedLayout>>
 {
   using __layout_type = _NestedLayout;
 };
-
 } // namespace __detail
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
@@ -311,7 +307,6 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
   return mdspan<__element_type, typename decltype(__mapping)::extents_type, __layout_type, __accessor_type>{
     __a.data_handle(), __mapping, __accessor};
 }
-
 } // end namespace linalg
 
 _CCCL_END_NAMESPACE_CUDA_STD

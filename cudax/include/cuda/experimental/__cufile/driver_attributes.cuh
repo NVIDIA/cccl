@@ -26,12 +26,8 @@
 
 #include <cufile.h>
 
-namespace cuda::experimental
+namespace cuda::experimental::cufile_driver_attributes
 {
-
-namespace cufile_driver_attributes
-{
-
 template <class _ParamEnum>
 [[nodiscard]] _CCCL_CONSTEVAL auto __attr_from_param_type() noexcept
 {
@@ -174,7 +170,4 @@ inline constexpr has_dynamic_routing_support_t has_dynamic_routing_support{};
 inline constexpr has_batch_io_support_t has_batch_io_support{};
 inline constexpr has_streams_support_t has_streams_support{};
 inline constexpr has_parallel_io_support_t has_parallel_io_support{};
-
-} // namespace cufile_driver_attributes
-
-} // namespace cuda::experimental
+} // namespace cuda::experimental::cufile_driver_attributes

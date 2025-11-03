@@ -34,7 +34,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // get_iterator_value specialization on iterators
 // --------------------------------------------------
 // it is okay to dereference iterator in the usual way
@@ -56,7 +55,6 @@ get_iterator_value(thrust::execution_policy<DerivedPolicy>& exec, Pointer* ptr)
 {
   return get_value(derived_cast(exec), ptr);
 } // get_iterator_value(exec,Pointer*)
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

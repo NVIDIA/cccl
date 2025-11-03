@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -119,7 +118,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   T init,
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

@@ -23,13 +23,11 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   // omp prefers generic::find_if to cpp::find_if
   return thrust::system::detail::generic::find_if(exec, first, last, pred);
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

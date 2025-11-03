@@ -66,7 +66,6 @@ struct __has_hidden_friend_swap
 
 namespace __detect_adl_swap
 {
-
 template <class _Tp>
 void swap(_Tp&, _Tp&) = delete;
 
@@ -147,7 +146,6 @@ struct __nothrow_swappable_with
 template <class _Tp, class _Up>
 struct __nothrow_swappable_with<_Tp, _Up, false> : false_type
 {};
-
 } // namespace __detail
 
 template <class _Tp>

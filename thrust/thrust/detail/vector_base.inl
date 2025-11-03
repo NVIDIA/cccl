@@ -46,7 +46,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base()
     : m_storage()
@@ -1204,7 +1203,6 @@ bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
 {
   return !(lhs == rhs);
 }
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

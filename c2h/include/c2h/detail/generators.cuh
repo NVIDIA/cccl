@@ -14,7 +14,6 @@
 
 namespace c2h::detail
 {
-
 class generator_t
 {
 public:
@@ -101,5 +100,4 @@ struct random_to_item_t<cuda::std::complex<T>, false>
     return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
-
 } // namespace c2h::detail

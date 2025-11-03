@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief This computes the CUDA device in which the stream was created
  */
@@ -52,5 +51,4 @@ inline int get_device_from_stream(cudaStream_t stream)
 
   return int(stream_dev);
 }
-
 } // end namespace cuda::experimental::stf

@@ -94,7 +94,6 @@ fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator l
 {
   cuda_cub::fill_n(policy, first, ::cuda::std::distance(first, last), value);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

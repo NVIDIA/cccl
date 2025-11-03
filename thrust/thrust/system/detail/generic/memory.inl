@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename Size>
 _CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size)
 {
@@ -80,6 +79,5 @@ _CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Point
 {
   static_assert(thrust::detail::depend_on_instantiation<Pointer1, false>::value, "unimplemented for this system");
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

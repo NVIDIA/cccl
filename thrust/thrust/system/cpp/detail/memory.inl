@@ -35,7 +35,6 @@ namespace system
 {
 namespace cpp
 {
-
 pointer<void> malloc(std::size_t n)
 {
   tag t;
@@ -54,7 +53,6 @@ void free(pointer<void> ptr)
   tag t;
   return thrust::system::detail::sequential::free(t, ptr);
 } // end free()
-
 } // namespace cpp
 } // namespace system
 THRUST_NAMESPACE_END

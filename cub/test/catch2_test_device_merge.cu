@@ -312,38 +312,73 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
   const offset_t size2    = 634;
   const auto values_start = 123456789;
 
+  const auto larger_size  = std::max(size1, size2);
+  const auto smaller_size = std::min(size1, size2);
+
+  auto test = [&](auto key1_it, auto value1_it, auto key2_it, auto value2_it) {
+    // compute CUB result
+    c2h::device_vector<key_t> result_keys_d(size1 + size2);
+    c2h::device_vector<value_t> result_values_d(size1 + size2);
+    merge_pairs(
+      key1_it,
+      value1_it,
+      size1,
+      key2_it,
+      value2_it,
+      size2,
+      result_keys_d.begin(),
+      result_values_d.begin(),
+      cuda::std::less<key_t>{});
+
+    // check result
+    c2h::host_vector<key_t> result_keys_h     = result_keys_d;
+    c2h::host_vector<value_t> result_values_h = result_values_d;
+
+    for (offset_t i = 0; i < static_cast<offset_t>(result_keys_h.size()); i++)
+    {
+      if (i < 2 * smaller_size)
+      {
+        CHECK(result_keys_h[i + 0] == i / 2);
+        CHECK(result_values_h[i + 0] == values_start + i / 2);
+      }
+      else
+      {
+        CHECK(result_keys_h[i] == i - smaller_size);
+        CHECK(result_values_h[i] == values_start + i - smaller_size);
+      }
+    }
+  };
+
   auto key_it   = thrust::counting_iterator<key_t>{};
-  auto value_it = thrust::counting_iterator<key_t>{values_start};
+  auto value_it = thrust::counting_iterator<value_t>{values_start};
 
-  // compute CUB result
-  c2h::device_vector<key_t> result_keys_d(size1 + size2);
-  c2h::device_vector<value_t> result_values_d(size1 + size2);
-  merge_pairs(
-    key_it,
-    value_it,
-    size1,
-    key_it,
-    value_it,
-    size2,
-    result_keys_d.begin(),
-    result_values_d.begin(),
-    cuda::std::less<key_t>{});
+  c2h::device_vector<key_t> keys_vec(larger_size);
+  thrust::sequence(keys_vec.begin(), keys_vec.end());
+  c2h::device_vector<key_t> values_vec(larger_size);
+  thrust::sequence(values_vec.begin(), values_vec.end(), values_start);
 
-  // check result
-  c2h::host_vector<key_t> result_keys_h     = result_keys_d;
-  c2h::host_vector<value_t> result_values_h = result_values_d;
-  const auto smaller_size                   = std::min(size1, size2);
-  for (offset_t i = 0; i < static_cast<offset_t>(result_keys_h.size()); i++)
+  SECTION("cit/cit/cit/cit")
   {
-    if (i < 2 * smaller_size)
-    {
-      CHECK(result_keys_h[i + 0] == i / 2);
-      CHECK(result_values_h[i + 0] == values_start + i / 2);
-    }
-    else
-    {
-      CHECK(result_keys_h[i] == i - smaller_size);
-      CHECK(result_values_h[i] == values_start + i - smaller_size);
-    }
+    test(key_it, value_it, key_it, value_it);
+  }
+  // key arrays have mixed types
+  SECTION("vec/cit/cit/cit")
+  {
+    test(keys_vec.begin(), value_it, key_it, value_it);
+  }
+  // value arrays have mixed types
+  SECTION("cit/vec/cit/cit")
+  {
+    test(key_it, values_vec.begin(), key_it, value_it);
+  }
+  // key and value arrays have mixed types
+  SECTION("cit/vec/vec/cit")
+  {
+    test(key_it, values_vec.begin(), keys_vec.begin(), value_it);
+  }
+  // values have different iterator and keys
+  SECTION("cit/vec/cit/vec")
+  {
+    test(key_it, values_vec.begin(), key_it, values_vec.begin());
   }
 }

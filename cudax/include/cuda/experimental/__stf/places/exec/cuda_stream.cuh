@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Designates execution that is to run on a specific CUDA stream
  *
@@ -95,5 +94,4 @@ inline exec_place_cuda_stream exec_place::cuda_stream(const decorated_stream& ds
 {
   return exec_place_cuda_stream(dstream);
 }
-
 } // end namespace cuda::experimental::stf

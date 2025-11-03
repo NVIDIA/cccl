@@ -70,7 +70,6 @@ inline constexpr size_t is_placeholder_v = is_placeholder<_Tp>::value;
 
 namespace placeholders
 {
-
 template <int _Np>
 struct __ph
 {};
@@ -85,7 +84,6 @@ inline constexpr __ph<7> _7{};
 inline constexpr __ph<8> _8{};
 inline constexpr __ph<9> _9{};
 inline constexpr __ph<10> _10{};
-
 } // namespace placeholders
 
 template <int _Np>

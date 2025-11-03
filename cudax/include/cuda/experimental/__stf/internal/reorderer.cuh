@@ -40,7 +40,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief We cannot pass deferred_stream_task<> to the reorderer due to circular
  * dependencies, so we store all the necessary info in this struct instead.
@@ -377,5 +376,4 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
   fprintf(stderr, "Invalid CUDASTF_TASK_ORDER value '%s'\n", reorderer_type);
   abort();
 }
-
 } // namespace cuda::experimental::stf::reserved

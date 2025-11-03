@@ -28,7 +28,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief Generates a unique `std::atomic<unsigned long>` counter object for each literal usage.
  *
@@ -123,5 +122,4 @@ public:
 private:
   static inline ::std::atomic<unsigned long> tracker{0};
 };
-
 } // namespace cuda::experimental::stf::reserved

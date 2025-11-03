@@ -36,7 +36,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator min_element(
@@ -105,6 +104,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
 
   return thrust::make_pair(imin, imax);
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -19,7 +19,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <int LogicalWarpSize>
 inline constexpr bool is_valid_logical_warp_size_v = LogicalWarpSize >= 1 && LogicalWarpSize <= detail::warp_threads;
 
@@ -56,6 +55,5 @@ logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logica
 {
   return cub::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
 }
-
 } // namespace detail
 CUB_NAMESPACE_END

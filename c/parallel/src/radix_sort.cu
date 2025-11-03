@@ -268,7 +268,6 @@ struct radix_sort_kernel_source
     return build.value_type.size;
   }
 };
-
 } // namespace radix_sort
 
 CUresult cccl_device_radix_sort_build_ex(

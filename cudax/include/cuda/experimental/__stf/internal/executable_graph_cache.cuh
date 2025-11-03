@@ -35,7 +35,6 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
 // This tries to instantiate the graph by updating an existing executable graph
@@ -65,7 +64,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
   return res;
 }
-
 } // end namespace reserved
 
 // To get information about how it was used
@@ -251,5 +249,4 @@ private:
 
   size_t cache_size_limit;
 };
-
 } // namespace cuda::experimental::stf

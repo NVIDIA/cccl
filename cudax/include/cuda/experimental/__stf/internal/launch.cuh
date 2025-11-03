@@ -28,7 +28,6 @@
 
 namespace cuda::experimental::stf
 {
-
 // This feature requires a CUDA compiler
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
@@ -38,7 +37,6 @@ class stream_task;
 
 namespace reserved
 {
-
 template <typename Fun, typename Arg>
 __global__ void launch_kernel(Fun f, Arg arg)
 {
@@ -486,7 +484,6 @@ private:
   ::std::string symbol;
   thread_hierarchy_spec_t spec;
 };
-
 } // namespace reserved
 
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

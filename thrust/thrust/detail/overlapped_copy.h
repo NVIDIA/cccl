@@ -35,7 +35,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename InputIterator, typename OutputIterator>
 OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
@@ -63,7 +62,6 @@ sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 la
 
 namespace dispatch
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 RandomAccessIterator2 overlapped_copy(
   cpp::execution_policy<DerivedPolicy>&,
@@ -101,7 +99,6 @@ RandomAccessIterator2 overlapped_copy(
   thrust::detail::temporary_array<value_type, DerivedPolicy> temp(exec, first, last);
   return thrust::copy(exec, temp.begin(), temp.end(), result);
 } // end overlapped_copy()
-
 } // namespace dispatch
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
@@ -118,7 +115,6 @@ overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomA
 
   return thrust::detail::dispatch::overlapped_copy(system, first, last, result);
 } // end overlapped_copy()
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

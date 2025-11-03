@@ -60,10 +60,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
 struct DispatchPartitionIf
 {
@@ -253,7 +251,6 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
     partition(policy, tmp.data().get(), tmp.data().get() + num_items, stencil, first, predicate);
   return first + num_selected;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -399,7 +396,6 @@ is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, P
   ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
   return end == last;
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

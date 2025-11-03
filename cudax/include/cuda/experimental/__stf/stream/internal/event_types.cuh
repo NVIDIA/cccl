@@ -32,16 +32,13 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_and_event;
 namespace reserved
 {
-
 inline event join_with_stream(
   backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event);
 
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
-
 } // namespace reserved
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
@@ -430,7 +427,6 @@ private:
 
 namespace reserved
 {
-
 /* This creates a synchronization point between all entries of the prereq_in list, and a CUDA stream */
 inline event join_with_stream(
   backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event)
@@ -458,7 +454,5 @@ inline event record_event_in_stream(const decorated_stream& dstream, reserved::p
   res->set_symbol_with_dot(dot, mv(symbol));
   return res;
 }
-
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

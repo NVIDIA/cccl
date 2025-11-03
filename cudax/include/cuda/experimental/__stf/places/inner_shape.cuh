@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
 
 /**
@@ -132,5 +131,4 @@ UNITTEST("inner mdspan shape")
 };
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

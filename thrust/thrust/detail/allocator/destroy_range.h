@@ -91,6 +91,5 @@ destroy_range([[maybe_unused]] Allocator& a, [[maybe_unused]] Pointer p, [[maybe
   }
   // case 3: Allocator has no member function "destroy", and T has a trivial destructor, nothing to be done
 }
-
 } // namespace detail
 THRUST_NAMESPACE_END

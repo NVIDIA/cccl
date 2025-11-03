@@ -23,7 +23,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 OutputIterator
 copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
@@ -56,6 +55,5 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
     return system::detail::sequential::copy_n(exec, first, n, result);
   }
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

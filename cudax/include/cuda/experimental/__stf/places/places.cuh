@@ -41,7 +41,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class backend_ctx_untyped;
 class exec_place;
 class exec_place_host;
@@ -1746,5 +1745,4 @@ struct hash<data_place>
     return ::std::hash<int>()(device_ordinal(k));
   }
 };
-
 } // end namespace cuda::experimental::stf

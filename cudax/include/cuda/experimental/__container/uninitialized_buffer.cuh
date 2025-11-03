@@ -39,7 +39,6 @@
 //! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
 namespace cuda::experimental
 {
-
 //! @rst
 //! .. _cudax-containers-uninitialized-buffer:
 //!
@@ -288,7 +287,6 @@ public:
 
 template <class _Tp>
 using uninitialized_device_buffer = uninitialized_buffer<_Tp, ::cuda::mr::device_accessible>;
-
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE

@@ -41,7 +41,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename, bool x>
 struct depend_on_instantiation
 {
@@ -52,7 +51,6 @@ struct depend_on_instantiation
 #define THRUST_STATIC_ASSERT(B) static_assert(B)
 //! Deprecated [Since 3.0]
 #define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

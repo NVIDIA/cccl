@@ -32,7 +32,6 @@
 
 namespace IteratorDebugChecks
 {
-
 enum ContainerType
 {
   CT_None,
@@ -384,7 +383,6 @@ private:
 private:
   BasicContainerChecks() = delete;
 };
-
 } // namespace IteratorDebugChecks
 
 #endif // TEST_SUPPORT_CONTAINER_DEBUG_TESTS_H

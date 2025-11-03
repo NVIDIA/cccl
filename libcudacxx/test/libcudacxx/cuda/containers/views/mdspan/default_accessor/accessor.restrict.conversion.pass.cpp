@@ -17,7 +17,6 @@
 
 namespace user1
 {
-
 template <class ElementType>
 class AccessorB;
 
@@ -90,7 +89,6 @@ public:
     return p + i;
   }
 };
-
 } // namespace user1
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -98,7 +96,6 @@ public:
 
 namespace user2
 {
-
 // Imagine that a different user1 writes AccessorC.
 // They can't change the public interface of AccessorA, but they want to permit a conversion from AccessorC to
 // AccessorA. AccessorA happens to be more type-erased than AccessorC, so this is a conversion without preconditions;
@@ -171,7 +168,6 @@ public:
     return p + i;
   }
 };
-
 } // namespace user2
 
 //----------------------------------------------------------------------------------------------------------------------

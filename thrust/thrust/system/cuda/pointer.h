@@ -38,7 +38,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 /*! \p cuda::pointer stores a pointer to an object allocated in memory
  *  accessible by the \p cuda system. This type provides type safety when
  *  dispatching algorithms on ranges resident in \p cuda memory.
@@ -117,7 +116,6 @@ using universal_host_pinned_pointer = thrust::pointer<T, cpp::tag, ::cuda::std::
  */
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::cuda_cub::tag>;
-
 } // namespace cuda_cub
 
 /*! \addtogroup system_backends Systems

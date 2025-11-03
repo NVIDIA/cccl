@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
@@ -65,6 +64,5 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
   return ++result;
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

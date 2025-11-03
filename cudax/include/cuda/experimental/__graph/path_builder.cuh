@@ -35,7 +35,6 @@
 
 namespace cuda::experimental
 {
-
 //! \brief A builder for a path in a CUDA graph.
 //!
 //! This class allows for the creation of a path in a CUDA graph, which is a sequence of nodes that are executed in
@@ -226,7 +225,6 @@ template <typename _FirstNode, typename... _Nodes>
   __pb.depends_on(__first_node, __nodes...);
   return __pb;
 }
-
 } // namespace cuda::experimental
 
 #endif // _CUDAX__GRAPH_PATH_BUILDER_CUH

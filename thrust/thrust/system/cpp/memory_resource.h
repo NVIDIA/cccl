@@ -36,7 +36,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-
 //! \cond
 namespace detail
 {
@@ -66,7 +65,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \} // memory_resources
  */
-
 } // namespace system::cpp
 
 THRUST_NAMESPACE_END

@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Removes duplicates from a range using a custom predicate.
  *
@@ -171,5 +170,4 @@ UNITTEST("unstable_unique")
   EXPECT(::std::vector<int>{1, 5, 4, 3, 2, 1, 1, 1, 1, 2, 2, 2, 3, 4, 5} == v7);
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

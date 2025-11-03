@@ -40,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_templates Random Number Engine Class Templates
  *  \ingroup random
  *  \{
@@ -276,7 +275,6 @@ using minstd_rand = linear_congruential_engine<std::uint32_t, 48271, 0, 21474836
 
 /*! \} // predefined_random
  */
-
 } // namespace random
 
 // import names into thrust::

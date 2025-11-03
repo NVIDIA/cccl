@@ -36,7 +36,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE OutputIterator unique_copy(
@@ -110,6 +109,5 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
 
   return count;
 } // end unique()
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

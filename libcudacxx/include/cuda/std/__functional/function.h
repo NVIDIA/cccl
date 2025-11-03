@@ -71,7 +71,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
 namespace __function
 {
-
 template <class _Rp>
 struct __maybe_derive_from_unary_function
 {};
@@ -119,12 +118,10 @@ _CCCL_API inline bool __not_null(_Rp (^__p)(_Args...))
   return __p;
 }
 #  endif
-
 } // namespace __function
 
 namespace __function
 {
-
 // __alloc_func holds a functor and an allocator.
 
 template <class _Fp, class _Ap, class _FB>
@@ -982,7 +979,6 @@ public:
 };
 
 #  endif // _LIBCUDACXX_HAS_EXTENSION_BLOCKS
-
 } // namespace __function
 
 template <class _Rp, class... _ArgTypes>

@@ -23,10 +23,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 namespace pointer_traits_detail
 {
-
 template <typename Ptr, typename Enable = void>
 struct pointer_raw_pointer_impl
 {};
@@ -42,7 +40,6 @@ struct pointer_raw_pointer_impl<Ptr, ::cuda::std::void_t<typename Ptr::raw_point
 {
   using type = typename Ptr::raw_pointer;
 };
-
 } // namespace pointer_traits_detail
 
 template <typename T>
@@ -53,7 +50,6 @@ struct pointer_raw_pointer : pointer_traits_detail::pointer_raw_pointer_impl<T>
 // sufficient just to check if pointer_raw_pointer<T> has meaning
 template <typename T>
 inline constexpr bool is_thrust_pointer_v = is_metafunction_defined<pointer_raw_pointer<T>>::value;
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

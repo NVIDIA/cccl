@@ -34,7 +34,6 @@
 
 namespace cuda::experimental::stf
 {
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * @brief Invokes the provided callable on the value of the given variant.
@@ -1456,7 +1455,6 @@ UNITTEST("unit_test_partitioner_product")
 {
   unit_test_partitioner_product();
 };
-
 } // namespace reserved
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
@@ -1627,5 +1625,4 @@ UNITTEST("get_stream graph")
 };
 
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

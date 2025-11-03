@@ -24,7 +24,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-
 // TODO: this class should be templated on `typename... Ts` to avoid repetition,
 // but due to an issue with NVCC 12.0 we currently template each member function
 // individually instead.

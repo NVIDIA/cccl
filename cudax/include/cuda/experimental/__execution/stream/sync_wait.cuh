@@ -123,7 +123,6 @@ private:
 template <>
 struct stream_domain::__apply_t<sync_wait_t> : __stream::__sync_wait_t
 {};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

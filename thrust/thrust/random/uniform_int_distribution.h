@@ -40,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_distributions Random Number Distributions Class Templates
  *  \ingroup random
  *  \{
@@ -251,7 +250,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntTy
 
 /*! \} // end random_number_distributions
  */
-
 } // namespace random
 
 using random::uniform_int_distribution;

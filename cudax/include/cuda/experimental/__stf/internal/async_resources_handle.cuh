@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class green_context_helper;
 
 // Needed to set/get affinity
@@ -561,5 +560,4 @@ UNITTEST("async_resources_handle is_default_constructible")
                 "async_resources_handle must be default constructible");
 };
 #endif
-
 } // namespace cuda::experimental::stf

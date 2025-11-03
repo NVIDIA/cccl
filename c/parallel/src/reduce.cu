@@ -44,7 +44,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-
 struct reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy single_tile;

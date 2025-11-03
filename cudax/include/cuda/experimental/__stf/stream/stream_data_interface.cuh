@@ -34,7 +34,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Data interface for the CUDA streams backend.
  *
@@ -190,5 +189,4 @@ public:
     prereqs = op.end(bctx);
   }
 };
-
 } // end namespace cuda::experimental::stf

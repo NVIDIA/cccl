@@ -28,7 +28,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -84,6 +83,5 @@ void reduce_intervals(
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

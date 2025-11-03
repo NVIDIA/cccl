@@ -82,10 +82,8 @@ void _CCCL_HOST_DEVICE reduce_into(
 
 namespace cuda_cub
 {
-
 namespace __reduce
 {
-
 template <bool>
 struct is_true : thrust::detail::false_type
 {};
@@ -610,7 +608,6 @@ struct DrainAgent
 
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION size_t get_reduce_n_temporary_storage_size(
   execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
@@ -700,7 +697,6 @@ THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
   status = cuda_cub::synchronize_optional(policy);
   cuda_cub::throw_on_error(status, "reduce failed to synchronize");
 }
-
 } // namespace detail
 
 //-------------------------
@@ -774,7 +770,6 @@ _CCCL_HOST_DEVICE void reduce_into(execution_policy<Derived>& policy, InputIt fi
   using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce_into(policy, first, last, output, value_type(0));
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

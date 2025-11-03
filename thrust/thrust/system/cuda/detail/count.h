@@ -47,7 +47,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 template <class Derived, class InputIt, class UnaryPred>
 thrust::detail::it_difference_t<InputIt> _CCCL_HOST_DEVICE
 count_if(execution_policy<Derived>& policy, InputIt first, InputIt last, UnaryPred unary_pred)
@@ -69,7 +68,6 @@ count(execution_policy<Derived>& policy, InputIt first, InputIt last, Value cons
 {
   return cuda_cub::count_if(policy, first, last, thrust::detail::equal_to_value<Value>{value});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

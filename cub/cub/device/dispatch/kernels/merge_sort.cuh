@@ -22,7 +22,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::merge_sort
 {
-
 /**
  * @brief Helper class template that provides two agent template instantiations: one instantiated with the default
  * policy and one with the fallback policy. This helps to avoid having to enlist all the agent's template parameters
@@ -328,7 +327,6 @@ __launch_bounds__(
   // If applicable, hints to discard modified cache lines for vsmem
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
-
 } // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

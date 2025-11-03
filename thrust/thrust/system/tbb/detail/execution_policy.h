@@ -101,7 +101,6 @@ using detail::execution_policy;
 inline constexpr detail::par_t par;
 
 //! \}
-
 } // namespace system::tbb
 
 // aliases:

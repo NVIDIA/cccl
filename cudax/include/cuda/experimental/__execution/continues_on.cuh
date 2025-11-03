@@ -87,7 +87,6 @@ _CCCL_CONCEPT __forwarding_continues_on_query =
                get_completion_scheduler_t<set_value_t>,
                get_completion_scheduler_t<set_error_t>,
                get_completion_scheduler_t<set_stopped_t>>;
-
 } // namespace __detail
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t

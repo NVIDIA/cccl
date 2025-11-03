@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 struct streamed_interface_of;
 
@@ -93,5 +92,4 @@ struct streamed_interface_of<void_interface>
 {
   using type = void_stream_interface;
 };
-
 } // end namespace cuda::experimental::stf

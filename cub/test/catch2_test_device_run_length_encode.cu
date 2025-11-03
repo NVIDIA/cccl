@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -33,6 +9,8 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
@@ -95,6 +73,23 @@ struct run_to_run_length_op
   __host__ __device__ RunLengthT operator()(OffsetT index) const
   {
     return (index < num_small_runs) ? RunLengthT{1} : RunLengthT{2};
+  }
+};
+
+class non_default_constructible_iterator_op
+{
+  const std::size_t k;
+
+public:
+  // Not default constructible
+  non_default_constructible_iterator_op() = delete;
+  __host__ __device__ non_default_constructible_iterator_op(std::size_t k)
+      : k{k}
+  {}
+
+  __host__ __device__ std::size_t operator()(std::size_t index) const
+  {
+    return index + k;
   }
 };
 
@@ -283,6 +278,34 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   // turn the NaN into something else to make it comparable
   out_unique.front()       = 42.0;
   reference_unique.front() = 42.0;
+
+  REQUIRE(out_unique == reference_unique);
+  REQUIRE(out_counts == reference_counts);
+  REQUIRE(out_num_runs == reference_num_runs);
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode works with non-default constructible iterators",
+         "[device][run_length_encode]",
+         offset_types)
+{
+  // This is a smoke test to ensure that the algorithm works with iterators that are not default-constructible, as was
+  // the case before introducing the streaming context (see https://github.com/NVIDIA/cccl/issues/6419).
+  using type        = int;
+  using offset_type = typename c2h::get<0, TestType>;
+
+  constexpr int64_t num_items = 1000;
+  auto counting_it            = thrust::make_counting_iterator(0);
+  auto custom_it              = thrust::make_transform_iterator(counting_it, non_default_constructible_iterator_op{42});
+
+  c2h::device_vector<type> out_unique(num_items);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(1);
+
+  run_length_encode(custom_it, out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
+
+  c2h::device_vector<type> reference_unique{custom_it, custom_it + num_items};
+  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
   REQUIRE(out_unique == reference_unique);
   REQUIRE(out_counts == reference_counts);

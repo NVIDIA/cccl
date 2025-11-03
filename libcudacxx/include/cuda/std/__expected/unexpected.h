@@ -43,7 +43,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __unexpected
 {
-
 template <class _Tp>
 inline constexpr bool __valid_unexpected =
   is_object_v<_Tp> && !is_array_v<_Tp> && !__is_cuda_std_unexpected<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;

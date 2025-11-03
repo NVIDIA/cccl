@@ -35,10 +35,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 enum class msir_state_id
 {
   invalid,
@@ -209,7 +207,6 @@ private:
   msir_state_id msir = msir_state_id::invalid; // MSIR = msir_state_id::modified, ...
   bool allocated     = false;
 };
-
 } // end namespace reserved
 
 // Overload hash to compute the hash of a per_data_instance_msi_state
@@ -222,5 +219,4 @@ struct hash<reserved::per_data_instance_msi_state>
     return s.hash();
   }
 };
-
 } // namespace cuda::experimental::stf

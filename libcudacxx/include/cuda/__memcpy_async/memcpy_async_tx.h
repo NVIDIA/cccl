@@ -34,6 +34,7 @@
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
@@ -75,7 +76,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
       if (::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared)
           && ::cuda::device::is_address_from(__src, ::cuda::device::address_space::global)) {
         ::cuda::ptx::cp_async_bulk(
-          ::cuda::ptx::space_cluster,
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
           ::cuda::ptx::space_global,
           __dest,
           __src,
@@ -84,7 +85,6 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
       } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
-        // dsmem, we need to arrive on a cluster-scoped barrier, which
         // is not yet implemented. So we trap in this case as well.
         _CCCL_UNREACHABLE();
       }),

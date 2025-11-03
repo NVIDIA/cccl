@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
@@ -59,7 +58,6 @@ minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator fi
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

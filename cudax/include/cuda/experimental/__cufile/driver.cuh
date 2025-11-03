@@ -30,7 +30,6 @@
 
 namespace cuda::experimental
 {
-
 #if _CCCL_CTK_AT_LEAST(13, 0)
 //! @brief Structure representing the range of valid values for a cuFile driver attribute.
 //!
@@ -280,5 +279,4 @@ public:
 
 //! @brief Global instance of the cuFile driver interface.
 inline constexpr cufile_driver_t cufile_driver = cufile_driver_t::__make_instance();
-
 } // namespace cuda::experimental

@@ -194,7 +194,6 @@ struct __bulk_t : execution::__bulk_t<__bulk_t>
     return bulk.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), env{});
   }
 };
-
 } // namespace __stream
 
 template <>
@@ -218,7 +217,6 @@ inline constexpr size_t structured_binding_size<__stream::__bulk_unchunked_t::__
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
 inline constexpr size_t structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

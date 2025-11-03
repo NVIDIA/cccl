@@ -422,7 +422,6 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   return __transform::binary_if_with_stencil(
     policy, first1, first2, result, num_items, stencil, transform_op, predicate);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

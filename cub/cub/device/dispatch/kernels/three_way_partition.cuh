@@ -19,7 +19,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
-
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
 using per_partition_offset_t = ::cuda::std::int32_t;

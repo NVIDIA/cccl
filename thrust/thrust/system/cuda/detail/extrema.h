@@ -57,10 +57,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __extrema
 {
-
 template <class InputType, class IndexType, class Predicate>
 struct arg_min_f
 {
@@ -386,7 +384,6 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
   T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
   return first + thrust::get<1>(result);
 }
-
 } // namespace __extrema
 
 /// min element
@@ -470,7 +467,6 @@ pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived
   using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::minmax_element(policy, first, last, ::cuda::std::less<value_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

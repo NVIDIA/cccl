@@ -38,7 +38,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 template <typename T>
 _CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
 {
@@ -53,6 +52,5 @@ _CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
 
   return result + n;
 } // end trivial_copy_n()
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

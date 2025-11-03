@@ -29,10 +29,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Size>
 struct make_unsigned_special;
 
@@ -55,7 +53,6 @@ struct make_unsigned_special<long long>
 {
   using type = unsigned long long;
 };
-
 } // namespace detail
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

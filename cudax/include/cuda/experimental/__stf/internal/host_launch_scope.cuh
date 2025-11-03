@@ -38,13 +38,11 @@
 
 namespace cuda::experimental::stf
 {
-
 class graph_ctx;
 class stream_ctx;
 
 namespace reserved
 {
-
 //! \brief Resource wrapper for managing host callback arguments
 //!
 //! This manages the memory allocated for host callback arguments using the
@@ -235,7 +233,5 @@ private:
   Ctx& ctx;
   task_dep_vector<Deps...> deps;
 };
-
 } // end namespace reserved
-
 } // end namespace cuda::experimental::stf

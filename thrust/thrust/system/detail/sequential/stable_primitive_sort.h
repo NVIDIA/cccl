@@ -25,24 +25,97 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/type_traits.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+#include <thrust/system/detail/sequential/partition.h>
+#include <thrust/system/detail/sequential/stable_radix_sort.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
+namespace stable_primitive_sort_detail
+{
+template <typename Iterator>
+struct enable_if_bool_sort
+    : ::cuda::std::enable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+{};
+
+template <typename Iterator>
+struct disable_if_bool_sort
+    : thrust::detail::disable_if<::cuda::std::is_same<bool, thrust::detail::it_value_t<Iterator>>::value>
+{};
+
+template <typename DerivedPolicy, typename RandomAccessIterator>
+typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+{
+  // use stable_partition if we're sorting bool
+  // stable_partition puts true values first, so we need to logical_not
+  sequential::stable_partition(exec, first, last, ::cuda::std::logical_not<bool>());
+}
+
+template <typename DerivedPolicy, typename RandomAccessIterator>
+typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
+  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+{
+  // call stable_radix_sort
+  sequential::stable_radix_sort(exec, first, last);
+}
+
+struct logical_not_first
+{
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE bool operator()(Tuple t)
+  {
+    return !thrust::get<0>(t);
+  }
+};
+
+template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
+typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first)
+{
+  // use stable_partition if we're sorting bool
+  // stable_partition puts true values first, so we need to logical_not
+  sequential::stable_partition(
+    exec,
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_last, values_first),
+    logical_not_first());
+}
+
+template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
+typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first)
+{
+  // call stable_radix_sort_by_key
+  sequential::stable_radix_sort_by_key(exec, keys_first, keys_last, values_first);
+}
+} // end namespace stable_primitive_sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void stable_primitive_sort(
-  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
+  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+{
+  stable_primitive_sort_detail::stable_primitive_sort(exec, first, last);
+}
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 _CCCL_HOST_DEVICE void stable_primitive_sort_by_key(
   sequential::execution_policy<DerivedPolicy>& exec,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
-  RandomAccessIterator2 values_first);
-
+  RandomAccessIterator2 values_first)
+{
+  stable_primitive_sort_detail::stable_primitive_sort_by_key(exec, keys_first, keys_last, values_first);
+}
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/sequential/stable_primitive_sort.inl>

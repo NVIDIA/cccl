@@ -31,7 +31,6 @@
 
 namespace cuda::experimental
 {
-
 template <class _Signature>
 class kernel_ref;
 
@@ -229,7 +228,6 @@ public:
 protected:
   ::CUlibrary __library_;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

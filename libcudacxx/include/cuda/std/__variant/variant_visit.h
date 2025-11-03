@@ -216,7 +216,6 @@ struct __variant
     return __value_visitor_return_type<_Rp, _Visitor>{::cuda::std::forward<_Visitor>(__visitor)};
   }
 };
-
 } // namespace __variant_detail::__visitation
 
 _CCCL_END_NAMESPACE_CUDA_STD

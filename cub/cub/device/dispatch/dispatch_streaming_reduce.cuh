@@ -30,7 +30,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
 struct accumulating_transform_output_op
 {
@@ -334,7 +333,6 @@ struct dispatch_streaming_arg_reduce_t
     return cudaSuccess;
   }
 };
-
 } // namespace detail::reduce
 CUB_NAMESPACE_END
 

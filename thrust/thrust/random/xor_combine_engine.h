@@ -45,7 +45,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_adaptors
  *  \{
  */
@@ -244,7 +243,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1_, s
 
 /*! \} // end random_number_engine_adaptors
  */
-
 } // namespace random
 
 // import names into thrust::

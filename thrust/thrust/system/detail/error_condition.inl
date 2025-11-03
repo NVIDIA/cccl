@@ -33,7 +33,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 error_condition ::error_condition()
     : m_val(0)
     , m_cat(&generic_category())
@@ -115,7 +114,6 @@ bool operator<(const error_condition& lhs, const error_condition& rhs)
   return lhs.category().operator<(rhs.category())
       || (lhs.category().operator==(rhs.category()) && (lhs.value() < rhs.value()));
 } // end operator<()
-
 } // namespace system
 
 THRUST_NAMESPACE_END

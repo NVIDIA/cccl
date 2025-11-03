@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE OutputIterator
 fill_n(thrust::execution_policy<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
@@ -49,6 +48,5 @@ fill(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwa
   // XXX consider using the placeholder expression _1 = value
   thrust::generate(exec, first, last, thrust::detail::fill_functor<T>{value});
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

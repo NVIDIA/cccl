@@ -45,7 +45,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief This class stores statistics about task execution time
  */
@@ -299,5 +298,4 @@ private:
 
   statistics_map_t statistics;
 };
-
 } // namespace cuda::experimental::stf::reserved

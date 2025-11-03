@@ -96,7 +96,6 @@ __host__ __device__ constexpr int iter_move(some_union& u) noexcept(false)
 {
   return u.x;
 }
-
 } // namespace check_unqualified_lookup
 
 class move_tracker

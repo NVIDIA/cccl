@@ -36,7 +36,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
@@ -48,7 +47,6 @@ public:
 
   [[nodiscard]] _CCCL_API static time_point now() noexcept;
 };
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

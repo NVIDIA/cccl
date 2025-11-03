@@ -36,7 +36,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::radix_sort
 {
-
 /**
  * @brief Upsweep digit-counting kernel entry point (multi-block).
  *        Computes privatized digit histograms, one per block.
@@ -797,7 +796,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
     d_bins[bin_start + bin] = bins[u];
   }
 }
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

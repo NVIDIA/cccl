@@ -32,7 +32,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 template <typename Upstream, typename Pointer>
 class fancy_pointer_resource final
     : public memory_resource<Pointer>
@@ -62,6 +61,5 @@ public:
 private:
   Upstream* m_upstream;
 };
-
 } // namespace mr
 THRUST_NAMESPACE_END

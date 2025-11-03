@@ -33,7 +33,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
-
 template <class _Ret, class _DecayFn>
 class __return_type_wrapper
 {
@@ -92,7 +91,6 @@ public:
     return ::cuda::std::__invoke(::cuda::std::move(__fn_), ::cuda::std::forward<_As>(__as)...);
   }
 };
-
 } // namespace __detail
 
 template <class _Ret, class _Fn>

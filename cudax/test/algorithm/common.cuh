@@ -71,7 +71,6 @@ inline auto create_fake_strided_mdspan()
 
 namespace cuda::experimental
 {
-
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
 template <typename RelocatableValue = cuda::std::span<int>>
 struct weird_buffer

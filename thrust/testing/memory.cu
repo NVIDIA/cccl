@@ -55,7 +55,6 @@ private:
 
 namespace my_old_namespace
 {
-
 struct my_old_temporary_allocation_system : public thrust::device_execution_policy<my_old_temporary_allocation_system>
 {};
 
@@ -74,12 +73,10 @@ void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
   using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
 }
-
 } // namespace my_old_namespace
 
 namespace my_new_namespace
 {
-
 struct my_new_temporary_allocation_system : public thrust::device_execution_policy<my_new_temporary_allocation_system>
 {};
 
@@ -107,7 +104,6 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std:
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
   ASSERT_EQUAL(n, 413);
 }
-
 } // namespace my_new_namespace
 
 template <typename T1, typename T2>

@@ -45,7 +45,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 template <class Derived, class ItemsIt, class MapIt, class ResultIt>
 void _CCCL_HOST_DEVICE
 scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, ResultIt result)
@@ -85,7 +84,6 @@ void _CCCL_HOST_DEVICE scatter_if(
   cuda_cub::scatter_if(
     policy, first, last, map, stencil, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

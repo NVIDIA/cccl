@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 ForwardIterator lower_bound(
   execution_policy<DerivedPolicy>& exec,
@@ -54,6 +53,5 @@ bool binary_search(execution_policy<DerivedPolicy>& exec,
   // omp prefers generic::binary_search to cpp::binary_search
   return thrust::system::detail::generic::binary_search(exec, begin, end, value, comp);
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

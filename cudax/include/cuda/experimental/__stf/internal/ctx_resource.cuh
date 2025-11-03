@@ -34,7 +34,6 @@
 
 namespace cuda::experimental::stf
 {
-
 //! Generic container for a resource that needs to be retained until a context has consumed them
 class ctx_resource
 {
@@ -135,5 +134,4 @@ private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release
 };
-
 } // end namespace cuda::experimental::stf

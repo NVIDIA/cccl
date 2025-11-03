@@ -30,7 +30,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
 //!
 //! The destination needs to either be a `contiguous_range` or transform into one. It can
@@ -72,7 +71,6 @@ _CCCL_HOST_API void fill_bytes(::cuda::stream_ref __stream, _DstTy&& __dst, ::cu
   ::cuda::__detail::__fill_bytes_impl(
     __stream, ::cuda::__as_mdspan(device_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

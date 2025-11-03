@@ -22,7 +22,6 @@
 
 namespace thrust
 {
-
 /*! \addtogroup test Test
  *  \{
  */
@@ -187,7 +186,6 @@ using test_alias = test_class<int, double>;
  */
 namespace test_namespace
 {
-
 inline constexpr int test_constant = 12;
 
 /*! \brief \c nested_function is a function intended to exercise and test
@@ -212,7 +210,6 @@ struct test_struct
    */
   bool operator<(test_struct const& t);
 };
-
 } // namespace test_namespace
 
 /*! \brief \c THRUST_TEST_MACRO is a macro intended to exercise and test
@@ -222,5 +219,4 @@ struct test_struct
 
 /*! \} // test
  */
-
 } // namespace thrust

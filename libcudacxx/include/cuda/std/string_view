@@ -873,7 +873,6 @@ inline namespace literals
 {
 inline namespace string_view_literals
 {
-
 _CCCL_API constexpr basic_string_view<char> operator""sv(const char* __str, size_t __len) noexcept
 {
   return basic_string_view<char>{__str, __len};
@@ -902,7 +901,6 @@ _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __s
 {
   return basic_string_view<char32_t>{__str, __len};
 }
-
 } // namespace string_view_literals
 } // namespace literals
 

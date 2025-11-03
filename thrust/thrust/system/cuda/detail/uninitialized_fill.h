@@ -94,7 +94,6 @@ void _CCCL_HOST_DEVICE uninitialized_fill(execution_policy<Derived>& policy, Ite
 {
   cuda_cub::uninitialized_fill_n(policy, first, ::cuda::std::distance(first, last), x);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

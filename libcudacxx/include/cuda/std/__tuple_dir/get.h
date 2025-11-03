@@ -57,7 +57,6 @@ template <size_t _Ip, class... _Tp>
 
 namespace __find_detail
 {
-
 static constexpr size_t __not_found = ~size_t(0);
 static constexpr size_t __ambiguous = __not_found - 1;
 
@@ -86,7 +85,6 @@ struct __find_exactly_one_checked<_T1>
 {
   static_assert(!is_same_v<_T1, _T1>, "type not in empty type list");
 };
-
 } // namespace __find_detail
 
 template <typename _T1, typename... _Args>

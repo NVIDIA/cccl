@@ -40,7 +40,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Uncached allocator (used as a base for other allocators)
  *
@@ -748,7 +747,6 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-
 inline void unit_test_graph_stage()
 {
   graph_ctx ctx;
@@ -1025,7 +1023,6 @@ UNITTEST("create many graph ctxs")
 {
   unit_test_launch_many_graph_ctx();
 };
-
 } // end namespace reserved
 
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

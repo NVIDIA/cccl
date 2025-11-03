@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class shape_of;
 
@@ -76,7 +75,6 @@ struct hash<void_interface>
 
 namespace reserved
 {
-
 /**
  * @brief Strip tuple entries with a "void_interface" type
  */
@@ -101,7 +99,5 @@ using remove_void_interface_t = decltype(remove_void_interface(::std::declval<T>
 
 template <typename... Ts>
 using remove_void_interface_from_pack_t = remove_void_interface_t<::std::tuple<Ts...>>;
-
 } // end namespace reserved
-
 } // end namespace cuda::experimental::stf

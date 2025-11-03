@@ -29,7 +29,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator, typename Size, typename UnaryFunction>
 RandomAccessIterator for_each_n(execution_policy<DerivedPolicy>&, RandomAccessIterator first, Size n, UnaryFunction f)
 {
@@ -70,6 +69,5 @@ for_each(execution_policy<DerivedPolicy>& s, RandomAccessIterator first, RandomA
 {
   return omp::detail::for_each_n(s, first, ::cuda::std::distance(first, last), f);
 } // end for_each()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

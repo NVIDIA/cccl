@@ -38,7 +38,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::cpp
 {
-
 /*! \p cpp::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
  *  and removal of elements at the beginning or in the middle. The number of

@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 template <typename MR>
 struct validator
 {
@@ -51,6 +50,5 @@ struct validator2
 template <typename T>
 struct validator2<T, T> : private validator<T>
 {};
-
 } // namespace mr
 THRUST_NAMESPACE_END

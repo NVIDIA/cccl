@@ -47,7 +47,6 @@ struct pointer_traits<alloc_id>
     return reinterpret_cast<void*>(id.alignment);
   }
 };
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

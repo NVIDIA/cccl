@@ -23,7 +23,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_sort
 {
-
 // Type used to index within segments within a single invocation
 using local_segment_index_t = ::cuda::std::uint32_t;
 // Type used for total number of segments and to index within segments globally

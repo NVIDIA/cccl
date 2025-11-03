@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /** @brief Contiguous memory interface. Supports multiple dimensions (compile-time chosen) and strides (run-time
  * chosen).
  */
@@ -299,5 +298,4 @@ struct streamed_interface_of<mdspan<T, P...>>
 {
   using type = slice_stream_interface<T, mdspan<T, P...>::rank()>;
 };
-
 } // namespace cuda::experimental::stf

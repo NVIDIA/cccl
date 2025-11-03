@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE InputIterator
@@ -69,6 +68,5 @@ for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Si
 
   return first;
 } // end for_each_n()
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -39,7 +39,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_distributions
  *  \{
  */
@@ -247,7 +246,6 @@ std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>&
 
 /*! \} // end random_number_distributions
  */
-
 } // namespace random
 
 using random::normal_distribution;
