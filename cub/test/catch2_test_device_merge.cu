@@ -376,4 +376,9 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
   {
     test(key_it, values_vec.begin(), keys_vec.begin(), value_it);
   }
+  // values have different iterator and keys
+  SECTION("cit/vec/cit/vec")
+  {
+    test(key_it, values_vec.begin(), key_it, values_vec.begin());
+  }
 }
