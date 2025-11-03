@@ -44,7 +44,7 @@ template <class _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);))
   }
-  return _Tp(1) / ::cuda::std::sqrt(__x);
+  return _Tp{1} / ::cuda::std::sqrt(__x);
 }
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
@@ -66,14 +66,14 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_l
   // Times (__hi + __lo).
   // We need to add the -1.0 here in an fma, or different compilers (eg host vs device)
   // optimize differently and give (sometimes very) different results.
-  const _Tp _hi_hi_hi = ::cuda::std::fma(__hi, __init_sq_hi, -1.0);
+  const _Tp _hi_hi_hi = ::cuda::std::fma(__hi, __init_sq_hi, _Tp{-1.0});
   // Low part not needed for fp32/fp64, but might be if this is extended to other types:
   // _Tp _hi_hi_lo = fma(__hi, __init_sq_hi, -_hi_hi_hi);
 
   // Add all terms
   const _Tp __full_term = _hi_hi_hi + (::cuda::std::fma(__lo, __init_sq_hi, __hi * __init_sq_lo) /*+ _hi_hi_lo*/);
 
-  const _Tp __correction_term = -0.5 * __initial_guess * __full_term;
+  const _Tp __correction_term = _Tp(-0.5) * __initial_guess * __full_term;
 
   // rsqrt(hi + lo) is now estimated well by (__initial_guess + __correction_term)
   // Multiply everything by (hi + lo) to get sqrt(hi + lo)
