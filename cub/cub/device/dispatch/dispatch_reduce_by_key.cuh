@@ -192,7 +192,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
     OffsetT num_items,
-    _CCCL_GRID_CONSTANT const ::cuda::std::optional<StreamingContextT> streaming_context,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
@@ -497,7 +497,7 @@ struct DispatchReduceByKey
                 equality_op,
                 reduction_op,
                 num_items,
-                ::cuda::std::optional<streaming_context_t>{},
+                streaming_context_t{},
                 cub::detail::vsmem_t{allocations[1]});
 
         // Check for failure to launch

@@ -322,7 +322,7 @@ struct AgentReduceByKey
   ReduceBySegmentOpT scan_op;
 
   /// Streaming context providing context about this partition for streaming invocations
-  ::cuda::std::optional<StreamingContextT> streaming_context;
+  StreamingContextT streaming_context;
 
   //---------------------------------------------------------------------
   // Constructor
@@ -366,12 +366,12 @@ struct AgentReduceByKey
     NumRunsOutputIteratorT d_num_runs_out,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    ::cuda::std::optional<StreamingContext> streaming_context)
+    StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
-      , d_unique_out(d_unique_out + streaming_context.value().num_uniques())
+      , d_unique_out(d_unique_out + streaming_context.num_uniques())
       , d_values_in(d_values_in)
-      , d_aggregates_out(d_aggregates_out + streaming_context.value().num_uniques())
+      , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
       , d_num_runs_out(d_num_runs_out)
       , equality_op(equality_op)
       , reduction_op(reduction_op)
@@ -388,7 +388,7 @@ struct AgentReduceByKey
     NumRunsOutputIteratorT d_num_runs_out,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    ::cuda::std::optional<NullType> streaming_context)
+    NullType streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
@@ -551,7 +551,7 @@ struct AgentReduceByKey
       //   Subsequent tiles get last key from previous tile
       if constexpr (is_streaming_invocation)
       {
-        tile_predecessor = (tile_idx == 0) ? streaming_context.value().predecessor_key() : d_keys_in[tile_offset - 1];
+        tile_predecessor = (tile_idx == 0) ? streaming_context.predecessor_key() : d_keys_in[tile_offset - 1];
       }
       else
       {
@@ -592,7 +592,7 @@ struct AgentReduceByKey
     // (key[0] == key[0]) is false (e.g., when key[0] is NaN)
     if constexpr (is_streaming_invocation)
     {
-      if (streaming_context.value().is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
+      if (streaming_context.is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
       {
         head_flags[0] = 0;
       }
@@ -629,7 +629,7 @@ struct AgentReduceByKey
       // First partition does not need to account for preceding partitions
       if constexpr (is_streaming_invocation)
       {
-        if (streaming_context.value().is_first_partition())
+        if (streaming_context.is_first_partition())
         {
           BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
           num_segments_prefix = 0;
@@ -638,7 +638,7 @@ struct AgentReduceByKey
         // Subsequent partitions need to account for preceding partitions
         else
         {
-          auto init_value = OffsetValuePairT{0, streaming_context.value().prefix()};
+          auto init_value = OffsetValuePairT{0, streaming_context.prefix()};
           BlockScanT(temp_storage.scan_storage.scan)
             .ExclusiveScan(scan_items, scan_items, init_value, scan_op, block_aggregate);
           num_segments_prefix = 0;
@@ -700,7 +700,7 @@ struct AgentReduceByKey
       {
         if constexpr (is_streaming_invocation)
         {
-          if (streaming_context.value().is_last_partition())
+          if (streaming_context.is_last_partition())
           {
             d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
             d_aggregates_out[num_segments] = total_aggregate.value;
@@ -709,7 +709,7 @@ struct AgentReduceByKey
           else
           {
             // Write the prefix aggregate of this partition as context for the subsequent partition
-            streaming_context.value().write_prefix(total_aggregate.value);
+            streaming_context.write_prefix(total_aggregate.value);
           }
         }
         else
@@ -723,10 +723,10 @@ struct AgentReduceByKey
       if constexpr (is_streaming_invocation)
       {
         // Add the number of unique items in this partition to the global aggregate
-        auto total_uniques = streaming_context.value().add_num_uniques(num_segments);
+        auto total_uniques = streaming_context.add_num_uniques(num_segments);
 
         // If this is the last partition, write out the number of unique items
-        if (streaming_context.value().is_last_partition())
+        if (streaming_context.is_last_partition())
         {
           *d_num_runs_out = total_uniques;
         }
