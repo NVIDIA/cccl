@@ -231,7 +231,7 @@ struct agent_policy_t {{
 struct {5} {{
   struct ActivePolicy {{
     using AgentHistogramPolicyT = agent_policy_t;
-    static constexpr int pld_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   }};
 }};
 )XXX";
