@@ -434,4 +434,22 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);
   }
+
+  SECTION("maximum")
+  {
+    c2h::device_vector<type> d_output(1);
+
+    init_t init_value{cuda::std::numeric_limits<init_t>::min()};
+
+    auto error =
+      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_t>{}, init_value, env);
+    REQUIRE(error == cudaSuccess);
+
+    c2h::host_vector<type> h_input = d_input;
+    c2h::host_vector<type> h_expected(1);
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::maximum<>{});
+
+    c2h::host_vector<type> h_output = d_output;
+    REQUIRE(h_expected == h_output);
+  }
 }
