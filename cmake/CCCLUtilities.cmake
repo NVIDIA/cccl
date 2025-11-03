@@ -68,37 +68,138 @@ endfunction()
 
 # cccl_add_xfail_compile_target_test(
 #   <target_name>
-#   [REGEX <regex>]
+#   [TEST_NAME <test_name>]
+#   [ERROR_REGEX <regex>]
+#   [SOURCE_FILE <source_file>]
+#   [ERROR_REGEX_LABEL <error_string>]
+#   [ERROR_NUMBER <error_number>]
+#   [ERROR_NUMBER_TARGET_NAME_REGEX <regex>]
 # )
 #
 # Given a configured build target that is expected to fail to compile:
 # - Mark the target as excluded from the `all` target.
-# - Add a CTest that attempts to build it and expects one of the following:
-#   - If REGEX is provided, the compilation output must match the regex. Exit code is not checked.
-#   - If REGEX is not provided, the compilation step must fail (non-zero exit code).
+# - Create a CTest test that compiles the target. If TEST_NAME is provided, it is used.
+#   Otherwise, the target_name is used as the test name.
+# - When the test runs, it passes if exactly one of the following conditions is met:
+#   - A provided / detected error regex matches the compilation output, ignoring exit code.
+#   - No error regex is provided / detected, and the compilation fails.
+#
+# An error regex may be explicitly provided via ERROR_REGEX, or it may be
+# detected by scanning the SOURCE_FILE for a specially formatted comment.
+#
+# If ERROR_REGEX_LABEL is provided, the SOURCE_FILE will read, looking for a comment of the form:
+#
+# // <ERROR_REGEX_LABEL> {{"error_regex"}}
+#
+# An error number may be appended to the ERROR_REGEX_LABEL in the comment:
+#
+# // <ERROR_REGEX_LABEL>-<error_number> {{"error_regex"}}
+#
+# If ERROR_NUMBER_TARGET_NAME_REGEX is specified, the regex is used to capture
+# the error_number from the target name. If target_name is
+# "cccl.test.my_test.err_5.foo_3" and ERROR_NUMBER_TARGET_NAME_REGEX is
+# "\\.err_([0-9]+)", the captured error number "5."
+#
+# // <ERROR_REGEX_LABEL>-<captured_error_number> {{"error_regex"}}
+#
+# If ERROR_NUMBER is provided, ERROR_NUMBER_TARGET_NAME_REGEX is ignored.
+# If ERROR_NUMBER_TARGET_NAME_REGEX is provided but does not match, a plain ERROR_REGEX_LABEL is used.
 function(cccl_add_xfail_compile_target_test target_name)
   set(options)
-  set(oneValueArgs REGEX)
+  set(oneValueArgs
+    ERROR_REGEX
+    SOURCE_FILE
+    ERROR_REGEX_LABEL
+    ERROR_NUMBER
+    ERROR_NUMBER_TARGET_NAME_REGEX
+  )
   set(multiValueArgs)
   cmake_parse_arguments(cccl_xfail "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  message(VERBOSE "CCCL: Adding XFAIL compile target test: ${target_name}")
-  if (DEFINED cccl_xfail_REGEX)
-    message(VERBOSE "CCCL:   with expected regex: '${cccl_xfail_REGEX}'")
+  if (cccl_xfail_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unparsed arguments: ${cccl_xfail_UNPARSED_ARGUMENTS}")
   endif()
 
-  set_target_properties(${test_target} PROPERTIES
-    EXCLUDE_FROM_ALL true
-  )
-  add_test(NAME ${test_target}
+  set(test_name "${target_name}")
+  if (DEFINED cccl_xfail_TEST_NAME)
+    set(test_name "${cccl_xfail_TEST_NAME}")
+  endif()
+
+  set(regex)
+  if (DEFINED cccl_xfail_ERROR_REGEX)
+    set(regex "${cccl_xfail_ERROR_REGEX}")
+  elseif (DEFINED cccl_xfail_SOURCE_FILE AND DEFINED cccl_xfail_ERROR_REGEX_LABEL)
+    # Cache all error label matches (with and without error numbers) in the parent scope
+    # to avoid re-reading and parsing the same source file.
+    set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
+    string(MD5 source_filename_md5 "${cccl_xfail_SOURCE_FILE}")
+    set(error_cache_var "_cccl_xfail_error_cache_${source_md5}")
+    set(error_cache)
+    if (DEFINED ${error_cache_var})
+      set(error_cache "${${error_cache_var}}")
+    else()
+      file(READ "${cccl_xfail_SOURCE_FILE}" source_contents)
+      string(REGEX MATCHALL "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}" error_cache "${source_contents}")
+      set(${error_cache_var} "${error_cache}" PARENT_SCOPE)
+    endif()
+
+    set(error_number)
+    if (DEFINED cccl_xfail_ERROR_NUMBER)
+      set(error_number "${cccl_xfail_ERROR_NUMBER}")
+    elseif (DEFINED cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX)
+      string(REGEX MATCH "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}" matched ${target_name})
+      if (matched)
+        set(error_number "${CMAKE_MATCH_1}")
+      endif()
+    endif()
+
+    # Look for a labeled error with the specific error number.
+    if (NOT "${error_number}" STREQUAL "") # Check strings to allow "0"
+      string(REGEX MATCH "//[ \t]*${error_label_regex}-${error_number}[ \t]*{{\"([^\"]+)\"}}" matched "${error_cache}")
+      if (matched)
+        set(regex "${CMAKE_MATCH_1}")
+      endif()
+    endif()
+
+    if (NOT regex)
+      # Look for a labeled error without an error number.
+      string(REGEX MATCH "//[ \t]*${error_label_regex}[ \t]*{{\"([^\"]+)\"}}" matched "${error_cache}")
+      if (matched)
+        set(regex "${CMAKE_MATCH_1}")
+      endif()
+    endif()
+  endif()
+
+  message(VERBOSE "CCCL: Adding XFAIL test: ${test_name}")
+  if (regex)
+    message(VERBOSE "CCCL:   with expected regex: '${regex}'")
+  endif()
+
+  set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true)
+
+  # The same target may be reused for multiple tests, and the output file
+  # may exist if using a regex to check for warnings. Add a setup fixture to
+  # delete the output file before each test run.
+  if (NOT TEST ${target_name}.clean)
+    add_test(NAME ${target_name}.clean COMMAND "${CMAKE_COMMAND}" -E rm -f
+      "$<TARGET_FILE:${target_name}>"
+      "$<TARGET_OBJECTS:${target_name}>"
+    )
+    set_tests_properties(${test_name}.clean PROPERTIES FIXTURES_SETUP ${target_name}.clean)
+  endif()
+
+
+  add_test(NAME ${test_name}
            COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
                                     --target ${test_target}
-                                    --config $<CONFIGURATION>)
+                                    --config $<CONFIGURATION>
+  )
+  set_tests_properties(${test_name} PROPERTIES FIXTURES_CLEANUP ${target_name}.clean)
 
-  if (DEFINED cccl_xfail_REGEX)
-    set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${cccl_xfail_REGEX}")
+  if (regex)
+    set_tests_properties(${test_name} PROPERTIES PASS_REGULAR_EXPRESSION "${regex}")
   else()
-    set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+    set_tests_properties(${test_name} PROPERTIES WILL_FAIL true)
   endif()
 
 endfunction()

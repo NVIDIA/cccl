@@ -171,29 +171,12 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     endif()
 
     _cub_is_fail_test(is_fail_test "${test_src}")
-    if (is_fail_test)
-      file(READ ${test_src} test_content)
-
-      # Check for a specific error case regex:
-      set(regex)
-      string(REGEX MATCH "err_([0-9]+)" has_error_variants "${test_name}")
-      if(has_error_variants)
-        string(REGEX MATCH "// expected-error-${CMAKE_MATCH_1} {{\"([^\"]+)\"}}" specific_regex_found ${test_content})
-        if (specific_regex_found)
-          set(regex "REGEX" "${CMAKE_MATCH_1}")
-        endif()
-      endif()
-
-      # If no specific error regex is specified, look for a general one:
-      if (NOT regex)
-        string(REGEX MATCH "// expected-error {{\"([^\"]+)\"}}" general_regex_found ${test_content})
-        if (general_regex_found)
-          set(regex "REGEX" "${CMAKE_MATCH_1}")
-        endif()
-      endif()
-
-      # Setup the xfail test:
-      cccl_add_xfail_compile_target_test(${test_target} ${regex})
+      if (is_fail_test)
+      cccl_add_xfail_compile_target_test(${test_target}
+        SOURCE_FILE "${test_src}"
+        ERROR_REGEX_LABEL "expected-error"
+        ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
+      )
     else()
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})

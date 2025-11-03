@@ -48,6 +48,7 @@ int main()
   mark_as_used(d_out);
   mark_as_used(d_kv_out);
   mark_as_used(d_pair_out);
+  mark_as_used(d_offsets);
 
 #if TEST_ERR == 0
   // expected-error-0 {{"Offset iterator value type should be integral."}}
