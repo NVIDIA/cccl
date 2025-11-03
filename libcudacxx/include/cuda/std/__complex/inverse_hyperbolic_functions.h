@@ -36,6 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
 {
+#if _CCCL_CUDA_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrtf(__x);))
@@ -44,6 +45,7 @@ template <class _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);))
   }
+#endif // _CCCL_CUDA_COMPILATION()
   return _Tp{1} / ::cuda::std::sqrt(__x);
 }
 
