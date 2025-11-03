@@ -103,8 +103,13 @@ struct __atomic_ref_storage_impl<_Tp, true>
   }
 };
 
+#if defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
 template <typename _Tp>
 using __atomic_ref_storage = __atomic_ref_storage_impl<_Tp, (sizeof(_Tp) < 4)>;
+#else
+template <typename _Tp>
+using __atomic_ref_storage = __atomic_ref_storage_impl<_Tp, false>;
+#endif // defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

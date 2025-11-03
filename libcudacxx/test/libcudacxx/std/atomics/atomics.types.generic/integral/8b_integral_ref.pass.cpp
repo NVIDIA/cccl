@@ -12,6 +12,8 @@
 // Basic smoke test for cuda::atomic_ref / cuda::std::atomic_ref on narrow (<=1B) types.
 
 #include <cuda/atomic>
+#define _LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE
+
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 

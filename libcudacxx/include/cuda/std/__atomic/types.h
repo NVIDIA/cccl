@@ -24,7 +24,9 @@
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/locked.h>
 #include <cuda/std/__atomic/types/reference.h>
-#include <cuda/std/__atomic/types/reference_small.h>
+#if defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
+#  include <cuda/std/__atomic/types/reference_small.h>
+#endif // defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
 #include <cuda/std/__atomic/types/small.h>
 #include <cuda/std/__type_traits/conditional.h>
 

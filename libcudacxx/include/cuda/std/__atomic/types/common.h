@@ -46,9 +46,11 @@ template <typename _Sto>
 using __atomic_storage_is_locked = enable_if_t<__atomic_tag::__atomic_locked_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
 using __atomic_storage_is_small = enable_if_t<__atomic_tag::__atomic_small_tag == remove_cvref_t<_Sto>::__tag, int>;
+#if defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
 template <typename _Sto>
 using __atomic_storage_is_ref_small =
   enable_if_t<__atomic_tag::__atomic_ref_small_tag == remove_cvref_t<_Sto>::__tag, int>;
+#endif // defined(_LIBCUDACXX_ATOMIC_REF_ENABLE_MEMCHECK_SAFE)
 
 template <typename _Tp>
 using __atomic_underlying_t = typename _Tp::__underlying_t;
