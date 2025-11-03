@@ -46,35 +46,35 @@ static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 enum class tma_oob_fill
 {
-  none,
-  nan
+  none = ::CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE,
+  nan  = ::CU_TENSOR_MAP_FLOAT_OOB_FILL_NAN_REQUEST_ZERO_FMA
 };
 
 enum class tma_l2_fetch_size
 {
-  none,
-  bytes64,
-  bytes128,
-  bytes256
+  none     = ::CU_TENSOR_MAP_L2_PROMOTION_NONE,
+  bytes64  = ::CU_TENSOR_MAP_L2_PROMOTION_L2_64B,
+  bytes128 = ::CU_TENSOR_MAP_L2_PROMOTION_L2_128B,
+  bytes256 = ::CU_TENSOR_MAP_L2_PROMOTION_L2_256B
 };
 
 enum class tma_interleave_layout
 {
-  none,
-  bytes16,
-  bytes32
+  none    = ::CU_TENSOR_MAP_INTERLEAVE_NONE,
+  bytes16 = ::CU_TENSOR_MAP_INTERLEAVE_16B,
+  bytes32 = ::CU_TENSOR_MAP_INTERLEAVE_32B
 };
 
 enum class tma_swizzle
 {
-  none,
-  bytes32,
-  bytes64,
-  bytes128,
+  none     = ::CU_TENSOR_MAP_SWIZZLE_NONE,
+  bytes32  = ::CU_TENSOR_MAP_SWIZZLE_32B,
+  bytes64  = ::CU_TENSOR_MAP_SWIZZLE_64B,
+  bytes128 = ::CU_TENSOR_MAP_SWIZZLE_128B,
 #  if _CCCL_CTK_AT_LEAST(12, 8)
-  bytes128_atom_32B,
-  bytes128_atom_32B_flip_8B,
-  bytes128_atom_64B
+  bytes128_atom_32B         = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B,
+  bytes128_atom_32B_flip_8B = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B_FLIP_8B,
+  bytes128_atom_64B         = ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B,
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
 
