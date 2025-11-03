@@ -28,6 +28,7 @@
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target>
@@ -42,12 +43,18 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
   const _Group& __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    (if (__g.thread_rank() == 0) {
-                      _CUDA_VPTX::cp_async_bulk(
-                        _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global, __dest, __src, __size, __bar_handle);
-                    }),
-                    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (if (__g.thread_rank() == 0) {
+      _CUDA_VPTX::cp_async_bulk(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+        _CUDA_VPTX::space_global,
+        __dest,
+        __src,
+        __size,
+        __bar_handle);
+    }),
+    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
