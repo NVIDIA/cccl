@@ -138,7 +138,7 @@ template <class _Tp>
     }
 
     // If z is (NaN,+0), the result is (NaN,+0)
-    if (::cuda::std::isnan(__realx) && (__imagx == _Tp(0)))
+    if (::cuda::std::isnan(__realx) && (__imagx == _Tp{0}))
     {
       return __x;
     }
@@ -152,9 +152,9 @@ template <class _Tp>
 
   // Special case that for various reasons does not pass
   // easily through the algorithm below:
-  if ((__realx == _Tp(0)) && (__imagx == _Tp(1)))
+  if ((__realx == _Tp{0}) && (__imagx == _Tp(1)))
   {
-    return complex<_Tp>(__x.real(), ::cuda::std::copysign(_Tp(0.5) * __pi, __x.imag()));
+    return complex<_Tp>(__x.real(), ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
   }
 
   // It is a little involved to account for large inputs in an inlined-into-existing-code fashion.
@@ -167,7 +167,7 @@ template <class _Tp>
   constexpr __uint_t __max_allowed_val_as_uint = __uint_t(__max_allowed_exponent + __exp_max) << __mant_nbits;
 
   //  Check if the largest component of __x is > 2^__max_allowed_exponent:
-  _Tp __x_big_factor = _Tp(0);
+  _Tp __x_big_factor = _Tp{0};
   const _Tp __max    = (__realx > __imagx) ? __realx : __imagx;
   const bool __x_big = ::cuda::std::bit_cast<__uint_t>(__max) > __max_allowed_val_as_uint;
 
@@ -192,7 +192,7 @@ template <class _Tp>
   }
 
   // let compiler pick which way to fma this, accuracy stays the same.
-  const _Tp __diffx_m1 = __realx * __realx - (__imagx - _Tp(1)) * (__imagx + _Tp(1));
+  const _Tp __diffx_m1 = __realx * __realx - (__imagx - _Tp{1}) * (__imagx + _Tp{1});
 
   // Get the real and imag parts of |sqrt(z^2 + 1)|^2
   // This equates to calculating:
@@ -209,8 +209,8 @@ template <class _Tp>
   const _Tp __x_abs_sq_lo = ::cuda::std::fma(__realx, __realx, __imagx_sq_lo);
 
   // Add one:
-  const _Tp __x_abs_sq_p1_hi = (__x_abs_sq_hi + _Tp(1));
-  const _Tp __x_abs_sq_p1_lo = __x_abs_sq_lo - ((__x_abs_sq_p1_hi - _Tp(1)) - __x_abs_sq_hi);
+  const _Tp __x_abs_sq_p1_hi = (__x_abs_sq_hi + _Tp{1});
+  const _Tp __x_abs_sq_p1_lo = __x_abs_sq_lo - ((__x_abs_sq_p1_hi - _Tp{1}) - __x_abs_sq_hi);
 
   // square:
   const _Tp __x_abs_sq_p1_sq_hi = __x_abs_sq_p1_hi * __x_abs_sq_p1_hi;
@@ -218,42 +218,42 @@ template <class _Tp>
 
   // Add in the lower square terms, all needed
   __x_abs_sq_p1_sq_lo =
-    ::cuda::std::fma(__x_abs_sq_p1_lo, (_Tp(2) * __x_abs_sq_p1_hi + __x_abs_sq_p1_lo), __x_abs_sq_p1_sq_lo);
+    ::cuda::std::fma(__x_abs_sq_p1_lo, (_Tp{2} * __x_abs_sq_p1_hi + __x_abs_sq_p1_lo), __x_abs_sq_p1_sq_lo);
 
   // Get __x_abs_sq_p1_sq_hi/lo - 4.0*__imagx_sq_hi/lo:
   // Subtract high parts:
-  _Tp __inner_most_term_hi = __x_abs_sq_p1_sq_hi - _Tp(4) * __imagx_sq_hi;
-  _Tp __inner_most_term_lo = ((__x_abs_sq_p1_sq_hi - __inner_most_term_hi) - _Tp(4) * __imagx_sq_hi);
+  _Tp __inner_most_term_hi = __x_abs_sq_p1_sq_hi - _Tp{4} * __imagx_sq_hi;
+  _Tp __inner_most_term_lo = ((__x_abs_sq_p1_sq_hi - __inner_most_term_hi) - _Tp{4} * __imagx_sq_hi);
   // lo parts, all needed:
-  __inner_most_term_lo += __x_abs_sq_p1_sq_lo - _Tp(4) * __imagx_sq_lo;
+  __inner_most_term_lo += __x_abs_sq_p1_sq_lo - _Tp{4} * __imagx_sq_lo;
 
   // We can have some slightly bad cases here due to catastrohip cancellation that can't be fixed easily.
   // We still need to to the extended-sqrt on these values, so we fix them now.
   // It occurs around "real ~= small" and "imag ~= (1 - small)", and imag < 1.
   // Worked out through targeted testing on fp64 and fp32.
-  _Tp __realx_small_bound = _Tp(1.0e-13);
-  _Tp __imagx_close_bound = _Tp(0.98);
+  _Tp __realx_small_bound = _Tp{1.0e-13};
+  _Tp __imagx_close_bound = _Tp{0.98};
 
   if constexpr (is_same_v<_Tp, float>)
   {
-    __realx_small_bound = _Tp(1.0e-5f);
-    __imagx_close_bound = _Tp(0.9f);
+    __realx_small_bound = _Tp{1.0e-5f};
+    __imagx_close_bound = _Tp{0.9f};
   }
 
-  if ((__realx < __realx_small_bound) && (__imagx_close_bound < __imagx) && (__imagx <= _Tp(1)))
+  if ((__realx < __realx_small_bound) && (__imagx_close_bound < __imagx) && (__imagx <= _Tp{1}))
   {
     // Get (real^2 + (1 - imag)^2) * (real^2 + (1 + imag)^2) in double-double:
     // term1 = (real^2 + (1 - imag)^2)
-    const _Tp __term1_hi = (_Tp(1) - __imagx) * (_Tp(1) - __imagx);
-    const _Tp __term1_lo = ::cuda::std::fma(_Tp(1) - __imagx, _Tp(1) - __imagx, -__term1_hi) + __realx * __realx;
+    const _Tp __term1_hi = (_Tp{1} - __imagx) * (_Tp{1} - __imagx);
+    const _Tp __term1_lo = ::cuda::std::fma(_Tp{1} - __imagx, _Tp{1} - __imagx, -__term1_hi) + __realx * __realx;
 
     // Need (1.0 + __imagx)^2 with nearly full accuracy.
-    const _Tp __term2_sum_hi = (_Tp(1) + __imagx);
-    const _Tp __term2_sum_lo = ((_Tp(1) - __term2_sum_hi) + __imagx);
+    const _Tp __term2_sum_hi = (_Tp{1} + __imagx);
+    const _Tp __term2_sum_lo = ((_Tp{1} - __term2_sum_hi) + __imagx);
 
     const _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
     _Tp __term2_sq_lo       = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
-    __term2_sq_lo += _Tp(2) * __term2_sum_hi * __term2_sum_lo;
+    __term2_sq_lo += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
 
     // Multiple __term1_hi/lo and __term2_sq_hi/lo:
     __inner_most_term_hi = __term1_hi * __term2_sq_hi;
@@ -280,10 +280,10 @@ template <class _Tp>
   constexpr __uint_t __min_normal_bits = __uint_t(0x1) << __mant_nbits;
   const _Tp __min_normal               = ::cuda::std::bit_cast<_Tp>(__min_normal_bits);
 
-  if (__inner_most_term_hi <= _Tp(2) * __min_normal)
+  if (__inner_most_term_hi <= _Tp{2} * __min_normal)
   {
-    __extended_sqrt_hi = _Tp(2) * __realx;
-    __extended_sqrt_lo = _Tp(0);
+    __extended_sqrt_hi = _Tp{2} * __realx;
+    __extended_sqrt_lo = _Tp{0};
   }
 
   // Get sqrt(0.5*(__extended_sqrt_hi + __diffx_m1))
@@ -291,7 +291,7 @@ template <class _Tp>
   // We instead use the equivalent
   //     (__realx*__imagx) / sqrt(0.5*(__extended_sqrt_hi - __diffx_m1))
 
-  const _Tp __inside_sqrt_term = _Tp(0.5) * (::cuda::std::fabs(__diffx_m1) + __extended_sqrt_hi);
+  const _Tp __inside_sqrt_term = _Tp{0.5} * (::cuda::std::fabs(__diffx_m1) + __extended_sqrt_hi);
 
   // Allow for rsqrt optimization:
   // We can have two slightly different paths depending on whether rsqrt is available
@@ -313,14 +313,14 @@ template <class _Tp>
   const _Tp __small_x_real_return_val = __realx * __recip_sqrt;
   const _Tp __pos_evaluation_imag     = __imagx * __small_x_real_return_val;
 
-  const _Tp __sqrt_real_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_real : __pos_evaluation_imag;
-  const _Tp __sqrt_imag_part = (__diffx_m1 > _Tp(0)) ? __pos_evaluation_imag : __pos_evaluation_real;
+  const _Tp __sqrt_real_part = (__diffx_m1 > _Tp{0}) ? __pos_evaluation_real : __pos_evaluation_imag;
+  const _Tp __sqrt_imag_part = (__diffx_m1 > _Tp{0}) ? __pos_evaluation_imag : __pos_evaluation_real;
 
   // For an accurate log, we calculate |(__sqrt_real_part + i*__sqrt_imag_part)| - 1 and use log1p.
   // This can normally have bad catastrophic cancellation, however
   // we have a lot of retained enough accuracy to subtract fairly simply:
-  const _Tp __m1  = __extended_sqrt_hi - _Tp(1);
-  const _Tp __rem = -((__m1 + _Tp(1)) - __extended_sqrt_hi);
+  const _Tp __m1  = __extended_sqrt_hi - _Tp{1};
+  const _Tp __rem = -((__m1 + _Tp{1}) - __extended_sqrt_hi);
 
   __extended_sqrt_hi = __m1;
   __extended_sqrt_lo += __rem;
@@ -328,7 +328,7 @@ template <class _Tp>
   // Final sum before sending it to log1p, all terms needed.
   // Add our sum via three terms, adding equally sized components.
   const _Tp __sum1 = (__x_abs_sq_hi + __extended_sqrt_hi);
-  const _Tp __sum2 = _Tp(2) * (__realx * __sqrt_real_part + __imagx * __sqrt_imag_part);
+  const _Tp __sum2 = _Tp{2} * (__realx * __sqrt_real_part + __imagx * __sqrt_imag_part);
   const _Tp __sum3 = (__extended_sqrt_lo + __x_abs_sq_lo);
 
   const _Tp __abs_sqrt_part_sq = __sum1 + (__sum2 + __sum3);
@@ -336,16 +336,16 @@ template <class _Tp>
   const _Tp __atan2_input1 = __imagx + __sqrt_imag_part;
   const _Tp __atan2_input2 = __realx + __sqrt_real_part;
 
-  _Tp __ans_real       = _Tp(0.5) * ::cuda::std::log1p(__abs_sqrt_part_sq);
+  _Tp __ans_real       = _Tp{0.5} * ::cuda::std::log1p(__abs_sqrt_part_sq);
   const _Tp __ans_imag = ::cuda::std::atan2(__atan2_input1, __atan2_input2);
 
   // The small |real| case, as mentioned above.
   // Bounds found by testing.
-  _Tp __realx_small_bound_override = _Tp(2.220446e-16);
+  _Tp __realx_small_bound_override = _Tp{2.220446e-16};
 
   if constexpr (is_same_v<_Tp, float>)
   {
-    __realx_small_bound_override = _Tp(6.0e-08f);
+    __realx_small_bound_override = _Tp{6.0e-08f};
   }
 
   if (__realx < __realx_small_bound_override && __imagx < _Tp(1))
