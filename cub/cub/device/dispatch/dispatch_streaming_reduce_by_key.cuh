@@ -220,7 +220,7 @@ struct DispatchStreamingReduceByKey
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      streaming_context_t streaming_context{};
+      ::cuda::std::optional<streaming_context_t> streaming_context{};
       if constexpr (use_streaming_invocation)
       {
         auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
@@ -230,14 +230,14 @@ struct DispatchStreamingReduceByKey
         const bool is_last_partition  = (partition_idx + 1 == num_partitions);
         const int buffer_selector     = partition_idx % 2;
 
-        streaming_context = streaming_context_t{
+        streaming_context.emplace(streaming_context_t{
           is_first_partition,
           is_last_partition,
           is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
           &tmp_prefix[buffer_selector],
           &tmp_prefix[buffer_selector ^ 0x01],
           &tmp_num_uniques[buffer_selector],
-          &tmp_num_uniques[buffer_selector ^ 0x01]};
+          &tmp_num_uniques[buffer_selector ^ 0x01]});
       }
 
       // Construct the tile status interface
