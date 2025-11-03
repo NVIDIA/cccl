@@ -104,6 +104,9 @@ endfunction()
 #
 # If ERROR_NUMBER is provided, ERROR_NUMBER_TARGET_NAME_REGEX is ignored.
 # If ERROR_NUMBER_TARGET_NAME_REGEX is provided but does not match, a plain ERROR_REGEX_LABEL is used.
+#
+# If both SOURCE_FILE and ERROR_REGEX_LABEL are provided, the source file will be added to the
+# current directory's CMAKE_CONFIGURE_DEPENDS to ensure that changes to the file will re-trigger CMake.
 function(cccl_add_xfail_compile_target_test target_name)
   set(options)
   set(oneValueArgs
@@ -129,19 +132,26 @@ function(cccl_add_xfail_compile_target_test target_name)
   if (DEFINED cccl_xfail_ERROR_REGEX)
     set(regex "${cccl_xfail_ERROR_REGEX}")
   elseif (DEFINED cccl_xfail_SOURCE_FILE AND DEFINED cccl_xfail_ERROR_REGEX_LABEL)
-    # Cache all error label matches (with and without error numbers) in the parent scope
-    # to avoid re-reading and parsing the same source file.
-    set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
-    string(MD5 source_filename_md5 "${cccl_xfail_SOURCE_FILE}")
-    set(error_cache_var "_cccl_xfail_error_cache_${source_md5}")
-    set(error_cache)
-    if (DEFINED ${error_cache_var})
-      set(error_cache "${${error_cache_var}}")
+  set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
+    get_filename_component(src_absolute "${cccl_xfail_SOURCE_FILE}" ABSOLUTE)
+
+    # Cache all error label matches (with and without error numbers) as global properties.
+    # This avoids re-reading and re-parsing the source file multiple times if multiple
+    # tests are added for the same source file. Properties are used instead of cache variables
+    # to ensure that the source is not cached in between CMake executions.
+    string(MD5 source_filename_md5 "${src_absolute}")
+    set(error_cache_property "_cccl_xfail_error_cache_${source_filename_md5}")
+    get_property(error_cache_set GLOBAL PROPERTY "${error_cache_property}" SET)
+    if (error_cache_set)
+      get_property(error_cache GLOBAL PROPERTY "${error_cache_property}")
     else()
-      file(READ "${cccl_xfail_SOURCE_FILE}" source_contents)
+      file(READ "${src_absolute}" source_contents)
       string(REGEX MATCHALL "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}" error_cache "${source_contents}")
-      set(${error_cache_var} "${error_cache}" PARENT_SCOPE)
+      set_property(GLOBAL PROPERTY "${error_cache_property}" "${error_cache}")
     endif()
+
+    # Changes to the source file should re-run CMake to pick-up new error specs:
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${src_absolute}")
 
     set(error_number)
     if (DEFINED cccl_xfail_ERROR_NUMBER)
