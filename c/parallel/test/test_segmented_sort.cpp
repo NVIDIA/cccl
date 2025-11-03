@@ -197,7 +197,10 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   const std::size_t n_elems = n_segments * segment_size;
 
   std::vector<int> host_keys_int = generate<int>(n_elems);
-  std::vector<key_t> host_keys(host_keys_int.begin(), host_keys_int.end());
+  std::vector<key_t> host_keys(n_elems);
+  std::transform(host_keys_int.begin(), host_keys_int.end(), host_keys.begin(), [](int val) {
+    return static_cast<key_t>(val);
+  });
   std::vector<key_t> host_keys_out(n_elems);
 
   REQUIRE(host_keys.size() == n_elems);
@@ -323,9 +326,15 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   const std::size_t n_elems = n_segments * segment_size;
 
   std::vector<int> host_keys_int = generate<int>(n_elems);
-  std::vector<key_t> host_keys(host_keys_int.begin(), host_keys_int.end());
+  std::vector<key_t> host_keys(n_elems);
+  std::transform(host_keys_int.begin(), host_keys_int.end(), host_keys.begin(), [](int val) {
+    return static_cast<key_t>(val);
+  });
   std::vector<int> host_values_int = generate<int>(n_elems);
-  std::vector<item_t> host_values(host_values_int.begin(), host_values_int.end());
+  std::vector<item_t> host_values(n_elems);
+  std::transform(host_values_int.begin(), host_values_int.end(), host_values.begin(), [](int val) {
+    return static_cast<item_t>(val);
+  });
 
   std::vector<key_t> host_keys_out(n_elems);
   std::vector<item_t> host_values_out(n_elems);
@@ -593,11 +602,17 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   std::size_t n_elems = std::accumulate(segment_sizes.begin(), segment_sizes.end(), 0ULL);
 
   std::vector<int> host_keys_int = generate<int>(n_elems);
-  std::vector<key_t> host_keys(host_keys_int.begin(), host_keys_int.end());
+  std::vector<key_t> host_keys(n_elems);
+  std::transform(host_keys_int.begin(), host_keys_int.end(), host_keys.begin(), [](int val) {
+    return static_cast<key_t>(val);
+  });
 
   // Generate float values by first generating ints and then transforming
   std::vector<int> host_values_int = generate<int>(n_elems);
-  std::vector<item_t> host_values(host_values_int.begin(), host_values_int.end());
+  std::vector<item_t> host_values(n_elems);
+  std::transform(host_values_int.begin(), host_values_int.end(), host_values.begin(), [](int val) {
+    return static_cast<item_t>(val);
+  });
   std::vector<key_t> host_keys_out(n_elems);
   std::vector<item_t> host_values_out(n_elems);
 
