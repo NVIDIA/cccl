@@ -89,18 +89,16 @@ struct agent_t
 
   static constexpr bool keys_use_block_load_to_shared  = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
   static constexpr bool items_use_block_load_to_shared = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
-  static constexpr bool need_block_load_to_shared = keys_use_block_load_to_shared || items_use_block_load_to_shared;
-  static constexpr int load2sh_minimum_align      = block_load_to_shared::template SharedBufferAlignBytes<char>();
+  static constexpr int load2sh_minimum_align           = block_load_to_shared::template SharedBufferAlignBytes<char>();
 
-  template <typename ValueT, bool UseBlockLoadToShared>
-  struct alignas(UseBlockLoadToShared ? block_load_to_shared::template SharedBufferAlignBytes<ValueT>()
-                                      : alignof(ValueT)) buffer_t
+  template <typename ValueT>
+  struct alignas(block_load_to_shared::template SharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
     static constexpr int bytes_needed = block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
                                       + (alignof(ValueT) < load2sh_minimum_align ? 2 * load2sh_minimum_align : 0);
 
-    char c_array[UseBlockLoadToShared ? bytes_needed : sizeof(ValueT) * (items_per_tile + 1)];
+    char c_array[bytes_needed];
   };
 
   struct bl2sh_temp_storage
@@ -109,14 +107,21 @@ struct agent_t
   };
 
   // add the BlockLoadToShared temp storage only if needed
-  struct temp_storages : ::cuda::std::conditional_t<need_block_load_to_shared, bl2sh_temp_storage, NullType>
+  struct temp_storages
+      : ::cuda::std::
+          conditional_t<keys_use_block_load_to_shared || items_use_block_load_to_shared, bl2sh_temp_storage, NullType>
   {
+    using keys_smem =
+      ::cuda::std::conditional_t<keys_use_block_load_to_shared, buffer_t<key_type>, key_type[items_per_tile + 1]>;
+    using items_smem =
+      ::cuda::std::conditional_t<items_use_block_load_to_shared, buffer_t<item_type>, item_type[items_per_tile + 1]>;
+
     union
     {
       typename block_store_keys::TempStorage store_keys;
       typename block_store_items::TempStorage store_items;
-      buffer_t<key_type, keys_use_block_load_to_shared> keys_shared;
-      buffer_t<item_type, items_use_block_load_to_shared> items_shared;
+      keys_smem keys_shared;
+      items_smem items_shared;
     };
   };
 
@@ -208,7 +213,7 @@ struct agent_t
       auto keys2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys2_in);
       merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
         keys_loc, keys1_in_cm + keys1_beg, keys2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
-      keys1_shared = &::cuda::ptr_rebind<key_type>(storage.keys_shared.c_array)[0];
+      keys1_shared = &storage.keys_shared[0];
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = keys1_count_tile;
       keys2_shared = keys1_shared + keys2_offset;
@@ -311,7 +316,7 @@ struct agent_t
           merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
             items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
           __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
-          items1_shared = &::cuda::ptr_rebind<item_type>(storage.items_shared.c_array)[0];
+          items1_shared = &storage.items_shared[0];
           if constexpr (keys_use_block_load_to_shared)
           {
             const int items2_offset = keys1_count_tile;
