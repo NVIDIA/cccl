@@ -653,11 +653,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
       _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
 
       ::cuda::ptx::cp_async_bulk(
-#if __cccl_ptx_isa >= 860
-        ::cuda::ptx::space_shared,
-#else // __cccl_ptx_isa >= 860
-        ::cuda::ptx::space_cluster,
-#endif // __cccl_ptx_isa >= 860
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
         ::cuda::ptx::space_global,
         dst_ptr + head_bytes,
         src_ptr + head_bytes,
@@ -792,11 +788,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         }
 
         ::cuda::ptx::cp_async_bulk(
-#if __cccl_ptx_isa >= 860
-          ::cuda::ptx::space_shared,
-#else // __cccl_ptx_isa >= 860
-          ::cuda::ptx::space_cluster,
-#endif // __cccl_ptx_isa >= 860
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
           ::cuda::ptx::space_global,
           dst,
           src,
