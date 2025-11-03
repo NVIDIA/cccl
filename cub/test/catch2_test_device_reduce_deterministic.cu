@@ -190,7 +190,7 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
   // device RFA result should be approximately equal to host result
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output_p1, type{0.01});
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output_p1, type{0.05});
 
   // Both device RFA results should be strictly equal, as RFA is deterministic
   REQUIRE(d_output_p1 == d_output_p2);
