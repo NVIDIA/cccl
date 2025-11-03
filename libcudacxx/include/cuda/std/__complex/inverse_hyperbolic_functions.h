@@ -49,7 +49,7 @@ template <class _Tp>
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-static void __device__ __host__ __forceinline__
+static void _CCCL_API _CCCL_FORCEINLINE
 __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo, _Tp* __out_hi, _Tp* __out_lo) noexcept
 {
   // rsqrt
