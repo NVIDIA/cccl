@@ -36,13 +36,13 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-  // To construct an error_code after a CUDA Runtime error:
-  //
-  //   error_code(::cudaGetLastError(), cuda_category())
-  
-  // XXX N3000 prefers enum class errc { ... }
-  /*! Namespace for CUDA Runtime errors.
-   */
+// To construct an error_code after a CUDA Runtime error:
+//
+//   error_code(::cudaGetLastError(), cuda_category())
+
+// XXX N3000 prefers enum class errc { ... }
+/*! Namespace for CUDA Runtime errors.
+ */
 namespace cuda::errc
 {
 /*! \p errc_t enumerates the kinds of CUDA Runtime errors.
