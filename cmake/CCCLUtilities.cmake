@@ -132,8 +132,8 @@ function(cccl_add_xfail_compile_target_test target_name)
   if (DEFINED cccl_xfail_ERROR_REGEX)
     set(regex "${cccl_xfail_ERROR_REGEX}")
   elseif (DEFINED cccl_xfail_SOURCE_FILE AND DEFINED cccl_xfail_ERROR_REGEX_LABEL)
-  set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
     get_filename_component(src_absolute "${cccl_xfail_SOURCE_FILE}" ABSOLUTE)
+    set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
 
     # Cache all error label matches (with and without error numbers) as global properties.
     # This avoids re-reading and re-parsing the source file multiple times if multiple
@@ -197,7 +197,6 @@ function(cccl_add_xfail_compile_target_test target_name)
     )
     set_tests_properties(${test_name}.clean PROPERTIES FIXTURES_SETUP ${target_name}.clean)
   endif()
-
 
   add_test(NAME ${test_name}
            COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
