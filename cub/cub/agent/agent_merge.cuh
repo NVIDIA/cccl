@@ -195,11 +195,9 @@ struct agent_t
         keys_buffers.last(block_load_to_shared::template SharedBufferSizeBytes<key_type>(keys2_count_tile));
       _CCCL_ASSERT(keys1_buffer.end() <= keys2_buffer.begin(),
                    "Keys buffer needs to be appropriately sized (internal)");
-      auto keys1_sh = load2sh.CopyAsync(keys1_buffer, keys1_src);
-      auto keys2_sh = load2sh.CopyAsync(keys2_buffer, keys2_src);
+      keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
+      keys2_shared = data(load2sh.CopyAsync(keys2_buffer, keys2_src));
       load2sh.Commit();
-      keys1_shared = data(keys1_sh);
-      keys2_shared = data(keys2_sh);
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = static_cast<int>(keys2_shared - keys1_shared);
       load2sh.Wait();
@@ -298,12 +296,10 @@ struct agent_t
                      "Items buffer needs to be appropriately sized (internal)");
         // block_store_keys above uses shared memory, so make sure all threads are done before we write
         __syncthreads();
-        auto items1_sh = load2sh.CopyAsync(items1_buffer, items1_src);
-        auto items2_sh = load2sh.CopyAsync(items2_buffer, items2_src);
+        items1_shared            = data(load2sh.CopyAsync(items1_buffer, items1_src));
+        item_type* items2_shared = data(load2sh.CopyAsync(items2_buffer, items2_src));
         load2sh.Commit();
-        items1_shared            = data(items1_sh);
-        item_type* items2_shared = data(items2_sh);
-        const int items2_offset  = static_cast<int>(items2_shared - items1_shared);
+        const int items2_offset = static_cast<int>(items2_shared - items1_shared);
         translate_indices(items2_offset);
         load2sh.Wait();
       }
