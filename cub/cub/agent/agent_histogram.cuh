@@ -23,6 +23,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -628,6 +629,8 @@ struct AgentHistogram
       ((size_t(d_native_samples) & pixel_mask) == 0) && // ptr is pixel-aligned
       ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
 
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     // Whether rows are aligned and can be vectorized
     if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
     {
@@ -639,6 +642,8 @@ struct AgentHistogram
       ConsumeTiles<false>(
         num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
   }
 
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
