@@ -92,15 +92,6 @@ struct agent_t
   static constexpr bool need_block_load_to_shared = keys_use_block_load_to_shared || items_use_block_load_to_shared;
   static constexpr int load2sh_minimum_align      = block_load_to_shared::template SharedBufferAlignBytes<char>();
 
-  struct empty_t
-  {
-    struct TempStorage
-    {};
-    _CCCL_DEVICE _CCCL_FORCEINLINE empty_t(TempStorage) {}
-  };
-
-  using optional_load2sh_t = ::cuda::std::conditional_t<need_block_load_to_shared, block_load_to_shared, empty_t>;
-
   template <typename ValueT, bool UseBlockLoadToShared>
   struct alignas(UseBlockLoadToShared ? block_load_to_shared::template SharedBufferAlignBytes<ValueT>()
                                       : alignof(ValueT)) buffer_t
@@ -111,7 +102,13 @@ struct agent_t
                                       : sizeof(ValueT) * (items_per_tile + 1)];
   };
 
-  struct temp_storages_bl2sh
+  struct bl2sh_temp_storage
+  {
+    typename block_load_to_shared::TempStorage load2sh;
+  };
+
+  // add the BlockLoadToShared temp storage only if needed
+  struct temp_storages : ::cuda::std::conditional_t<need_block_load_to_shared, bl2sh_temp_storage, NullType>
   {
     union
     {
@@ -120,25 +117,9 @@ struct agent_t
       buffer_t<key_type, keys_use_block_load_to_shared> keys_shared;
       buffer_t<item_type, items_use_block_load_to_shared> items_shared;
     };
-    typename block_load_to_shared::TempStorage load2sh;
   };
 
-  union temp_storages_fallback
-  {
-    typename block_store_keys::TempStorage store_keys;
-    typename block_store_items::TempStorage store_items;
-
-    buffer_t<key_type, keys_use_block_load_to_shared> keys_shared;
-    buffer_t<item_type, items_use_block_load_to_shared> items_shared;
-
-    typename empty_t::TempStorage load2sh;
-  };
-
-  using temp_storages =
-    ::cuda::std::conditional_t<need_block_load_to_shared, temp_storages_bl2sh, temp_storages_fallback>;
-
-  struct TempStorage : Uninitialized<temp_storages>
-  {};
+  using TempStorage = Uninitialized<temp_storages>;
 
   // Per thread data
   temp_storages& storage;
@@ -185,7 +166,16 @@ struct agent_t
       _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == num_remaining, "");
     }
 
-    optional_load2sh_t load2sh{storage.load2sh};
+    auto load2sh = [&] {
+      if constexpr (keys_use_block_load_to_shared)
+      {
+        return block_load_to_shared{storage.load2sh};
+      }
+      else
+      {
+        return NullType{};
+      }
+    }();
 
     key_type keys_loc[items_per_thread];
     key_type* keys1_shared;
