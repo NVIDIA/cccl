@@ -132,7 +132,6 @@ struct DeviceSegmentedRadixSortKernelSource
     return sizeof(ValueT);
   }
 };
-
 } // namespace detail::radix_sort
 
 /******************************************************************************

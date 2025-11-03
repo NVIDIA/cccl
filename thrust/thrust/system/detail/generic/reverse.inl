@@ -37,7 +37,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename BidirectionalIterator>
 _CCCL_HOST_DEVICE void
 reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
@@ -62,6 +61,5 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
 {
   return thrust::copy(exec, ::cuda::std::reverse_iterator{last}, ::cuda::std::reverse_iterator{first}, result);
 } // end reverse_copy()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

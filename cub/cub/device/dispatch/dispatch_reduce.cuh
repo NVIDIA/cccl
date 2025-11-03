@@ -46,7 +46,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -585,7 +584,6 @@ using DispatchTransformReduce =
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -966,7 +964,6 @@ struct DispatchSegmentedReduce
 
 namespace detail::reduce
 {
-
 // @brief Functor to generate a key-value pair from an index and value
 template <typename Iterator, typename OutputValueT>
 struct generate_idx_value

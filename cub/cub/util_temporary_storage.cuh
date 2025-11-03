@@ -28,7 +28,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 /**
  * @brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
  *
@@ -90,7 +89,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
 
   return cudaSuccess;
 }
-
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED

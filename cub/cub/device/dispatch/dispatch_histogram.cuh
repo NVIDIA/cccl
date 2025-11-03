@@ -293,7 +293,6 @@ struct dispatch_histogram
       active_policy);
   }
 };
-
 } // namespace detail::histogram
 
 /******************************************************************************

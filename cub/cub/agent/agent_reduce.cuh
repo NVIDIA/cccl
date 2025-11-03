@@ -135,7 +135,6 @@ struct AgentWarpReducePolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceImpl implements a stateful abstraction of CUDA thread blocks
  *        and warps, for participating in device-wide reduction .
@@ -588,7 +587,6 @@ struct AgentWarpReduce
       : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x % AgentReducePolicy::WARP_THREADS)
   {}
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

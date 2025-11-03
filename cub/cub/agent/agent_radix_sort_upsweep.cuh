@@ -104,7 +104,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::radix_sort
 {
-
 /**
  * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
  * participating in device-wide radix sort upsweep .
@@ -548,7 +547,6 @@ struct AgentRadixSortUpsweep
     }
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

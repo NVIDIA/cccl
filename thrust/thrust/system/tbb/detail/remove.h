@@ -18,7 +18,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 ForwardIterator
 remove_if(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -63,6 +62,5 @@ OutputIterator remove_copy_if(
   // tbb prefers generic::remove_copy_if to cpp::remove_copy_if
   return thrust::system::detail::generic::remove_copy_if(exec, first, last, stencil, result, pred);
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

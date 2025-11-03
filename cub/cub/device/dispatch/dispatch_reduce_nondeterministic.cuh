@@ -39,7 +39,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,

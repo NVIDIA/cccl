@@ -36,7 +36,6 @@ namespace system::tbb::detail
 {
 namespace reduce_by_key_detail
 {
-
 template <typename L, typename R>
 inline L divide_ri(const L x, const R y)
 {
@@ -265,7 +264,6 @@ make_serial_reduce_by_key_body(
     binary_pred,
     binary_op);
 }
-
 } // namespace reduce_by_key_detail
 
 template <typename DerivedPolicy,
@@ -376,6 +374,5 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
 
   return thrust::make_pair(keys_result + size_of_result, values_result + size_of_result);
 }
-
 } // namespace system::tbb::detail
 THRUST_NAMESPACE_END

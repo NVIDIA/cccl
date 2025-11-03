@@ -45,7 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle
 {
-
 template <typename PrecedingKeyItT, typename RunLengthT, typename GlobalOffsetT>
 struct streaming_context
 {

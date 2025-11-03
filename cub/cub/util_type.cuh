@@ -184,7 +184,6 @@ struct NullType
 
 namespace detail
 {
-
 template <bool Value>
 inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
 
@@ -193,7 +192,6 @@ using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
 
 template <auto Value>
 inline constexpr auto constant_v = constant_t<Value>{};
-
 } // namespace detail
 
 /**
@@ -245,7 +243,6 @@ FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {
-
 /**
  * \brief Allows algorithms to instantiate a single kernel to support both immediate value and future value.
  */
@@ -291,7 +288,6 @@ private:
     T m_immediate_value;
   };
 };
-
 } // namespace detail
 
 /******************************************************************************

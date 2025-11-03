@@ -103,7 +103,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::radix_sort
 {
-
 template <typename AgentRadixSortOnesweepPolicy,
           bool IS_DESCENDING,
           typename KeyT,
@@ -698,7 +697,6 @@ struct AgentRadixSortOnesweep
     full_block = (block_idx + 1) * TILE_ITEMS <= num_items;
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

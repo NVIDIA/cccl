@@ -130,7 +130,6 @@ public:
 };
 
 _CCCL_GLOBAL_CONSTANT transform_sender_t transform_sender{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

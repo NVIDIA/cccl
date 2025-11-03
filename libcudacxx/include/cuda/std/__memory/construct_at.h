@@ -71,7 +71,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {
-
 #if _CCCL_COMPILER(NVHPC, <, 25, 5) // NVHPC has issues determining the narrowing conversions
 template <class _To, class...>
 struct __check_narrowing : true_type

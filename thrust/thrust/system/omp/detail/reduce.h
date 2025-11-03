@@ -27,7 +27,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
 OutputType reduce(execution_policy<DerivedPolicy>& exec,
                   InputIterator first,
@@ -59,6 +58,5 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
 
   return partial_sums[0];
 } // end reduce()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

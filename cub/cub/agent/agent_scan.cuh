@@ -118,7 +118,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::scan
 {
-
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
  *        participating in device-wide prefix scan.
@@ -558,7 +557,6 @@ struct AgentScan
     }
   }
 };
-
 } // namespace detail::scan
 
 CUB_NAMESPACE_END

@@ -74,7 +74,6 @@ struct AgentScanByKeyPolicy
 
 namespace detail::scan_by_key
 {
-
 /**
  * @brief AgentScanByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide prefix scan by key.
@@ -444,7 +443,6 @@ struct AgentScanByKey
     }
   }
 };
-
 } // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

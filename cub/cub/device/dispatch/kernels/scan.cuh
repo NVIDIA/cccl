@@ -20,7 +20,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
@@ -159,7 +158,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   // Process tiles
   AgentScanT(temp_storage, d_in, d_out, scan_op, real_init_value).ConsumeRange(num_items, tile_state, start_tile);
 }
-
 } // namespace detail::scan
 
 CUB_NAMESPACE_END

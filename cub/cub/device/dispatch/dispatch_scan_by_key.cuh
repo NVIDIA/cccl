@@ -44,7 +44,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan_by_key
 {
-
 /**
  * @brief Scan by key kernel entry point (multi-block)
  *

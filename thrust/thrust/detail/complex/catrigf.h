@@ -62,7 +62,6 @@ namespace detail
 {
 namespace complex
 {
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z);
@@ -545,9 +544,7 @@ _CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
   complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
   return (complex<float>(w.imag(), w.real()));
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <>

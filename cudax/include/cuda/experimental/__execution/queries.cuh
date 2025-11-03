@@ -346,7 +346,6 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     return true;
   }
 } get_launch_config{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

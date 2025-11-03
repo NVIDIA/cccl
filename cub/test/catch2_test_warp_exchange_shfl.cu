@@ -5,7 +5,6 @@
 
 namespace
 {
-
 using inout_types = c2h::type_list<std::uint16_t, std::int32_t, std::int64_t, double>;
 
 using items_per_thread = c2h::enum_type_list<int, 2, 4, 8, 16, 32>;
@@ -22,7 +21,6 @@ struct params_t
   static constexpr int tile_size            = logical_warp_threads * items_per_thread;
   static constexpr int total_item_count     = total_warps * tile_size;
 };
-
 } // namespace
 
 C2H_TEST("Blocked to striped works", "[exchange][warp][shfl]", inout_types, items_per_thread)

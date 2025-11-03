@@ -29,7 +29,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 //! \brief A Feistel cipher for operating on power of two sized problems
 class feistel_bijection
 {
@@ -172,6 +171,5 @@ public:
     return n;
   }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END

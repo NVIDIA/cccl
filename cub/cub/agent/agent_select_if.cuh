@@ -104,7 +104,6 @@ struct AgentSelectIfPolicy
 
 namespace detail::select
 {
-
 template <typename EqualityOpT>
 struct guarded_inequality_op
 {
@@ -1087,7 +1086,6 @@ struct AgentSelectIf
     }
   }
 };
-
 } // namespace detail::select
 
 CUB_NAMESPACE_END

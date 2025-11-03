@@ -99,7 +99,6 @@ namespace detail
 {
 namespace complex
 {
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
@@ -175,9 +174,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctan(complex<double> z)
   z = ctanh(complex<double>(-z.imag(), z.real()));
   return (complex<double>(z.imag(), -z.real()));
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <typename ValueType>

@@ -56,7 +56,6 @@
 //! @file The \c async_buffer class provides a container of contiguous memory
 namespace cuda::experimental
 {
-
 // Once we add support from options taken from the env we can list them here in addition to using is_same_v
 template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
@@ -774,7 +773,6 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, 
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, __mr, ::cuda::std::forward<_Range>(__range), __env};
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

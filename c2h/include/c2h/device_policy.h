@@ -16,5 +16,4 @@ static const auto nosync_device_policy = THRUST_NS_QUALIFIER::cuda::par_nosync(c
 static const auto device_policy        = THRUST_NS_QUALIFIER::device;
 static const auto nosync_device_policy = THRUST_NS_QUALIFIER::device;
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-
 } // namespace c2h

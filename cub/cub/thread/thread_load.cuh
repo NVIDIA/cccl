@@ -105,7 +105,6 @@ UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence
 {
   ((dst[Is] = src[Is]), ...);
 }
-
 } // namespace detail
 
 template <int Count, CacheLoadModifier MODIFIER, typename T>

@@ -1058,7 +1058,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace detail::radix
 
 CUB_NAMESPACE_END

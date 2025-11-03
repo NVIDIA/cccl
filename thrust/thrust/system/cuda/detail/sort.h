@@ -62,10 +62,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __merge_sort
 {
-
 template <class KeysIt, class ItemsIt, class Size, class CompareOp>
 THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   void* d_temp_storage,
@@ -171,7 +169,6 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
 
 namespace __radix_sort
 {
-
 template <class SORT_ITEMS, class Comparator>
 struct dispatch;
 
@@ -303,7 +300,6 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 
 namespace __smart_sort
 {
-
 template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
@@ -467,7 +463,6 @@ stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt 
   using key_type = thrust::detail::it_value_t<KeysIt>;
   cuda_cub::stable_sort_by_key(policy, keys_first, keys_last, values, ::cuda::std::less<key_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

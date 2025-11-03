@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort
 {
-
 template <typename PolicyT, typename = void>
 struct SegmentedSortPolicyWrapper : PolicyT
 {

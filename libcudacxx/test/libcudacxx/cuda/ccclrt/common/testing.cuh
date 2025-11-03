@@ -91,7 +91,6 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
-
 } // namespace Catch
 
 namespace
@@ -139,7 +138,6 @@ struct ccclrt_test_fixture
     CCCLRT_CHECK(count_driver_stack() == 0);
   }
 };
-
 } // namespace test
 } // namespace
 

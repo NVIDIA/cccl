@@ -18,7 +18,6 @@
 
 namespace
 {
-
 // Empty node descriptor for testing
 struct empty_node_descriptor
 {
@@ -29,7 +28,6 @@ struct empty_node_descriptor
     return cuda::experimental::graph_node_ref{node, graph};
   }
 };
-
 } // namespace
 
 C2H_TEST("can default construct a graph and destroy it", "[graph]")

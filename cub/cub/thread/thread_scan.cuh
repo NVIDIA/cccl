@@ -26,7 +26,6 @@ CUB_NAMESPACE_BEGIN
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace detail
 {
-
 /**
  * @name Sequential prefix scan over statically-sized array types
  * @{
@@ -469,6 +468,5 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
 }
 
 //@}  end member group
-
 } // namespace detail
 CUB_NAMESPACE_END

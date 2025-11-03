@@ -38,7 +38,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE ForwardIterator lower_bound(
@@ -131,6 +130,5 @@ _CCCL_HOST_DEVICE bool binary_search(
 
   return iter != last && !wrapped_comp(val, *iter);
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

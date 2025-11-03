@@ -5,7 +5,6 @@
 
 namespace
 {
-
 using inout_types =
   c2h::type_list<c2h::pair<std::uint16_t, std::int64_t>,
                  c2h::pair<std::uint16_t, std::uint32_t>,
@@ -38,7 +37,6 @@ struct params_t
   static constexpr int tile_size            = logical_warp_threads * items_per_thread;
   static constexpr int total_item_count     = total_warps * tile_size;
 };
-
 } // namespace
 
 C2H_TEST("Scatter to striped works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)

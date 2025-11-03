@@ -27,7 +27,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 /**
  * choose_offset checks NumItemsT, the type of the num_items parameter, and
  * selects the offset type based on it.
@@ -131,7 +130,6 @@ struct common_iterator_value
 };
 template <typename... Iter>
 using common_iterator_value_t = typename common_iterator_value<Iter...>::type;
-
 } // namespace detail
 
 CUB_NAMESPACE_END

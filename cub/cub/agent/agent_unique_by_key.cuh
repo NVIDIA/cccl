@@ -87,7 +87,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::unique_by_key
 {
-
 /**
  * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide unique-by-key
@@ -601,7 +600,6 @@ struct AgentUniqueByKey
     }
   }
 };
-
 } // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

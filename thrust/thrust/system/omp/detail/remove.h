@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 ForwardIterator
 remove_if(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -64,6 +63,5 @@ OutputIterator remove_copy_if(
   // omp prefers generic::remove_copy_if to cpp::remove_copy_if
   return thrust::system::detail::generic::remove_copy_if(exec, first, last, stencil, result, pred);
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

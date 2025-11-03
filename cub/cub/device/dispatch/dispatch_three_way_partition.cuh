@@ -35,7 +35,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename FirstOutputIteratorT,

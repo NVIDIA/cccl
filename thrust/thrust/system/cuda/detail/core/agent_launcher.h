@@ -279,7 +279,6 @@ struct AgentLauncher : Agent
     sync();
   }
 };
-
 } // namespace detail
 } // namespace core
 } // namespace cuda_cub

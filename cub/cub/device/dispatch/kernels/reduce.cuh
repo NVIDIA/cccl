@@ -25,7 +25,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 /**
  * All cub::DeviceReduce::* algorithms are using the same implementation. Some of them, however,
  * should use initial value only for empty problems. If this struct is used as initial value with
@@ -553,7 +552,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
       (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

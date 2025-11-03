@@ -99,7 +99,6 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 
 namespace detail
 {
-
 inline constexpr int max_devices       = CUB_MAX_DEVICES;
 inline constexpr int warp_threads      = CUB_PTX_WARP_THREADS;
 inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
@@ -136,7 +135,6 @@ struct MemBoundScaling
                         ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
                           * 32);
 };
-
 } // namespace detail
 #endif // Do not document
 

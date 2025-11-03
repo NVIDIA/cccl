@@ -69,7 +69,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::three_way_partition
 {
-
 template <class OffsetT>
 struct pair_pack_t
 {
@@ -576,7 +575,6 @@ struct AgentThreeWayPartition
     }
   }
 };
-
 } // namespace detail::three_way_partition
 
 CUB_NAMESPACE_END

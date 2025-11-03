@@ -689,7 +689,6 @@ struct DispatchBatchMemcpy
     return error;
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

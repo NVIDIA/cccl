@@ -27,7 +27,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
 {
   NV_IF_TARGET(
@@ -188,7 +187,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned c
        "}" : : "l"(ptr),
        "h"((unsigned short) val) : "memory");));
 }
-
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED

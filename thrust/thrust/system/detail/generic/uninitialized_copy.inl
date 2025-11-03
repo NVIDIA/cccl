@@ -39,7 +39,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 template <typename InputType, typename OutputType>
 struct uninitialized_copy_functor
 {
@@ -136,7 +135,6 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 {
   return thrust::copy_n(exec, first, n, result);
 } // end uninitialized_copy_n()
-
 } // namespace detail
 
 template <typename ExecutionPolicy, typename InputIterator, typename ForwardIterator>
@@ -162,6 +160,5 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   return thrust::system::detail::generic::detail::uninitialized_copy_n(
     exec, first, n, result, ResultTypeHasTrivialCopyConstructor());
 } // end uninitialized_copy_n()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

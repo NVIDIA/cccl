@@ -36,7 +36,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 //! @rst
 //! The @c BlockLoadToShared class provides a :ref:`collective <collective-primitives>` method for asynchronously
 //! loading data from global to shared memory.
@@ -412,7 +411,6 @@ public:
     return bulk_aligned ? num_bytes : (::cuda::round_up(num_bytes, minimum_align) + extra_space);
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

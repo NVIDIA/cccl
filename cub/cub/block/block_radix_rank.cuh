@@ -79,7 +79,6 @@ struct BlockRadixRankEmptyCallback
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-
 template <int Bits, int PartialWarpThreads, int PartialWarpId>
 struct warp_in_block_matcher_t
 {
@@ -102,7 +101,6 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
     return MatchAny<Bits>(label);
   }
 };
-
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -1172,7 +1170,6 @@ struct BlockRadixRankMatchEarlyCounts
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-
 // `BlockRadixRank` doesn't conform to the typical pattern, not exposing the algorithm
 // template parameter. Other algorithms don't provide the same template parameters, not allowing
 // multi-dimensional thread block specializations.
@@ -1195,7 +1192,6 @@ using block_radix_rank_t = ::cuda::std::_If<
         RankAlgorithm == RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ANY>,
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ATOMIC_OR>>>>>;
-
 } // namespace detail
 #endif // _CCCL_DOXYGEN_INVOKED
 

@@ -106,7 +106,6 @@ struct ArgMin
 
 namespace detail
 {
-
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
 struct arg_max
@@ -384,7 +383,6 @@ struct ReduceByKeyOp
 
 namespace detail
 {
-
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
@@ -659,7 +657,6 @@ inline constexpr T identity_v<::cuda::std::logical_or<T>, T> = false;
 
 template <typename T>
 inline constexpr T identity_v<::cuda::std::logical_or<T>, void> = false;
-
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

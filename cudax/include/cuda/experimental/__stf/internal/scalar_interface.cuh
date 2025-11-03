@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class shape_of;
 
@@ -331,5 +330,4 @@ struct hash<scalar_view<T>>
     return ::std::hash<T>{}(*s.addr);
   }
 };
-
 } // end namespace cuda::experimental::stf

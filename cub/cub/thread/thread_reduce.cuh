@@ -155,7 +155,6 @@ template <typename Input,
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace detail
 {
-
 /***********************************************************************************************************************
  * Enable SIMD/Tree reduction heuristics (Trait)
  **********************************************************************************************************************/
@@ -402,7 +401,6 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
     return cub::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
   }
 }
-
 } // namespace detail
 
 /***********************************************************************************************************************

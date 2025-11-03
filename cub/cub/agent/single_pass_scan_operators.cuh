@@ -643,7 +643,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   // Set the necessary size of the blob
   return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
-
 } // namespace detail
 
 /**

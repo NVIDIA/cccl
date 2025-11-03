@@ -22,7 +22,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeShfl
 {
@@ -299,7 +298,6 @@ public:
                   "                 OffsetT (&ranks)[ITEMS_PER_THREAD])");
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

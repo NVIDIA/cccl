@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator
 max_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
@@ -43,6 +42,5 @@ minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, For
   // omp prefers generic::minmax_element to cpp::minmax_element
   return thrust::system::detail::generic::minmax_element(exec, first, last, comp);
 } // end minmax_element()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

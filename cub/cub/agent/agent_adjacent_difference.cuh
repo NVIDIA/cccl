@@ -42,7 +42,6 @@ struct AgentAdjacentDifferencePolicy
 
 namespace detail::adjacent_difference
 {
-
 template <typename Policy,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -229,7 +228,6 @@ struct AgentDifferenceInit
     }
   }
 };
-
 } // namespace detail::adjacent_difference
 
 CUB_NAMESPACE_END

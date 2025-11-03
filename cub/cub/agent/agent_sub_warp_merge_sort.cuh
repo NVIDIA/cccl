@@ -62,7 +62,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::sub_warp_merge_sort
 {
-
 /**
  * @brief AgentSubWarpSort implements a sub-warp merge sort.
  *
@@ -316,7 +315,6 @@ private:
     }
   }
 };
-
 } // namespace detail::sub_warp_merge_sort
 
 CUB_NAMESPACE_END

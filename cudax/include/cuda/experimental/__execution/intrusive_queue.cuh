@@ -288,7 +288,6 @@ private:
   _Item* __head_ = nullptr;
   _Item* __tail_ = nullptr;
 };
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

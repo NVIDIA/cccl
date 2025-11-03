@@ -23,7 +23,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::radix_sort
 {
-
 /**
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
  * https://github.com/NVIDIA/cub/issues/383 is addressed.
@@ -259,7 +258,6 @@ struct AgentSegmentedRadixSort
     downsweep.ProcessRegion(OffsetT{}, num_items);
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

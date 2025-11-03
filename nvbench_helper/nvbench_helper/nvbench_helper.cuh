@@ -54,7 +54,6 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
 
 namespace detail
 {
-
 template <class List, class... Ts>
 struct push_back
 {};
@@ -64,7 +63,6 @@ struct push_back<nvbench::type_list<As...>, Ts...>
 {
   using type = nvbench::type_list<As..., Ts...>;
 };
-
 } // namespace detail
 
 template <class List, class... Ts>
@@ -218,7 +216,6 @@ template <typename T>
 
 namespace detail
 {
-
 void do_not_optimize(const void* ptr);
 
 template <typename T>
@@ -251,7 +248,6 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
 
 namespace
 {
-
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -433,7 +429,6 @@ struct gen_t
   gen_power_law_t power_law{};
 };
 } // namespace
-
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -636,5 +631,4 @@ auto policy(caching_allocator_t&, nvbench::launch&)
   return thrust::device;
 }
 #endif
-
 } // namespace

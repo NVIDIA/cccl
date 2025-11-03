@@ -45,7 +45,6 @@
 
 namespace cuda::experimental
 {
-
 template <typename _Config, typename _Kernel, class... _Args>
 __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
@@ -512,7 +511,6 @@ namespace execution
 template <class _Config, class _Fn, class... _Args>
 inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
