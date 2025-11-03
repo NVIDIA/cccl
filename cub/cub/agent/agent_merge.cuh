@@ -183,9 +183,9 @@ struct agent_t
     int keys2_offset;
     if constexpr (keys_use_block_load_to_shared)
     {
-      ::cuda::std::span keys1_src{THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(keys1_in + keys1_beg),
+      ::cuda::std::span keys1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys1_in + keys1_beg),
                                   static_cast<::cuda::std::size_t>(keys1_count_tile)};
-      ::cuda::std::span keys2_src{THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(keys2_in + keys2_beg),
+      ::cuda::std::span keys2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys2_in + keys2_beg),
                                   static_cast<::cuda::std::size_t>(keys2_count_tile)};
       ::cuda::std::span keys_buffers{storage.keys_shared.c_array};
       auto keys1_buffer =
@@ -284,9 +284,9 @@ struct agent_t
       item_type* items1_shared;
       if constexpr (keys_use_block_load_to_shared)
       {
-        ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(items1_in + keys1_beg),
+        ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
                                      static_cast<::cuda::std::size_t>(keys1_count_tile)};
-        ::cuda::std::span items2_src{THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(items2_in + keys2_beg),
+        ::cuda::std::span items2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items2_in + keys2_beg),
                                      static_cast<::cuda::std::size_t>(keys2_count_tile)};
         ::cuda::std::span items_buffers{storage.items_shared.c_array};
         auto items1_buffer =
