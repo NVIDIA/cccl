@@ -200,7 +200,6 @@ void validate(const thrust::device_vector<ValueT>& input,
   assert(computed_mins == ref_mins);
   assert(computed_maxs == ref_maxs);
 }
-
 }; // namespace impl
 
 template <typename T, typename OffsetT>

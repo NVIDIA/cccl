@@ -52,7 +52,6 @@ struct policy_hub_t
 
 namespace impl
 {
-
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
  * Elements of this algebra are ``q^m * p^n``, identified by a pair of integral exponents. The identity
  * element is ``1 == q^0 * p^0``, which maps to pair of zeros ``e = (0, 0)``.
@@ -99,7 +98,6 @@ struct repack_pair
     return {v1, v2};
   };
 };
-
 }; // namespace impl
 
 template <typename T, typename OffsetT>

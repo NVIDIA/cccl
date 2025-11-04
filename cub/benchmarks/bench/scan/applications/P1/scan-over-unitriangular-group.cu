@@ -56,7 +56,6 @@ struct policy_hub_t
 
 namespace impl
 {
-
 template <typename T>
 using triplet_t = cuda::std::tuple<T, T, T>;
 

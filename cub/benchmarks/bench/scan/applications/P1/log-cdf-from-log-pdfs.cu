@@ -110,7 +110,6 @@ template <typename T>
 
   return check;
 }
-
 }; // namespace impl
 
 template <typename FloatingPointT, typename OffsetT>

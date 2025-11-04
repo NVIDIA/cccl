@@ -57,7 +57,6 @@ struct policy_hub_t
 
 namespace impl
 {
-
 /* Denote epsilon, the identity element, be an empty sequence, and consider
  * set of sequences of {0, 1} bits, with binary operation of concatenation.
  *
@@ -291,7 +290,6 @@ template <typename InputT, typename OutputT>
 
   return true;
 }
-
 }; // namespace impl
 
 template <typename BitsetT, typename OffsetT>

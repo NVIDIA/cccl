@@ -27,7 +27,6 @@
 
 namespace impl
 {
-
 // bicyclid monoid operator is associative and non-commutative
 template <typename UnsignedIntegralT>
 struct bicyclic_monoid_op
@@ -46,7 +45,6 @@ struct bicyclic_monoid_op
     return {m + r - min_nr, s + n - min_nr};
   }
 };
-
 }; // namespace impl
 
 C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]")
