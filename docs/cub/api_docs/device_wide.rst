@@ -39,7 +39,7 @@ Example pattern:
 
 **Single-Phase API** (Environment-Based)
 
-Environment-based overloads are rolling out across CUB device-wide primitives. They remove the manual query/execute split by deriving temporary storage from an execution environment argument.
+Environment-based overloads are rolling out across CUB device-wide primitives. They remove the manual query/execute split by obtaining the temporary storage from a memory resource queried from the execution environment argument.
 
 Key properties of the environment argument:
 
