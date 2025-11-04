@@ -427,12 +427,12 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(_T input, ReductionOp reduction_op, int last_lane, int offset)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(_Tp input, ReductionOp reduction_op, int last_lane, int offset)
   {
-    _T output = input;
+    _Tp output = input;
 
-    _T temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
+    _Tp temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)
@@ -461,9 +461,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }
@@ -487,9 +487,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }
