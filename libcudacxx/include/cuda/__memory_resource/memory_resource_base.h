@@ -253,18 +253,41 @@ struct memory_pool_properties
   size_t initial_pool_size                           = 0;
   size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
   cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  size_t max_pool_size                               = 0;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
 //! @throws cuda_error If the creation of the CUDA memory pool failed.
 //! @returns The created CUDA memory pool.
 [[nodiscard]] static cudaMemPool_t __create_cuda_mempool(
-  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type) noexcept
+  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type)
 {
   ::CUmemPoolProps __pool_properties{};
   __pool_properties.allocType   = __allocation_type;
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
+
+#if _CCCL_CTK_AT_LEAST(12, 2)
+  if (__properties.max_pool_size != 0)
+  {
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
+    {
+      ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
+    }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+    if (__properties.initial_pool_size > __properties.max_pool_size)
+    {
+      ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+    }
+  }
+  __pool_properties.maxSize = __properties.max_pool_size;
+#else
+  if (__properties.max_pool_size != 0)
+  {
+    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
