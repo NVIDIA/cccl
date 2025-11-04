@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
@@ -571,5 +571,5 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_INCLUDE("dlpack/dlpack.h")
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 #endif // _CUDA___TMA_MAKE_TMA_DESCRIPTOR_H
