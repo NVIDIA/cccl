@@ -56,10 +56,10 @@ std::string get_device_segmented_sort_fallback_kernel_name(
   cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_segmented_sort_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   /*
   template <SortOrder Order,             // 0 (ascending)
@@ -90,10 +90,10 @@ std::string get_device_segmented_sort_kernel_small_name(
   cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_segmented_sort_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   /*
   template <SortOrder Order,             // 0 (ascending)
@@ -124,10 +124,10 @@ std::string get_device_segmented_sort_kernel_large_name(
   cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_segmented_sort_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   /*
   template <SortOrder Order,             // 0 (ascending)
@@ -182,7 +182,7 @@ cccl_op_t make_segments_selector_op(
   cccl_op_t selector_op{};
   auto selector_op_state = std::make_unique<selector_state_t>();
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   const std::string code = std::format(
     R"XXX(
@@ -297,7 +297,7 @@ std::string get_three_way_partition_init_kernel_name()
 std::string get_three_way_partition_kernel_name(std::string_view large_selector_t, std::string_view small_selector_t)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_three_way_partition_policy>(&chained_policy_t));
 
   static constexpr std::string_view input_it_t =
     "thrust::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
@@ -308,7 +308,7 @@ std::string get_three_way_partition_kernel_name(std::string_view large_selector_
   static constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
   static constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   static constexpr std::string_view per_partition_offset_t = "cub::detail::three_way_partition::per_partition_offset_t";
   static constexpr std::string_view streaming_context_t =
