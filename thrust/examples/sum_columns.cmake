@@ -1,3 +1,11 @@
+# GCC 7 has issues with capturing lambdas in non-CUDA backends triggering unused parameter warnings
+# in libcudacxx's __destroy_at. Disable this example for GCC 7.
+if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
+    set_target_properties(${example_target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    set_tests_properties(${example_target} PROPERTIES DISABLED TRUE)
+    return()
+endif()
+
 target_compile_options(${example_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda>)
 # This check is actually not correct, because we must check the host compiler, not the CXX compiler.
 # We rely on these usually being the same ;)
