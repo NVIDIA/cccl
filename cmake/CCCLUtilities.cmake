@@ -65,3 +65,17 @@ function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
   )
   set(${full_test_name_var} ${test_name} PARENT_SCOPE)
 endfunction()
+
+# Check for WSL. CMAKE_SYSTEM is "Linux-<kernelver>-microsoft-standard-WSL2" on WSLv2.
+if (CMAKE_SYSTEM MATCHES WSL)
+  set(_CCCL_WSL TRUE)
+else()
+  set(_CCCL_WSL FALSE)
+endif()
+
+# Check for Windows, including WSL:
+if (WIN32 OR _CCCL_WSL)
+  set(_CCCL_WINDOWS TRUE)
+else()
+  set(_CCCL_WINDOWS FALSE)
+endif()
