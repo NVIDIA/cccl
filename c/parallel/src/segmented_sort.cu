@@ -12,7 +12,7 @@
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
-#include <cub/device/dispatch/kernels/segmented_sort.cuh> // DeviceSegmentedSort kernels
+#include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh> // DeviceSegmentedSort kernels
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh> // policy_hub
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
@@ -186,7 +186,7 @@ cccl_op_t make_segments_selector_op(
 
   const std::string code = std::format(
     R"XXX(
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
 
 extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {{
@@ -638,7 +638,7 @@ CUresult cccl_device_segmented_sort_build_ex(
 
     const std::string final_src = std::format(
       R"XXX(
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/device/dispatch/kernels/three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
