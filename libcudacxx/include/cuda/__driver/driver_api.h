@@ -325,7 +325,7 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
-_CCCL_HOST_API inline ::cudaError_t
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __memRetainAllocationHandleNoThrow(::CUmemGenericAllocationHandle* __handle, void* __addr)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemRetainAllocationHandle);
