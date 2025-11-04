@@ -49,7 +49,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// subtraction with unsigned types to avoid UB, return an unsigned type
+// Subtracts using unsigned intermediates to avoid signed overflow (UB) before casting to the requested result type.
 template <typename _Result, typename _Lhs, typename _Rhs>
 [[nodiscard]] _CCCL_API constexpr _Result __sub_as_unsigned(_Lhs __lhs, _Rhs __rhs) noexcept
 {
