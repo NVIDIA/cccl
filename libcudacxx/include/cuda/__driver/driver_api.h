@@ -326,20 +326,7 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
-__memRetainAllocationHandleNoThrow(::CUmemGenericAllocationHandle* __handle, void* __addr)
-{
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemRetainAllocationHandle);
-  return static_cast<::cudaError_t>(__driver_fn(__handle, __addr));
-}
-
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
-__memGetAllocationPropertiesFromHandleNoThrow(::CUmemAllocationProp* __prop, ::CUmemGenericAllocationHandle __handle)
-{
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemGetAllocationPropertiesFromHandle);
-  return static_cast<::cudaError_t>(__driver_fn(__prop, __handle));
-}
-
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+__mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
@@ -505,7 +492,7 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
   ::cuda::std::span<::CUpointer_attribute> __attrs, ::cuda::std::span<void*> __results, const void* __ptr)
 {
   _CCCL_ASSERT(__attrs.size() == __results.size(), "size mismatch in __pointerGetAttributesNoThrow");
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
   return static_cast<::cudaError_t>(__driver_fn(
     static_cast<unsigned>(__attrs.size()), __attrs.data(), __results.data(), reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
