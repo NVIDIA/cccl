@@ -2,7 +2,10 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-`cuda.cccl` provides a Pythonic interface to the [CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries). It provides the following modules:
+[`cuda.cccl`](https://nvidia.github.io/cccl/python)
+provides a Pythonic interface to the
+[CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries).
+It provides the following modules:
 
 - **`cuda.compute`** - Device-level parallel algorithms (reduce, scan, sort, etc.) and iterators
 - **`cuda.coop`** - Block and warp-level cooperative primitives for custom CUDA kernels
