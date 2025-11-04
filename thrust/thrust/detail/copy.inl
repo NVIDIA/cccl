@@ -79,7 +79,8 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy(
   InputIterator last,
   OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE_IF(should_enable_nvtx_for_policy<System1>(), "thrust::two_system_copy");
+  _CCCL_NVTX_RANGE_SCOPE_IF(should_enable_nvtx_for_policy<System1>() || should_enable_nvtx_for_policy<System2>(),
+                            "thrust::two_system_copy");
   using thrust::system::detail::generic::select_system;
 
   return thrust::copy(

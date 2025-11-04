@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -35,8 +35,6 @@ namespace detail
 template <typename DerivedPolicy>
 inline constexpr bool should_enable_nvtx_for_policy()
 {
-  using Policy = typename ::cuda::std::remove_cv<typename ::cuda::std::remove_reference<DerivedPolicy>::type>::type;
-
   // Check if Policy is derived from sequential::execution_policy
   // This catches thrust::seq, cpp::tag, and any other sequential-based policy
   return !::cuda::std::is_base_of<thrust::system::detail::sequential::execution_policy<Policy>, Policy>::value
