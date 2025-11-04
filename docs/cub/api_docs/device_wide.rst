@@ -47,7 +47,7 @@ Key properties of the environment argument:
 - Streams can be forwarded by specifying ``cuda::get_stream`` properties.
 - You can select the memory resource (CCCL-provided or custom) used for internal allocations.
 - Supported algorithms accept determinism requirements (for example, ``cuda::execution::determinism::gpu_to_gpu``).
-- Multiple properties compose into a single centralized control point.
+- Multiple properties compose into a single centralized argument.
 
 Example (centralized control via a single environment argument):
 
