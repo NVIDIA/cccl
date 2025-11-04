@@ -517,12 +517,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
                      typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
                      typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
 
-  static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = SegmentedPolicyT::ITEMS_PER_THREAD;
-  static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
-  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
-  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr int BLOCK_THREADS = SegmentedPolicyT::BLOCK_THREADS;
+  static constexpr int RADIX_BITS    = SegmentedPolicyT::RADIX_BITS;
+  static constexpr int RADIX_DIGITS  = 1 << RADIX_BITS;
 
   // Upsweep type
   using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, SegmentSizeT, DecomposerT>;
