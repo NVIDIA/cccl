@@ -11,10 +11,10 @@
 
 #include <dlpack/dlpack.h> // to include before the make_from_dlpack.h
 //
-#include <cuda/tma>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
+#include <cuda/tma>
 
 #include <cuda_runtime_api.h>
 
