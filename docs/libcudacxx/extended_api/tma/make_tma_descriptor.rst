@@ -23,7 +23,7 @@ Defined in the ``<cuda/tma>`` header.
       tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
 
     template <size_t BoxDimSize>
-    [[nodiscard]] inline 
+    [[nodiscard]] inline
     CUtensorMap make_tma_descriptor(
         const DLTensor&                        tensor,
         cuda::std::span<const int, BoxDimSize> box_sizes,
