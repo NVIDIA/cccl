@@ -66,7 +66,7 @@ _CCCL_HOST_API bool is_host_accessible(_Pointer __p)
     ::cuda::std::span<::CUpointer_attribute, 2>{__attrs}, ::cuda::std::span<void*, 2>{__results}, __p1);
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "__query_host_or_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   if (__memory_type == static_cast<::CUmemorytype>(0)) // check if the pointer is unregistered
   {
