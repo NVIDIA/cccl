@@ -130,7 +130,10 @@ struct launch_transform_to_int_convertible
 
     // Immovable to ensure that device_transform doesn't copy the returned
     // object
-    int_convertible(int_convertible&&) = delete;
+    // NOTE: For now just make sure we move and not copy, once we fix the
+    // device transform we can handle immovable types.
+    int_convertible(int_convertible&&) noexcept = default;
+    int_convertible(const int_convertible&) noexcept = delete;
 
     ~int_convertible() noexcept
     {
