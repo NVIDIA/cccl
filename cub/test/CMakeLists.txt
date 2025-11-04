@@ -91,6 +91,7 @@ endfunction()
 #
 function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
+  cub_get_target_property(config_dialect ${cub_target} DIALECT)
 
   _cub_is_catch2_test(is_catch2_test "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
@@ -106,9 +107,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     set(config_c2h_target ${config_prefix}.test.catch2_helper.lid_${launcher_id})
     if (NOT TARGET ${config_c2h_target})
       add_library(${config_c2h_target} INTERFACE)
-      target_include_directories(${config_c2h_target} INTERFACE "${CUB_SOURCE_DIR}/test")
+      cccl_configure_target(${config_c2h_target} DIALECT ${config_dialect})
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
+      target_include_directories(${config_c2h_target} INTERFACE "${CUB_SOURCE_DIR}/test")
       target_link_libraries(${config_c2h_target} INTERFACE
         ${cub_target}
         cccl.c2h
@@ -118,7 +120,17 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     endif() # config_c2h_target
 
     add_executable(${test_target} "${test_src}")
-    target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
+    cccl_configure_target(${test_target} DIALECT ${config_dialect})
+    cub_clone_target_properties(${test_target} ${cub_target})
+    target_link_libraries(${test_target} PRIVATE
+      ${cub_target}
+      ${config_c2h_target}
+      cccl.c2h.main
+      Catch2::Catch2
+    )
+    target_include_directories(${test_target}
+      PUBLIC "${CUB_SOURCE_DIR}/test"
+    )
     add_dependencies(${config_meta_target} ${test_target})
 
     add_test(NAME ${test_target} COMMAND
@@ -143,26 +155,17 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     if ("${test_target}" MATCHES "test.[A-Za-z0-9_]+_api")
       target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
     endif()
-
-    target_link_libraries(${test_target} PRIVATE
-      ${cub_target}
-      ${config_c2h_target}
-      Catch2::Catch2
-    )
-    cub_clone_target_properties(${test_target} ${cub_target})
-    target_include_directories(${test_target}
-      PUBLIC "${CUB_SOURCE_DIR}/test"
-    )
   else() # Not catch2:
     # Related target names:
     set(test_meta_target cub.all.test.${test_name})
 
     add_executable(${test_target} "${test_src}")
+    cccl_configure_target(${test_target} DIALECT ${config_dialect})
+    cub_clone_target_properties(${test_target} ${cub_target})
     target_link_libraries(${test_target} PRIVATE
       ${cub_target}
       cccl.c2h
     )
-    cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
     target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
@@ -197,7 +200,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
         endif()
       endif()
-    else()
+    else() # Not fail test:
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})
 

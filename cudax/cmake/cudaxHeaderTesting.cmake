@@ -8,9 +8,9 @@
 add_custom_target(cudax.all.headers)
 
 function(cudax_add_header_test label definitions)
-  foreach(cn_target IN LISTS cudax_TARGETS)
-    cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-    cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+  foreach(cudax_target IN LISTS cudax_TARGETS)
+    cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
+    cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
     ###################
     # Non-STF headers #
@@ -30,12 +30,12 @@ function(cudax_add_header_test label definitions)
         "cuda/experimental/stf.cuh"
         "cuda/experimental/__stf/*"
     )
-    target_link_libraries(${headertest_target} PUBLIC ${cn_target})
+    target_link_libraries(${headertest_target} PUBLIC ${cudax_target})
     target_compile_definitions(${headertest_target} PRIVATE
       ${definitions}
       "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     )
-    cudax_clone_target_properties(${headertest_target} ${cn_target})
+    cudax_clone_target_properties(${headertest_target} ${cudax_target})
 
     add_dependencies(cudax.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
@@ -50,8 +50,8 @@ function(cudax_add_header_test label definitions)
           "cuda/experimental/cufile.cuh"
           "cuda/experimental/__cufile/*.cuh"
       )
-      target_link_libraries(${headertest_target} PUBLIC ${cn_target})
-      cudax_clone_target_properties(${headertest_target} ${cn_target})
+      target_link_libraries(${headertest_target} PUBLIC ${cudax_target})
+      cudax_clone_target_properties(${headertest_target} ${cudax_target})
 
       add_dependencies(cudax.all.headers ${headertest_target})
       add_dependencies(${config_prefix}.all ${headertest_target})
@@ -74,7 +74,7 @@ function(cudax_add_header_test label definitions)
         # the following line removed:
         HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
       )
-      target_link_libraries(${headertest_target} PUBLIC ${cn_target})
+      target_link_libraries(${headertest_target} PUBLIC ${cudax_target})
       target_compile_options(${headertest_target} PRIVATE
         # Required by stf headers:
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
@@ -83,7 +83,7 @@ function(cudax_add_header_test label definitions)
         # necessary.
         $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
       )
-      cudax_clone_target_properties(${headertest_target} ${cn_target})
+      cudax_clone_target_properties(${headertest_target} ${cudax_target})
 
       add_dependencies(cudax.all.headers ${headertest_target})
       add_dependencies(${config_prefix}.all ${headertest_target})
