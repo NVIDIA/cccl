@@ -31,15 +31,11 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__utility/select_execution_space.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 enum class _IsConstIter
 {
   __no,
@@ -63,11 +59,11 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator;
 
 // We restrict all accessors of the iterator based on the execution space
-template <class _Tp, _IsConstIter _IsConst, _ExecutionSpace _Space>
+template <class _Tp, _IsConstIter _IsConst, ::cuda::mr::__memory_accessability _Space>
 class __heterogeneous_iterator_access;
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -114,7 +110,7 @@ protected:
 };
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -161,7 +157,7 @@ protected:
 };
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host_device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host_device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -211,12 +207,12 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator
     : public __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
                                              ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                             __select_execution_space<_Properties...>>
+                                             ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>
 {
   using __base =
     __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
                                     ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                    __select_execution_space<_Properties...>>;
+                                    ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>;
 
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -411,16 +407,16 @@ public:
     return this->__ptr_;
   }
 };
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Here be dragons: We need to ensure that the iterator can work with legacy interfaces that take a pointer.
 // This will obviously eat all of our execution checks
 template <class _Tp, class... _Properties>
-struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Properties...>>
+struct pointer_traits<::cuda::heterogeneous_iterator<_Tp, _Properties...>>
 {
-  using pointer         = ::cuda::experimental::heterogeneous_iterator<_Tp, _Properties...>;
+  using pointer         = ::cuda::heterogeneous_iterator<_Tp, _Properties...>;
   using element_type    = _Tp;
   using difference_type = ::cuda::std::ptrdiff_t;
 
@@ -434,8 +430,6 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/std/__cccl/epilogue.h>
 
