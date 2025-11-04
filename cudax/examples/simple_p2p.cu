@@ -30,7 +30,7 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
-#include <cuda/algorithm.h>
+#include <cuda/algorithm>
 #include <cuda/devices>
 #include <cuda/memory_resource>
 

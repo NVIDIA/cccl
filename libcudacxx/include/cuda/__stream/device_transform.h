@@ -122,7 +122,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     __optional_with_a_destructor<__transform_result_t<_Arg>> __storage = cuda::std::nullopt) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return _CCCL_MOVE(__storage.emplace(transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg))))
         .transformed_argument();
@@ -142,7 +142,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   [[nodiscard]] _CCCL_HOST_API auto operator()(_Stream&& __stream, _Arg&& __arg) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
@@ -155,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   template <typename _Arg>
   [[nodiscard]] _CCCL_HOST_API auto operator()(::cuda::std::__ignore_t, _Arg&& __arg) const -> decltype(auto)
   {
-    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, _Arg>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, _Arg>)
     {
       return ::cuda::std::forward<_Arg>(__arg).transformed_argument();
     }
