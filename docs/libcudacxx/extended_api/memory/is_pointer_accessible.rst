@@ -21,7 +21,7 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
 .. code:: cuda
 
    namespace cuda {
-        
+
    [[nodiscard]] inline
    bool is_device_accessible(const void* ptr, device_ref device);
 
