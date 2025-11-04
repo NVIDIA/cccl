@@ -22,6 +22,8 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
+#  include <cuda/__device/attributes.h>
+#  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__algorithm/min.h>
@@ -31,6 +33,8 @@
 #  include <cuda/std/cstdint>
 #  include <cuda/std/limits>
 #  include <cuda/std/span>
+
+#  include <driver_types.h>
 
 #  include <dlpack/dlpack.h>
 //
@@ -93,7 +97,6 @@ enum class tma_swizzle
     default:
       _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapL2promotion
@@ -112,7 +115,6 @@ __to_cutensor_map(tma_l2_fetch_size __l2_fetch_size) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapInterleave
@@ -129,7 +131,6 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapSwizzle __to_cutensor_map(tma_swizzle __swizzle) noexcept
@@ -155,7 +156,6 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     default:
       _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
@@ -189,7 +189,6 @@ __to_cutensor_map_size(::cuda::std::size_t __num_items, ::CUtensorMapDataType __
     default:
       _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 /***********************************************************************************************************************
@@ -200,11 +199,12 @@ _CCCL_HOST_API inline void __check_device(const ::DLTensor& __tensor, tma_swizzl
 {
   _CCCL_VERIFY(__tensor.device.device_type == ::kDLCUDA || __tensor.device.device_type == ::kDLCUDAManaged,
                "Device type must be kDLCUDA or kDLCUDAManaged");
-  _CCCL_VERIFY(__tensor.device.device_id >= 0, "Device ID must be a valid GPU device ordinal");
-  auto __current_device = ::cuda::__driver::__deviceGet(static_cast<int>(__tensor.device.device_id));
-  auto __compute_capability =
-    ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, __current_device);
-  _CCCL_VERIFY(__compute_capability >= 9, "Compute capability 9.0 or higher is required");
+  auto __current_device     = ::cuda::device_ref(__tensor.device.device_id);
+  auto __compute_capability = __current_device.attribute<::cudaDevAttrComputeCapabilityMajor>();
+  // auto __current_device = ::cuda::__driver::__deviceGet(__tensor.device.device_id);
+  // auto __compute_capability =
+  //   ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, __current_device);
+  //_CCCL_VERIFY(__compute_capability >= 9, "Compute capability 9.0 or higher is required");
   if (__compute_capability >= 10)
   {
     return;
@@ -464,7 +464,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
   }
-  auto __max_shmem =
+  const auto __max_shmem =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
   _CCCL_VERIFY(::cuda::__to_cutensor_map_size(__total_size, __data_type) <= static_cast<size_t>(__max_shmem),
                "Box sizes do not fit in shared memory");
