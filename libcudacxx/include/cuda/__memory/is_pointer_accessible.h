@@ -37,11 +37,15 @@ _CCCL_HOST_API inline bool is_managed(const void* __p)
   bool __is_managed{};
   const auto __status =
     ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p);
-  if (__status != ::cudaErrorInvalidValue && __status != ::cudaSuccess)
+  switch (__status)
   {
-    ::cuda::__throw_cuda_error(__status, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    case ::cudaSuccess:
+      return __is_managed;
+    case ::cudaErrorInvalidValue:
+      return false;
+    default:
+      ::cuda::__throw_cuda_error(__status, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  return (__status == ::cudaErrorInvalidValue) || __is_managed;
 }
 
 [[nodiscard]]
