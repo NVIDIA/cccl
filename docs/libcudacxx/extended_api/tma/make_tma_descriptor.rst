@@ -12,8 +12,8 @@ Defined in the ``<cuda/tma>`` header.
     namespace cuda {
 
     template <size_t BoxDimSize, size_t ElemStrideSize>
-    [[nodiscard]] inline __host__
-    CUtensorMapmake_tma_descriptor(
+    [[nodiscard]] inline
+    CUtensorMap make_tma_descriptor(
       const DLTensor&                            tensor,
       cuda::std::span<const int, BoxDimSize>     box_sizes,
       cuda::std::span<const int, ElemStrideSize> elem_strides,
@@ -23,8 +23,8 @@ Defined in the ``<cuda/tma>`` header.
       tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
 
     template <size_t BoxDimSize>
-    [[nodiscard]] inline CUtensorMap
-    make_tma_descriptor(
+    [[nodiscard]] inline 
+    CUtensorMap make_tma_descriptor(
         const DLTensor&                        tensor,
         cuda::std::span<const int, BoxDimSize> box_sizes,
         tma_interleave_layout                  interleave_layout = tma_interleave_layout::none,

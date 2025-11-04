@@ -22,7 +22,7 @@
 
 constexpr auto no_interleave = cuda::tma_interleave_layout::none;
 
-__host__ bool test_ranks()
+bool test_ranks()
 {
   alignas(128) float data[64]{};
   constexpr int64_t shape_storage[5]   = {128, 128, 128, 128, 128};
@@ -54,7 +54,7 @@ __host__ bool test_ranks()
   return true;
 }
 
-__host__ bool test_address_alignment()
+bool test_address_alignment()
 {
   alignas(16) float data_16B[64]{};
   alignas(32) float data_32B[64]{};
@@ -85,7 +85,7 @@ __host__ bool test_address_alignment()
   return true;
 }
 
-__host__ bool test_sizes()
+bool test_sizes()
 {
   alignas(128) float data[64]{};
   constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 32};
@@ -108,7 +108,7 @@ __host__ bool test_sizes()
   return true;
 }
 
-__host__ bool test_strides()
+bool test_strides()
 {
   alignas(128) float data[64]{};
   constexpr int64_t shape_storage[2] = {16, 128};
@@ -137,7 +137,7 @@ __host__ bool test_strides()
   return true;
 }
 
-__host__ bool test_box_sizes()
+bool test_box_sizes()
 {
   alignas(128) float data[64]{};
   constexpr int64_t shape_storage[1]   = {256};
@@ -160,7 +160,7 @@ __host__ bool test_box_sizes()
   return true;
 }
 
-__host__ bool test_elem_strides()
+bool test_elem_strides()
 {
   alignas(128) float data[64]{};
   constexpr int64_t shape_storage[]   = {128, 128, 128};
@@ -185,7 +185,7 @@ __host__ bool test_elem_strides()
   return true;
 }
 
-__host__ bool test_enums()
+bool test_enums()
 {
   constexpr cuda::tma_oob_fill tma_oob_fill_array[]           = {cuda::tma_oob_fill::none, cuda::tma_oob_fill::nan};
   constexpr cuda::tma_l2_fetch_size tma_l2_fetch_size_array[] = {
