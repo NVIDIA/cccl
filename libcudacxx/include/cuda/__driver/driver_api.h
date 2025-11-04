@@ -339,7 +339,7 @@ __memGetAllocationPropertiesFromHandleNoThrow(::CUmemAllocationProp* __prop, ::C
   return static_cast<::cudaError_t>(__driver_fn(__prop, __handle));
 }
 
-_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
