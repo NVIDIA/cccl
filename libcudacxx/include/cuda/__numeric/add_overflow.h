@@ -180,7 +180,9 @@ template <typename _Tp>
 
 template <typename _Result, typename _Lhs, typename _Rhs>
 inline constexpr bool __is_add_representable_v =
-  (sizeof(_Result) > sizeof(_Lhs) && sizeof(_Result) > sizeof(_Rhs) && ::cuda::std::is_signed_v<_Result>);
+  sizeof(_Result) > sizeof(_Lhs) && sizeof(_Result) > sizeof(_Rhs)
+  && (::cuda::std::is_signed_v<_Result>
+      || (::cuda::std::is_unsigned_v<_Lhs> && ::cuda::std::is_unsigned_v<_Rhs> && ::cuda::std::is_unsigned_v<_Result>) );
 
 /***********************************************************************************************************************
  * Public interface
@@ -193,8 +195,8 @@ _CCCL_TEMPLATE(typename _Result = void,
                typename _ActualResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
 _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_integer_v<_Result>)
                  _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
-[[nodiscard]] _CCCL_API constexpr overflow_result<_ActualResult>
-add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
+[[nodiscard]]
+_CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
 // (1) __builtin_add_overflow is not available in a constant expression with gcc + nvcc
 // (2) __builtin_add_overflow generates suboptimal code with nvc++ and clang-cuda for device code
