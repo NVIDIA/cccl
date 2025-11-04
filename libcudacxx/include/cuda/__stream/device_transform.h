@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
-#define _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#ifndef _CUDA__STREAM_DEVICE_TRANSFORM_H
+#define _CUDA__STREAM_DEVICE_TRANSFORM_H
 
 #include <cuda/__cccl_config>
 
@@ -22,9 +22,11 @@
 #endif // no system header
 
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__type_traits/is_instantiable_with.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_reference.h>
@@ -32,19 +34,15 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/variant.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 // This function turns rvalues into prvalues and leaves lvalues as is.
 template <typename _Tp>
-_CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(__nothrow_movable<_Tp>) -> _Tp
+_CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Tp>)
+  -> _Tp
 {
   return ::cuda::std::forward<_Tp>(__value);
 }
@@ -85,22 +83,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   using __transformed_argument_t =
     __remove_rvalue_reference_t<decltype(::cuda::std::declval<_Arg>().transformed_argument())>;
 
-#if _CCCL_COMPILER(MSVC)
-  // MSVC has a bug where it rejects the use of an immovable type in a defaulted function
-  // argument.
-  // https://developercommunity.visualstudio.com/t/rejects-valid-cannot-use-an-immovable/10932844
-  template <typename _Arg>
-  struct __optional : execution::__variant<_Arg>
-  {
-    __optional() = default;
-    __optional(__optional&&); // declared but not defined
-  };
-#else
-  template <typename _Arg>
-  using __optional = execution::__variant<_Arg>;
-#endif
-
-  // The use of `__variant` here is to move the destruction of the object returned from
+  // The use of `optional` here is to move the destruction of the object returned from
   // transform_device_argument into the caller's stack frame. Objects created for default arguments
   // are located in the caller's stack frame. This is so that a use of `device_transform`
   // such as:
@@ -120,26 +103,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   //   auto operator()(::cuda::stream_ref stream, Arg&& arg, auto&& action = transform_device_argument(arg))
   //
   // but sadly that is not valid C++.
+  // TODO move to use __variant type once cuda/experimental/execution/__variant is moved to libcudacxx
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND(
     !::cuda::std::is_reference_v<__transform_result_t<_Arg>>))
   [[nodiscard]] _CCCL_HOST_API auto
-  operator()(_Stream&& __stream, _Arg&& __arg, __optional<__transform_result_t<_Arg>> __storage = {}) const
+  operator()(_Stream&& __stream, _Arg&& __arg, ::cuda::std::optional<__transform_result_t<_Arg>> __storage = {}) const
     -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
-      return _CCCL_MOVE(__storage.__emplace_from([&] {
-               return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
-             }))
+      return _CCCL_MOVE(__storage.emplace(transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg))))
         .transformed_argument();
     }
     else
     {
-      return _CCCL_MOVE(__storage.__emplace_from([&] {
-        return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
-      }));
+      return _CCCL_MOVE(__storage.emplace(transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg))));
     }
   }
 
@@ -152,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   [[nodiscard]] _CCCL_HOST_API auto operator()(_Stream&& __stream, _Arg&& __arg) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
@@ -165,7 +145,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   template <typename _Arg>
   [[nodiscard]] _CCCL_HOST_API auto operator()(::cuda::std::__ignore_t, _Arg&& __arg) const -> decltype(auto)
   {
-    if constexpr (__is_instantiable_with<__transformed_argument_t, _Arg>)
+    if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, _Arg>)
     {
       return ::cuda::std::forward<_Arg>(__arg).transformed_argument();
     }
@@ -182,8 +162,9 @@ _CCCL_GLOBAL_CONSTANT auto device_transform = __tfx::__device_transform_t{};
 template <typename _Arg>
 using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
   __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__device_transform_t, ::cuda::stream_ref, _Arg>>;
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#endif // _CUDA__STREAM_DEVICE_TRANSFORM_H
