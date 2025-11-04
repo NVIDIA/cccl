@@ -1108,7 +1108,6 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
 }
 
-// Common iterator helpers shared by segmented tests
 inline std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
   std::string_view index_ty_name,
   std::string_view state_name,
@@ -1135,9 +1134,9 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
 
   static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ {2} {0}({1}* state)
+extern "C" __device__ void {0}({1}* state, {2}* result)
 {{
-  return (state->linear_id) * (state->segment_size);
+  *result = (state->linear_id) * (state->segment_size);
 }}
 )XXX";
 
