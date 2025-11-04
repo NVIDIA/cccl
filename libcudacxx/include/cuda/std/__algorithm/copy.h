@@ -55,7 +55,7 @@ _CCCL_API constexpr bool __dispatch_memmove(_Up* __result, _Tp* __first, const s
   _CCCL_BUILTIN_MEMMOVE(__result, __first, __n * sizeof(_Up));
   return true;
 #else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     ::cuda::std::memmove(__result, __first, __n * sizeof(_Up));
     return true;
