@@ -111,6 +111,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   {
     using ::cuda::std::optional<_Tp>::optional;
     ~__optional_with_a_destructor() {}
+
+    template <class _Fn>
+    _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& __emplace_from_fn(_Fn&& __fn)
+    {
+      _CCCL_ASSERT(!this->has_value(), "__construct called for engaged __optional_storage");
+      new (::cuda::std::addressof(this->__get())) _Tp(::cuda::std::invoke(::cuda::std::forward<_Fn>(__fn)));
+      this->__set_engaged(true);
+      return this->__get();
+    }
   };
 
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
@@ -124,12 +133,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
-      return _CCCL_MOVE(__storage.emplace(transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg))))
+      return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
+               return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+             }))
         .transformed_argument();
     }
     else
     {
-      return _CCCL_MOVE(__storage.emplace(transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg))));
+      return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
+        return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+      }));
     }
   }
 
