@@ -11,7 +11,7 @@
 #ifndef __ALGORITHM_COMMON__
 #define __ALGORITHM_COMMON__
 
-#include <cuda/algorithm.h>
+#include <cuda/algorithm>
 #include <cuda/memory_resource>
 #include <cuda/std/mdspan>
 
