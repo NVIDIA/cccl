@@ -1,4 +1,11 @@
-# This example uses C++20 ranges. CUDA 13 nvcc has incompatibilities with GCC 14's libstdc++ ranges implementation.
+# This example uses C++20 ranges, so it requires C++20.
+if (NOT "20" STREQUAL "${config_dialect}")
+    set_target_properties(${example_target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    set_tests_properties(${example_target} PROPERTIES DISABLED TRUE)
+    return()
+endif()
+
+# CUDA 13 nvcc has incompatibilities with GCC 14's libstdc++ ranges implementation.
 # Disable this example for CUDA 13 + GCC 14 combination.
 if ("CUDA" STREQUAL "${config_device}" AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS "14.0")
     if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
