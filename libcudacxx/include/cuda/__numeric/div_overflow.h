@@ -83,9 +83,9 @@ _CCCL_API constexpr overflow_result<_ActualResult> div_overflow(const _Lhs __lhs
     using ::cuda::std::is_unsigned_v;
     using ::cuda::std::make_unsigned_t;
     using ::cuda::std::numeric_limits;
-    constexpr bool __both_signed = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
-    const bool __lhs_ge_zero     = is_unsigned_v<_Lhs> || __lhs >= _Lhs{0};
-    const bool __rhs_ge_zero     = is_unsigned_v<_Rhs> || __rhs >= _Rhs{0};
+    constexpr bool __both_signed              = is_signed_v<_Lhs> && is_signed_v<_Rhs>;
+    [[maybe_unused]] const bool __lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= _Lhs{0};
+    [[maybe_unused]] const bool __rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= _Rhs{0};
     if constexpr (__both_signed)
     {
       constexpr auto __lhs_min = numeric_limits<_Lhs>::min();
