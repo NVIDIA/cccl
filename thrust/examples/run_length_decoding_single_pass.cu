@@ -1,4 +1,7 @@
-// nvcc -arch=native -std=c++20 --extended-lambda --expt-relaxed-constexpr run_length_decode.cu -o run_length_decode
+// This example demonstrates a single-pass run-length decoding algorithm using thrust::inclusive_scan.
+// The algorithm processes run-length encoded data and expands it in a single pass by computing
+// offsets during the scan and filling the output array as the scan proceeds. The size of the output
+// has to be known ahead of time.
 
 #include <thrust/fill.h>
 #include <thrust/scan.h>
@@ -98,15 +101,36 @@ int main() {
   thrust::device_vector<CountType> counts(size);
   thrust::fill(thrust::device, counts.begin(), counts.end(), repeat);
 
+  // Print first 32 elements of compressed input
+  thrust::host_vector<ValueType> values_h(32);
+  thrust::host_vector<CountType> counts_h(32);
+  thrust::copy(values.begin(), values.begin() + 32, values_h.begin());
+  thrust::copy(counts.begin(), counts.begin() + 32, counts_h.begin());
+
+  std::cout << "Compressed input (first 32 runs):" << std::endl;
+  for (CountType i = 0; i < 32; ++i) {
+    std::cout << "(" << values_h[i] << "," << counts_h[i] << ")";
+    if (i < 31) std::cout << " ";
+  }
+  std::cout << std::endl << std::endl;
+
   thrust::device_vector<ValueType> output(size * repeat);
 
   auto out_end = run_length_decode(values.begin(), counts.begin(), values.size(),
                                    output.begin(), output.size());
 
-  if (out_end - output.begin() != size * repeat) throw int{};
+  if (static_cast<CountType>(out_end - output.begin()) != size * repeat) throw int{};
 
   thrust::host_vector<ValueType> observed(size * repeat);
   thrust::copy(output.begin(), out_end, observed.begin());
+
+  // Print first 32 elements of decompressed output
+  std::cout << "Decompressed output (first 32 elements):" << std::endl;
+  for (CountType i = 0; i < 32; ++i) {
+    std::cout << observed[i];
+    if (i < 31) std::cout << " ";
+  }
+  std::cout << std::endl;
 
   auto gold = std::views::iota(CountType{0})
               | std::views::transform([=](auto x) {
