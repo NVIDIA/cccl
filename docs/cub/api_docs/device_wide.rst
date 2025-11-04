@@ -26,7 +26,7 @@ Most CUB device-wide algorithms follow a two-phase usage pattern:
 **What arguments are needed during the query phase?**
 
 * **Template instantiation**: The query call must use the same template arguments as the execution call.
-* **Argument access**: Aside from ``d_temp_storage``, ``temp_storage_bytes``, and the problem-size arguments, no parameters are inspected during the query phase, so their values may be indeterminate. The dispatch layer returns before launching kernels or touching user storage.
+* **Argument access**: Aside from ``d_temp_storage``, ``temp_storage_bytes``, and the problem-size arguments, no parameters are accessed during the query phase, so their values may be indeterminate. The dispatch layer returns before launching kernels or touching user storage.
 * **Current device**: The computed temporary storage size is valid only when the execution call runs on the same current CUDA device as the query. Re-run the query if the current device changes between phases.
 
 Example pattern:
