@@ -22,7 +22,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator1 search(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -95,6 +94,5 @@ _CCCL_HOST_DEVICE ForwardIterator1 search(
 
   return thrust::system::detail::generic::search(exec, first, last, s_first, s_last, thrust::equal_to<value_type1>());
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
