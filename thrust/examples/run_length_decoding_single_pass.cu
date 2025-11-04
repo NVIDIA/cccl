@@ -3,44 +3,50 @@
 // offsets during the scan and filling the output array as the scan proceeds. The size of the output
 // has to be known ahead of time.
 
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/transform_output_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/iterator/transform_output_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/execution_policy.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 
-#include <cuda/std/cstdint>
 #include <cuda/functional>
+#include <cuda/std/cstdint>
 
 #include <algorithm>
-#include <ranges>
 #include <iostream>
+#include <ranges>
 
 template <typename ValueType, typename CountType>
-struct run {
+struct run
+{
   ValueType value;
   CountType count;
-  CountType offset; // Offset where we should begin outputing the run.
+  CountType offset; // Offset where we should begin outputting the run.
   CountType run_id; // 1-index of the run in the input sequence; subtract by 1 to get the 0-index.
 
-  __host__ __device__ run(ValueType value = ValueType{}, CountType count = 0,
-                          CountType offset = 0, CountType run_id = 1)
-    : value(value), count(count), offset(offset), run_id(run_id) {}
-  run(run const& other) = default;
+  __host__ __device__ run(ValueType value = ValueType{}, CountType count = 0, CountType offset = 0, CountType run_id = 1)
+      : value(value)
+      , count(count)
+      , offset(offset)
+      , run_id(run_id)
+  {}
+  run(run const& other)            = default;
   run& operator=(run const& other) = default;
 
-  __host__ __device__ friend run operator+(run l, run r) {
+  __host__ __device__ friend run operator+(run l, run r)
+  {
     return run{r.value, r.count, l.offset + l.count + r.offset, l.run_id + r.run_id};
   }
 };
 
 template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
-struct expand {
+struct expand
+{
   OutputIterator out;
   CountType out_size;
   CountType runs_size;
@@ -48,28 +54,34 @@ struct expand {
 
   __host__ __device__
   expand(OutputIterator out, CountType out_size, CountType runs_size, ExpandedSizeIterator expanded_size)
-    : out(out), out_size(out_size), runs_size(runs_size), expanded_size(expanded_size) {}
+      : out(out)
+      , out_size(out_size)
+      , runs_size(runs_size)
+      , expanded_size(expanded_size)
+  {}
 
   template <typename ValueType>
-  __host__ __device__
-  CountType operator()(run<ValueType, CountType> r) const {
+  __host__ __device__ CountType operator()(run<ValueType, CountType> r) const
+  {
     cuda::std::size_t end = cuda::minimum()(r.offset + r.count, out_size);
     thrust::fill(thrust::seq, out + r.offset, out + end, r.value);
     if (r.run_id == runs_size) // If we're the last run, write the expanded size.
+    {
       *expanded_size = end;
+    }
     return end;
   }
 };
 
 template <typename ValueIterator, typename CountIterator, typename OutputIterator, typename CountType>
-OutputIterator run_length_decode(ValueIterator values, CountIterator counts, CountType runs_size,
-                                 OutputIterator out, CountType out_size) {
+OutputIterator run_length_decode(
+  ValueIterator values, CountIterator counts, CountType runs_size, OutputIterator out, CountType out_size)
+{
   using ValueType = typename ValueIterator::value_type;
 
   // Zip the values and counts together and convert the resulting tuples to a named struct.
   auto runs = thrust::make_transform_iterator(
-    thrust::make_zip_iterator(values, counts),
-    [] __host__ __device__ (thrust::tuple<ValueType, CountType> tup) {
+    thrust::make_zip_iterator(values, counts), [] __host__ __device__(thrust::tuple<ValueType, CountType> tup) {
       return run{thrust::get<0>(tup), thrust::get<1>(tup)};
     });
 
@@ -81,18 +93,19 @@ OutputIterator run_length_decode(ValueIterator values, CountIterator counts, Cou
   auto expand_out = thrust::make_transform_output_iterator(
     thrust::make_discard_iterator(), expand(out, out_size, runs_size, expanded_size.begin()));
 
-  // Scan to compute outut offsets and then write the expanded sequence.
+  // Scan to compute output offsets and then write the expanded sequence.
   thrust::inclusive_scan(thrust::device, runs, runs + runs_size, expand_out);
 
   // Calculate the end of the output sequence.
   return out + expanded_size[0];
 }
 
-int main() {
+int main()
+{
   using ValueType = cuda::std::int32_t;
   using CountType = cuda::std::size_t;
 
-  CountType size = 8192;
+  CountType size   = 8192;
   CountType repeat = 4;
 
   thrust::device_vector<ValueType> values(size);
@@ -108,36 +121,49 @@ int main() {
   thrust::copy(counts.begin(), counts.begin() + 32, counts_h.begin());
 
   std::cout << "Compressed input (first 32 runs):" << std::endl;
-  for (CountType i = 0; i < 32; ++i) {
+  for (CountType i = 0; i < 32; ++i)
+  {
     std::cout << "(" << values_h[i] << "," << counts_h[i] << ")";
-    if (i < 31) std::cout << " ";
+    if (i < 31)
+    {
+      std::cout << " ";
+    }
   }
   std::cout << std::endl << std::endl;
 
   thrust::device_vector<ValueType> output(size * repeat);
 
-  auto out_end = run_length_decode(values.begin(), counts.begin(), values.size(),
-                                   output.begin(), output.size());
+  auto out_end = run_length_decode(values.begin(), counts.begin(), values.size(), output.begin(), output.size());
 
-  if (static_cast<CountType>(out_end - output.begin()) != size * repeat) throw int{};
+  if (static_cast<CountType>(out_end - output.begin()) != size * repeat)
+  {
+    throw int{};
+  }
 
   thrust::host_vector<ValueType> observed(size * repeat);
   thrust::copy(output.begin(), out_end, observed.begin());
 
   // Print first 32 elements of decompressed output
   std::cout << "Decompressed output (first 32 elements):" << std::endl;
-  for (CountType i = 0; i < 32; ++i) {
+  for (CountType i = 0; i < 32; ++i)
+  {
     std::cout << observed[i];
-    if (i < 31) std::cout << " ";
+    if (i < 31)
+    {
+      std::cout << " ";
+    }
   }
   std::cout << std::endl;
 
-  auto gold = std::views::iota(CountType{0})
-              | std::views::transform([=](auto x) {
-                  return std::views::iota(CountType{0}, repeat)
-                      | std::views::transform([=](auto){ return x; });
-                })
-              | std::views::join;
+  auto gold = std::views::iota(CountType{0}) | std::views::transform([=](auto x) {
+                return std::views::iota(CountType{0}, repeat) | std::views::transform([=](auto) {
+                         return x;
+                       });
+              })
+            | std::views::join;
 
-  if (!std::equal(observed.begin(), observed.end(), gold.begin())) throw int{};
+  if (!std::equal(observed.begin(), observed.end(), gold.begin()))
+  {
+    throw int{};
+  }
 }
