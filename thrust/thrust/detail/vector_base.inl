@@ -34,8 +34,10 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/distance.h>
 #include <thrust/equal.h>
+#include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
@@ -881,12 +883,11 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
 {
   if (n == 0)
   {
-    // Clear existing elements so the vector has size 0
     if (size() > 0)
     {
       m_storage.destroy(begin(), end());
+      m_size = 0;
     }
-    m_size = 0;
     return;
   }
 
@@ -897,16 +898,8 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
     // compute the new capacity after the allocation
     size_type new_capacity = old_size + ::cuda::std::max THRUST_PREVENT_MACRO_SUBSTITUTION(old_size, n);
 
-    // allocate exponentially larger new storage
-    new_capacity = ::cuda::std::max<size_type>(new_capacity, 2 * capacity());
-
-    // do not exceed maximum storage
-    new_capacity = ::cuda::std::min<size_type>(new_capacity, max_size());
-
-    if (new_capacity > max_size())
-    {
-      throw std::length_error("insert(): insertion exceeds max_size().");
-    } // end if
+    // Ensure allocation grows exponentially within bounds
+    new_capacity = ::cuda::std::clamp<size_type>(new_capacity, static_cast<size_type>(2 * capacity()), max_size());
 
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
@@ -934,54 +927,53 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
       throw;
     } // end catch
 
-    // call destructors on the elements in the old storage
-    m_storage.destroy(begin(), end());
-
     // record the vector's new state
     m_storage.swap(new_storage);
+
+    // call destructors on the elements in the old storage
+    new_storage.destroy(new_storage.begin(), new_storage.begin() + old_size);
+
     m_size = old_size + n;
+    return;
   }
+
+  // we've got room for all of them
+  const size_type num_displaced_elements = end() - position;
+  iterator old_end                       = end();
+
+  if (num_displaced_elements > n)
+  {
+    // construct copy n displaced elements to new elements
+    // following the insertion
+    m_storage.uninitialized_copy(end() - n, end(), end());
+
+    // extend the size
+    m_size += n;
+
+    // copy num_displaced_elements - n elements to existing elements
+    // this copy overlaps
+    const size_type copy_length = (old_end - n) - position;
+    thrust::detail::overlapped_copy(position, old_end - n, old_end - copy_length);
+
+    // finally, fill the range to the insertion point
+    thrust::fill_n(position, n, x);
+  } // end if
   else
   {
-    // we've got room for all of them
-    // how many existing elements will we displace?
-    const size_type num_displaced_elements = end() - position;
-    iterator old_end                       = end();
+    // construct new elements at the end of the vector
+    m_storage.uninitialized_fill_n(end(), n - num_displaced_elements, x);
 
-    if (num_displaced_elements > n)
-    {
-      // construct copy n displaced elements to new elements
-      // following the insertion
-      m_storage.uninitialized_copy(end() - n, end(), end());
+    // extend the size
+    m_size += n - num_displaced_elements;
 
-      // extend the size
-      m_size += n;
+    // construct copy the displaced elements
+    m_storage.uninitialized_copy(position, old_end, end());
 
-      // copy num_displaced_elements - n elements to existing elements
-      // this copy overlaps
-      const size_type copy_length = (old_end - n) - position;
-      thrust::detail::overlapped_copy(position, old_end - n, old_end - copy_length);
+    // extend the size
+    m_size += num_displaced_elements;
 
-      // finally, fill the range to the insertion point
-      thrust::fill_n(position, n, x);
-    } // end if
-    else
-    {
-      // construct new elements at the end of the vector
-      m_storage.uninitialized_fill_n(end(), n - num_displaced_elements, x);
-
-      // extend the size
-      m_size += n - num_displaced_elements;
-
-      // construct copy the displaced elements
-      m_storage.uninitialized_copy(position, old_end, end());
-
-      // extend the size
-      m_size += num_displaced_elements;
-
-      // fill to elements which already existed
-      thrust::fill(position, old_end, x);
-    } // end else
+    // fill to elements which already existed
+    thrust::fill(position, old_end, x);
   } // end else
 } // end vector_base::fill_insert()
 
