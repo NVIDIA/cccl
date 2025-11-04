@@ -54,28 +54,22 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
-    /// The number of warp scan steps
-    STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
+  /// The number of warp scan steps
+  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8
-  };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  static constexpr int SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
 
   template <typename S>
   struct IntegerTraits
   {
-    enum
-    {
-      /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
-      /// exchange
-      IS_SMALL_UNSIGNED =
-        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
-    };
+    /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
+    /// exchange
+    static constexpr bool IS_SMALL_UNSIGNED =
+      ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int));
   };
 
   /// Shared memory storage layout type

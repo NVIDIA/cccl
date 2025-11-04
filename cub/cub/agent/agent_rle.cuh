@@ -164,24 +164,21 @@ struct AgentRle
   using ScanTileStateT = ReduceByKeyScanTileState<LengthT, OffsetT>;
 
   // Constants
-  enum
-  {
-    WARP_THREADS     = warp_threads,
-    BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD,
-    WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int WARP_THREADS     = warp_threads;
+  static constexpr int BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD;
+  static constexpr int WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    /// Whether or not to sync after loading data
-    SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT),
+  /// Whether or not to sync after loading data
+  static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
 
-    /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
-    /// among block-warps during any store-related data transpositions (versus each warp having
-    /// its own storage)
-    STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING,
-    ACTIVE_EXCHANGE_WARPS   = (STORE_WARP_TIME_SLICING) ? 1 : WARPS,
-  };
+  /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+  /// among block-warps during any store-related data transpositions (versus each warp having
+  /// its own storage)
+  static constexpr bool STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING;
+  static constexpr int ACTIVE_EXCHANGE_WARPS    = (STORE_WARP_TIME_SLICING) ? 1 : WARPS;
 
   /**
    * Special operator that signals all out-of-bounds items are not equal to everything else,

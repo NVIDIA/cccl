@@ -101,11 +101,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
                      typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
                      typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
-  enum
-  {
-    TILE_ITEMS = ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                                  ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
-  };
+  static constexpr int TILE_ITEMS =
+    ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                     ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD);
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
   using AgentRadixSortUpsweepT =
@@ -261,11 +259,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
                      typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
                      typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
-  enum
-  {
-    TILE_ITEMS = ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                                  ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
-  };
+  static constexpr int TILE_ITEMS =
+    ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                     ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD);
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
   using AgentRadixSortDownsweepT = radix_sort::
@@ -341,12 +337,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
     DecomposerT decomposer = {})
 {
   // Constants
-  enum
-  {
-    BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS,
-    ITEMS_PER_THREAD = ChainedPolicyT::ActivePolicy::SingleTilePolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>,
-  };
+  static constexpr int BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = ChainedPolicyT::ActivePolicy::SingleTilePolicy::ITEMS_PER_THREAD;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // BlockRadixSort type
   using BlockRadixSortT =
@@ -524,15 +517,12 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
                      typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
                      typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
 
-  enum
-  {
-    BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = SegmentedPolicyT::ITEMS_PER_THREAD,
-    RADIX_BITS       = SegmentedPolicyT::RADIX_BITS,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-    RADIX_DIGITS     = 1 << RADIX_BITS,
-    KEYS_ONLY        = ::cuda::std::is_same_v<ValueT, NullType>,
-  };
+  static constexpr int BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = SegmentedPolicyT::ITEMS_PER_THREAD;
+  static constexpr int RADIX_BITS       = SegmentedPolicyT::RADIX_BITS;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
+  static constexpr bool KEYS_ONLY       = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // Upsweep type
   using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, SegmentSizeT, DecomposerT>;
@@ -544,11 +534,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   using BlockDownsweepT = detail::radix_sort::
     AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
 
-  enum
-  {
-    /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD
-  };
+  /// Number of bin-starting offsets tracked per thread
+  static constexpr int BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
 
   //
   // Process input tiles
