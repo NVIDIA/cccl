@@ -7,6 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
+
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
 #include <cuda/memory>
