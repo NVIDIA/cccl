@@ -36,7 +36,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief A non-owning representation of a CUDA kernel
 //!
 //! @tparam _Signature The signature of the kernel
@@ -164,9 +163,7 @@ template <class _Tp>
 inline constexpr bool __is_kernel_ref_v<const volatile _Tp> = __is_kernel_ref_v<_Tp>;
 template <class... _Signature>
 inline constexpr bool __is_kernel_ref_v<kernel_ref<_Signature...>> = true;
-
 } // namespace __detail
-
 } // namespace cuda::experimental
 
 #endif // _CUDAX___KERNEL_KERNEL_REF

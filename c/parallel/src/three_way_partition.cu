@@ -47,7 +47,6 @@ static_assert(sizeof(OffsetT) == sizeof(cuda::std::int64_t));
 
 namespace three_way_partition
 {
-
 struct three_way_partition_runtime_tuning_policy
 {
   cub::detail::RuntimeThreeWayPartitionAgentPolicy three_way_partition;

@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct TripleChevronFactory
 {
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
@@ -94,7 +93,6 @@ struct TripleChevronFactory
     return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

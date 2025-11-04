@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
-#define _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H
+#define _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,17 +31,15 @@
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/internal_streams.h>
+#include <cuda/__stream/stream.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/experimental/__stream/internal_streams.cuh>
-#include <cuda/experimental/__stream/stream.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 enum class __pool_attr_settable : bool
 {
@@ -121,7 +119,7 @@ struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    ::cuda::experimental::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
+    ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
   }
 };
 
@@ -131,7 +129,7 @@ struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    ::cuda::experimental::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
+    ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
   }
 };
 
@@ -255,18 +253,41 @@ struct memory_pool_properties
   size_t initial_pool_size                           = 0;
   size_t release_threshold                           = ::cuda::std::numeric_limits<size_t>::max();
   cudaMemAllocationHandleType allocation_handle_type = ::cudaMemAllocationHandleType::cudaMemHandleTypeNone;
+  size_t max_pool_size                               = 0;
 };
 
 //! @brief  Creates the CUDA memory pool from the passed in arguments.
 //! @throws cuda_error If the creation of the CUDA memory pool failed.
 //! @returns The created CUDA memory pool.
 [[nodiscard]] static cudaMemPool_t __create_cuda_mempool(
-  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type) noexcept
+  memory_pool_properties __properties, ::CUmemLocation __location, CUmemAllocationType __allocation_type)
 {
   ::CUmemPoolProps __pool_properties{};
   __pool_properties.allocType   = __allocation_type;
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
+
+#if _CCCL_CTK_AT_LEAST(12, 2)
+  if (__properties.max_pool_size != 0)
+  {
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
+    {
+      ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
+    }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+    if (__properties.initial_pool_size > __properties.max_pool_size)
+    {
+      ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+    }
+  }
+  __pool_properties.maxSize = __properties.max_pool_size;
+#else
+  if (__properties.max_pool_size != 0)
+  {
+    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
@@ -278,9 +299,8 @@ struct memory_pool_properties
   if (__error != ::cudaSuccess)
   {
     // Mempool creation failed, lets try to figure out why
-    ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__location.id);
-    ::cuda::experimental::__verify_device_supports_export_handle_type(
-      __location.id, __properties.allocation_handle_type, __location);
+    ::cuda::__verify_device_supports_stream_ordered_allocations(__location.id);
+    ::cuda::__verify_device_supports_export_handle_type(__location.id, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
     ::cuda::__throw_cuda_error(__error, "Failed to create a memory pool");
@@ -489,8 +509,7 @@ public:
   //! @param __devices A span of `device_ref`s listing devices to enable access for
   _CCCL_HOST_API void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
-    ::cuda::experimental::__mempool_set_access(
-      __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied device
@@ -501,7 +520,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be enabled
   _CCCL_HOST_API void enable_access_from(device_ref __device)
   {
-    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied devices
@@ -513,8 +532,7 @@ public:
   //! @param __devices A span of `device_ref`s listing devices to disable access for
   _CCCL_HOST_API void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
-    ::cuda::experimental::__mempool_set_access(
-      __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
+    ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied device
@@ -525,7 +543,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be disabled
   _CCCL_HOST_API void disable_access_from(device_ref __device)
   {
-    ::cuda::experimental::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
+    ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
@@ -533,7 +551,7 @@ public:
   //! @param __device device for which the access is queried
   [[nodiscard]] _CCCL_HOST_API bool is_accessible_from(device_ref __device)
   {
-    return ::cuda::experimental::__mempool_get_access(__pool_, __device);
+    return ::cuda::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another __memory_resource_base.
@@ -553,8 +571,8 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
+#endif // _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H

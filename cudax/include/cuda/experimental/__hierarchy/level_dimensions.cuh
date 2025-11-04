@@ -21,10 +21,8 @@
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 namespace __detail
 {
-
 /* Keeping it around in case issues like https://github.com/NVIDIA/cccl/issues/522
 template <typename T, size_t... Extents>
 struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
@@ -218,7 +216,6 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
   auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<block_level, decltype(dims)>(dims);
 }
-
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 

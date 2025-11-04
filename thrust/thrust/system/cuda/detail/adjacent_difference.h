@@ -68,10 +68,8 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
 namespace cuda_cub
 {
-
 namespace __adjacent_difference
 {
-
 template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
@@ -184,7 +182,6 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 
   return result + num_items;
 }
-
 } // namespace __adjacent_difference
 
 //-------------------------
@@ -209,7 +206,6 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using input_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::adjacent_difference(policy, first, last, result, ::cuda::std::minus<input_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

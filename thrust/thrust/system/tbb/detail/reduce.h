@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file reduce.h
  *  \brief TBB implementation of reduce.
@@ -29,10 +29,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace reduce_detail
 {
-
 template <typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
 struct body
 {
@@ -96,7 +94,6 @@ struct body
     sum = binary_op(sum, b.sum);
   }
 }; // end body
-
 } // namespace reduce_detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
@@ -119,6 +116,5 @@ OutputType reduce(
     return binary_op(init, reduce_body.sum);
   }
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

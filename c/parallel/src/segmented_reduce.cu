@@ -47,7 +47,6 @@ static_assert(sizeof(OffsetT) == sizeof(::cuda::std::uint64_t));
 
 namespace segmented_reduce
 {
-
 struct segmented_reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy segmented_reduce;

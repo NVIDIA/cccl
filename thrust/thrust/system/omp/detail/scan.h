@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 struct __no_init_tag
 {};
 
@@ -186,6 +185,5 @@ OutputIterator exclusive_scan(
 {
   return scan_impl<false>(exec, first, last, result, init, binary_op);
 }
-
 } // namespace system::omp::detail
 THRUST_NAMESPACE_END

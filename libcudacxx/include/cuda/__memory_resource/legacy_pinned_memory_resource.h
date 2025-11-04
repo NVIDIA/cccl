@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
-#define _CUDA__MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
+#ifndef _CUDA___MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,20 +26,17 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>
 
-#include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
-#include <cuda/experimental/__stream/internal_streams.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
@@ -52,7 +49,7 @@ public:
   //! This constructor takes an optional device argument to specify the device that should be tied to allocations
   //! for the resource. This association has the effect of initializing that device and the memory being implicitly
   //! freed if the device is reset.
-  _CCCL_HOST_API constexpr legacy_pinned_memory_resource(device_ref __device = {0}) noexcept
+  _CCCL_HOST_API constexpr legacy_pinned_memory_resource(::cuda::device_ref __device = {0}) noexcept
       : __device_(__device)
   {}
 
@@ -135,8 +132,8 @@ private:
 static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
 
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA__MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
+#endif //_CUDA___MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H

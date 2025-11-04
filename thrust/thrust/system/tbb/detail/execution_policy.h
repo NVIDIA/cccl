@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -101,7 +101,6 @@ using detail::execution_policy;
 inline constexpr detail::par_t par;
 
 //! \}
-
 } // namespace system::tbb
 
 // aliases:

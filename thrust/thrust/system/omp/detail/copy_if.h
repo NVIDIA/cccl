@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -19,7 +19,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -36,6 +35,5 @@ OutputIterator copy_if(
   // omp prefers generic::copy_if to cpp::copy_if
   return thrust::system::detail::generic::copy_if(exec, first, last, stencil, result, pred);
 } // end copy_if()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

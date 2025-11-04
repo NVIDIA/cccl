@@ -38,15 +38,12 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 class mapping_id_tag
 {};
 
 using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
-
 } // end namespace reserved
 
 class backend_ctx_untyped;
@@ -412,7 +409,6 @@ public:
 
 namespace reserved
 {
-
 /* This method lazily allocates data (possibly reclaiming memory) and copies data if needed */
 template <typename Data>
 void dep_allocate(
@@ -483,7 +479,6 @@ void dep_allocate(
     }
   }
 }
-
 } // end namespace reserved
 
 // inline size_t task_state::hash() const {
@@ -710,5 +705,4 @@ struct hash<task>
     return t.hash();
   }
 };
-
 } // namespace cuda::experimental::stf

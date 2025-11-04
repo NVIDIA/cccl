@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2018-2020, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2018-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file tbb/memory_resource.h
  *  \brief Memory resources for the TBB system.
@@ -23,7 +23,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb
 {
-
 //! \cond
 namespace detail
 {
@@ -53,7 +52,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \} // memory_resources
  */
-
 } // namespace system::tbb
 
 THRUST_NAMESPACE_END

@@ -33,7 +33,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
 {
-
 template <class Fn>
 struct first_parameter
 {
@@ -255,7 +254,6 @@ struct op_wrapper_extents_t
     impl(i, ::cuda::std::make_index_sequence<ExtentsType::rank()>{});
   }
 };
-
 } // namespace detail::for_each
 
 CUB_NAMESPACE_END

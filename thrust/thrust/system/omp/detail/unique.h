@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -20,7 +20,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator
 unique(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
@@ -48,6 +47,5 @@ thrust::detail::it_difference_t<ForwardIterator> unique_count(
   // omp prefers generic::unique_count to cpp::unique_count
   return thrust::system::detail::generic::unique_count(exec, first, last, binary_pred);
 } // end unique_count()
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

@@ -32,7 +32,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy,
           typename InputIterator,
           typename UnaryFunction,
@@ -51,6 +50,5 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
 
   return thrust::reduce(exec, xfrm_first, xfrm_last, init, binary_op);
 } // end transform_reduce()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -26,7 +26,6 @@
 
 namespace c2h::detail
 {
-
 #if !C2H_HAS_CURAND
 struct i_to_rnd_t
 {
@@ -234,5 +233,4 @@ init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, half_t
 template void
 init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, bfloat16_t* out, std::size_t element_size);
 #endif // TEST_BF_T()
-
 } // namespace c2h::detail

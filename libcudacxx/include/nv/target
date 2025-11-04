@@ -40,7 +40,6 @@ namespace target
 {
 namespace detail
 {
-
 typedef unsigned long long base_int_t;
 
 // No host specialization

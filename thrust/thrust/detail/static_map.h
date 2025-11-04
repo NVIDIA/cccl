@@ -31,7 +31,6 @@ namespace detail
 {
 namespace static_map_detail
 {
-
 template <unsigned int k, unsigned int v>
 struct key_value
 {
@@ -110,7 +109,6 @@ struct static_map
     return impl::template get<default_value>(key);
   }
 };
-
 } // end namespace static_map_detail
 
 template <unsigned int default_value,
@@ -162,6 +160,5 @@ _CCCL_HOST_DEVICE unsigned int lookup(unsigned int key)
 {
   return StaticMap::get(key);
 }
-
 } // end namespace detail
 THRUST_NAMESPACE_END

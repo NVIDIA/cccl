@@ -32,7 +32,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 namespace determinism
 {
-
 struct __get_determinism_t;
 
 enum class __determinism_t
@@ -81,7 +80,6 @@ struct __get_determinism_t
 };
 
 _CCCL_GLOBAL_CONSTANT auto __get_determinism = __get_determinism_t{};
-
 } // namespace determinism
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION

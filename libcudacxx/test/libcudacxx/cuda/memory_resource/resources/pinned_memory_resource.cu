@@ -8,26 +8,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
-
-#include <cuda/experimental/memory_resource.cuh>
-#include <cuda/experimental/stream.cuh>
-
-#include <stdexcept>
 
 #include <testing.cuh>
 #include <utility.cuh>
 
 #include "common_tests.cuh"
 
-namespace cudax = cuda::experimental;
-
 #if _CCCL_CTK_AT_LEAST(12, 6)
-#  define TEST_TYPES cudax::legacy_pinned_memory_resource, cudax::pinned_memory_pool_ref
+#  define TEST_TYPES cuda::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-#  define TEST_TYPES cudax::legacy_pinned_memory_resource
+#  define TEST_TYPES cuda::legacy_pinned_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 template <typename Resource>
@@ -40,24 +34,24 @@ void resource_static_asserts()
   static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_move_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_destructible_v<Resource>, "");
-  if constexpr (cuda::std::is_same_v<Resource, cudax::legacy_pinned_memory_resource>)
+  if constexpr (cuda::std::is_same_v<Resource, cuda::legacy_pinned_memory_resource>)
   {
     static_assert(cuda::std::is_default_constructible_v<Resource>, "");
   }
 }
 
-template void resource_static_asserts<cudax::legacy_pinned_memory_resource>();
+template void resource_static_asserts<cuda::legacy_pinned_memory_resource>();
 #if _CCCL_CTK_AT_LEAST(12, 6)
-template void resource_static_asserts<cudax::pinned_memory_pool_ref>();
+template void resource_static_asserts<cuda::pinned_memory_pool_ref>();
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 template <class Resource>
 Resource get_resource()
 {
 #if _CCCL_CTK_AT_LEAST(12, 6)
-  if constexpr (cuda::std::is_same_v<Resource, cudax::pinned_memory_pool_ref>)
+  if constexpr (cuda::std::is_same_v<Resource, cuda::pinned_memory_pool_ref>)
   {
-    return cudax::pinned_default_memory_pool();
+    return cuda::pinned_default_memory_pool();
   }
   else
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
@@ -82,7 +76,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 {
   using pinned_resource = TestType;
   pinned_resource res   = get_resource<pinned_resource>();
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
@@ -230,7 +224,7 @@ static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
+struct derived_pinned_resource : cuda::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
@@ -299,7 +293,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
 #if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
-  cudax::pinned_memory_pool_ref resource = cudax::pinned_default_memory_pool();
+  cuda::pinned_memory_pool_ref resource = cuda::pinned_default_memory_pool();
   test_deallocate_async(resource);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 6)

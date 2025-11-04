@@ -38,6 +38,7 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -54,7 +55,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -86,7 +87,6 @@ _CCCL_CONCEPT __forwarding_continues_on_query =
                get_completion_scheduler_t<set_value_t>,
                get_completion_scheduler_t<set_error_t>,
                get_completion_scheduler_t<set_stopped_t>>;
-
 } // namespace __detail
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
@@ -143,12 +143,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
 
     template <class _Error>
-    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
+    _CCCL_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
@@ -309,15 +309,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
       return {};
     }
 
-    // continues_on has a special rule for the domain used to transform the sender.
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_override_t, _Env&&...) const noexcept
-      -> __completion_domain_of_t<set_value_t, _Sndr, __fwd_env_t<_Env>...>
-    {
-      return {};
-    }
-
     // The completion behavior of continues_on/continues_on is the weaker of the
     // completion behaviors of the predecessor sender and the scheduler's sender.
     template <class... _Env>
@@ -347,18 +338,21 @@ public:
   {
     template <class _Sndr>
     [[nodiscard]]
-    _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sch, _Sndr>
+    _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
     {
       static_assert(__is_sender<_Sndr>);
-      return __sndr_t<_Sch, _Sndr>{{}, __sch_, static_cast<_Sndr&&>(__sndr)};
+      using __child_t = __call_result_t<schedule_from_t, _Sndr>;
+      return __sndr_t<_Sch, __child_t>{{}, __sch_, schedule_from(static_cast<_Sndr&&>(__sndr))};
     }
 
     template <class _Sndr>
     [[nodiscard]]
-    _CCCL_API constexpr friend auto operator|(_Sndr __sndr, __closure_t __clsur) -> __sndr_t<_Sch, _Sndr>
+    _CCCL_API constexpr friend auto operator|(_Sndr __sndr, __closure_t __clsur)
+      -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
     {
       static_assert(__is_sender<_Sndr>);
-      return __sndr_t<_Sch, _Sndr>{{}, __clsur.__sch_, static_cast<_Sndr&&>(__sndr)};
+      using __child_t = __call_result_t<schedule_from_t, _Sndr>;
+      return __sndr_t<_Sch, __child_t>{{}, __clsur.__sch_, schedule_from(static_cast<_Sndr&&>(__sndr))};
     }
 
     _Sch __sch_;
@@ -372,11 +366,13 @@ public:
   }
 
   template <class _Sch, class _Sndr>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const -> __sndr_t<_Sch, _Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
+    -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
-    return __sndr_t<_Sch, _Sndr>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
+    using __child_t = __call_result_t<schedule_from_t, _Sndr>;
+    return __sndr_t<_Sch, __child_t>{{}, __sch, schedule_from(static_cast<_Sndr&&>(__sndr))};
   }
 };
 

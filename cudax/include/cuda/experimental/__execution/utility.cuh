@@ -262,7 +262,7 @@ namespace __detail
 struct __call_or_t
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Fn, class _Default, class... _Args)
+  _CCCL_TEMPLATE(class _Fn, class _Default = __nil, class... _Args)
   _CCCL_REQUIRES(__callable<_Fn, _Args...>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
     noexcept(__nothrow_callable<_Fn, _Args...>) -> __call_result_t<_Fn, _Args...>
@@ -271,19 +271,36 @@ struct __call_or_t
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Default, class... _Args>
+  template <class _Default = __nil,
+            class _Result  = ::cuda::std::_If<__same_as<_Default, __nil>, void, _Default>,
+            class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
-    noexcept(__nothrow_movable<_Default>) -> _Default
+    noexcept(__nothrow_movable<_Default>) -> _Result
   {
-    return static_cast<_Default&&>(__default);
+    return static_cast<_Result>(static_cast<_Default&&>(__default));
   }
+};
+
+template <bool>
+struct __call_result_or
+{
+  template <class _Fn, class _Default, class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = __call_result_t<__call_or_t, _Fn, _Default, _Args...>;
+};
+
+template <>
+struct __call_result_or<true>
+{
+  template <class _Fn, class _Default, class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = decltype(__call_or_t()(declval<_Fn>(), {}, declval<_Args>()...));
 };
 } // namespace __detail
 
 _CCCL_GLOBAL_CONSTANT __detail::__call_or_t __call_or{};
 
 template <class _Fn, class _Default, class... _Args>
-using __call_result_or_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__call_or_t, _Fn, _Default, _Args...>;
+using __call_result_or_t _CCCL_NODEBUG_ALIAS =
+  cuda::std::__type_call<__detail::__call_result_or<__same_as<_Default, __nil>>, _Fn, _Default, _Args...>;
 
 //! @brief A callable that always return a value of type _Ty, regardless of the arguments
 //! passed to it.
@@ -390,7 +407,6 @@ using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

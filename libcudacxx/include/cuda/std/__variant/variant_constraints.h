@@ -41,7 +41,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __find_detail
 {
-
 template <class _Tp, class... _Types>
 _CCCL_API constexpr size_t __find_index()
 {
@@ -66,12 +65,10 @@ using __find_unambiguous_index_sfinae =
   enable_if_t<::cuda::std::__find_detail::__find_index<_Tp, _Types...>()
                 != __not_found&& ::cuda::std::__find_detail::__find_index<_Tp, _Types...>() != __ambiguous,
               integral_constant<size_t, ::cuda::std::__find_detail::__find_index<_Tp, _Types...>()>>;
-
 } // namespace __find_detail
 
 namespace __variant_detail
 {
-
 struct __invalid_variant_constraints
 {
   static constexpr bool __constructible         = false;

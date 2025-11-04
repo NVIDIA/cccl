@@ -55,10 +55,10 @@ C2H_TEST("env_t is queryable for all properties we want", "[execution][env]")
 
 C2H_TEST("env_t is default constructible", "[execution][env]")
 {
-  env_t env{cudax::device_default_memory_pool(cuda::device_ref{0})};
+  env_t env{cuda::device_default_memory_pool(cuda::device_ref{0})};
   CHECK(env.query(cuda::get_stream) == ::cuda::__detail::__invalid_stream);
   CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::any_execution_policy{});
-  CHECK(env.query(cuda::mr::get_memory_resource) == cudax::device_default_memory_pool(cuda::device_ref{0}));
+  CHECK(env.query(cuda::mr::get_memory_resource) == cuda::device_default_memory_pool(cuda::device_ref{0}));
 }
 
 C2H_TEST("env_t is constructible from an any_resource", "[execution][env]")

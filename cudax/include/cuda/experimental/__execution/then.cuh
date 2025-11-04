@@ -394,7 +394,6 @@ inline constexpr size_t structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, 
 _CCCL_GLOBAL_CONSTANT auto then         = then_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

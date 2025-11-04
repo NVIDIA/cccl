@@ -39,7 +39,6 @@ namespace system
 {
 namespace omp
 {
-
 //! \cond
 namespace detail
 {
@@ -69,7 +68,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \}
  */
-
 } // namespace omp
 } // namespace system
 

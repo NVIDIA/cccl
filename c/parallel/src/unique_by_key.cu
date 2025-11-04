@@ -192,7 +192,6 @@ struct dynamic_vsmem_helper_t
     return 0;
   }
 };
-
 } // namespace unique_by_key
 
 CUresult cccl_device_unique_by_key_build_ex(
