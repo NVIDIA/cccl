@@ -56,7 +56,6 @@
 //! @file The \c async_buffer class provides a container of contiguous memory
 namespace cuda::experimental
 {
-
 enum class __memory_accessability
 {
   device,
