@@ -104,12 +104,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   //
   // but sadly that is not valid C++.
   // TODO move to use __variant type once cuda/experimental/execution/__variant is moved to libcudacxx
+  // NOTE: The above seems to only apply if the type is not trivially destructible. To use the optional here I had to
+  // add a destructor.
+  template <typename _Tp>
+  struct __optional_with_a_destructor : ::cuda::std::optional<_Tp>
+  {
+    using ::cuda::std::optional<_Tp>::optional;
+    ~__optional_with_a_destructor() {}
+  };
+
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND(
     !::cuda::std::is_reference_v<__transform_result_t<_Arg>>))
-  [[nodiscard]] _CCCL_HOST_API auto
-  operator()(_Stream&& __stream, _Arg&& __arg, ::cuda::std::optional<__transform_result_t<_Arg>> __storage = {}) const
-    -> decltype(auto)
+  [[nodiscard]] _CCCL_HOST_API auto operator()(
+    _Stream&& __stream,
+    _Arg&& __arg,
+    __optional_with_a_destructor<__transform_result_t<_Arg>> __storage = cuda::std::nullopt) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
     if constexpr (::cuda::__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
