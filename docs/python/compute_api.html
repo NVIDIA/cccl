@@ -2187,8 +2187,8 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">histogram_even</span></code> is used to compute a histogram with evenly-spaced bins.</p>
-<div class="literal-block-wrapper docutils container" id="id3">
-<div class="code-block-caption"><span class="caption-text">Basic histogram example.</span><a class="headerlink" href="#id3" title="Link to this code">#</a></div>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Basic histogram example.</span><a class="headerlink" href="#id5" title="Link to this code">#</a></div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Example showing how to use histogram_even to bin a sequence of samples.</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -2636,11 +2636,11 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._radix_sort.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input sequence of keys</p></li>
+<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input sequence of keys</p></li>
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted keys (optional)</p></li>
-<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._radix_sort.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Device array or DoubleBuffer containing the input sequence of values (optional)</p></li>
+<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Device array or DoubleBuffer containing the input sequence of values (optional)</p></li>
 <li><p><strong>d_out_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted values (optional)</p></li>
-<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._radix_sort.SortOrder"><em>SortOrder</em></a>) – Sort order (ascending or descending)</p></li>
+<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._sort._sort_common.SortOrder"><em>SortOrder</em></a>) – Sort order (ascending or descending)</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to sort</p></li>
 <li><p><strong>begin_bit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Beginning bit position for comparison (optional)</p></li>
 <li><p><strong>end_bit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Ending bit position for comparison (optional)</p></li>
@@ -2730,12 +2730,12 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._radix_sort.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input keys to be sorted</p></li>
+<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input keys to be sorted</p></li>
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted keys</p></li>
-<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._radix_sort.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Optional Device array or DoubleBuffer containing the input keys to be sorted</p></li>
+<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Optional Device array or DoubleBuffer containing the input keys to be sorted</p></li>
 <li><p><strong>d_out_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted values</p></li>
 <li><p><strong>op</strong> – Callable representing the comparison operator</p></li>
-<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._radix_sort.SortOrder"><em>SortOrder</em></a>)</p></li>
+<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._sort._sort_common.SortOrder"><em>SortOrder</em></a>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3092,6 +3092,83 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A callable object that can be used to perform unique by key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.segmented_sort">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">segmented_sort</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_in_keys</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out_keys</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_in_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_segments</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">start_offsets_in</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">end_offsets_in</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.segmented_sort" title="Link to this definition">#</a></dt>
+<dd><p>Performs device-wide segmented sort.</p>
+<p>This function automatically handles temporary storage allocation and execution.</p>
+<p class="rubric">Example</p>
+<p>Below, <code class="docutils literal notranslate"><span class="pre">segmented_sort</span></code> is used to perform a segmented sort. It also rearranges the values according to the keys’ order.</p>
+<p>In the following example, <code class="docutils literal notranslate"><span class="pre">segmented_sort</span></code> is used to perform a segmented sort with a <a href="#id3"><span class="problematic" id="id4">``</span></a>DoubleBuffer` for reduced temporary storage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input keys to be sorted</p></li>
+<li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted keys (optional)</p></li>
+<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Device array or DoubleBuffer containing the input values to be sorted (optional)</p></li>
+<li><p><strong>d_out_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted values (optional)</p></li>
+<li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Total number of items to sort</p></li>
+<li><p><strong>num_segments</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of segments to sort</p></li>
+<li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em>) – Device array or iterator containing the sequence of beginning offsets</p></li>
+<li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em>) – Device array or iterator containing the sequence of ending offsets</p></li>
+<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._sort._sort_common.SortOrder"><em>SortOrder</em></a>) – Sort order (ascending or descending)</p></li>
+<li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.make_segmented_sort">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">make_segmented_sort</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_in_keys</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out_keys</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_in_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">start_offsets_in</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">end_offsets_in</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.make_segmented_sort" title="Link to this definition">#</a></dt>
+<dd><p>Performs a device-wide segmented sort using the specified keys and values.</p>
+<p class="rubric">Example</p>
+<p>Below, <code class="docutils literal notranslate"><span class="pre">make_segmented_sort</span></code> is used to create a segmented sort object that can be reused.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_in_keys</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a>) – Device array or DoubleBuffer containing the input keys to be sorted</p></li>
+<li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted keys</p></li>
+<li><p><strong>d_in_values</strong> (<em>DeviceArrayLike</em><em> | </em><a class="reference internal" href="#cuda.compute.algorithms.DoubleBuffer" title="cuda.compute.algorithms._sort._sort_common.DoubleBuffer"><em>DoubleBuffer</em></a><em> | </em><em>None</em>) – Optional Device array or DoubleBuffer containing the input values to be sorted</p></li>
+<li><p><strong>d_out_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted values</p></li>
+<li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em>) – Device array or iterator containing the sequence of beginning offsets</p></li>
+<li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em>) – Device array or iterator containing the sequence of ending offsets</p></li>
+<li><p><strong>order</strong> (<a class="reference internal" href="#cuda.compute.algorithms.SortOrder" title="cuda.compute.algorithms._sort._sort_common.SortOrder"><em>SortOrder</em></a>) – SortOrder specifying the order of the sort</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A callable object that can be used to perform the segmented sort</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4008,6 +4085,8 @@ the smallest and the largest absolute values:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_segmented_reduce"><code class="docutils literal notranslate"><span class="pre">make_segmented_reduce()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.unique_by_key"><code class="docutils literal notranslate"><span class="pre">unique_by_key()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_unique_by_key"><code class="docutils literal notranslate"><span class="pre">make_unique_by_key()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.segmented_sort"><code class="docutils literal notranslate"><span class="pre">segmented_sort()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_segmented_sort"><code class="docutils literal notranslate"><span class="pre">make_segmented_sort()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.three_way_partition"><code class="docutils literal notranslate"><span class="pre">three_way_partition()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_three_way_partition"><code class="docutils literal notranslate"><span class="pre">make_three_way_partition()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer"><code class="docutils literal notranslate"><span class="pre">DoubleBuffer</span></code></a><ul class="nav section-nav flex-column">
