@@ -92,17 +92,14 @@ using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::cuda::universal_host_pinned_memory_resource>;
 } // namespace cuda_cub
 
-namespace system
-{
-namespace cuda
+namespace system::cuda
 {
 using thrust::cuda_cub::allocator;
 using thrust::cuda_cub::free;
 using thrust::cuda_cub::malloc;
 using thrust::cuda_cub::universal_allocator;
 using thrust::cuda_cub::universal_host_pinned_allocator;
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda
 
 /*! \namespace thrust::cuda
  *  \brief \p thrust::cuda is a top-level alias for \p thrust::system::cuda.

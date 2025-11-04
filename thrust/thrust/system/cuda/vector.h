@@ -87,15 +87,12 @@ template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
 } // namespace cuda_cub
 
-namespace system
-{
-namespace cuda
+namespace system::cuda
 {
 using thrust::cuda_cub::universal_host_pinned_vector;
 using thrust::cuda_cub::universal_vector;
 using thrust::cuda_cub::vector;
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda
 
 namespace cuda
 {

@@ -28,9 +28,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace random
-{
-namespace detail
+namespace random::detail
 {
 struct random_core_access
 {
@@ -53,7 +51,6 @@ struct random_core_access
   }
 
 }; // end random_core_access
-} // namespace detail
-} // namespace random
+} // namespace random::detail
 
 THRUST_NAMESPACE_END
