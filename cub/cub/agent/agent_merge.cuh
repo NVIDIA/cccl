@@ -101,17 +101,10 @@ struct agent_t
     char c_array[bytes_needed];
   };
 
-  struct bl2sh_temp_storage
-  {
-    typename block_load_to_shared::TempStorage load2sh;
-  };
-
-  // add the BlockLoadToShared temp storage only if needed
-  struct temp_storages : ::cuda::std::conditional_t<keys_use_bl2sh || items_use_bl2sh, bl2sh_temp_storage, NullType>
+  struct temp_storages_without_bl2sh
   {
     using keys_smem  = ::cuda::std::conditional_t<keys_use_bl2sh, buffer_t<key_type>, key_type[items_per_tile + 1]>;
     using items_smem = ::cuda::std::conditional_t<items_use_bl2sh, buffer_t<item_type>, item_type[items_per_tile + 1]>;
-
     union
     {
       typename block_store_keys::TempStorage store_keys;
@@ -120,6 +113,15 @@ struct agent_t
       items_smem items_shared;
     };
   };
+
+  // inherit from data storage, so it's positioned at the start of the shared memory
+  struct temp_storages_with_bl2sh : temp_storages_without_bl2sh
+  {
+    typename block_load_to_shared::TempStorage load2sh;
+  };
+
+  using temp_storages =
+    ::cuda::std::conditional_t<keys_use_bl2sh || items_use_bl2sh, temp_storages_with_bl2sh, temp_storages_without_bl2sh>;
 
   using TempStorage = Uninitialized<temp_storages>;
 
