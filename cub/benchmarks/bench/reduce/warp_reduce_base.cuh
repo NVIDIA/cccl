@@ -9,6 +9,30 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
+using value_types = nvbench::type_list<
+  int8_t,
+  int16_t,
+  int32_t,
+#if NVBENCH_HELPER_HAS_I128
+  int128_t,
+#endif
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+#if _CCCL_HAS_NVBF16()
+  __nv_bfloat16,
+#endif
+  float,
+  double,
+#if _CCCL_HAS_NVFP16()
+  cuda::std::complex<__half>,
+#endif
+#if _CCCL_HAS_NVBF16()
+  cuda::std::complex<__nv_bfloat16>,
+#endif
+  cuda::std::complex<float>,
+  cuda::std::complex<double>>;
+
 struct benchmark_op_t
 {
   template <typename T>
@@ -33,7 +57,7 @@ void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
   int max_blocks_per_SM       = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
   const int grid_size = max_blocks_per_SM * num_SMs;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
+  state.set state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
     kernel<<<grid_size, block_size>>>(benchmark_op_t{});
   });
 }
