@@ -2289,12 +2289,7 @@ cdef extern from "cccl/c/segmented_sort.h":
         cccl_iterator_t d_keys_out,
         cccl_iterator_t begin_offset_in,
         cccl_iterator_t end_offset_in,
-        int,
-        int,
-        const char *,
-        const char *,
-        const char *,
-        const char *
+        int, int, const char *, const char *, const char *, const char *
     ) nogil
 
     cdef CUresult cccl_device_segmented_sort(
