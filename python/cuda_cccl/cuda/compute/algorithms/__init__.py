@@ -13,13 +13,13 @@ from ._scan import make_exclusive_scan as make_exclusive_scan
 from ._scan import make_inclusive_scan as make_inclusive_scan
 from ._segmented_reduce import make_segmented_reduce as make_segmented_reduce
 from ._segmented_reduce import segmented_reduce
-from ._sort._merge_sort import make_merge_sort as make_merge_sort
-from ._sort._merge_sort import merge_sort as merge_sort
-from ._sort._radix_sort import make_radix_sort as make_radix_sort
-from ._sort._radix_sort import radix_sort as radix_sort
-from ._sort._segmented_sort import make_segmented_sort as make_segmented_sort
-from ._sort._segmented_sort import segmented_sort as segmented_sort
-from ._sort._sort_common import DoubleBuffer, SortOrder
+from ._sort import DoubleBuffer, SortOrder
+from ._sort import make_merge_sort as make_merge_sort
+from ._sort import make_radix_sort as make_radix_sort
+from ._sort import make_segmented_sort as make_segmented_sort
+from ._sort import merge_sort as merge_sort
+from ._sort import radix_sort as radix_sort
+from ._sort import segmented_sort as segmented_sort
 from ._three_way_partition import make_three_way_partition as make_three_way_partition
 from ._three_way_partition import three_way_partition as three_way_partition
 from ._transform import binary_transform, unary_transform
