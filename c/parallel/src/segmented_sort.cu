@@ -640,7 +640,7 @@ CUresult cccl_device_segmented_sort_build_ex(
       R"XXX(
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 
 {0}
