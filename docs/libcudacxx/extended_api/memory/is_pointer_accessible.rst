@@ -9,9 +9,8 @@ Defined in ``<cuda/memory>`` header.
 
    namespace cuda {
 
-   template <typename Pointer>
-   [[nodiscard]] __host__
-   bool is_host_accessible(Pointer ptr);
+   [[nodiscard]] inline
+   bool is_host_accessible(const void* ptr);
 
    } // namespace cuda
 
@@ -22,10 +21,9 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
 .. code:: cuda
 
    namespace cuda {
-
-   template <typename Pointer>
-   [[nodiscard]] __host__
-   bool is_device_accessible(Pointer ptr, device_ref device);
+        
+   [[nodiscard]] inline
+   bool is_device_accessible(const void* ptr, device_ref device);
 
    } // namespace cuda
 
@@ -37,9 +35,8 @@ Determines whether the memory referenced by ``ptr`` is accessible from the speci
 
    namespace cuda {
 
-   template <typename Pointer>
-   [[nodiscard]] __host__
-   bool is_managed(Pointer ptr);
+   [[nodiscard]] inline
+   bool is_managed(const void* ptr);
 
    } // namespace cuda
 
@@ -49,7 +46,7 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 **Parameters**
 
-- ``ptr``: A contiguous iterator or pointer that denotes the memory location to query.
+- ``ptr``: A pointer that denotes the memory location to query.
 - ``device``: A ``device_ref`` object that denotes the device to query.
 
 **Return value**
@@ -65,10 +62,6 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
   - ``new`` or ``malloc()``-allocated host memory (not pinned).
   - Global host array or variable.
   - Global ``__device__`` array or variable without retrieving the address with ``cudaGetSymbolAddress()``.
-
-**Constraints**
-
-- ``Pointer`` must be a contiguous iterator or pointer.
 
 **Prerequisites**
 
