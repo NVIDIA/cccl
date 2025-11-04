@@ -469,7 +469,12 @@ public:
     constexpr auto float_double_plus =
       gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
 
-    constexpr auto supported = integral_fallback || float_double_plus || !gpu_gpu_determinism;
+    constexpr auto float_double_min_max_fallback =
+      gpu_gpu_determinism
+      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+
+    constexpr auto supported =
+      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
 
     // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
     // float and double types with ::cuda::std::plus operator
@@ -496,7 +501,7 @@ public:
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && integral_fallback)
+        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
           || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
