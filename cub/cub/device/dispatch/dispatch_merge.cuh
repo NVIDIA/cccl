@@ -178,7 +178,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicyHub = detail::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>>>
+          typename PolicyHub = detail::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>>
 struct dispatch_t
 {
   void* d_temp_storage;
