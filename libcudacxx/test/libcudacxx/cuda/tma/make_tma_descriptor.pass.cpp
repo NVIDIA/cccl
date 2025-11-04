@@ -11,7 +11,7 @@
 
 #include <dlpack/dlpack.h> // to include before the make_from_dlpack.h
 //
-#include <cuda/__tma/make_tma_descriptor.h>
+#include <cuda/tma>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
