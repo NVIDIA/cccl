@@ -23,9 +23,9 @@
 #endif // no system header
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
-#include <cuda/std/type_traits> // is_void_v
 
 #include <cuda/std/__cccl/prologue.h>
 
