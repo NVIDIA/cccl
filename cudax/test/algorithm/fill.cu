@@ -12,10 +12,10 @@
 
 C2H_TEST("Fill", "[data_manipulation]")
 {
-  cudax::stream _stream{cuda::device_ref{0}};
+  cuda::stream _stream{cuda::device_ref{0}};
   SECTION("Host resource")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -25,7 +25,7 @@ C2H_TEST("Fill", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::device_memory_pool_ref device_resource = cudax::device_default_memory_pool(cuda::device_ref{0});
+    cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(device_resource, buffer_size);
     cudax::fill_bytes(_stream, buffer, fill_byte);
 
@@ -37,7 +37,7 @@ C2H_TEST("Fill", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -47,7 +47,7 @@ C2H_TEST("Fill", "[data_manipulation]")
 
 C2H_TEST("Mdspan Fill", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   {
     cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
     auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
@@ -65,7 +65,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
     cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(host_resource, size);
@@ -77,7 +77,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 

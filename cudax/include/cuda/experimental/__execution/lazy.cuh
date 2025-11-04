@@ -156,7 +156,6 @@ using __lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tupl<::cuda::std::make_index_seq
 
 template <class... _Ts>
 using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<decay_t<_Ts>...>;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

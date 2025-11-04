@@ -33,7 +33,6 @@ static_assert(!cuda::property_with_value<property_without_value<someStruct>>, ""
 
 namespace resource_test
 {
-
 // Ensure we have the right size
 static_assert(
   sizeof(
@@ -151,7 +150,6 @@ void test_resource_ref()
   // Ensure we only forward requested properties
   test_property_forwarding();
 }
-
 } // namespace resource_test
 
 int main(int, char**)

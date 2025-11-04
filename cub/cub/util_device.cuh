@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2020, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2020, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! \file
 //! Properties of a given CUDA device and the corresponding PTX bundle.
@@ -80,7 +56,6 @@ namespace detail
 template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
-
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -494,7 +469,6 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
   has_uva = uva == 1;
   return error;
 }
-
 } // namespace detail
 
 /**
@@ -557,7 +531,6 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 
 namespace detail
 {
-
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
@@ -600,32 +573,18 @@ namespace detail
     ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
       static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
 
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
-    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
-
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
-
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                                  \
-    struct Runtime##concept_name                                                                                     \
-    {                                                                                                                \
-      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                                \
-      static std::pair<Runtime##concept_name, std::string>                                                           \
-      from_json(const nlohmann::json& json,                                                                          \
-                std::string_view subpolicy_name,                                                                     \
-                std::optional<std::string_view> delay_cons_type = std::nullopt)                                      \
-      {                                                                                                              \
-        auto subpolicy = json[subpolicy_name];                                                                       \
-        assert(!subpolicy.is_null());                                                                                \
-        Runtime##concept_name ap;                                                                                    \
-        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                          \
-        return std::make_pair(                                                                                       \
-          ap,                                                                                                        \
-          std::format(                                                                                               \
-            "struct {} {{\n" _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING, __VA_ARGS__) "{} }};\n",      \
-            subpolicy_name _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE, __VA_ARGS__),                    \
-            delay_cons_type ? std::format("struct detail {{ using delay_constructor_t = {}; }}; ", *delay_cons_type) \
-                            : ""));                                                                                  \
-      }                                                                                                              \
+#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                       \
+    struct Runtime##concept_name                                                                          \
+    {                                                                                                     \
+      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                     \
+      static Runtime##concept_name from_json(const nlohmann::json& json, std::string_view subpolicy_name) \
+      {                                                                                                   \
+        auto subpolicy = json[subpolicy_name];                                                            \
+        assert(!subpolicy.is_null());                                                                     \
+        Runtime##concept_name ap;                                                                         \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                               \
+        return ap;                                                                                        \
+      }                                                                                                   \
     };
 #else
 #  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
@@ -667,7 +626,6 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 {
   return policy;
 }
-
 } // namespace detail
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -677,7 +635,6 @@ __host__ __device__ constexpr PolicyT MakePolicyWrapper(PolicyT policy)
 
 namespace detail
 {
-
 // Forward declaration of the default kernel launcher factory
 struct TripleChevronFactory;
 

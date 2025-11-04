@@ -57,7 +57,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
-
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
@@ -653,7 +652,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
       _CCCL_ASSERT(aligned_bytes_to_copy % bulk_copy_size_multiple == 0, "");
 
       ::cuda::ptx::cp_async_bulk(
-        ::cuda::ptx::space_cluster,
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
         ::cuda::ptx::space_global,
         dst_ptr + head_bytes,
         src_ptr + head_bytes,
@@ -757,7 +756,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   if (inner_blocks)
   {
     // use one thread to setup the entire bulk copy
-    if (cuda::device::__elect_one())
+    if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
       // an update to the CUDA memory model blesses skipping the following fence
@@ -787,7 +786,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           bytes_to_copy = int{sizeof(T)} * tile_size;
         }
 
-        ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+        ::cuda::ptx::cp_async_bulk(
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+          ::cuda::ptx::space_global,
+          dst,
+          src,
+          bytes_to_copy,
+          &bar);
         total_copied += bytes_to_copy;
 
         smem += tile_padding + int{sizeof(T)} * tile_size;
@@ -811,7 +816,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   }
   else
   {
-    const bool elected = cuda::device::__elect_one();
+    const bool elected = cuda::device::__block_elect_one();
     if (elected)
     {
       ptx::mbarrier_init(&bar, 1);
@@ -1018,7 +1023,6 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     static_assert(!sizeof(Offset), "Algorithm not implemented");
   }
 }
-
 } // namespace detail::transform
 
 CUB_NAMESPACE_END

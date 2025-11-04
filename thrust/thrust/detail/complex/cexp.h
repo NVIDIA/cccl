@@ -175,9 +175,7 @@ _CCCL_HOST_DEVICE inline complex<double> cexp(const complex<double>& z)
     return (complex<double>(exp_x * cos(y), exp_x * sin(y)));
   }
 }
-
 } // namespace complex
-
 } // namespace detail
 
 template <typename ValueType>

@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
@@ -30,7 +31,6 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
@@ -44,7 +44,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-
 struct reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy single_tile;
@@ -192,56 +191,36 @@ CUresult cccl_device_reduce_build_ex(
     const auto [op_name, op_src] =
       get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    constexpr size_t ptx_num_args      = 6;
-    const char* ptx_args[ptx_num_args] = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    const std::string src = std::format(
-      R"XXX(
-#include <cub/block/block_reduce.cuh>
-{5}
-struct __align__({1}) storage_t {{
-  char data[{0}];
-}};
-{2}
-{3}
-{4}
-)XXX",
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      input_iterator_src, // 2
-      output_iterator_src, // 3
-      op_src, // 4
-      jit_template_header_contents); // 5
-
-    const auto offset_t           = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{}, {}, "
-                  "{}>::MaxPolicy::ActivePolicy{{}})",
-                  accum_cpp,
-                  offset_t,
-                  op_name),
-      "#include <cub/device/dispatch/tuning/tuning_reduce.cuh>\n" + src,
-      ptx_args);
-
-    using cub::detail::RuntimeReduceAgentPolicy;
-    auto [reduce_policy, reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
-    auto [st_policy, st_policy_str]         = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+    auto policy_hub_expr = std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
     std::string final_src = std::format(
-      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
-      "{0}\n"
-      "struct device_reduce_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    {1}\n"
-      "    {2}\n"
-      "  }};\n"
-      "}};",
-      src,
-      reduce_policy_str,
-      st_policy_str);
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/kernels/reduce.cuh>
+{0}
+struct __align__({2}) storage_t {{
+  char data[{1}];
+}};
+{3}
+{4}
+{5}
+using device_reduce_policy = {6}::MaxPolicy;
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_reduce_policy")>()
+    = cub::detail::reduce::ReducePolicyWrapper<device_reduce_policy::ActivePolicy>::EncodedPolicy();
+}};
+)XXX",
+      jit_template_header_contents, // 0
+      input_it.value_type.size, // 1
+      input_it.value_type.alignment, // 2
+      input_iterator_src, // 3
+      output_iterator_src, // 4
+      op_src, // 5
+      policy_hub_expr); // 6
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -270,6 +249,7 @@ struct __align__({1}) storage_t {{
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
 
     // Add user's extra flags if config is provided
@@ -305,6 +285,13 @@ struct __align__({1}) storage_t {{
     check(cuLibraryGetKernel(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_reduce_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
+    auto st_policy     = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
 
     build->cc               = cc;
     build->cubin            = (void*) result.data.release();

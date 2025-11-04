@@ -99,44 +99,6 @@ void segmented_reduce(
 //   Test section
 // ==============
 
-static std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
-  std::string_view index_ty_name,
-  std::string_view state_name,
-  std::string_view advance_fn_name,
-  std::string_view dereference_fn_name)
-{
-  static constexpr std::string_view it_state_src_tmpl = R"XXX(
-struct {0} {{
-  {1} linear_id;
-  {1} row_size;
-}};
-)XXX";
-
-  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
-
-  static constexpr std::string_view it_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
-{{
-  state->linear_id += offset;
-}}
-)XXX";
-
-  const std::string it_advance_fn_def_src =
-    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
-
-  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2}* result)
-{{
-  *result = (state->linear_id) * (state->row_size);
-}}
-)XXX";
-
-  const std::string it_deref_fn_def_src =
-    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
-
-  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
-}
-
 struct SegmentedReduce_SumOverRows_Fixture_Tag;
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",
@@ -150,8 +112,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   // generate 4 choices for number of columns
   const std::size_t n_cols = GENERATE(0, 12, take(2, random(1 << 10, 1 << 12)));
 
-  const std::size_t n_elems  = n_rows * n_cols;
-  const std::size_t row_size = n_cols;
+  const std::size_t n_elems      = n_rows * n_cols;
+  const std::size_t segment_size = n_cols;
 
   const std::vector<TestType> host_input = generate<TestType>(n_elems);
   std::vector<TestType> host_output(n_rows, 0);
@@ -168,7 +130,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   struct row_offset_iterator_state_t
   {
     SizeT linear_id;
-    SizeT row_size;
+    SizeT segment_size;
   };
 
   static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
@@ -184,16 +146,16 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
     {advance_offset_method_name, offset_iterator_advance_src},
     {deref_offset_method_name, offset_iterator_deref_src});
 
-  start_offset_it.state.linear_id = 0;
-  start_offset_it.state.row_size  = row_size;
+  start_offset_it.state.linear_id    = 0;
+  start_offset_it.state.segment_size = segment_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies,
   // just reused those defined above
   iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
-  end_offset_it.state.linear_id = 1;
-  end_offset_it.state.row_size  = row_size;
+  end_offset_it.state.linear_id    = 1;
+  end_offset_it.state.segment_size = segment_size;
 
   operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
@@ -208,7 +170,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * row_size;
+    std::size_t row_offset = i * segment_size;
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
@@ -228,8 +190,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
   // generate 4 choices for number of columns
   const std::size_t n_cols = GENERATE(0, 12, take(2, random(1 << 10, 1 << 12)));
 
-  const std::size_t n_elems  = n_rows * n_cols;
-  const std::size_t row_size = n_cols;
+  const std::size_t n_elems      = n_rows * n_cols;
+  const std::size_t segment_size = n_cols;
 
   const std::vector<TestType> host_input = generate<TestType>(n_elems);
   std::vector<TestType> host_output(n_rows, 0);
@@ -246,7 +208,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
   struct row_offset_iterator_state_t
   {
     SizeT linear_id;
-    SizeT row_size;
+    SizeT segment_size;
   };
 
   static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
@@ -262,16 +224,16 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
     {advance_offset_method_name, offset_iterator_advance_src},
     {deref_offset_method_name, offset_iterator_deref_src});
 
-  start_offset_it.state.linear_id = 0;
-  start_offset_it.state.row_size  = row_size;
+  start_offset_it.state.linear_id    = 0;
+  start_offset_it.state.segment_size = segment_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies,
   // just reused those defined above
   iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
-  end_offset_it.state.linear_id = 1;
-  end_offset_it.state.row_size  = row_size;
+  end_offset_it.state.linear_id    = 1;
+  end_offset_it.state.segment_size = segment_size;
 
   cccl_op_t op = make_well_known_binary_operation();
   value_t<TestType> init{0};
@@ -286,7 +248,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * row_size;
+    std::size_t row_offset = i * segment_size;
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
@@ -699,25 +661,8 @@ struct host_check_functor_state
   DataT* m_ptr;
 };
 
-template <typename StateT>
-void host_advance_transform_it_state(void* state, cccl_increment_t offset)
-{
-  auto st      = reinterpret_cast<StateT*>(state);
-  using IndexT = decltype(st->base_it_state.value);
-
-  if constexpr (std::is_signed_v<IndexT>)
-  {
-    st->base_it_state.value += offset.signed_offset;
-  }
-  else
-  {
-    st->base_it_state.value += offset.unsigned_offset;
-  }
-}
-
 namespace validate
 {
-
 using BuildResultT = cccl_device_reduce_build_result_t;
 
 struct reduce_cleanup
@@ -768,7 +713,6 @@ void reduce_for_pointer_inputs(
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run>(
     build_cache, test_key, input, output, num_items, op, init);
 }
-
 } // namespace validate
 
 struct SegmentedReduce_LargeNumSegments_Fixture_Tag;
@@ -914,8 +858,8 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
   auto cccl_end_offsets_it   = static_cast<cccl_iterator_t>(end_offsets_it);
 
   // set host_advance functions
-  cccl_start_offsets_it.host_advance = &host_advance_transform_it_state<HostTransformStateT>;
-  cccl_end_offsets_it.host_advance   = &host_advance_transform_it_state<HostTransformStateT>;
+  cccl_start_offsets_it.host_advance = &host_advance_base_value<HostTransformStateT>;
+  cccl_end_offsets_it.host_advance   = &host_advance_base_value<HostTransformStateT>;
 
   value_t<DataT> h_init{DataT{0}};
 

@@ -31,7 +31,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -76,7 +75,6 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred,
   BinaryFunction binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

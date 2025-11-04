@@ -1108,6 +1108,76 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
 }
 
+inline std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
+  std::string_view index_ty_name,
+  std::string_view state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  static constexpr std::string_view it_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} linear_id;
+  {1} segment_size;
+}};
+)XXX";
+
+  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
+
+  static constexpr std::string_view it_def_src_tmpl = R"XXX(
+extern "C" __device__ void {0}({1}* state, {2} offset)
+{{
+  state->linear_id += offset;
+}}
+)XXX";
+
+  const std::string it_advance_fn_def_src =
+    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
+
+  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
+extern "C" __device__ void {0}({1}* state, {2}* result)
+{{
+  *result = (state->linear_id) * (state->segment_size);
+}}
+)XXX";
+
+  const std::string it_deref_fn_def_src =
+    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
+
+  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
+}
+
+// Host-side advance function for iterator states that have a `linear_id` member
+template <typename StateT>
+inline void host_advance_linear_id(void* state, cccl_increment_t offset)
+{
+  auto* st    = reinterpret_cast<StateT*>(state);
+  using Index = decltype(st->linear_id);
+  if constexpr (std::is_signed_v<Index>)
+  {
+    st->linear_id += offset.signed_offset;
+  }
+  else
+  {
+    st->linear_id += offset.unsigned_offset;
+  }
+}
+
+// Host-side advance for iterator states that contain a nested `base_it_state.value`
+template <typename StateT>
+inline void host_advance_base_value(void* state, cccl_increment_t offset)
+{
+  auto st      = reinterpret_cast<StateT*>(state);
+  using IndexT = decltype(st->base_it_state.value);
+  if constexpr (std::is_signed_v<IndexT>)
+  {
+    st->base_it_state.value += offset.signed_offset;
+  }
+  else
+  {
+    st->base_it_state.value += offset.unsigned_offset;
+  }
+}
+
 template <class ValueT>
 iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_reverse_iterator(
   iterator_kind kind, std::string_view value_type, std::string_view prefix = "", std::string_view transform = "")

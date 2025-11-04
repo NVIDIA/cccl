@@ -40,10 +40,7 @@ template <class _Env>
 using __starting_domain = __call_result_or_t<get_domain_t, default_domain, const _Env&>;
 
 template <class _Sndr, class _Env>
-using __completing_domain =
-  __call_result_t<__first_callable<get_domain_override_t, get_completion_domain_t<set_value_t>>,
-                  env_of_t<_Sndr>,
-                  const _Env&>;
+using __completing_domain = __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, const _Env&>;
 
 template <class _Domain, class _OpTag>
 struct __transform_sender_t
@@ -133,7 +130,6 @@ public:
 };
 
 _CCCL_GLOBAL_CONSTANT transform_sender_t transform_sender{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

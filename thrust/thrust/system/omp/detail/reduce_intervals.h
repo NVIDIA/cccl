@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file reduce_intervals.h
  *  \brief OpenMP implementations of reduce_intervals algorithms.
@@ -28,7 +28,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -84,6 +83,5 @@ void reduce_intervals(
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

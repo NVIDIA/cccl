@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file default_decomposition.h
  *  \brief Return a decomposition that is appropriate for the OpenMP backend.
@@ -26,7 +26,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 template <typename IndexType>
 thrust::system::detail::internal::uniform_decomposition<IndexType> default_decomposition(IndexType n)
 {
@@ -45,6 +44,5 @@ thrust::system::detail::internal::uniform_decomposition<IndexType> default_decom
   return thrust::system::detail::internal::uniform_decomposition<IndexType>(n, 1, 1);
 #endif
 }
-
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END

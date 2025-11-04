@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_radix_sort.cuh>
 
 #include <format>
@@ -20,7 +21,6 @@
 #include "kernels/operators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/radix_sort.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -39,11 +39,11 @@ struct radix_sort_runtime_tuning_policy
   RuntimeRadixSortExclusiveSumAgentPolicy exclusive_sum;
   RuntimeRadixSortOnesweepAgentPolicy onesweep;
   cub::detail::RuntimeScanAgentPolicy scan;
-  RuntimeRadixSortDownsweepAgentPolicy downsweep;
-  RuntimeRadixSortDownsweepAgentPolicy alt_downsweep;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy downsweep;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy alt_downsweep;
   RuntimeRadixSortUpsweepAgentPolicy upsweep;
   RuntimeRadixSortUpsweepAgentPolicy alt_upsweep;
-  RuntimeRadixSortDownsweepAgentPolicy single_tile;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy single_tile;
   bool is_onesweep;
 
   auto Histogram() const
@@ -268,7 +268,6 @@ struct radix_sort_kernel_source
     return build.value_type.size;
   }
 };
-
 } // namespace radix_sort
 
 CUresult cccl_device_radix_sort_build_ex(
@@ -303,13 +302,15 @@ CUresult cccl_device_radix_sort_build_ex(
         : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
     constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+    std::string offset_t;
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
-    constexpr size_t ptx_num_args      = 6;
-    const char* ptx_args[ptx_num_args] = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
+    const auto policy_hub_expr =
+      std::format("cub::detail::radix::policy_hub<{}, {}, {}>", key_cpp, value_cpp, offset_t);
 
-    constexpr std::string_view src_template = R"XXX(
+    const std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 
@@ -320,91 +321,21 @@ struct __align__({3}) values_storage_t {{
   char data[{2}];
 }};
 {4}
-)XXX";
+using {5} = {6}::MaxPolicy;
 
-    std::string src = std::format(
-      src_template,
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_radix_sort_policy")>()
+    = cub::detail::radix::RadixSortPolicyWrapper<{5}::ActivePolicy>::EncodedPolicy();
+}}
+)XXX",
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_values_it.value_type.size, // 2
       input_values_it.value_type.alignment, // 3
-      op_src // 4
-    );
-
-    std::string offset_t;
-    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
-
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::radix::MakeRadixSortPolicyWrapper(cub::detail::radix::policy_hub<{}, {}, "
-                  "{}>::MaxPolicy::ActivePolicy{{}})",
-                  key_cpp,
-                  value_cpp,
-                  offset_t),
-      "#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>\n" + src,
-      ptx_args);
-
-    auto delay_ctor_info = runtime_policy["ScanDelayConstructor"];
-    std::string delay_ctor_params;
-    for (auto&& param : delay_ctor_info["params"])
-    {
-      delay_ctor_params.append(to_string(param) + ", ");
-    }
-    delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
-    auto delay_ctor_t =
-      std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
-
-    using namespace cub::detail::radix_sort_runtime_policies;
-    using cub::detail::RuntimeScanAgentPolicy;
-    auto [single_tile_policy,
-          single_tile_policy_str] = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
-    auto [onesweep_policy,
-          onesweep_policy_str]    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
-    auto [upsweep_policy,
-          upsweep_policy_str]     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
-    auto [alt_upsweep_policy,
-          alt_upsweep_policy_str] = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
-    auto [downsweep_policy,
-          downsweep_policy_str]   = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
-    auto [alt_downsweep_policy, alt_downsweep_policy_str] =
-      RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
-    auto [histogram_policy,
-          histogram_policy_str] = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
-    auto [exclusive_sum_policy, exclusive_sum_policy_str] =
-      RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
-    auto [scan_policy, scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy", delay_ctor_t);
-    auto is_onesweep                    = runtime_policy["Onesweep"].get<bool>();
-
-    constexpr std::string_view final_src_template = R"XXX(
-{0}
-struct {10} {{
-  struct ActivePolicy {{
-    {1}
-    {2}
-    {3}
-    {4}
-    {5}
-    {6}
-    {7}
-    {8}
-    {9}
-  }};
-}};
-)XXX";
-
-    const std::string final_src = std::format(
-      final_src_template,
-      src, // 0
-      single_tile_policy_str, // 1
-      onesweep_policy_str, // 2
-      upsweep_policy_str, // 3
-      alt_upsweep_policy_str, // 4
-      downsweep_policy_str, // 5
-      alt_downsweep_policy_str, // 6
-      histogram_policy_str, // 7
-      exclusive_sum_policy_str, // 8
-      scan_policy_str, // 9
-      chained_policy_t // 10
-    );
+      op_src, // 4
+      chained_policy_t, // 5
+      policy_hub_expr); // 6
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -441,7 +372,16 @@ struct {10} {{
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -493,6 +433,26 @@ struct {10} {{
     check(cuLibraryGetKernel(
       &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_radix_sort_policy", {result.data.get(), result.size});
+
+    using namespace cub::detail::radix_sort_runtime_policies;
+    using cub::detail::RuntimeScanAgentPolicy;
+    auto single_tile_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+    auto onesweep_policy    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
+    auto upsweep_policy     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
+    auto alt_upsweep_policy = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
+    auto downsweep_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
+    auto alt_downsweep_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
+    auto histogram_policy = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+    auto exclusive_sum_policy =
+      RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
+    auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy");
+    auto is_onesweep = runtime_policy["Onesweep"].get<bool>();
 
     build_ptr->cc             = cc;
     build_ptr->cubin          = (void*) result.data.release();

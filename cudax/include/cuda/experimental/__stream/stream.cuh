@@ -24,7 +24,7 @@
 #endif // no system header
 
 #include <cuda/__device/device_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/__runtime/api_wrapper.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
@@ -34,7 +34,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
 {
@@ -154,7 +153,6 @@ private:
       : stream_ref(__handle)
   {}
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

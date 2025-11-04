@@ -37,10 +37,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 // We use this function as a detector for what __PRETTY_FUNCTION__ looks like
 template <typename T>
 constexpr ::std::string_view type_name_IMPL()
@@ -83,7 +81,6 @@ constexpr ::std::string_view type_name_impl()
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 #endif // !_CCCL_COMPILER(MSVC)
 }
-
 } // namespace reserved
 
 /**
@@ -135,7 +132,6 @@ class print_type_name_and_fail
 
 namespace reserved
 {
-
 /**
  * @brief A singleton template class implementing the Meyers Singleton design pattern.
  *
@@ -195,7 +191,6 @@ public:
     return instance;
   }
 };
-
 } // end namespace reserved
 
 /**
@@ -247,7 +242,6 @@ static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size
 
 namespace reserved
 {
-
 /**
  * @brief Converts an `std::tuple` into a `cuda::std::array`.
  *
@@ -283,7 +277,6 @@ template <typename T, size_t N>
   }
   return result;
 }
-
 } // end namespace reserved
 
 /**
@@ -557,7 +550,6 @@ auto shuffled_array_tuple(ArgTypes... args)
 
 namespace reserved
 {
-
 /**
  * @brief Trait class to check if a function can be invoked with `std::apply` using a tuple type
  */
@@ -582,7 +574,5 @@ template <typename T>
 struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
     : ::std::true_type
 {};
-
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

@@ -16,10 +16,11 @@
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 
+#include <cuda/std/__numeric/reduce.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
@@ -329,12 +330,22 @@ struct Transforms
 //!
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
-template <int NumActiveChannels, typename CounterT, typename OffsetT>
+template <typename ChainedPolicyT, int NumActiveChannels, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
+                                    // writes/reads to the temp storage, we could omit the sync here
+
+  // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
+                    <= ChainedPolicyT::ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count) {
+                 _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+               }));
+
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
     tile_queue.ResetDrain();
