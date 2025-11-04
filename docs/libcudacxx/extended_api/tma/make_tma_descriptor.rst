@@ -219,8 +219,10 @@ Example
         tensor.byte_offset = 0;
 
         // Define shared memory box sizes and element strides.
-        int box_sizes_storage[2]    = {16, 16};
-        int elem_strides_storage[2] = {1, 1};
+        constexpr int BoxSizeX      = 16; // rows
+        constexpr int BoxSizeY      = 16; // columns
+        int box_sizes_storage[2]    = {BoxSizeX, BoxSizeY};
+        int elem_strides_storage[2] = {BoxSizeY, 1}; // {1, ..., 1} is also valid to specify contiguous memory
 
         return cuda::make_tma_descriptor(
             tensor,
