@@ -34,7 +34,7 @@ void TestSearchSimple()
   // Pattern not found
   Vector pattern2{9, 9};
   iter = thrust::search(data.begin(), data.end(), pattern2.begin(), pattern2.end());
-  ASSERT_EQUAL(iter - data.begin(), data.size());
+  ASSERT_EQUAL(iter - data.begin(), static_cast<typename Vector::difference_type>(data.size()));
 
   // Empty pattern (should return first)
   Vector empty_pattern;
@@ -44,7 +44,7 @@ void TestSearchSimple()
   // Pattern longer than data
   Vector long_pattern{1, 2, 3, 4, 5, 6, 7, 8, 9};
   iter = thrust::search(data.begin(), data.end(), long_pattern.begin(), long_pattern.end());
-  ASSERT_EQUAL(iter - data.begin(), data.size());
+  ASSERT_EQUAL(iter - data.begin(), static_cast<typename Vector::difference_type>(data.size()));
 
   // Single occurrence
   Vector data2{0, 1, 2, 3, 4, 5};
@@ -85,7 +85,7 @@ void TestSearchWithPredicate()
   iter = thrust::search(data2.begin(), data2.end(), pattern2.begin(), pattern2.end(), thrust::equal_to<T>());
   ASSERT_EQUAL(iter - data2.begin(), 1);
 }
-DECLARE_VECTOR_UNITTEST(TestSearchWithPredicate);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(TestSearchWithPredicate);
 
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator1 search(my_system& system, ForwardIterator1 first, ForwardIterator1, ForwardIterator2, ForwardIterator2)
@@ -161,8 +161,9 @@ struct TestSearch
     h_iter = thrust::search(h_data.begin(), h_data.end(), h_nonexistent.begin(), h_nonexistent.end());
     d_iter = thrust::search(d_data.begin(), d_data.end(), d_nonexistent.begin(), d_nonexistent.end());
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
-    ASSERT_EQUAL(h_iter, h_data.end());
-    ASSERT_EQUAL(d_iter, d_data.end());
+    ASSERT_EQUAL(h_iter - h_data.begin(), static_cast<typename thrust::host_vector<T>::difference_type>(h_data.size()));
+    ASSERT_EQUAL(d_iter - d_data.begin(),
+                 static_cast<typename thrust::device_vector<T>::difference_type>(d_data.size()));
   }
 };
 VariableUnitTest<TestSearch, SignedIntegralTypes> TestSearchInstance;
@@ -204,7 +205,7 @@ void TestSearchSingleElement()
   // Single element not found
   Vector pattern2{9};
   iter = thrust::search(data.begin(), data.end(), pattern2.begin(), pattern2.end());
-  ASSERT_EQUAL(iter, data.end());
+  ASSERT_EQUAL(iter - data.begin(), static_cast<typename Vector::difference_type>(data.size()));
 }
 DECLARE_VECTOR_UNITTEST(TestSearchSingleElement);
 
@@ -216,7 +217,7 @@ void TestSearchFullMatch()
   Vector pattern{1, 2, 3, 4, 5};
 
   auto iter = thrust::search(data.begin(), data.end(), pattern.begin(), pattern.end());
-  ASSERT_EQUAL(iter, data.begin()); // Should find at beginning
+  ASSERT_EQUAL(iter - data.begin(), 0); // Should find at beginning
 }
 DECLARE_VECTOR_UNITTEST(TestSearchFullMatch);
 
