@@ -142,13 +142,13 @@ __host__ __device__ constexpr void test_type()
   test_type<Lhs, Rhs, cuda::std::common_type_t<Lhs, Rhs>>();
   test_type<Lhs, Rhs, unsigned>();
   test_type<Lhs, Rhs, int>();
-  // instantiation of all tests is very expensive. clang hits "constexpr evaluation hit maximum step limit"
+  // instantiation of all tests is very expensive. gcc hits "constexpr evaluation hit maximum step limit"
 #if _CCCL_COMPILER(GCC)
   test_type<Lhs, Rhs, long long>();
   test_type<Lhs, Rhs, unsigned long long>();
   test_type<Lhs, Rhs, signed char>();
   test_type<Lhs, Rhs, unsigned char>();
-#endif
+#endif // _CCCL_COMPILER(GCC)
 }
 
 template <typename T>
