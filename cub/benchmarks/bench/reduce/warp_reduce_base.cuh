@@ -18,7 +18,7 @@ struct benchmark_op_t
     using TempStorage = typename WarpReduce::TempStorage;
     __shared__ TempStorage temp_storage[32];
     auto warp_id = threadIdx.x / 32;
-    return WarpReduce{temp_storage[warp_id]}.Reduce(thread_data, cuda::std::plus<>{});
+    return WarpReduce{temp_storage[warp_id]}.Reduce(thread_data, op_t{});
   }
 };
 
