@@ -17,10 +17,10 @@
 
 #include "test_macros.h"
 
-__device__ int device_ptr3[]              = {1, 2, 3, 4};
-__device__ __managed__ int managed_ptr2[] = {1, 2, 3, 4};
+__device__ int device_ptr1[]              = {1, 2, 3, 4};
+__device__ __managed__ int managed_ptr1[] = {1, 2, 3, 4};
 
-int host_ptr5[] = {1, 2, 3, 4};
+int host_ptr1[] = {1, 2, 3, 4};
 
 template <typename Pointer>
 void test_accessible_pointer(
@@ -40,43 +40,43 @@ void test_accessible_pointer(
 bool test_basic()
 {
   cuda::device_ref dev{0};
-  int host_ptr1[] = {1, 2, 3, 4};
-  auto host_ptr2  = new int[2];
-  int* host_ptr3  = nullptr;
-  assert(cudaMallocHost(&host_ptr3, sizeof(int) * 2) == cudaSuccess);
+  int host_ptr2[] = {1, 2, 3, 4};
+  auto host_ptr3  = new int[2];
+  int* host_ptr4  = nullptr;
+  assert(cudaMallocHost(&host_ptr4, sizeof(int) * 2) == cudaSuccess);
 
-  int* host_ptr4 = nullptr;
-  assert(cudaHostAlloc(&host_ptr4, sizeof(int) * 2, cudaHostAllocMapped) == cudaSuccess);
+  int* host_ptr5 = nullptr;
+  assert(cudaHostAlloc(&host_ptr5, sizeof(int) * 2, cudaHostAllocMapped) == cudaSuccess);
 
-  int* device_ptr1 = nullptr;
-  assert(cudaMalloc(&device_ptr1, sizeof(int) * 2) == cudaSuccess);
+  int* device_ptr2 = nullptr;
+  assert(cudaMalloc(&device_ptr2, sizeof(int) * 2) == cudaSuccess);
 
-  int* device_ptr2    = nullptr;
+  int* device_ptr3    = nullptr;
   cudaStream_t stream = nullptr;
   assert(cudaStreamCreate(&stream) == cudaSuccess);
-  assert(cudaMallocAsync(&device_ptr2, sizeof(int) * 2, stream) == cudaSuccess);
+  assert(cudaMallocAsync(&device_ptr3, sizeof(int) * 2, stream) == cudaSuccess);
 
-  int* managed_ptr1 = nullptr;
-  assert(cudaMallocManaged(&managed_ptr1, sizeof(int) * 2) == cudaSuccess);
+  int* managed_ptr2 = nullptr;
+  assert(cudaMallocManaged(&managed_ptr2, sizeof(int) * 2) == cudaSuccess);
 
   test_accessible_pointer((void*) nullptr, true, true, true, dev);
 
-  test_accessible_pointer(host_ptr1, true, true, true, dev); // memory space cannot be verified for local array
-  test_accessible_pointer(host_ptr2, true, true, true, dev); // memory space cannot be verified for non-cuda malloc
-  test_accessible_pointer(host_ptr3, true, false, false, dev);
+  test_accessible_pointer(host_ptr1, true, true, true, dev); // memory space cannot be verified for global array
+  test_accessible_pointer(host_ptr2, true, true, true, dev); // memory space cannot be verified for local array
+  test_accessible_pointer(host_ptr3, true, true, true, dev); // memory space cannot be verified for non-cuda malloc
   test_accessible_pointer(host_ptr4, true, false, false, dev);
-  test_accessible_pointer(host_ptr5, true, true, true, dev); // memory space cannot be verified for global array
+  test_accessible_pointer(host_ptr5, true, false, false, dev);
 
-  test_accessible_pointer(device_ptr1, false, true, false, dev);
+  test_accessible_pointer(device_ptr1, true, true, true, dev); // memory space cannot be verified for global device
   test_accessible_pointer(device_ptr2, false, true, false, dev);
-  test_accessible_pointer(device_ptr3, true, true, true, dev); // memory space cannot be verified for global device
+  test_accessible_pointer(device_ptr3, false, true, false, dev);
 
   void* device_ptr4 = nullptr;
-  assert(cudaGetSymbolAddress(&device_ptr4, device_ptr3) == cudaSuccess);
+  assert(cudaGetSymbolAddress(&device_ptr4, device_ptr1) == cudaSuccess);
   test_accessible_pointer(device_ptr4, false, true, false, dev);
 
-  const int* const_device_ptr1 = device_ptr1;
-  test_accessible_pointer(const_device_ptr1, false, true, false, dev);
+  const int* const_device_ptr2 = device_ptr2;
+  test_accessible_pointer(const_device_ptr2, false, true, false, dev);
 
   test_accessible_pointer(managed_ptr1, true, true, true, dev);
   test_accessible_pointer(managed_ptr2, true, true, true, dev);
@@ -93,13 +93,13 @@ bool test_memory_pool()
   cudaMemPool_t mem_pool     = nullptr;
   cudaMemPoolCreate(&mem_pool, &pool_prop);
 
-  int* device_ptr2    = nullptr;
+  int* device_ptr3    = nullptr;
   cudaStream_t stream = nullptr;
   assert(cudaStreamCreate(&stream) == cudaSuccess);
-  assert(cudaMallocFromPoolAsync(&device_ptr2, sizeof(int) * 2, mem_pool, stream) == cudaSuccess);
+  assert(cudaMallocFromPoolAsync(&device_ptr3, sizeof(int) * 2, mem_pool, stream) == cudaSuccess);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 
-  test_accessible_pointer(device_ptr2, false, true, false, dev);
+  test_accessible_pointer(device_ptr3, false, true, false, dev);
   return true;
 }
 
