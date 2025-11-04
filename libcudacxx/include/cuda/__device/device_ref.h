@@ -26,7 +26,7 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
@@ -44,8 +44,15 @@ public:
   /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
   {
-    const auto __device_count = ::cuda::__driver::__deviceGetCount();
-    _CCCL_VERIFY(__id >= 0 && __id < __device_count, "Device ID must be a valid GPU device ordinal");
+    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
+    }
+    else
+    {
+      const auto __device_count = ::cuda::__driver::__deviceGetCount();
+      _CCCL_VERIFY(__id >= 0 && __id < __device_count, "Device ID must be a valid GPU device ordinal");
+    }
   }
 
   //! @brief Retrieve the native ordinal of the `device_ref`
