@@ -35,9 +35,13 @@ Determines whether the memory referenced by ``ptr`` is accessible from the speci
 
 .. code:: cuda
 
+   namespace cuda {
+
    template <typename Pointer>
    [[nodiscard]] __host__
    bool is_managed(Pointer ptr);
+
+   } // namespace cuda
 
 Determines whether the memory referenced by ``ptr`` is backed by Unified Memory (managed memory).
 
@@ -72,7 +76,7 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 **Exceptions**
 
-- The functions throw a ``cuda::cuda_error`` if the underlying driver API call fails. Note that this function may also return error codes from previous, asynchronous launches.
+- The functions throw a ``cuda::cuda_error`` if the underlying driver API calls fail. Note that this function may also fail with error codes from previous, asynchronous launches.
 
 **Undefined Behavior**
 
