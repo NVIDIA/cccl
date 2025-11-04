@@ -25,24 +25,24 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-_CCCL_API constexpr bool is_constant_evaluated() noexcept
+[[nodiscard]] _CCCL_API constexpr bool is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
-_CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
+[[nodiscard]] _CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
 #else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
-_CCCL_API constexpr bool is_constant_evaluated() noexcept
+[[nodiscard]] _CCCL_API constexpr bool is_constant_evaluated() noexcept
 {
   return false;
 }
-_CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
+[[nodiscard]] _CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return true;
 }
-#endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // ^^^ !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
