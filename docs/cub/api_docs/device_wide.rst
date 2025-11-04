@@ -11,8 +11,10 @@ Device-Wide Primitives
    ../api/device
 
 
+.. _device-temp-storage:
+
 Determining Temporary Storage Requirements
-++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++
 
 **Two-Phase API** (Traditional)
 
@@ -23,9 +25,9 @@ Most CUB device-wide algorithms follow a two-phase usage pattern:
 
 **What arguments are needed during the query phase?**
 
-* **Required**: Data types (via template parameters and iterator types) and problem size (``num_items``)
-* **Can be ``nullptr``/dummy**: All device pointers (``d_in``, ``d_out``, etc.).
-* **Why this is safe**: During the size query (``d_temp_storage == nullptr``) our dispatch layer exits immediately—no kernels launch and user-provided pointers are never dereferenced. Only the ``temp_storage_bytes`` reference is written.
+* **Template instantiation**: The query call must use the same template arguments as the execution call; only ``d_temp_storage``, ``temp_storage_bytes``, and problem-size parameters (for example ``num_items``) differ.
+* **Argument access**: Aside from ``d_temp_storage``, ``temp_storage_bytes``, and the problem-size arguments, no parameters are inspected during the query phase, so their values may be indeterminate. The dispatch layer returns before launching kernels or touching user storage.
+* **Current device**: The computed temporary storage size is valid only when the execution call runs on the same current CUDA device as the query. Re-run the query if the current device changes between phases.
 
 Example pattern:
 
@@ -37,19 +39,15 @@ Example pattern:
 
 **Single-Phase API** (Environment-Based)
 
-Environment-based overloads are being rolled out across CUB's device-wide primitives (rollout in progress).
-They eliminate explicit temporary-storage management, which in turn removes:
+Environment-based overloads are rolling out across CUB device-wide primitives. They remove the manual query/execute split by deriving temporary storage from an execution environment argument.
 
-- the two-phase query/execute call sequence, and
-- the two legacy storage arguments at the beginning of each API.
+Key properties of the environment argument:
 
-Key properties of the execution environment argument:
-
-- It is the last parameter and is defaulted (you can omit it entirely).
-- You can specify the CUDA stream via the environment.
-- You can select the memory resource (CCCL-provided or a custom resource) that backs internal allocations.
-- For some algorithms, you can request determinism requirements (e.g., gpu-to-gpu) via the environment.
-- Multiple properties can be provided simultaneously in a single, centralized argument.
+- It is defaulted and appears last, so traditional two-phase call sites remain valid without changes.
+- Streams can be forwarded by specifying ``cuda::get_stream`` properties.
+- You can select the memory resource (CCCL-provided or custom) used for internal allocations.
+- Supported algorithms accept determinism requirements (for example, ``cuda::execution::determinism::gpu_to_gpu``).
+- Multiple properties compose into a single centralized control point.
 
 Example (centralized control via a single environment argument):
 
@@ -77,6 +75,7 @@ Example (centralized control via a single environment argument):
 
 This page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
 availability and specifics of single-phase overloads.
+
 
 CUB device-level single-problem parallel algorithms:
 
