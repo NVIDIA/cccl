@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -28,9 +28,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace segmented_scan
+namespace detail::segmented_scan
 {
 enum class primitive_accum
 {
@@ -401,7 +399,7 @@ struct SegmentedScanPolicyWrapper : PolicyT
 
 template <typename StaticPolicyT>
 struct SegmentedScanPolicyWrapper<StaticPolicyT,
-                                  ::cuda::std::void_t<decltype(StaticPolicyT::SegmentedScanPolicyT::LOAD_MODIFIER)>>
+                                  ::cuda::std::void_t<decltype(StaticPolicyT::SegmentedScanPolicyT::load_modifier)>>
     : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper(StaticPolicyT base)
@@ -415,7 +413,7 @@ struct SegmentedScanPolicyWrapper<StaticPolicyT,
 
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
-    return StaticPolicyT::SegmentedScanPolicyT::LOAD_MODIFIER;
+    return StaticPolicyT::SegmentedScanPolicyT::load_modifier;
   }
 
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
@@ -569,8 +567,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
-} // namespace segmented_scan
-} // namespace detail
+} // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

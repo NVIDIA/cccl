@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/**
- * @file cub::AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks
- *       for participating in device-wide prefix segmented scan .
- */
+//!
+//! @file cub::AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks
+//!       for participating in device-wide prefix segmented scan .
+//!
 #pragma once
 
 #include <cub/config.cuh>
@@ -28,82 +28,81 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::segmented_scan
+{
 /******************************************************************************
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * @brief Parameterizable tuning policy type for AgentSegmentedScan
- *
- * @tparam NOMINAL_BLOCK_THREADS_4B
- *   Threads per thread block
- *
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B
- *   Items per thread (per tile of input)
- *
- * @tparam ComputeT
- *   Dominant compute type
- *
- * @tparam _LOAD_ALGORITHM
- *   The BlockLoad algorithm to use
- *
- * @tparam _LOAD_MODIFIER
- *   Cache load modifier for reading input elements
- *
- * @tparam _STORE_ALGORITHM
- *   The BlockStore algorithm to use
- *
- * @tparam _SCAN_ALGORITHM
- *   The BlockScan algorithm to use
- */
+//!
+//! @brief Parameterizable tuning policy type for AgentSegmentedScan
+//!
+//! @tparam Nominal4ByteBlockThreads
+//!   Threads per thread block
+//!
+//! @tparam Nominal4BytesItemsPerThread
+//!   Items per thread (per tile of input)
+//!
+//! @tparam ComputeT
+//!   Dominant compute type
+//!
+//! @tparam LoadAlgorithm
+//!   The BlockLoad algorithm to use
+//!
+//! @tparam LoadModifier
+//!   Cache load modifier for reading input elements
+//!
+//! @tparam StoreAlgorithm
+//!   The BlockStore algorithm to use
+//!
+//! @tparam ScanAlgorithm
+//!   The BlockScan algorithm to use
+//!
 template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
+  int Nominal4ByteBlockThreads,
+  int Nominal4BytesItemsPerThread,
   typename ComputeT,
-  BlockLoadAlgorithm _LOAD_ALGORITHM,
-  CacheLoadModifier _LOAD_MODIFIER,
-  BlockStoreAlgorithm _STORE_ALGORITHM,
-  BlockScanAlgorithm _SCAN_ALGORITHM,
-  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+  BlockLoadAlgorithm LoadAlgorithm,
+  CacheLoadModifier LoadModifier,
+  BlockStoreAlgorithm StoreAlgorithm,
+  BlockScanAlgorithm ScanAlgorithm,
+  typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4BytesItemsPerThread, ComputeT>>
 struct AgentSegmentedScanPolicy : ScalingType
 {
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
+  static constexpr BlockLoadAlgorithm load_algorithm   = LoadAlgorithm;
+  static constexpr CacheLoadModifier load_modifier     = LoadModifier;
+  static constexpr BlockStoreAlgorithm store_algorithm = StoreAlgorithm;
+  static constexpr BlockScanAlgorithm scan_algorithm   = ScanAlgorithm;
 };
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail::segmented_scan
-{
-
-/**
- * @brief AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks for
- *        participating in device-wide segmented prefix scan.
- * @tparam AgentSegmentedScanPolicyT
- *   Parameterized AgentSegmentedScanPolicyT tuning policy type
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type
- *
- * @tparam OutputIteratorT
- *   Random-access output iterator type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @tparam ScanOpT
- *   Scan functor type
- *
- * @tparam InitValueT
- *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
- *
- * @tparam AccumT
- *   The type of intermediate accumulator (according to P2322R6)
- */
+//!
+//! @brief AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks for
+//!        participating in device-wide segmented prefix scan.
+//! @tparam AgentSegmentedScanPolicyT
+//!   Parameterized AgentSegmentedScanPolicyT tuning policy type
+//!
+//! @tparam InputIteratorT
+//!   Random-access input iterator type
+//!
+//! @tparam OutputIteratorT
+//!   Random-access output iterator type
+//!
+//! @tparam OffsetT
+//!   Signed integer type for global offsets
+//!
+//! @tparam ScanOpT
+//!   Scan functor type
+//!
+//! @tparam InitValueT
+//!   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
+//!
+//! @tparam AccumT
+//!   The type of intermediate accumulator (according to P2322R6)
+//!
 template <typename AgentSegmentedScanPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -119,58 +118,44 @@ struct AgentSegmentedScan
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::it_value_t<InputIteratorT>;
+  using input_t = cub::detail::it_value_t<InputIteratorT>;
 
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using WrappedInputIteratorT =
+  using wrapped_input_iterator_t =
     ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentSegmentedScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                     CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
                      InputIteratorT>;
 
   // Constants
-  enum
-  {
-    // Use cub::NullType means no initial value is provided
-    HAS_INIT = !::cuda::std::is_same_v<InitValueT, NullType>,
-    // We are relying on either initial value not being `NullType`
-    // or the ForceInclusive tag to be true for inclusive scan
-    // to get picked up.
-    IS_INCLUSIVE     = ForceInclusive || !HAS_INIT,
-    BLOCK_THREADS    = AgentSegmentedScanPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
 
-  // Parametrized BlockLoad type
-  using BlockLoadT =
-    BlockLoad<AccumT,
-              AgentSegmentedScanPolicyT::BLOCK_THREADS,
-              AgentSegmentedScanPolicyT::ITEMS_PER_THREAD,
-              AgentSegmentedScanPolicyT::LOAD_ALGORITHM>;
+  // Use cub::NullType means no initial value is provided
+  static constexpr bool has_init = !::cuda::std::is_same_v<InitValueT, NullType>;
+  // We are relying on either initial value not being `NullType`
+  // or the ForceInclusive tag to be true for inclusive scan
+  // to get picked up.
+  static constexpr bool is_inclusive    = ForceInclusive || !has_init;
+  static constexpr int block_threads    = AgentSegmentedScanPolicyT::BLOCK_THREADS;
+  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int tile_items       = block_threads * items_per_thread;
 
-  // Parametrized BlockStore type
-  using BlockStoreT =
-    BlockStore<AccumT,
-               AgentSegmentedScanPolicyT::BLOCK_THREADS,
-               AgentSegmentedScanPolicyT::ITEMS_PER_THREAD,
-               AgentSegmentedScanPolicyT::STORE_ALGORITHM>;
+  using block_load_t = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
 
-  // Parametrized BlockScan type
-  using BlockScanT =
-    BlockScan<AccumT, AgentSegmentedScanPolicyT::BLOCK_THREADS, AgentSegmentedScanPolicyT::SCAN_ALGORITHM>;
+  using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
+
+  using block_scan_t = BlockScan<AccumT, block_threads, AgentSegmentedScanPolicyT::scan_algorithm>;
 
   union _TempStorage
   {
     // smem needed for tile loading
-    typename BlockLoadT::TempStorage load;
+    typename block_load_t::TempStorage load;
 
     // smem needed for tile storing
-    typename BlockStoreT::TempStorage store;
+    typename block_store_t::TempStorage store;
 
     // smem needed for tile scanning
-    typename BlockScanT::TempStorage scan;
+    typename block_scan_t::TempStorage scan;
   };
 
   // Alias wrapper allowing storage to be unioned
@@ -179,7 +164,7 @@ struct AgentSegmentedScan
 
   // Thread-private fields
   _TempStorage& temp_storage; ///< Reference to temp_storage
-  WrappedInputIteratorT d_in; ///< Input data
+  wrapped_input_iterator_t d_in; ///< Input data
   OutputIteratorT d_out; ///< Output data
   ScanOpT scan_op; ///< Binary associating scan operator
   InitValueT initial_value; // The initial value element for ScanOpT
@@ -188,22 +173,22 @@ struct AgentSegmentedScan
   // Constructor
   //---------------------------------------------------------------------
 
-  /**
-   * @param temp_storage
-   *   Reference to temp_storage
-   *
-   * @param d_in
-   *   Input data
-   *
-   * @param d_out
-   *   Output data
-   *
-   * @param scan_op
-   *   Binary scan operator
-   *
-   * @param init_value
-   *   Initial value to seed the exclusive scan
-   */
+  //!
+  //! @param temp_storage
+  //!   Reference to temp_storage
+  //!
+  //! @param d_in
+  //!   Input data
+  //!
+  //! @param d_out
+  //!   Output data
+  //!
+  //! @param scan_op
+  //!   Binary scan operator
+  //!
+  //! @param init_value
+  //!   Initial value to seed the exclusive scan
+  //!
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentedScan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
@@ -213,41 +198,41 @@ struct AgentSegmentedScan
       , initial_value(initial_value)
   {}
 
-  /**
-   * @brief Scan one segment of values
-   *
-   * @param inp_idx_begin
-   *   Index of start of the segment in input array
-   *
-   * @param inp_idx_end
-   *   Index of end of the segment in input array
-   *
-   * @param out_idx_begin
-   *   Index of start of the segment's prefix scan result in the output array
-   */
+  //!
+  //! @brief Scan one segment of values
+  //!
+  //! @param inp_idx_begin
+  //!   Index of start of the segment in input array
+  //!
+  //! @param inp_idx_end
+  //!  Index of end of the segment in input array
+  //!
+  //! @param out_idx_begin
+  //!  Index of start of the segment's prefix scan result in the output array
+  //!
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
     AccumT exclusive_prefix{};
-    OffsetT n_chunks = cuda::ceil_div(inp_idx_end - inp_idx_begin, TILE_ITEMS);
+    OffsetT n_chunks = ::cuda::ceil_div(inp_idx_end - inp_idx_begin, tile_items);
 
-    AccumT thread_values[ITEMS_PER_THREAD] = {};
+    AccumT thread_values[items_per_thread] = {};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
     {
-      OffsetT chunk_begin = inp_idx_begin + chunk_id * TILE_ITEMS;
-      OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TILE_ITEMS, inp_idx_end);
+      OffsetT chunk_begin = inp_idx_begin + chunk_id * tile_items;
+      OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, inp_idx_end);
       // chunk_size <= TILE_ITEMS, casting to int is safe
       int chunk_size = static_cast<int>(chunk_end - chunk_begin);
       // load elements using BlockLoad
-      BlockLoadT(temp_storage.load).Load(d_in + chunk_begin, thread_values, chunk_size);
+      block_load_t(temp_storage.load).Load(d_in + chunk_begin, thread_values, chunk_size);
       __syncthreads();
 
       // execute BlockScan
       AccumT block_aggregate;
-      BlockScanT block_scan_algo(temp_storage.scan);
-      if constexpr (IS_INCLUSIVE)
+      block_scan_t block_scan_algo(temp_storage.scan);
+      if constexpr (is_inclusive)
       {
-        if constexpr (HAS_INIT)
+        if constexpr (has_init)
         {
           if (chunk_id == 0)
           {
@@ -277,7 +262,7 @@ struct AgentSegmentedScan
       }
       else
       {
-        constexpr auto loop_size = static_cast<int>(ITEMS_PER_THREAD);
+        constexpr auto loop_size = static_cast<int>(items_per_thread);
         cuda::static_for<loop_size>([&](int i) {
           thread_values[i] = scan_op(thread_values[i], exclusive_prefix);
         });
@@ -285,12 +270,11 @@ struct AgentSegmentedScan
       }
 
       // write out scan values using BlockStore
-      BlockStoreT(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * TILE_ITEMS, thread_values, chunk_size);
+      block_store_t(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
       __syncthreads();
     }
   };
 };
-
 } // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

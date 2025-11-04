@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -19,7 +19,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/kernels/segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
@@ -40,7 +40,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -74,10 +73,7 @@ struct DeviceSegmentedScanKernelSource
     return sizeof(AccumT);
   }
 };
-
 } // namespace detail::segmented_scan
-
-// TODO: define struct DispatchSegmentedScan
 
 template <
   typename InputIteratorT,
@@ -93,10 +89,10 @@ template <
                                                                                   cub::detail::it_value_t<InputIteratorT>,
                                                                                   typename InitValueT::value_type>>,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename _OffsetT               = typename detail::
+  typename OffsetT                = typename detail::
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicyHub = detail::segmented_scan::
-    policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, _OffsetT, ScanOpT>,
+    policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
   typename KernelSource = detail::segmented_scan::DeviceSegmentedScanKernelSource<
     typename PolicyHub::MaxPolicy,
     InputIteratorT,
@@ -104,7 +100,7 @@ template <
     BeginOffsetIteratorInputT,
     EndOffsetIteratorInputT,
     BeginOffsetIteratorOutputT,
-    _OffsetT,
+    OffsetT,
     ScanOpT,
     InitValueT,
     AccumT,
@@ -112,8 +108,6 @@ template <
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedScan
 {
-  using OffsetT = _OffsetT;
-
   static_assert(::cuda::std::is_integral_v<OffsetT> && sizeof(OffsetT) >= 4 && sizeof(OffsetT) <= 8,
                 "DispatchSegmentedScan only supports integral offset types of 4- or 8-bytes");
 
@@ -263,57 +257,57 @@ struct DispatchSegmentedScan
     return InvokePasses(kernel_source.SegmentedScanKernel(), wrapped_policy);
   }
 
-  /**
-   * @brief Internal dispatch routine
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no
-   *   work is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_in
-   *   Iterator to the input sequence of data items
-   *
-   * @param[out] d_out
-   *   Iterator to the output sequence of data items
-   *
-   * @param[in] num_segments
-   *   Total number of segments that comprise the input data
-   *
-   * @param[in] input_begin_offsets
-   *   Random-access iterator to the offsets for beginnings of segments in
-   *   the input sequence
-   *
-   * @param[in] input_end_offsets
-   *   Random-access iterator to the offsets for endings of segments in
-   *   the input sequence
-   *
-   * @param[in] output_begin_offsets
-   *   Random-access iterator to the offsets for beginnings of segments in
-   *   the output sequence
-   *
-   * @param[in] scan_op
-   *   Binary scan functor
-   *
-   * @param[in] init_value
-   *   Initial value to seed the exclusive scan
-   *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within.
-   *   Default is stream<sub>0</sub>.
-   *
-   * @param[in] kernel_source
-   *   Object specifying implementation kernels
-   *
-   * @param[in] launcher_factory
-   *   Object to execute implementation kernels on the given stream
-   *
-   * @param[in] max_policy
-   *   Struct encoding chain of algorithm tuning policies
-   */
+  //!
+  //! @brief Internal dispatch routine
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no
+  //!   work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Iterator to the output sequence of data items
+  //!
+  //! @param[in] num_segments
+  //!   Total number of segments that comprise the input data
+  //!
+  //! @param[in] input_begin_offsets
+  //!   Random-access iterator to the offsets for beginnings of segments in
+  //!   the input sequence
+  //!
+  //! @param[in] input_end_offsets
+  //!   Random-access iterator to the offsets for endings of segments in
+  //!   the input sequence
+  //!
+  //! @param[in] output_begin_offsets
+  //!   Random-access iterator to the offsets for beginnings of segments in
+  //!   the output sequence
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] stream
+  //!   **[optional]** CUDA stream to launch kernels within.
+  //!   Default is stream<sub>0</sub>.
+  //!
+  //! @param[in] kernel_source
+  //!   Object specifying implementation kernels
+  //!
+  //! @param[in] launcher_factory
+  //!   Object to execute implementation kernels on the given stream
+  //!
+  //! @param[in] max_policy
+  //!   Struct encoding chain of algorithm tuning policies
+  //!
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
