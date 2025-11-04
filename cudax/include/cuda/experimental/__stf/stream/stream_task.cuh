@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_ctx;
 
 template <typename... Data>
@@ -886,5 +885,4 @@ public:
   }
 };
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
@@ -594,7 +595,6 @@ inline constexpr size_t structured_binding_size<let_stopped_t::__sndr_t<_Sndr, _
 _CCCL_GLOBAL_CONSTANT auto let_value   = let_value_t{};
 _CCCL_GLOBAL_CONSTANT auto let_error   = let_error_t{};
 _CCCL_GLOBAL_CONSTANT auto let_stopped = let_stopped_t{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

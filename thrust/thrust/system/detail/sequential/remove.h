@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator
@@ -174,6 +173,5 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 
   return result;
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

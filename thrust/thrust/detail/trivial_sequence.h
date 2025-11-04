@@ -42,7 +42,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // never instantiated
 template <typename Iterator, typename DerivedPolicy, bool is_trivial>
 struct _trivial_sequence
@@ -124,7 +123,6 @@ struct trivial_sequence : detail::_trivial_sequence<Iterator, DerivedPolicy, is_
       : super_t(exec, first, last)
   {}
 };
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

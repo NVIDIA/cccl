@@ -48,7 +48,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 // short names to avoid nvcc bug
 struct lbf
 {
@@ -196,7 +195,6 @@ struct binary_search_less
     return lhs < rhs;
   }
 };
-
 } // end namespace detail
 
 //////////////////////
@@ -379,6 +377,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
   ForwardIterator ub = thrust::upper_bound(exec, first, last, value, comp);
   return thrust::make_pair(lb, ub);
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

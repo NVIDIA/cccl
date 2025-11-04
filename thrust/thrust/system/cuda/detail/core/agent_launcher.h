@@ -58,11 +58,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
-{
-namespace detail
+namespace cuda_cub::core::detail
 {
 #  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
 #    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
@@ -279,10 +275,7 @@ struct AgentLauncher : Agent
     sync();
   }
 };
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END
 

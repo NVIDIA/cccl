@@ -40,7 +40,6 @@
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 namespace cuda::experimental
 {
-
 enum class _IsConstIter
 {
   __no,

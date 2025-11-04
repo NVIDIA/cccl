@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -393,7 +394,6 @@ inline constexpr size_t structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, 
 _CCCL_GLOBAL_CONSTANT auto then         = then_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

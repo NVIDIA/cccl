@@ -19,7 +19,6 @@
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 template <typename T, size_t... Extents>
 using dimensions = ::cuda::std::extents<T, Extents...>;
 
@@ -153,7 +152,6 @@ template <typename TyTrunc, typename Index, typename Dims>
 
   return (static_cast<TyTrunc>(index.extent(2)) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
 }
-
 } // namespace __detail
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017

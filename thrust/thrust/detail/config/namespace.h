@@ -56,7 +56,6 @@
 #  define THRUST_NS_PREFIX             \
     namespace THRUST_WRAPPED_NAMESPACE \
     {
-
 #  define THRUST_NS_POSTFIX }
 
 #  define THRUST_NS_QUALIFIER ::THRUST_WRAPPED_NAMESPACE::thrust

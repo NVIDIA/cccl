@@ -7,29 +7,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
-class SeedSequence
-{
-public:
-  constexpr SeedSequence() = default;
-  __host__ __device__ constexpr void generate(uint32_t* __begin, uint32_t* __end) const noexcept
-  {
-    for (uint32_t* it = __begin; it != __end; ++it)
-    {
-      *it = 42;
-    }
-  }
-};
+#include <cuda/std/__random_>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#include "test_macros.h"
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_ctor()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_ctor()
 {
   Engine e1;
   Engine e2(Engine::default_seed);
   assert(e1 == e2);
   Engine e3(42);
   assert(e3 != e2);
-  constexpr auto seq = SeedSequence{};
+  auto seq = cuda::std::seed_seq{};
   Engine e4(seq);
   Engine e5 = e4;
   assert(e4 == e5);
@@ -39,7 +36,7 @@ __host__ __device__ constexpr bool test_ctor()
 }
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_copy()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_copy()
 {
   Engine e1;
   Engine e2 = e1;
@@ -56,7 +53,7 @@ __host__ __device__ constexpr bool test_copy()
 }
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_seed()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_seed()
 {
   Engine e1(23);
   Engine e2;
@@ -65,17 +62,17 @@ __host__ __device__ constexpr bool test_seed()
   e1.seed(Engine::default_seed);
   assert(e1 == e2);
 
-  constexpr auto seq = SeedSequence{};
+  auto seq = cuda::std::seed_seq{};
+  static_assert(cuda::std::is_void_v<decltype(e1.seed(seq))>);
   static_assert(cuda::std::is_void_v<decltype(e1.seed())>);
   static_assert(cuda::std::is_void_v<decltype(e1.seed(23))>);
-  static_assert(cuda::std::is_void_v<decltype(e1.seed(seq))>);
   static_assert(noexcept(e1.seed()));
   static_assert(noexcept(e1.seed(23)));
   return true;
 }
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_operator()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_operator()
 {
   Engine e1;
   static_assert(cuda::std::is_same_v<decltype(e1()), typename Engine::result_type>);
@@ -88,7 +85,7 @@ __host__ __device__ constexpr bool test_operator()
 }
 
 template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ constexpr bool test_discard()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_discard()
 {
   Engine e;
   for (int i = 0; i < 100; ++i)
@@ -110,7 +107,7 @@ __host__ __device__ constexpr bool test_discard()
 }
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_equality()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_equality()
 {
   Engine e;
   assert(e == e);
@@ -130,7 +127,7 @@ __host__ __device__ constexpr bool test_equality()
 }
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_min_max()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_min_max()
 {
   const auto seeds = {0, 29332, 9000};
   for (auto seed : seeds)
@@ -173,23 +170,24 @@ void test_save_restore()
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename Engine, typename Engine::result_type value_10000>
-__host__ __device__ constexpr bool test_engine()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_engine()
 {
   test_ctor<Engine>();
-  static_assert(test_ctor<Engine>());
   test_seed<Engine>();
-  static_assert(test_seed<Engine>());
   test_copy<Engine>();
-  static_assert(test_copy<Engine>());
   test_operator<Engine>();
-  static_assert(test_operator<Engine>());
-
   test_discard<Engine, value_10000>();
-  static_assert(test_discard<Engine, value_10000>());
   test_equality<Engine>();
-  static_assert(test_equality<Engine>());
   test_min_max<Engine>();
-  static_assert(test_min_max<Engine>());
   NV_IF_TARGET(NV_IS_HOST, ({ test_save_restore<Engine>(); }));
+#if TEST_STD_VER >= 2020
+  static_assert(test_ctor<Engine>());
+  static_assert(test_seed<Engine>());
+  static_assert(test_copy<Engine>());
+  static_assert(test_operator<Engine>());
+  static_assert(test_discard<Engine, value_10000>());
+  static_assert(test_equality<Engine>());
+  static_assert(test_min_max<Engine>());
+#endif
   return true;
 }

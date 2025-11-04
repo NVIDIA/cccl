@@ -44,7 +44,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 //////////////
 // Functors //
 //////////////
@@ -148,7 +147,6 @@ struct duplicate_tuple
     return thrust::make_tuple(t, t);
   }
 }; // end duplicate_tuple
-
 } // end namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator>
@@ -247,6 +245,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
   return thrust::make_pair(first + thrust::get<1>(thrust::get<0>(result)),
                            first + thrust::get<1>(thrust::get<1>(result)));
 } // end minmax_element()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
