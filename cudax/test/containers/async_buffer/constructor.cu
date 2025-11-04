@@ -332,7 +332,7 @@ C2H_CCCLRT_TEST("cudax::make_async_buffer narrowing properties", "[container][as
 
   auto buf = cudax::make_async_buffer<int>(stream, resource, 0, cudax::no_init);
 
-  auto input = compare_data_initializer_list;
+  auto input      = compare_data_initializer_list;
   auto buf_host   = cudax::make_async_buffer<int, cuda::mr::host_accessible>(stream, resource, input);
   auto buf_device = cudax::make_async_buffer<int, cuda::mr::device_accessible>(stream, resource, 2, 42);
 

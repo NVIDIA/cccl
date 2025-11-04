@@ -242,7 +242,8 @@ C2H_CCCLRT_TEST("make_async_buffer with legacy resource", "[container][async_buf
 {
   cudax::stream stream{cuda::device_ref{0}};
   auto resource = cuda::legacy_pinned_memory_resource{};
-  cudax::async_buffer<int, cuda::mr::host_accessible> input{stream, resource, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
+  cudax::async_buffer<int, cuda::mr::host_accessible> input{
+    stream, resource, {int(1), int(42), int(1337), int(0), int(12), int(-1)}};
   auto buf = cudax::make_async_buffer(input.stream(), resource, input);
   CUDAX_CHECK(equal_range(buf));
 }
