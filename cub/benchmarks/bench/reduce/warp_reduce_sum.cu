@@ -10,18 +10,18 @@ using value_types = nvbench::type_list<
 #if NVBENCH_HELPER_HAS_I128
   int128_t,
 #endif
-#if _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   __half,
 #endif
-#if _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
   __nv_bfloat16,
 #endif
   float,
   double,
-#if _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   cuda::std::complex<__half>,
 #endif
-#if _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
   cuda::std::complex<__nv_bfloat16>,
 #endif
   cuda::std::complex<float>,
