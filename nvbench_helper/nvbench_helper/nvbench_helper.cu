@@ -16,7 +16,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/bit>
 
 #include <cstdint>
 #include <random>
