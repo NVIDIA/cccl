@@ -33,8 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _From, typename _To>
 inline constexpr bool __is_integer_representable_v =
-  ::cuda::std::cmp_less(::cuda::std::numeric_limits<_From>::max(), ::cuda::std::numeric_limits<_To>::max())
-  && ::cuda::std::cmp_greater(::cuda::std::numeric_limits<_From>::min(), ::cuda::std::numeric_limits<_To>::min());
+  ::cuda::std::cmp_less_equal(::cuda::std::numeric_limits<_From>::max(), ::cuda::std::numeric_limits<_To>::max())
+  && ::cuda::std::cmp_greater_equal(::cuda::std::numeric_limits<_From>::min(), ::cuda::std::numeric_limits<_To>::min());
 
 //! @brief Casts a number \p __from to a number of type \p _To with overflow detection
 //! @param __from The number to cast
