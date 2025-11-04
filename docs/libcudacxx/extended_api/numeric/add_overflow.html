@@ -54,7 +54,7 @@
     <link rel="icon" href="../../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="cuda::narrow" href="narrow.html" />
+    <link rel="next" title="cuda::sub_overflow" href="sub_overflow.html" />
     <link rel="prev" title="Numeric" href="../numeric.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -1515,16 +1515,20 @@
   <section id="cuda-add-overflow">
 <span id="libcudacxx-extended-api-numeric-add-overflow"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::add_overflow</span></code><a class="headerlink" href="#cuda-add-overflow" title="Link to this heading">#</a></h1>
 <p>Defined in <code class="docutils literal notranslate"><span class="pre">&lt;cuda/numeric&gt;</span></code> header.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">namespace</span><span class="w"> </span><span class="nn">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">overflow_result</span><span class="p">;</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cm">/*unspecified*/</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Lhs</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Rhs</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="k">constexpr</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="k">constexpr</span>
 <span class="n">overflow_result</span><span class="o">&lt;</span><span class="cm">/*see-below*/</span><span class="o">&gt;</span><span class="w"> </span><span class="n">add_overflow</span><span class="p">(</span><span class="n">Lhs</span><span class="w"> </span><span class="n">lhs</span><span class="p">,</span><span class="w"> </span><span class="n">Rhs</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (1)</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Result</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Lhs</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Rhs</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="k">constexpr</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="k">constexpr</span>
 <span class="kt">bool</span><span class="w"> </span><span class="n">add_overflow</span><span class="p">(</span><span class="n">Result</span><span class="o">&amp;</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="n">Lhs</span><span class="w"> </span><span class="n">lhs</span><span class="p">,</span><span class="w"> </span><span class="n">Rhs</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (2)</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function <code class="docutils literal notranslate"><span class="pre">cuda::add_overflow</span></code> performs addition of two values <code class="docutils literal notranslate"><span class="pre">lhs</span></code> and <code class="docutils literal notranslate"><span class="pre">rhs</span></code> with overflow checking. The result is the same as if the operands were first promoted to an infinite precision signed type, added together and the result truncated to the type of the return value.</p>
@@ -1536,8 +1540,8 @@
 </ul>
 <p><strong>Return value</strong></p>
 <ol class="arabic simple">
-<li><p>Returns an <a class="reference internal" href="overflow_result.html#libcudacxx-extended-api-numeric-overflow-result"><span class="std std-ref">overflow_result</span></a> object that contains the result of the addition and a boolean indicating whether an overflow occurred. If the <code class="docutils literal notranslate"><span class="pre">Result</span></code> type is specified, it will be used as the type of the result, otherwise the common type of <code class="docutils literal notranslate"><span class="pre">Lhs</span></code> and <code class="docutils literal notranslate"><span class="pre">Rhs</span></code> is used.</p></li>
-<li><p>Returns a boolean indicating whether an overflow occurred, and if no overflow occurred, the result is stored in the provided <code class="docutils literal notranslate"><span class="pre">result</span></code> variable.</p></li>
+<li><p>Returns an <a class="reference internal" href="overflow_result.html#libcudacxx-extended-api-numeric-overflow-result"><span class="std std-ref">overflow_result</span></a> object  containing the result of the addition and a boolean indicating whether an overflow or underflow occurred. If the <code class="docutils literal notranslate"><span class="pre">Result</span></code> type is specified, it will be used as the type of the result, otherwise the common type of <code class="docutils literal notranslate"><span class="pre">Lhs</span></code> and <code class="docutils literal notranslate"><span class="pre">Rhs</span></code> is used.</p></li>
+<li><p>Returns <code class="docutils literal notranslate"><span class="pre">true</span></code> if an overflow or underflow occurred, <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise.</p></li>
 </ol>
 <p><strong>Constraints</strong></p>
 <ul class="simple">
@@ -1545,10 +1549,10 @@
 </ul>
 <p><strong>Performance considerations</strong></p>
 <ul class="simple">
-<li><p>No overflow checking if <code class="docutils literal notranslate"><span class="pre">Lhs</span> <span class="pre">+</span>&#160; <span class="pre">Rhs</span></code> is always  representable with the <code class="docutils literal notranslate"><span class="pre">Result</span></code> type.</p></li>
-<li><p>The computation is faster when <code class="docutils literal notranslate"><span class="pre">Lhs</span></code>, <code class="docutils literal notranslate"><span class="pre">Rhs</span></code>, and <code class="docutils literal notranslate"><span class="pre">Result</span></code> have the same sign.</p></li>
-<li><p>The computation with unsigned types is faster than signed types.</p></li>
-<li><p>The function uses PTX <code class="docutils literal notranslate"><span class="pre">asm</span></code> on device, and compiler-intrinsics on host whenever possible.</p></li>
+<li><p>No overflow checking is required if <code class="docutils literal notranslate"><span class="pre">Lhs</span> <span class="pre">+</span>&#160; <span class="pre">Rhs</span></code> is always representable with the <code class="docutils literal notranslate"><span class="pre">Result</span></code> type.</p></li>
+<li><p>Computation is generally faster when <code class="docutils literal notranslate"><span class="pre">Lhs</span></code>, <code class="docutils literal notranslate"><span class="pre">Rhs</span></code>, and <code class="docutils literal notranslate"><span class="pre">Result</span></code> have the same signedness.</p></li>
+<li><p>Unsigned computations are generally faster than signed computations.</p></li>
+<li><p>The function uses PTX <code class="docutils literal notranslate"><span class="pre">asm</span></code> on device and compiler intrinsics on host whenever possible.</p></li>
 </ul>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
@@ -1575,11 +1579,10 @@
 
 <span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">result</span><span class="p">{};</span>
 <span class="w">    </span><span class="c1">// cuda::add_overflow(result, lhs, rhs) with bool return type</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">add_overflow</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">int_max</span><span class="p">))</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">cuda</span><span class="o">::</span><span class="n">add_overflow</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">int_max</span><span class="p">))</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="n">assert</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span><span class="w"> </span><span class="c1">// should not be reached</span>
+<span class="w">        </span><span class="n">assert</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">int_max</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1u</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">int_max</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1u</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span>
@@ -1589,7 +1592,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/n1dWPf8c6">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/PPT17ozx6">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 
@@ -1613,11 +1616,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="narrow.html"
+       href="sub_overflow.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">cuda::narrow</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">cuda::sub_overflow</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
