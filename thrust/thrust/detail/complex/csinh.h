@@ -56,9 +56,7 @@
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-namespace complex
+namespace detail::complex
 {
 using thrust::complex;
 
@@ -191,8 +189,7 @@ _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
   z = csinh(complex<double>(-z.imag(), z.real()));
   return (complex<double>(z.imag(), -z.real()));
 }
-} // namespace complex
-} // namespace detail
+} // namespace detail::complex
 
 template <typename ValueType>
 _CCCL_HOST_DEVICE inline complex<ValueType> sin(const complex<ValueType>& z)

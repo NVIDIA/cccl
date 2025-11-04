@@ -35,9 +35,7 @@
 #include <thrust/system/omp/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
+namespace system::omp
 {
 //! \cond
 namespace detail
@@ -68,7 +66,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \}
  */
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 THRUST_NAMESPACE_END

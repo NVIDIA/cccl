@@ -15,7 +15,7 @@
 
 #include <cub/agent/agent_three_way_partition.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>

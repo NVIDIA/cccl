@@ -81,11 +81,8 @@ template <int NominalBlockThreads4B,
           typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
-  enum
-  {
-    /// The number of radix bits, i.e., log2(bins)
-    RADIX_BITS = RadixBits,
-  };
+  /// The number of radix bits, i.e., log2(bins)
+  static constexpr int RADIX_BITS = RadixBits;
 
   /// The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;

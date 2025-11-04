@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_for.cuh>
-#include <cub/device/dispatch/kernels/for_each.cuh>
+#include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>

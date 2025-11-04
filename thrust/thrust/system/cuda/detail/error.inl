@@ -42,9 +42,7 @@ error_condition make_error_condition(cuda::errc::errc_t e)
   return error_condition(static_cast<int>(e), cuda_category());
 } // end make_error_condition()
 
-namespace cuda_cub
-{
-namespace detail
+namespace cuda_cub::detail
 {
 class cuda_error_category : public error_category
 {
@@ -77,8 +75,7 @@ public:
     return system_category().default_error_condition(ev);
   }
 }; // end cuda_error_category
-} // namespace detail
-} // end namespace cuda_cub
+} // end namespace cuda_cub::detail
 
 const error_category& cuda_category()
 {

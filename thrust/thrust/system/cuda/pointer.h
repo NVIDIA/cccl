@@ -131,16 +131,13 @@ using reference = thrust::tagged_reference<T, thrust::cuda_cub::tag>;
  *  aliased in the top-level <tt>thrust::cuda</tt> namespace for easy access.
  *
  */
-namespace system
-{
-namespace cuda
+namespace system::cuda
 {
 using thrust::cuda_cub::pointer;
 using thrust::cuda_cub::reference;
 using thrust::cuda_cub::universal_host_pinned_pointer;
 using thrust::cuda_cub::universal_pointer;
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda
 /*! \}
  */
 

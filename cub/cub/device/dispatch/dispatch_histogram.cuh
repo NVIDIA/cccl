@@ -23,7 +23,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
-#include <cub/device/dispatch/kernels/histogram.cuh>
+#include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
