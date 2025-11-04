@@ -65,7 +65,6 @@
 
 namespace c2h
 {
-
 template <typename... Ts>
 using type_list = ::cuda::std::__type_list<Ts...>;
 
@@ -189,7 +188,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 #endif // TEST_BF_T()
-
 } // namespace c2h
 
 namespace detail
@@ -399,7 +397,6 @@ class nvtx_fixture
 
 namespace c2h
 {
-
 inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested

@@ -324,7 +324,6 @@ template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_error_t> get_completion_domain<set_error_t>{};
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_stopped_t> get_completion_domain<set_stopped_t>{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

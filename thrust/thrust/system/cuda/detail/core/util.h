@@ -45,11 +45,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
-{
-namespace detail
+namespace cuda_cub::core::detail
 {
 /// Typelist - a container of types
 template <typename...>
@@ -585,9 +581,6 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

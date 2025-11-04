@@ -44,7 +44,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-
 struct reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy single_tile;
@@ -199,7 +198,7 @@ CUresult cccl_device_reduce_build_ex(
     std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/device/dispatch/kernels/reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
   char data[{1}];

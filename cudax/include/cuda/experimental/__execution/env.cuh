@@ -349,7 +349,6 @@ public:
     return __policy_;
   }
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/experimental/__execution/epilogue.cuh>

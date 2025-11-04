@@ -33,7 +33,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 namespace output_ordering
 {
-
 struct __get_output_ordering_t;
 
 enum class __output_ordering_t
@@ -79,7 +78,6 @@ struct __get_output_ordering_t
 };
 
 _CCCL_GLOBAL_CONSTANT auto __get_output_ordering = __get_output_ordering_t{};
-
 } // namespace output_ordering
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION

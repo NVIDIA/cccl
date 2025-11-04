@@ -45,7 +45,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 #ifdef THRUST_CACHING_DEVICE_MALLOC
 #  define __CUB_CACHING_MALLOC
 #  if _CCCL_HOST_COMPILATION()
@@ -116,6 +115,5 @@ _CCCL_HOST_DEVICE void free(execution_policy<DerivedPolicy>&, Pointer ptr)
                  thrust::free(thrust::seq, ptr);));
 #endif
 } // end free()
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

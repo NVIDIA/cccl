@@ -183,7 +183,6 @@ _CCCL_API _CCCL_CONSTEVAL auto transform_completion_signatures(
     }
   }
 }
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

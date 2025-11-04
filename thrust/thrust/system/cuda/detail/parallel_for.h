@@ -49,7 +49,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class F, class Size>
 void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size count)
@@ -74,7 +73,6 @@ void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size
   ));
   // clang-format on
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

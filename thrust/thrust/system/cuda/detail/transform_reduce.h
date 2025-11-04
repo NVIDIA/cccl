@@ -60,10 +60,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
   execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
@@ -120,7 +118,6 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
   // make this guarantee.
   return thrust::cuda_cub::get_value(policy, thrust::detail::aligned_reinterpret_cast<T*>(tmp.data().get()));
 }
-
 } // namespace detail
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -137,7 +134,6 @@ T _CCCL_HOST_DEVICE transform_reduce(
        cvt_to_seq(derived_cast(policy)), first, first + num_items, transform_op, init, reduce_op);));
   return init;
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

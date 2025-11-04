@@ -57,10 +57,8 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 struct is_trivially_relocatable_impl;
-
 } // namespace detail
 
 /*! \endcond
@@ -208,7 +206,6 @@ struct proclaim_trivially_relocatable : false_type
 
 namespace detail
 {
-
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
@@ -218,7 +215,6 @@ struct is_trivially_relocatable_impl
 template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 {};
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

@@ -49,7 +49,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 // XXX forward declare to circumvent circular dependency
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate);
@@ -60,7 +59,6 @@ find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Pred
 
 template <class Derived, class InputIt, class T>
 InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first, InputIt last, T const& value);
-
 }; // namespace cuda_cub
 THRUST_NAMESPACE_END
 
@@ -69,10 +67,8 @@ THRUST_NAMESPACE_END
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __find_if
 {
-
 template <typename TupleType>
 struct functor
 {
@@ -164,7 +160,6 @@ InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first,
 
   return cuda_cub::find_if(policy, first, last, _1 == value);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -37,11 +37,8 @@
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp
 {
-namespace omp
-{
-
 /*! \p omp::pointer stores a pointer to an object allocated in memory accessible
  *  by the \p omp system. This type provides type safety when dispatching
  *  algorithms on ranges resident in \p omp memory.
@@ -103,9 +100,7 @@ using universal_host_pinned_pointer = universal_pointer<T>;
  */
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::system::omp::tag>;
-
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system

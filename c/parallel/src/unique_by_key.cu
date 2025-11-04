@@ -192,7 +192,6 @@ struct dynamic_vsmem_helper_t
     return 0;
   }
 };
-
 } // namespace unique_by_key
 
 CUresult cccl_device_unique_by_key_build_ex(
@@ -260,8 +259,8 @@ CUresult cccl_device_unique_by_key_build_ex(
     std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
-#include <cub/device/dispatch/kernels/scan.cuh>
-#include <cub/device/dispatch/kernels/unique_by_key.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];

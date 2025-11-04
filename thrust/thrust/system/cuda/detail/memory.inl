@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n)
 {
   tag cuda_tag;
@@ -52,6 +51,5 @@ _CCCL_HOST_DEVICE void free(pointer<void> ptr)
   tag cuda_tag;
   return thrust::cuda_cub::free(cuda_tag, ptr.get());
 } // end free()
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
