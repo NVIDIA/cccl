@@ -534,7 +534,7 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
     __box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type, __tensor.device.device_id);
   const auto __raw_elem_strides =
     ::cuda::__get_elem_strides(__elem_strides, __tensor_sizes, __rank, __interleave_layout);
-  const auto [__tensor_map, __status] = ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
+  const auto __result = ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
     __data_type,
     __rank,
     __address,
@@ -546,8 +546,8 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
     __raw_swizzle,
     __raw_l2_fetch_size,
     __raw_oobfill);
-  _CCCL_VERIFY(__status == ::cudaSuccess, "Failed to encode TMA descriptor");
-  return __tensor_map;
+  _CCCL_VERIFY(__result.error() == ::cudaSuccess, "Failed to encode TMA descriptor");
+  return *__result;
 }
 
 template <::cuda::std::size_t _BoxDimSize>
