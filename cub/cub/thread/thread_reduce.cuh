@@ -155,6 +155,27 @@ template <typename Input,
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace detail
 {
+
+template <typename PreferredT, typename ValueT, typename ReductionOp, typename L, typename R>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(const ReductionOp& reduction_op, L&& lhs, R&& rhs)
+{
+  if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, PreferredT, PreferredT>)
+  {
+    return reduction_op(static_cast<PreferredT>(lhs), static_cast<PreferredT>(rhs));
+  }
+  else if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, PreferredT, ValueT>)
+  {
+    return reduction_op(static_cast<PreferredT>(lhs), static_cast<ValueT>(rhs));
+  }
+  else if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, ValueT, PreferredT>)
+  {
+    return reduction_op(static_cast<ValueT>(lhs), static_cast<PreferredT>(rhs));
+  }
+  else
+  {
+    return reduction_op(static_cast<ValueT>(lhs), static_cast<ValueT>(rhs));
+  }
+}
 /***********************************************************************************************************************
  * Enable SIMD/Tree reduction heuristics (Trait)
  **********************************************************************************************************************/
@@ -274,11 +295,12 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
 template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
-  auto retval = static_cast<AccumT>(input[0]);
+  auto retval      = static_cast<AccumT>(input[0]);
+  using value_type = ::cuda::std::iter_value_t<Input>;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < static_size_v<Input>; ++i)
   {
-    retval = reduction_op(retval, input[i]);
+    retval = thread_reduce_apply<AccumT, value_type>(reduction_op, retval, input[i]);
   }
   return retval;
 }
@@ -288,13 +310,14 @@ template <typename AccumT, typename Input, typename ReductionOp>
 {
   constexpr auto length = static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
+  using value_type      = ::cuda::std::iter_value_t<Input>;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 2)
     {
-      array[j] = reduction_op(array[j], array[j + i]);
+      array[j] = thread_reduce_apply<AccumT, value_type>(reduction_op, array[j], array[j + i]);
     }
   }
   return array[0];
@@ -305,14 +328,16 @@ template <typename AccumT, typename Input, typename ReductionOp>
 {
   constexpr auto length = static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
+  using value_type      = ::cuda::std::iter_value_t<Input>;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 3)
     {
-      auto value = reduction_op(array[j], array[j + i]);
-      array[j]   = (j + i * 2 < length) ? reduction_op(value, array[j + i * 2]) : value;
+      auto value = thread_reduce_apply<AccumT, value_type>(reduction_op, array[j], array[j + i]);
+      array[j] =
+        (j + i * 2 < length) ? thread_reduce_apply<AccumT, value_type>(reduction_op, value, array[j + i * 2]) : value;
     }
   }
   return array[0];
@@ -322,13 +347,14 @@ template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduceSequentialPartial(const Input& input, ReductionOp reduction_op, int valid_items)
 {
-  auto retval = static_cast<AccumT>(input[0]);
+  auto retval      = static_cast<AccumT>(input[0]);
+  using value_type = ::cuda::std::iter_value_t<Input>;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < static_size_v<Input>; ++i)
   {
     if (i < valid_items)
     {
-      retval = reduction_op(retval, input[i]);
+      retval = thread_reduce_apply<AccumT, value_type>(reduction_op, retval, input[i]);
     }
   }
   return retval;
