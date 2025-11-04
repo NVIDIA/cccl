@@ -53,7 +53,7 @@ Example (centralized control via a single environment argument):
 
 .. code-block:: c++
 
-   #include <cub/cub.cuh>
+   #include <cub/device/device_reduce.cuh>
    #include <cuda/std/execution>
    #include <cuda/stream_ref>
    #include <cuda/__memory_resource/get_memory_resource.h>
