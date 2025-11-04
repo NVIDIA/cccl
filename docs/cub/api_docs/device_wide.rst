@@ -20,7 +20,7 @@ Determining Temporary Storage Requirements
 
 Most CUB device-wide algorithms follow a two-phase usage pattern:
 
-1. **Query Phase**: Call the algorithm with ``d_temp_storage = nullptr`` to determine required temporary storage size
+1. **Query Phase**: Call the algorithm with ``d_temp_storage = nullptr`` to determine the required temporary storage size
 2. **Execution Phase**: Allocate storage and call the algorithm again to perform the actual operation
 
 **What arguments are needed during the query phase?**
