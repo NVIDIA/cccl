@@ -73,7 +73,7 @@ Example (centralized control via a single environment argument):
    // Single-phase API (no explicit temp storage, environment last and defaulted)
    cub::DeviceReduce::Reduce(d_in, d_out, num_items, cuda::std::plus<>{}, init, env);
 
-This page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
+The remainder of this page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
 availability and specifics of single-phase overloads.
 
 
