@@ -290,7 +290,7 @@ public:
     return __temp;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
@@ -301,7 +301,7 @@ public:
     __other += __count;
     return __other;
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
@@ -330,7 +330,7 @@ public:
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Equality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -340,7 +340,7 @@ public:
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
   }
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -350,15 +350,15 @@ public:
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
-#    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   [[nodiscard]] _CCCL_API friend constexpr ::cuda::std::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
   }
-#    else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Less than relation between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -399,8 +399,8 @@ public:
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
-#    endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#  endif // _CCCL_DOXYGEN_INVOKED
+#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#endif // _CCCL_DOXYGEN_INVOKED
 
   _CCCL_API constexpr pointer __unwrap() const noexcept
   {

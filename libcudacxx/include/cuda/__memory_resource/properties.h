@@ -114,13 +114,14 @@ enum class __memory_accessability
 };
 
 template <class... _Properties>
-struct __memory_accessability_from_properties {
- static constexpr __memory_accessability value =
-  ::cuda::mr::__is_host_device_accessible<_Properties...> ? __memory_accessability::__host_device
-  : ::cuda::mr::__is_device_accessible<_Properties...>
-    ? __memory_accessability::__device
-    : __memory_accessability::__host;
- };
+struct __memory_accessability_from_properties
+{
+  static constexpr __memory_accessability value =
+    ::cuda::mr::__is_host_device_accessible<_Properties...> ? __memory_accessability::__host_device
+    : ::cuda::mr::__is_device_accessible<_Properties...>
+      ? __memory_accessability::__device
+      : __memory_accessability::__host;
+};
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

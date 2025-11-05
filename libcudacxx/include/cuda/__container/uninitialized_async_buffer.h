@@ -132,7 +132,7 @@ private:
     return {__self.__get_data(), __self.size()};
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED
+#ifndef _CCCL_DOXYGEN_INVOKED
   // This is needed to ensure that we do not do a deep copy in __replace_allocation
   struct __fake_resource_ref
   {
@@ -172,7 +172,7 @@ private:
     _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Property, _Properties...>)
     _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const __fake_resource_ref&, _Property) noexcept {}
   };
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
 public:
   using value_type      = _Tp;
@@ -182,7 +182,8 @@ public:
   using const_pointer   = const _Tp*;
   using size_type       = size_t;
 
-  //! @brief Constructs an \c __uninitialized_async_buffer, allocating sufficient storage for \p __count elements through
+  //! @brief Constructs an \c __uninitialized_async_buffer, allocating sufficient storage for \p __count elements
+  //! through
   //! \p __mr
   //! @param __mr The async memory resource to allocate the buffer with.
   //! @param __stream The CUDA stream used for stream-ordered allocation.
@@ -215,7 +216,8 @@ public:
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer(__uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
+  _CCCL_HIDE_FROM_ABI
+  __uninitialized_async_buffer(__uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(::cuda::std::move(__other.__mr_))
       , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
       , __count_(::cuda::std::exchange(__other.__count_, 0))

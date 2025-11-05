@@ -12,15 +12,14 @@
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
-
-#include <cuda/__container/uninitialized_async_buffer.h>
-#include <cuda/memory_resource>
 
 #include "testing.cuh"
 
@@ -36,8 +35,8 @@ struct my_property
 {
   using value_type = int;
 };
-constexpr int get_property(
-  const cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>&, my_property)
+constexpr int get_property(const cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>&,
+                           my_property)
 {
   return 42;
 }
@@ -49,8 +48,7 @@ constexpr int get_property(const cuda::device_memory_pool_ref&, my_property)
 C2H_TEST_LIST(
   "__uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
-  using __uninitialized_async_buffer =
-    cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible>;
+  using __uninitialized_async_buffer = cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible>;
   static_assert(!cuda::std::is_default_constructible<__uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_constructible<__uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value, "");
@@ -84,8 +82,7 @@ C2H_TEST_LIST(
 
   SECTION("conversion")
   {
-    cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible, my_property> input{
-      resource, stream, 42};
+    cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible, my_property> input{resource, stream, 42};
     const TestType* ptr = input.data();
 
     __uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
@@ -166,8 +163,7 @@ C2H_TEST_LIST(
                                      cuda::mr::device_accessible>,
                   "");
     static_assert(
-      cuda::has_property<cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>,
-                         my_property>,
+      cuda::has_property<cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>, my_property>,
       "");
   }
 
