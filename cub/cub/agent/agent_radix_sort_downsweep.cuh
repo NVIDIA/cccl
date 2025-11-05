@@ -492,7 +492,7 @@ struct AgentRadixSortDownsweep
    * Process tile
    */
   template <bool FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, const OffsetT& valid_items = TILE_ITEMS)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
     int ranks[ITEMS_PER_THREAD];
