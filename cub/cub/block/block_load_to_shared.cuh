@@ -248,12 +248,7 @@ public:
     __syncthreads();
     if (elected)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (
-                     // Borrowed from cuda::barrier
-                     // TODO Make this available through cuda::ptx::
-                     asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-                       ::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ::cuda::ptx::mbarrier_inval(&temp_storage.mbarrier_handle););
     }
     // Make sure the elected thread is done invalidating the mbarrier
     __syncthreads();

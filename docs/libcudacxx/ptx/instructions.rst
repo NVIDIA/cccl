@@ -28,6 +28,7 @@ PTX Instructions
    instructions/getctarank
    instructions/mapa
    instructions/mbarrier_init
+   instructions/mbarrier_inval
    instructions/mbarrier_arrive
    instructions/mbarrier_expect_tx
    instructions/mbarrier_test_wait
@@ -426,7 +427,7 @@ Instructions by section
    * - :ref:`mbarrier.init <libcudacxx-ptx-instructions-mbarrier-init>`
      - CCCL 2.5.0 / CUDA Future
    * - `mbarrier.inval <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval>`__
-     - No
+     - CCCL 3.2.0 / CUDA 13.2
    * - `mbarrier.complete_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx>`__
      - No
    * - :ref:`mbarrier.arrive <libcudacxx-ptx-instructions-mbarrier-arrive>`

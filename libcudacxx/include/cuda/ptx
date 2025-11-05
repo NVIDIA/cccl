@@ -89,6 +89,7 @@
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
+#include <cuda/__ptx/instructions/mbarrier_inval.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/instructions/multimem_ld_reduce.h>
 #include <cuda/__ptx/instructions/multimem_red.h>
