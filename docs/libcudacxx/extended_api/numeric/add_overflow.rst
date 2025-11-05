@@ -7,16 +7,20 @@ Defined in ``<cuda/numeric>`` header.
 
 .. code:: cpp
 
+   namespace cuda {
+
    template <class T>
    struct overflow_result;
 
    template <class Result = /*unspecified*/, class Lhs, class Rhs>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    overflow_result</*see-below*/> add_overflow(Lhs lhs, Rhs rhs) noexcept; // (1)
 
    template <class Result, class Lhs, class Rhs>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    bool add_overflow(Result& result, Lhs lhs, Rhs rhs) noexcept; // (2)
+
+   } // namespace cuda
 
 The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and ``rhs`` with overflow checking. The result is the same as if the operands were first promoted to an infinite precision signed type, added together and the result truncated to the type of the return value.
 
@@ -28,8 +32,8 @@ The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and 
 
 **Return value**
 
-1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object that contains the result of the addition and a boolean indicating whether an overflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
-2. Returns a boolean indicating whether an overflow occurred, and if no overflow occurred, the result is stored in the provided ``result`` variable.
+1. Returns an :ref:`overflow_result <libcudacxx-extended-api-numeric-overflow_result>` object  containing the result of the addition and a boolean indicating whether an overflow or underflow occurred. If the ``Result`` type is specified, it will be used as the type of the result, otherwise the common type of ``Lhs`` and ``Rhs`` is used.
+2. Returns ``true`` if an overflow or underflow occurred, ``false`` otherwise.
 
 **Constraints**
 
@@ -37,10 +41,10 @@ The function ``cuda::add_overflow`` performs addition of two values ``lhs`` and 
 
 **Performance considerations**
 
-- No overflow checking if ``Lhs +  Rhs`` is always  representable with the ``Result`` type.
-- The computation is faster when ``Lhs``, ``Rhs``, and ``Result`` have the same sign.
-- The computation with unsigned types is faster than signed types.
-- The function uses PTX ``asm`` on device, and compiler-intrinsics on host whenever possible.
+- No overflow checking is required if ``Lhs +  Rhs`` is always representable with the ``Result`` type.
+- Computation is generally faster when ``Lhs``, ``Rhs``, and ``Result`` have the same signedness.
+- Unsigned computations are generally faster than signed computations.
+- The function uses PTX ``asm`` on device and compiler intrinsics on host whenever possible.
 
 Example
 -------
@@ -70,11 +74,10 @@ Example
 
         unsigned result{};
         // cuda::add_overflow(result, lhs, rhs) with bool return type
-        if (cuda::add_overflow(result, 1, int_max))
+        if (!cuda::add_overflow(result, 1, int_max))
         {
-            assert(false); // should not be reached
+            assert(result.value == static_cast<unsigned>(int_max) + 1u);
         }
-        assert(result.value == static_cast<unsigned>(int_max) + 1u);
     }
 
     int main()
@@ -83,4 +86,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/n1dWPf8c6>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/PPT17ozx6>`_

@@ -25,6 +25,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/pow2.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -78,7 +80,7 @@ struct BlockReduceRaking
 
   /// Whether or not warp-synchronous reduction should be unguarded (i.e., the warp-reduction elements is a power of
   /// two
-  static constexpr int WARP_SYNCHRONOUS_UNGUARDED = PowerOfTwo<RAKING_THREADS>::VALUE;
+  static constexpr int WARP_SYNCHRONOUS_UNGUARDED = ::cuda::is_power_of_two(RAKING_THREADS);
 
   /// Whether or not accesses into smem are unguarded
   static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;

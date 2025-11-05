@@ -39,9 +39,9 @@ extern "C++" {
 #  endif
 
 #  if !_CCCL_COMPILER(NVRTC)
-#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) __alignof(_T)
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 #  else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
-#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) alignof(_T)
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) alignof(_Tp)
 #  endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
 
 #  if _CCCL_COMPILER(MSVC)
