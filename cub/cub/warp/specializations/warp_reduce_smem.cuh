@@ -263,13 +263,6 @@ struct WarpReduceSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
-    enum
-    {
-      UNSET = 0x0, // Is initially unset
-      SET   = 0x1, // Is initially set
-      SEEN  = 0x2, // Has seen another head flag from a successor peer
-    };
-
     // Alias flags onto shared data storage
     SmemFlag* flag_storage = temp_storage.flags;
 
