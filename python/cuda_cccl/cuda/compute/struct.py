@@ -19,6 +19,8 @@ from numba.core.extending import (
     register_model,
     typeof_impl,
 )
+from numba.core.imputils import lower_cast
+from numba.core.typeconv import Conversion
 from numba.core.typing import signature as nb_signature
 from numba.core.typing.templates import AttributeTemplate, ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
@@ -34,6 +36,29 @@ def _setup_numba_struct(struct_class: Type, field_types: Dict[str, types.Type]):
     class StructType(numba.types.Type):
         def __init__(self):
             super().__init__(name=struct_class.__name__)
+
+        def can_convert_from(self, typingctx, other):
+            """Allow implicit conversion from tuples to struct."""
+
+            # Check if tuple has the right number of elements
+            if isinstance(other, types.UniTuple):
+                tuple_size = other.count
+                # Check if all elements can convert to corresponding fields
+                if tuple_size == len(field_types):
+                    return Conversion.safe
+
+            elif isinstance(other, types.Tuple):
+                tuple_size = len(other.types)
+                if tuple_size == len(field_types):
+                    # Check if each element can convert to its field
+                    all_compatible = all(
+                        typingctx.can_convert(src_type, tgt_type) is not None
+                        for src_type, tgt_type in zip(other.types, field_types.values())
+                    )
+                    if all_compatible:
+                        return Conversion.safe
+
+            return None
 
     struct_numba_type = StructType()
 
@@ -101,6 +126,23 @@ def struct_getitem_impl(struct_val, idx):
         exec(impl_code, {}, local_vars)
         return local_vars["struct_getitem_impl"]
 
+    # Add tuple() conversion support to enable unpacking with explicit conversion
+    # Usage: a, b = tuple(struct)
+    @overload(tuple)
+    def struct_as_tuple(struct_val):
+        if not isinstance(struct_val, StructType):
+            return
+
+        # Generate code to extract all fields and return as tuple
+        field_accesses = [f"struct_val.{fname}" for fname in field_names_list]
+        impl_code = f"""
+def struct_as_tuple_impl(struct_val):
+    return ({", ".join(field_accesses)},)
+"""
+        local_vars = {}
+        exec(impl_code, {}, local_vars)
+        return local_vars["struct_as_tuple_impl"]
+
     # Typing for constructor
     @cuda_registry.register
     class StructConstructor(ConcreteTemplate):
@@ -118,6 +160,45 @@ def struct_getitem_impl(struct_val, idx):
         return retval._getvalue()
 
     lower_builtin(struct_class, *list(field_types.values()))(struct_constructor)
+
+    # Register implicit cast from tuple to struct
+    @lower_cast(types.BaseTuple, StructType)
+    def tuple_to_struct_cast(context, builder, fromty, toty, val):
+        """Cast a tuple to the struct type by unpacking elements."""
+
+        # Determine tuple element types and size
+        if isinstance(fromty, types.UniTuple):
+            tuple_size = fromty.count
+            element_types = [fromty.dtype] * tuple_size
+        elif isinstance(fromty, types.Tuple):
+            tuple_size = len(fromty.types)
+            element_types = list(fromty.types)
+        else:
+            # For other tuple types, try to extract the count
+            tuple_size = len(field_types)
+            element_types = list(field_types.values())
+
+        if tuple_size != len(field_types):
+            raise ValueError(
+                f"Cannot cast tuple of size {tuple_size} to {struct_class.__name__} "
+                f"with {len(field_types)} fields"
+            )
+
+        # Create the struct
+        retval = cgutils.create_struct_proxy(toty)(context, builder)
+
+        # Extract each tuple element and assign to struct field
+        for i, (field_name, target_type) in enumerate(field_types.items()):
+            element = builder.extract_value(val, i)
+
+            # Cast element to target field type if necessary
+            source_type = element_types[i]
+            if source_type != target_type:
+                element = context.cast(builder, element, source_type, target_type)
+
+            setattr(retval, field_name, element)
+
+        return retval._getvalue()
 
     # Store the struct type on the class for later use
     struct_class._numba_type = struct_numba_type
