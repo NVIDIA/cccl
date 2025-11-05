@@ -24,6 +24,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -53,7 +54,7 @@ struct WarpReduceSmem
   static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
 
   /// The number of warp reduction steps
   static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
