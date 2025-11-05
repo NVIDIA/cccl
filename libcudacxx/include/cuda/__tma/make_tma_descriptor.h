@@ -276,6 +276,7 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_swizzle __swizzle, tm
     case ::kDLBool:
       _CCCL_VERIFY(__oobfill == tma_oob_fill::none,
                    "tma_oob_fill::nan is only supported for floating-point data types");
+      [[fallthrough]];
     case ::kDLFloat8_e3m4:
     case ::kDLFloat8_e4m3:
     case ::kDLFloat8_e4m3b11fnuz:
