@@ -139,7 +139,10 @@ InsertTrailingCommas: Wrapped
 IndentRequires: true
 IndentPPDirectives: AfterHash
 IndentWidth: 2
-KeepEmptyLinesAtTheStartOfBlocks: false
+KeepEmptyLines:
+  AtEndOfFile: true
+  AtStartOfBlock: false
+  AtStartOfFile: false
 MaxEmptyLinesToKeep: 1
 Macros:
 - _CCCL_TEMPLATE(...)=template<...>
@@ -199,3 +202,4 @@ StatementMacros: [
 ]
 TabWidth: 2
 UseTab: Never
+WrapNamespaceBodyWithEmptyLines: Never

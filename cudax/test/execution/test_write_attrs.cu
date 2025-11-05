@@ -15,7 +15,6 @@
 
 namespace
 {
-
 struct my_domain
 {};
 
@@ -29,5 +28,4 @@ C2H_TEST("basic test of write_attrs", "[write_attrs]")
   auto op = cudax_async::connect(std::move(sndr), checked_value_receiver{42});
   cudax_async::start(op);
 }
-
 } // namespace

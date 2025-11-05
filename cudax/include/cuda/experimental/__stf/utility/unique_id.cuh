@@ -26,10 +26,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 /* This defines an object with a unique identifier. This object is non
  * copyable, but moving it transfers the unique id to the destination object.
  */
@@ -85,7 +83,6 @@ public:
 private:
   int _value = next_id();
 };
-
 } // end namespace reserved
 
 template <typename C>
@@ -96,5 +93,4 @@ struct hash<reserved::unique_id<C>>
     return ::std::hash<int>()(id);
   }
 };
-
 } // end namespace cuda::experimental::stf

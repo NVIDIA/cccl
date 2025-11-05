@@ -130,7 +130,6 @@ struct stream_ref : ::cuda::stream_ref
   query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> __call_result_t<execution::get_domain_t, const _Env&>;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

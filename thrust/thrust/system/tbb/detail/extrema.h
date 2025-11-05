@@ -18,7 +18,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator
 max_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
@@ -42,6 +41,5 @@ minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, For
   // tbb prefers generic::minmax_element to cpp::minmax_element
   return thrust::system::detail::generic::minmax_element(exec, first, last, comp);
 } // end minmax_element()
-
 } // namespace system::tbb::detail
 THRUST_NAMESPACE_END

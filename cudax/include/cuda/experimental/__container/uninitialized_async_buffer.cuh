@@ -42,7 +42,6 @@
 //! resource.
 namespace cuda::experimental
 {
-
 //! @rst
 //! .. _cudax-containers-uninitialized-async-buffer:
 //!
@@ -67,7 +66,7 @@ namespace cuda::experimental
 //!    the buffer.
 //!
 //! @endrst
-//! @tparam _T the type to be stored in the buffer
+//! @tparam _Tp the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
@@ -389,7 +388,6 @@ public:
 
 template <class _Tp>
 using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, ::cuda::mr::device_accessible>;
-
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE

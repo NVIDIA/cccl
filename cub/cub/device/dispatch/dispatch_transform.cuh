@@ -16,7 +16,7 @@
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/dispatch/kernels/transform.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -51,7 +51,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
-
 template <typename T>
 using cuda_expected = ::cuda::std::expected<T, cudaError_t>;
 
@@ -536,7 +535,6 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::transform
 CUB_NAMESPACE_END
 

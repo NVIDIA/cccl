@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::execution
 {
-
 using ::cuda::std::execution::__execution_policy;
 using ::cuda::std::execution::par;
 using ::cuda::std::execution::par_unseq;
@@ -124,7 +123,6 @@ struct get_execution_policy_t
 };
 
 _CCCL_GLOBAL_CONSTANT get_execution_policy_t get_execution_policy{};
-
 } // namespace cuda::experimental::execution
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -45,11 +21,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort
 {
-
 template <typename PolicyT, typename = void>
 struct SegmentedSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -60,81 +35,81 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
                                                      typename StaticPolicyT::SmallSegmentPolicy,
                                                      typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto LargeSegment()
+  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto SmallSegment()
+  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto MediumSegment()
+  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int PartitioningThreshold()
+  _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int LargeSegmentRadixBits()
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerSmallBlock()
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()
   {
     return StaticPolicyT::SmallSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerMediumBlock()
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerMediumBlock()
   {
     return StaticPolicyT::MediumSegmentPolicy::SEGMENTS_PER_BLOCK;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SmallPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE static constexpr int SmallPolicyItemsPerTile()
   {
     return StaticPolicyT::SmallSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int MediumPolicyItemsPerTile()
+  _CCCL_HOST_DEVICE static constexpr int MediumPolicyItemsPerTile()
   {
     return StaticPolicyT::MediumSegmentPolicy::ITEMS_PER_TILE;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LargeSegmentLoadModifier()
+  _CCCL_HOST_DEVICE static constexpr CacheLoadModifier LargeSegmentLoadModifier()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
   {
     return StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
   {
     return StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
   {
     return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
@@ -152,7 +127,7 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
 {
   return SegmentedSortPolicyWrapper<PolicyT>{policy};
 }

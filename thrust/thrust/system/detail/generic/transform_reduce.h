@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename UnaryFunction,
@@ -43,7 +42,6 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   UnaryFunction unary_op,
   OutputType init,
   BinaryFunction binary_op);
-
 }
 THRUST_NAMESPACE_END
 

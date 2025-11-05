@@ -8,7 +8,6 @@
 
 namespace unittest
 {
-
 // mark the absence of a type
 struct null_type
 {};
@@ -171,5 +170,4 @@ struct concat<L<T1s...>, L<T2s...>, Ls...>
 {
   using type = concat<L<T1s..., T2s...>, Ls...>;
 };
-
 } // namespace unittest

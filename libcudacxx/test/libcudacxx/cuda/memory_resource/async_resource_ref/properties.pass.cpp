@@ -34,7 +34,6 @@ static_assert(!cuda::property_with_value<property_without_value<someStruct>>, ""
 
 namespace resource_test
 {
-
 // Ensure we have the right size
 static_assert(
   sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)

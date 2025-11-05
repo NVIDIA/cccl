@@ -32,7 +32,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class month
 {
 private:
@@ -177,7 +176,6 @@ inline constexpr month September{9};
 inline constexpr month October{10};
 inline constexpr month November{11};
 inline constexpr month December{12};
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

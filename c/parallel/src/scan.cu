@@ -49,7 +49,6 @@ struct output_iterator_t;
 
 namespace scan
 {
-
 enum class InitKind
 {
   Value,
@@ -261,7 +260,7 @@ CUresult cccl_device_scan_build_ex(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/device/dispatch/kernels/scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];

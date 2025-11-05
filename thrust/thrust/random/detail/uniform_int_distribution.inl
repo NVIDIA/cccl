@@ -34,7 +34,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename IntType>
 _CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(IntType a, IntType b)
     : m_param(a, b)
@@ -192,7 +191,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntTy
 {
   return thrust::random::detail::random_core_access::stream_in(is, d);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

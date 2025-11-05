@@ -30,7 +30,6 @@
 #if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
-
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 //! @brief A unique identifier for a green context.
 enum class green_context_id : unsigned long long
@@ -95,7 +94,6 @@ private:
       , __transformed(__ctx)
   {}
 };
-
 } // namespace cuda::experimental
 
 #endif // _CCCL_CTK_AT_LEAST(12, 5)

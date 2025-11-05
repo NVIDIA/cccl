@@ -129,7 +129,7 @@ std::string get_for_kernel(cccl_op_t user_op, cccl_iterator_t iter)
     R"XXX(
 #include <cuda/std/iterator>
 #include <cub/agent/agent_for.cuh>
-#include <cub/device/dispatch/kernels/for_each.cuh>
+#include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 
 struct __align__({2}) storage_t {{
   char data[{3}];

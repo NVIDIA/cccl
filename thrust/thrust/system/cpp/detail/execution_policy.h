@@ -101,7 +101,6 @@ using detail::execution_policy;
 _CCCL_GLOBAL_CONSTANT detail::par_t par;
 
 //! \}
-
 } // namespace system::cpp
 
 // aliases:

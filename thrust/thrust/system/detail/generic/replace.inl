@@ -35,7 +35,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 // this functor receives x, and returns a new_value if predicate(x) is true; otherwise,
 // it returns x
 template <typename Predicate, typename NewType, typename OutputType>
@@ -80,7 +79,6 @@ struct constant_unary
 
   T c;
 }; // end constant_unary
-
 } // namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
@@ -170,6 +168,5 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
 
   return thrust::replace_if(exec, first, last, _1 == old_value, new_value);
 } // end replace()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

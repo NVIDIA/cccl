@@ -114,7 +114,6 @@ using make_index_sequence = ::cuda::std::make_index_sequence<N>;
 
 namespace detail
 {
-
 /*! \brief Create a new \c integer_sequence containing the elements of \c
  *  Sequence0 followed by the elements of \c Sequence1. \c Sequence1::size() is
  *  added to each element from \c Sequence0 in the new sequence.
@@ -148,7 +147,6 @@ struct merge_and_renumber_reversed_integer_sequences_impl<integer_sequence<T, Is
 {
   using type = integer_sequence<T, (sizeof...(Is1) + Is0)..., Is1...>;
 };
-
 } // namespace detail
 
 /*! \endcond
@@ -207,7 +205,6 @@ using integer_sequence_push_back = typename detail::integer_sequence_push_back_i
 
 namespace detail
 {
-
 template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl
 {
@@ -246,7 +243,6 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...>>
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // namespace detail
 
 /*! \endcond

@@ -39,11 +39,11 @@ struct radix_sort_runtime_tuning_policy
   RuntimeRadixSortExclusiveSumAgentPolicy exclusive_sum;
   RuntimeRadixSortOnesweepAgentPolicy onesweep;
   cub::detail::RuntimeScanAgentPolicy scan;
-  RuntimeRadixSortDownsweepAgentPolicy downsweep;
-  RuntimeRadixSortDownsweepAgentPolicy alt_downsweep;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy downsweep;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy alt_downsweep;
   RuntimeRadixSortUpsweepAgentPolicy upsweep;
   RuntimeRadixSortUpsweepAgentPolicy alt_upsweep;
-  RuntimeRadixSortDownsweepAgentPolicy single_tile;
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy single_tile;
   bool is_onesweep;
 
   auto Histogram() const
@@ -268,7 +268,6 @@ struct radix_sort_kernel_source
     return build.value_type.size;
   }
 };
-
 } // namespace radix_sort
 
 CUresult cccl_device_radix_sort_build_ex(
@@ -312,7 +311,7 @@ CUresult cccl_device_radix_sort_build_ex(
     const std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
-#include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 
 struct __align__({1}) storage_t {{
@@ -440,13 +439,16 @@ __device__ consteval auto& policy_generator() {{
 
     using namespace cub::detail::radix_sort_runtime_policies;
     using cub::detail::RuntimeScanAgentPolicy;
-    auto single_tile_policy   = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
-    auto onesweep_policy      = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
-    auto upsweep_policy       = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
-    auto alt_upsweep_policy   = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
-    auto downsweep_policy     = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
-    auto alt_downsweep_policy = RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
-    auto histogram_policy     = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+    auto single_tile_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+    auto onesweep_policy    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
+    auto upsweep_policy     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
+    auto alt_upsweep_policy = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
+    auto downsweep_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
+    auto alt_downsweep_policy =
+      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
+    auto histogram_policy = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
     auto exclusive_sum_policy =
       RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
     auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy");

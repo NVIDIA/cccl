@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2008-2013 NVIDIA Corporation
  *
@@ -99,6 +98,5 @@ inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_sys
 {
   return thrust::device_system_tag();
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

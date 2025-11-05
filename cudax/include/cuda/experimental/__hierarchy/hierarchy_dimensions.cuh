@@ -27,10 +27,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 /* TODO right now operator stacking can end up with a wrong unit, we could use below type, but we would need an explicit
  thread_level inserter
 struct unknown_unit : public hierarchy_level
@@ -399,9 +397,9 @@ struct hierarchy_dimensions
       : levels(ls)
   {}
 
-#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
+#if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
-#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
+#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
   {
@@ -413,7 +411,7 @@ struct hierarchy_dimensions
   {
     return left.levels != right.levels;
   }
-#  endif // _CCCL_NO_THREE_WAY_COMPARISON
+#endif // _CCCL_NO_THREE_WAY_COMPARISON
 
 private:
   // This being static is a bit of a hack to make extents_type working without incomplete class member access
@@ -820,12 +818,12 @@ public:
     }
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   constexpr hierarchy_dimensions combine([[maybe_unused]] __empty_hierarchy __empty) const
   {
     return *this;
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 /**
@@ -944,9 +942,7 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions<Unit, Levels...>& 
       ::cuda::std::tuple_cat(hierarchy.levels, ::cuda::std::make_tuple(new_level)));
   }
 }
-
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 

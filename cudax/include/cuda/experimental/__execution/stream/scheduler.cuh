@@ -252,7 +252,6 @@ private:
 template <>
 struct stream_domain::__apply_t<stream_scheduler::__tag_t> : stream_domain::__apply_passthru_t
 {};
-
 } // namespace execution
 
 _CCCL_API inline auto stream_ref::schedule() const noexcept
@@ -288,7 +287,6 @@ stream_ref::query(const execution::get_completion_domain_t<execution::set_error_
 {
   return {};
 }
-
 } // namespace cuda::experimental
 
 _CCCL_DIAG_POP

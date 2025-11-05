@@ -102,7 +102,6 @@ using __variant_index_t =
                 conditional_t<::cuda::std::__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
 namespace __variant_detail
 {
-
 struct __valueless_t
 {};
 
@@ -176,7 +175,6 @@ struct __traits
 
   static constexpr _Trait __destructible_trait = __common_trait({__destructible_trait_<_Types>...});
 };
-
 } // namespace __variant_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD
