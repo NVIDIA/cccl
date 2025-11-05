@@ -1,7 +1,5 @@
 # CUDA CCCL Python Package
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
 [`cuda.cccl`](https://nvidia.github.io/cccl/python)
 provides a Pythonic interface to the
 [CUDA Core Compute Libraries](https://nvidia.github.io/cccl/cpp.html#cccl-cpp-libraries).
