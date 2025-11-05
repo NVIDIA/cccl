@@ -52,6 +52,7 @@ PTX Instructions
    instructions/tensormap_replace
    instructions/tensormap_cp_fenceproxy
    instructions/trap
+   instructions/setmaxnreg
    instructions/special_registers
 
 
@@ -576,7 +577,7 @@ Instructions by section
    * - `trap <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap>`__
      - CCCL 3.0.0
    * - `setmaxnreg <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg>`__
-     - No
+     - CCCL 3.2.0 / CUDA 13.2
 
 .. list-table:: `Special registers <libcudacxx-ptx-instructions-special-registers>`
    :widths: 25 25 25 25
