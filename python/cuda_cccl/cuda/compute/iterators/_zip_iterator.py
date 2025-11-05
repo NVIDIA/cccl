@@ -100,17 +100,29 @@ def {func_name}(context, struct_ptr_type):
             it.input_dereference, device=True
         )
         # Also compile output_dereference if available
-        if it.output_dereference is not None:
-            globals()[f"output_dereference_{i}"] = cuda.jit(
-                it.output_dereference, device=True
-            )
+        try:
+            output_deref = it.output_dereference
+            if output_deref is not None:
+                globals()[f"output_dereference_{i}"] = cuda.jit(
+                    output_deref, device=True
+                )
+        except AttributeError:
+            # Iterator doesn't support output operations
+            pass
 
     # Generate the advance method, which advances each input iterator:
     advance_lines = []  # lines of code for the advance method
     input_dereference_lines = []  # lines of code for input dereference method
     output_dereference_lines = []  # lines of code for output dereference method
 
-    all_support_output = all(it.output_dereference is not None for it in iterators)
+    # Check if all iterators support output operations
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
+
+    all_support_output = all(supports_output(it) for it in iterators)
 
     for i in range(n_iterators):
         advance_lines.append(
@@ -195,9 +207,13 @@ def make_zip_iterator(*iterators):
     )
 
     # Check if all underlying iterators support output
-    all_support_output = all(
-        it.output_dereference is not None for it in processed_iterators
-    )
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
+
+    all_support_output = all(supports_output(it) for it in processed_iterators)
 
     class ZipIterator(IteratorBase):
         iterator_kind_type = ZipIteratorKind
