@@ -544,7 +544,10 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
     __raw_swizzle,
     __raw_l2_fetch_size,
     __raw_oobfill);
-  _CCCL_VERIFY(__result.error() == ::cudaSuccess, "Failed to encode TMA descriptor");
+  if (!__result)
+  {
+    _CCCL_VERIFY(false, "Failed to encode TMA descriptor");
+  }
   return *__result;
 }
 

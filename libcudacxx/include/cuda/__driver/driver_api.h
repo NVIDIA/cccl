@@ -869,7 +869,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   {
     return ::cuda::std::expected<::CUtensorMap, ::cudaError_t>{__tensorMap};
   }
-  return ::cuda::std::unexpected<::cudaError_t>(__status);
+  return ::cuda::std::unexpected<::cudaError_t>{__status};
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
