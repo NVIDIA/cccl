@@ -61,14 +61,18 @@ class _Scan:
 
         match self.init_kind:
             case _bindings.InitKind.NO_INIT:
-                # TODO: we just need to extract the dtype from the input iterator
-                if not isinstance(d_in, DeviceArrayLike):
+                self.init_value_cccl = None
+
+                # Extract value type from input (either device array or iterator)
+                if isinstance(d_in, DeviceArrayLike):
+                    value_type = numba.from_dtype(protocols.get_dtype(d_in))
+                elif isinstance(d_in, IteratorBase):
+                    value_type = d_in.value_type
+                else:
                     raise ValueError(
-                        "No init value not supported for non-DeviceArrayLike input"
+                        "Input must be either a DeviceArrayLike or IteratorBase"
                     )
 
-                self.init_value_cccl = None
-                value_type = numba.from_dtype(protocols.get_dtype(d_in))
                 init_value_type_info = self.d_in_cccl.value_type
 
             case _bindings.InitKind.FUTURE_VALUE_INIT:
