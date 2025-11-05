@@ -218,7 +218,7 @@ public:
   /// Token type used to enforce correct call order between Commit() and Wait()
   /// member functions. Returned by Commit() and required by Wait() as a usage
   /// guard.
-  using TokenT = token_impl;
+  using CommitToken = token_impl;
 
   //! @name Collective constructors
   //! @{
@@ -352,7 +352,7 @@ public:
   }
 
   //! @brief Commit one or more @c CopyAsync() calls.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TokenT Commit()
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE CommitToken Commit()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy_or_commit, "CopyAsync() must be called before Commit()");
@@ -376,12 +376,12 @@ public:
 
     // Token's mere purpose currently is to prevent calling Wait() without a
     // prior Commit()
-    return TokenT{};
+    return CommitToken{};
   }
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(const TokenT&)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(const CommitToken&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
