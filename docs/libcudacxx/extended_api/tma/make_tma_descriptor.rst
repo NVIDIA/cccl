@@ -203,7 +203,7 @@ Example
     CUtensorMap create_2d_tile_descriptor(float* device_ptr) {
         // Define DLPack tensor descriptor, commonly provided externally by the user, library, or framework.
         constexpr int64_t shape_storage[2]   = {64, 64};
-        constexpr int64_t strides_storage[2] = {1, 64};
+        constexpr int64_t strides_storage[2] = {64, 1};
 
         DLTensor tensor{};
         tensor.data        = device_ptr;
@@ -217,8 +217,8 @@ Example
         tensor.byte_offset = 0;
 
         // Define shared memory box sizes and element strides.
-        constexpr int BoxSizeX      = 16; // rows
-        constexpr int BoxSizeY      = 16; // columns
+        constexpr int BoxSizeX      = 8; // rows
+        constexpr int BoxSizeY      = 8; // columns
         int box_sizes_storage[2]    = {BoxSizeX, BoxSizeY};
         int elem_strides_storage[2] = {BoxSizeY, 1}; // {1, ..., 1} is also valid to specify contiguous memory
 
