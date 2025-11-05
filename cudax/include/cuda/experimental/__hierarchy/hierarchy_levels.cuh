@@ -39,7 +39,6 @@ _CCCL_DEVICE auto extents(const _Unit& = _Unit(), const _Level& = _Level());
 
 namespace __detail
 {
-
 template <class _Level>
 struct __dimensions_query
 {
@@ -297,7 +296,8 @@ template <typename _Unit, typename _Level>
   {
     using _SplitLevel = __detail::__default_unit_below<_Level>;
     return ::cuda::experimental::__detail::__dims_sum<typename _Level::product_type>(
-      ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(__index_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>()),
+      ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(
+        __index_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>()),
       __index_impl<_Unit, _SplitLevel>());
   }
   _CCCL_UNREACHABLE();
