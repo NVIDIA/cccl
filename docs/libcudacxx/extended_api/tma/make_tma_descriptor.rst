@@ -11,26 +11,24 @@ Defined in the ``<cuda/tma>`` header.
 
     namespace cuda {
 
-    template <size_t BoxDimSize, size_t ElemStrideSize>
     [[nodiscard]] inline
     CUtensorMap make_tma_descriptor(
-      const DLTensor&                            tensor,
-      cuda::std::span<const int, BoxDimSize>     box_sizes,
-      cuda::std::span<const int, ElemStrideSize> elem_strides,
-      tma_interleave_layout                      interleave_layout = tma_interleave_layout::none,
-      tma_swizzle                                swizzle           = tma_swizzle::none,
-      tma_l2_fetch_size                          l2_fetch_size     = tma_l2_fetch_size::none,
-      tma_oob_fill                               oobfill           = tma_oob_fill::none) noexcept;
+      const DLTensor&            tensor,
+      cuda::std::span<const int> box_sizes,
+      cuda::std::span<const int> elem_strides,
+      tma_interleave_layout      interleave_layout = tma_interleave_layout::none,
+      tma_swizzle                swizzle           = tma_swizzle::none,
+      tma_l2_fetch_size          l2_fetch_size     = tma_l2_fetch_size::none,
+      tma_oob_fill               oobfill           = tma_oob_fill::none) noexcept;
 
-    template <size_t BoxDimSize>
     [[nodiscard]] inline
     CUtensorMap make_tma_descriptor(
-        const DLTensor&                        tensor,
-        cuda::std::span<const int, BoxDimSize> box_sizes,
-        tma_interleave_layout                  interleave_layout = tma_interleave_layout::none,
-        tma_swizzle                            swizzle           = tma_swizzle::none,
-        tma_l2_fetch_size                      l2_fetch_size     = tma_l2_fetch_size::none,
-        tma_oob_fill                           oobfill           = tma_oob_fill::none) noexcept;
+        const DLTensor&            tensor,
+        cuda::std::span<const int> box_sizes,
+        tma_interleave_layout      interleave_layout = tma_interleave_layout::none,
+        tma_swizzle                swizzle           = tma_swizzle::none,
+        tma_l2_fetch_size          l2_fetch_size     = tma_l2_fetch_size::none,
+        tma_oob_fill               oobfill           = tma_oob_fill::none) noexcept;
 
     } // namespace cuda
 
@@ -72,7 +70,7 @@ Parameters
 
 - ``tensor``: The DLPack tensor describing the logical layout in device memory.
 - ``box_sizes``: Extent of the shared memory tile, one entry per tensor dimension.
-- ``elem_strides``: Stride, in elements, between consecutive accesses inside the shared memory tile. The second overload assumes a stride of ``1`` for every dimension.
+- ``elem_strides``: Stride, in elements, between consecutive accesses inside the shared memory tile. The second overload assumes a stride of ``1`` for every dimension with the special meaning of contiguous memory.
 
 *Optional parameters*:
 
@@ -199,7 +197,7 @@ Example
 .. code:: cuda
 
     #include <cuda/tma>
-    #include <cuda/std/span>
+    #include <cuda/std/cstdint>
     #include <dlpack/dlpack.h>
 
     CUtensorMap create_2d_tile_descriptor(float* device_ptr) {
@@ -224,8 +222,5 @@ Example
         int box_sizes_storage[2]    = {BoxSizeX, BoxSizeY};
         int elem_strides_storage[2] = {BoxSizeY, 1}; // {1, ..., 1} is also valid to specify contiguous memory
 
-        return cuda::make_tma_descriptor(
-            tensor,
-            cuda::std::span{box_sizes_storage},
-            cuda::std::span{elem_strides_storage});
+        return cuda::make_tma_descriptor(tensor, box_sizes_storage, elem_strides_storage);
     }

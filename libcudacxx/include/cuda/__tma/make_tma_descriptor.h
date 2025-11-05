@@ -22,16 +22,14 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
-#  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__algorithm/min.h>
-#  include <cuda/std/__memory/is_sufficiently_aligned.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/array>
-#  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/limits>
 #  include <cuda/std/span>
 
 #  include <driver_types.h>
@@ -404,9 +402,9 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   return __output_strides;
 }
 
-template <::cuda::std::size_t _BoxDimSize>
+[[nodiscard]]
 _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
-  ::cuda::std::span<const int, _BoxDimSize> __box_sizes,
+  ::cuda::std::span<const int> __box_sizes,
   const __tma_sizes_array_t& __tensor_sizes,
   int __rank,
   tma_interleave_layout __interleave_layout,
@@ -417,7 +415,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
   __tma_box_sizes_array_t __box_sizes_output{};
-  _CCCL_VERIFY(__box_sizes.size() == __rank, "Box sizes size mismatch");
+  _CCCL_VERIFY(__box_sizes.size() == static_cast<size_t>(__rank), "Box sizes size mismatch");
   size_t __total_size = 1;
   for (int __i = 0; __i < __rank; ++__i)
   {
@@ -471,9 +469,9 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   return __box_sizes_output;
 }
 
-template <::cuda::std::size_t _ElemStrideSize>
+[[nodiscard]]
 _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
-  ::cuda::std::span<const int, _ElemStrideSize> __elem_strides,
+  ::cuda::std::span<const int> __elem_strides,
   const __tma_sizes_array_t& __tensor_sizes,
   int __rank,
   tma_interleave_layout __interleave_layout) noexcept
@@ -507,11 +505,10 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
  * Public API
  **********************************************************************************************************************/
 
-template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(
   const ::DLTensor& __tensor,
-  ::cuda::std::span<const int, _BoxDimSize> __box_sizes,
-  ::cuda::std::span<const int, _ElemStrideSize> __elem_strides,
+  ::cuda::std::span<const int> __box_sizes,
+  ::cuda::std::span<const int> __elem_strides,
   tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
   tma_swizzle __swizzle                     = tma_swizzle::none,
   tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
@@ -550,10 +547,9 @@ template <::cuda::std::size_t _BoxDimSize, ::cuda::std::size_t _ElemStrideSize>
   return *__result;
 }
 
-template <::cuda::std::size_t _BoxDimSize>
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(
   const ::DLTensor& __tensor,
-  ::cuda::std::span<const int, _BoxDimSize> __box_sizes,
+  ::cuda::std::span<const int> __box_sizes,
   tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
   tma_swizzle __swizzle                     = tma_swizzle::none,
   tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
