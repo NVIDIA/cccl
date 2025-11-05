@@ -19,7 +19,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 namespace hierarchy
@@ -488,7 +487,6 @@ _CCCL_DEVICE auto index(const Unit&, const Level&)
 }
 } // namespace hierarchy
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 
