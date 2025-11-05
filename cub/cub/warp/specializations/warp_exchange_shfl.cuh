@@ -192,16 +192,16 @@ class WarpExchangeShfl
       CompileTimeArray<OutputT, next_idx, SIZE>::template Foreach<NUM_ENTRIES>(xor_bit_set, mask);
     }
 
-    // terminate recursion
-    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, constant_t<0>) {}
-
     template <int NUM_ENTRIES>
     _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, constant_t<NUM_ENTRIES>)
     {
-      const bool xor_bit_set = lane_id & NUM_ENTRIES;
-      Foreach<NUM_ENTRIES>(xor_bit_set, mask);
+      if constexpr (NUM_ENTRIES != 0)
+      {
+        const bool xor_bit_set = lane_id & NUM_ENTRIES;
+        Foreach<NUM_ENTRIES>(xor_bit_set, mask);
 
-      TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
+        TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
+      }
     }
 
   public:
