@@ -15,8 +15,8 @@
 
 #include "test_macros.h"
 
-#ifndef _LIBCUDACXX_VERSION
-#  error _LIBCUDACXX_VERSION not defined
+#ifndef _CUDA_STD_VERSION
+#  error _CUDA_STD_VERSION not defined
 #endif
 
 int main(int, char**)

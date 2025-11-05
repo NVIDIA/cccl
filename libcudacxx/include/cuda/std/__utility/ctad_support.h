@@ -1,14 +1,14 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H
-#define _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#ifndef _CUDA_STD___UTILITY_CTAD_SUPPORT_H
+#define _CUDA_STD___UTILITY_CTAD_SUPPORT_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,22 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
+#define _CCCL_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
+  template <class... _Tag>                        \
+  _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
 
-#  include <cuda/std/__chrono/duration.h>
-
-#  include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-_CCCL_API inline void __cccl_thread_yield();
-
-_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns);
-
-_CCCL_END_NAMESPACE_CUDA_STD
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CCCL_HAS_THREAD_API_EXTERNAL
-
-#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#endif // _CUDA_STD___UTILITY_CTAD_SUPPORT_H

@@ -44,9 +44,9 @@ struct __atomic_common
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -63,9 +63,9 @@ struct __atomic_arithmetic
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -85,9 +85,9 @@ struct __atomic_bitwise
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
@@ -110,9 +110,9 @@ struct __atomic_pointer
 
   __atomic_storage_t<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
