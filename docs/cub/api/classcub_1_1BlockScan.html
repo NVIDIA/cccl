@@ -1706,56 +1706,6 @@ however only the return value from <em>lane</em><sub>0</sub> is applied as the b
 computes an exclusive prefix sum over multiple “tiles” of input using a
 prefix functor to maintain a running total between block-wide scans.  Each tile consists
 of 128 integer items that are partitioned across 128 threads.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="c1">// A stateful callback functor that maintains a running prefix to be applied</span>
-<span class="c1">// during consecutive scan operations.</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">BlockPrefixCallbackOp</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Running prefix</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">running_total</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Constructor</span>
-<span class="w">    </span><span class="n">__device__</span><span class="w"> </span><span class="nf">BlockPrefixCallbackOp</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">running_total</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">running_total</span><span class="p">(</span><span class="n">running_total</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
-
-<span class="w">    </span><span class="c1">// Callback operator to be entered by the first warp of threads in the block.</span>
-<span class="w">    </span><span class="c1">// Thread-0 is responsible for returning a value for seeding the block-wide scan.</span>
-<span class="w">    </span><span class="n">__device__</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="k">operator</span><span class="p">()(</span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">)</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">old_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">running_total</span><span class="p">;</span>
-<span class="w">        </span><span class="n">running_total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">old_prefix</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">};</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">d_data</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Initialize running total</span>
-<span class="w">    </span><span class="n">BlockPrefixCallbackOp</span><span class="w"> </span><span class="nf">prefix_op</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-
-<span class="w">    </span><span class="c1">// Have the block iterate over segments of items</span>
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">num_items</span><span class="p">;</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">128</span><span class="p">)</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// Load a segment of consecutive items that are blocked across threads</span>
-<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d_data</span><span class="p">[</span><span class="n">block_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">];</span>
-
-<span class="w">        </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
-<span class="w">        </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span>
-<span class="w">            </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">prefix_op</span><span class="p">);</span>
-<span class="w">        </span><span class="n">__syncthreads</span><span class="p">();</span>
-
-<span class="w">        </span><span class="c1">// Store scanned items to output segment</span>
-<span class="w">        </span><span class="n">d_data</span><span class="p">[</span><span class="n">block_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 <p>Suppose the input <code class="docutils literal notranslate"><span class="pre">d_data</span></code> is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...</span></code>.
 The corresponding output for the first segment will be <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">127</span></code>.
 The output for the second segment will be <code class="docutils literal notranslate"><span class="pre">128,</span> <span class="pre">129,</span> <span class="pre">...,</span> <span class="pre">255</span></code>.</p>
@@ -1806,25 +1756,6 @@ The value of 0 is applied as the initial value, and is assigned to <code class="
 <p>The code snippet below illustrates an exclusive prefix sum of 512 integer items that
 are partitioned in a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads
 where each thread owns 4 consecutive items.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1">   // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">);</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[1,1,1,1],</span> <span class="pre">[1,1,1,1],</span> <span class="pre">...,</span> <span class="pre">[1,1,1,1]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
@@ -1870,26 +1801,6 @@ Also provides every thread with the block-wide <code class="docutils literal not
 <p>The code snippet below illustrates an exclusive prefix sum of 512 integer items that are partitioned in
 a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads where each thread owns
 4 consecutive items.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix sum</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[1,1,1,1],</span> <span class="pre">[1,1,1,1],</span> <span class="pre">...,</span> <span class="pre">[1,1,1,1]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
@@ -1995,25 +1906,6 @@ Each thread contributes one input element.</p>
 <h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
 are partitioned across 128 threads.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1">   // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain input item for each thread</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide exclusive prefix max scan</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">ExclusiveScan</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">INT_MIN</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">-1,</span> <span class="pre">2,</span> <span class="pre">-3,</span> <span class="pre">...,</span> <span class="pre">126,</span> <span class="pre">-127</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be <code class="docutils literal notranslate"><span class="pre">INT_MIN,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">2,</span> <span class="pre">...,</span> <span class="pre">124,</span> <span class="pre">126</span></code>.</p>
 </section>
@@ -2435,25 +2327,6 @@ Also provides every thread with the block-wide <code class="docutils literal not
 <h2>Snippet<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates an inclusive prefix sum of 128 integer items that
 are partitioned across 128 threads.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1">   // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain input item for each thread</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide inclusive prefix sum</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">InclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">1</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">...,</span> <span class="pre">128</span></code>.
 Furthermore the value <code class="docutils literal notranslate"><span class="pre">128</span></code> will be stored in <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> for all threads.</p>
@@ -2638,25 +2511,6 @@ Also provides every thread with the block-wide <code class="docutils literal not
 <p>The code snippet below illustrates an inclusive prefix sum of 512 integer items that
 are partitioned in a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> across 128 threads
 where each thread owns 4 consecutive items.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1"> // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide inclusive prefix sum</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">;</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">InclusiveSum</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">block_aggregate</span><span class="p">);</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[1,1,1,1],</span> <span class="pre">[1,1,1,1],</span> <span class="pre">...,</span> <span class="pre">[1,1,1,1]</span> <span class="pre">}</span></code>. The
 corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
@@ -2761,24 +2615,6 @@ Each thread contributes one input element.</p>
 <h2>Snippet<a class="headerlink" href="#id18" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
 are partitioned across 128 threads.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1">   // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain input item for each thread</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">;</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide inclusive prefix max scan</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">InclusiveScan</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">-1,</span> <span class="pre">2,</span> <span class="pre">-3,</span> <span class="pre">...,</span> <span class="pre">126,</span> <span class="pre">-127</span></code>. The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code>
 in those threads will be <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">2,</span> <span class="pre">2,</span> <span class="pre">...,</span> <span class="pre">126,</span> <span class="pre">126</span></code>.</p>
@@ -2949,24 +2785,6 @@ Each thread contributes an array of consecutive input elements.</p>
 <p>The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
 are partitioned in a [&lt;em&gt;blocked arrangement&lt;/em&gt;](../index.html#sec5sec3) across 128 threads
 where each thread owns 4 consecutive items.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span><span class="c1">   // or equivalently &lt;cub/block/block_scan.cuh&gt;</span>
-
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">ExampleKernel</span><span class="p">(...)</span>
-<span class="p">{</span>
-<span class="w">    </span><span class="c1">// Specialize BlockScan for a 1D block of 128 threads of type int</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Allocate shared memory for BlockScan</span>
-<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-<span class="w">    </span><span class="p">...</span>
-
-<span class="w">    </span><span class="c1">// Collectively compute the block-wide inclusive prefix max scan</span>
-<span class="w">    </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">).</span><span class="n">InclusiveScan</span><span class="p">(</span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">maximum</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
-</pre></div>
-</div>
 <p>Suppose the set of input <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> across the block of threads is
 <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">[0,-1,2,-3],</span> <span class="pre">[4,-5,6,-7],</span> <span class="pre">...,</span> <span class="pre">[508,-509,510,-511]</span> <span class="pre">}</span></code>.
 The corresponding output <code class="docutils literal notranslate"><span class="pre">thread_data</span></code> in those threads will be
