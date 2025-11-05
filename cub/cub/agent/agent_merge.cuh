@@ -187,6 +187,7 @@ struct agent_t
 
     optional_load2sh_t load2sh{storage.load2sh};
 
+    key_type keys_loc[items_per_thread];
     key_type* keys1_shared;
     key_type* keys2_shared;
     int keys2_offset;
@@ -214,7 +215,6 @@ struct agent_t
     }
     else
     {
-      key_type keys_loc[items_per_thread];
       auto keys1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys1_in);
       auto keys2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys2_in);
       merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
@@ -248,7 +248,6 @@ struct agent_t
     const int keys2_count_thread = keys2_count_tile - keys2_beg_thread;
 
     // perform serial merge
-    key_type keys_loc[items_per_thread];
     int indices[items_per_thread];
     cub::SerialMerge(
       keys1_shared,
@@ -291,6 +290,7 @@ struct agent_t
       // WAR for MSVC erroring ("declared but never referenced") despite [[maybe_unused]]
       (void) translate_indices;
 
+      item_type items_loc[items_per_thread];
       item_type* items1_shared;
       if constexpr (keys_use_block_load_to_shared)
       {
@@ -318,7 +318,6 @@ struct agent_t
       }
       else
       {
-        item_type items_loc[items_per_thread];
         {
           auto items1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items1_in);
           auto items2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items2_in);
@@ -337,7 +336,6 @@ struct agent_t
       }
 
       // gather items from shared mem
-      item_type items_loc[items_per_thread];
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
