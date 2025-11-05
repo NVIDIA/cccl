@@ -45,7 +45,11 @@ template <class _Tp>
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    return ::isnan(__x);
+#if defined(isnan)
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::isnan(__x);), (return isnan(__x);));
+#else
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::isnan(__x);), (return ::isnan(__x);));
+#endif
   }
   return __x != __x;
 }
