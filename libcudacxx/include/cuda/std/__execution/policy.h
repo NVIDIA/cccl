@@ -20,14 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_EXECUTION
 
-enum class __execution_policy : uint32_t
+//! @brief Enumerates the standard execution policies
+enum class __execution_policy : uint8_t
 {
   __invalid_execution_policy = 0,
   __sequenced                = 1 << 0,
@@ -36,49 +36,73 @@ enum class __execution_policy : uint32_t
   __parallel_unsequenced     = __execution_policy::__parallel | __execution_policy::__unsequenced,
 };
 
-[[nodiscard]] _CCCL_API constexpr bool
-__satisfies_execution_policy(__execution_policy __lhs, __execution_policy __rhs) noexcept
+//! @brief Enumerates the different backends we support
+//! @note Not an enum class because a user might specify multiple backends
+enum __execution_backend : uint8_t
 {
-  return (static_cast<uint32_t>(__lhs) & static_cast<uint32_t>(__rhs)) != 0;
-}
+  // The backends we provide
+  __none = 0,
+#if _CCCL_HAS_BACKEND_CUDA()
+  __cuda = 1 << 1,
+#endif // _CCCL_HAS_BACKEND_CUDA()
+#if _CCCL_HAS_BACKEND_OMP()
+  __omp = 1 << 2,
+#endif // _CCCL_HAS_BACKEND_OMP()
+#if _CCCL_HAS_BACKEND_TBB()
+  __tbb = 1 << 3,
+#endif // _CCCL_HAS_BACKEND_TBB()
+};
 
-template <__execution_policy _Policy>
-struct __policy
+//! @brief Base class for our execution policies.
+//! It takes an untagged uint32_t because we want to be able to store 3 different enumerations in it.
+template <uint32_t _Policy>
+struct __execution_policy_base
 {
-  template <__execution_policy _OtherPolicy>
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __policy&, const __policy<_OtherPolicy>&) noexcept
+  template <uint32_t _OtherPolicy>
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy>&) noexcept
   {
-    using __underlying_t = underlying_type_t<__execution_policy>;
-    return (static_cast<__underlying_t>(_Policy) == static_cast<__underlying_t>(_OtherPolicy));
+    return _Policy == _OtherPolicy;
   }
 
 #if _CCCL_STD_VER <= 2017
-  template <__execution_policy _OtherPolicy>
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __policy&, const __policy<_OtherPolicy>&) noexcept
+  template <uint32_t _OtherPolicy>
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy>&) noexcept
   {
-    using __underlying_t = underlying_type_t<__execution_policy>;
-    return (static_cast<__underlying_t>(_Policy) != static_cast<__underlying_t>(_OtherPolicy));
+    return _Policy != _OtherPolicy;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  static constexpr __execution_policy __policy_ = _Policy;
+  //! @brief Tag that identifies this and all derived classes as a CCCL execution policy
+  static constexpr uint32_t __cccl_policy_ = _Policy;
+
+  //! @brief Extracts the execution policy from the stored _Policy
+  [[nodiscard]] _CCCL_API static constexpr __execution_policy __get_policy() noexcept
+  {
+    constexpr uint32_t __policy_mask{0x000000FF};
+    return __execution_policy{_Policy & __policy_mask};
+  }
+
+  //! @brief Extracts the execution backend from the stored _Policy
+  [[nodiscard]] _CCCL_API static constexpr __execution_backend __get_backend() noexcept
+  {
+    constexpr uint32_t __backend_mask{0x0000FF00};
+    return __execution_backend{(_Policy & __backend_mask) >> 8};
+  }
 };
 
-struct sequenced_policy : public __policy<__execution_policy::__sequenced>
-{};
-
+using sequenced_policy = __execution_policy_base<static_cast<uint32_t>(__execution_policy::__sequenced)>;
 _CCCL_GLOBAL_CONSTANT sequenced_policy seq{};
 
-struct parallel_policy : public __policy<__execution_policy::__parallel>
-{};
+using parallel_policy = __execution_policy_base<static_cast<uint32_t>(__execution_policy::__parallel)>;
 _CCCL_GLOBAL_CONSTANT parallel_policy par{};
 
-struct parallel_unsequenced_policy : public __policy<__execution_policy::__parallel_unsequenced>
-{};
+using parallel_unsequenced_policy =
+  __execution_policy_base<static_cast<uint32_t>(__execution_policy::__parallel_unsequenced)>;
 _CCCL_GLOBAL_CONSTANT parallel_unsequenced_policy par_unseq{};
 
-struct unsequenced_policy : public __policy<__execution_policy::__unsequenced>
-{};
+using unsequenced_policy = __execution_policy_base<static_cast<uint32_t>(__execution_policy::__unsequenced)>;
 _CCCL_GLOBAL_CONSTANT unsequenced_policy unseq{};
 
 _CCCL_END_NAMESPACE_EXECUTION
