@@ -9,6 +9,7 @@ Numeric
 
    numeric/add_overflow
    numeric/sub_overflow
+   numeric/div_overflow
    numeric/narrow
    numeric/overflow_result
 
