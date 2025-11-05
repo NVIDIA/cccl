@@ -19,7 +19,6 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possi
 
 namespace
 {
-
 // Helper construction to create a double from float and
 // vice versa to test thrust::complex promoting operators.
 template <typename T>
@@ -40,7 +39,6 @@ struct other_floating_point_type<double>
 
 template <typename T>
 using other_floating_point_type_t = typename other_floating_point_type<T>::type;
-
 } // anonymous namespace
 
 template <typename T>

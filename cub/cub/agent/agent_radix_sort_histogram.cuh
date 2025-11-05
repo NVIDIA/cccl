@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2020, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2020, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -58,36 +34,57 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int _RADIX_BITS>
+template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct AgentRadixSortHistogramPolicy
 {
   enum
   {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+    BLOCK_THREADS    = BlockThreads,
+    ITEMS_PER_THREAD = ItemsPerThread,
     /** NUM_PARTS is the number of private histograms (parts) each histogram is split
      * into. Each warp lane is assigned to a specific part based on the lane
      * ID. However, lanes with the same ID in different warp use the same private
      * histogram. This arrangement helps reduce the degree of conflicts in atomic
      * operations. */
     NUM_PARTS  = ::cuda::std::max(1, NOMINAL_4B_NUM_PARTS * 4 / ::cuda::std::max(int{sizeof(ComputeT)}, 4)),
-    RADIX_BITS = _RADIX_BITS,
+    RADIX_BITS = RadixBits,
   };
 };
 
-template <int _BLOCK_THREADS, int _RADIX_BITS>
+template <int BlockThreads, int RadixBits>
 struct AgentRadixSortExclusiveSumPolicy
 {
   enum
   {
-    BLOCK_THREADS = _BLOCK_THREADS,
-    RADIX_BITS    = _RADIX_BITS,
+    BLOCK_THREADS = BlockThreads,
+    RADIX_BITS    = RadixBits,
   };
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail::radix_sort_runtime_policies
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  RadixSortExclusiveSumAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (RADIX_BITS, RadixBits, int) )
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  RadixSortHistogramAgentPolicy,
+  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (NUM_PARTS, NumParts, int),
+  (RADIX_BITS, RadixBits, int) )
+} // namespace detail::radix_sort_runtime_policies
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
 namespace detail::radix_sort
 {
-
 template <typename AgentRadixSortHistogramPolicy,
           bool IS_DESCENDING,
           typename KeyT,
@@ -280,7 +277,6 @@ struct AgentRadixSortHistogram
     return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

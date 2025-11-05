@@ -36,10 +36,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
-namespace cuda
-{
-
 // To construct an error_code after a CUDA Runtime error:
 //
 //   error_code(::cudaGetLastError(), cuda_category())
@@ -47,9 +43,8 @@ namespace cuda
 // XXX N3000 prefers enum class errc { ... }
 /*! Namespace for CUDA Runtime errors.
  */
-namespace errc
+namespace cuda::errc
 {
-
 /*! \p errc_t enumerates the kinds of CUDA Runtime errors.
  */
 enum errc_t
@@ -113,10 +108,7 @@ enum errc_t
   attempted_operation_not_supported = cudaErrorNotSupported,
   startup_failure                   = cudaErrorStartupFailure
 }; // end errc_t
-
-} // end namespace errc
-
-} // namespace cuda
+} // namespace cuda::errc
 
 /*! \return A reference to an object of a type derived from class \p thrust::error_category.
  *  \note The object's \p equivalent virtual functions shall behave as specified
@@ -147,7 +139,6 @@ inline error_code make_error_code(cuda::errc::errc_t e);
 /*! \return <tt>error_condition(static_cast<int>(e), cuda::error_category())</tt>.
  */
 inline error_condition make_error_condition(cuda::errc::errc_t e);
-
 } // namespace system
 
 namespace cuda_cub

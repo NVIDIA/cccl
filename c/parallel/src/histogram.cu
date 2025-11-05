@@ -75,6 +75,7 @@ struct histogram_kernel_source
 {
   cccl_device_histogram_build_result_t& build;
 
+  template <typename PolicyT>
   CUkernel HistogramInitKernel() const
   {
     return build.init_kernel;
@@ -102,10 +103,15 @@ histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, 
   return {384, pixels_per_thread};
 }
 
-std::string get_init_kernel_name(int num_active_channels, std::string_view counter_t, std::string_view offset_t)
+std::string get_init_kernel_name(
+  std::string_view chained_policy_t, int num_active_channels, std::string_view counter_t, std::string_view offset_t)
 {
   return std::format(
-    "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}>", num_active_channels, counter_t, offset_t);
+    "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}, {3}>",
+    chained_policy_t,
+    num_active_channels,
+    counter_t,
+    offset_t);
 }
 
 std::string get_sweep_kernel_name(
@@ -157,7 +163,6 @@ std::string get_sweep_kernel_name(
     output_decode_op_t,
     offset_t);
 }
-
 } // namespace histogram
 
 CUresult cccl_device_histogram_build_ex(
@@ -207,7 +212,7 @@ CUresult cccl_device_histogram_build_ex(
     constexpr std::string_view src_template = R"XXX(
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
-#include <cub/device/dispatch/kernels/histogram.cuh>
+#include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 
 struct __align__({1}) storage_t {{
   char data[{0}];
@@ -226,6 +231,7 @@ struct agent_policy_t {{
 struct {5} {{
   struct ActivePolicy {{
     using AgentHistogramPolicyT = agent_policy_t;
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   }};
 }};
 )XXX";
@@ -254,7 +260,8 @@ struct {5} {{
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 
-    std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
+    std::string init_kernel_name =
+      histogram::get_init_kernel_name(chained_policy_t, num_active_channels, counter_cpp, offset_cpp);
     std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
       chained_policy_t,
       privatized_smem_bins,

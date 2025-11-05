@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -280,10 +256,14 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  16, 8> : sm
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+using namespace radix_sort_runtime_policies;
+#endif
 
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
@@ -300,23 +280,23 @@ struct RadixSortPolicyWrapper<
                       typename StaticPolicyT::SegmentedPolicy,
                       typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr bool IsOnesweep()
+  _CCCL_HOST_DEVICE static constexpr bool IsOnesweep()
   {
     return StaticPolicyT::ONESWEEP;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int RadixBits(PolicyT /*policy*/)
   {
     return PolicyT::RADIX_BITS;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -332,10 +312,29 @@ struct RadixSortPolicyWrapper<
   CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
   CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
   CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<
+      key<"SingleTilePolicy">()     = SingleTile().EncodedPolicy(),
+      key<"OnesweepPolicy">()       = Onesweep().EncodedPolicy(),
+      key<"UpsweepPolicy">()        = Upsweep().EncodedPolicy(),
+      key<"AltUpsweepPolicy">()     = AltUpsweep().EncodedPolicy(),
+      key<"DownsweepPolicy">()      = Downsweep().EncodedPolicy(),
+      key<"AltDownsweepPolicy">()   = AltDownsweep().EncodedPolicy(),
+      key<"HistogramPolicy">()      = Histogram().EncodedPolicy(),
+      key<"ScanPolicy">()           = Scan().EncodedPolicy(),
+      key<"ScanDelayConstructor">() = StaticPolicyT::ScanPolicy::detail::delay_constructor_t::EncodedConstructor(),
+      key<"ExclusiveSumPolicy">()   = ExclusiveSum().EncodedPolicy(),
+      key<"Onesweep">()             = value<IsOnesweep()>()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
@@ -1059,7 +1058,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace detail::radix
 
 CUB_NAMESPACE_END

@@ -1,13 +1,8 @@
 # Short intro to ptx-json
 
-This directory contains a library for embedding an almost valid JSON string in a PTX instruction stream produced with
-the CUDA C++ compiler. This tool is useful for transmitting structured information from device TUs compiled with NVRTC
-to the code compiling said TUs, and is used in c.parallel for figuring out the correct tuning policies for algorithms.
-
-> [!CAUTION]
-> The PTX instruction stream produced when using this library is NOT valid. If you use this library, make sure to only
-> instantiate its functions when compiling to PTX and no further. You should hide their instantiations behind an opt-in
-> macro for general code.
+This directory contains a library for embedding a valid JSON string in a CUBIN produced with the CUDA C++ compiler. This
+tool is useful for transmitting structured information from device TUs compiled with NVRTC to the code compiling said TUs,
+and is used in c.parallel for figuring out the correct tuning policies for algorithms.
 
 ## Example code
 
@@ -20,8 +15,7 @@ This code is taken from a test of this library, demonstrating all the current ca
                      (ptx_json::key<"c">() = ptx_json::array<1, 2, ptx_json::string("a")>())>();
 ```
 
-When compiled into PTX and extracted using a JSON parser capable of parsing C-style comments (such as `nlohmann/json`
-with an opt-in argument), this produces a JSON equivalent to
+When compiled into a CUBIN and extracted using a JSON parser (such as `nlohmann/json`), this produces a JSON equivalent to
 
 ```json
 {
@@ -46,8 +40,9 @@ This type is used to lift core constant expressions into the type system. All co
 template arguments into `ptx_json::value` objects.
 
 Currently supported types are:
-* `int`
-* `ptx_json::string`
+* integral types;
+* `bool`;
+* `ptx_json::string`.
 
 ### `ptx_json::array`
 

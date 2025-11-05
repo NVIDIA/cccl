@@ -32,14 +32,13 @@
 #endif // no system header
 
 #include <thrust/detail/config/memory_resource.h>
-#include <thrust/detail/integer_math.h>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 /*! \addtogroup memory_resources Memory Resources
  *  \ingroup memory_management
  *  \{
@@ -104,15 +103,15 @@ struct pool_options
    */
   bool validate() const
   {
-    if (!detail::is_power_of_2(smallest_block_size))
+    if (smallest_block_size != 0 && !::cuda::is_power_of_two(smallest_block_size))
     {
       return false;
     }
-    if (!detail::is_power_of_2(largest_block_size))
+    if (largest_block_size != 0 && !::cuda::is_power_of_two(largest_block_size))
     {
       return false;
     }
-    if (!detail::is_power_of_2(alignment))
+    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
     {
       return false;
     }
@@ -169,6 +168,5 @@ struct pool_options
 
 /*! \} // memory_resources
  */
-
 } // namespace mr
 THRUST_NAMESPACE_END

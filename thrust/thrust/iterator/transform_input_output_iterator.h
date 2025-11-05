@@ -107,7 +107,6 @@ public:
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 inline constexpr bool
   is_proxy_reference_v<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> = true;
-
 } // namespace detail
 
 //! \addtogroup iterators

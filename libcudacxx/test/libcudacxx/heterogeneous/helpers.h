@@ -69,6 +69,7 @@ using threadcount_trait = threadcount_trait_impl<T>;
     if (err != cudaSuccess)                                                           \
     {                                                                                 \
       printf("CUDA ERROR: %s: %s\n", cudaGetErrorName(err), cudaGetErrorString(err)); \
+      fflush(stdout);                                                                 \
       abort();                                                                        \
     }                                                                                 \
   } while (false)

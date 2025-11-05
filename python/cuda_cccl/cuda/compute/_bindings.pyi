@@ -26,10 +26,10 @@ class OpKind(IntEnum):
     BIT_OR = ...
     BIT_XOR = ...
     BIT_NOT = ...
-    # IDENTITY = ...
+    IDENTITY = ...
     NEGATE = ...
-    # MINIMUM = ...
-    # MAXIMUM = ...
+    MINIMUM = ...
+    MAXIMUM = ...
 
 class TypeEnum(IntEnum):
     _value_: int
@@ -56,6 +56,12 @@ class SortOrder(IntEnum):
     _value_: int
     ASCENDING = ...
     DESCENDING = ...
+
+class InitKind(IntEnum):
+    _value_: int
+    NO_INIT = ...
+    FUTURE_VALUE_INIT = ...
+    VALUE_INIT = ...
 
 class Op:
     def __init__(
@@ -133,6 +139,8 @@ class Iterator:
     def state(self, value) -> None: ...
     @property
     def type(self) -> IteratorKind: ...
+    @property
+    def value_type(self) -> TypeInfo: ...
     def as_bytes(self) -> bytes: ...
     def is_kind_pointer(self) -> bool: ...
     def is_kind_iterator(self) -> bool: ...
@@ -197,8 +205,9 @@ class DeviceScanBuildResult:
         d_in: Iterator,
         d_out: Iterator,
         binary_op: Op,
-        h_init: Value,
+        init_type: TypeInfo,
         force_inclusive: bool,
+        init_kind: InitKind,
         info: CommonData,
     ): ...
     def compute_inclusive(
@@ -221,6 +230,39 @@ class DeviceScanBuildResult:
         num_items: int,
         binary_op: Op,
         h_init: Value,
+        stream,
+    ) -> int: ...
+    def compute_inclusive_future_value(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Iterator,
+        stream,
+    ) -> int: ...
+    def compute_exclusive_future_value(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Iterator,
+        stream,
+    ) -> int: ...
+    def compute_inclusive_no_init(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: None,
         stream,
     ) -> int: ...
 
@@ -404,6 +446,29 @@ class DeviceHistogramBuildResult:
         row_stride_samples: int,
         stream,
     ) -> None: ...
+
+# -----------------
+# DeviceSegmentedSort
+# -----------------
+
+class DeviceSegmentedSortBuildResult:
+    def __init__(self): ...
+    def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in_keys: Iterator,
+        d_out_keys: Iterator,
+        d_in_values: Iterator,
+        d_out_values: Iterator,
+        num_items: int,
+        num_segments: int,
+        d_begin_offsets: Iterator,
+        d_end_offsets: Iterator,
+        is_overwrite_okay: bool,
+        selector: int,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # ---------------------
 # DeviceThreeWayPartition

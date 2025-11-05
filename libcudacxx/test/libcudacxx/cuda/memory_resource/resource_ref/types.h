@@ -41,7 +41,7 @@ struct resource
     return &_val;
   }
 
-  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);

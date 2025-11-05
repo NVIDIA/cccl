@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief An cyclic shape is a shape or rank 'dimensions' where the bounds are
  * explicit in each dimension, and where we jump between elements with a
@@ -328,5 +327,4 @@ UNITTEST("apply cyclic ")
   EXPECT(cnt == expected_cnt);
 };
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

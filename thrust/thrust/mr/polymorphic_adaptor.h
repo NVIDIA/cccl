@@ -31,7 +31,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 template <typename Pointer = void*>
 class polymorphic_adaptor_resource final : public memory_resource<Pointer>
 {
@@ -58,6 +57,5 @@ public:
 private:
   memory_resource<Pointer>* upstream_resource;
 };
-
 } // namespace mr
 THRUST_NAMESPACE_END

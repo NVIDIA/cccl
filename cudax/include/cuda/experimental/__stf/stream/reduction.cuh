@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Helper class to define a reduction operator attached to a data
  * interface.
@@ -164,5 +163,4 @@ class stream_reduction_operator : public stream_reduction_operator_untyped
     init_op(out_instance, e, s);
   }
 };
-
 } // end namespace cuda::experimental::stf

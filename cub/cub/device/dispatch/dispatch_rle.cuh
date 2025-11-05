@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -69,7 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle
 {
-
 template <typename PrecedingKeyItT, typename RunLengthT, typename GlobalOffsetT>
 struct streaming_context
 {
@@ -414,26 +389,6 @@ struct DeviceRleDispatch
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      streaming_context_t streaming_context{};
-      if constexpr (use_streaming_invocation)
-      {
-        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
-
-        const bool is_first_partition = (partition_idx == 0);
-        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
-        const int buffer_selector     = partition_idx % 2;
-
-        streaming_context = streaming_context_t{
-          is_first_partition,
-          is_last_partition,
-          current_partition_offset,
-          &tmp_prefix[buffer_selector],
-          &tmp_prefix[buffer_selector ^ 0x01],
-          &tmp_num_uniques[buffer_selector],
-          &tmp_num_uniques[buffer_selector ^ 0x01]};
-      }
-
       // Construct the tile status interface
       const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
 
@@ -490,17 +445,50 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-        .doit(device_rle_sweep_kernel,
-              d_in + current_partition_offset,
-              d_offsets_out,
-              d_lengths_out,
-              d_num_runs_out,
-              tile_status,
-              equality_op,
-              static_cast<local_offset_t>(current_num_items),
-              num_current_tiles,
-              streaming_context);
+      if constexpr (use_streaming_invocation)
+      {
+        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
+
+        const bool is_first_partition = (partition_idx == 0);
+        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
+        const int buffer_selector     = partition_idx % 2;
+
+        streaming_context_t streaming_context{
+          is_first_partition,
+          is_last_partition,
+          current_partition_offset,
+          &tmp_prefix[buffer_selector],
+          &tmp_prefix[buffer_selector ^ 0x01],
+          &tmp_num_uniques[buffer_selector],
+          &tmp_num_uniques[buffer_selector ^ 0x01]};
+
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                streaming_context);
+      }
+      else
+      {
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                NullType{});
+      }
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());

@@ -126,15 +126,17 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   }
 }
 
-// Use dynamic shared memory for the destination buffer (and the internal static shared TempStorage and multi-dim
-// blocks, and a span of non-const for the src range)
+// Use dynamic shared memory for the destination buffer (and multi-dim blocks, and a span of non-const for the src
+// range)
 template <int ThreadsInBlockX, int ThreadsInBlockY, int ThreadsInBlockZ, typename InputPointerT, typename OutputIteratorT>
 __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output, int num_items)
 {
   using input_t         = cub::detail::it_value_t<InputPointerT>;
   using block_load2sh_t = cub::detail::BlockLoadToShared<ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ>;
+  using storage_t       = typename block_load2sh_t::TempStorage;
 
-  block_load2sh_t block_load2sh{};
+  __shared__ storage_t storage;
+  block_load2sh_t block_load2sh{storage};
 
   static_assert(alignof(input_t) <= block_load2sh_t::template SharedBufferAlignBytes<char>());
   extern __shared__ char smem_buff[];
@@ -159,17 +161,17 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
 template <int ItemsPerThread, int ThreadsInBlock, typename T, typename InputPointerT>
 void test_block_load_dyn_smem_dst(const c2h::device_vector<T>& d_input, InputPointerT input)
 {
-  constexpr int ThreadsInBlockX = ThreadsInBlock / 4;
-  constexpr int ThreadsInBlockY = 2;
-  constexpr int ThreadsInBlockZ = 2;
-  using block_load2sh_t         = cub::detail::BlockLoadToShared<ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ>;
-  constexpr int tile_size       = ItemsPerThread * ThreadsInBlock;
-  constexpr int buffer_size     = block_load2sh_t::template SharedBufferSizeBytes<T>(tile_size);
+  constexpr int block_dim_x = ThreadsInBlock / 4;
+  constexpr int block_dim_y = 2;
+  constexpr int block_dim_z = 2;
+  using block_load2sh_t     = cub::detail::BlockLoadToShared<block_dim_x, block_dim_y, block_dim_z>;
+  constexpr int tile_size   = ItemsPerThread * ThreadsInBlock;
+  constexpr int buffer_size = block_load2sh_t::template SharedBufferSizeBytes<T>(tile_size);
   CAPTURE(ThreadsInBlock, ItemsPerThread, c2h::type_name<T>());
 
   c2h::device_vector<T> d_output(d_input.size());
-  kernel_dyn_smem_dst<ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ>
-    <<<1, dim3{ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ}, buffer_size>>>(
+  kernel_dyn_smem_dst<block_dim_x, block_dim_y, block_dim_z>
+    <<<1, dim3{block_dim_x, block_dim_y, block_dim_z}, buffer_size>>>(
       input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

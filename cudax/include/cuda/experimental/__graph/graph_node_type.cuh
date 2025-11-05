@@ -91,11 +91,10 @@ enum class graph_node_type : int
   free             = cudaGraphNodeTypeMemFree,
 // batch_memop      = CU_GRAPH_NODE_TYPE_BATCH_MEM_OP, // not exposed by the CUDA runtime
 
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
+#if _CCCL_CTK_AT_LEAST(12, 8)
   conditional = cudaGraphNodeTypeConditional
-#endif
+#endif // _CCCL_CTK_AT_LEAST(12, 8)
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

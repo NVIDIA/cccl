@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief Provides flags for instantiating the `handle` class (below).
  */
@@ -288,5 +287,4 @@ UNITTEST("Weak handle")
   EXPECT(h->a == 43);
 };
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf::reserved

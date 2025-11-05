@@ -147,15 +147,6 @@ bool equal_range(const Range1& range1, const Range2& range2)
   }
 }
 
-struct dev0_device_memory_resource : cudax::device_memory_resource
-{
-  dev0_device_memory_resource()
-      : cudax::device_memory_resource{cuda::device_ref{0}}
-  {}
-
-  using default_queries = cudax::properties_list<cuda::mr::device_accessible>;
-};
-
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
 struct extract_properties;
@@ -163,14 +154,24 @@ struct extract_properties;
 template <class T, class... Properties>
 struct extract_properties<cuda::std::tuple<T, Properties...>>
 {
-  using async_buffer = cudax::async_buffer<T, Properties...>;
-  using resource     = cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
-                                            cudax::pinned_memory_resource,
-#else
-                                            void,
-#endif
-                                            dev0_device_memory_resource>;
+  static auto get_resource()
+  {
+    if constexpr (cuda::mr::__is_host_accessible<Properties...>)
+    {
+#if _CCCL_CTK_AT_LEAST(12, 6)
+      return cuda::pinned_default_memory_pool();
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+      return;
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+    }
+    else
+    {
+      return cuda::device_default_memory_pool(cuda::device_ref{0});
+    }
+  }
+
+  using async_buffer   = cudax::async_buffer<T, Properties...>;
+  using resource       = decltype(get_resource());
   using iterator       = cudax::heterogeneous_iterator<T, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<const T, Properties...>;
 

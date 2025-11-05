@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
     auto [x, y] = iter[0];
     assert(cuda::std::addressof(x) == cuda::std::addressof(a[0]));
     assert(cuda::std::addressof(y) == cuda::std::addressof(b[0]));
-    static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::pair<int&, double&>>);
+    static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::tuple<int&, double&>>);
 
     x = 5;
     y = 0.1;
@@ -62,7 +62,7 @@ __host__ __device__ constexpr bool test()
     cuda::zip_iterator iter{a, cuda::std::as_const(b)};
     assert(cuda::std::addressof(cuda::std::get<0>(iter[0])) == cuda::std::addressof(a[0]));
     assert(cuda::std::addressof(cuda::std::get<1>(iter[0])) == cuda::std::addressof(b[0]));
-    static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::pair<int&, const double&>>);
+    static_assert(cuda::std::is_same_v<decltype(iter[0]), cuda::std::tuple<int&, const double&>>);
   }
 
   { // not all random_access_iterator

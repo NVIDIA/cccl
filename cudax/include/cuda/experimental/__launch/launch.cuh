@@ -22,13 +22,13 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/pod_tuple.h>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -45,7 +45,6 @@
 
 namespace cuda::experimental
 {
-
 template <typename _Config, typename _Kernel, class... _Args>
 __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
@@ -512,7 +511,6 @@ namespace execution
 template <class _Config, class _Fn, class... _Args>
 inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

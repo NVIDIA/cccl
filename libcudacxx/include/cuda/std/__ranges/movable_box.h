@@ -65,7 +65,7 @@ _CCCL_CONCEPT __movable_box_object = move_constructible<_Tp> && is_object_v<_Tp>
 // whenever we can apply any of these optimizations for both the copy assignment and the move assignment
 // operator.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __doesnt_need_empty_state() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __doesnt_need_empty_state() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -92,7 +92,7 @@ template <class _Tp>
 // Hence, when the _Tp doesn't have an assignment operator, we can't risk making it a potentially-overlapping
 // subobject because of the above, and we don't use [[no_unique_address]] in that case.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __can_use_no_unique_address() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __can_use_no_unique_address() noexcept
 {
   if constexpr (copy_constructible<_Tp>)
   {
@@ -141,7 +141,7 @@ struct __mb_optional_copy_assign : __mb_optional_destruct_base<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
 
-  _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = delete;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(__mb_optional_copy_assign&&)      = default;
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign& operator=(const __mb_optional_copy_assign&) = delete;
@@ -209,9 +209,7 @@ struct __mb_optional_move_assign<_Tp, false> : __mb_optional_copy_assign<_Tp>
 };
 
 template <class _Tp>
-struct __mb_optional_base
-    : __mb_optional_move_assign<_Tp>
-    , __sfinae_move_base<copy_constructible<_Tp>, true>
+struct __mb_optional_base : __mb_optional_move_assign<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_base, __mb_optional_move_assign, _Tp);
 

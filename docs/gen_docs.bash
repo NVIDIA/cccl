@@ -160,7 +160,7 @@ fi
 # Check if dependencies are installed in the virtual environment
 if ! python -c "import sphinx" 2>/dev/null; then
     echo "Installing documentation dependencies..."
-    pip install -r requirements.txt || {
+    python3 -m pip install -r requirements.txt || {
         echo "Error: Failed to install documentation dependencies"
         echo "Please install manually: pip install -r requirements.txt"
         exit 1

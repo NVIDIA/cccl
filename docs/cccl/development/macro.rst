@@ -330,6 +330,77 @@ Usage example:
 | ``_CCCL_PRAGMA_NOUNROLL()``    | Portable ``#pragma nounroll`` pragma      |
 +--------------------------------+-------------------------------------------+
 
+**Exception Macros**
+
+CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
+
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_TRY``              | Replacement for the ``try`` keyword                               |
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``        | Replacement for the ``catch (/*X*/)`` statement                   |
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``        | Replacement for the ``catch (...)`` statement                     |
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_CATCH_FALLTHOUGH`` | End of ``try``/``catch`` block if ``_CCCL_CATCH_ALL`` is not used |
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_THROW``            | Replacement for the ``throw /*arg*/`` expression                  |
++----------------------------+-------------------------------------------------------------------+
+| ``_CCCL_RETHROW``          | Replacement for the plain ``throw`` expression                    |
++----------------------------+-------------------------------------------------------------------+
+
+*Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
+
+Example:
+
+.. code-block:: c++
+
+    __host__ __device__ void* alloc(cuda::std::size_t nbytes)
+    {
+        if (void* ptr = cuda::std::malloc(nbytes))
+        {
+            return ptr;
+        }
+        _CCCL_THROW std::bad_alloc{}; // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void do_something(int* buff)
+    {
+        _CCCL_THROW std::runtime_error{"Something went wrong"}; // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void fn(cuda::std::size_t n)
+    {
+        int* buff{};
+
+        _CCCL_TRY
+        {
+            buff = reinterpret_cast<int*>(alloc(n * sizeof(int)));
+
+            do_something(buff);
+        }
+        _CCCL_CATCH ([[maybe_unused]] const std::bad_alloc& e) // must be always named
+        {
+            std::fprintf(stderr, "Failed to allocate memory\n"); // We can directly call host-only functions
+            cuda::std::terminate();
+        }
+        _CCCL_CATCH_ALL // or _CCCL_CATCH_FALLTHOUGH
+        {
+            cuda::std::free(buff);
+            _CCCL_RETHROW;
+        }
+    }
+
+    __global__ void kernel()
+    {
+        fn(10);
+    }
+
+    int main()
+    {
+        fn(10);
+        return 0;
+    }
+
 ----
 
 Visibility Macros

@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief A RAII style wrapper for NVTX ranges
  */
@@ -99,5 +98,4 @@ public:
 private:
   bool active = true; // Tracks if nvtxRangePop() should be called
 };
-
 } // end namespace cuda::experimental::stf

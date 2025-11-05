@@ -22,7 +22,6 @@
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 namespace hierarchy
 {
 template <typename Unit, typename Level>
@@ -70,7 +69,6 @@ struct dimensions_query
     return hierarchy::extents<Unit, Level>();
   }
 };
-
 } // namespace __detail
 
 // Struct to represent levels allowed below or above a certain level,
@@ -199,7 +197,6 @@ constexpr bool is_core_cuda_hierarchy_level =
 
 namespace __detail
 {
-
 template <typename Unit, typename Level>
 struct dims_helper;
 
@@ -311,7 +308,6 @@ template <typename Unit, typename Level>
 
 namespace hierarchy
 {
-
 /**
  * @brief Counts the number of entities in a CUDA hierarchy level
  *

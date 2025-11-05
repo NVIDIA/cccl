@@ -26,7 +26,7 @@
 
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
@@ -141,7 +141,6 @@ private:
   mutable device_vector<_Ty> __d_{};
   mutable bool __dirty_ = true;
 };
-
 } // namespace cuda::experimental
 
 #endif

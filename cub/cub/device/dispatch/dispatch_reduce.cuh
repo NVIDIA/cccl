@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file cub::DeviceReduce provides device-wide, parallel operations for
@@ -46,8 +22,8 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/kernels/reduce.cuh>
-#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -70,7 +46,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -609,7 +584,6 @@ using DispatchTransformReduce =
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -790,7 +764,7 @@ struct DispatchSegmentedReduce
    *   Function type of cub::DeviceSegmentedReduceKernel
    *
    * @param[in] segmented_reduce_kernel
-   *   Kernel function pointer to parameterization of
+   *   Kernel function pointer to instantiation of
    *   cub::DeviceSegmentedReduceKernel
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
@@ -809,7 +783,8 @@ struct DispatchSegmentedReduce
         return cudaSuccess;
       }
 
-      // Init kernel configuration
+      // Init kernel configuration (computes kernel occupancy)
+      // maybe only used inside CUB_DEBUG_LOG code sections
       [[maybe_unused]] detail::KernelConfig segmented_reduce_config;
       error =
         CubDebug(segmented_reduce_config.Init(segmented_reduce_kernel, policy.SegmentedReduce(), launcher_factory));
@@ -839,7 +814,7 @@ struct DispatchSegmentedReduce
                 segmented_reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-        // Invoke DeviceReduceKernel
+        // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
           .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
@@ -989,7 +964,6 @@ struct DispatchSegmentedReduce
 
 namespace detail::reduce
 {
-
 // @brief Functor to generate a key-value pair from an index and value
 template <typename Iterator, typename OutputValueT>
 struct generate_idx_value

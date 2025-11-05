@@ -25,6 +25,7 @@
 
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/extended_data_types.h>
+#include <cuda/std/__cccl/host_std_lib.h>
 
 //! This file consolidates all compiler builtin detection for CCCL.
 //!
@@ -357,10 +358,6 @@
 #  define _CCCL_BUILTIN_PREFETCH(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_prefetch)
 
-#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
-
 #if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
@@ -607,55 +604,51 @@
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
-// Some compilers provide std::move/std::forward/etc as builtins
-#if defined(__cplusplus)
-// Bring in the feature test macros (needed for std::forward_like)
-#  if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
-#    include <version>
-#  elif !_CCCL_COMPILER(NVRTC)
-#    include <ciso646> // otherwise go for the smallest possible header
-#  endif // !_CCCL_COMPILER(NVRTC)
+// todo: re-enable std builtins
 
-// Bring in the bits of the STL we need
-#  if defined(_GLIBCXX_VERSION)
-#    include <bits/move.h> // for move, forward, forward_like, and addressof
-#  elif defined(_LIBCPP_VERSION)
-#    include <__memory/addressof.h>
-#    include <__utility/as_const.h>
-#    include <__utility/forward.h>
-#    include <__utility/forward_like.h>
-#    include <__utility/move.h>
-#  endif
+// // Some compilers provide std::move/std::forward/etc as builtins
+// #if defined(__cplusplus)
+// // Bring in the bits of the STL we need
+// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+// #    include <bits/move.h> // for move, forward, forward_like, and addressof
+// #  elif _CCCL_HOST_STD_LIB(LIBCXX)
+// #    include <__memory/addressof.h>
+// #    include <__utility/as_const.h>
+// #    include <__utility/forward.h>
+// #    if __cpp_lib_forward_like >= 202217L
+// #      include <__utility/forward_like.h>
+// #    endif // __cpp_lib_forward_like >= 202217L
+// #    include <__utility/move.h>
+// #  endif
 
-#  if defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION)
-// std::move builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-#      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
-#    endif
+// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
+// // std::move builtin
+// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+// #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
+// #    endif
 
-// std::forward builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-#      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
-#    endif
+// // std::forward builtin
+// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+// #      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
+// #    endif
 
-// std::addressof builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-#      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
-#    endif
+// // std::addressof builtin
+// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
+// #      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
+// #    endif
 
-// std::as_const builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15)
-#      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
-#    endif
+// // std::as_const builtin
+// #    if _CCCL_COMPILER(CLANG, >=, 15)
+// #      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
+// #    endif
 
-// std::forward_like builtin
-// Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
-#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && defined(__cpp_lib_forward_like) \
-      && (__cpp_lib_forward_like >= 202217L)
-#      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
-#    endif
-#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCPP_VERSION) || defined(_MSVC_STL_VERSION)
-#endif // defined(__cplusplus)
+// // std::forward_like builtin
+// // Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
+// #    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
+// #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
+// #    endif
+// #  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
+// #endif // defined(__cplusplus)
 
 #ifndef _CCCL_HAS_BUILTIN_STD_MOVE
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
