@@ -37,16 +37,13 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // XXX WAR an unfortunate circular #inclusion problem
 template <typename, typename>
 class temporary_array;
-
 } // namespace detail
 
 namespace system::detail::sequential
 {
-
 template <typename ForwardIterator1, typename ForwardIterator2>
 _CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 {
@@ -296,6 +293,5 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
 
   return thrust::make_pair(out_true, out_false);
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

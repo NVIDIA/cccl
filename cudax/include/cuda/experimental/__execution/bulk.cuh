@@ -25,6 +25,7 @@
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -446,7 +447,6 @@ inline constexpr size_t structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, 
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
 inline constexpr size_t structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

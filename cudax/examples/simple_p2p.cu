@@ -120,7 +120,7 @@ void test_cross_device_access_from_kernel(
 
   // This will be a pinned memory vector once available
   cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(
-    cudax::legacy_pinned_memory_resource(), dev0_buffer.size());
+    cuda::legacy_pinned_memory_resource(), dev0_buffer.size());
   std::generate(host_buffer.begin(), host_buffer.end(), []() {
     static int i = 0;
     return static_cast<float>((i++) % 4096);
@@ -215,13 +215,13 @@ try
     return 0;
   }
 
-  cudax::stream dev0_stream(peers[0]);
-  cudax::stream dev1_stream(peers[1]);
+  cuda::stream dev0_stream(peers[0]);
+  cuda::stream dev1_stream(peers[1]);
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
-  cudax::device_memory_pool_ref dev0_resource = cudax::device_default_memory_pool(peers[0]);
+  cuda::device_memory_pool_ref dev0_resource = cuda::device_default_memory_pool(peers[0]);
   dev0_resource.enable_access_from(peers[1]);
-  cudax::device_memory_pool_ref dev1_resource = cudax::device_default_memory_pool(peers[1]);
+  cuda::device_memory_pool_ref dev1_resource = cuda::device_default_memory_pool(peers[1]);
   dev1_resource.enable_access_from(peers[0]);
 
   // Allocate buffers

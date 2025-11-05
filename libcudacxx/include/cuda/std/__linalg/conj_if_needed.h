@@ -39,9 +39,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
-
 _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
+// Need newline for concept emulation :_(
 template <class _Type>
 _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
@@ -67,7 +67,6 @@ _CCCL_END_NAMESPACE_CPO
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{};
-
 } // namespace __cpo
 } // end namespace linalg
 

@@ -111,7 +111,6 @@ inline constexpr bool is_contiguous_iterator_impl_v =
   ::cuda::std::contiguous_iterator<Iterator> || is_thrust_pointer_v<Iterator> || is_libcxx_wrap_iter_v<Iterator>
   || is_libstdcxx_normal_iterator_v<Iterator> || is_msvc_contiguous_iterator_v<Iterator>
   || proclaim_contiguous_iterator<Iterator>::value;
-
 } // namespace detail
 
 /*! \endcond

@@ -20,6 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/variant>
+#include <cuda/std/__utility/monostate.h>
+#include <cuda/std/__variant/bad_variant_access.h>
+#include <cuda/std/__variant/comparison.h>
+#include <cuda/std/__variant/get.h>
+#include <cuda/std/__variant/hash.h>
+#include <cuda/std/__variant/variant.h>
+#include <cuda/std/__variant/visit.h>
+#include <cuda/std/version>
 
 #endif //_CUDA_STD_VARIANT

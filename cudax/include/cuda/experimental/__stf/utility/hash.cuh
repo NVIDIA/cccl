@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief We define a hash trait class in our namespace
  */
@@ -39,7 +38,6 @@ struct hash;
 
 namespace reserved
 {
-
 /**
  * @brief Trait to check if std::hash<E> is defined.
  *
@@ -72,7 +70,6 @@ struct has_std_hash<E, ::std::void_t<decltype(::std::declval<::std::hash<E>>()(:
  */
 template <typename E>
 inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
-
 } // end namespace reserved
 
 /**
@@ -233,7 +230,6 @@ struct has_cudastf_hash<
  */
 template <typename E>
 inline constexpr bool has_cudastf_hash_v = has_cudastf_hash<E>::value;
-
 } // end namespace reserved
 
 UNITTEST("hash for tuples")
@@ -241,5 +237,4 @@ UNITTEST("hash for tuples")
   ::std::unordered_map<::std::tuple<int, int>, int, ::cuda::experimental::stf::hash<::std::tuple<int, int>>> m;
   m[::std::tuple(1, 2)] = 42;
 };
-
 } // end namespace cuda::experimental::stf

@@ -9,7 +9,6 @@
 
 namespace ArchetypeBases
 {
-
 template <bool, class T>
 struct DepType : T
 {};
@@ -286,7 +285,6 @@ protected:
       : value(0)
   {}
 };
-
 } // namespace ArchetypeBases
 
 //============================================================================//
@@ -368,7 +366,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // namespace TestTypes
 
 //============================================================================//
@@ -394,7 +391,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // namespace ExplicitTestTypes
 
 //============================================================================//
@@ -418,7 +414,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // end namespace ConstexprTestTypes
 
 //============================================================================//
@@ -443,7 +438,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // end namespace ExplicitConstexprTestTypes
 
 //============================================================================//
@@ -467,7 +461,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // end namespace TrivialTestTypes
 
 //============================================================================//
@@ -492,7 +485,6 @@ __host__ __device__ constexpr bool operator!=(Tp const& L, Tp const& R) noexcept
 {
   return L.value != R.value;
 }
-
 } // end namespace ExplicitTrivialTestTypes
 
 #endif // TEST_SUPPORT_ARCHETYPES_H

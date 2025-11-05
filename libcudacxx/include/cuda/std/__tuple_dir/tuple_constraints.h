@@ -93,7 +93,7 @@ struct __tuple_constructible_struct
 };
 
 // __tuple_nothrow_constructible
-template <class _From, class _To, bool = __tuple_types_same_size<_From, _To>>
+template <class _From, class _To, bool = __tuple_types_constructible<_From, _To>>
 inline constexpr bool __tuple_types_nothrow_constructible = false;
 
 template <class... _From, class... _To>

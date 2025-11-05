@@ -14,11 +14,8 @@
 
 #include <cccl/c/types.h>
 
-namespace cccl
+namespace cccl::detail
 {
-namespace detail
-{
-
 /**
  * @brief Extends a vector of compilation arguments with extra flags and include directories from a build config
  *
@@ -42,6 +39,4 @@ inline void extend_args_with_build_config(std::vector<const char*>& args, const 
     }
   }
 }
-
-} // namespace detail
-} // namespace cccl
+} // namespace cccl::detail

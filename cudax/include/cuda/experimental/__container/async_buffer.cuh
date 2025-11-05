@@ -25,6 +25,7 @@
 #  include <cub/device/device_transform.cuh>
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
@@ -48,7 +49,6 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__launch/host_launch.cuh>
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -56,7 +56,6 @@
 //! @file The \c async_buffer class provides a container of contiguous memory
 namespace cuda::experimental
 {
-
 // Once we add support from options taken from the env we can list them here in addition to using is_same_v
 template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
@@ -97,7 +96,7 @@ public:
   using properties_list        = ::cuda::mr::properties_list<_Properties...>;
 
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::experimental::any_resource<_Properties...>;
+  using __resource_t     = ::cuda::mr::any_resource<_Properties...>;
   using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
 
   template <class, class...>
@@ -620,7 +619,7 @@ _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp, class... _TargetProperties, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   stream_ref __stream,
-  any_resource<_TargetProperties...> __mr,
+  ::cuda::mr::any_resource<_TargetProperties...> __mr,
   const async_buffer<_Tp, _SourceProperties...>& __source,
   const _Env& __env = {})
 {
@@ -648,7 +647,7 @@ auto make_async_buffer(
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(__buffer_compatible_env<_Env>)
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, const _Env& __env = {})
+make_async_buffer(stream_ref __stream, ::cuda::mr::any_resource<_Properties...>& __mr, const _Env& __env = {})
 {
   return async_buffer<_Tp, _Properties...>{__stream, __mr, __env};
 }
@@ -668,7 +667,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
 async_buffer<_Tp, _Properties...> make_async_buffer(
   stream_ref __stream,
-  any_resource<_Properties...> __mr,
+  ::cuda::mr::any_resource<_Properties...> __mr,
   size_t __size,
   const _Tp& __value,
   [[maybe_unused]] const _Env& __env = {})
@@ -698,7 +697,7 @@ _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
 async_buffer<_Tp, _Properties...> make_async_buffer(
   stream_ref __stream,
-  any_resource<_Properties...> __mr,
+  ::cuda::mr::any_resource<_Properties...>& __mr,
   size_t __size,
   ::cuda::experimental::no_init_t,
   const _Env& __env = {})
@@ -719,7 +718,11 @@ auto make_async_buffer(
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
 async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last, const _Env& __env = {})
+  stream_ref __stream,
+  ::cuda::mr::any_resource<_Properties...>& __mr,
+  _Iter __first,
+  _Iter __last,
+  const _Env& __env = {})
 {
   return async_buffer<_Tp, _Properties...>{__stream, __mr, __first, __last, __env};
 }
@@ -737,7 +740,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _It
 template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
 async_buffer<_Tp, _Properties...> make_async_buffer(
   stream_ref __stream,
-  any_resource<_Properties...> __mr,
+  ::cuda::mr::any_resource<_Properties...>& __mr,
   ::cuda::std::initializer_list<_Tp> __ilist,
   const _Env& __env = {})
 {
@@ -756,8 +759,8 @@ auto make_async_buffer(
 // Range make function for ranges
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::std::ranges::forward_range<_Range>)
-async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Range&& __range, const _Env& __env = {})
+async_buffer<_Tp, _Properties...> make_async_buffer(
+  stream_ref __stream, ::cuda::mr::any_resource<_Properties...> __mr, _Range&& __range, const _Env& __env = {})
 {
   return async_buffer<_Tp, _Properties...>{__stream, __mr, ::cuda::std::forward<_Range>(__range), __env};
 }
@@ -770,7 +773,6 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, 
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, __mr, ::cuda::std::forward<_Range>(__range), __env};
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

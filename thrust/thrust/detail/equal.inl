@@ -27,9 +27,21 @@
 #endif // no system header
 #include <thrust/equal.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/equal.h>
-#include <thrust/system/detail/generic/equal.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/equal.h>
+#include <thrust/system/detail/sequential/equal.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(equal.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(equal.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/equal.h>
+#  include <thrust/system/cuda/detail/equal.h>
+#  include <thrust/system/omp/detail/equal.h>
+#  include <thrust/system/tbb/detail/equal.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

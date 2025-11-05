@@ -12,11 +12,11 @@
 
 C2H_TEST("1d Copy", "[data_manipulation]")
 {
-  cudax::stream _stream{cuda::device_ref{0}};
+  cuda::stream _stream{cuda::device_ref{0}};
 
   SECTION("Device resource")
   {
-    cudax::device_memory_pool_ref device_resource = cudax::device_default_memory_pool(cuda::device_ref{0});
+    cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     std::vector<int> host_vector(buffer_size);
 
     {
@@ -46,8 +46,8 @@ C2H_TEST("1d Copy", "[data_manipulation]")
 
   SECTION("Host and managed resource")
   {
-    cudax::legacy_managed_memory_resource managed_resource;
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_managed_memory_resource managed_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
@@ -78,7 +78,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
 
@@ -90,7 +90,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
 
   SECTION("Asymmetric size")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
@@ -133,7 +133,7 @@ void test_mdspan_copy_bytes(
 
 C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -154,7 +154,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
-    auto host_resource = cudax::legacy_pinned_memory_resource{};
+    auto host_resource = cuda::legacy_pinned_memory_resource{};
     auto mixed_extents =
       cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
     [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
@@ -171,7 +171,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 

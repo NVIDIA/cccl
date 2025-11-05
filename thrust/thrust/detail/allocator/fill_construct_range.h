@@ -37,7 +37,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // fill_construct_range has 2 cases:
 // if Allocator has an effectful member function construct:
 //   1. construct via the allocator
@@ -76,6 +75,5 @@ _CCCL_HOST_DEVICE void fill_construct_range(Allocator& a, Pointer p, Size n, con
     thrust::uninitialized_fill_n(allocator_system<Allocator>::get(a), p, n, value);
   }
 }
-
 } // namespace detail
 THRUST_NAMESPACE_END

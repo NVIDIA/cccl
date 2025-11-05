@@ -40,7 +40,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename... TArgs>
 inline constexpr bool is_one_of_v = (::cuda::std::is_same_v<T, TArgs> || ...);
 
@@ -182,6 +181,5 @@ using signed_promotion_t = ::cuda::std::conditional_t<
   ::cuda::std::__cccl_is_signed_integer_v<T> && sizeof(T) <= sizeof(int),
   int,
   ::cuda::std::conditional_t<::cuda::std::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
-
 } // namespace detail
 CUB_NAMESPACE_END

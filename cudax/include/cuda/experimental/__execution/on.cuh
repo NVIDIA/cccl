@@ -112,6 +112,7 @@ struct on_t
   struct __not_a_scheduler
   {
     using scheduler_concept = scheduler_t;
+
     [[nodiscard]] _CCCL_API static constexpr auto schedule() noexcept
     {
       return __not_a_sender{};
@@ -333,10 +334,12 @@ private:
       constexpr bool __old_sch_has_compl =
         __has_completions_for<_SetTag, schedule_result_t<_OldSch>, __fwd_env_t<_Env>>;
 
-      using __new_sch_domain_t = __call_result_or_t<get_completion_domain_t<_SetTag>, default_domain, _Sch>;
-      using __old_sch_domain_t = __call_result_or_t<get_completion_domain_t<_SetTag>, default_domain, _OldSch>;
+      using __new_sch_domain_t =
+        __call_result_or_t<get_completion_domain_t<_SetTag>, default_domain, _Sch, __fwd_env_t<_Env>>;
+      using __old_sch_domain_t =
+        __call_result_or_t<get_completion_domain_t<_SetTag>, default_domain, _OldSch, __fwd_env_t<_Env>>;
       using __sndr_domain_t =
-        __type_call_or_q<__call_result_t, void, get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>>;
+        __call_result_or_t<get_completion_domain_t<_SetTag>, void, env_of_t<_Sndr>, __env2_t<_Sch, _Env>>;
 
       using __domain_t =
         __type_call_or_q<::cuda::std::common_type_t,
@@ -390,7 +393,7 @@ private:
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, _Env&&) const noexcept
     {
       using __old_sch_t = __call_result_or_t<get_scheduler_t, __not_a_scheduler, _Env>;
-      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, _Env>(),
+      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>>(),
                                execution::get_completion_behavior<_Sndr, __env2_t<_Sch, _Env>>(),
                                execution::get_completion_behavior<schedule_result_t<__old_sch_t>, __fwd_env_t<_Env>>());
     }
@@ -447,7 +450,6 @@ inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr, _Clo
 
 template <class _Sndr, class _NewSch, class _OldSch, class... _Closure>
 inline constexpr size_t structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _OldSch, _Closure...>> = 3;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

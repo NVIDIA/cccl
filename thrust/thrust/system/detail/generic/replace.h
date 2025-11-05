@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -88,7 +87,6 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
         ForwardIterator last,
         const T& old_value,
         const T& new_value);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

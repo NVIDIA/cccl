@@ -8,6 +8,7 @@ Numeric
    :maxdepth: 1
 
    numeric/add_overflow
+   numeric/sub_overflow
    numeric/narrow
    numeric/overflow_result
 
