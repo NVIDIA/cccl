@@ -126,8 +126,6 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   }
 }
 
-// Use dynamic shared memory for the destination buffer (and multi-dim blocks,
-// and a span of non-const for the src range)
 template <int ThreadsInBlockX, int ThreadsInBlockY, int ThreadsInBlockZ, typename InputPointerT, typename OutputIteratorT>
 __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output, int num_items)
 {

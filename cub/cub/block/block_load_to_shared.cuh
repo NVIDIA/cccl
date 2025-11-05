@@ -215,9 +215,9 @@ public:
   /// @smemstorage{BlockLoadToShared}
   using TempStorage = cub::Uninitialized<_TempStorage>;
 
-  /// Token type used to enforce correct call order between Commit() and Wait()
-  /// member functions. Returned by Commit() and required by Wait() as a usage
-  /// guard.
+  //! Token type used to enforce correct call order between Commit() and Wait()  
+  //! member functions. Returned by Commit() and required by Wait() as a usage  
+  //! guard.
   using CommitToken = token_impl;
 
   //! @name Collective constructors
