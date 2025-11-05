@@ -12,9 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -35,10 +34,9 @@ namespace detail
 template <typename DerivedPolicy>
 inline constexpr bool should_enable_nvtx_for_policy()
 {
-  // Check if Policy is derived from sequential::execution_policy
+  using Policy = ::cuda::std::decay_t<DerivedPolicy>;
   // This catches thrust::seq, cpp::tag, and any other sequential-based policy
-  return !::cuda::std::is_base_of<thrust::system::detail::sequential::execution_policy<Policy>, Policy>::value
-      && !::cuda::std::is_same<Policy, thrust::system::detail::sequential::tag>::value;
+  return !::cuda::std::is_base_of_v<thrust::system::detail::sequential::execution_policy<Policy>, Policy>;
 }
 
 } // namespace detail
