@@ -807,8 +807,8 @@ public:
       // Do we have some CCCL tuple utils that can select all but the first?
       auto __to_add_with_one_too_many = __other.template levels_range<_OtherUnit, __this_bottom_level>();
       auto __to_add                   = ::cuda::std::apply(
-        [](auto&&, auto&&... rest) {
-          return ::cuda::std::make_tuple(rest...);
+        [](auto&&, auto&&... __rest) {
+          return ::cuda::std::make_tuple(__rest...);
         },
         __to_add_with_one_too_many);
       return ::cuda::std::apply(fragment_helper<_OtherUnit>(), ::cuda::std::tuple_cat(levels, __to_add));

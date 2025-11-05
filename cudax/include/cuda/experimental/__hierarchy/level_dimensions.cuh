@@ -70,9 +70,9 @@ struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
 {
   static constexpr bool __is_type_supported = true;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __dims) noexcept
   {
-    return dimensions<dimensions_index_type, size_t(__d), 1, 1>();
+    return dimensions<dimensions_index_type, size_t(__dims), 1, 1>();
   }
 };
 } // namespace __detail
@@ -150,10 +150,10 @@ struct level_dimensions
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t _X, size_t _Y = 1, size_t _Z = 1>
+template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 {
-  return level_dimensions<grid_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
+  return level_dimensions<grid_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
 
 /**
@@ -174,10 +174,10 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(_Tp __t) noexcept
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t _X, size_t _Y = 1, size_t _Z = 1>
+template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 {
-  return level_dimensions<cluster_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
+  return level_dimensions<cluster_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
 
 /**
@@ -198,10 +198,10 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(_Tp __t) noexcept
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t _X, size_t _Y = 1, size_t _Z = 1>
+template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 {
-  return level_dimensions<block_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
+  return level_dimensions<block_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
 
 /**

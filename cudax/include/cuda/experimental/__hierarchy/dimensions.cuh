@@ -98,7 +98,7 @@ template <class _Op>
   }
   else
   {
-    _Op __op;
+    _Op __op{};
     return __op(__e1, __e2);
   }
 }

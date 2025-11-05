@@ -342,8 +342,8 @@ template <typename _Unit, typename _Level>
 _CCCL_DEVICE auto count(const _Unit&, const _Level&)
 {
   static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
-  auto d = __detail::__extents_impl<_Unit, _Level>();
-  return d.extent(0) * d.extent(1) * d.extent(2);
+  auto __dims = __detail::__extents_impl<_Unit, _Level>();
+  return __dims.extent(0) * __dims.extent(1) * __dims.extent(2);
 }
 
 /**
