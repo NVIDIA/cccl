@@ -51,13 +51,17 @@
 #  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
 
-// NVCC cannot handle builtins for bswap
+// nvcc doesn't support these builtins in device code
 #if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 #  undef _CCCL_BUILTIN_BSWAP16
 #  undef _CCCL_BUILTIN_BSWAP32
 #  undef _CCCL_BUILTIN_BSWAP64
-#  undef _CCCL_BUILTIN_BSWAP128
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// gcc fails to use the builtin when compiling with nvcc
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
+#  undef _CCCL_BUILTIN_BSWAP128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
