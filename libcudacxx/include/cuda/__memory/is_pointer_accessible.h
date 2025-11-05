@@ -34,6 +34,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_managed(const void* __p)
 {
+  if (__p == nullptr)
+  {
+    return false;
+  }
   bool __is_managed{};
   const auto __status =
     ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p);
@@ -51,6 +55,10 @@ _CCCL_HOST_API inline bool is_managed(const void* __p)
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
 {
+  if (__p == nullptr)
+  {
+    return false;
+  }
   ::CUpointer_attribute __attrs[2] = {::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED};
   ::CUmemorytype __memory_type     = static_cast<::CUmemorytype>(0);
   int __is_managed                 = 0;
@@ -71,6 +79,10 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __device)
 {
+  if (__p == nullptr)
+  {
+    return false;
+  }
   ::CUpointer_attribute __attrs[4] = {
     ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
     ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
