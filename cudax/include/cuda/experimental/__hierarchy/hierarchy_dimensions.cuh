@@ -43,9 +43,9 @@ struct unknown_unit : public hierarchy_level
 namespace __detail
 {
 template <typename _Level>
-[[nodiscard]] _CCCL_API constexpr auto __as_level(_Level __l) noexcept -> _Level
+[[nodiscard]] _CCCL_API constexpr auto __as_level(_Level __lvl) noexcept -> _Level
 {
-  return __l;
+  return __lvl;
 }
 
 template <typename _LevelFn>
@@ -194,7 +194,7 @@ template <class _LUnit>
 // maybe_unused needed for MSVC
 template <class _LUnit, class _LDims, class... _Levels>
 [[nodiscard]] _CCCL_API constexpr auto
-__get_levels_range_end(const _LDims& __l, [[maybe_unused]] const _Levels&... __levels) noexcept
+__get_levels_range_end(const _LDims& __lvl, [[maybe_unused]] const _Levels&... __levels) noexcept
 {
   if constexpr (::cuda::std::is_same_v<_LUnit, __level_type_of<_LDims>>)
   {
@@ -202,7 +202,7 @@ __get_levels_range_end(const _LDims& __l, [[maybe_unused]] const _Levels&... __l
   }
   else
   {
-    return ::cuda::std::tuple_cat(::cuda::std::tie(__l), __get_levels_range_end<_LUnit>(__levels...));
+    return ::cuda::std::tuple_cat(::cuda::std::tie(__lvl), __get_levels_range_end<_LUnit>(__levels...));
   }
 }
 
