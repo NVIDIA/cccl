@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#define _CCCL_HAS_BACKEND_CUDA() 0
+#define _CCCL_HAS_BACKEND_CUDA() _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 #define _CCCL_HAS_BACKEND_OMP()  0
 #define _CCCL_HAS_BACKEND_TBB()  0
 
