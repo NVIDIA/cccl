@@ -170,7 +170,7 @@ struct agent_t
       _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == num_remaining, "");
     }
 
-    auto load2sh = [&] {
+    [[maybe_unused]] auto load2sh = [&] {
       if constexpr (keys_use_bl2sh || items_use_bl2sh)
       {
         return block_load_to_shared{storage.load2sh};
