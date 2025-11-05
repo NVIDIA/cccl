@@ -16,7 +16,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 template <typename T, size_t... Extents>
@@ -154,7 +153,6 @@ template <typename TyTrunc, typename Index, typename Dims>
 }
 } // namespace __detail
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 
