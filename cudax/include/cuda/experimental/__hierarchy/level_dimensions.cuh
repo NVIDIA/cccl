@@ -40,23 +40,23 @@ struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
 };
 */
 
-template <typename Dims>
-struct dimensions_handler
+template <class _Dims>
+struct __dimensions_handler
 {
-  static constexpr bool is_type_supported = ::cuda::std::is_integral_v<Dims>;
+  static constexpr bool __is_type_supported = ::cuda::std::is_integral_v<_Dims>;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __d) noexcept
   {
-    return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(d));
+    return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(__d));
   }
 };
 
 template <>
-struct dimensions_handler<dim3>
+struct __dimensions_handler<dim3>
 {
-  static constexpr bool is_type_supported = true;
+  static constexpr bool __is_type_supported = true;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const dim3& d) noexcept
   {
     return dimensions<dimensions_index_type,
                       ::cuda::std::dynamic_extent,
@@ -65,14 +65,14 @@ struct dimensions_handler<dim3>
   }
 };
 
-template <typename Dims, Dims Val>
-struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
+template <class _Dims, _Dims _Val>
+struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
 {
-  static constexpr bool is_type_supported = true;
+  static constexpr bool __is_type_supported = true;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __d) noexcept
   {
-    return dimensions<dimensions_index_type, size_t(d), 1, 1>();
+    return dimensions<dimensions_index_type, size_t(__d), 1, 1>();
   }
 };
 } // namespace __detail
@@ -110,20 +110,20 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
  * @tparam Dimensions
  *   Type holding the dimensions of this level
  */
-template <typename Level, typename Dimensions>
+template <class _Level, class _Dimensions>
 struct level_dimensions
 {
-  static_assert(::cuda::std::is_base_of_v<hierarchy_level, Level>);
-  using level_type = Level;
+  static_assert(::cuda::std::is_base_of_v<hierarchy_level, _Level>);
+  using level_type = _Level;
 
   // Needs alignas to work around an issue with tuple
-  alignas(16) Dimensions dims; // Unit for dimensions is implicit
+  alignas(16) _Dimensions dims; // Unit for dimensions is implicit
 
-  _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
-      : dims(d)
+  _CCCL_HOST_DEVICE constexpr level_dimensions(const _Dimensions& __d)
+      : dims(__d)
   {}
-  _CCCL_HOST_DEVICE constexpr level_dimensions(Dimensions&& d)
-      : dims(d)
+  _CCCL_HOST_DEVICE constexpr level_dimensions(_Dimensions&& __d)
+      : dims(__d)
   {}
   _CCCL_HOST_DEVICE constexpr level_dimensions()
       : dims(){};
@@ -132,15 +132,15 @@ struct level_dimensions
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const level_dimensions& left, const level_dimensions& right) noexcept
+  operator==(const level_dimensions& __left, const level_dimensions& __right) noexcept
   {
-    return left.dims == right.dims;
+    return __left.dims == __right.dims;
   }
 
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const level_dimensions& left, const level_dimensions& right) noexcept
+  operator!=(const level_dimensions& __left, const level_dimensions& __right) noexcept
   {
-    return left.dims != right.dims;
+    return __left.dims != __right.dims;
   }
 #  endif // _CCCL_NO_THREE_WAY_COMPARISON
 };
@@ -150,10 +150,10 @@ struct level_dimensions
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t X, size_t Y = 1, size_t Z = 1>
+template <size_t _X, size_t _Y = 1, size_t _Z = 1>
 _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 {
-  return level_dimensions<grid_level, dimensions<dimensions_index_type, X, Y, Z>>();
+  return level_dimensions<grid_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
 }
 
 /**
@@ -161,12 +161,12 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
  *
  * This function creates the level from an integral or dim3 argument.
  */
-template <typename T>
-_CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
+template <class _Tp>
+_CCCL_HOST_DEVICE constexpr auto grid_dims(_Tp __t) noexcept
 {
-  static_assert(__detail::dimensions_handler<T>::is_type_supported);
-  auto dims = __detail::dimensions_handler<T>::translate(t);
-  return level_dimensions<grid_level, decltype(dims)>(dims);
+  static_assert(__detail::__dimensions_handler<_Tp>::__is_type_supported);
+  auto __dims = __detail::__dimensions_handler<_Tp>::__translate(__t);
+  return level_dimensions<grid_level, decltype(__dims)>(__dims);
 }
 
 /**
@@ -174,10 +174,10 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t X, size_t Y = 1, size_t Z = 1>
+template <size_t _X, size_t _Y = 1, size_t _Z = 1>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 {
-  return level_dimensions<cluster_level, dimensions<dimensions_index_type, X, Y, Z>>();
+  return level_dimensions<cluster_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
 }
 
 /**
@@ -185,12 +185,12 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
  *
  * This function creates the level from an integral or dim3 argument.
  */
-template <typename T>
-_CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
+template <class _Tp>
+_CCCL_HOST_DEVICE constexpr auto cluster_dims(_Tp __t) noexcept
 {
-  static_assert(__detail::dimensions_handler<T>::is_type_supported);
-  auto dims = __detail::dimensions_handler<T>::translate(t);
-  return level_dimensions<cluster_level, decltype(dims)>(dims);
+  static_assert(__detail::__dimensions_handler<_Tp>::__is_type_supported);
+  auto __dims = __detail::__dimensions_handler<_Tp>::__translate(__t);
+  return level_dimensions<cluster_level, decltype(__dims)>(__dims);
 }
 
 /**
@@ -198,10 +198,10 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
  *
  * This function creates a statically sized level from up to three template arguments.
  */
-template <size_t X, size_t Y = 1, size_t Z = 1>
+template <size_t _X, size_t _Y = 1, size_t _Z = 1>
 _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 {
-  return level_dimensions<block_level, dimensions<dimensions_index_type, X, Y, Z>>();
+  return level_dimensions<block_level, dimensions<dimensions_index_type, _X, _Y, _Z>>();
 }
 
 /**
@@ -209,12 +209,12 @@ _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
  *
  * This function creates the level from an integral or dim3 argument.
  */
-template <typename T>
-_CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
+template <class _Tp>
+_CCCL_HOST_DEVICE constexpr auto block_dims(_Tp __t) noexcept
 {
-  static_assert(__detail::dimensions_handler<T>::is_type_supported);
-  auto dims = __detail::dimensions_handler<T>::translate(t);
-  return level_dimensions<block_level, decltype(dims)>(dims);
+  static_assert(__detail::__dimensions_handler<_Tp>::__is_type_supported);
+  auto __dims = __detail::__dimensions_handler<_Tp>::__translate(__t);
+  return level_dimensions<block_level, decltype(__dims)>(__dims);
 }
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
