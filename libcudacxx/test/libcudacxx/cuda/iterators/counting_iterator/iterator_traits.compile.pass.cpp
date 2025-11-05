@@ -142,6 +142,12 @@ _CCCL_CONCEPT HasIteratorCategory =
 template <template <class...> class Traits>
 __host__ __device__ void test()
 {
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
+
   {
     using Iter       = cuda::counting_iterator<char>;
     using IterTraits = Traits<Iter>;
@@ -189,7 +195,7 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long long>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, widest_integer>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
@@ -202,7 +208,7 @@ __host__ __device__ void test()
     // https://eel.is/c++draft/range.iota.view#1.3
     static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long long>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, widest_integer>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
