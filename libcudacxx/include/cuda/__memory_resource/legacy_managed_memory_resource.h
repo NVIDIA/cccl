@@ -21,20 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/__stream/internal_streams.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__exception/throw_error.h>
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    include <cuda_runtime_api.h>
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/internal_streams.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
+
+#  include <stdexcept>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
@@ -73,9 +78,8 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "legacy_managed_memory_resource::allocate_sync.");
+      _CCCL_THROW(::std::invalid_argument("Invalid alignment passed to "
+                                          "legacy_managed_memory_resource::allocate_sync."));
     }
 
     ::cuda::__ensure_current_context __guard(__device_);
@@ -107,7 +111,7 @@ public:
   {
     return __flags_ == __other.__flags_;
   }
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with different flags.
@@ -115,7 +119,7 @@ public:
   {
     return __flags_ != __other.__flags_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
   _CCCL_HOST_API friend constexpr void
@@ -143,6 +147,8 @@ static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resour
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif //_CUDA___MEMORY_RESOURCE_LEGACY_MANAGED_MEMORY_RESOURCE_H

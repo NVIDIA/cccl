@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
@@ -55,7 +56,7 @@ template <size_t _Ip, class _Vp>
   using __variant_detail::__access::__variant;
   if (!::cuda::std::__holds_alternative<_Ip>(__v))
   {
-    ::cuda::std::__throw_bad_variant_access();
+    _CCCL_THROW(bad_variant_access());
   }
   return __variant::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v)).__value;
 }

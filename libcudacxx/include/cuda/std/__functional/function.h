@@ -57,15 +57,6 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-[[noreturn]] _CCCL_API inline void __throw_bad_function_call()
-{
-#  if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (::cuda::std::terminate();))
-#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  ::cuda::std::terminate();
-#  endif // !_CCCL_HAS_EXCEPTIONS()
-}
-
 template <class _Fp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
@@ -509,7 +500,7 @@ public:
   {
     if (__f_ == nullptr)
     {
-      __throw_bad_function_call();
+      _CCCL_THROW(::std::bad_function_call());
     }
     return (*__f_)(::cuda::std::forward<_ArgTypes>(__args)...);
   }
@@ -718,7 +709,7 @@ private:
 
   static _Rp __call_empty(const __policy_storage*, __fast_forward<_ArgTypes>...)
   {
-    __throw_bad_function_call();
+    _CCCL_THROW(::std::bad_function_call());
   }
 
   template <typename _Fun>

@@ -21,18 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/__memory_resource/memory_resource_base.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__exception/throw_error.h>
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
+
+#  include <stdexcept>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
@@ -64,9 +69,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "legacy_pinned_memory_resource::allocate_sync.");
+      _CCCL_THROW(::std::invalid_argument("Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync."));
     }
 
     ::cuda::__ensure_current_context __guard(__device_);
@@ -97,7 +100,7 @@ public:
   {
     return true;
   }
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
@@ -105,7 +108,7 @@ public:
   {
     return false;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
   _CCCL_HOST_API friend constexpr void
@@ -134,6 +137,8 @@ static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resourc
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif //_CUDA___MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H
