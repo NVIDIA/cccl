@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-template <typename MaxPolicyT,
+template <typename ArchPolicies,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -50,9 +50,12 @@ template <typename MaxPolicyT,
           typename TransformOpT>
 struct DeviceReduceKernelSource
 {
+  // ArchPolicies must be stateless, so we can pass the type to the kernel
+  static_assert(::cuda::std::is_empty_v<ArchPolicies>);
+
   CUB_DEFINE_KERNEL_GETTER(
     SingleTileKernel,
-    DeviceReduceSingleTileKernel<MaxPolicyT,
+    DeviceReduceSingleTileKernel<ArchPolicies,
                                  InputIteratorT,
                                  OutputIteratorT,
                                  OffsetT,
@@ -61,12 +64,12 @@ struct DeviceReduceKernelSource
                                  AccumT,
                                  TransformOpT>)
 
-  CUB_DEFINE_KERNEL_GETTER(ReductionKernel,
-                           DeviceReduceKernel<MaxPolicyT, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>)
+  CUB_DEFINE_KERNEL_GETTER(
+    ReductionKernel, DeviceReduceKernel<ArchPolicies, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     SingleTileSecondKernel,
-    DeviceReduceSingleTileKernel<MaxPolicyT,
+    DeviceReduceSingleTileKernel<ArchPolicies,
                                  AccumT*,
                                  OutputIteratorT,
                                  int, // Always used with int offsets
@@ -560,7 +563,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce =
+using DispatchTransformReduce [[deprecated]] =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
@@ -571,5 +574,207 @@ using DispatchTransformReduce =
                  PolicyHub,
                  KernelSource,
                  KernelLauncherFactory>;
+
+namespace detail::reduce
+{
+struct no_override
+{};
+
+template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
+_CCCL_API auto select_accum_t(const no_override&)
+  -> ::cuda::std::__accumulator_t<ReductionOpT,
+                                  ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
+                                  InitT>;
+
+template <typename InputIteratorT,
+          typename InitT,
+          typename ReductionOpT,
+          typename TransformOpT,
+          typename OverrideAccumT,
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, no_override>, int> = 0>
+_CCCL_API auto select_accum_t(const OverrideAccumT&) -> OverrideAccumT;
+
+template <
+  typename OverrideAccumT = no_override,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename InitT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+  typename TransformOpT = ::cuda::std::identity,
+  typename AccumT =
+    decltype(select_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(::cuda::std::declval<OverrideAccumT>())),
+  typename ArchPolicies = typed_arch_policies<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource =
+    DeviceReduceKernelSource<ArchPolicies, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitT init,
+  cudaStream_t stream,
+  TransformOpT transform_op              = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {},
+  ArchPolicies arch_policies             = {})
+{
+  // from Dispatch()
+  int ptx_version = 0;
+  if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
+  {
+    return error;
+  }
+
+  const arch_policy active_policy = arch_policies(ptx_version);
+
+  auto invoke_single_tile = [&] {
+    // Return if the caller is simply requesting the size of the storage allocation
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    // Log single_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+            "%d items per thread\n",
+            active_policy.single_tile_policy.block_threads(long long) stream,
+            active_policy.single_tile_policy.items_per_thread);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke single_reduce_sweep_kernel
+    launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
+      .doit(kernel_source.SingleTileKernel(), d_in, d_out, num_items, reduction_op, init, transform_op);
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+      return error;
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      return error;
+
+    return cudaSuccess;
+  };
+
+  auto invoke_passes = [&] {
+    // Get SM count
+    int sm_count;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
+
+    // Init regular kernel configuration
+    KernelConfig reduce_config;
+    if (const auto error =
+          CubDebug(reduce_config.Init(kernel_source.ReductionKernel(), active_policy.reduce_policy, launcher_factory)))
+    {
+      return error;
+    }
+
+    const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+
+    // Even-share work distribution
+    const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+    GridEvenShare<OffsetT> even_share;
+    even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
+
+    // Temporary storage allocation requirements
+    void* allocations[1]       = {};
+    size_t allocation_sizes[1] = {
+      max_blocks * kernel_source.AccumSize() // bytes needed for privatized block reductions
+    };
+
+    // Alias the temporary allocations from the single storage blob (or
+    // compute the necessary size of the blob)
+    if (const auto error =
+          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+
+    if (d_temp_storage == nullptr)
+    {
+      // Return if the caller is simply requesting the size of the storage allocation
+      return cudaSuccess;
+    }
+
+    // Alias the allocation for the privatized per-block reductions
+    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+
+    // Get grid size for device_reduce_sweep_kernel
+    const int reduce_grid_size = even_share.grid_size;
+
+// Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+            "per thread, %d SM occupancy\n",
+            (unsigned long) reduce_grid_size,
+            active_policy.Reduce().BlockThreads(),
+            (long long) stream,
+            active_policy.Reduce().ItemsPerThread(),
+            reduce_config.sm_occupancy);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke DeviceReduceKernel
+    launcher_factory(reduce_grid_size, active_policy.reduce_policy.block_threads, 0, stream)
+      .doit(
+        kernel_source.ReductionKernel(), d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+      return error;
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      return error;
+
+// Log single_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+            "%d items per thread\n",
+            active_policy.single_tile_policy.block_threads(long long) stream,
+            active_policy.single_tile_policy.items_per_thread);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke DeviceReduceSingleTileKernel
+    launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
+      .doit(kernel_source.SingleTileSecondKernel(),
+            d_block_reductions,
+            d_out,
+            reduce_grid_size,
+            reduction_op,
+            init,
+            ::cuda::std::identity{});
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+      return error;
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      return error;
+
+    return cudaSuccess;
+  };
+
+  // from Invoke()
+  if (num_items <= static_cast<OffsetT>(
+        active_policy.single_tile_policy.block_threads * active_policy.single_tile_policy.items_per_thread))
+  {
+    // Small, single tile size
+    return invoke_single_tile();
+  }
+
+  // Regular size
+  return invoke_passes();
+}
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END
