@@ -24,25 +24,33 @@ int host_ptr1[] = {1, 2, 3, 4};
 
 template <typename Pointer>
 void test_accessible_pointer(
-  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible, cuda::device_ref device)
+  Pointer ptr,
+  bool is_host_accessible,
+  bool is_device_accessible,
+  bool is_managed_accessible,
+  cuda::device_ref device,
+  bool skip_plus_one = false)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
   assert(cuda::is_managed(ptr) == is_managed_accessible);
-  if constexpr (!cuda::std::is_same_v<Pointer, void*> && !cuda::std::is_same_v<Pointer, const void*>)
+  if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
   {
-    assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
-    assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
-    assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
+    if (!skip_plus_one)
+    {
+      assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
+      assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
+      assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
+    }
   }
 }
 
 bool test_basic()
 {
   cuda::device_ref dev{0};
-  int host_ptr2[] = {1, 2, 3, 4};
-  auto host_ptr3  = new int[2];
-  int* host_ptr4  = nullptr;
+  [[maybe_unused]] int host_ptr2[] = {1, 2, 3, 4};
+  [[maybe_unused]] auto host_ptr3  = new int[2];
+  [[maybe_unused]] int* host_ptr4  = nullptr;
   assert(cudaMallocHost(&host_ptr4, sizeof(int) * 2) == cudaSuccess);
 
   int* host_ptr5 = nullptr;
@@ -59,27 +67,27 @@ bool test_basic()
   int* managed_ptr2 = nullptr;
   assert(cudaMallocManaged(&managed_ptr2, sizeof(int) * 2) == cudaSuccess);
 
-  test_accessible_pointer((void*) nullptr, true, true, true, dev);
+  test_accessible_pointer((void*) nullptr, false, false, false, dev);
 
-  test_accessible_pointer(host_ptr1, true, true, true, dev); // memory space cannot be verified for global array
-  test_accessible_pointer(host_ptr2, true, true, true, dev); // memory space cannot be verified for local array
-  test_accessible_pointer(host_ptr3, true, true, true, dev); // memory space cannot be verified for non-cuda malloc
-  test_accessible_pointer(host_ptr4, true, false, false, dev);
-  test_accessible_pointer(host_ptr5, true, false, false, dev);
+  test_accessible_pointer(host_ptr1, true, false, false, dev); // global host array
+  test_accessible_pointer(host_ptr2, true, false, false, dev); // local host array
+  test_accessible_pointer(host_ptr3, true, false, false, dev); // non-cuda malloc host memory
+  test_accessible_pointer(host_ptr4, true, false, false, dev); // stack-allocated host memory
+  test_accessible_pointer(host_ptr5, true, false, false, dev); // pinned host memory
 
-  test_accessible_pointer(device_ptr1, true, true, true, dev); // memory space cannot be verified for global device
-  test_accessible_pointer(device_ptr2, false, true, false, dev);
-  test_accessible_pointer(device_ptr3, false, true, false, dev);
+  test_accessible_pointer(device_ptr1, false, true, false, dev, true); // global device array pointer with offset
+  test_accessible_pointer(device_ptr2, false, true, false, dev); // cudaMalloc device pointer
+  test_accessible_pointer(device_ptr3, false, true, false, dev); // cudaMallocAsync device pointer
 
   void* device_ptr4 = nullptr;
   assert(cudaGetSymbolAddress(&device_ptr4, device_ptr1) == cudaSuccess);
-  test_accessible_pointer(device_ptr4, false, true, false, dev);
+  test_accessible_pointer(device_ptr4, false, true, false, dev); // cudaGetSymbolAddress device pointer
 
   const int* const_device_ptr2 = device_ptr2;
-  test_accessible_pointer(const_device_ptr2, false, true, false, dev);
+  test_accessible_pointer(const_device_ptr2, false, true, false, dev); // const device pointer
 
-  test_accessible_pointer(managed_ptr1, true, true, true, dev);
-  test_accessible_pointer(managed_ptr2, true, true, true, dev);
+  test_accessible_pointer(managed_ptr1, true, true, true, dev); // global managed memory
+  test_accessible_pointer(managed_ptr2, true, true, true, dev); // allocated managed memory
   return true;
 }
 

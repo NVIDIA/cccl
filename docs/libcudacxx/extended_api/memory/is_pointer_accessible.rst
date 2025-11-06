@@ -51,17 +51,11 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 **Return value**
 
-- ``true`` if the queried property (host access, device access, or managed allocation) can be verified or the memory space cannot be proven, ``false`` otherwise.
+- ``true`` if the queried property (host access, device access, or managed allocation) can be verified, ``false`` otherwise.
 
 .. note::
 
-  The following cases are handled conservatively because the memory space cannot be proven:
-
-  - ``NULL`` pointer.
-  - Stack-allocated host memory.
-  - ``new`` or ``malloc()``-allocated host memory (not pinned).
-  - Global host array or variable.
-  - Global ``__device__`` array or variable without retrieving the address with ``cudaGetSymbolAddress()``.
+  The functions cannot correctly determine the accessibility of a ``__device__`` global array pointer with an offset, for example ``ptr + 1``.
 
 **Prerequisites**
 
