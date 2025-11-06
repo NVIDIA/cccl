@@ -220,7 +220,7 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U));
+  static constexpr int MAX_INPUT_BYTES             = int{::cuda::std::max(sizeof(T), sizeof(U))};
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
   static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
@@ -235,7 +235,7 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U));
+  static constexpr int MAX_INPUT_BYTES             = int{::cuda::std::max(sizeof(T), sizeof(U))};
   static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
   static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
