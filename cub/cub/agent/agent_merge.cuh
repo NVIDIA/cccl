@@ -200,10 +200,10 @@ struct agent_t
                    "Keys buffer needs to be appropriately sized (internal)");
       keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
       keys2_shared = data(load2sh.CopyAsync(keys2_buffer, keys2_src));
-      load2sh.Commit();
+      auto token   = load2sh.Commit();
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = static_cast<int>(keys2_shared - keys1_shared);
-      load2sh.Wait();
+      load2sh.Wait(token);
     }
     else
     {
@@ -301,10 +301,10 @@ struct agent_t
         __syncthreads();
         items1_shared            = data(load2sh.CopyAsync(items1_buffer, items1_src));
         item_type* items2_shared = data(load2sh.CopyAsync(items2_buffer, items2_src));
-        load2sh.Commit();
-        const int items2_offset = static_cast<int>(items2_shared - items1_shared);
+        auto token               = load2sh.Commit();
+        const int items2_offset  = static_cast<int>(items2_shared - items1_shared);
         translate_indices(items2_offset);
-        load2sh.Wait();
+        load2sh.Wait(token);
       }
       else
       {
