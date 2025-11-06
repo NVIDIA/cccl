@@ -191,6 +191,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return islessequal(__x, __y);
 #    else
   return ::islessequal(__x, __y);
+#    endif // !_CCCL_BUILTIN_ISLESSEQUAL
 #  endif // !_CCCL_BUILTIN_ISLESSEQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
