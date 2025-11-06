@@ -299,7 +299,7 @@ private:
   using __stream_ref = stream_ref;
 
   __resource __mr_;
-  __stream_ref __stream_                    = ::cuda::__detail::__invalid_stream;
+  __stream_ref __stream_                    = ::cuda::__invalid_stream();
   execution::any_execution_policy __policy_ = {};
 
 public:
@@ -308,7 +308,7 @@ public:
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
-                            __stream_ref __stream                    = ::cuda::__detail::__invalid_stream,
+                            __stream_ref __stream                    = ::cuda::__invalid_stream(),
                             execution::any_execution_policy __policy = {}) noexcept
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)

@@ -23,6 +23,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -135,7 +136,7 @@ class BlockExchange
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise
   // we can typically use 128b loads)
-  static constexpr bool INSERT_PADDING = ItemsPerThread > 4 && PowerOfTwo<ItemsPerThread>::VALUE;
+  static constexpr bool INSERT_PADDING = ItemsPerThread > 4 && ::cuda::is_power_of_two(ItemsPerThread);
   static constexpr int PADDING_ITEMS   = INSERT_PADDING ? (TIME_SLICED_ITEMS >> LOG_SMEM_BANKS) : 0;
 
   /// Shared memory storage layout type

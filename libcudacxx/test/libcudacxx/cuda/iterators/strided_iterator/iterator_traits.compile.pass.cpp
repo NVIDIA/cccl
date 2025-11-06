@@ -31,6 +31,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::iter_difference_t<int*>>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, cuda::std::iter_reference_t<int*>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
@@ -42,6 +43,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::iter_difference_t<int*>>);
+    static_assert(cuda::std::same_as<typename IterTraits::reference, cuda::std::iter_reference_t<int*>>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }

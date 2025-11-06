@@ -134,9 +134,10 @@ struct Log2<N, 0, COUNT>
 
 /**
  * \brief Statically determine if N is a power-of-two
+ * deprecated [since 3.2]
  */
 template <int N>
-struct PowerOfTwo
+struct [[deprecated("Use cuda::is_power_of_two(N) instead")]] PowerOfTwo
 {
   enum
   {

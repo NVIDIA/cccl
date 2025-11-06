@@ -24,6 +24,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -79,7 +80,7 @@ struct reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> : ::cu
 template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpReduceShfl
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
   //---------------------------------------------------------------------
   // Constants and type definitions
@@ -427,12 +428,12 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(_T input, ReductionOp reduction_op, int last_lane, int offset)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(_Tp input, ReductionOp reduction_op, int last_lane, int offset)
   {
-    _T output = input;
+    _Tp output = input;
 
-    _T temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
+    _Tp temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)
@@ -461,9 +462,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }
@@ -487,9 +488,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }

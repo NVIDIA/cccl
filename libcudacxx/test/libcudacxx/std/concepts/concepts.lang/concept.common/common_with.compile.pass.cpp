@@ -356,9 +356,7 @@ struct T2
 {};
 static_assert(!cuda::std::convertible_to<CommonTypeImplicitlyConstructibleFromInt, T2>, "");
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T2, int>
@@ -371,8 +369,7 @@ struct common_type<int, T2>
 {
   using type = CommonTypeImplicitlyConstructibleFromInt;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(HasValidCommonType<T2, int>(), "");
 static_assert(!CheckCommonWith<T2, int>(), "");
 
@@ -386,9 +383,7 @@ struct T3
 {};
 static_assert(!cuda::std::convertible_to<CommonTypeExplicitlyConstructibleFromInt, T2>, "");
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T3, int>
@@ -401,8 +396,7 @@ struct common_type<int, T3>
 {
   using type = CommonTypeExplicitlyConstructibleFromInt;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(HasValidCommonType<T3, int>(), "");
 static_assert(!CheckCommonWith<T3, int>(), "");
 
@@ -414,9 +408,7 @@ struct CommonTypeImplicitlyConstructibleFromT4
 };
 static_assert(requires(T4 t4) { static_cast<CommonTypeImplicitlyConstructibleFromT4>(t4); });
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T4, int>
@@ -429,8 +421,7 @@ struct common_type<int, T4>
 {
   using type = CommonTypeImplicitlyConstructibleFromT4;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(HasValidCommonType<T4, int>(), "");
 static_assert(!CheckCommonWith<T4, int>(), "");
 
@@ -442,9 +433,7 @@ struct CommonTypeExplicitlyConstructibleFromT5
 };
 static_assert(requires(T5 t5) { static_cast<CommonTypeExplicitlyConstructibleFromT5>(t5); });
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_type<T5, int>
@@ -457,8 +446,7 @@ struct common_type<int, T5>
 {
   using type = CommonTypeExplicitlyConstructibleFromT5;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(HasValidCommonType<T5, int>(), "");
 static_assert(!CheckCommonWith<T5, int>(), "");
 #endif // TEST_STD_VER > 2017

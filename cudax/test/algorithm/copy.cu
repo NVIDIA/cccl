@@ -20,7 +20,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
     std::vector<int> host_vector(buffer_size);
 
     {
-      cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> buffer(device_resource, _stream, buffer_size);
+      cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible> buffer(device_resource, _stream, buffer_size);
       cuda::fill_bytes(_stream, buffer, fill_byte);
 
       cuda::copy_bytes(_stream, buffer, host_vector);
@@ -30,7 +30,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
       check_result_and_erase(_stream, host_vector);
     }
     {
-      cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> not_yet_const_buffer(
+      cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible> not_yet_const_buffer(
         device_resource, _stream, buffer_size);
       cuda::fill_bytes(_stream, not_yet_const_buffer, fill_byte);
 

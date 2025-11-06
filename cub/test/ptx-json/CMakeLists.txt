@@ -58,7 +58,7 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     add_library(${target_name} OBJECT
       "${source}"
     )
-
+    cccl_configure_target(${target_name} DIALECT ${dialect})
     cub_clone_target_properties(${target_name} ${cub_target})
     target_link_libraries(${target_name}
       PRIVATE ${cub_target}

@@ -212,7 +212,7 @@ CUresult cccl_device_histogram_build_ex(
     constexpr std::string_view src_template = R"XXX(
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
-#include <cub/device/dispatch/kernels/histogram.cuh>
+#include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 
 struct __align__({1}) storage_t {{
   char data[{0}];

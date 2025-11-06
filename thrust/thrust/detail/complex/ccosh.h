@@ -54,9 +54,7 @@
 #include <thrust/detail/complex/math_private.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-namespace complex
+namespace detail::complex
 {
 /*
  * Hyperbolic cosine of a complex argument z = x + i y.
@@ -196,8 +194,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<doub
   /* ccos(z) = ccosh(I * z) */
   return (ccosh(thrust::complex<double>(-z.imag(), z.real())));
 }
-} // namespace complex
-} // namespace detail
+} // namespace detail::complex
 
 template <typename ValueType>
 _CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)

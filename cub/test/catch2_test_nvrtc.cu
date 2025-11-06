@@ -51,16 +51,16 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/block/block_shuffle.cuh>
     #include <cub/block/block_store.cuh>
     #include <cub/block/radix_rank_sort_operations.cuh>
-    #include <cub/device/dispatch/kernels/reduce.cuh>
-    #include <cub/device/dispatch/kernels/for_each.cuh>
-    #include <cub/device/dispatch/kernels/scan.cuh>
-    #include <cub/device/dispatch/kernels/merge_sort.cuh>
-    #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
-    #include <cub/device/dispatch/kernels/radix_sort.cuh>
-    #include <cub/device/dispatch/kernels/unique_by_key.cuh>
-    #include <cub/device/dispatch/kernels/transform.cuh>
-    #include <cub/device/dispatch/kernels/histogram.cuh>
-    #include <cub/device/dispatch/kernels/segmented_sort.cuh>
+    #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
+    #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
+    #include <cub/device/dispatch/kernels/kernel_scan.cuh>
+    #include <cub/device/dispatch/kernels/kernel_merge_sort.cuh>
+    #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
+    #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
+    #include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
+    #include <cub/device/dispatch/kernels/kernel_transform.cuh>
+    #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
+    #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
     #include <cub/iterator/arg_index_input_iterator.cuh>
     #include <cub/iterator/cache_modified_input_iterator.cuh>
     #include <cub/iterator/cache_modified_output_iterator.cuh>

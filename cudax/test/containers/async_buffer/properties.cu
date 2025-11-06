@@ -29,10 +29,10 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::async_buffer properties", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::buffer properties", "[container][buffer]", test_types)
 {
   using TestT                  = c2h::get<0, TestType>;
-  using Buffer                 = typename extract_properties<TestT>::async_buffer;
+  using Buffer                 = typename extract_properties<TestT>::buffer;
   using iterator               = typename extract_properties<TestT>::iterator;
   using const_iterator         = typename extract_properties<TestT>::const_iterator;
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
