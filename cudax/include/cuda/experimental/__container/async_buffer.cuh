@@ -558,7 +558,7 @@ template <class _Tp>
 using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
 
 template <class _Tp>
-using async_host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
+using host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
 
 template <class _Tp, class _PropsList>
 using __buffer_type_for_props = typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<buffer, _Tp>;

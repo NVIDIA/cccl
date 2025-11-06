@@ -27,7 +27,7 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform cudax::device_buffer", "[device][device_transform]")
 {
   using type          = int;
   const int num_items = 1 << 24;
@@ -35,12 +35,12 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   cudax::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
-  cudax::async_device_buffer<type> a{stream, resource, num_items, cudax::no_init};
-  cudax::async_device_buffer<type> b{stream, resource, num_items, cudax::no_init};
+  cudax::device_buffer<type> a{stream, resource, num_items, cudax::no_init};
+  cudax::device_buffer<type> b{stream, resource, num_items, cudax::no_init};
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
 
-  cudax::async_device_buffer<type> result{stream, resource, num_items, cudax::no_init};
+  cudax::device_buffer<type> result{stream, resource, num_items, cudax::no_init};
 
   cub::DeviceTransform::Transform(
     ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
@@ -84,8 +84,8 @@ C2H_CCCLRT_TEST("cudax::buffer launch transform", "[container][buffer]")
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-  cudax::async_device_buffer<int> a       = cudax::make_buffer<int>(stream, resource, array);
-  const cudax::async_device_buffer<int> b = cudax::make_buffer(stream, resource, a.size(), 1);
+  cudax::device_buffer<int> a       = cudax::make_buffer<int>(stream, resource, array);
+  const cudax::device_buffer<int> b = cudax::make_buffer(stream, resource, a.size(), 1);
 
   cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
 
