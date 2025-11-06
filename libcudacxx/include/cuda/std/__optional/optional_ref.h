@@ -240,7 +240,7 @@ public:
     return __value_ != nullptr;
   }
 
-  _CCCL_API constexpr _Tp& value() const noexcept
+  _CCCL_API constexpr _Tp& value() const
   {
     if (__value_ != nullptr)
     {
