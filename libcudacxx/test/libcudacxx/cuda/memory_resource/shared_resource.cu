@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/memory_resource>
-#include <cuda/__memory_resource/shared_resource.cuh>
 #include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/__memory_resource/shared_resource.h>
+#include <cuda/memory_resource>
 #include <cuda/stream>
 
 #include <testing.cuh>
@@ -138,9 +138,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       bytes(42 * sizeof(int));
       cuda::stream stream{cuda::device_ref{0}};
       cuda::__uninitialized_async_buffer<int, ::cuda::mr::host_accessible> buffer{
-        cuda::mr::shared_resource<TestResource>(cuda::std::in_place_type<TestResource>, 42, this),
-        stream,
-        42};
+        cuda::mr::shared_resource<TestResource>(cuda::std::in_place_type<TestResource>, 42, this), stream, 42};
       ++expected.object_count;
       ++expected.allocate_async_count;
       CHECK(this->counts == expected);
