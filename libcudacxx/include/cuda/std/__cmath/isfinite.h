@@ -62,11 +62,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-#  if defined(isfinite)
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::isfinite(__x);), (return isfinite(__x);));
-#  else
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::isfinite(__x);), (return ::isfinite(__x);));
-#  endif
+    return ::cuda::std::__isfinite_impl(__x);
   }
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
