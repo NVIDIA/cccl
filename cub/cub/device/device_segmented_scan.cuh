@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
 //! cub::DeviceSegmentedScan provides device-wide, parallel operations for computing a batched prefix
@@ -179,22 +179,20 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    using ScanOpT = ::cuda::std::plus<>;
-    ScanOpT scan_op{};
+    using scan_op_t = ::cuda::std::plus<>;
+    scan_op_t scan_op{};
 
-    using InitValueT = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
+    init_value_t init_value{};
 
-    // Initial value
-    InitValueT init_value{};
-
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
-      ScanOpT,
-      detail::InputValue<InitValueT>>::
+      scan_op_t,
+      detail::InputValue<init_value_t>>::
       Dispatch(
         d_temp_storage,
         temp_storage_bytes,
@@ -205,7 +203,7 @@ struct DeviceSegmentedScan
         d_in_end_offsets,
         d_in_begin_offsets,
         scan_op,
-        detail::InputValue<InitValueT>(init_value),
+        detail::InputValue<init_value_t>(init_value),
         stream);
   }
 
@@ -316,22 +314,20 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    using ScanOpT = ::cuda::std::plus<>;
-    ScanOpT scan_op{};
+    using scan_op_t = ::cuda::std::plus<>;
+    scan_op_t scan_op{};
 
-    using InitValueT = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
+    init_value_t init_value{};
 
-    // Initial value
-    InitValueT init_value{};
-
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
-      ScanOpT,
-      detail::InputValue<InitValueT>>::
+      scan_op_t,
+      detail::InputValue<init_value_t>>::
       Dispatch(
         d_temp_storage,
         temp_storage_bytes,
@@ -342,7 +338,7 @@ struct DeviceSegmentedScan
         d_in_end_offsets,
         d_out_begin_offsets,
         scan_op,
-        detail::InputValue<InitValueT>(init_value),
+        detail::InputValue<init_value_t>(init_value),
         stream);
   }
 
@@ -459,7 +455,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -596,7 +592,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -707,7 +703,6 @@ struct DeviceSegmentedScan
     ::cuda::std::int64_t num_segments,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
     using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
@@ -718,7 +713,7 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -840,7 +835,6 @@ struct DeviceSegmentedScan
     ::cuda::std::int64_t num_segments,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
     using offset_t =
@@ -852,7 +846,7 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -956,7 +950,6 @@ struct DeviceSegmentedScan
     ScanOpT scan_op,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
     using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
@@ -964,7 +957,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1093,7 +1086,6 @@ struct DeviceSegmentedScan
     ScanOpT scan_op,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
     using offset_t =
@@ -1102,7 +1094,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1229,7 +1221,6 @@ struct DeviceSegmentedScan
     InitValueT init_value,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
     using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
@@ -1240,7 +1231,7 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1370,7 +1361,6 @@ struct DeviceSegmentedScan
     InitValueT init_value,
     cudaStream_t stream = 0)
   {
-    // defined in cub/config.cuh
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
     using offset_t =
@@ -1382,7 +1372,7 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::DispatchSegmentedScan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,

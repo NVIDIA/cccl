@@ -73,7 +73,6 @@ struct DeviceSegmentedScanKernelSource
     return sizeof(AccumT);
   }
 };
-} // namespace detail::segmented_scan
 
 template <
   typename InputIteratorT,
@@ -128,10 +127,13 @@ struct DispatchSegmentedScan
   /// The number of segments that comprise the segmented scan data
   ::cuda::std::int64_t num_segments;
 
+  /// Offsets to beginning of each segment in the input sequence
   BeginOffsetIteratorInputT d_input_begin_offsets;
 
+  /// Offsets to end of each segment in the input sequence
   EndOffsetIteratorInputT d_input_end_offsets;
 
+  /// Offsets to beginning of each segment in the output sequence
   BeginOffsetIteratorOutputT d_output_begin_offsets;
 
   /// Binary scan functor
@@ -149,38 +151,6 @@ struct DispatchSegmentedScan
 
   KernelLauncherFactory launcher_factory;
 
-  // Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorInputT d_in_begin_offsets,
-    EndOffsetIteratorInputT d_in_end_offsets,
-    BeginOffsetIteratorOutputT d_out_begin_offsets,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    cudaStream_t stream,
-    int ptx_version,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {})
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_segments(num_segments)
-      , d_input_begin_offsets(d_in_begin_offsets)
-      , d_input_end_offsets(d_in_end_offsets)
-      , d_output_begin_offsets(d_out_begin_offsets)
-      , scan_op(scan_op)
-      , init_value(init_value)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , kernel_source(kernel_source)
-      , launcher_factory(launcher_factory)
-  {}
-
   template <typename ActivePolicyT, typename SegmentedScanKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   InvokePasses(SegmentedScanKernelT segmented_scan_kernel, ActivePolicyT policy = {})
@@ -189,63 +159,55 @@ struct DispatchSegmentedScan
     // performance.
     policy.CheckLoadModifier();
 
-    cudaError error = cudaSuccess;
-    do
+    if (d_temp_storage == nullptr)
     {
-      // Return if the caller is simply requesting the size of the storage
-      // allocation
-      if (d_temp_storage == nullptr)
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    const auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+    const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+      launcher_factory(
+        static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedScan().BlockThreads(), 0, stream)
+        .doit(segmented_scan_kernel,
+              d_in,
+              d_out,
+              d_input_begin_offsets,
+              d_input_end_offsets,
+              d_output_begin_offsets,
+              static_cast<OffsetT>(num_current_segments),
+              scan_op,
+              init_value);
+
+      cudaError_t error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
-        temp_storage_bytes = 1;
-        return cudaSuccess;
+        return error;
       }
 
-      const auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-      const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
-      const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
-
-      for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+      if (invocation_index + 1 < num_invocations)
       {
-        const auto current_seg_offset = invocation_index * num_segments_per_invocation;
-        const auto num_current_segments =
-          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
-
-        // Invoke DeviceSegmentedScanKernel
-        launcher_factory(
-          static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedScan().BlockThreads(), 0, stream)
-          .doit(segmented_scan_kernel,
-                d_in,
-                d_out,
-                d_input_begin_offsets,
-                d_input_end_offsets,
-                d_output_begin_offsets,
-                static_cast<OffsetT>(num_current_segments),
-                scan_op,
-                init_value);
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        if (invocation_index + 1 < num_invocations)
-        {
-          d_input_begin_offsets += num_current_segments;
-          d_input_end_offsets += num_current_segments;
-          d_output_begin_offsets += num_current_segments;
-        }
-
-        // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
+        d_input_begin_offsets += num_current_segments;
+        d_input_end_offsets += num_current_segments;
+        d_output_begin_offsets += num_current_segments;
       }
-    } while (0);
-    return error;
+
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
   }
 
   /// Invocation
@@ -257,57 +219,6 @@ struct DispatchSegmentedScan
     return InvokePasses(kernel_source.SegmentedScanKernel(), wrapped_policy);
   }
 
-  //!
-  //! @brief Internal dispatch routine
-  //!
-  //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no
-  //!   work is done.
-  //!
-  //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
-  //!
-  //! @param[in] d_in
-  //!   Iterator to the input sequence of data items
-  //!
-  //! @param[out] d_out
-  //!   Iterator to the output sequence of data items
-  //!
-  //! @param[in] num_segments
-  //!   Total number of segments that comprise the input data
-  //!
-  //! @param[in] input_begin_offsets
-  //!   Random-access iterator to the offsets for beginnings of segments in
-  //!   the input sequence
-  //!
-  //! @param[in] input_end_offsets
-  //!   Random-access iterator to the offsets for endings of segments in
-  //!   the input sequence
-  //!
-  //! @param[in] output_begin_offsets
-  //!   Random-access iterator to the offsets for beginnings of segments in
-  //!   the output sequence
-  //!
-  //! @param[in] scan_op
-  //!   Binary scan functor
-  //!
-  //! @param[in] init_value
-  //!   Initial value to seed the exclusive scan
-  //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  //!
-  //! @param[in] kernel_source
-  //!   Object specifying implementation kernels
-  //!
-  //! @param[in] launcher_factory
-  //!   Object to execute implementation kernels on the given stream
-  //!
-  //! @param[in] max_policy
-  //!   Struct encoding chain of algorithm tuning policies
-  //!
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -330,45 +241,38 @@ struct DispatchSegmentedScan
       return cudaSuccess;
     }
 
-    cudaError error = cudaSuccess;
-
-    do
+    int ptx_version = 0;
+    cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version));
+    if (cudaSuccess != error)
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchSegmentedScan dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        input_begin_offsets,
-        input_end_offsets,
-        output_begin_offsets,
-        scan_op,
-        init_value,
-        stream,
-        ptx_version,
-        kernel_source,
-        launcher_factory);
+    DispatchSegmentedScan dispatch{
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      input_begin_offsets,
+      input_end_offsets,
+      output_begin_offsets,
+      scan_op,
+      init_value,
+      stream,
+      ptx_version,
+      kernel_source,
+      launcher_factory};
 
-      // Dispatch to chained policy
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
+    error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
     return error;
   }
 };
+} // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END
