@@ -40,6 +40,13 @@ _CCCL_CONCEPT __has_member_deallocate = _CCCL_REQUIRES_EXPR(
   (_Resource), _Resource& __res, ::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment)(
   _Same_as(void) __res.deallocate(__stream, __ptr, __bytes, __alignment));
 
+//! @brief Adapter that allows a synchronous resource to be used as a resource
+//! It examines the resource for the presence of the allocate and deallocate members.
+//! If they are present, it passes through the allocate and deallocate calls to the contained resource.
+//! Otherwise, it uses the allocate_sync and deallocate_sync members (with proper synchronization in case of
+//! deallocate).
+//! @note This adapter takes ownership of the contained resource.
+//! @tparam _Resource The type of the resource to be adapted
 template <class _Resource>
 struct synchronous_resource_adapter : ::cuda::mr::__copy_default_queries<_Resource>
 {
