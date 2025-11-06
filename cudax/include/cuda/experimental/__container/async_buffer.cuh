@@ -25,6 +25,8 @@
 #  include <cub/device/device_transform.cuh>
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
+#include <cuda/__container/heterogeneous_iterator.h>
+#include <cuda/__container/uninitialized_async_buffer.h>
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
@@ -44,8 +46,6 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__container/heterogeneous_iterator.cuh>
-#include <cuda/experimental/__container/uninitialized_async_buffer.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__launch/host_launch.cuh>
@@ -87,15 +87,15 @@ public:
   using const_reference        = const _Tp&;
   using pointer                = _Tp*;
   using const_pointer          = const _Tp*;
-  using iterator               = heterogeneous_iterator<_Tp, _Properties...>;
-  using const_iterator         = heterogeneous_iterator<const _Tp, _Properties...>;
+  using iterator               = ::cuda::heterogeneous_iterator<_Tp, _Properties...>;
+  using const_iterator         = ::cuda::heterogeneous_iterator<const _Tp, _Properties...>;
   using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
   using size_type              = ::cuda::std::size_t;
   using difference_type        = ::cuda::std::ptrdiff_t;
   using properties_list        = ::cuda::mr::properties_list<_Properties...>;
 
-  using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
+  using __buffer_t       = ::cuda::__uninitialized_async_buffer<_Tp, _Properties...>;
   using __resource_t     = ::cuda::mr::any_resource<_Properties...>;
   using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
 
