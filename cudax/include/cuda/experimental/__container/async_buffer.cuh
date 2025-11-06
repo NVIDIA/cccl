@@ -25,6 +25,7 @@
 #  include <cub/device/device_transform.cuh>
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
+#include <cuda/__launch/host_launch.h>
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
@@ -48,7 +49,6 @@
 #include <cuda/experimental/__container/uninitialized_async_buffer.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
-#include <cuda/__launch/host_launch.h>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

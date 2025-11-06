@@ -7,11 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include <cuda/atomic>
-#include <cuda/memory>
-
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__stream/stream.h>
+#include <cuda/atomic>
+#include <cuda/memory>
 
 #include <cooperative_groups.h>
 #include <testing.cuh>
@@ -166,7 +165,7 @@ C2H_CCCLRT_TEST("Host launch", "")
 
     cuda::host_launch(stream, wrapped_lambda);
     stream.sync();
-    CCCLRT_REQUIRE(i == 21)
+    CCCLRT_REQUIRE(i == 21);
   }
 
   SECTION("Can launch a local function and return")
