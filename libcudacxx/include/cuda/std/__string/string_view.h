@@ -24,7 +24,6 @@
 #  include <cuda/std/compare>
 #endif
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>

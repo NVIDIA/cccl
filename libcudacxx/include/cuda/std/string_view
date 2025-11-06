@@ -23,7 +23,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__fwd/allocator.h>

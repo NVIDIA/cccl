@@ -30,7 +30,6 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>

@@ -35,7 +35,6 @@
 #include <thrust/device_reference.h>
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/limits>
 
 #include <new>

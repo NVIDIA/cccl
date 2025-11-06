@@ -20,7 +20,6 @@
 #endif // no system header
 
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 

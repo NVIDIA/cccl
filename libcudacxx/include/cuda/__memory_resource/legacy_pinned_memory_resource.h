@@ -33,7 +33,6 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__exception/throw_error.h>
 
 #  include <stdexcept>
 
