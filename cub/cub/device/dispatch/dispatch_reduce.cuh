@@ -643,7 +643,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
-            active_policy.single_tile_policy.block_threads(long long) stream,
+            active_policy.single_tile_policy.block_threads,
+            (long long) stream,
             active_policy.single_tile_policy.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
@@ -716,9 +717,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             (unsigned long) reduce_grid_size,
-            active_policy.Reduce().BlockThreads(),
+            active_policy.reduce_policy.block_threads,
             (long long) stream,
-            active_policy.Reduce().ItemsPerThread(),
+            active_policy.reduce_policy.items_per_thread,
             reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
@@ -739,7 +740,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
-            active_policy.single_tile_policy.block_threads(long long) stream,
+            active_policy.single_tile_policy.block_threads,
+            (long long) stream,
             active_policy.single_tile_policy.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
