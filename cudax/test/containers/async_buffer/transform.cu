@@ -77,15 +77,15 @@ struct add_kernel
   }
 };
 
-C2H_CCCLRT_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
+C2H_CCCLRT_TEST("cudax::buffer launch transform", "[container][buffer]")
 {
   cudax::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-  cudax::async_device_buffer<int> a       = cudax::make_async_buffer<int>(stream, resource, array);
-  const cudax::async_device_buffer<int> b = cudax::make_async_buffer(stream, resource, a.size(), 1);
+  cudax::async_device_buffer<int> a       = cudax::make_buffer<int>(stream, resource, array);
+  const cudax::async_device_buffer<int> b = cudax::make_buffer(stream, resource, a.size(), 1);
 
   cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
 
