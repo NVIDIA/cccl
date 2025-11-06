@@ -376,7 +376,7 @@ public:
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(const CommitToken&)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(CommitToken&&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -386,6 +386,12 @@ public:
     while (!__try_wait())
       ;
     phase_parity ^= 1u;
+  }
+
+  //! @brief Convenience overload calling `Commit()` and `Wait()`.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void CommitAndWait()
+  {
+    Wait(Commit());
   }
 
   // Having these as static members does require using "template" in user code which is kludgy.
