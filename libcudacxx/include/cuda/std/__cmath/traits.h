@@ -64,7 +64,11 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATER)
   return _CCCL_BUILTIN_ISGREATER(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
+#    if defined(isgreater)
+  return isgreater(__x, __y);
+#    else
   return ::isgreater(__x, __y);
+#    endif
 #  endif // !_CCCL_BUILTIN_ISGREATER
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -101,7 +105,11 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
   return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
+#    if defined(isgreaterequal)
+  return isgreaterequal(__x, __y);
+#    else
   return ::isgreaterequal(__x, __y);
+#    endif
 #  endif // !_CCCL_BUILTIN_ISGREATEREQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
