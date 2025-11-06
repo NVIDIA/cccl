@@ -3,4 +3,4 @@
 Size
 ====
 
-Returns the current number of elements stored in the async_buffer.
+Returns the current number of elements stored in the buffer.

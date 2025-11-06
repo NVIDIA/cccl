@@ -3,4 +3,4 @@
 Iterators
 =========
 
-Returns an iterator to the first element of the async_buffer.
+Returns an iterator to the first element of the buffer.
