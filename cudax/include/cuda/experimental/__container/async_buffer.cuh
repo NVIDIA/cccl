@@ -555,7 +555,7 @@ public:
 };
 
 template <class _Tp>
-using async_device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
+using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
 
 template <class _Tp>
 using async_host_buffer = buffer<_Tp, ::cuda::mr::host_accessible>;
