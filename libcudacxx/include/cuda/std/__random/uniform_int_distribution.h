@@ -118,7 +118,7 @@ public:
     result_type __sp        = 0;
     for (size_t __k = 0; __k < __n0_; ++__k)
     {
-      _Engine_result_type __u;
+      _Engine_result_type __u{};
       do
       {
         __u = __e_() - _Engine::min();
@@ -136,7 +136,7 @@ public:
 
     for (size_t __k = __n0_; __k < __n_; ++__k)
     {
-      _Engine_result_type __u;
+      _Engine_result_type __u{};
       do
       {
         __u = __e_() - _Engine::min();
@@ -206,7 +206,7 @@ public:
       : uniform_int_distribution(0)
   {}
   _CCCL_API explicit constexpr uniform_int_distribution(
-    result_type __a, result_type __b = (numeric_limits<result_type>::max)()) noexcept
+    result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
   {}
   _CCCL_API explicit constexpr uniform_int_distribution(const param_type& __p) noexcept
@@ -246,7 +246,7 @@ public:
     }
 
     _Eng __e(__g, __w);
-    _UIntType __u;
+    _UIntType __u{};
     do
     {
       __u = __e();
