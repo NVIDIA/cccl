@@ -90,13 +90,6 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   {
     return false;
   }
-  [[maybe_unused]] void* __tmp_ptr = nullptr;
-  const auto __status1             = ::cudaGetSymbolAddress(&__tmp_ptr, __p);
-  ::cudaGetLastError();
-  if (__status1 == ::cudaSuccess)
-  {
-    return true;
-  }
   ::CUpointer_attribute __attrs[4] = {
     ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
     ::CU_POINTER_ATTRIBUTE_IS_MANAGED,

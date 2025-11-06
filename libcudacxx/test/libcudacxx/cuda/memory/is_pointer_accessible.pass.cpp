@@ -75,7 +75,7 @@ bool test_basic()
   test_accessible_pointer(host_ptr4, true, false, false, dev); // stack-allocated host memory
   test_accessible_pointer(host_ptr5, true, false, false, dev); // pinned host memory
 
-  test_accessible_pointer(device_ptr1, false, true, false, dev, true); // global device array pointer with offset
+  test_accessible_pointer(device_ptr1, false, false, false, dev, true); // global device array pointer with offset
   test_accessible_pointer(device_ptr2, false, true, false, dev); // cudaMalloc device pointer
   test_accessible_pointer(device_ptr3, false, true, false, dev); // cudaMallocAsync device pointer
 

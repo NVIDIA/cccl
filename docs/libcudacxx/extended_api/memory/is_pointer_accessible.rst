@@ -55,7 +55,11 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 .. note::
 
-  The functions cannot correctly determine the accessibility of a ``__device__`` global array pointer with an offset, for example ``ptr + 1``.
+  A ``__device__`` global array or variable is not accessible from device code without retrieving the address with ``cudaGetSymbolAddress()``.
+
+.. note::
+
+  ``is_host_accessible()`` cannot correctly determine host accessibility of a ``__device__`` global array pointer with an offset, for example ``ptr + 1``.
 
 **Prerequisites**
 
