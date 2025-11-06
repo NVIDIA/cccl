@@ -47,9 +47,9 @@ template <class _Tp>
   {
 #if defined(isnan)
     NV_IF_TARGET(NV_IS_DEVICE, (return ::isnan(__x);), (return isnan(__x);));
-#else
+#else // ^^^ macro ^^^ / vvv function vvv
     NV_IF_TARGET(NV_IS_DEVICE, (return ::isnan(__x);), (return ::isnan(__x);));
-#endif
+#endif // function
   }
   return __x != __x;
 }
