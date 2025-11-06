@@ -149,7 +149,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #    if defined(isless)
   return isless(__x, __y);
 #    else // ^^^ macro ^^^ / vvv function vvv
-  return ::isless(__x);
+  return ::isless(__x, __y);
 #    endif // function
 #  endif // !_CCCL_BUILTIN_ISLESS
 }
