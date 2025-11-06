@@ -186,18 +186,18 @@ Functions
 * :doc:`cuda::experimental::dynamic_shared_memory <namespacecuda_1_1experimental_1a16ae2fb164a4475d384839b106867f6a>`
 * :doc:`cuda::experimental::dynamic_smem_ref <namespacecuda_1_1experimental_1a64c529b2b7d858f06b3d45a5ee1967c3>`
 * :doc:`cuda::experimental::dynamic_smem_span <namespacecuda_1_1experimental_1a5b4677b4c5bc188a0144206ace982c58>`
-* :doc:`cuda::experimental::get_launch_dimensions <namespacecuda_1_1experimental_1a173aac0f7accd9eef0e7c7d2e05da650>`
+* :doc:`cuda::experimental::get_launch_dimensions <namespacecuda_1_1experimental_1a70c44ea26b1498f90419bb3b32a5f622>`
 * :doc:`cuda::experimental::grid_dims <namespacecuda_1_1experimental_1a1722a1a89c93bec7e741c58695c4d1b5>`
-* :doc:`cuda::experimental::hierarchy::count <namespacecuda_1_1experimental_1_1hierarchy_1a3b5a407e1710c604dcde78ac322a79fc>`
-* :doc:`cuda::experimental::hierarchy::extents <namespacecuda_1_1experimental_1_1hierarchy_1a0dbf8173fb48a95d9be00f50054ef546>`
-* :doc:`cuda::experimental::hierarchy::index <namespacecuda_1_1experimental_1_1hierarchy_1a369b81efeb5fbddff6b631322ecd9898>`
-* :doc:`cuda::experimental::hierarchy::rank <namespacecuda_1_1experimental_1_1hierarchy_1aeaa73cf3e862e7f56e53862f5f840126>`
-* :doc:`cuda::experimental::hierarchy_add_level <namespacecuda_1_1experimental_1af333881b536dd39765ae2f0e003eabcd>`
+* :doc:`cuda::experimental::hierarchy::count <namespacecuda_1_1experimental_1_1hierarchy_1afae0df2b4c67255ba59862e445fd616a>`
+* :doc:`cuda::experimental::hierarchy::extents <namespacecuda_1_1experimental_1_1hierarchy_1a44faabf89b091e347072854baa7fb889>`
+* :doc:`cuda::experimental::hierarchy::index <namespacecuda_1_1experimental_1_1hierarchy_1a0005c3898faf2106b9f7ae078ace2d10>`
+* :doc:`cuda::experimental::hierarchy::rank <namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789>`
+* :doc:`cuda::experimental::hierarchy_add_level <namespacecuda_1_1experimental_1ad06aeac9dc8f8a5bf0d59a91d821f852>`
 * :doc:`cuda::experimental::host_launch <namespacecuda_1_1experimental_1a220f357be074348d480be71c228e1ccc>`
 * :doc:`cuda::experimental::launch <namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080>`
 * :doc:`cuda::experimental::make_async_buffer <namespacecuda_1_1experimental_1a7984ec84817b4e0e6bf5ca6da4d0f8a0>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
-* :doc:`cuda::experimental::make_hierarchy <namespacecuda_1_1experimental_1ab04039bc09c8136f3619e8e30ac739ab>`
+* :doc:`cuda::experimental::make_hierarchy <namespacecuda_1_1experimental_1a576809535c5d9316e761c22d32a068e9>`
 * :doc:`cuda::experimental::make_shared_resource <namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f>`
 * :doc:`cuda::experimental::operator& <namespacecuda_1_1experimental_1a6885fad002736fd2c1e2bbcc81d395b5>`
 * :doc:`cuda::experimental::start_path <namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e>`
@@ -264,7 +264,7 @@ Type Definitions
 
 * :doc:`cuda::experimental::async_device_buffer <namespacecuda_1_1experimental_1a07f516f838f53fe7a46d7dc440e83c1a>`
 * :doc:`cuda::experimental::async_host_buffer <namespacecuda_1_1experimental_1a64c350f4b7a5ca83daf762270e3df393>`
-* :doc:`cuda::experimental::dimensions <namespacecuda_1_1experimental_1a240e2877377596bbbe54ead3ec7561a5>`
+* :doc:`cuda::experimental::dimensions <namespacecuda_1_1experimental_1a826dbb867052421a576e1da309e78e2a>`
 * :doc:`cuda::experimental::dimensions_index_type <namespacecuda_1_1experimental_1aa7e410c16ff7d4b08d9b7da94658778c>`
 * :doc:`cuda::experimental::stf::array_tuple <namespacecuda_1_1experimental_1_1stf_1ad79958209ea876e5dafe78f59ab52d79>`
 * :doc:`cuda::experimental::stf::blocked_partition <namespacecuda_1_1experimental_1_1stf_1aa7d4170e1a89607a1064da6257130929>`
@@ -477,9 +477,9 @@ Variables
    namespacecuda_1_1experimental_1a7984ec84817b4e0e6bf5ca6da4d0f8a0
    namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4
    namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e
-   namespacecuda_1_1experimental_1a173aac0f7accd9eef0e7c7d2e05da650
-   namespacecuda_1_1experimental_1ab04039bc09c8136f3619e8e30ac739ab
-   namespacecuda_1_1experimental_1af333881b536dd39765ae2f0e003eabcd
+   namespacecuda_1_1experimental_1a70c44ea26b1498f90419bb3b32a5f622
+   namespacecuda_1_1experimental_1a576809535c5d9316e761c22d32a068e9
+   namespacecuda_1_1experimental_1ad06aeac9dc8f8a5bf0d59a91d821f852
    namespacecuda_1_1experimental_1a1722a1a89c93bec7e741c58695c4d1b5
    namespacecuda_1_1experimental_1add18e119f7c345d5dfed692e1e257a6e
    namespacecuda_1_1experimental_1afa68139cec4ab96febdedb9f757c3203
@@ -492,10 +492,10 @@ Variables
    namespacecuda_1_1experimental_1a220f357be074348d480be71c228e1ccc
    namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080
    namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f
-   namespacecuda_1_1experimental_1_1hierarchy_1aeaa73cf3e862e7f56e53862f5f840126
-   namespacecuda_1_1experimental_1_1hierarchy_1a3b5a407e1710c604dcde78ac322a79fc
-   namespacecuda_1_1experimental_1_1hierarchy_1a369b81efeb5fbddff6b631322ecd9898
-   namespacecuda_1_1experimental_1_1hierarchy_1a0dbf8173fb48a95d9be00f50054ef546
+   namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789
+   namespacecuda_1_1experimental_1_1hierarchy_1afae0df2b4c67255ba59862e445fd616a
+   namespacecuda_1_1experimental_1_1hierarchy_1a0005c3898faf2106b9f7ae078ace2d10
+   namespacecuda_1_1experimental_1_1hierarchy_1a44faabf89b091e347072854baa7fb889
    namespacecuda_1_1experimental_1_1stf_1ad18742cd2980317d08fa22179fe9838b
    namespacecuda_1_1experimental_1_1stf_1a15334df9162430aaae8d98d9f6614164
    namespacecuda_1_1experimental_1_1stf_1ad4e01a86f130b065598ee6eccc017de9
@@ -555,7 +555,7 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1ab6102f1f400fb5014573fd1424e1ae0c
    namespacecuda_1_1experimental_1a07f516f838f53fe7a46d7dc440e83c1a
    namespacecuda_1_1experimental_1a64c350f4b7a5ca83daf762270e3df393
-   namespacecuda_1_1experimental_1a240e2877377596bbbe54ead3ec7561a5
+   namespacecuda_1_1experimental_1a826dbb867052421a576e1da309e78e2a
    namespacecuda_1_1experimental_1aa7e410c16ff7d4b08d9b7da94658778c
    namespacecuda_1_1experimental_1_1stf_1ad79958209ea876e5dafe78f59ab52d79
    namespacecuda_1_1experimental_1_1stf_1aa7d4170e1a89607a1064da6257130929

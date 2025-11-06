@@ -16,6 +16,6 @@ Overloads
 ``cluster_dims(noexcept)``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfunction:: cuda::experimental::cluster_dims(T t) noexcept
+.. doxygenfunction:: cuda::experimental::cluster_dims(_Dims __dims) noexcept
    :project: cudax
    :no-link:

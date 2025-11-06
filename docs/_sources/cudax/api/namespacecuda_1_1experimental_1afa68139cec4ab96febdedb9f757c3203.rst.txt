@@ -16,6 +16,6 @@ Overloads
 ``block_dims(noexcept)``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfunction:: cuda::experimental::block_dims(T t) noexcept
+.. doxygenfunction:: cuda::experimental::block_dims(_Dims __dims) noexcept
    :project: cudax
    :no-link:
