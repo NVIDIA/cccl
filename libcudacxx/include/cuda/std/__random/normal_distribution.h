@@ -1,0 +1,220 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD___RANDOM_NORMAL_DISTRIBUTION_H
+#define _CUDA_STD___RANDOM_NORMAL_DISTRIBUTION_H
+
+#include <cuda/std/detail/__config>
+
+#include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _RealType = double>
+class normal_distribution
+{
+  static_assert(__libcpp_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
+
+public:
+  // types
+  using result_type = _RealType;
+
+  class param_type
+  {
+    result_type __mean_;
+    result_type __stddev_;
+
+  public:
+    using distribution_type = normal_distribution;
+
+    _CCCL_API constexpr explicit param_type(result_type __mean = 0, result_type __stddev = 1)
+        : __mean_(__mean)
+        , __stddev_(__stddev)
+    {}
+
+    _CCCL_API constexpr result_type mean() const
+    {
+      return __mean_;
+    }
+    _CCCL_API constexpr result_type stddev() const
+    {
+      return __stddev_;
+    }
+
+    _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y)
+    {
+      return __x.__mean_ == __y.__mean_ && __x.__stddev_ == __y.__stddev_;
+    }
+    _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y)
+    {
+      return !(__x == __y);
+    }
+  };
+
+private:
+  param_type __p_;
+  result_type __v_;
+  bool __v_hot_;
+
+public:
+  _CCCL_API constexpr normal_distribution()
+      : normal_distribution(0)
+  {}
+  _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = 1)
+      : __p_(param_type(__mean, __stddev))
+      , __v_hot_(false)
+  {}
+  _CCCL_API constexpr explicit normal_distribution(const param_type& __p)
+      : __p_(__p)
+      , __v_hot_(false)
+  {}
+  _CCCL_API constexpr void reset()
+  {
+    __v_hot_ = false;
+  }
+
+  // generating functions
+  template <class _URng>
+  _CCCL_API result_type operator()(_URng& __g)
+  {
+    return (*this)(__g, __p_);
+  }
+  template <class _URng>
+  _CCCL_API result_type operator()(_URng& __g, const param_type& __p);
+
+  // property functions
+  _CCCL_API constexpr result_type mean() const
+  {
+    return __p_.mean();
+  }
+  _CCCL_API constexpr result_type stddev() const
+  {
+    return __p_.stddev();
+  }
+
+  _CCCL_API constexpr param_type param() const
+  {
+    return __p_;
+  }
+  _CCCL_API constexpr void param(const param_type& __p)
+  {
+    __p_ = __p;
+  }
+
+  _CCCL_API constexpr result_type min() const
+  {
+    return -numeric_limits<result_type>::infinity();
+  }
+  _CCCL_API constexpr result_type max() const
+  {
+    return numeric_limits<result_type>::infinity();
+  }
+
+  _CCCL_API friend constexpr bool operator==(const normal_distribution& __x, const normal_distribution& __y)
+  {
+    return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
+  }
+  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y)
+  {
+    return !(__x == __y);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  template <class _CharT, class _Traits>
+  friend ::std::basic_ostream<_CharT, _Traits>&
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const normal_distribution& __x)
+  {
+    using _OStream = ::std::basic_ostream<_CharT, _Traits>;
+    auto __flags   = __os.flags();
+    __os.flags(_OStream::dec | _OStream::left | _OStream::fixed | _OStream::scientific);
+    _CharT __sp = __os.widen(' ');
+    __os.fill(__sp);
+    __os << __x.mean() << __sp << __x.stddev() << __sp << __x.__v_hot_;
+    if (__x.__v_hot_)
+    {
+      __os << __sp << __x.__v_;
+    }
+    __os.flags(__flags);
+    return __os;
+  }
+
+  template <class _CharT, class _Traits>
+  friend ::std::basic_istream<_CharT, _Traits>&
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, normal_distribution& __x)
+  {
+    using result_type = _RealType;
+    using _Istream    = ::std::basic_istream<_CharT, _Traits>;
+    auto __flags      = __is.flags();
+    __is.flags(_Istream::dec | _Istream::skipws);
+    result_type __mean;
+    result_type __stddev;
+    result_type __vp = 0;
+    bool __v_hot     = false;
+    __is >> __mean >> __stddev >> __v_hot;
+    if (__v_hot)
+    {
+      __is >> __vp;
+    }
+    if (!__is.fail())
+    {
+      __x.param(param_type(__mean, __stddev));
+      __x.__v_hot_ = __v_hot;
+      __x.__v_     = __vp;
+    }
+    __is.flags(__flags);
+    return __is;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+template <class _RealType>
+template <class _URng>
+_CCCL_API _RealType normal_distribution<_RealType>::operator()(_URng& __g, const param_type& __p)
+{
+  static_assert(__cccl_random_is_valid_urng<_URng>, "");
+  result_type __up;
+  if (__v_hot_)
+  {
+    __v_hot_ = false;
+    __up     = __v_;
+  }
+  else
+  {
+    uniform_real_distribution<result_type> __uni(-1, 1);
+    result_type __u;
+    result_type __v;
+    result_type __s;
+    do
+    {
+      __u = __uni(__g);
+      __v = __uni(__g);
+      __s = __u * __u + __v * __v;
+    } while (__s > 1 || __s == 0);
+    result_type __fp = std::sqrt(-2 * std::log(__s) / __s);
+    __v_             = __v * __fp;
+    __v_hot_         = true;
+    __up             = __u * __fp;
+  }
+  return __up * __p.stddev() + __p.mean();
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#endif // _CUDA_STD___RANDOM_NORMAL_DISTRIBUTION_H
