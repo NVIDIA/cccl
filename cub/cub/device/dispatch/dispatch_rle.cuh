@@ -389,26 +389,6 @@ struct DeviceRleDispatch
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      streaming_context_t streaming_context{};
-      if constexpr (use_streaming_invocation)
-      {
-        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
-
-        const bool is_first_partition = (partition_idx == 0);
-        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
-        const int buffer_selector     = partition_idx % 2;
-
-        streaming_context = streaming_context_t{
-          is_first_partition,
-          is_last_partition,
-          current_partition_offset,
-          &tmp_prefix[buffer_selector],
-          &tmp_prefix[buffer_selector ^ 0x01],
-          &tmp_num_uniques[buffer_selector],
-          &tmp_num_uniques[buffer_selector ^ 0x01]};
-      }
-
       // Construct the tile status interface
       const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
 
@@ -465,17 +445,50 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-        .doit(device_rle_sweep_kernel,
-              d_in + current_partition_offset,
-              d_offsets_out,
-              d_lengths_out,
-              d_num_runs_out,
-              tile_status,
-              equality_op,
-              static_cast<local_offset_t>(current_num_items),
-              num_current_tiles,
-              streaming_context);
+      if constexpr (use_streaming_invocation)
+      {
+        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
+
+        const bool is_first_partition = (partition_idx == 0);
+        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
+        const int buffer_selector     = partition_idx % 2;
+
+        streaming_context_t streaming_context{
+          is_first_partition,
+          is_last_partition,
+          current_partition_offset,
+          &tmp_prefix[buffer_selector],
+          &tmp_prefix[buffer_selector ^ 0x01],
+          &tmp_num_uniques[buffer_selector],
+          &tmp_num_uniques[buffer_selector ^ 0x01]};
+
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                streaming_context);
+      }
+      else
+      {
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                NullType{});
+      }
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());

@@ -77,19 +77,16 @@ template <int BlockThreads,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentRlePolicy
 {
-  enum
-  {
-    /// Threads per thread block
-    BLOCK_THREADS = BlockThreads,
+  /// Threads per thread block
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
-    /// Items per thread (per tile of input)
-    ITEMS_PER_THREAD = ItemsPerThread,
+  /// Items per thread (per tile of input)
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
-    /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
-    /// among block-warps during any store-related data transpositions (versus each warp having its
-    /// own storage)
-    STORE_WARP_TIME_SLICING = StoreWarpTimeSlicing,
-  };
+  /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+  /// among block-warps during any store-related data transpositions (versus each warp having its
+  /// own storage)
+  static constexpr bool STORE_WARP_TIME_SLICING = StoreWarpTimeSlicing;
 
   /// The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;

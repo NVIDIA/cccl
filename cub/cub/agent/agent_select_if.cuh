@@ -74,14 +74,11 @@ template <int BlockThreads,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentSelectIfPolicy
 {
-  enum
-  {
-    /// Threads per thread block
-    BLOCK_THREADS = BlockThreads,
+  /// Threads per thread block
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
-    /// Items per thread (per tile of input)
-    ITEMS_PER_THREAD = ItemsPerThread,
-  };
+  /// Items per thread (per tile of input)
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   /// The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;

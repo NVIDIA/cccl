@@ -22,6 +22,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
@@ -200,7 +201,7 @@ class WarpLoad
 {
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
 
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
 private:
   /*****************************************************************************

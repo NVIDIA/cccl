@@ -16,7 +16,7 @@
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/dispatch/kernels/transform.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>

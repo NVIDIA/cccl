@@ -13,6 +13,14 @@ else()
   find_package(CUDAToolkit)
 endif()
 
+# We need to handle atomic headers differently as they do not compile on architectures below sm70
+set(architectures_at_least_sm70)
+foreach(item IN LISTS CMAKE_CUDA_ARCHITECTURES)
+  if(item GREATER_EQUAL 70)
+    list(APPEND architectures_at_least_sm70 ${item})
+  endif()
+endforeach()
+
 # Grep all internal headers
 file(GLOB_RECURSE internal_headers
   RELATIVE "${libcudacxx_SOURCE_DIR}/include/"

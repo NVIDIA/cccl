@@ -19,6 +19,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -173,7 +174,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
 template <typename KeyT, typename ValueT, int NumThreads, int ItemsPerThread, typename SynchronizationPolicy>
 class BlockMergeSortStrategy
 {
-  static_assert(PowerOfTwo<NumThreads>::VALUE, "NumThreads must be a power of two");
+  static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
 
 private:
   static constexpr int ITEMS_PER_TILE = ItemsPerThread * NumThreads;

@@ -81,11 +81,8 @@ template <int NominalBlockThreads4B,
           typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
-  enum
-  {
-    /// The number of radix bits, i.e., log2(bins)
-    RADIX_BITS = RadixBits,
-  };
+  /// The number of radix bits, i.e., log2(bins)
+  static constexpr int RADIX_BITS = RadixBits;
 
   /// The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
@@ -101,7 +98,7 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail::radix_sort_runtime_policies
+namespace detail
 {
 // Only define this when needed.
 // Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
@@ -111,7 +108,7 @@ namespace detail::radix_sort_runtime_policies
 // TODO: enable this unconditionally once concepts are always available
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   RadixSortDownsweepAgentPolicy,
-  (RadixSortUpsweepAgentPolicy, UniqueByKeyAgentPolicy),
+  (cub::detail::radix_sort_runtime_policies::RadixSortUpsweepAgentPolicy, UniqueByKeyAgentPolicy),
   (BLOCK_THREADS, BlockThreads, int),
   (ITEMS_PER_THREAD, ItemsPerThread, int),
   (RADIX_BITS, RadixBits, int),
@@ -119,7 +116,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
   (RANK_ALGORITHM, RankAlgorithm, cub::RadixRankAlgorithm),
   (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
-} // namespace detail::radix_sort_runtime_policies
+} // namespace detail
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 /******************************************************************************

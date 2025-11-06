@@ -384,13 +384,13 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(_Tp input, ScanOpT scan_op, int first_lane, int offset)
   {
-    _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
+    _Tp temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = scan_op(temp, input);
+    _Tp output = scan_op(temp, input);
     if (static_cast<int>(lane_id) < first_lane + offset)
     {
       output = input;
@@ -417,19 +417,19 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStepPartial(_T input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
+  InclusiveScanStepPartial(_Tp input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
   {
     _CCCL_ASSERT((first_lane >= 0) && (first_lane <= static_cast<int>(lane_id)),
                  "first_lane must be in range [0, lane_id]");
     _CCCL_ASSERT((offset > 0) && (offset < LOGICAL_WARP_THREADS),
                  "offset must be in the range [1, LOGICAL_WARP_THREADS)");
     _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<unsigned>(offset)), "offset must be a power of two");
-    _T temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
+    _Tp temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = input;
+    _Tp output = input;
     if (static_cast<int>(lane_id) >= first_lane + offset && static_cast<int>(lane_id) < valid_items)
     {
       output = scan_op(temp, input);
@@ -455,9 +455,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -481,9 +481,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
-    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -526,8 +526,8 @@ struct WarpScanShfl
    * @param[in] scan_op
    *   Binary scan operator
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_T input, _T& inclusive_output, ScanOpT scan_op)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_Tp input, _Tp& inclusive_output, ScanOpT scan_op)
   {
     inclusive_output = input;
 
@@ -562,9 +562,9 @@ struct WarpScanShfl
    * @param[in] valid_items
    *   Number of valid items in warp
    */
-  template <typename _T, typename ScanOpT>
+  template <typename _Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScanPartial(_T input, _T& inclusive_output, ScanOpT scan_op, int valid_items)
+  InclusiveScanPartial(_Tp input, _Tp& inclusive_output, ScanOpT scan_op, int valid_items)
   {
     if (static_cast<int>(lane_id) < valid_items)
     {
