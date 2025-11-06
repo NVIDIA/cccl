@@ -1,9 +1,10 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_segmented_scan.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
-
-#include <thrust/host_vector.h>
 
 #include <cstdint>
 #include <iostream>

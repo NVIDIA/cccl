@@ -56,18 +56,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_
     AccumT,
     ForceInclusive>;
 
-  // Declare shared memory of AgentSegmentedScanT::TempStorage type
   __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
 
-  // Invoke agent logic
-  ActualInitValueT _init_value = init_value;
+  const ActualInitValueT _init_value = init_value;
 
   const auto segment_id = blockIdx.x;
   if (segment_id < n_segments)
   {
-    OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
-    OffsetT inp_end_offset   = end_offset_d_in[segment_id];
-    OffsetT out_begin_offset = begin_offset_d_out[segment_id];
+    const OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
+    const OffsetT inp_end_offset   = end_offset_d_in[segment_id];
+    const OffsetT out_begin_offset = begin_offset_d_out[segment_id];
 
     agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
       .ConsumeRange(inp_begin_offset, inp_end_offset, out_begin_offset);
