@@ -173,7 +173,7 @@ public:
     using distribution_type = uniform_int_distribution;
 
     _CCCL_API constexpr explicit param_type(result_type __a = 0,
-                                            result_type __b = (numeric_limits<result_type>::max)()) noexcept
+                                            result_type __b = numeric_limits<result_type>::max()) noexcept
         : __a_(__a)
         , __b_(__b)
     {}
