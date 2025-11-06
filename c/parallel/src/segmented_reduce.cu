@@ -47,7 +47,6 @@ static_assert(sizeof(OffsetT) == sizeof(::cuda::std::uint64_t));
 
 namespace segmented_reduce
 {
-
 struct segmented_reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy segmented_reduce;
@@ -188,7 +187,7 @@ CUresult cccl_device_segmented_reduce_build_ex(
       R"XXX(
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
   char data[{1}];

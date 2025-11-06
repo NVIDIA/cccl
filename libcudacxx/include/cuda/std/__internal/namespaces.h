@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/version.h>
+
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
 #if defined(_CCCL_HEADER_TEST)
 #  define _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() \

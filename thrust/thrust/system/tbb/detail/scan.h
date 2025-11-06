@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file scan.h
  *  \brief TBB implementations of scan functions.
@@ -31,10 +31,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace scan_detail
 {
-
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction, typename ValueType, bool HasInit>
 struct inclusive_body
 {
@@ -218,7 +216,6 @@ struct exclusive_body
     sum = b.sum;
   }
 };
-
 } // namespace scan_detail
 
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
@@ -293,6 +290,5 @@ OutputIterator exclusive_scan(
 
   return result;
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

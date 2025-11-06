@@ -35,7 +35,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
 {
 public:
@@ -70,7 +69,6 @@ template <class _Duration>
 using sys_time    = time_point<system_clock, _Duration>;
 using sys_seconds = sys_time<seconds>;
 using sys_days    = sys_time<days>;
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

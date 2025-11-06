@@ -45,7 +45,6 @@
 
 namespace cuda::experimental
 {
-
 template <typename _Config, typename _Kernel, class... _Args>
 __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
@@ -159,7 +158,7 @@ _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
 _CCCL_HOST_API ::cuda::stream_ref __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
 {
-  return ::cuda::__detail::__invalid_stream;
+  return ::cuda::stream_ref{::cuda::invalid_stream};
 }
 
 _CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(::cuda::stream_ref __stream)
@@ -512,7 +511,6 @@ namespace execution
 template <class _Config, class _Fn, class... _Args>
 inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

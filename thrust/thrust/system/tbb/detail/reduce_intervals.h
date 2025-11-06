@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,7 +29,6 @@ namespace system::tbb::detail
 {
 namespace reduce_intervals_detail
 {
-
 template <typename L, typename R>
 inline L divide_ri(const L x, const R y)
 {
@@ -78,7 +77,6 @@ body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction> make_bo
   return body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction>(
     first, result, n, interval_size, binary_op);
 }
-
 } // namespace reduce_intervals_detail
 
 template <typename DerivedPolicy,
@@ -116,6 +114,5 @@ void reduce_intervals(
   return thrust::system::tbb::detail::reduce_intervals(
     exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
-
 } // namespace system::tbb::detail
 THRUST_NAMESPACE_END

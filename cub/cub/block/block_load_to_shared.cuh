@@ -36,7 +36,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 //! @rst
 //! The @c BlockLoadToShared class provides a :ref:`collective <collective-primitives>` method for asynchronously
 //! loading data from global to shared memory.
@@ -105,13 +104,6 @@ private:
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
   State state{State::ready_to_copy};
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
-
-  /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& __private_storage()
-  {
-    __shared__ _TempStorage private_storage;
-    return private_storage;
-  }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_thread() const
   {
@@ -216,19 +208,20 @@ private:
        return true;));
   }
 
+  struct token_impl
+  {};
+
 public:
   /// @smemstorage{BlockLoadToShared}
   using TempStorage = cub::Uninitialized<_TempStorage>;
 
+  //! Token type used to enforce correct call order between Commit() and Wait()
+  //! member functions. Returned by Commit() and required by Wait() as a usage
+  //! guard.
+  using CommitToken = token_impl;
+
   //! @name Collective constructors
   //! @{
-
-  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoadToShared()
-      : temp_storage(__private_storage())
-  {
-    __init_mbarrier();
-  }
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage.
   //!
@@ -263,12 +256,7 @@ public:
     __syncthreads();
     if (elected)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (
-                     // Borrowed from cuda::barrier
-                     // TODO Make this available through cuda::ptx::
-                     asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-                       ::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ::cuda::ptx::mbarrier_inval(&temp_storage.mbarrier_handle););
     }
     // Make sure the elected thread is done invalidating the mbarrier
     __syncthreads();
@@ -359,7 +347,7 @@ public:
   }
 
   //! @brief Commit one or more @c CopyAsync() calls.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Commit()
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE CommitToken Commit()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy_or_commit, "CopyAsync() must be called before Commit()");
@@ -380,10 +368,15 @@ public:
        __syncthreads();),
       NV_PROVIDES_SM_80,
       (asm volatile("cp.async.commit_group ;" :: : "memory");));
+
+    // Token's mere purpose currently is to prevent calling Wait() without a
+    // prior Commit()
+    return CommitToken{};
   }
 
-  //! @brief Wait for previously committed copies to arrive. Prepare for next calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait()
+  //! @brief Wait for previously committed copies to arrive. Prepare for next
+  //! calls to @c CopyAsync() .
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(const CommitToken&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -426,7 +419,6 @@ public:
     return bulk_aligned ? num_bytes : (::cuda::round_up(num_bytes, minimum_align) + extra_space);
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

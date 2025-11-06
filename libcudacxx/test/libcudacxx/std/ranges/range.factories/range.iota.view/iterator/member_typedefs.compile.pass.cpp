@@ -107,6 +107,12 @@ _CCCL_CONCEPT HasIteratorCategory =
 
 __host__ __device__ void test()
 {
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
+
   {
     const cuda::std::ranges::iota_view<char> io(0);
     using Iter = decltype(io.begin());
@@ -155,7 +161,7 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
     unused(io);
   }
   {
@@ -168,7 +174,7 @@ __host__ __device__ void test()
     // https://eel.is/c++draft/range.iota.view#1.3
     static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, widest_integer>);
     unused(io);
   }
   {

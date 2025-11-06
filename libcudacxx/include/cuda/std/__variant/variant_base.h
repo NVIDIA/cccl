@@ -42,7 +42,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __variant_detail
 {
-
 // NOTE: we need to define all special member functions, because NVCC has issues with host only types
 template <size_t _Index, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
@@ -675,7 +674,6 @@ private:
     return this->valueless_by_exception() || __results[this->index()];
   }
 };
-
 } // namespace __variant_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -6,7 +6,6 @@ function(cudax_stf_configure_target target_name)
   cmake_parse_arguments(CSCT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   target_link_libraries(${target_name} PRIVATE
-    ${cn_target}
     CUDA::cudart
     CUDA::curand
     CUDA::cuda_driver

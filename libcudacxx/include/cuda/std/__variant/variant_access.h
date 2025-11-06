@@ -29,7 +29,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __variant_detail::__access
 {
-
 struct __union
 {
   template <class _Vp>
@@ -62,7 +61,6 @@ struct __variant
     return __base::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v).__impl_);
   }
 };
-
 } // namespace __variant_detail::__access
 
 _CCCL_END_NAMESPACE_CUDA_STD

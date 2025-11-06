@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
 
@@ -31,21 +33,20 @@
 
 namespace cuda::experimental
 {
-
 template <class _Callable, class... _Args>
 struct __stream_callback_data
 {
   _Callable __callable_;
-  ::cuda::std::tuple<_Args...> __args_tuple_;
+  ::cuda::std::tuple<_Args...> __args_;
 };
 
 template <class _CallbackData>
-void __stream_callback_caller(::cudaStream_t, ::cudaError_t __status, void* __data_ptr)
+_CCCL_HOST_API inline void CUDA_CB __stream_callback_launcher(::CUstream, ::CUresult __status, void* __data_ptr)
 {
   auto* __casted_data_ptr = static_cast<_CallbackData*>(__data_ptr);
-  if (__status == cudaSuccess)
+  if (__status == ::CUDA_SUCCESS)
   {
-    ::cuda::std::apply(__casted_data_ptr->__callable_, ::cuda::std::move(__casted_data_ptr->__args_tuple_));
+    (void) ::cuda::std::apply(__casted_data_ptr->__callable_, ::cuda::std::move(__casted_data_ptr->__args_));
   }
   delete __casted_data_ptr;
 }
@@ -63,27 +64,24 @@ void __stream_callback_caller(::cudaStream_t, ::cudaError_t __status, void* __da
 //! @param __stream Stream to launch the host function on
 //! @param __callable Host function or callable object to call in stream order
 //! @param __args Arguments to call the supplied callable with
-template <typename _Callable, typename... _Args>
-void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
+template <class _Callable, class... _Args>
+_CCCL_HOST_API void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
 {
   static_assert(::cuda::std::is_invocable_v<_Callable, _Args...>,
                 "Callable can't be called with the supplied arguments");
+  static_assert(::cuda::std::is_move_constructible_v<_Callable>, "The callable must be move constructible");
+  static_assert((::cuda::std::is_move_constructible_v<_Args> && ...),
+                "All callback arguments must be move constructible");
 
   using _CallbackData                = __stream_callback_data<_Callable, _Args...>;
   _CallbackData* __callback_data_ptr = new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
 
   // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
-  _CCCL_TRY_CUDA_API(
-    cudaStreamAddCallback,
-    "Failed to launch host function",
-    __stream.get(),
-    __stream_callback_caller<_CallbackData>,
-    static_cast<void*>(__callback_data_ptr),
-    0);
+  ::cuda::__driver::__streamAddCallback(__stream.get(), __stream_callback_launcher<_CallbackData>, __callback_data_ptr);
 }
 
 template <class _Callable>
-void __host_func_launcher(void* __callable_ptr)
+_CCCL_HOST_API inline void CUDA_CB __host_func_launcher(void* __callable_ptr)
 {
   (*static_cast<_Callable*>(__callable_ptr))();
 }
@@ -93,27 +91,19 @@ void __host_func_launcher(void* __callable_ptr)
 //! Callable will be called using the supplied reference. If the callable was destroyed
 //! or moved by the time it is asynchronously called the behavior is undefined.
 //!
-//! Callable can't take any arguments, if some additional state is required a lambda can be used
-//! to capture it.
-//!
 //! Callable must not call any APIs from cuda, thrust or cub namespaces.
 //! It must not call into CUDA Runtime or Driver APIs. It also can't depend on another
 //! thread that might block on any asynchronous CUDA work.
 //!
 //! @param __stream Stream to launch the host function on
 //! @param __callable A reference to a host function or callable object to call in stream order
-template <typename _Callable, typename... _Args>
-void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> __callable)
+template <class _Callable>
+_CCCL_HOST_API void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> __callable)
 {
   static_assert(::cuda::std::is_invocable_v<_Callable>, "Callable in reference_wrapper can't take any arguments");
-  _CCCL_TRY_CUDA_API(
-    cudaLaunchHostFunc,
-    "Failed to launch host function",
-    __stream.get(),
-    __host_func_launcher<_Callable>,
-    ::cuda::std::addressof(__callable.get()));
+  ::cuda::__driver::__launchHostFunc(
+    __stream.get(), __host_func_launcher<_Callable>, ::cuda::std::addressof(__callable.get()));
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

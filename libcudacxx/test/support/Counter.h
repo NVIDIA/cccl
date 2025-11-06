@@ -80,7 +80,6 @@ int Counter_base::gConstructed = 0;
 
 namespace std
 {
-
 template <class T>
 struct hash<Counter<T>>
 {

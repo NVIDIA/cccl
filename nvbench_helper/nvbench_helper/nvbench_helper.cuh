@@ -33,7 +33,17 @@ NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 
 using complex = cuda::std::complex<float>;
 
-NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
+#if _CCCL_HAS_NVFP16()
+NVBENCH_DECLARE_TYPE_STRINGS(__half, "Half", "half");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__half>, "C16", "complex_half");
+#endif
+#if _CCCL_HAS_NVBF16()
+NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "Bfloat16", "bfloat16");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__nv_bfloat16>, "CB16", "complex_bfloat16");
+#endif
+NVBENCH_DECLARE_TYPE_STRINGS(complex, "C32", "complex32");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<double>, "C64", "complex64");
+
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
 NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
@@ -54,7 +64,6 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
 
 namespace detail
 {
-
 template <class List, class... Ts>
 struct push_back
 {};
@@ -64,7 +73,6 @@ struct push_back<nvbench::type_list<As...>, Ts...>
 {
   using type = nvbench::type_list<As..., Ts...>;
 };
-
 } // namespace detail
 
 template <class List, class... Ts>
@@ -218,7 +226,6 @@ template <typename T>
 
 namespace detail
 {
-
 void do_not_optimize(const void* ptr);
 
 template <typename T>
@@ -251,7 +258,6 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
 
 namespace
 {
-
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -433,7 +439,6 @@ struct gen_t
   gen_power_law_t power_law{};
 };
 } // namespace
-
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -636,5 +641,4 @@ auto policy(caching_allocator_t&, nvbench::launch&)
   return thrust::device;
 }
 #endif
-
 } // namespace
