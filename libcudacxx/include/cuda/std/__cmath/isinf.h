@@ -47,7 +47,11 @@ template <class _Tp>
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    return ::isinf(__x);
+#if defined(isinf)
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::isinf(__x);), (return isinf(__x);));
+#else
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::isinf(__x);), (return ::isinf(__x);));
+#endif
   }
   if (::cuda::std::isnan(__x))
   {
@@ -70,7 +74,7 @@ template <class _Tp>
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    return ::isinf(__x);
+    return ::cuda::std::__isinf_impl(__x);
   }
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
