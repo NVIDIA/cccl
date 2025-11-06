@@ -10,7 +10,6 @@ Classes
 ~~~~~~~
 
 * :doc:`cuda::experimental::async_buffer <classcuda_1_1experimental_1_1async__buffer>`
-* :doc:`cuda::experimental::heterogeneous_iterator <classcuda_1_1experimental_1_1heterogeneous__iterator>`
 * :doc:`cuda::experimental::logical_device <classcuda_1_1experimental_1_1logical__device>`
 * :doc:`cuda::experimental::stf::algorithm <classcuda_1_1experimental_1_1stf_1_1algorithm>`
 * :doc:`cuda::experimental::stf::async_resources_handle <classcuda_1_1experimental_1_1stf_1_1async__resources__handle>`
@@ -119,7 +118,6 @@ Classes
 * :doc:`cuda::experimental::stf::void_graph_interface <classcuda_1_1experimental_1_1stf_1_1void__graph__interface>`
 * :doc:`cuda::experimental::stf::void_interface <classcuda_1_1experimental_1_1stf_1_1void__interface>`
 * :doc:`cuda::experimental::stf::void_stream_interface <classcuda_1_1experimental_1_1stf_1_1void__stream__interface>`
-* :doc:`cuda::experimental::uninitialized_async_buffer <classcuda_1_1experimental_1_1uninitialized__async__buffer>`
 * :doc:`cuda::experimental::uninitialized_buffer <classcuda_1_1experimental_1_1uninitialized__buffer>`
 
 Structs
@@ -275,7 +273,6 @@ Type Definitions
 * :doc:`cuda::experimental::stf::slice <namespacecuda_1_1experimental_1_1stf_1ae06c2436b4d1c209eb27b51246a623ef>`
 * :doc:`cuda::experimental::stf::task_dep_vector_untyped <namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62>`
 * :doc:`cuda::experimental::stf::token <namespacecuda_1_1experimental_1_1stf_1aa9c8a86afb5d22780fd035a16435c768>`
-* :doc:`cuda::experimental::uninitialized_async_device_buffer <namespacecuda_1_1experimental_1aefba5d75351aad499faf30658b54df50>`
 * :doc:`cuda::experimental::uninitialized_device_buffer <namespacecuda_1_1experimental_1a0d0aa10903bca9350c88da9e7121c089>`
 
 Enumerations
@@ -362,7 +359,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1green__ctx__view
    classcuda_1_1experimental_1_1stf_1_1hashtable
    classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface
-   classcuda_1_1experimental_1_1heterogeneous__iterator
    classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy
    classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and
    classcuda_1_1experimental_1_1stf_1_1logical__data
@@ -419,7 +415,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1uncached__block__allocator
    classcuda_1_1experimental_1_1stf_1_1uncached__graph__allocator
    classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator
-   classcuda_1_1experimental_1_1uninitialized__async__buffer
    classcuda_1_1experimental_1_1uninitialized__buffer
    classcuda_1_1experimental_1_1stf_1_1void__graph__interface
    classcuda_1_1experimental_1_1stf_1_1void__interface
@@ -566,7 +561,6 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1ae06c2436b4d1c209eb27b51246a623ef
    namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62
    namespacecuda_1_1experimental_1_1stf_1aa9c8a86afb5d22780fd035a16435c768
-   namespacecuda_1_1experimental_1aefba5d75351aad499faf30658b54df50
    namespacecuda_1_1experimental_1a0d0aa10903bca9350c88da9e7121c089
    namespacecuda_1_1experimental_1a4401baa9c7798a0dd6f981de4e549d86
    namespacecuda_1_1experimental_1_1stf_1a923aa8f0346e2b2a9e970a0fab753673
