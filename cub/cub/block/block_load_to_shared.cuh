@@ -208,9 +208,17 @@ private:
        return true;));
   }
 
+  struct token_impl
+  {};
+
 public:
   /// @smemstorage{BlockLoadToShared}
   using TempStorage = cub::Uninitialized<_TempStorage>;
+
+  //! Token type used to enforce correct call order between Commit() and Wait()
+  //! member functions. Returned by Commit() and required by Wait() as a usage
+  //! guard.
+  using CommitToken = token_impl;
 
   //! @name Collective constructors
   //! @{
@@ -339,7 +347,7 @@ public:
   }
 
   //! @brief Commit one or more @c CopyAsync() calls.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Commit()
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE CommitToken Commit()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy_or_commit, "CopyAsync() must be called before Commit()");
@@ -360,10 +368,15 @@ public:
        __syncthreads();),
       NV_PROVIDES_SM_80,
       (asm volatile("cp.async.commit_group ;" :: : "memory");));
+
+    // Token's mere purpose currently is to prevent calling Wait() without a
+    // prior Commit()
+    return CommitToken{};
   }
 
-  //! @brief Wait for previously committed copies to arrive. Prepare for next calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait()
+  //! @brief Wait for previously committed copies to arrive. Prepare for next
+  //! calls to @c CopyAsync() .
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(const CommitToken&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
