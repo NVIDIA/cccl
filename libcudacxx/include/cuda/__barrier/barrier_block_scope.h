@@ -45,6 +45,10 @@
 
 #include <nv/target>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <new>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #if _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
