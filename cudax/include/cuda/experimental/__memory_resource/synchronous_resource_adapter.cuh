@@ -43,11 +43,11 @@ _CCCL_CONCEPT __has_member_deallocate = _CCCL_REQUIRES_EXPR(
 template <class _Resource>
 struct synchronous_resource_adapter : ::cuda::mr::__copy_default_queries<_Resource>
 {
-  synchronous_resource_adapter(const _Resource& __resource) noexcept
+  _CCCL_HOST_API synchronous_resource_adapter(const _Resource& __resource) noexcept
       : __resource(__resource)
   {}
 
-  synchronous_resource_adapter(_Resource&& __resource) noexcept
+  _CCCL_HOST_API synchronous_resource_adapter(_Resource&& __resource) noexcept
       : __resource(__resource)
   {}
 
