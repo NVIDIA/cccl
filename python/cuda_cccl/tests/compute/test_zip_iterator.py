@@ -268,7 +268,7 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     def add_pairs(p1, p2):
         a, b = tuple(p1)
         c, d = tuple(p2)
-        return a + d, b + c
+        return a + c, b + d
 
     cuda.compute.inclusive_scan(zip_it, zip_out_it, add_pairs, None, num_items)
 
@@ -280,12 +280,9 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     # First element is just the input
     expected_out1[0] = in1[0]
     expected_out2[0] = in2[0]
-
-    # Inclusive scan: out[i] = add_pairs(out[i-1], in[i])
-    # where add_pairs((a, b), (c, d)) = (a + d, b + c)
     for i in range(1, num_items):
-        expected_out1[i] = expected_out1[i - 1] + in2[i]  # p1[0] + p2[1]
-        expected_out2[i] = expected_out2[i - 1] + in1[i]  # p1[1] + p2[0]
+        expected_out1[i] = expected_out1[i - 1] + in1[i]
+        expected_out2[i] = expected_out2[i - 1] + in2[i]
 
     np.testing.assert_array_equal(d_out1.get(), expected_out1)
     np.testing.assert_array_equal(d_out2.get(), expected_out2)
