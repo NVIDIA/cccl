@@ -212,7 +212,7 @@ private:
   class token_impl
   {
     friend class BlockLoadToShared;
-    _CCCL_DEVICE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+    _CCCL_DEVICE _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
 
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
