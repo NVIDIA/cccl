@@ -17,6 +17,12 @@ pip install cuda-cccl[cu13]  # For CUDA 13.x
 pip install cuda-cccl[cu12]  # For CUDA 12.x
 ```
 
+Install from conda-forge:
+
+```bash
+conda install -c conda-forge cccl-python
+```
+
 **Requirements:** Python 3.10+, CUDA Toolkit 12.x or 13.x, NVIDIA GPU with Compute Capability 6.0+
 
 ## Documentation

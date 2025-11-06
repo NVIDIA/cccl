@@ -175,32 +175,12 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
 
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
-      set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
-                                           EXCLUDE_FROM_DEFAULT_BUILD true)
-      add_test(NAME ${test_target}
-               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                                        --target ${test_target}
-                                        --config $<CONFIGURATION>)
-      string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
-      file(READ ${test_src} test_content)
-      if(MATCH_RESULT)
-        string(REGEX MATCH "// expected-error-${CMAKE_MATCH_1}+ {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
-
-        if (expected_errors_matches)
-          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
-        else()
-          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
-        endif()
-      else()
-        string(REGEX MATCH "// expected-error {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
-
-        if (expected_errors_matches)
-          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
-        else()
-          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
-        endif()
-      endif()
-    else() # Not fail test:
+      cccl_add_xfail_compile_target_test(${test_target}
+        SOURCE_FILE "${test_src}"
+        ERROR_REGEX_LABEL "expected-error"
+        ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
+      )
+    else()
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})
 
