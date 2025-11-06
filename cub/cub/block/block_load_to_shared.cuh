@@ -208,8 +208,14 @@ private:
        return true;));
   }
 
+  // token is only constructible by BlockLoadToShared
   struct token_impl
-  {};
+  {
+    friend class BlockLoadToShared;
+
+  private:
+    _CCCL_DEVICE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+  };
 
 public:
   /// @smemstorage{BlockLoadToShared}
