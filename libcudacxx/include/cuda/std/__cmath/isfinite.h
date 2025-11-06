@@ -64,7 +64,7 @@ template <class _Tp>
   {
 #  if defined(isfinite)
     NV_IF_TARGET(NV_IS_DEVICE, (return ::isfinite(__x);), (return isfinite(__x);));
-#  else
+#  else // ^^^ macro ^^^ / vvv function vvv
     NV_IF_TARGET(NV_IS_DEVICE, (return ::isfinite(__x);), (return ::isfinite(__x);));
 #  endif // function
   }
