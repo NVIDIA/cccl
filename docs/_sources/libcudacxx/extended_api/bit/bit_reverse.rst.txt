@@ -59,8 +59,8 @@ Example
     #include <cuda/std/cassert>
 
     __global__ void bit_reverse_kernel() {
-        assert(cuda::bitfield_reverse(0x0000FFFFu) == 0xFFFF0000u);
-        assert(cuda::bitfield_reverse(uint8_t{0b00001011}) == uint8_t{0b11010000});
+        assert(cuda::bit_reverse(0x0000FFFFu) == 0xFFFF0000u);
+        assert(cuda::bit_reverse(uint8_t{0b00001011}) == uint8_t{0b11010000});
     }
 
     int main() {
