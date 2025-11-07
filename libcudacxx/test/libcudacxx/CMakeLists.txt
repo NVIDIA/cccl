@@ -1,3 +1,42 @@
+###############################################################################
+### C2H tests:
+cccl_get_c2h()
+
+file(GLOB_RECURSE test_srcs
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  CONFIGURE_DEPENDS
+  *.cu
+)
+
+set(c2h_all_target "libcudacxx.test.c2h_all")
+add_custom_target(${c2h_all_target})
+
+function(libcudacxx_add_test target_name_var source)
+  string(REPLACE "/" "." target_name "${source}")
+  string(PREPEND target_name "libcudacxx.test.")
+  string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
+  set(${target_name_var} ${target_name} PARENT_SCOPE)
+
+  add_executable(${target_name} "${source}")
+  cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+  target_include_directories(${target_name} PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common")
+  target_link_libraries(${target_name} PRIVATE
+    libcudacxx::libcudacxx
+    libcudacxx.compiler_interface
+    cccl.c2h.main
+  )
+
+  add_dependencies(${c2h_all_target} ${target_name})
+
+  add_test(NAME ${target_name} COMMAND ${target_name})
+endfunction()
+
+foreach (test_src IN LISTS test_srcs)
+  libcudacxx_add_test(test_target "${test_src}")
+endforeach()
+
+###############################################################################
+### Lit tests:
 macro(pythonize_bool var)
   if (${var})
     set(${var} True)
@@ -14,7 +53,7 @@ foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
   set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}")
 endforeach ()
 
-message(STATUS "Enabled CUDA architectures:${_compute_message}")
+message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
 
 option(LIBCUDACXX_TEST_WITH_NVRTC
   "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
@@ -133,10 +172,26 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
-    DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
-    COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    # HACK: There is no way to tell CMake/ninja to always build a target serially,
+    # so we make this target depend on all other libcudacxx targets to avoid oversubscribing
+    # the build machine.
+    # FIXME: This has nasty side effects:
+    # - It's fragile and must be updated every time we add new targets to libcudacxx
+    # - It oversubs `-dev` presets that configure libcudacxx alongside other CCCL projects
+    # - It makes it impossible to just build this target alone since it brings in the world
+    # See related issue https://github.com/NVIDIA/cccl/issues/6163.
+    DEPENDS
+      libcudacxx.test.public_headers
+      libcudacxx.test.internal_headers
+      libcudacxx.test.public_headers_host_only
+      libcudacxx.test.c2h_all
+    COMMAND
+      "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+        "${libcudacxx_LIT}"
+          -vv --no-progress-bar --time-tests
+          ${libcudacxx_LIT_FLAGS}
+          "-Dexecutor=\"NoopExecutor()\""
+          "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
 
 endif()
@@ -147,49 +202,15 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 )
 
 add_test(NAME libcudacxx.test.lit COMMAND
-  "${CMAKE_COMMAND}" -E env
-    "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+  "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+    "${libcudacxx_LIT}"
+      -vv --no-progress-bar --time-tests
+      ${libcudacxx_LIT_FLAGS}
+      -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
+      "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
   TIMEOUT 10800 # 3hr, some CI machines are slow
   RUN_SERIAL TRUE
 )
-
-# Add c2h tests:
-cccl_get_c2h()
-
-file(GLOB_RECURSE test_srcs
-  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
-  CONFIGURE_DEPENDS
-  *.cu
-)
-
-set(c2h_all_target "libcudacxx.test.c2h_all")
-add_custom_target(${c2h_all_target})
-
-function(libcudacxx_add_test target_name_var source)
-  string(REPLACE "/" "." target_name "${source}")
-  string(PREPEND target_name "libcudacxx.test.")
-  string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
-  set(${target_name_var} ${target_name} PARENT_SCOPE)
-
-  add_executable(${target_name} "${source}")
-  cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
-  target_include_directories(${target_name} PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common")
-  target_link_libraries(${target_name} PRIVATE
-    libcudacxx::libcudacxx
-    cccl.c2h.main
-    libcudacxx.compiler_interface
-  )
-
-  add_dependencies(${c2h_all_target} ${target_name})
-
-  add_test(NAME ${target_name} COMMAND ${target_name})
-endfunction()
-
-foreach (test_src IN LISTS test_srcs)
-  libcudacxx_add_test(test_target "${test_src}")
-endforeach()
