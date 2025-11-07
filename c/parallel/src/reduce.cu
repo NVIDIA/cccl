@@ -307,35 +307,17 @@ __device__ consteval auto& policy_generator() {{
       case CCCL_MAXIMUM:
         ot = op_type::plus;
         break;
+      default:
+        break;
     }
 
     auto os = offset_size::_8; // sizeof(uint64_t)
-
-    auto as = accum_size::unknown;
-    switch (accum_t.size)
-    {
-      case 1:
-        as = accum_size::_1;
-        break;
-      case 2:
-        as = accum_size::_2;
-        break;
-      case 4:
-        as = accum_size::_4;
-        break;
-      case 8:
-        as = accum_size::_8;
-        break;
-      case 16:
-        as = accum_size::_16;
-        break;
-    }
 
     build->cc               = cc_major * 10 + cc_minor;
     build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
-    build->runtime_policy   = new arch_policies{at, ot, os, as};
+    build->runtime_policy   = new arch_policies{at, ot, os, static_cast<int>(accum_t.size)};
   }
   catch (const std::exception& exc)
   {
@@ -369,8 +351,6 @@ CUresult cccl_device_reduce(
     check(cuCtxGetDevice(&cu_device));
 
     using namespace cub::detail::reduce;
-    const auto policy_hub = *reinterpret_cast<arch_policies*>(build.runtime_policy);
-
     auto exec_status = ::cub::detail::reduce::dispatch<void>(
       d_temp_storage,
       *temp_storage_bytes,
@@ -383,7 +363,7 @@ CUresult cccl_device_reduce(
       ::cuda::std::identity{},
       reduce::reduce_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-      policy_hub);
+      *static_cast<arch_policies*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
