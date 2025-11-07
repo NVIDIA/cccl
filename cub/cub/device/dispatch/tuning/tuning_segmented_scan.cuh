@@ -78,17 +78,25 @@ struct policy_hub
 private:
   using scan_hub = detail::scan::policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
 
+  template <int BlockThreads, int ItemsPerThread, typename ComputeT>
+  struct NoScaling
+  {
+    static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+    static constexpr int BLOCK_THREADS    = BlockThreads;
+  };
+
   // reuse policy_hub for scan algorithms. This approach assumes that
   // policy chain here matches the chain used in scan_hub
   template <typename ComputeT, typename AgentScanPolicyT>
-  using translate_agent =
-    AgentSegmentedScanPolicy<AgentScanPolicyT::BLOCK_THREADS,
-                             AgentScanPolicyT::ITEMS_PER_THREAD,
-                             ComputeT,
-                             AgentScanPolicyT::LOAD_ALGORITHM,
-                             AgentScanPolicyT::LOAD_MODIFIER,
-                             AgentScanPolicyT::STORE_ALGORITHM,
-                             AgentScanPolicyT::SCAN_ALGORITHM>;
+  using translate_agent = AgentSegmentedScanPolicy<
+    AgentScanPolicyT::BLOCK_THREADS,
+    AgentScanPolicyT::ITEMS_PER_THREAD,
+    ComputeT,
+    AgentScanPolicyT::LOAD_ALGORITHM,
+    AgentScanPolicyT::LOAD_MODIFIER,
+    AgentScanPolicyT::STORE_ALGORITHM,
+    AgentScanPolicyT::SCAN_ALGORITHM,
+    NoScaling<AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::ITEMS_PER_THREAD, ComputeT>>;
 
 public:
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
