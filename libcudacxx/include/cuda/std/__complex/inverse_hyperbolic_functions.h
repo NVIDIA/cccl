@@ -390,9 +390,7 @@ template <class _Tp>
 template <>
 _CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
-  const complex<__nv_bfloat16> ans = complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
-
-  return ans;
+  return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
