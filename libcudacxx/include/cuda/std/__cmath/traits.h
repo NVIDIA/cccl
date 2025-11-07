@@ -64,11 +64,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATER)
   return _CCCL_BUILTIN_ISGREATER(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
-#    if defined(isgreater)
   return isgreater(__x, __y);
-#    else // ^^^ macro ^^^ / vvv function vvv
-  return ::isgreater(__x, __y);
-#    endif // function
 #  endif // !_CCCL_BUILTIN_ISGREATER
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -105,11 +101,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
   return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
-#    if defined(isgreaterequal)
   return isgreaterequal(__x, __y);
-#    else // ^^^ macro ^^^ / vvv function vvv
-  return ::isgreaterequal(__x, __y);
-#    endif // function
 #  endif // !_CCCL_BUILTIN_ISGREATEREQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -146,11 +138,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESS)
   return _CCCL_BUILTIN_ISLESS(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
-#    if defined(isless)
   return isless(__x, __y);
-#    else // ^^^ macro ^^^ / vvv function vvv
-  return ::isless(__x, __y);
-#    endif // function
 #  endif // !_CCCL_BUILTIN_ISLESS
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -187,11 +175,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESSEQUAL)
   return _CCCL_BUILTIN_ISLESSEQUAL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
-#    if defined(islessequal)
   return islessequal(__x, __y);
-#    else // ^^^ macro ^^^ / vvv function vvv
-  return ::islessequal(__x, __y);
-#    endif // function
 #  endif // !_CCCL_BUILTIN_ISLESSEQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -228,11 +212,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESSGREATER)
   return _CCCL_BUILTIN_ISLESSGREATER(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
-#    if defined(islessgreater)
   return islessgreater(__x, __y);
-#    else // ^^^ macro ^^^ / vvv function vvv
-  return ::islessgreater(__x, __y);
-#    endif // function
 #  endif // !_CCCL_BUILTIN_ISLESSGREATER
 }
 #endif // !_CCCL_COMPILER(NVRTC)
