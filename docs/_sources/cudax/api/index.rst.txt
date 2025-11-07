@@ -191,7 +191,6 @@ Functions
 * :doc:`cuda::experimental::hierarchy::index <namespacecuda_1_1experimental_1_1hierarchy_1a0005c3898faf2106b9f7ae078ace2d10>`
 * :doc:`cuda::experimental::hierarchy::rank <namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789>`
 * :doc:`cuda::experimental::hierarchy_add_level <namespacecuda_1_1experimental_1ad06aeac9dc8f8a5bf0d59a91d821f852>`
-* :doc:`cuda::experimental::host_launch <namespacecuda_1_1experimental_1a220f357be074348d480be71c228e1ccc>`
 * :doc:`cuda::experimental::launch <namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080>`
 * :doc:`cuda::experimental::make_buffer <namespacecuda_1_1experimental_1a37b1c7d3541c43e63a8ea8e94b33d5ee>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
@@ -484,7 +483,6 @@ Variables
    namespacecuda_1_1experimental_1a591c99d80c8d7f96a29174492e72a859
    namespacecuda_1_1experimental_1a64c529b2b7d858f06b3d45a5ee1967c3
    namespacecuda_1_1experimental_1a5b4677b4c5bc188a0144206ace982c58
-   namespacecuda_1_1experimental_1a220f357be074348d480be71c228e1ccc
    namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080
    namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f
    namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789
