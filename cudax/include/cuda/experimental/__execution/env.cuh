@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
@@ -35,7 +36,6 @@
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -202,17 +202,9 @@ _CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
 struct __mk_sch_env_t
 {
   template <class _Sch, class... _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
   {
-    if constexpr (__completes_inline<env_of_t<schedule_result_t<_Sch>>, _Env...>
-                  && (__callable<get_scheduler_t, const _Env&> || ...))
-    {
-      return __sch_env_t{get_scheduler(__env)...};
-    }
-    else
-    {
-      return __sch_env_t{__sch};
-    }
+    return __sch_env_t{__call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __env...)};
   }
 };
 
@@ -253,23 +245,6 @@ _CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 //! and domain based on the environment.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_attrs_t
 {
-  template <class _Tag, class _Env, class _Sch = __scheduler_of_t<_Env>>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>, const _Env& __env) const noexcept
-    -> __call_result_or_t<get_completion_scheduler_t<set_value_t>, _Sch, _Sch, __hide_scheduler<const _Env&>>
-  {
-    _Sch __sch = get_scheduler(__env);
-    // We must ask the scheduler where its schedule operations will complete, since it may
-    // not be on the scheduler itself.
-    return __call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __hide_scheduler{__env});
-  }
-
-  template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env& __env) const noexcept
-    -> __call_result_t<get_domain_t, const _Env&>
-  {
-    return {};
-  }
-
   [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
   {
     return completion_behavior::inline_completion;
@@ -320,11 +295,11 @@ template <class... _Properties>
 class env_t
 {
 private:
-  using __resource   = any_resource<_Properties...>;
+  using __resource   = ::cuda::mr::any_resource<_Properties...>;
   using __stream_ref = stream_ref;
 
   __resource __mr_;
-  __stream_ref __stream_                    = ::cuda::__detail::__invalid_stream;
+  __stream_ref __stream_                    = ::cuda::__invalid_stream();
   execution::any_execution_policy __policy_ = {};
 
 public:
@@ -333,7 +308,7 @@ public:
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
-                            __stream_ref __stream                    = ::cuda::__detail::__invalid_stream,
+                            __stream_ref __stream                    = ::cuda::__invalid_stream(),
                             execution::any_execution_policy __policy = {}) noexcept
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
@@ -374,7 +349,6 @@ public:
     return __policy_;
   }
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/experimental/__execution/epilogue.cuh>

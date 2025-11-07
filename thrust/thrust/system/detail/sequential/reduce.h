@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputType reduce(
@@ -59,6 +58,5 @@ _CCCL_HOST_DEVICE OutputType reduce(
 
   return result;
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

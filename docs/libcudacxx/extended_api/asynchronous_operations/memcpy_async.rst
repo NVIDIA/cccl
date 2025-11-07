@@ -233,4 +233,4 @@ a custom group can be defined like:
      }
    };
 
-`See it on Godbolt <https://godbolt.org/z/aM9cbabcW>`_
+`See it on Godbolt <https://godbolt.org/z/aM9cbabcW>`__

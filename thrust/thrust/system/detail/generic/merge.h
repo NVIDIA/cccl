@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 // XXX calling this function is an error; there is no implementation
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -92,7 +91,6 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator4 values_first2,
   OutputIterator1 keys_result,
   OutputIterator2 values_result);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

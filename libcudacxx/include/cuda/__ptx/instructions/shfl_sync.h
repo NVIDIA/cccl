@@ -83,11 +83,11 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
   [[maybe_unused]] uint32_t __lane_mask)
 {
   static_assert(sizeof(_Tp) == 4, "shfl.sync only accepts 4-byte data types");
+  _CCCL_ASSERT(__lane_mask & (1u << ::cuda::ptx::get_sreg_laneid()), "lane_mask must contain the current lane");
   if (__shfl_mode != __dot_shfl_mode::__idx)
   {
     _CCCL_ASSERT(__lane_idx_offset < 32, "the lane index or offset must be less than the warp size");
   }
-  _CCCL_ASSERT(__lane_mask != 0, "lane_mask must be non-zero");
   _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
                "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
   _CCCL_ASSERT(::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,

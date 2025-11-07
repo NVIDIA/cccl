@@ -29,12 +29,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/copy.h>
+#include <thrust/detail/function.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -47,8 +50,31 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   InputIterator2 first2,
   InputIterator2 last2,
   OutputIterator result,
-  StrictWeakOrdering comp);
+  StrictWeakOrdering comp)
+{
+  // wrap comp
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
+  while (first1 != last1 && first2 != last2)
+  {
+    if (wrapped_comp(*first2, *first1))
+    {
+      *result = *first2;
+      ++first2;
+    } // end if
+    else
+    {
+      *result = *first1;
+      ++first1;
+    } // end else
+
+    ++result;
+  } // end while
+
+  return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
+} // end merge()
+
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -58,7 +84,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
-  sequential::execution_policy<DerivedPolicy>& exec,
+  sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -67,9 +93,55 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator4 values_first2,
   OutputIterator1 keys_result,
   OutputIterator2 values_result,
-  StrictWeakOrdering comp);
+  StrictWeakOrdering comp)
+{
+  // wrap comp
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
+  while (keys_first1 != keys_last1 && keys_first2 != keys_last2)
+  {
+    if (!wrapped_comp(*keys_first2, *keys_first1))
+    {
+      // *keys_first1 <= *keys_first2
+      *keys_result   = *keys_first1;
+      *values_result = *values_first1;
+      ++keys_first1;
+      ++values_first1;
+    }
+    else
+    {
+      // *keys_first1 > keys_first2
+      *keys_result   = *keys_first2;
+      *values_result = *values_first2;
+      ++keys_first2;
+      ++values_first2;
+    }
+
+    ++keys_result;
+    ++values_result;
+  }
+
+  while (keys_first1 != keys_last1)
+  {
+    *keys_result   = *keys_first1;
+    *values_result = *values_first1;
+    ++keys_first1;
+    ++values_first1;
+    ++keys_result;
+    ++values_result;
+  }
+
+  while (keys_first2 != keys_last2)
+  {
+    *keys_result   = *keys_first2;
+    *values_result = *values_first2;
+    ++keys_first2;
+    ++values_first2;
+    ++keys_result;
+    ++values_result;
+  }
+
+  return thrust::make_pair(keys_result, values_result);
+}
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/sequential/merge.inl>

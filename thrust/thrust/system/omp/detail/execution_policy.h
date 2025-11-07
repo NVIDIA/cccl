@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -22,16 +23,11 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp
 {
-//! \addtogroup execution_policies
-//! \{
-
-//! \p thrust::omp::tag is a type representing Thrust's OpenMP backend system in C++'s type system. Iterators "tagged"
-//! with a type which is convertible to \p omp::tag assert that they may be "dispatched" to algorithm implementations in
-//! the \p omp system.
+namespace detail
+{
+// note: the tag and execution policy need to be defined in the same namespace as the algorithms for ADL to find them
 struct tag;
 
-//! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution policies which are derived from
-//! Thrust's OpenMP backend system.
 template <typename Derived>
 struct execution_policy;
 
@@ -56,8 +52,6 @@ struct execution_policy : cpp::execution_policy<Derived>
   }
 };
 
-namespace detail
-{
 struct par_t
     : execution_policy<par_t>
     , thrust::detail::allocator_aware_execution_policy<execution_policy>
@@ -78,6 +72,18 @@ _CCCL_HOST_DEVICE System2 select_system(tbb::execution_policy<System1>, executio
   return thrust::detail::derived_cast(s);
 }
 } // namespace detail
+
+//! \addtogroup execution_policies
+//! \{
+
+//! \p thrust::omp::tag is a type representing Thrust's OpenMP backend system in C++'s type system. Iterators "tagged"
+//! with a type which is convertible to \p omp::tag assert that they may be "dispatched" to algorithm implementations in
+//! the \p omp system.
+using detail::tag;
+
+//! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution policies which are derived from
+//! Thrust's OpenMP backend system.
+using detail::execution_policy;
 
 //! \p thrust::omp::par is the parallel execution policy associated with Thrust's OpenMP backend system.
 //!
@@ -114,7 +120,6 @@ _CCCL_HOST_DEVICE System2 select_system(tbb::execution_policy<System1>, executio
 inline constexpr detail::par_t par;
 
 //! \}
-
 } // namespace system::omp
 
 // aliases:

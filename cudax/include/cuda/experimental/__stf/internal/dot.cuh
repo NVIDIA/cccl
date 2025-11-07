@@ -59,7 +59,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 int get_next_prereq_unique_id();
 
 //! Sets of integer pairs used to represent edges
@@ -1555,5 +1554,4 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
   nvtxRangePop();
 #endif
 }
-
 } // namespace cuda::experimental::stf::reserved

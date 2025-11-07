@@ -11,7 +11,7 @@ cccl_get_catch2()
 cccl_get_nvbench()
 
 add_library(cccl.nvbench_helper OBJECT nvbench_helper/nvbench_helper.cu)
-
+cccl_configure_target(cccl.nvbench_helper DIALECT 17)
 target_link_libraries(cccl.nvbench_helper
   PUBLIC
     libcudacxx::libcudacxx
@@ -21,6 +21,7 @@ target_link_libraries(cccl.nvbench_helper
     nvbench::nvbench
   PRIVATE
     CUDA::curand
+    cccl.compiler_interface_cpp17
 )
 
 target_include_directories(cccl.nvbench_helper PUBLIC "${CMAKE_CURRENT_LIST_DIR}/nvbench_helper")
@@ -48,6 +49,7 @@ if (nvbench_helper_ENABLE_TESTING)
       cccl.nvbench_helper.test.Thrust.cpp.${device_system}
       Catch2::Catch2WithMain
       Boost::math
+      cccl.compiler_interface_cpp17
     )
   endfunction()
 

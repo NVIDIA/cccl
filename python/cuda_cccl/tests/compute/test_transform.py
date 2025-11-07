@@ -271,9 +271,6 @@ def test_unary_transform_well_known_negate():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-@pytest.mark.xfail(
-    reason="CCCL_IDENTITY well-known operation fails with NVRTC compilation error in C++ library. See GH#5515."
-)
 def test_unary_transform_well_known_identity():
     """Test unary transform with well-known IDENTITY operation."""
     dtype = np.int32

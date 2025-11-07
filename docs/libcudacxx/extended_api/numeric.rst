@@ -8,6 +8,8 @@ Numeric
    :maxdepth: 1
 
    numeric/add_overflow
+   numeric/sub_overflow
+   numeric/div_overflow
    numeric/narrow
    numeric/overflow_result
 
@@ -32,5 +34,15 @@ Numeric
 
    * - :ref:`cuda::add_overflow <libcudacxx-extended-api-numeric-add_overflow>`
      - Performs addition with overflow checking
+     - CCCL 3.2.0
+     - CUDA 13.2
+
+   * - :ref:`cuda::sub_overflow <libcudacxx-extended-api-numeric-sub_overflow>`
+     - Performs subtraction with overflow checking
+     - CCCL 3.2.0
+     - CUDA 13.2
+
+   * - :ref:`cuda::div_overflow <libcudacxx-extended-api-numeric-div_overflow>`
+     - Performs division with overflow checking
      - CCCL 3.2.0
      - CUDA 13.2

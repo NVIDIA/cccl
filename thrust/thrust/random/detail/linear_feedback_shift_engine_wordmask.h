@@ -28,12 +28,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace random
+namespace random::detail
 {
-
-namespace detail
-{
-
 template <typename T, int w, int i = w - 1>
 struct linear_feedback_shift_engine_wordmask
 {
@@ -45,9 +41,6 @@ struct linear_feedback_shift_engine_wordmask<T, w, 0>
 {
   static const T value = 0;
 }; // end linear_feedback_shift_engine_wordmask
-
-} // namespace detail
-
-} // namespace random
+} // namespace random::detail
 
 THRUST_NAMESPACE_END

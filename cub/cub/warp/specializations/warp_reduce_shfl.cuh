@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -48,6 +24,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -66,7 +43,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <class A = int, class = A>
 struct reduce_add_exists : ::cuda::std::false_type
 {};
@@ -104,7 +80,7 @@ struct reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> : ::cu
 template <typename T, int LOGICAL_WARP_THREADS>
 struct WarpReduceShfl
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
   //---------------------------------------------------------------------
   // Constants and type definitions
@@ -452,12 +428,12 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(_T input, ReductionOp reduction_op, int last_lane, int offset)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(_Tp input, ReductionOp reduction_op, int last_lane, int offset)
   {
-    _T output = input;
+    _Tp output = input;
 
-    _T temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
+    _Tp temp = ShuffleDown<LOGICAL_WARP_THREADS>(output, offset, last_lane, member_mask);
 
     // Perform reduction op if valid
     if (offset + lane_id <= last_lane)
@@ -486,9 +462,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }
@@ -512,9 +488,9 @@ struct WarpReduceShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small unsigned integer
    */
-  template <typename _T, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(
-    _T input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
+    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return ReduceStep(input, reduction_op, last_lane, offset);
   }

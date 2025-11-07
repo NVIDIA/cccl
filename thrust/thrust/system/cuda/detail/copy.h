@@ -268,6 +268,5 @@ copy_n(cross_system<System1, System2> systems, InputIterator first, Size n, Outp
 {
   return __copy::cross_system_copy_n(systems, first, n, result);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

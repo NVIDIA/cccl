@@ -40,9 +40,7 @@
 #include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-namespace functional
+namespace detail::functional
 {
 // there's no standard plus_equal functional, so roll an ad hoc one here
 struct plus_equal
@@ -381,6 +379,5 @@ _CCCL_HOST_DEVICE auto do_assign(const actor<Eval>& _1, const T& _2) -> decltype
 {
   return compose(assign{}, _1, _2);
 }
-} // namespace functional
-} // namespace detail
+} // namespace detail::functional
 THRUST_NAMESPACE_END

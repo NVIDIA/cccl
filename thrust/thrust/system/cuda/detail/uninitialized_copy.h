@@ -105,7 +105,6 @@ uninitialized_copy(execution_policy<Derived>& policy, InputIt first, InputIt las
 {
   return cuda_cub::uninitialized_copy_n(policy, first, ::cuda::std::distance(first, last), result);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

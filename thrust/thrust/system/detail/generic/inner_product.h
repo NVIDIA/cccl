@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
 _CCCL_HOST_DEVICE OutputType inner_product(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -53,7 +52,6 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   OutputType init,
   BinaryFunction1 binary_op1,
   BinaryFunction2 binary_op2);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

@@ -11,7 +11,7 @@
 #define TEST_SUPPORT_CONTAINER_DEBUG_TESTS_H
 
 #include <ciso646>
-#ifndef _LIBCUDACXX_VERSION
+#ifndef _CUDA_STD_VERSION
 #  error This header may only be used for libc++ tests
 #endif
 
@@ -32,7 +32,6 @@
 
 namespace IteratorDebugChecks
 {
-
 enum ContainerType
 {
   CT_None,
@@ -384,7 +383,6 @@ private:
 private:
   BasicContainerChecks() = delete;
 };
-
 } // namespace IteratorDebugChecks
 
 #endif // TEST_SUPPORT_CONTAINER_DEBUG_TESTS_H

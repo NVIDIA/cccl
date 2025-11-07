@@ -32,7 +32,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename BinaryFunction>
 struct is_commutative : public ::cuda::std::false_type
 {};
@@ -64,6 +63,5 @@ struct is_commutative<typename ::cuda::std::bit_and<T>> : public ::cuda::std::is
 template <typename T>
 struct is_commutative<typename ::cuda::std::bit_xor<T>> : public ::cuda::std::is_arithmetic<T>
 {};
-
 } // end namespace detail
 THRUST_NAMESPACE_END

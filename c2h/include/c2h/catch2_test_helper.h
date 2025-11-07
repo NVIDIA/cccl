@@ -18,6 +18,7 @@
 #include <type_traits>
 
 #include <c2h/catch2_main.h>
+#include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
@@ -64,7 +65,6 @@
 
 namespace c2h
 {
-
 template <typename... Ts>
 using type_list = ::cuda::std::__type_list<Ts...>;
 
@@ -188,7 +188,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 #endif // TEST_BF_T()
-
 } // namespace c2h
 
 namespace detail
@@ -398,13 +397,12 @@ class nvtx_fixture
 
 namespace c2h
 {
-
 inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static const char* override_str = std::getenv("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds = override_str ? std::atoi(override_str) : 0;
+  static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
+  static const int override_seeds                = override_str ? std::atoi(override_str->c_str()) : 0;
   return override_seeds;
 }
 

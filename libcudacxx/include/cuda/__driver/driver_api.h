@@ -283,7 +283,7 @@ _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
   size_t __zero           = 0;
-  _CUDA_DRIVER::__call_driver_fn(
+  ::cuda::__driver::__call_driver_fn(
     __driver_fn,
     "Failed to perform a memcpy with attributes",
     reinterpret_cast<::CUdeviceptr*>(&__dst),
@@ -498,6 +498,13 @@ __pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__r
 
 // Stream management
 
+_CCCL_HOST_API inline void
+__streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, unsigned __flags = 0)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamAddCallback);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to add a stream callback", __stream, __cb, __data, __flags);
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUstream __streamCreateWithPriority(unsigned __flags, int __priority)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamCreateWithPriority);
@@ -653,7 +660,7 @@ _CCCL_HOST_API inline void __eventSynchronize(::CUevent __evnt)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelGetFunction);
   ::CUfunction __result;
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get kernel function", &__result, __kernel);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel function", &__result, __kernel);
   return __result;
 }
 
@@ -662,7 +669,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 {
   int __value;
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get kernel attribute", &__value, __attr, __kernel, __dev);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel attribute", &__value, __attr, __kernel, __dev);
   return __value;
 }
 
@@ -671,7 +678,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuKernelGetName, cuKernelGetName, 12, 3);
   const char* __name;
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get kernel name", &__name, __kernel);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel name", &__name, __kernel);
   return __name;
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 3)
@@ -687,7 +694,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryLoadData);
   ::CUlibrary __result;
-  _CUDA_DRIVER::__call_driver_fn(
+  ::cuda::__driver::__call_driver_fn(
     __driver_fn,
     "Failed to load a library from data",
     &__result,
@@ -705,7 +712,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetKernel);
   ::CUkernel __result;
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get kernel from library", &__result, __library, __name);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel from library", &__result, __library, __name);
   return __result;
 }
 
@@ -720,7 +727,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuKernelGetLibrary, cuKernelGetLibrary, 12, 5);
   ::CUlibrary __lib;
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get the library from kernel", &__lib, __kernel);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get the library from kernel", &__lib, __kernel);
   return __lib;
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
@@ -762,11 +769,17 @@ __functionSetAttributeNoThrow(::CUfunction __kernel, ::CUfunction_attribute __at
   return static_cast<::cudaError_t>(__driver_fn(__kernel, __attr, __value));
 }
 
+_CCCL_HOST_API inline void __launchHostFunc(::CUstream __stream, ::CUhostFn __fn, void* __data)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLaunchHostFunc);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to launch host function", __stream, __fn, __data);
+}
+
 _CCCL_HOST_API inline void
 __launchKernel(::CUlaunchConfig& __config, ::CUfunction __kernel, void* __args[], void* __extra[] = nullptr)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLaunchKernelEx);
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to launch kernel", &__config, __kernel, __args, __extra);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to launch kernel", &__config, __kernel, __args, __extra);
 }
 
 // Graph management
@@ -776,7 +789,7 @@ __launchKernel(::CUlaunchConfig& __config, ::CUfunction __kernel, void* __args[]
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuGraphAddKernelNode);
   ::CUgraphNode __result;
-  _CUDA_DRIVER::__call_driver_fn(
+  ::cuda::__driver::__call_driver_fn(
     __driver_fn, "Failed to add a node to a graph", &__result, __graph, __deps, __ndeps, &__node_params);
   return __result;
 }
@@ -785,7 +798,7 @@ _CCCL_HOST_API inline void
 __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, const ::CUkernelNodeAttrValue& __value)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuGraphKernelNodeSetAttribute);
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to set kernel node parameters", __node, __id, &__value);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set kernel node parameters", __node, __id, &__value);
 }
 
 // Peer Context Memory Access
@@ -794,7 +807,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceCanAccessPeer);
   int __result;
-  _CUDA_DRIVER::__call_driver_fn(
+  ::cuda::__driver::__call_driver_fn(
     __driver_fn, "Failed to query if device can access peer's memory", &__result, __dev, __peer_dev);
   return static_cast<bool>(__result);
 }
@@ -832,7 +845,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxGetId, cuGreenCtxGetId, 13, 0);
   unsigned long long __id;
-  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get the ID of a green context", __green_ctx, &__id);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get the ID of a green context", __green_ctx, &__id);
   return __id;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)

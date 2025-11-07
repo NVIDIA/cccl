@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename Tag, typename Pointer>
 class tagged_allocator;
 
@@ -110,6 +109,5 @@ public:
     return false;
   }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END
