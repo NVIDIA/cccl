@@ -637,7 +637,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST,
                (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceReduce with tuning: %s\n", ss.str().c_str());))
+                _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", ptx_version, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   auto invoke_single_tile = [&] {
