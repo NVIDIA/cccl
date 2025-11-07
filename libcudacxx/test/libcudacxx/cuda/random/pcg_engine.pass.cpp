@@ -17,9 +17,9 @@
 __host__ __device__ constexpr bool test_against_reference()
 {
   // reference values obtained from other library implementations
-  const int seeds[]                            = {10823018, 0, 23};
-  const int discards[]                         = {0, 5, 100};
-  const cuda::std::uint64_t reference_values[] = {
+  constexpr int seeds[]                            = {10823018, 0, 23};
+  constexpr int discards[]                         = {0, 5, 100};
+  constexpr cuda::std::uint64_t reference_values[] = {
     11492238902574317825ull,
     8322011739913317518ull,
     16162292887622315191ull,

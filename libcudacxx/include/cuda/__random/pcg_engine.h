@@ -110,7 +110,7 @@ public:
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
   constexpr _CCCL_API void seed(_Sseq& __seq)
   {
-    ::cuda::std::array<uint32_t, 4> data = {};
+    ::cuda::std::array<::cuda::std::uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());
     __uint128_t seed_val = data[0];
     seed_val             = (seed_val << 32) | data[1];
@@ -134,8 +134,8 @@ public:
   /// @param __z Number of values to discard.
   constexpr _CCCL_API void discard(unsigned long long __z) noexcept
   {
-    auto [__mult, __plus] = __power_mod(__z);
-    __x_                  = __x_ * __mult + __plus;
+    const auto [__mult, __plus] = __power_mod(__z);
+    __x_                        = __x_ * __mult + __plus;
   }
 
   /// @brief Equality comparison for two engines.
@@ -144,12 +144,17 @@ public:
   {
     return __x.__x_ == __y.__x_;
   }
+
+#  if _CCCL_STD_VER == 2017
   /// @brief Inequality comparison for two engines.
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
   }
+#  endif
+
 #  if !_CCCL_COMPILER(NVRTC)
+
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const pcg64_engine& __e)
@@ -204,11 +209,11 @@ public:
 private:
   using __bitcount_t = ::cuda::std::uint8_t;
 
-  static constexpr __uint128_t __multiplier = ((__uint128_t) 2549297995355413924ULL << 64) | 4865540595714422341ULL;
-  static constexpr __uint128_t __increment  = ((__uint128_t) 6364136223846793005ULL << 64) | 1442695040888963407ULL;
+  static constexpr __uint128_t __multiplier = (__uint128_t{2549297995355413924ULL} << 64) | 4865540595714422341ULL;
+  static constexpr __uint128_t __increment  = (__uint128_t{6364136223846793005ULL} << 64) | 1442695040888963407ULL;
   [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_t __internal) noexcept
   {
-    __bitcount_t __rot = __bitcount_t(__internal >> 122);
+    const int __rot = static_cast<__bitcount_t>(__internal >> 122);
     __internal ^= __internal >> 64;
     return ::cuda::std::rotr(result_type(__internal), __rot);
   }
