@@ -46,26 +46,6 @@ public:
   }
 };
 
-struct ValueToScaledInteger
-{
-  int scale;
-
-  __host__ __device__ ScaledInteger operator()(const int& value) const
-  {
-    return ScaledInteger{value, scale};
-  }
-};
-
-struct ScaledIntegerToValue
-{
-  int scale;
-
-  __host__ __device__ int operator()(const ScaledInteger& scaled) const
-  {
-    return scaled.rescale(scale).value();
-  }
-};
-
 int main()
 {
   const size_t size = 4;
@@ -80,14 +60,28 @@ int main()
   const int B_scale = 8; // Values in B are left shifted by 8
   const int C_scale = 4; // Values in C are left shifted by 4
 
+  // Lambda to convert value to ScaledInteger
+  auto value_to_scaled = [](int scale) {
+    return [=] __device__(const int& value) {
+      return ScaledInteger{value, scale};
+    };
+  };
+
+  // Lambda to convert ScaledInteger to value
+  auto scaled_to_value = [](int scale) {
+    return [=] __device__(const ScaledInteger& scaled) {
+      return scaled.rescale(scale).value();
+    };
+  };
+
   auto A_begin = thrust::make_transform_input_output_iterator(
-    A.begin(), ValueToScaledInteger{A_scale}, ScaledIntegerToValue{A_scale});
+    A.begin(), value_to_scaled(A_scale), scaled_to_value(A_scale));
   auto A_end =
-    thrust::make_transform_input_output_iterator(A.end(), ValueToScaledInteger{A_scale}, ScaledIntegerToValue{A_scale});
+    thrust::make_transform_input_output_iterator(A.end(), value_to_scaled(A_scale), scaled_to_value(A_scale));
   auto B_begin = thrust::make_transform_input_output_iterator(
-    B.begin(), ValueToScaledInteger{B_scale}, ScaledIntegerToValue{B_scale});
+    B.begin(), value_to_scaled(B_scale), scaled_to_value(B_scale));
   auto C_begin = thrust::make_transform_input_output_iterator(
-    C.begin(), ValueToScaledInteger{C_scale}, ScaledIntegerToValue{C_scale});
+    C.begin(), value_to_scaled(C_scale), scaled_to_value(C_scale));
 
   // Sum A and B as ScaledIntegers, storing the scaled result in C
   thrust::transform(A_begin, A_end, B_begin, C_begin, cuda::std::plus<ScaledInteger>{});

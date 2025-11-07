@@ -39,25 +39,6 @@
 //
 // The possibilities are endless! :)
 
-struct arbitrary_functor1
-{
-  template <typename Tuple>
-  __host__ __device__ void operator()(Tuple t)
-  {
-    // D[i] = A[i] + B[i] * C[i];
-    thrust::get<3>(t) = thrust::get<0>(t) + thrust::get<1>(t) * thrust::get<2>(t);
-  }
-};
-
-struct arbitrary_functor2
-{
-  __host__ __device__ void operator()(const float& a, const float& b, const float& c, float& d)
-  {
-    // D[i] = A[i] + B[i] * C[i];
-    d = a + b * c;
-  }
-};
-
 int main()
 {
   // allocate and initialize
@@ -69,23 +50,31 @@ int main()
   // apply the transformation
   thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D1.begin()),
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D1.end()),
-                   arbitrary_functor1());
+                   [] __device__(auto t) {
+                    // D[i] = A[i] + B[i] * C[i];
+                    thrust::get<3>(t) = thrust::get<0>(t) + thrust::get<1>(t) * thrust::get<2>(t);
+                  });
 
   // print the output
-  std::cout << "Tuple functor" << std::endl;
+  std::cout << "Tuple lambda" << std::endl;
   for (size_t i = 0; i < A.size(); i++)
   {
     std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << std::endl;
   }
 
-  // apply the transformation using zip_function
+  // apply the transformation using zip_function with lambda
   thrust::device_vector<float> D2(5);
+  auto arbitrary_lambda2 = [] __device__(const float& a, const float& b, const float& c, float& d) {
+    // D[i] = A[i] + B[i] * C[i];
+    d = a + b * c;
+  };
+
   thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D2.begin()),
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D2.end()),
-                   thrust::make_zip_function(arbitrary_functor2()));
+                   thrust::make_zip_function(arbitrary_lambda2));
 
   // print the output
-  std::cout << "N-ary functor" << std::endl;
+  std::cout << "N-ary lambda" << std::endl;
   for (size_t i = 0; i < A.size(); i++)
   {
     std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D2[i] << std::endl;

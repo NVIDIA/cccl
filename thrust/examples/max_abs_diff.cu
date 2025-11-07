@@ -9,15 +9,6 @@
 // this example computes the maximum absolute difference
 // between the elements of two vectors
 
-template <typename T>
-struct abs_diff
-{
-  __host__ __device__ T operator()(const T& a, const T& b)
-  {
-    return fabsf(b - a);
-  }
-};
-
 int main()
 {
   thrust::device_vector<float> d_a = {1.0, 2.0, 3.0, 4.0};
@@ -30,7 +21,9 @@ int main()
   cuda::maximum<float> binary_op1{};
   abs_diff<float> binary_op2;
 
-  float max_abs_diff = thrust::inner_product(d_a.begin(), d_a.end(), d_b.begin(), init, binary_op1, binary_op2);
+  float max_abs_diff = thrust::inner_product(d_a.begin(), d_a.end(), d_b.begin(), init, binary_op1, [] __device__(const float& a, const float& b) {
+    return fabsf(b - a);
+  });
 
   std::cout << "maximum absolute difference: " << max_abs_diff << std::endl;
   return 0;

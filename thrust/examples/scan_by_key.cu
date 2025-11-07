@@ -4,17 +4,6 @@
 
 #include <iostream>
 
-// BinaryPredicate for the head flag segment representation
-// equivalent to cuda::std::not_fn(thrust::project2nd<int,int>()));
-template <typename HeadFlagType>
-struct head_flag_predicate
-{
-  __host__ __device__ bool operator()(HeadFlagType, HeadFlagType right) const
-  {
-    return !right;
-  }
-};
-
 template <typename Vector>
 void print(const Vector& v)
 {
@@ -52,9 +41,15 @@ int main()
   std::cout << " output values : ";
   print(d_output);
 
+  // lambda predicate for the head flag segment representation
+  // equivalent to cuda::std::not_fn(thrust::project2nd<int,int>()));
+  auto head_flag_predicate = [] __device__(int, int right) {
+    return !right;
+  };
+
   // inclusive scan using head flags
   thrust::inclusive_scan_by_key(
-    d_flags.begin(), d_flags.end(), d_values.begin(), d_output.begin(), head_flag_predicate<int>());
+    d_flags.begin(), d_flags.end(), d_values.begin(), d_output.begin(), head_flag_predicate);
 
   std::cout << "\nInclusive Segmented Scan w/ Head Flag Sequence\n";
   std::cout << " head flags    : ";

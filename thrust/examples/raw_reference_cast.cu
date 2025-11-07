@@ -38,33 +38,6 @@ __host__ __device__ void assign_value_to_reference(int x, int& y)
   y = x;
 }
 
-template <typename InputIterator, typename OutputIterator>
-struct copy_iterators
-{
-  InputIterator input;
-  OutputIterator output;
-
-  copy_iterators(InputIterator input, OutputIterator output)
-      : input(input)
-      , output(output)
-  {}
-
-  __host__ __device__ void operator()(int i)
-  {
-    InputIterator in   = input + i;
-    OutputIterator out = output + i;
-
-    // invalid - reference<int> is not convertible to int&
-    // assign_reference_to_reference(*in, *out);
-
-    // valid - reference<int> explicitly converted to int&
-    assign_reference_to_reference(thrust::raw_reference_cast(*in), thrust::raw_reference_cast(*out));
-
-    // valid - since reference<int> is convertible to int
-    assign_value_to_reference(*in, thrust::raw_reference_cast(*out));
-  }
-};
-
 template <typename Vector>
 void print(const std::string& name, const Vector& v)
 {
@@ -96,7 +69,19 @@ int main()
   // note: we must specify the System to ensure correct execution
   thrust::for_each(thrust::counting_iterator<int, System>(0),
                    thrust::counting_iterator<int, System>(5),
-                   copy_iterators<Iterator, Iterator>(A.begin(), B.begin()));
+                   [input = A.begin(), output = B.begin()] __device__(int i) {
+                    auto in  = input + i;
+                    auto out = output + i;
+                
+                    // invalid - reference<int> is not convertible to int&
+                    // assign_reference_to_reference(*in, *out);
+                
+                    // valid - reference<int> explicitly converted to int&
+                    assign_reference_to_reference(thrust::raw_reference_cast(*in), thrust::raw_reference_cast(*out));
+                
+                    // valid - since reference<int> is convertible to int
+                    assign_value_to_reference(*in, thrust::raw_reference_cast(*out));
+                  });
 
   std::cout << "After A->B Copy" << std::endl;
   print("A", A);

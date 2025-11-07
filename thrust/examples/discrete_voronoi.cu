@@ -21,102 +21,33 @@
 //
 // Thanks to David Coeurjolly for contributing this example
 
-// minFunctor
-// Tuple  = <seeds,seeds + k,seeds + m*k, seeds - k,
-//           seeds - m*k, seeds+ k+m*k,seeds + k-m*k,
-//           seeds- k+m*k,seeds - k+m*k, i>
-struct voronoi_site_selector
+// Helper function to decide if we need to change the current Voronoi site
+__host__ __device__ int minVoro(int m, int n, int x_i, int y_i, int p, int q)
 {
-  int m, n, k;
-
-  __host__ __device__ voronoi_site_selector(int m, int n, int k)
-      : m(m)
-      , n(n)
-      , k(k)
-  {}
-
-  // To decide I have to change my current Voronoi site
-  __host__ __device__ int minVoro(int x_i, int y_i, int p, int q)
+  if (q == m * n)
   {
-    if (q == m * n)
-    {
-      return p;
-    }
-
-    // coordinates of points p and q
-    int y_q = q / m;
-    int x_q = q - y_q * m;
-    int y_p = p / m;
-    int x_p = p - y_p * m;
-
-    // squared distances
-    int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
-    int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
-
-    if (d_iq < d_ip)
-    {
-      return q; // q is closer
-    }
-    else
-    {
-      return p;
-    }
+    return p;
   }
 
-  // For each point p+{-k,0,k}, we keep the Site with minimum distance
-  template <typename Tuple>
-  __host__ __device__ int operator()(const Tuple& t)
+  // coordinates of points p and q
+  int y_q = q / m;
+  int x_q = q - y_q * m;
+  int y_p = p / m;
+  int x_p = p - y_p * m;
+
+  // squared distances
+  int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
+  int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
+
+  if (d_iq < d_ip)
   {
-    // Current point and site
-    int i = thrust::get<9>(t);
-    int v = thrust::get<0>(t);
-
-    // Current point coordinates
-    int y = i / m;
-    int x = i - y * m;
-
-    if (x >= k)
-    {
-      v = minVoro(x, y, v, thrust::get<3>(t));
-
-      if (y >= k)
-      {
-        v = minVoro(x, y, v, thrust::get<8>(t));
-      }
-
-      if (y + k < n)
-      {
-        v = minVoro(x, y, v, thrust::get<7>(t));
-      }
-    }
-
-    if (x + k < m)
-    {
-      v = minVoro(x, y, v, thrust::get<1>(t));
-
-      if (y >= k)
-      {
-        v = minVoro(x, y, v, thrust::get<6>(t));
-      }
-      if (y + k < n)
-      {
-        v = minVoro(x, y, v, thrust::get<5>(t));
-      }
-    }
-
-    if (y >= k)
-    {
-      v = minVoro(x, y, v, thrust::get<4>(t));
-    }
-    if (y + k < n)
-    {
-      v = minVoro(x, y, v, thrust::get<2>(t));
-    }
-
-    // global return
-    return v;
+    return q; // q is closer
   }
-};
+  else
+  {
+    return p;
+  }
+}
 
 // print an M-by-N array
 template <typename T>
@@ -173,6 +104,59 @@ void vector_to_pgm(thrust::host_vector<int>& t, int m, int n, const char* out)
 // Perform a jump with step k
 void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsigned int k, int m, int n)
 {
+  // Lambda for Voronoi site selection
+  // For each point p+{-k,0,k}, we keep the Site with minimum distance
+  auto voronoi_site_selector = [m, n, k] __device__(const auto& t) {
+    // Current point and site
+    int i = thrust::get<9>(t);
+    int v = thrust::get<0>(t);
+
+    // Current point coordinates
+    int y = i / m;
+    int x = i - y * m;
+
+    if (x >= k)
+    {
+      v = minVoro(m, n, x, y, v, thrust::get<3>(t));
+
+      if (y >= k)
+      {
+        v = minVoro(m, n, x, y, v, thrust::get<8>(t));
+      }
+
+      if (y + k < n)
+      {
+        v = minVoro(m, n, x, y, v, thrust::get<7>(t));
+      }
+    }
+
+    if (x + k < m)
+    {
+      v = minVoro(m, n, x, y, v, thrust::get<1>(t));
+
+      if (y >= k)
+      {
+        v = minVoro(m, n, x, y, v, thrust::get<6>(t));
+      }
+      if (y + k < n)
+      {
+        v = minVoro(m, n, x, y, v, thrust::get<5>(t));
+      }
+    }
+
+    if (y >= k)
+    {
+      v = minVoro(m, n, x, y, v, thrust::get<4>(t));
+    }
+    if (y + k < n)
+    {
+      v = minVoro(m, n, x, y, v, thrust::get<2>(t));
+    }
+
+    // global return
+    return v;
+  };
+
   thrust::transform(
     thrust::make_zip_iterator(
       in.begin(),
@@ -198,7 +182,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       thrust::counting_iterator<int>(0))
       + n * m,
     out.begin(),
-    voronoi_site_selector(m, n, k));
+    voronoi_site_selector);
 }
 /********************************************/
 
