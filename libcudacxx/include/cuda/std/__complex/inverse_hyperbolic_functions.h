@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // It can happen that the double 1/sqrt() on device gets optimized better than CUDA rsqrt(),
 // but it depends on the calling function. We needs to optimize on an individual basis.
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
 {
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
@@ -68,7 +68,7 @@ struct _CCCL_ALIGNAS(2 * sizeof(_Tp)) __cccl_asinh_sqrt_return_hilo
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-static _CCCL_API inline __cccl_asinh_sqrt_return_hilo<_Tp>
+static _CCCL_API __cccl_asinh_sqrt_return_hilo<_Tp>
 __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 {
   // rsqrt
