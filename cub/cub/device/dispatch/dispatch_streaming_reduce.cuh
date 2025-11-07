@@ -192,9 +192,6 @@ struct dispatch_streaming_arg_reduce_t
     InitT init,
     cudaStream_t stream)
   {
-    // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = THRUST_NS_QUALIFIER::constant_iterator<GlobalOffsetT>;
-
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
     using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, InitT>;
