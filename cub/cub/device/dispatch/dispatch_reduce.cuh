@@ -546,7 +546,7 @@ struct no_override
 {};
 
 template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
-_CCCL_API auto select_accum_t(const no_override&)
+_CCCL_API auto select_accum_t(no_override*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                   InitT>;
@@ -557,7 +557,7 @@ template <typename InputIteratorT,
           typename TransformOpT,
           typename OverrideAccumT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, no_override>, int> = 0>
-_CCCL_API auto select_accum_t(const OverrideAccumT&) -> OverrideAccumT;
+_CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
   typename OverrideAccumT = no_override,
@@ -568,7 +568,7 @@ template <
   typename InitT        = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
   typename TransformOpT = ::cuda::std::identity,
   typename AccumT =
-    decltype(select_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(::cuda::std::declval<OverrideAccumT>())),
+    decltype(select_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(static_cast<OverrideAccumT*>(nullptr))),
   typename ArchPolicies = typed_arch_policies<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource =
     DeviceReduceKernelSource<ArchPolicies, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
