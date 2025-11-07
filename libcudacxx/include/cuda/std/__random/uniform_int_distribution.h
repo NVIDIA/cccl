@@ -206,7 +206,7 @@ public:
       : uniform_int_distribution(0)
   {}
   _CCCL_API explicit constexpr uniform_int_distribution(
-    result_type __a, result_type __b = (numeric_limits<result_type>::max)()) noexcept
+    result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
   {}
   _CCCL_API explicit constexpr uniform_int_distribution(const param_type& __p) noexcept
