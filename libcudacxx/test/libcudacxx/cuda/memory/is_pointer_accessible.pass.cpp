@@ -29,7 +29,7 @@ void test_accessible_pointer(
   bool is_device_accessible,
   bool is_managed_accessible,
   cuda::device_ref device,
-  bool skip_plus_one = false)
+  [[maybe_unused]] bool skip_plus_one = false)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
