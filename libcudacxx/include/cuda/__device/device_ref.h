@@ -34,6 +34,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+::cuda::std::size_t __physical_devices_count();
+
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
@@ -50,8 +52,8 @@ public:
     }
     else
     {
-      const auto __device_count = ::cuda::__driver::__deviceGetCount();
-      _CCCL_VERIFY(__id >= 0 && __id < __device_count, "Device ID must be a valid GPU device ordinal");
+      _CCCL_VERIFY(__id >= 0 && static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
+                   "Device ID must be a valid GPU device ordinal");
     }
   }
 
