@@ -30,7 +30,8 @@ _CCCL_BEGIN_NAMESPACE_EXECUTION
 
 enum __cuda_backend_options : uint16_t
 {
-  __with_stream = 1 << 0, ///> Determines whether the policy holds a stream
+  __with_stream          = 1 << 0, ///> Determines whether the policy holds a stream
+  __with_memory_resource = 1 << 0, ///> Determines whether the policy holds a memory resource
 };
 
 //! @brief Sets the execution backend to cuda
@@ -51,6 +52,10 @@ inline constexpr __cuda_backend_options __to_cuda_policy_options =
 template <uint32_t _Policy>
 inline constexpr bool __cuda_policy_with_stream =
   __to_cuda_policy_options<_Policy> & __cuda_backend_options::__with_stream;
+
+template <uint32_t _Policy>
+inline constexpr bool __cuda_policy_with_memory_resource =
+  __to_cuda_policy_options<_Policy> & __cuda_backend_options::__with_memory_resource;
 
 _CCCL_END_NAMESPACE_EXECUTION
 
