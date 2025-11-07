@@ -140,7 +140,6 @@ Structs
 * :doc:`cuda::experimental::launch_priority <structcuda_1_1experimental_1_1launch__priority>`
 * :doc:`cuda::experimental::level_dimensions <structcuda_1_1experimental_1_1level__dimensions>`
 * :doc:`cuda::experimental::path_builder <structcuda_1_1experimental_1_1path__builder>`
-* :doc:`cuda::experimental::shared_resource <structcuda_1_1experimental_1_1shared__resource>`
 * :doc:`cuda::experimental::stf::cuda_kernel_desc <structcuda_1_1experimental_1_1stf_1_1cuda__kernel__desc>`
 * :doc:`cuda::experimental::stf::decorated_stream <structcuda_1_1experimental_1_1stf_1_1decorated__stream>`
 * :doc:`cuda::experimental::stf::graphed_interface_of <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of>`
@@ -195,7 +194,6 @@ Functions
 * :doc:`cuda::experimental::make_buffer <namespacecuda_1_1experimental_1a37b1c7d3541c43e63a8ea8e94b33d5ee>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
 * :doc:`cuda::experimental::make_hierarchy <namespacecuda_1_1experimental_1a576809535c5d9316e761c22d32a068e9>`
-* :doc:`cuda::experimental::make_shared_resource <namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f>`
 * :doc:`cuda::experimental::operator& <namespacecuda_1_1experimental_1a6885fad002736fd2c1e2bbcc81d395b5>`
 * :doc:`cuda::experimental::start_path <namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e>`
 * :doc:`cuda::experimental::stf::access_mode_string <namespacecuda_1_1experimental_1_1stf_1a9490b3265235f0e5a08595d81a24054c>`
@@ -458,7 +456,6 @@ Variables
    structcuda_1_1experimental_1_1path__builder
    structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config
    structcuda_1_1experimental_1_1stf_1_1scalar__view
-   structcuda_1_1experimental_1_1shared__resource
    structcuda_1_1experimental_1_1stream
    structcuda_1_1experimental_1_1stf_1_1stream__pool
    structcuda_1_1experimental_1_1stream__ref
@@ -484,7 +481,6 @@ Variables
    namespacecuda_1_1experimental_1a64c529b2b7d858f06b3d45a5ee1967c3
    namespacecuda_1_1experimental_1a5b4677b4c5bc188a0144206ace982c58
    namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080
-   namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f
    namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789
    namespacecuda_1_1experimental_1_1hierarchy_1afae0df2b4c67255ba59862e445fd616a
    namespacecuda_1_1experimental_1_1hierarchy_1a0005c3898faf2106b9f7ae078ace2d10

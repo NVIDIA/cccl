@@ -58,7 +58,7 @@
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="cuda::experimental::shared_resource" href="api/structcuda_1_1experimental_1_1shared__resource.html" />
+    <link rel="next" title="Graphs library" href="graph.html" />
     <link rel="prev" title="cuda::experimental::stf::task_dep_vector" href="api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html" />
 
 
@@ -1112,8 +1112,7 @@
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html">cuda::experimental::stf::task_dep_vector</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">Memory Resources</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html">cuda::experimental::shared_resource</a></li>
+<li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">Memory Resources</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="simple">
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1289,7 +1288,6 @@
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1path__builder.html">cuda::experimental::path_builder</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config.html">cuda::experimental::stf::pooled_allocator_config</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1stf_1_1scalar__view.html">cuda::experimental::stf::scalar_view</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html">cuda::experimental::shared_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1stream.html">cuda::experimental::stream</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1stf_1_1stream__pool.html">cuda::experimental::stf::stream_pool</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/structcuda_1_1experimental_1_1stream__ref.html">cuda::experimental::stream_ref</a></li>
@@ -1315,7 +1313,6 @@
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1a64c529b2b7d858f06b3d45a5ee1967c3.html">cuda::experimental::dynamic_smem_ref</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1a5b4677b4c5bc188a0144206ace982c58.html">cuda::experimental::dynamic_smem_span</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080.html">cuda::experimental::launch</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f.html">cuda::experimental::make_shared_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789.html">cuda::experimental::hierarchy::rank</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1_1hierarchy_1afae0df2b4c67255ba59862e445fd616a.html">cuda::experimental::hierarchy::count</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/namespacecuda_1_1experimental_1_1hierarchy_1a0005c3898faf2106b9f7ae078ace2d10.html">cuda::experimental::hierarchy::index</a></li>
@@ -1507,30 +1504,6 @@
   <section id="memory-resources">
 <span id="cudax-memory-resource"></span><h1>Memory Resources<a class="headerlink" href="#memory-resources" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html">cuda::experimental::shared_resource</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4I0EN4cuda12experimental15shared_resourceE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::shared_resource</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4IDpEN4cuda12experimental15shared_resource15shared_resourceEN4cudaSt15in_place_type_tI9_ResourceEEDpRR5_Args"><code class="docutils literal notranslate"><span class="pre">shared_resource()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource15shared_resourceERK15shared_resource"><code class="docutils literal notranslate"><span class="pre">shared_resource()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource15shared_resourceERR15shared_resource"><code class="docutils literal notranslate"><span class="pre">shared_resource()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resourceD0Ev"><code class="docutils literal notranslate"><span class="pre">~shared_resource()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resourceaSERK15shared_resource"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resourceaSERR15shared_resource"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource4swapER15shared_resource"><code class="docutils literal notranslate"><span class="pre">swap()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource13allocate_syncE6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">allocate_sync()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource15deallocate_syncEPv6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate_sync()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4I0_N4cudaSt11enable_if_tIN4cuda2mr8resourceI13_ThisResourceEEiEEEN4cuda12experimental15shared_resource8allocateEPvN4cuda10stream_refE6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">allocate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4I0_N4cudaSt11enable_if_tIN4cuda2mr8resourceI13_ThisResourceEEiEEEN4cuda12experimental15shared_resource10deallocateEvN4cuda10stream_refEPv6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resource4swapER15shared_resourceR15shared_resource"><code class="docutils literal notranslate"><span class="pre">swap</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resourceeqERK15shared_resourceRK15shared_resource"><code class="docutils literal notranslate"><span class="pre">operator==</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4N4cuda12experimental15shared_resourceneERK15shared_resourceRK15shared_resource"><code class="docutils literal notranslate"><span class="pre">operator!=</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4I0_N4cudaSt11enable_if_tIXaant19property_with_valueI9_PropertyE12has_propertyI9_Resource9_PropertyEEiEEEN4cuda12experimental15shared_resource12get_propertyEvRK15shared_resource9_Property"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#_CPPv4I0_N4cudaSt11enable_if_tIFRR19property_with_valueI9_PropertyE12has_propertyI9_Resource9_PropertyEEiEEEN4cuda12experimental15shared_resource12get_propertyE18__property_value_tI9_PropertyERK15shared_resource9_Property"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
 </div>
 <dl class="simple">
 <dt>The <code class="docutils literal notranslate"><span class="pre">&lt;cuda/experimental/memory_resource.cuh&gt;</span></code> header provides:</dt><dd><ul class="simple">
@@ -1542,7 +1515,7 @@ own the contained resource.</p></li>
 <em>stream-ordered</em> memory allocation tailored to the needs of CUDA C++ developers. This design builds off of the
 success of the <a class="reference external" href="https://github.com/rapidsai/rmm">RAPIDS Memory Manager (RMM)</a> project and evolves the design
 based on lessons learned.</p></li>
-<li><p><a class="reference internal" href="api/structcuda_1_1experimental_1_1shared__resource.html#cudax-memory-resource-shared-resource"><span class="std std-ref">shared_resource</span></a> a type erased reference counted memory resource.
+<li><p><span class="xref std std-ref">shared_resource</span> a type erased reference counted memory resource.
 In contrast to <span class="xref std std-ref">any_resource</span> it additionally provides shared ownership
 semantics.</p></li>
 </ul>
@@ -1573,11 +1546,11 @@ the <code class="docutils literal notranslate"><span class="pre">cuda::mr</span>
       </div>
     </a>
     <a class="right-next"
-       href="api/structcuda_1_1experimental_1_1shared__resource.html"
+       href="graph.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cuda::experimental::shared_resource</p>
+        <p class="prev-next-title">Graphs library</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
