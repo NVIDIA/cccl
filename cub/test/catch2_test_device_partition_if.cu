@@ -317,8 +317,7 @@ try
 
   // Prepare expected data
   auto expected_selected_it = cuda::counting_iterator(offset_t{0});
-  auto expected_rejected_it =
-    cuda::std::make_reverse_iterator(cuda::counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));
+  auto expected_rejected_it = cuda::std::make_reverse_iterator(cuda::counting_iterator<offset_t>(num_items));
   auto expected_result_op =
     make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);
   auto expected_result_it = cuda::transform_iterator(cuda::counting_iterator(offset_t{0}), expected_result_op);
