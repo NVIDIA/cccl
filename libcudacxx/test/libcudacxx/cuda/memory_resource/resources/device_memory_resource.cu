@@ -459,7 +459,7 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
       cuda::stream_ref stream{peers.front()};
-      CUDAX_CHECK(pool.is_accessible_from(cuda::devices[0]));
+      CCCLRT_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
         auto* ptr1  = resource.allocate(stream, sizeof(int));
@@ -474,27 +474,27 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
       pool.enable_access_from(peers);
 
-      CUDAX_CHECK(pool.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(pool.is_accessible_from(peers.front()));
       allocate_and_check_access(pool);
 
       cudax::device_memory_pool_ref resource{pool};
-      CUDAX_CHECK(resource.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(resource.is_accessible_from(peers.front()));
       allocate_and_check_access(resource);
 
       pool.disable_access_from(peers.front());
-      CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
-      CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(!pool.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(!resource.is_accessible_from(peers.front()));
 
       if (peers.size() > 1)
       {
-        CUDAX_CHECK(pool.is_accessible_from(peers[1]));
+        CCCLRT_CHECK(pool.is_accessible_from(peers[1]));
       }
 
       pool.disable_access_from(peers);
 
       pool.enable_access_from(peers.front());
-      CUDAX_CHECK(pool.is_accessible_from(peers.front()));
-      CUDAX_CHECK(resource.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(pool.is_accessible_from(peers.front()));
+      CCCLRT_CHECK(resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
       {
@@ -509,9 +509,9 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
         pool.enable_access_from(peers_ext.front());
 
-        CUDAX_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_CHECK(default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(default_pool_resource);
-        CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
+        CCCLRT_CHECK(another_default_pool_resource.is_accessible_from(peers_ext.front()));
         allocate_and_check_access(another_default_pool_resource);
       }
     }
