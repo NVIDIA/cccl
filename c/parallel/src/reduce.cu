@@ -42,29 +42,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-struct reduce_runtime_tuning_policy
-{
-  cub::detail::RuntimeReduceAgentPolicy single_tile;
-  cub::detail::RuntimeReduceAgentPolicy reduce;
-
-  auto SingleTile() const
-  {
-    return single_tile;
-  }
-  auto Reduce() const
-  {
-    return reduce;
-  }
-
-  using MaxPolicy = reduce_runtime_tuning_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<reduce_runtime_tuning_policy>(*this);
-  }
-};
-
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -204,13 +181,7 @@ struct __align__({2}) storage_t {{
 {3}
 {4}
 {5}
-using device_reduce_policy = {6}::MaxPolicy;
-
-#include <cub/detail/ptx-json/json.h>
-__device__ consteval auto& policy_generator() {{
-  return ptx_json::id<ptx_json::string("device_reduce_policy")>()
-    = cub::detail::reduce::ReducePolicyWrapper<device_reduce_policy::ActivePolicy>::EncodedPolicy();
-}};
+using device_reduce_policy = {6};
 )XXX",
       jit_template_header_contents, // 0
       input_it.value_type.size, // 1
