@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_HOST_LAUNCH
-#define _CUDAX__LAUNCH_HOST_LAUNCH
+#ifndef _CUDA___LAUNCH_HOST_LAUNCH_H
+#define _CUDA___LAUNCH_HOST_LAUNCH_H
 
 #include <cuda/__cccl_config>
 
@@ -31,8 +31,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 template <class _Callable, class... _Args>
 struct __stream_callback_data
 {
@@ -104,8 +104,8 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, ::cuda::std::reference_wrap
   ::cuda::__driver::__launchHostFunc(
     __stream.get(), __host_func_launcher<_Callable>, ::cuda::std::addressof(__callable.get()));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__LAUNCH_HOST_LAUNCH
+#endif // !_CUDA___LAUNCH_HOST_LAUNCH_H
