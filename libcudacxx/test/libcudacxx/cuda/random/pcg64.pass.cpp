@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test_against_reference()
 
 int main(int, char**)
 {
-  test_engine<cuda::pcg64_engine, 11135645891219275043ul>();
+  test_engine<cuda::pcg64, 11135645891219275043ul>();
   test_against_reference();
   return 0;
 }

@@ -35,27 +35,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_INT128()
 
-/// @class pcg64_engine
-/// @brief A 128-bit state PCG engine producing 64-bit output values.
+/// @brief A 64-bit permuted congruential generator (PCG) random number engine.
 ///
-/// This class implements the PCG XSL RR 128/64 generator described in:
-/// O’neill, Melissa E. "PCG: A family of simple fast space-efficient statistically good algorithms for random number
-/// generation." ACM Transactions on Mathematical Software 204 (2014): 1-46. The engine keeps a 128-bit internal state
-/// and returns 64-bit pseudo-random values. PCG64 is a fast general purpose PRNG that passes common statistical tests,
-/// has a long period (2^128), and can discard values in O(log n) time.
+/// This is a high-quality, fast random number generator based on the PCG family
+/// of algorithms. It uses a 128-bit internal state and produces 64-bit output
+/// values using a permutation function applied to a linear congruential generator.
 ///
-/// PCG64 produces the 10000th value 11135645891219275043 when seeded with the default seed.
+/// Most users should use the predefined `pcg64` type alias instead of this class directly.
 ///
-/// Usage example:
-/// @code
-///   #include <cuda/std/random>
+/// @tparam __a The multiplier constant for the LCG.
+/// @tparam __c The increment constant for the LCG.
 ///
-///   cuda::pcg64_engine eng;                 // default seed
-///   uint64_t v = eng();                     // draw value
-///   eng.seed(42);                           // reseed
-///   eng.discard(10);                        // skip 10 outputs
-/// @endcode
+/// @note This class requires compiler support for 128-bit integers.
 ///
+/// @see https://www.pcg-random.org/ for details on the PCG family of generators.
+template <__uint128_t __a, __uint128_t __c>
 class pcg64_engine
 {
 public:
@@ -209,8 +203,8 @@ public:
 private:
   using __bitcount_t = ::cuda::std::uint8_t;
 
-  static constexpr __uint128_t __multiplier = (__uint128_t{2549297995355413924ULL} << 64) | 4865540595714422341ULL;
-  static constexpr __uint128_t __increment  = (__uint128_t{6364136223846793005ULL} << 64) | 1442695040888963407ULL;
+  static constexpr __uint128_t __multiplier = __a;
+  static constexpr __uint128_t __increment  = __c;
   [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_t __internal) noexcept
   {
     const int __rot = static_cast<__bitcount_t>(__internal >> 122);
@@ -239,6 +233,31 @@ private:
   }
   __uint128_t __x_{};
 };
+
+/// @class pcg64
+/// @brief A 128-bit state PCG engine producing 64-bit output values.
+///
+/// This class implements the PCG XSL RR 128/64 generator described in:
+/// O’neill, Melissa E. "PCG: A family of simple fast space-efficient statistically good algorithms for random number
+/// generation." ACM Transactions on Mathematical Software 204 (2014): 1-46. The engine keeps a 128-bit internal state
+/// and returns 64-bit pseudo-random values. PCG64 is a fast general purpose PRNG that passes common statistical tests,
+/// has a long period (2^128), and can discard values in O(log n) time.
+///
+/// PCG64 produces the 10000th value 11135645891219275043 when seeded with the default seed.
+///
+/// Usage example:
+/// @code
+///   #include <cuda/random>
+///
+///   cuda::pcg64 eng;                 // default seed
+///   uint64_t v = eng();                     // draw value
+///   eng.seed(42);                           // reseed
+///   eng.discard(10);                        // skip 10 outputs
+/// @endcode
+///
+/// @note This class requires compiler support for 128-bit integers.
+using pcg64 = pcg64_engine<(__uint128_t{2549297995355413924ULL} << 64) | 4865540595714422341ULL,
+                           (__uint128_t{6364136223846793005ULL} << 64) | 1442695040888963407ULL>;
 
 #endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
