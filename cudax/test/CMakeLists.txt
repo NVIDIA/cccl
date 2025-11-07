@@ -66,10 +66,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
   )
 
-  cudax_add_catch2_test(test_target host_launch ${cudax_target}
-    launch/host_launch.cu
-  )
-
   cudax_add_catch2_test(test_target launch_configuration ${cudax_target}
     launch/configuration.cu
   )
@@ -127,10 +123,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target cuco ${cudax_target}
     cuco/utility/test_hashers.cu
-  )
-
-  cudax_add_catch2_test(test_target memory_resource ${cudax_target}
-    memory_resource/shared_resource.cu
   )
 
   cudax_add_catch2_test(test_target green_context ${cudax_target}

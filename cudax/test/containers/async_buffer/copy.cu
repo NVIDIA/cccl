@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -220,7 +221,7 @@ C2H_CCCLRT_TEST("make_buffer variants", "[container][buffer]")
     !::cuda::mr::synchronous_resource_with<typename decltype(buf6)::__resource_t, cuda::mr::host_accessible>);
 
   auto shared_res =
-    cudax::make_shared_resource<cuda::device_memory_pool_ref>(cuda::device_default_memory_pool(cuda::device_ref{0}));
+    cuda::mr::make_shared_resource<cuda::device_memory_pool_ref>(cuda::device_default_memory_pool(cuda::device_ref{0}));
   auto buf7 = cudax::make_buffer(input.stream(), shared_res, input);
   CUDAX_CHECK(equal_range(buf7));
   static_assert(

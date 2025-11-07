@@ -27,6 +27,7 @@
 
 #include <cuda/__container/heterogeneous_iterator.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/__launch/host_launch.h>
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
@@ -48,8 +49,6 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
-#include <cuda/experimental/__launch/host_launch.cuh>
-#include <cuda/experimental/__memory_resource/synchronous_resource_adapter.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -605,7 +604,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
 
   if constexpr (_IsHostOnly)
   {
-    ::cuda::experimental::host_launch(
+    ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
   }
   else
