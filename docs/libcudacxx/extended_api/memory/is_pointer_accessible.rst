@@ -3,7 +3,7 @@
 ``cuda::is_host_accessible``, ``cuda::is_device_accessible``, ``cuda::is_managed``
 ==================================================================================
 
-Defined in ``<cuda/memory>`` header.
+Defined in the ``<cuda/memory>`` header.
 
 .. code:: cuda
 
@@ -27,7 +27,7 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host.
 
    } // namespace cuda
 
-Determines whether the memory referenced by ``ptr`` is accessible from the specified ``device``. The function also checks if the memory is peer accessible or backed by a memory pool that is accessible from the specified ``device``.
+Determines whether the memory referenced by ``ptr`` is accessible from the specified ``device``. The function also checks whether the memory is peer-accessible or allocated from a memory pool accessible to the specified ``device``.
 
 ----
 
@@ -46,20 +46,20 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 **Parameters**
 
-- ``ptr``: A pointer that denotes the memory location to query.
-- ``device``: A ``device_ref`` object that denotes the device to query.
+- ``ptr``: A pointer to the memory location to query.
+- ``device``: A ``device_ref`` that denotes the device to query.
 
 **Return value**
 
-- ``true`` if the queried property (host access, device access, or managed allocation) can be verified, ``false`` otherwise.
+- ``true`` if the queried property (host access, device access, or managed allocation) holds; otherwise, ``false``.
 
 .. note::
 
-  A ``__device__`` global array or variable is not accessible from device code without retrieving the address with ``cudaGetSymbolAddress()``.
+  A ``__device__`` global array or variable is not accessible from host code without first retrieving its address with ``cudaGetSymbolAddress()``.
 
 .. note::
 
-  ``is_host_accessible()`` cannot correctly determine host accessibility of a ``__device__`` global array pointer with an offset, for example ``ptr + 1``.
+  ``is_host_accessible()`` cannot reliably determine host accessibility of a ``__device__`` global array pointer with an offset; for example, ``ptr + 1``.
 
 **Prerequisites**
 
@@ -67,11 +67,11 @@ Determines whether the memory referenced by ``ptr`` is backed by Unified Memory 
 
 **Exceptions**
 
-- The functions throw a ``cuda::cuda_error`` if the underlying driver API calls fail. Note that this function may also fail with error codes from previous, asynchronous launches.
+- The functions throw a ``cuda::cuda_error`` if the underlying driver API calls fail. Note that these functions may also fail with error codes from previously launched asynchronous operations.
 
 **Undefined Behavior**
 
-- The functions have undefined behavior if the pointer is not valid, for example an already freed pointer.
+- The functions have undefined behavior if the pointer is not valid, for example, an already freed pointer.
 
 Example
 -------
