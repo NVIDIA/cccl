@@ -1522,26 +1522,33 @@
 <dl class="cpp struct">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub10DeviceTopKE">
 <span class="target" id="structcub_1_1DeviceTopK"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DeviceTopK</span></span></span><a class="headerlink" href="#_CPPv4N3cub10DeviceTopKE" title="Link to this definition">#</a><br /></dt>
-<dd><p><p>&#64;brief DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from
-sequences of unordered data items residing within device-accessible memory.</p>
-<p>&#64;par Overview
-The TopK algorithm tries to find the largest (or smallest) K items in an unordered list. A related problem is called
-[<em>K selection problem</em>](<a class="reference external" href="https://en.wikipedia.org/wiki/Selection_algorithm">https://en.wikipedia.org/wiki/Selection_algorithm</a>), which finds the Kth largest
+<dd><p><p>DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from sequences of
+unordered data items residing within device-accessible memory.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>The TopK algorithm tries to find the largest (or smallest) K items in an unordered list. A related problem is called
+<a class="reference external" href="https://en.wikipedia.org/wiki/Selection_algorithm">K selection problem</a>, which finds the Kth largest
 (or smallest) values in a list.
 DeviceTopK will return K items in an unspecified order as results. It is based on an algorithm called
-[<em>AIR TopK</em>](<a class="reference external" href="https://dl.acm.org/doi/10.1145/3581784.3607062">https://dl.acm.org/doi/10.1145/3581784.3607062</a>).</p>
-<p>&#64;par Supported Types
-DeviceTopK can process all of the built-in C++ numeric primitive types (<cite>unsigned char</cite>, <cite>int</cite>, <cite>double</cite>, etc.) as
+<a class="reference external" href="https://dl.acm.org/doi/10.1145/3581784.3607062">AIR TopK</a>.</p>
+</section>
+<section id="supported-types">
+<h2>Supported Types<a class="headerlink" href="#supported-types" title="Link to this heading">#</a></h2>
+<p>DeviceTopK can process all of the built-in C++ numeric primitive types (<cite>unsigned char</cite>, <cite>int</cite>, <cite>double</cite>, etc.) as
 well as CUDA’s <cite>__half</cite>  and <cite>__nv_bfloat16</cite> 16-bit floating-point types.</p>
-<p>&#64;par Stability
-DeviceTopK currently only provides an unstable version.
-Usage Considerations
-+++++++++++++++++++++++++++++++++++++++++++++</p>
+</section>
+<section id="stability">
+<h2>Stability<a class="headerlink" href="#stability" title="Link to this heading">#</a></h2>
+<p>DeviceTopK currently only provides an unstable version.</p>
+</section>
+<section id="usage-considerations">
+<h2>Usage Considerations<a class="headerlink" href="#usage-considerations" title="Link to this heading">#</a></h2>
 <blockquote>
 <div><ul class="simple">
 <li><p>Dynamic parallelism. DeviceTopK methods can be called within kernel code on devices in which CUDA dynamic parallelism is supported.</p></li>
 </ul>
 </div></blockquote>
+</section>
 <section id="performance">
 <h2>Performance<a class="headerlink" href="#performance" title="Link to this heading">#</a></h2>
 <p>The work-complexity of top-k as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU.</p>
@@ -1566,8 +1573,8 @@ Usage Considerations
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000000EN3cub10DeviceTopK8MaxPairsE11cudaError_tPvR6size_t17KeyInputIteratorT18KeyOutputIteratorT19ValueInputIteratorT20ValueOutputIteratorT9NumItemsT12NumOutItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
-<dd><p><section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<dd><p><section id="id1">
+<h2>Overview<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
 <p>Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.</p>
 <ul class="simple">
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
@@ -1668,15 +1675,15 @@ items:</p>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000000EN3cub10DeviceTopK8MinPairsE11cudaError_tPvR6size_t17KeyInputIteratorT18KeyOutputIteratorT19ValueInputIteratorT20ValueOutputIteratorT9NumItemsT12NumOutItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
-<dd><p><section id="id1">
-<h2>Overview<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<dd><p><section id="id2">
+<h2>Overview<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <p>Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.</p>
 <ul class="simple">
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h2>A Simple Example<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<section id="id3">
+<h2>A Simple Example<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
 <p>The following code snippet demonstrates how to use the <cite>cub::DeviceTopK::MinPairs</cite> function to find the lowest K
 items:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
@@ -1768,15 +1775,15 @@ items:</p>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub10DeviceTopK7MaxKeysE11cudaError_tPvR6size_t17KeyInputIteratorT18KeyOutputIteratorT9NumItemsT12NumOutItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
-<dd><p><section id="id3">
-<h2>Overview<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<dd><p><section id="id4">
+<h2>Overview<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
 <p>Finds the largest K keys from an unordered input sequence of keys.</p>
 <ul class="simple">
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
 </section>
-<section id="id4">
-<h2>A Simple Example<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<section id="id5">
+<h2>A Simple Example<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
 <p>The following code snippet demonstrates how to use the <cite>cub::DeviceTopK::MinKeys</cite> function to find the largest K
 items:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
@@ -1850,15 +1857,15 @@ items:</p>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub10DeviceTopK7MinKeysE11cudaError_tPvR6size_t17KeyInputIteratorT18KeyOutputIteratorT9NumItemsT12NumOutItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
-<dd><p><section id="id5">
-<h2>Overview<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<dd><p><section id="id6">
+<h2>Overview<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
 <p>Finds the lowest K keys from an unordered input sequence of keys.</p>
 <ul class="simple">
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
 </ul>
 </section>
-<section id="id6">
-<h2>A Simple Example<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h2>A Simple Example<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
 <p>The following code snippet demonstrates how to use the <cite>cub::DeviceTopK::MinKeys</cite> function to find the lowest K
 items:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
