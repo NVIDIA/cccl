@@ -47,7 +47,8 @@ THRUST_NAMESPACE_END
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

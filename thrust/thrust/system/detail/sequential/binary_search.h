@@ -30,10 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/function.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

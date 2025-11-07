@@ -35,7 +35,10 @@
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/move.h>
 
 #include <ostream>
 

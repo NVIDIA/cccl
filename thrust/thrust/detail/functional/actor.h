@@ -37,8 +37,10 @@
 #include <thrust/detail/type_deduction.h>
 #include <thrust/tuple.h>
 
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::functional
