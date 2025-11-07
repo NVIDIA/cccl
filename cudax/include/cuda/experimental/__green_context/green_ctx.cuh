@@ -68,7 +68,7 @@ struct green_context
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   [[nodiscard]] _CCCL_HOST_API green_context_id id() const
   {
-    return green_context_id{_CUDA_DRIVER::__greenCtxGetId(__green_ctx)};
+    return green_context_id{::cuda::__driver::__greenCtxGetId(__green_ctx)};
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
