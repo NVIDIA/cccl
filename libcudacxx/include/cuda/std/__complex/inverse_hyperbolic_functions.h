@@ -68,7 +68,7 @@ struct _CCCL_ALIGNAS(2 * sizeof(_Tp)) __cccl_asinh_sqrt_return_hilo
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-static _CCCL_API __cccl_asinh_sqrt_return_hilo<_Tp> __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo)
+[[nodiscard]] _CCCL_API __cccl_asinh_sqrt_return_hilo<_Tp> __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo)
 {
   // rsqrt
   const _Tp __initial_guess = __internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
@@ -112,7 +112,7 @@ static _CCCL_API __cccl_asinh_sqrt_return_hilo<_Tp> __internal_double_Tp_sqrt_un
 // asinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> asinh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API complex<_Tp> asinh(const complex<_Tp>& __x)
 {
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
@@ -387,7 +387,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
 }
@@ -395,7 +395,7 @@ _CCCL_API inline complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> asinh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::asinh(complex<float>{__x})};
 }
@@ -404,7 +404,7 @@ _CCCL_API inline complex<__half> asinh(const complex<__half>& __x)
 // acosh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API complex<_Tp> acosh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.real()))
@@ -449,7 +449,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
 }
@@ -457,7 +457,7 @@ _CCCL_API inline complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::acosh(complex<float>{__x})};
 }
@@ -466,7 +466,7 @@ _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
 // atanh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API complex<_Tp> atanh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.imag()))
@@ -501,7 +501,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
 }
@@ -509,7 +509,7 @@ _CCCL_API inline complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> atanh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::atanh(complex<float>{__x})};
 }
