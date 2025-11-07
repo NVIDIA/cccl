@@ -25,9 +25,9 @@
 #  include <cub/device/device_transform.cuh>
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-#include <cuda/__launch/host_launch.h>
 #include <cuda/__container/heterogeneous_iterator.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/__launch/host_launch.h>
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
