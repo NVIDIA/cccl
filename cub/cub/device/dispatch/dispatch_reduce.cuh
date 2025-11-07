@@ -642,19 +642,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Init regular kernel configuration
-    KernelConfig reduce_config;
-    if (const auto error =
-          CubDebug(reduce_config.Init(kernel_source.ReductionKernel(), active_policy.reduce_policy, launcher_factory)))
+    const auto tile_size = active_policy.reduce_policy.block_threads * active_policy.reduce_policy.items_per_thread;
+    int sm_occupancy;
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce_policy.block_threads)))
     {
       return error;
     }
 
-    const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+    const int reduce_device_occupancy = sm_occupancy * sm_count;
 
     // Even-share work distribution
     const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
     GridEvenShare<OffsetT> even_share;
-    even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
+    even_share.DispatchInit(num_items, max_blocks, tile_size);
 
     // Temporary storage allocation requirements
     void* allocations[1]       = {};
@@ -690,7 +691,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             active_policy.reduce_policy.block_threads,
             (long long) stream,
             active_policy.reduce_policy.items_per_thread,
-            reduce_config.sm_occupancy);
+            sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
     // Invoke DeviceReduceKernel

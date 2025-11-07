@@ -663,8 +663,8 @@ struct KernelConfig
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = agent_policy.block_threads;
-    items_per_thread = agent_policy.items_per_thread;
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
