@@ -1513,13 +1513,18 @@
                   
   <section id="cuda-bitfield-extract">
 <span id="libcudacxx-extended-api-bit-bitfield-extract"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::bitfield_extract</span></code><a class="headerlink" href="#cuda-bitfield-extract" title="Link to this heading">#</a></h1>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="n">T</span>
-<span class="n">bitfield_extract</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">width</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/bit&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
+<span class="n">T</span><span class="w"> </span><span class="n">bitfield_extract</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">width</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function extracts a bitfield from a value and returns it in the lower bits.
-<code class="docutils literal notranslate"><span class="pre">bitfield_extract()</span></code> computes <code class="docutils literal notranslate"><span class="pre">(value</span> <span class="pre">&gt;&gt;</span> <span class="pre">start)</span> <span class="pre">&amp;</span> <span class="pre">bitfield</span></code>, where <code class="docutils literal notranslate"><span class="pre">bitfield</span></code> is a sequence of bits of width <code class="docutils literal notranslate"><span class="pre">width</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">bitfield_extract()</span></code> computes <code class="docutils literal notranslate"><span class="pre">(value</span> <span class="pre">&gt;&gt;</span> <span class="pre">start)</span> <span class="pre">&amp;</span> <span class="pre">mask</span></code>, where <code class="docutils literal notranslate"><span class="pre">mask</span></code> is a sequence of bits of width <code class="docutils literal notranslate"><span class="pre">width</span></code>.</p>
 <p><strong>Parameters</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">value</span></code>: The value to apply the bitfield.</p></li>
@@ -1528,52 +1533,50 @@
 </ul>
 <p><strong>Return value</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">(value</span> <span class="pre">&gt;&gt;</span> <span class="pre">start)</span> <span class="pre">&amp;</span> <span class="pre">bitfield</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">(value</span> <span class="pre">&gt;&gt;</span> <span class="pre">start)</span> <span class="pre">&amp;</span> <span class="pre">mask</span></code>, where <code class="docutils literal notranslate"><span class="pre">mask</span></code> is a bitmask of width <code class="docutils literal notranslate"><span class="pre">width</span></code>.</p></li>
 </ul>
 <p><strong>Constraints</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">T</span></code> is an unsigned integer type.</p></li>
 </ul>
 <p><strong>Preconditions</strong></p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">&gt;=</span> <span class="pre">0</span> <span class="pre">&amp;&amp;</span> <span class="pre">start</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">width</span> <span class="pre">&gt;=</span> <span class="pre">0</span> <span class="pre">&amp;&amp;</span> <span class="pre">width</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">+</span> <span class="pre">width</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code></p></li>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">&gt;=</span> <span class="pre">0</span> <span class="pre">&amp;&amp;</span> <span class="pre">start</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">width</span> <span class="pre">&gt;=</span> <span class="pre">0</span> <span class="pre">&amp;&amp;</span> <span class="pre">width</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">+</span> <span class="pre">width</span> <span class="pre">&lt;=</span> <span class="pre">num_bits(T)</span></code>.</p></li>
 </ul>
-</div></blockquote>
 <p><strong>Performance considerations</strong></p>
 <p>The function performs the following operations in CUDA for <code class="docutils literal notranslate"><span class="pre">uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">uint16_t</span></code>, <code class="docutils literal notranslate"><span class="pre">uint32_t</span></code>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">SM</span> <span class="pre">&lt;</span> <span class="pre">70</span></code>: <code class="docutils literal notranslate"><span class="pre">BFE</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">SM</span> <span class="pre">&gt;=</span> <span class="pre">70</span></code>: <code class="docutils literal notranslate"><span class="pre">BMSK</span></code>, bitwise operation x2</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SM</span> <span class="pre">&lt;</span> <span class="pre">70</span></code>: <code class="docutils literal notranslate"><span class="pre">BFE</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SM</span> <span class="pre">&gt;=</span> <span class="pre">70</span></code>: <code class="docutils literal notranslate"><span class="pre">BMSK</span></code>, bitwise operation x2.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the function could not be optimal.</p>
+<p>Using the function could not be optimal when the input is a run-time value that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>GCC &lt;= 8 uses a slow path with more instructions even in CUDA</p>
+<p>GCC &lt;= 8 uses a slow path with more instructions even in CUDA.</p>
 </div>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/bit&gt;</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/bit&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/cassert&gt;</span>
 
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bitfield_insert_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bitfield_extract_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">bitfield_extract</span><span class="p">(</span><span class="o">~</span><span class="mi">0u</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mb">0b1111</span><span class="p">);</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">bitfield_extract</span><span class="p">(</span><span class="mb">0b1011000</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mb">0b1011</span><span class="p">);</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">bitfield_extract</span><span class="p">(</span><span class="mb">0b1011000u</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mb">0b1011</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">bitfield_insert_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">&gt;&gt;&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="n">bitfield_extract_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">&gt;&gt;&gt;</span><span class="p">();</span>
 <span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/WvqfG9nbP">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/ofGnbsxW5">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 

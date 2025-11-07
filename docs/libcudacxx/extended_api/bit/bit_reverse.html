@@ -1513,9 +1513,14 @@
                   
   <section id="cuda-bit-reverse">
 <span id="libcudacxx-extended-api-bit-bit-reverse"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::bit_reverse</span></code><a class="headerlink" href="#cuda-bit-reverse" title="Link to this heading">#</a></h1>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="n">T</span>
-<span class="n">bit_reverse</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/bit&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
+<span class="n">T</span><span class="w"> </span><span class="n">bit_reverse</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function reverses the order of bits in a value.</p>
@@ -1533,35 +1538,33 @@
 </ul>
 <p><strong>Performance considerations</strong></p>
 <p>The function performs the following operations:</p>
-<ul>
+<ul class="simple">
 <li><p>Device:</p>
-<blockquote>
-<div><ul class="simple">
+<ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">uint8_t</span></code> <code class="docutils literal notranslate"><span class="pre">uint16_t</span></code>: <code class="docutils literal notranslate"><span class="pre">PRMT</span></code>, <code class="docutils literal notranslate"><span class="pre">BREV</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">uint32_t</span></code>: <code class="docutils literal notranslate"><span class="pre">BREV</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">uint64_t</span></code>: <code class="docutils literal notranslate"><span class="pre">BREV</span></code> x2, <code class="docutils literal notranslate"><span class="pre">MOV</span></code> x2</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">uint128_t</span></code>: <code class="docutils literal notranslate"><span class="pre">BREV</span></code> x4, <code class="docutils literal notranslate"><span class="pre">MOV</span></code> x4</p></li>
 </ul>
-</div></blockquote>
 </li>
 <li><p>Host: <code class="docutils literal notranslate"><span class="pre">__builtin_bitreverse&lt;N&gt;</span></code> with clang</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>When the input values are run-time values that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations, using the function could not be optimal.</p>
+<p>Using the function could not be optimal when the input is a run-time value that the compiler can resolve at compile-time, e.g. an index of a loop with a fixed number of iterations.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>GCC &lt;= 8 uses a slow path with more instructions even in CUDA</p>
+<p>GCC &lt;= 8 uses a slow path with more instructions even in device code.</p>
 </div>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/bit&gt;</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/bit&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/cassert&gt;</span>
 
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bit_reverse_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">bitfield_reverse</span><span class="p">(</span><span class="mi">0u</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="o">~</span><span class="mi">0u</span><span class="p">);</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">bitfield_reverse</span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">{</span><span class="mb">0b00001011</span><span class="p">})</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">uint8_t</span><span class="p">{</span><span class="mb">0b11010000</span><span class="p">});</span>
+<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bit_reverse_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">bitfield_reverse</span><span class="p">(</span><span class="mh">0x0000FFFFu</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0xFFFF0000u</span><span class="p">);</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">bitfield_reverse</span><span class="p">(</span><span class="kt">uint8_t</span><span class="p">{</span><span class="mb">0b00001011</span><span class="p">})</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">uint8_t</span><span class="p">{</span><span class="mb">0b11010000</span><span class="p">});</span>
 <span class="p">}</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
@@ -1571,7 +1574,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/K36dvoh58">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/nW6qe5fT4">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 
