@@ -46,14 +46,14 @@ private:
     conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>;
 
   _Engine& __e_;
-  size_t __w_;
-  size_t __w0_;
-  size_t __n_;
-  size_t __n0_;
-  _Working_result_type __y0_;
-  _Working_result_type __y1_;
-  _Engine_result_type __mask0_;
-  _Engine_result_type __mask1_;
+  size_t __w_{};
+  size_t __w0_{};
+  size_t __n_{};
+  size_t __n0_{};
+  _Working_result_type __y0_{};
+  _Working_result_type __y1_{};
+  _Engine_result_type __mask0_{};
+  _Engine_result_type __mask1_{};
 
   static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
   static constexpr const size_t __m               = ::cuda::std::__bit_log2<_Working_result_type>(_Rp);
@@ -118,11 +118,11 @@ public:
     result_type __sp        = 0;
     for (size_t __k = 0; __k < __n0_; ++__k)
     {
-      _Engine_result_type __u;
-      do
+      _Engine_result_type __u = __e_() - _Engine::min();
+      while (__u >= __y0_)
       {
         __u = __e_() - _Engine::min();
-      } while (__u >= __y0_);
+      }
       if (__w0_ < __w_rt)
       {
         __sp <<= __w0_;
@@ -136,11 +136,11 @@ public:
 
     for (size_t __k = __n0_; __k < __n_; ++__k)
     {
-      _Engine_result_type __u;
-      do
+      _Engine_result_type __u = __e_() - _Engine::min();
+      while (__u >= __y1_)
       {
         __u = __e_() - _Engine::min();
-      } while (__u >= __y1_);
+      }
       if (__w0_ < __w_rt - 1)
       {
         __sp <<= __w0_ + 1;
@@ -224,7 +224,7 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__cccl_random_is_valid_urng<_URng>, "");
+    static_assert(__cccl_random_is_valid_urng<_URng>);
     using _UIntType = conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, make_unsigned_t<result_type>>;
     const _UIntType __rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
     if (__rp == 1)
@@ -244,13 +244,12 @@ public:
     {
       ++__w;
     }
-
     _Eng __e(__g, __w);
-    _UIntType __u;
-    do
+    _UIntType __u = __e();
+    while (__u >= __rp)
     {
       __u = __e();
-    } while (__u >= __rp);
+    }
 
     return static_cast<result_type>(__u + __p.a());
   }
