@@ -113,45 +113,47 @@ public:
     {
       return static_cast<result_type>(__e_() & __mask0_);
     }
-
-    constexpr size_t __w_rt = numeric_limits<result_type>::digits;
-    result_type __sp        = 0;
-    for (size_t __k = 0; __k < __n0_; ++__k)
+    else
     {
-      _Engine_result_type __u = __e_() - _Engine::min();
-      while (__u >= __y0_)
+      constexpr size_t __w_rt = numeric_limits<result_type>::digits;
+      result_type __sp        = 0;
+      for (size_t __k = 0; __k < __n0_; ++__k)
       {
-        __u = __e_() - _Engine::min();
+        _Engine_result_type __u = __e_() - _Engine::min();
+        while (__u >= __y0_)
+        {
+          __u = __e_() - _Engine::min();
+        }
+        if (__w0_ < __w_rt)
+        {
+          __sp <<= __w0_;
+        }
+        else
+        {
+          __sp = 0;
+        }
+        __sp += __u & __mask0_;
       }
-      if (__w0_ < __w_rt)
-      {
-        __sp <<= __w0_;
-      }
-      else
-      {
-        __sp = 0;
-      }
-      __sp += __u & __mask0_;
-    }
 
-    for (size_t __k = __n0_; __k < __n_; ++__k)
-    {
-      _Engine_result_type __u = __e_() - _Engine::min();
-      while (__u >= __y1_)
+      for (size_t __k = __n0_; __k < __n_; ++__k)
       {
-        __u = __e_() - _Engine::min();
+        _Engine_result_type __u = __e_() - _Engine::min();
+        while (__u >= __y1_)
+        {
+          __u = __e_() - _Engine::min();
+        }
+        if (__w0_ < __w_rt - 1)
+        {
+          __sp <<= __w0_ + 1;
+        }
+        else
+        {
+          __sp = 0;
+        }
+        __sp += __u & __mask1_;
       }
-      if (__w0_ < __w_rt - 1)
-      {
-        __sp <<= __w0_ + 1;
-      }
-      else
-      {
-        __sp = 0;
-      }
-      __sp += __u & __mask1_;
+      return __sp;
     }
-    return __sp;
   }
 };
 
