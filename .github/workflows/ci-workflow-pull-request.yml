@@ -33,6 +33,7 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -195,7 +196,11 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
+    if: >-
+      ${{
+           needs.build-workflow.outputs.vdc_enabled == 'true' &&
+           github.repository == 'NVIDIA/cccl'
+      }}
     permissions:
       id-token: write
       contents: read
@@ -209,7 +214,8 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true'
+        needs.build-workflow.outputs.docs_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
       }}
     permissions:
       contents: write
@@ -223,7 +229,11 @@ jobs:
   build-rapids:
     name: Build RAPIDS (optional)
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.rapids_enabled == 'true' }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.rapids_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
     secrets: inherit
     permissions:
       actions: read
@@ -236,7 +246,11 @@ jobs:
   build-matx:
     name: Build MatX (optional)
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.matx_enabled == 'true' }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.matx_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
     secrets: inherit
     permissions:
       id-token: write
@@ -246,7 +260,11 @@ jobs:
   build-pytorch:
     name: Build PyTorch (optional)
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.pytorch_enabled == 'true' }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.pytorch_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
     secrets: inherit
     permissions:
       id-token: write

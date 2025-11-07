@@ -110,7 +110,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target containers ${cudax_target}
     containers/uninitialized_buffer.cu
-    containers/uninitialized_async_buffer.cu
     containers/async_buffer/access.cu
     containers/async_buffer/capacity.cu
     containers/async_buffer/constructor.cu

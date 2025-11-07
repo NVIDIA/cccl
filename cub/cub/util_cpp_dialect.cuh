@@ -63,7 +63,7 @@ CUB_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
 #  ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 #    if _CCCL_STD_VER < 2017
 #      error CUB requires at least C++17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.
-#    endif // _CCCL_STD_VER >= 2017
+#    endif // _CCCL_STD_VER < 2017
 #  endif
 
 #  undef CUB_COMP_DEPR_IMPL

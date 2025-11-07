@@ -159,30 +159,6 @@
 #  undef _CCCL_BUITLIN_CTZG
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
-
-#if _CCCL_CHECK_BUILTIN(builtin_bswap32) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
-
-#if _CCCL_CHECK_BUILTIN(builtin_bswap64) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
-
-#if _CCCL_CHECK_BUILTIN(builtin_bswap128) // Only available in GCC >= 11 which supports __has_builtin
-#  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
-
-// NVCC cannot handle builtins for bswap
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_BSWAP16
-#  undef _CCCL_BUILTIN_BSWAP32
-#  undef _CCCL_BUILTIN_BSWAP64
-#  undef _CCCL_BUILTIN_BSWAP128
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_bitreverse8) && !_CCCL_HAS_CUDA_COMPILER()
 #  define _CCCL_BUILTIN_BITREVERSE8(...) __builtin_bitreverse8(__VA_ARGS__)
 #endif
