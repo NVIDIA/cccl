@@ -109,12 +109,12 @@ private:
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
     static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
-    return NV_DISPATCH_TARGET(
+    NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
-        (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u)),
+        return (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u);),
       NV_IS_DEVICE,
-      (linear_tid == 0));
+      (return linear_tid == 0;));
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void __init_mbarrier()

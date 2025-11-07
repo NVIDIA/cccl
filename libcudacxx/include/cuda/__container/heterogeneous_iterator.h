@@ -31,15 +31,11 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__utility/select_execution_space.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 enum class _IsConstIter
 {
   __no,
@@ -63,11 +59,11 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator;
 
 // We restrict all accessors of the iterator based on the execution space
-template <class _Tp, _IsConstIter _IsConst, _ExecutionSpace _Space>
+template <class _Tp, _IsConstIter _IsConst, ::cuda::mr::__memory_accessability _Space>
 class __heterogeneous_iterator_access;
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -114,7 +110,7 @@ protected:
 };
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -161,7 +157,7 @@ protected:
 };
 
 template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host_device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host_device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -211,12 +207,12 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator
     : public __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
                                              ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                             __select_execution_space<_Properties...>>
+                                             ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>
 {
   using __base =
     __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
                                     ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                    __select_execution_space<_Properties...>>;
+                                    ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>;
 
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -294,7 +290,7 @@ public:
     return __temp;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
@@ -305,7 +301,7 @@ public:
     __other += __count;
     return __other;
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
@@ -334,7 +330,7 @@ public:
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Equality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -344,7 +340,7 @@ public:
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
   }
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -354,15 +350,15 @@ public:
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
-#    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   [[nodiscard]] _CCCL_API friend constexpr ::cuda::std::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
   }
-#    else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Less than relation between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -403,24 +399,24 @@ public:
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
-#    endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#  endif // _CCCL_DOXYGEN_INVOKED
+#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#endif // _CCCL_DOXYGEN_INVOKED
 
   _CCCL_API constexpr pointer __unwrap() const noexcept
   {
     return this->__ptr_;
   }
 };
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Here be dragons: We need to ensure that the iterator can work with legacy interfaces that take a pointer.
 // This will obviously eat all of our execution checks
 template <class _Tp, class... _Properties>
-struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Properties...>>
+struct pointer_traits<::cuda::heterogeneous_iterator<_Tp, _Properties...>>
 {
-  using pointer         = ::cuda::experimental::heterogeneous_iterator<_Tp, _Properties...>;
+  using pointer         = ::cuda::heterogeneous_iterator<_Tp, _Properties...>;
   using element_type    = _Tp;
   using difference_type = ::cuda::std::ptrdiff_t;
 
@@ -434,8 +430,6 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/std/__cccl/epilogue.h>
 

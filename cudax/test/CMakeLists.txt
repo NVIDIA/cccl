@@ -66,10 +66,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
   )
 
-  cudax_add_catch2_test(test_target host_launch ${cudax_target}
-    launch/host_launch.cu
-  )
-
   cudax_add_catch2_test(test_target launch_configuration ${cudax_target}
     launch/configuration.cu
   )
@@ -114,7 +110,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target containers ${cudax_target}
     containers/uninitialized_buffer.cu
-    containers/uninitialized_async_buffer.cu
     containers/async_buffer/access.cu
     containers/async_buffer/capacity.cu
     containers/async_buffer/constructor.cu
