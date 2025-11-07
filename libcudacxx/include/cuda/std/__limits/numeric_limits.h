@@ -20,13 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__floating_point/constants.h>
+#include <cuda/std/__floating_point/format.h>
+#include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/cfloat>
 #include <cuda/std/climits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -68,7 +67,7 @@ _CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
   {
     return __numeric_limits_type::__integral;
   }
-  else if constexpr (is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
+  else if constexpr (__is_fp_v<_Tp>)
   {
     return __numeric_limits_type::__floating_point;
   }
@@ -302,282 +301,177 @@ public:
   static constexpr float_round_style round_style = round_toward_zero;
 };
 
-template <>
-class __numeric_limits_impl<float, __numeric_limits_type::__floating_point>
+template <class _Tp>
+class __numeric_limits_impl<_Tp, __numeric_limits_type::__floating_point>
 {
+  static constexpr auto __fmt = __fp_format_of_v<_Tp>;
+
+  [[nodiscard]] _CCCL_API static constexpr int __max_exponent10() noexcept
+  {
+    switch (__fmt)
+    {
+      case __fp_format::__binary16:
+        return 4;
+      case __fp_format::__binary32:
+        return 38;
+      case __fp_format::__binary64:
+        return 308;
+      case __fp_format::__binary128:
+        return 4932;
+      case __fp_format::__bfloat16:
+        return 38;
+      case __fp_format::__fp80_x86:
+        return 4932;
+      case __fp_format::__fp8_nv_e4m3:
+        return 2;
+      case __fp_format::__fp8_nv_e5m2:
+        return 4;
+      case __fp_format::__fp8_nv_e8m0:
+        return 38;
+      case __fp_format::__fp6_nv_e2m3:
+        return 0;
+      case __fp_format::__fp6_nv_e3m2:
+        return 1;
+      case __fp_format::__fp4_nv_e2m1:
+        return 0;
+      default:
+        return 0;
+    }
+  }
+
 public:
-  using type = float;
+  using type = _Tp;
 
   static constexpr bool is_specialized = true;
 
-  static constexpr bool is_signed   = true;
-  static constexpr int digits       = FLT_MANT_DIG;
-  static constexpr int digits10     = FLT_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
-  _CCCL_API static constexpr type min() noexcept
+  static constexpr bool is_signed   = __fp_is_signed_v<__fmt>;
+  static constexpr int digits       = __fp_digits_v<__fmt>;
+  static constexpr int digits10     = static_cast<int>(((digits - 1) * 30103ll) / 100000ll);
+  static constexpr int max_digits10 = 2 + (digits * 30103ll) / 100000ll;
+  [[nodiscard]] _CCCL_API static constexpr type min() noexcept
   {
-    return FLT_MIN;
+    return ::cuda::std::__fp_min<_Tp>();
   }
-  _CCCL_API static constexpr type max() noexcept
+  [[nodiscard]] _CCCL_API static constexpr type max() noexcept
   {
-    return FLT_MAX;
+    return ::cuda::std::__fp_max<_Tp>();
   }
-  _CCCL_API static constexpr type lowest() noexcept
+  [[nodiscard]] _CCCL_API static constexpr type lowest() noexcept
   {
-    return -max();
+    if constexpr (is_signed)
+    {
+      return ::cuda::std::__fp_neg(::cuda::std::__fp_max<_Tp>());
+    }
+    else if constexpr (__fmt != __fp_format::__fp8_nv_e8m0)
+    {
+      return ::cuda::std::__fp_zero<_Tp>();
+    }
+    else
+    {
+      return ::cuda::std::__fp_min<_Tp>();
+    }
   }
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
-  static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
+  static constexpr int radix       = 2;
+  [[nodiscard]] _CCCL_API static constexpr type epsilon() noexcept
   {
-    return FLT_EPSILON;
+    return ::cuda::std::__fp_epsilon<_Tp>();
   }
-  _CCCL_API static constexpr type round_error() noexcept
+  [[nodiscard]] _CCCL_API static constexpr type round_error() noexcept
   {
-    return 0.5F;
-  }
-
-  static constexpr int min_exponent   = FLT_MIN_EXP;
-  static constexpr int min_exponent10 = FLT_MIN_10_EXP;
-  static constexpr int max_exponent   = FLT_MAX_EXP;
-  static constexpr int max_exponent10 = FLT_MAX_10_EXP;
-
-  static constexpr bool has_infinity                                       = true;
-  static constexpr bool has_quiet_NaN                                      = true;
-  static constexpr bool has_signaling_NaN                                  = true;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-
-#if defined(_CCCL_BUILTIN_HUGE_VALF)
-  _CCCL_API static constexpr type infinity() noexcept
-  {
-    return _CCCL_BUILTIN_HUGE_VALF();
-  }
-#else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7f800000);
-  }
-#endif // !_CCCL_BUILTIN_HUGE_VALF
-#if defined(_CCCL_BUILTIN_NANF)
-  _CCCL_API static constexpr type quiet_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NANF("");
-  }
-#else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7fc00000);
-  }
-#endif // !_CCCL_BUILTIN_NANF
-#if defined(_CCCL_BUILTIN_NANSF)
-  _CCCL_API static constexpr type signaling_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NANSF("");
-  }
-#else // ^^^ _CCCL_BUILTIN_NANSF ^^^ // vvv !_CCCL_BUILTIN_NANSF vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7fa00000);
-  }
-#endif // !_CCCL_BUILTIN_NANSF
-  _CCCL_API static constexpr type denorm_min() noexcept
-  {
-#if defined(FLT_TRUE_MIN)
-    return FLT_TRUE_MIN;
-#else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
-    return __FLT_DENORM_MIN__;
-#endif // ^^^ !FLT_TRUE_MIN ^^^
+    // 1.0 for nvfp8_e8m0, 0.5 for all other types
+    if constexpr (__fmt == __fp_format::__fp8_nv_e8m0)
+    {
+      return ::cuda::std::__fp_one<_Tp>();
+    }
+    else if constexpr (__fp_is_native_type_v<_Tp>)
+    {
+      return static_cast<_Tp>(0.5f);
+    }
+    else if (__fmt == __fp_format::__fp4_nv_e2m1)
+    {
+      return ::cuda::std::__fp_min<_Tp>();
+    }
+    else
+    {
+      using _Storage = __fp_storage_t<__fmt>;
+      return static_cast<_Storage>((static_cast<_Storage>(__fp_exp_bias_v<__fmt> - 1) << __fp_mant_nbits_v<__fmt>)
+                                   | __fp_explicit_bit_mask_v<__fmt>);
+    }
   }
 
-  static constexpr bool is_iec559  = true;
+  static constexpr int min_exponent   = __fp_exp_min_v<__fmt> + 1;
+  static constexpr int min_exponent10 = (30103ll * __fp_exp_min_v<__fmt>) / 100000ll;
+  static constexpr int max_exponent   = __fp_exp_max_v<__fmt> + 1;
+  static constexpr int max_exponent10 = __max_exponent10();
+
+  static constexpr bool has_infinity      = __fp_has_inf_v<__fmt>;
+  static constexpr bool has_quiet_NaN     = __fp_has_nan_v<__fmt>;
+  static constexpr bool has_signaling_NaN = __fp_has_nans_v<__fmt>;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm =
+    (__fmt != __fp_format::__fp8_nv_e8m0) ? denorm_present : denorm_absent;
+  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss = false;
+
+  [[nodiscard]] _CCCL_API static constexpr type infinity() noexcept
+  {
+    if constexpr (has_infinity)
+    {
+      return ::cuda::std::__fp_inf<_Tp>();
+    }
+    else
+    {
+      return _Tp{};
+    }
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr type quiet_NaN() noexcept
+  {
+    if constexpr (has_quiet_NaN)
+    {
+      return ::cuda::std::__fp_nan<_Tp>();
+    }
+    else
+    {
+      return _Tp{};
+    }
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr type signaling_NaN() noexcept
+  {
+    if constexpr (has_signaling_NaN)
+    {
+      return ::cuda::std::__fp_nans<_Tp>();
+    }
+    else
+    {
+      return _Tp{};
+    }
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr type denorm_min() noexcept
+  {
+    if constexpr (has_denorm)
+    {
+      return ::cuda::std::__fp_denorm_min<_Tp>();
+    }
+    else
+    {
+      return _Tp{};
+    }
+  }
+
+  static constexpr bool is_iec559 =
+    __fmt == __fp_format::__binary16 || __fmt == __fp_format::__binary32 || __fmt == __fp_format::__binary64
+    || __fmt == __fp_format::__binary128 || __fmt == __fp_format::__bfloat16 || __fmt == __fp_format::__fp80_x86;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo  = false;
 
-  static constexpr bool traps                    = false;
-  static constexpr bool tinyness_before          = false;
-  static constexpr float_round_style round_style = round_to_nearest;
-};
-
-template <>
-class __numeric_limits_impl<double, __numeric_limits_type::__floating_point>
-{
-public:
-  using type = double;
-
-  static constexpr bool is_specialized = true;
-
-  static constexpr bool is_signed   = true;
-  static constexpr int digits       = DBL_MANT_DIG;
-  static constexpr int digits10     = DBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
-  _CCCL_API static constexpr type min() noexcept
-  {
-    return DBL_MIN;
-  }
-  _CCCL_API static constexpr type max() noexcept
-  {
-    return DBL_MAX;
-  }
-  _CCCL_API static constexpr type lowest() noexcept
-  {
-    return -max();
-  }
-
-  static constexpr bool is_integer = false;
-  static constexpr bool is_exact   = false;
-  static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
-  {
-    return DBL_EPSILON;
-  }
-  _CCCL_API static constexpr type round_error() noexcept
-  {
-    return 0.5;
-  }
-
-  static constexpr int min_exponent   = DBL_MIN_EXP;
-  static constexpr int min_exponent10 = DBL_MIN_10_EXP;
-  static constexpr int max_exponent   = DBL_MAX_EXP;
-  static constexpr int max_exponent10 = DBL_MAX_10_EXP;
-
-  static constexpr bool has_infinity                                       = true;
-  static constexpr bool has_quiet_NaN                                      = true;
-  static constexpr bool has_signaling_NaN                                  = true;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-
-#if defined(_CCCL_BUILTIN_HUGE_VAL)
-  _CCCL_API static constexpr type infinity() noexcept
-  {
-    return _CCCL_BUILTIN_HUGE_VAL();
-  }
-#else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7ff0000000000000);
-  }
-#endif // !_CCCL_BUILTIN_HUGE_VAL
-#if defined(_CCCL_BUILTIN_NAN)
-  _CCCL_API static constexpr type quiet_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NAN("");
-  }
-#else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7ff8000000000000);
-  }
-#endif // !_CCCL_BUILTIN_NAN
-#if defined(_CCCL_BUILTIN_NANS)
-  _CCCL_API static constexpr type signaling_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NANS("");
-  }
-#else // ^^^ _CCCL_BUILTIN_NANS ^^^ // vvv !_CCCL_BUILTIN_NANS vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(0x7ff4000000000000);
-  }
-#endif // !_CCCL_BUILTIN_NANS
-  _CCCL_API static constexpr type denorm_min() noexcept
-  {
-#if defined(DBL_TRUE_MIN)
-    return DBL_TRUE_MIN;
-#else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
-    return __DBL_DENORM_MIN__;
-#endif // ^^^ !DBL_TRUE_MIN ^^^
-  }
-
-  static constexpr bool is_iec559  = true;
-  static constexpr bool is_bounded = true;
-  static constexpr bool is_modulo  = false;
-
-  static constexpr bool traps                    = false;
-  static constexpr bool tinyness_before          = false;
-  static constexpr float_round_style round_style = round_to_nearest;
-};
-
-template <>
-class __numeric_limits_impl<long double, __numeric_limits_type::__floating_point>
-{
-#if _CCCL_HAS_LONG_DOUBLE()
-
-public:
-  using type = long double;
-
-  static constexpr bool is_specialized = true;
-
-  static constexpr bool is_signed   = true;
-  static constexpr int digits       = LDBL_MANT_DIG;
-  static constexpr int digits10     = LDBL_DIG;
-  static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
-  _CCCL_API static constexpr type min() noexcept
-  {
-    return LDBL_MIN;
-  }
-  _CCCL_API static constexpr type max() noexcept
-  {
-    return LDBL_MAX;
-  }
-  _CCCL_API static constexpr type lowest() noexcept
-  {
-    return -max();
-  }
-
-  static constexpr bool is_integer = false;
-  static constexpr bool is_exact   = false;
-  static constexpr int radix       = FLT_RADIX;
-  _CCCL_API static constexpr type epsilon() noexcept
-  {
-    return LDBL_EPSILON;
-  }
-  _CCCL_API static constexpr type round_error() noexcept
-  {
-    return 0.5L;
-  }
-
-  static constexpr int min_exponent   = LDBL_MIN_EXP;
-  static constexpr int min_exponent10 = LDBL_MIN_10_EXP;
-  static constexpr int max_exponent   = LDBL_MAX_EXP;
-  static constexpr int max_exponent10 = LDBL_MAX_10_EXP;
-
-  static constexpr bool has_infinity                                       = true;
-  static constexpr bool has_quiet_NaN                                      = true;
-  static constexpr bool has_signaling_NaN                                  = true;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
-  _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
-  _CCCL_API static constexpr type infinity() noexcept
-  {
-    return _CCCL_BUILTIN_HUGE_VALL();
-  }
-  _CCCL_API static constexpr type quiet_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NANL("");
-  }
-  _CCCL_API static constexpr type signaling_NaN() noexcept
-  {
-    return _CCCL_BUILTIN_NANSL("");
-  }
-  _CCCL_API static constexpr type denorm_min() noexcept
-  {
-#  if defined(LDBL_TRUE_MIN)
-    return LDBL_TRUE_MIN;
-#  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
-    return __LDBL_DENORM_MIN__;
-#  endif // ^^^ !LDBL_TRUE_MIN ^^^
-  }
-
-  static constexpr bool is_iec559  = true;
-  static constexpr bool is_bounded = true;
-  static constexpr bool is_modulo  = false;
-
-  static constexpr bool traps                    = false;
-  static constexpr bool tinyness_before          = false;
-  static constexpr float_round_style round_style = round_to_nearest;
-#endif // _CCCL_HAS_LONG_DOUBLE()
+  static constexpr bool traps           = false;
+  static constexpr bool tinyness_before = false;
+  static constexpr float_round_style round_style =
+    (__fmt != __fp_format::__fp8_nv_e8m0) ? round_to_nearest : round_toward_zero;
 };
 
 template <class _Tp>
