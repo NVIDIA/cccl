@@ -1539,6 +1539,8 @@
 <p><strong>Performance considerations</strong></p>
 <ul class="simple">
 <li><p>The function is optimized for compile-time values of <code class="docutils literal notranslate"><span class="pre">alignment</span></code>.</p></li>
+<li><p>The function does not perform any operations if <code class="docutils literal notranslate"><span class="pre">alignment</span> <span class="pre">==</span> <span class="pre">alignof(T)</span></code>.</p></li>
+<li><p>The function is translated to a single <code class="docutils literal notranslate"><span class="pre">LOP3.LUT</span></code> instruction for other values of <code class="docutils literal notranslate"><span class="pre">alignment</span></code>.</p></li>
 <li><p>The returned pointer is decorated with <code class="docutils literal notranslate"><span class="pre">__builtin_assume_aligned</span></code> to help the compiler generate better code.</p></li>
 <li><p>The returned pointer maintains the same memory space, for example shared memory, as the input pointer.</p></li>
 </ul>

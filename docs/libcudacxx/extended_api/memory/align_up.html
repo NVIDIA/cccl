@@ -1539,25 +1539,27 @@
 <p><strong>Performance considerations</strong></p>
 <ul class="simple">
 <li><p>The function is optimized for compile-time values of <code class="docutils literal notranslate"><span class="pre">alignment</span></code>.</p></li>
+<li><p>The function does not perform any operations if <code class="docutils literal notranslate"><span class="pre">alignment</span> <span class="pre">==</span> <span class="pre">alignof(T)</span></code>.</p></li>
+<li><p>The function is translated to <code class="docutils literal notranslate"><span class="pre">LOP3.LUT</span></code> + <code class="docutils literal notranslate"><span class="pre">IADD.64</span></code> instructions for other values of <code class="docutils literal notranslate"><span class="pre">alignment</span></code>.</p></li>
 <li><p>The returned pointer is decorated with <code class="docutils literal notranslate"><span class="pre">__builtin_assume_aligned</span></code> to help the compiler generate better code.</p></li>
 <li><p>The returned pointer maintains the same memory space, for example shared memory, as the input pointer.</p></li>
 </ul>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/memory&gt;</span>
+<div class="highlight-cudas notranslate"><div class="highlight"><pre><span></span>#include &lt;cuda/memory&gt;
 
-<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">kernel</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">ptr_align16</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">align_up</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="p">);</span>
-<span class="w">    </span><span class="n">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">int4</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">ptr_align16</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">int4</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">};</span>
-<span class="p">}</span>
+__global__ void kernel(const int* ptr) {
+    auto ptr_align16 = cuda::align_up(ptr, 16);
+    reinterpret_cast&lt;int4*&gt;(ptr_align16)[0] = int4{1, 2, 3, 4};
+}
 
-<span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">;</span>
-<span class="w">    </span><span class="n">cudaMalloc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
-<span class="w">    </span><span class="n">kernel</span><span class="o">&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
-<span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
+int main() {
+    int* ptr;
+    cudaMalloc(&amp;ptr, 100 * sizeof(int));
+    kernel&lt;&lt;&lt;1, 1&gt;&gt;&gt;(ptr);
+    cudaDeviceSynchronize();
+    return 0;
+}
 </pre></div>
 </div>
 <p><a class="reference external" href="https://godbolt.org/z/8sYxETbjM">See it on Godbolt 🔗</a></p>
