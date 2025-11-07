@@ -141,7 +141,8 @@ __launch_bounds__(int(ArchPolicies{}(CUB_PTX_ARCH).reduce_policy.block_threads))
                       AccumT,
                       policy.vector_load_length,
                       policy.block_algorithm,
-                      policy.load_modifier>;
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
   using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
@@ -226,7 +227,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                       AccumT,
                       policy.vector_load_length,
                       policy.block_algorithm,
-                      policy.load_modifier>;
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
   using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
