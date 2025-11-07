@@ -27,7 +27,6 @@
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/span>
 
 #  include <cuda.h>
 
@@ -488,13 +487,13 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
   return __status;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __pointerGetAttributesNoThrow(
-  ::cuda::std::span<::CUpointer_attribute> __attrs, ::cuda::std::span<void*> __results, const void* __ptr)
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
 {
-  _CCCL_ASSERT(__attrs.size() == __results.size(), "size mismatch in __pointerGetAttributesNoThrow");
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
-  return static_cast<::cudaError_t>(__driver_fn(
-    static_cast<unsigned>(__attrs.size()), __attrs.data(), __results.data(), reinterpret_cast<::CUdeviceptr>(__ptr)));
+  return static_cast<::cudaError_t>(
+    __driver_fn(static_cast<unsigned>(_Np), __attrs, __results, reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
 
 // Stream management

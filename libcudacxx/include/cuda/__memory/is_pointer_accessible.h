@@ -66,8 +66,7 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   ::CUmemorytype __memory_type     = static_cast<::CUmemorytype>(0);
   int __is_managed                 = 0;
   void* __results[2]               = {&__memory_type, &__is_managed};
-  const auto __status2             = ::cuda::__driver::__pointerGetAttributesNoThrow(
-    ::cuda::std::span<::CUpointer_attribute, 2>{__attrs}, ::cuda::std::span<void*, 2>{__results}, __p);
+  const auto __status2             = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status2 != ::cudaSuccess)
   {
     ::cuda::__throw_cuda_error(__status2, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
@@ -100,8 +99,7 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   int __ptr_dev_id             = 0;
   ::CUmemoryPool __ptr_mempool = nullptr;
   void* __results[4]           = {&__memory_type, &__is_managed, &__ptr_dev_id, &__ptr_mempool};
-  const auto __status2         = ::cuda::__driver::__pointerGetAttributesNoThrow(
-    ::cuda::std::span<::CUpointer_attribute, 4>{__attrs}, ::cuda::std::span<void*, 4>{__results}, __p);
+  const auto __status2         = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status2 != ::cudaSuccess)
   {
     ::cuda::__throw_cuda_error(__status2, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
