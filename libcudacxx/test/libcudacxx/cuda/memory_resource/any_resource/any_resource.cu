@@ -13,7 +13,7 @@
 
 #include <testing.cuh>
 
-#include "test_resource.cuh"
+#include "../test_resource.cuh"
 
 #ifndef __CUDA_ARCH__
 

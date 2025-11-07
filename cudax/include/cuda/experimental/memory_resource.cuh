@@ -31,6 +31,4 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 
-#include <cuda/experimental/__memory_resource/shared_resource.cuh>
-
 #endif // __CUDAX_MEMORY_RESOURCE___
