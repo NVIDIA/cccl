@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__exception/cuda_error.h>
-#  include <cuda/std/__expected/expected.h>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -837,7 +836,8 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::expected<::CUtensorMap, ::cudaError_t> __tensorMapEncodeTiledNoThrow(
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
+  ::CUtensorMap& __tensorMap,
   ::CUtensorMapDataType __tensorDataType,
   ::cuda::std::uint32_t __tensorRank,
   void* __globalAddress,
@@ -851,8 +851,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   ::CUtensorMapFloatOOBfill __oobFill) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
-  ::CUtensorMap __tensorMap{};
-  auto __status = static_cast<::cudaError_t>(__driver_fn(
+  return static_cast<::cudaError_t>(__driver_fn(
     &__tensorMap,
     __tensorDataType,
     __tensorRank,
@@ -865,11 +864,6 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
     __swizzle,
     __l2Promotion,
     __oobFill));
-  if (__status == ::cudaSuccess)
-  {
-    return ::cuda::std::expected<::CUtensorMap, ::cudaError_t>{__tensorMap};
-  }
-  return ::cuda::std::unexpected<::cudaError_t>{__status};
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
