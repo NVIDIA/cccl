@@ -397,8 +397,9 @@ public:
     else
     {
       using _Storage = __fp_storage_t<__fmt>;
-      return static_cast<_Storage>((static_cast<_Storage>(__fp_exp_bias_v<__fmt> - 1) << __fp_mant_nbits_v<__fmt>)
-                                   | __fp_explicit_bit_mask_v<__fmt>);
+      return ::cuda::std::__fp_from_storage<_Tp>(static_cast<_Storage>(
+        (static_cast<_Storage>(__fp_exp_bias_v<__fmt> - 1) << __fp_mant_nbits_v<__fmt>)
+        | __fp_explicit_bit_mask_v<__fmt>));
     }
   }
 
