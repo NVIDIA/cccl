@@ -35,13 +35,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE InputIterator
 for_each(thrust::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator, UnaryFunction)
@@ -57,8 +52,5 @@ for_each_n(thrust::execution_policy<DerivedPolicy>&, InputIterator first, Size, 
   static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return first;
 } // end for_each_n()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

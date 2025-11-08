@@ -30,11 +30,8 @@
 #include <string>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail
 {
-namespace detail
-{
-
 // define our own bad_alloc so we can set its .what()
 class bad_alloc : public std::bad_alloc
 {
@@ -58,7 +55,5 @@ public:
 private:
   std::string m_what;
 }; // end bad_alloc
-
-} // namespace detail
-} // namespace system
+} // namespace system::detail
 THRUST_NAMESPACE_END

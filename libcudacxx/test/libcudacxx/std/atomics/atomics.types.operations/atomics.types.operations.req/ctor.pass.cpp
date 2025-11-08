@@ -13,7 +13,7 @@
 
 // constexpr atomic<T>::atomic(T value)
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/atomic>
 #include <cuda/std/atomic>
@@ -44,7 +44,7 @@ struct TestFunc
 {
   __host__ __device__ void operator()() const
   {
-    typedef cuda::atomic<Tp, Scope> Atomic;
+    using Atomic = cuda::atomic<Tp, Scope>;
     static_assert(cuda::std::is_literal_type<Atomic>::value, "");
     constexpr Tp t(42);
     {

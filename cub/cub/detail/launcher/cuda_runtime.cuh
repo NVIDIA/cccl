@@ -21,11 +21,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct TripleChevronFactory
 {
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
+    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
   {
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
@@ -94,7 +93,6 @@ struct TripleChevronFactory
     return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

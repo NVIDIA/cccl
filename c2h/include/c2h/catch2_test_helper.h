@@ -5,7 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__nvtx/nvtx3.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -18,6 +18,7 @@
 #include <type_traits>
 
 #include <c2h/catch2_main.h>
+#include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
@@ -35,6 +36,14 @@
 #  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
 #  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
 #  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
+#endif
+// The nv_diagnostic pragmas in Catch2 macros cause cicc to hang indefinitely in CTK 13.0.
+// See NVBugs 5475335.
+#if _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, 13, 0)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
 #endif
 // workaround for error
 // * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
@@ -56,7 +65,6 @@
 
 namespace c2h
 {
-
 template <typename... Ts>
 using type_list = ::cuda::std::__type_list<Ts...>;
 
@@ -180,7 +188,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 }
 
 #endif // TEST_BF_T()
-
 } // namespace c2h
 
 namespace detail
@@ -217,6 +224,13 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     auto vec_ref = detail::to_vec(ref);                                   \
     auto vec_out = detail::to_vec(out);                                   \
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
+  }
+
+#define REQUIRE_APPROX_EQ_ABS(ref, out, abs)                             \
+  {                                                                      \
+    auto vec_ref = detail::to_vec(ref);                                  \
+    auto vec_out = detail::to_vec(out);                                  \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).margin(abs)); \
   }
 
 namespace detail
@@ -293,7 +307,7 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
   }
 
 #include <cuda/std/tuple>
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -305,18 +319,18 @@ enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>
   {
     os << ", ";
   }
-  os << _CUDA_VSTD::get<N>(tup);
-  _CUDA_VSTD::print_elem<N + 1>(os, tup);
+  os << ::cuda::std::get<N>(tup);
+  ::cuda::std::print_elem<N + 1>(os, tup);
 }
 
 template <typename... T>
 ::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
 {
   os << "[";
-  _CUDA_VSTD::print_elem<0>(os, tup);
+  ::cuda::std::print_elem<0>(os, tup);
   return os << "]";
 }
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <>
 struct Catch::StringMaker<cudaError>
@@ -338,14 +352,11 @@ struct nvtx_c2h_domain
 };
 
 template <typename T>
-struct nvtx_fixture
+class nvtx_fixture
 {
-  nvtx_fixture()
-      : nvtx_range(Catch::getResultCapture().getCurrentTestName())
-  {}
-
-private:
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range;
+#if _CCCL_HAS_NVTX3()
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
+#endif // _CCCL_HAS_NVTX3()
 };
 } // namespace detail
 
@@ -375,17 +386,23 @@ private:
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
+#define C2H_TEST_LIST_WITH_FIXTURE_IMPL(ID, FIXTURE, NAME, TAG, ...) \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>;   \
+  TEMPLATE_LIST_TEST_CASE_METHOD(FIXTURE, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+
+#define C2H_TEST_LIST_WITH_FIXTURE(FIXTURE, NAME, TAG, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
+
 #define C2H_TEST_STR(a) #a
 
 namespace c2h
 {
-
 inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static const char* override_str = std::getenv("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds = override_str ? std::atoi(override_str) : 0;
+  static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
+  static const int override_seeds                = override_str ? std::atoi(override_str->c_str()) : 0;
   return override_seeds;
 }
 

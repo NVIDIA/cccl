@@ -33,15 +33,10 @@
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace general_copy_detail
 {
-
 // sometimes OutputIterator's reference type is reported as void
 // in that case, just assume that we're able to assign to it OK
 template <typename InputIterator, typename OutputIterator>
@@ -86,7 +81,6 @@ iter_assign(OutputIterator dst, InputIterator src)
   // insert a temporary and hope for the best
   *dst = static_cast<value_type>(*src);
 }
-
 } // namespace general_copy_detail
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -122,8 +116,5 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
 
   return result;
 } // end general_copy_n()
-
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

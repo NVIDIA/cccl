@@ -3,6 +3,11 @@ if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   return()
 endif()
 
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+  message(STATUS "Skipping ptx-json tests for clang-cuda.")
+  return()
+endif()
+
 set(is_20_available FALSE)
 foreach(cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(dialect ${cub_target} DIALECT)
@@ -16,10 +21,6 @@ if(NOT is_20_available)
   message(STATUS "Skipping ptx-json tests because no targets with DIALECT >= 20 were found.")
   return()
 endif()
-
-# Remove -G, -g, and -lineinfo from CUDA_FLAGS, otherwise the location information
-# will throw off the JSON output. This will only apply to targets created in this directory.
-string(REGEX REPLACE "(-G|-g|-lineinfo)" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
 include(CheckIncludeFileCXX)
 check_include_file_cxx("format" _CCCL_PTX_JSON_TEST_HAS_FORMAT)
@@ -51,20 +52,20 @@ function(cub_detail_ptx_json_add_test target_name_var source)
 
     cub_get_target_property(prefix ${cub_target} PREFIX)
 
-    string(REGEX REPLACE "ptx_json_test_([^.]*).cu" "${prefix}.detail.ptx_json.test.\\1.ptx" target_name "${source}")
+    string(REGEX REPLACE "ptx_json_test_([^.]*).cu" "${prefix}.detail.ptx_json.test.\\1.cubin" target_name "${source}")
     set(target_name_var ${target_name} PARENT_SCOPE)
 
     add_library(${target_name} OBJECT
       "${source}"
     )
-
+    cccl_configure_target(${target_name} DIALECT ${dialect})
     cub_clone_target_properties(${target_name} ${cub_target})
     target_link_libraries(${target_name}
       PRIVATE ${cub_target}
     )
     set_target_properties(${target_name} PROPERTIES
-      CUDA_PTX_COMPILATION ON
-      CUDA_ARCHITECTURES 90
+      CUDA_CUBIN_COMPILATION ON
+      CUDA_ARCHITECTURES "80-real"
     )
 
     add_test(NAME ${target_name}

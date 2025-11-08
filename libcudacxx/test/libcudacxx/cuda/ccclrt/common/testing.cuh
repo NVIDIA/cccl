@@ -11,7 +11,8 @@
 #ifndef __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 #define __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
+
 #include <cuda/__driver/driver_api.h>
 
 #include <nv/target>
@@ -90,7 +91,6 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
-
 } // namespace Catch
 
 namespace
@@ -99,11 +99,11 @@ namespace test
 {
 inline int count_driver_stack()
 {
-  if (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
+  if (::cuda::__driver::__ctxGetCurrent() != nullptr)
   {
-    auto ctx    = _CUDA_DRIVER::__ctxPop();
+    auto ctx    = ::cuda::__driver::__ctxPop();
     auto result = 1 + count_driver_stack();
-    _CUDA_DRIVER::__ctxPush(ctx);
+    ::cuda::__driver::__ctxPush(ctx);
     return result;
   }
   else
@@ -114,15 +114,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (_CUDA_DRIVER::__ctxGetCurrent() != nullptr)
+  while (::cuda::__driver::__ctxGetCurrent() != nullptr)
   {
-    _CUDA_DRIVER::__ctxPop();
+    ::cuda::__driver::__ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return _CUDA_DRIVER::__getVersion();
+  return ::cuda::__driver::__getVersion();
 }
 
 // Needs to be a template because we use template catch2 macro
@@ -138,7 +138,6 @@ struct ccclrt_test_fixture
     CCCLRT_CHECK(count_driver_stack() == 0);
   }
 };
-
 } // namespace test
 } // namespace
 
@@ -148,5 +147,8 @@ struct ccclrt_test_fixture
 // we don't accidentally initialize device 0 through CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
+
+#define C2H_CCCLRT_TEST_LIST(NAME, TAGS, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__

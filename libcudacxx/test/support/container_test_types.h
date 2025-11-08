@@ -168,7 +168,6 @@ inline constexpr TypeID const& makeArgumentID()
 {
   return makeTypeID<ArgumentListID<Args...>>();
 }
-
 } // namespace detail
 
 //===----------------------------------------------------------------------===//
@@ -497,8 +496,8 @@ bool operator<(CopyInsertable<ID> const& L, CopyInsertable<ID> const& R)
   return L.data < R.data;
 }
 
-#ifdef _LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#ifdef _CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 #else
 namespace std
 {
@@ -537,8 +536,8 @@ class unordered_set;
 template <class _Value, class _Hash, class _Equals, class _Alloc>
 class unordered_multiset;
 
-#ifdef _LIBCUDACXX_END_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
+#ifdef _CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 #else
 } // end namespace std
 #endif
@@ -546,7 +545,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 // TCT - Test container type
 namespace TCT
 {
-
 template <class T = CopyInsertable<1>>
 using vector = std::vector<T, ContainerTestAllocator<T, T>>;
 template <class T = CopyInsertable<1>>
@@ -581,7 +579,6 @@ using unordered_multiset =
 
 template <class Value = CopyInsertable<1>>
 using multiset = std::multiset<Value, std::less<Value>, ContainerTestAllocator<Value, Value>>;
-
 } // end namespace TCT
 
 #endif // SUPPORT_CONTAINER_TEST_TYPES_H

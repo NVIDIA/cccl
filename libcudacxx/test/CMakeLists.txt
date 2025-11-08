@@ -1,5 +1,32 @@
+find_package (Python COMPONENTS Interpreter)
+if (NOT Python_Interpreter_FOUND)
+  message(FATAL_ERROR
+    "Failed to find python interpreter, which is required for running tests and building a libcu++ static library.")
+endif ()
+
+# Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
+include(GetHostTriple)
+get_host_triple(LLVM_INFERRED_HOST_TRIPLE)
+
+set(LLVM_HOST_TRIPLE "${LLVM_INFERRED_HOST_TRIPLE}" CACHE STRING
+    "Host on which LLVM binaries will run")
+
+# By default, we target the host, but this can be overridden at CMake
+# invocation time.
+set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
+  "Default target for which LLVM will generate code." )
+set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
+message(STATUS "LLVM host triple: ${LLVM_HOST_TRIPLE}")
+message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
+
+set(LIT_EXTRA_ARGS "" CACHE STRING "Use for additional options (e.g. -j12)")
+find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
+set(LLVM_LIT_ARGS "-sv ${LIT_EXTRA_ARGS}")
+
 # Libcudacxx's main lit tests
 add_subdirectory(libcudacxx)
+
+add_subdirectory(cmake)
 
 # Set appropriate warning levels for MSVC/sane
 if("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
@@ -26,15 +53,6 @@ if(MSVC)
 else()
   set(headertest_warning_levels_host -Wall -Werror)
 endif()
-
-# Libcudacxx auto-generated internal header tests
-add_subdirectory(internal_headers)
-
-# Libcudacxx auto-generated public header tests
-add_subdirectory(public_headers)
-
-# Libcudacxx auto-generated public header as std tests
-add_subdirectory(public_headers_host_only)
 
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)

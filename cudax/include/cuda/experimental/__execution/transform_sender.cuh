@@ -28,105 +28,108 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
+#include <cuda/experimental/__execution/type_traits.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
+namespace __detail
 {
-  template <class _Domain, class _Sndr, class... _Env>
-  using __transform_domain_t =
-    _CUDA_VSTD::_If<_CUDA_VSTD::_IsValidExpansion<__transform_sender_result_t, _Domain, _Sndr, _Env...>::value,
-                    _Domain,
-                    default_domain>;
+template <class _Env>
+using __starting_domain = __call_result_or_t<get_domain_t, default_domain, const _Env&>;
 
-  enum class __strategy
+template <class _Sndr, class _Env>
+using __completing_domain = __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, const _Env&>;
+
+template <class _Domain, class _OpTag>
+struct __transform_sender_t
+{
+  template <class _Sndr, class _Env>
+  using __domain_for_t = ::cuda::std::_If< //
+    __has_transform_sender<_Domain, _OpTag, _Sndr, _Env>,
+    _Domain,
+    default_domain>;
+
+  template <class _Sndr, class _Env, bool _Nothrow = true>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
-    __passthru,
-    __transform,
-    __transform_recurse
-  };
+    using __domain_t = __domain_for_t<_Sndr, _Env>;
+    using __result_t = __transform_sender_result_t<__domain_t, _OpTag, _Sndr, _Env>;
 
-  struct __transform_strategy_t
-  {
-    bool __nothrow_;
-    __strategy __strategy_;
-  };
+    constexpr bool __is_nothrow = __nothrow_transform_sender<__domain_t, _OpTag, _Sndr, _Env>;
 
-  template <class _Self, class _Domain, class _Sndr, class... _Env>
-  _CCCL_TRIVIAL_API static constexpr auto __get_transform_strategy() noexcept -> __transform_strategy_t
-  {
-    using __dom_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<_Domain, _Sndr, _Env...>;
-    using __result_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom_t, _Sndr, _Env...>;
-
-    if constexpr (_CUDA_VSTD::_IsSame<__result_t&&, _Sndr&&>::value)
+    if constexpr (__same_as<__result_t, _Sndr>)
     {
-      return __transform_strategy_t{true, __strategy::__passthru};
+      return __declfn<__result_t, __is_nothrow>;
+    }
+    else if constexpr (__same_as<_OpTag, start_t>)
+    {
+      return __get_declfn<__result_t, const _Env&, (_Nothrow && __is_nothrow)>();
     }
     else
     {
-      using __dom2_t _CCCL_NODEBUG_ALIAS =
-        __transform_domain_t<__domain_of_t<__result_t, _Env...>, __result_t, _Env...>;
-      using __result2_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom2_t, __result_t, _Env...>;
-
-      if constexpr (_CUDA_VSTD::_IsSame<__result2_t&&, __result_t&&>::value)
-      {
-        constexpr bool __nothrow_ = noexcept(__dom_t{}.transform_sender(declval<_Sndr>(), declval<const _Env&>()...));
-        return __transform_strategy_t{__nothrow_, __strategy::__transform};
-      }
-      else
-      {
-        constexpr bool __nothrow_ = noexcept(
-          _Self{}(__dom2_t{},
-                  __dom_t{}.transform_sender(declval<_Sndr>(), declval<const _Env&>()...),
-                  declval<const _Env&>()...));
-        return __transform_strategy_t{__nothrow_, __strategy::__transform_recurse};
-      }
+      using __transform_recurse_t = __transform_sender_t<__completing_domain<__result_t, _Env>, set_value_t>;
+      return __transform_recurse_t::template __get_declfn<__result_t, set_value_t, (_Nothrow && __is_nothrow)>();
     }
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
-  _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__passthru))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
-    noexcept(__nothrow_movable<_Sndr>) -> _Sndr
+  template <class _Sndr, class _Env, auto _DeclFn = __get_declfn<_Sndr, _Env>()>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+    noexcept(noexcept(_DeclFn())) -> decltype(_DeclFn())
   {
-    return static_cast<_Sndr&&>(__sndr);
-  }
+    using __domain_t = __domain_for_t<_Sndr, _Env>;
+    using __result_t = __transform_sender_result_t<__domain_t, _OpTag, _Sndr, _Env>;
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
-  _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__transform))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
-    noexcept(__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__nothrow_) -> decltype(auto)
-  {
-    using __dom_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<_Domain, _Sndr, _Env...>;
-    return __dom_t{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env...);
+    if constexpr (__same_as<__result_t, _Sndr>)
+    {
+      return __domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env);
+    }
+    else if constexpr (__same_as<_OpTag, start_t>)
+    {
+      return (*this)(__domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env), __env);
+    }
+    else
+    {
+      using __transform_recurse_t = __transform_sender_t<__completing_domain<__result_t, _Env>, set_value_t>;
+      return __transform_recurse_t()(
+        __domain_t().transform_sender(_OpTag(), static_cast<_Sndr&&>(__sndr), __env), __env);
+    }
   }
+};
+} // namespace __detail
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
-  _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_
-                  == __strategy::__transform_recurse))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
-    noexcept(__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__nothrow_) -> decltype(auto)
+struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
+{
+private:
+  template <class _Fn1, class _Fn2>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __compose
   {
-    using __dom1_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<_Domain, _Sndr, _Env...>;
-    using __result1_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom1_t, _Sndr, _Env...>;
-    using __dom2_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<__early_domain_of_t<__result1_t>, __result1_t, _Env...>;
-    return (*this)(__dom2_t{}, __dom1_t{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env...), __env...);
+    template <class _Sndr, class _Env>
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+      noexcept(noexcept(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env)))
+        -> decltype(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env))
+    {
+      return _Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env);
+    }
+  };
+
+  template <class _Sndr, class _Env>
+  using __impl_fn_t =
+    __compose<__detail::__transform_sender_t<__detail::__starting_domain<_Env>, start_t>,
+              __detail::__transform_sender_t<__detail::__completing_domain<_Sndr, _Env>, set_value_t>>;
+
+public:
+  template <class _Sndr, class _Env, class _ImplFn = __impl_fn_t<_Sndr, _Env>>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+    noexcept(noexcept(_ImplFn()(static_cast<_Sndr&&>(__sndr), __env)))
+      -> decltype(_ImplFn()(static_cast<_Sndr&&>(__sndr), __env))
+  {
+    return _ImplFn()(static_cast<_Sndr&&>(__sndr), __env);
   }
 };
 
 _CCCL_GLOBAL_CONSTANT transform_sender_t transform_sender{};
-
-template <class _Sndr, class... _Env>
-_CCCL_CONCEPT __has_sender_transform =
-  transform_sender_t::__get_transform_strategy<transform_sender_t, __domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>()
-    .__strategy_
-  != transform_sender_t::__strategy::__passthru;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

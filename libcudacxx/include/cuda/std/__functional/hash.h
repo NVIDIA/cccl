@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_HASH_H
-#define _LIBCUDACXX___FUNCTIONAL_HASH_H
+#ifndef _CUDA_STD___FUNCTIONAL_HASH_H
+#define _CUDA_STD___FUNCTIONAL_HASH_H
 
 #include <cuda/std/detail/__config>
 
@@ -42,13 +42,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Size>
 _CCCL_API inline _Size __loadword(const void* __p)
 {
   _Size __r;
-  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
+  ::cuda::std::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
@@ -268,7 +268,7 @@ _Size __murmur2_or_cityhash<_Size, 64>::operator()(const void* __key, _Size __le
     __z = __rotate(__z + __w.first, 33) * __k1;
     __v = __weak_hash_len_32_with_seeds(__s, __v.second * __k1, __x + __w.first);
     __w = __weak_hash_len_32_with_seeds(__s + 32, __z + __w.second, __y + __loadword<_Size>(__s + 16));
-    _CUDA_VSTD::swap(__z, __x);
+    ::cuda::std::swap(__z, __x);
     __s += 64;
     __len -= 64;
   } while (__len != 0);
@@ -594,7 +594,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<long double> : public __scalar_hash<lo
   }
 };
 
-template <class _Tp, bool = is_enum<_Tp>::value>
+template <class _Tp, bool = is_enum_v<_Tp>>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __enum_hash : public __unary_function<_Tp, size_t>
 {
   _CCCL_API inline size_t operator()(_Tp __v) const noexcept
@@ -625,14 +625,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<n
 };
 
 template <class _Key, class _Hash>
-using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
-  integral_constant<bool,
-                    is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
-                      && __invocable_r<size_t, _Hash, _Key const&>::value>;
+using __check_hash_requirements _CCCL_NODEBUG_ALIAS = integral_constant<
+  bool,
+  is_copy_constructible_v<_Hash> && is_move_constructible_v<_Hash> && __invocable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
 using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
-  integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible<_Hash>::value>;
+  integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible_v<_Hash>>;
 
 template <class _Type, class>
 using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
@@ -641,10 +640,10 @@ template <class _Type, class... _Keys>
 using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
   __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_HASH_H
+#endif // _CUDA_STD___FUNCTIONAL_HASH_H

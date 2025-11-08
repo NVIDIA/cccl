@@ -75,12 +75,11 @@
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 // _CCCL_ASSUME
-
-#if _CCCL_HAS_CPP_ATTRIBUTE(assume)
+// NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
-#  define _CCCL_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
 #else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
@@ -141,8 +140,8 @@
 
 // _CCCL_NO_SPECIALIZATIONS
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(_Clang::__no_specializations__)
-#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[_Clang::__no_specializations__(_MSG)]]
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::__no_specializations__(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[msvc::no_specializations(_MSG)]]

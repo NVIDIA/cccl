@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -77,10 +72,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   UnaryFunction unary_op,
   T init,
   AssociativeOperator binary_op);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_scan.inl>

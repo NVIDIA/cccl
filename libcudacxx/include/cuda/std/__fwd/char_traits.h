@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_CHAR_TRAITS_H
-#define _LIBCUDACXX___FWD_CHAR_TRAITS_H
+#ifndef _CUDA_STD___FWD_CHAR_TRAITS_H
+#define _CUDA_STD___FWD_CHAR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT>
+struct char_traits;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits;
@@ -42,8 +55,20 @@ template <>
 struct char_traits<wchar_t>;
 #endif // _CCCL_HAS_WCHAR_T()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+inline constexpr bool __is_std_char_traits_v = false;
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp>
+inline constexpr bool __is_std_char_traits_v<::std::char_traits<_Tp>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_char_traits_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_char_traits_v<char_traits<_Tp>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_CHAR_TRAITS_H
+#endif // _CUDA_STD___FWD_CHAR_TRAITS_H

@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 scatter(thrust::execution_policy<DerivedPolicy>& exec,
@@ -70,10 +65,7 @@ _CCCL_HOST_DEVICE void scatter_if(
   InputIterator3 stencil,
   RandomAccessIterator output,
   Predicate pred);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/scatter.inl>

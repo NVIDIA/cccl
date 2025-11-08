@@ -29,19 +29,18 @@
 
 namespace cuda::experimental::execution
 {
-/////////////////////////////////////////////////////////////////////////////////
-// sequence: customization for the stream scheduler
-template <>
-struct stream_domain::__apply_t<sequence_t>
-{
-  template <class _Sndr, class _Env>
-  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
-  {
-    static_assert(_CUDA_VSTD::__always_false_v<_Sndr>,
-                  "The CUDA stream scheduler does not yet support the `sequence` algorithm.");
-  }
-};
-
+// /////////////////////////////////////////////////////////////////////////////////
+// // sequence: customization for the stream scheduler
+// template <>
+// struct stream_domain::__apply_t<sequence_t>
+// {
+//   template <class _Sndr, class _Env>
+//   _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
+//   {
+//     static_assert(::cuda::std::__always_false_v<_Sndr>,
+//                   "The CUDA stream scheduler does not yet support the 'sequence' algorithm.");
+//   }
+// };
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -31,7 +31,7 @@
 // ...
 // };
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
@@ -64,7 +64,7 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   test<char>();
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   test<char const>(); // extension
 #endif
   return 0;

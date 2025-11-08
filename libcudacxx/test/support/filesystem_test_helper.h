@@ -26,7 +26,6 @@
 
 namespace StaticEnv
 {
-
 inline fs::path makePath(fs::path const& p)
 {
   // env_path is expected not to contain symlinks.
@@ -86,7 +85,6 @@ static const fs::path RecDirFollowSymlinksIterationList[] = {
   makePath("dir1/dir2/symlink_to_dir3"),
   makePath("dir1/dir2/symlink_to_dir3/file5"),
 };
-
 } // namespace StaticEnv
 
 #endif // LIBCXX_FILESYSTEM_STATIC_TEST_ROOT
@@ -112,7 +110,6 @@ inline char random_hex_char()
   static std::uniform_int_distribution<int> mrand{0, 15};
   return to_hex(mrand(rd));
 }
-
 } // namespace random_utils
 
 struct scoped_test_env

@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -92,10 +87,7 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
         ForwardIterator last,
         const T& old_value,
         const T& new_value);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/replace.inl>

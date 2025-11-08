@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_IPOW
-#define _LIBCUDACXX___CMATH_IPOW
+#ifndef _CUDA___CMATH_IPOW_H
+#define _CUDA___CMATH_IPOW_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,22 +33,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, class _Ep>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl_base_pow2(_Tp __b, _Ep __e) noexcept
 {
   const auto __shift = static_cast<int>(__e - 1) * ::cuda::ilog2(__b);
-  const auto __lz    = _CUDA_VSTD::countl_zero(__b);
+  const auto __lz    = ::cuda::std::countl_zero(__b);
   return (__shift >= __lz) ? _Tp{0} : (_Tp{__b} << __shift);
 }
 
 template <class _Tp, class _Ep>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl(_Tp __b, _Ep __e) noexcept
 {
-  static_assert(_CUDA_VSTD::is_unsigned_v<_Tp>);
+  static_assert(::cuda::std::is_unsigned_v<_Tp>);
 
-  if (_CUDA_VSTD::has_single_bit(__b))
+  if (::cuda::std::has_single_bit(__b))
   {
     return ::cuda::__cccl_ipow_impl_base_pow2(__b, __e);
   }
@@ -77,22 +77,22 @@ template <class _Tp, class _Ep>
 //! @return The result of raising \p __b to the power of \p __e
 //! @note The result is undefined if \p __b is 0 and \p __e is negative.
 _CCCL_TEMPLATE(class _Tp, class _Ep)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Ep>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Ep>)
 [[nodiscard]] _CCCL_API constexpr _Tp ipow(_Tp __b, _Ep __e) noexcept
 {
-  _CCCL_ASSERT(__b != _Tp{0} || _CUDA_VSTD::cmp_greater_equal(__e, _Ep{0}),
+  _CCCL_ASSERT(__b != _Tp{0} || ::cuda::std::cmp_greater_equal(__e, _Ep{0}),
                "cuda::ipow() requires non-negative exponent for base 0");
 
   if (__e == _Ep{0} || __b == _Tp{1})
   {
     return _Tp{1};
   }
-  else if (_CUDA_VSTD::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
+  else if (::cuda::std::cmp_less(__e, _Ep{0}) || __b == _Tp{0})
   {
     return _Tp{0};
   }
-  auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), _CUDA_VSTD::__to_unsigned_like(__e));
-  if (_CUDA_VSTD::cmp_less(__b, _Tp{0}) && (__e % 2u == 1))
+  auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), ::cuda::std::__to_unsigned_like(__e));
+  if (::cuda::std::cmp_less(__b, _Tp{0}) && (__e % 2u == 1))
   {
     // todo: replace with ::cuda::__neg(__res) when available
     __res = (~__res + 1);
@@ -100,8 +100,8 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl
   return static_cast<_Tp>(__res);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_IPOW
+#endif // _CUDA___CMATH_IPOW_H

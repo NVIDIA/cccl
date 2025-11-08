@@ -11,7 +11,7 @@
 // result_of<Fn(ArgTypes...)>
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/type_traits>
 #ifdef _LIBCUDACXX_HAS_MEMORY
@@ -417,6 +417,7 @@ int main(int, char**)
   }
 #if TEST_CUDA_COMPILER(NVCC)
   { // extended lambda
+#  if _CCCL_CUDACC_AT_LEAST(12, 3)
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (test_lambda<int>([] __host__ __device__() -> int {
@@ -428,6 +429,7 @@ int main(int, char**)
        test_lambda<SD>([] __host__ __device__() -> SD {
          return {};
        });))
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
     test_lambda<double>(cuda::proclaim_return_type<double>([] __device__() -> double {
       return 42.0;
     }));

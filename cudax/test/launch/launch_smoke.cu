@@ -4,13 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
 #include <cuda/memory>
 
 #include <cuda/experimental/graph.cuh>
+#include <cuda/experimental/kernel.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -59,6 +60,11 @@ struct functor_taking_config
     kernel_run_proof = true;
   }
 };
+
+__global__ void kernel_no_arguments()
+{
+  kernel_run_proof = true;
+}
 
 __global__ void kernel_int_argument(int dummy)
 {
@@ -166,6 +172,9 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
     // Not taking dims
     {
+      cudax::launch(dst, config, kernel_no_arguments);
+      check_kernel_run(dst);
+
       const int dummy = 1;
       cudax::launch(dst, config, kernel_int_argument, dummy);
       check_kernel_run(dst);
@@ -173,14 +182,25 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_int_argument, launch_transform_to_int_convertible{1});
       check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_int_argument, 1U);
+      check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, dummy);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, launch_transform_to_int_convertible{1});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1U);
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
+
       cudax::launch(dst, config, functor_int_argument(), dummy);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), launch_transform_to_int_convertible{1});
-      check_kernel_run(dst);
-
-      cudax::launch(dst, config, kernel_int_argument, 1U);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1U);
       check_kernel_run(dst);
@@ -190,12 +210,17 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     {
       auto functor_instance = functor_taking_config<block_size>();
       auto kernel_instance  = kernel_taking_config<decltype(config), block_size>;
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::kernel_ref kernel_ref_instance = kernel_instance;
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
 
       cudax::launch(dst, config, functor_instance, grid_size);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
 
       cudax::launch(dst, config, kernel_instance, grid_size);
@@ -204,11 +229,19 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(dst);
-
-      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, kernel_ref_instance, grid_size);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, ::cuda::std::move(grid_size));
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, static_cast<unsigned int>(grid_size));
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
     }
   }
 
@@ -280,7 +313,12 @@ C2H_TEST("Launch smoke path builder", "[launch]")
 
   launch_smoke_test(pb);
 
-  CUDAX_REQUIRE(g.node_count() == 46);
+  // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
+#if _CCCL_CTK_BELOW(12, 1)
+  CUDAX_REQUIRE(g.node_count() == 48);
+#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
+  CUDAX_REQUIRE(g.node_count() == 64);
+#endif // _CCCL_CTK_BELOW(12, 1)
 
   auto exec = g.instantiate();
   cudax::stream s{cuda::device_ref{0}};
@@ -347,145 +385,4 @@ void test_default_config()
 C2H_TEST("Launch with default config", "")
 {
   test_default_config();
-}
-
-void block_stream(cudax::stream_ref stream, cuda::atomic<int>& atomic)
-{
-  auto block_lambda = [&]() {
-    while (atomic != 1)
-      ;
-  };
-  cudax::host_launch(stream, block_lambda);
-}
-
-void unblock_and_wait_stream(cudax::stream_ref stream, cuda::atomic<int>& atomic)
-{
-  CUDAX_REQUIRE(!stream.is_done());
-  atomic = 1;
-  stream.sync();
-  atomic = 0;
-}
-
-void launch_local_lambda(cudax::stream_ref stream, int& set, int set_to)
-{
-  auto lambda = [&]() {
-    set = set_to;
-  };
-  cudax::host_launch(stream, lambda);
-}
-
-template <typename Lambda>
-struct lambda_wrapper
-{
-  Lambda lambda;
-
-  lambda_wrapper(const Lambda& lambda)
-      : lambda(lambda)
-  {}
-
-  lambda_wrapper(lambda_wrapper&&)      = default;
-  lambda_wrapper(const lambda_wrapper&) = default;
-
-  void operator()()
-  {
-    if constexpr (cuda::std::is_same_v<cuda::std::invoke_result_t<Lambda>, void*>)
-    {
-      // If lambda returns the address it captured, confirm this object wasn't moved
-      CUDAX_REQUIRE(lambda() == this);
-    }
-    else
-    {
-      lambda();
-    }
-  }
-
-  // Make sure we fail if const is added to this wrapper anywhere
-  void operator()() const
-  {
-    CUDAX_REQUIRE(false);
-  }
-};
-
-C2H_TEST("Host launch", "")
-{
-  cuda::atomic<int> atomic = 0;
-  cudax::stream stream{cuda::device_ref{0}};
-  int i = 0;
-
-  auto set_lambda = [&](int set) {
-    i = set;
-  };
-
-  SECTION("Can do a host launch")
-  {
-    block_stream(stream, atomic);
-
-    cudax::host_launch(stream, set_lambda, 2);
-
-    unblock_and_wait_stream(stream, atomic);
-    CUDAX_REQUIRE(i == 2);
-  }
-
-  SECTION("Can launch multiple functions")
-  {
-    block_stream(stream, atomic);
-    auto check_lambda = [&]() {
-      CUDAX_REQUIRE(i == 4);
-    };
-
-    cudax::host_launch(stream, set_lambda, 3);
-    cudax::host_launch(stream, set_lambda, 4);
-    cudax::host_launch(stream, check_lambda);
-    cudax::host_launch(stream, set_lambda, 5);
-    unblock_and_wait_stream(stream, atomic);
-    CUDAX_REQUIRE(i == 5);
-  }
-
-  SECTION("Non trivially copyable")
-  {
-    std::string s = "hello";
-
-    cudax::host_launch(
-      stream,
-      [&](auto str_arg) {
-        CUDAX_REQUIRE(s == str_arg);
-      },
-      s);
-    stream.sync();
-  }
-
-  SECTION("Confirm no const added to the callable")
-  {
-    lambda_wrapper wrapped_lambda([&]() {
-      i = 21;
-    });
-
-    cudax::host_launch(stream, wrapped_lambda);
-    stream.sync();
-    CUDAX_REQUIRE(i == 21)
-  }
-
-  SECTION("Can launch a local function and return")
-  {
-    block_stream(stream, atomic);
-    launch_local_lambda(stream, i, 42);
-    unblock_and_wait_stream(stream, atomic);
-    CUDAX_REQUIRE(i == 42);
-  }
-
-  SECTION("Launch by reference")
-  {
-    // Grab the pointer to confirm callable was not moved
-    void* wrapper_ptr = nullptr;
-    lambda_wrapper another_lambda_setter([&]() {
-      i = 84;
-      return wrapper_ptr;
-    });
-    wrapper_ptr = static_cast<void*>(&another_lambda_setter);
-
-    block_stream(stream, atomic);
-    host_launch(stream, cuda::std::ref(another_lambda_setter));
-    unblock_and_wait_stream(stream, atomic);
-    CUDAX_REQUIRE(i == 84);
-  }
 }

@@ -34,12 +34,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::temporary_storage
 {
-
-namespace temporary_storage
-{
-
 class slot;
 
 template <typename T>
@@ -376,9 +372,6 @@ deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_
     (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
   return cudaSuccess;
 }
-
-} // namespace temporary_storage
-
-} // namespace detail
+} // namespace detail::temporary_storage
 
 CUB_NAMESPACE_END

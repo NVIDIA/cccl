@@ -31,13 +31,8 @@
 #include <thrust/system/detail/generic/temporary_buffer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
 thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
@@ -81,8 +76,5 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(thrust::execution_policy<DerivedP
   // `return_temporary_buffer` was found.
   thrust::free(exec, p);
 } // end return_temporary_buffer()
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -140,18 +140,34 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 
 ##### Installation
 
-A minimal build that only generates installation rules can be configured using the `install` CMake preset:
+The default CMake options generate only installation rules, so the familiar
+`cmake . && make install` workflow just works:
+
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl
-cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local/
-cd build/install
-ninja install
+cmake . -DCMAKE_INSTALL_PREFIX=/usr/local
+make install
 ```
 
-To include experimental libraries in the installation, use the `install-unstable` preset and build directory.
+A convenience script is also provided:
 
-To install **only** the experimental libraries, use the `install-unstable-only` preset and build directory.
+```bash
+ci/install_cccl.sh /usr/local
+```
+
+###### Advanced installation using presets
+
+CMake presets are also available with options for including experimental
+libraries:
+
+```bash
+cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset install --target install
+```
+
+Use the `install-unstable` preset to include experimental libraries, or
+`install-unstable-only` to install only experimental libraries.
 
 #### Conda
 
@@ -268,15 +284,25 @@ But we will not invest significant time in triaging or fixing issues for older c
 
 In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
+### GPU Architectures
+
+CCCL supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
+
+To be clear, while CCCL can be compiled with both the current and previous CTK major versions, we do not test or validate architectures that were only supported in the older CTK.
+
+Those architectures may still work — we do not intentionally break them — but they are outside our regular CI coverage. Furthermore, new features are not guaranteed to work with these architectures either.
+
+We welcome community contributions for reasonable fixes that unblock users on these older architectures.
+
+For example, CCCL 3.0 supports compiling with CTK 12.x and 13.x where
+- CUDA Toolkit 13.x supports `>=sm_75`
+- CUDA Toolkit 12.x supports `>=sm_50`
+
+In this scenario, compiling CCCL 3.0 with CTK 12.x targeting architectures below `sm_75` may work, but those configurations are not part of our regular testing.
+
 ### C++ Dialects
 - C++17
 - C++20
-
-### GPU Architectures
-
-Unless otherwise specified, CCCL supports all the same GPU architectures/Compute Capabilities as the CUDA Toolkit, which are documented here: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability
-
-Note that some features may only support certain architectures/Compute Capabilities.
 
 ### Testing Strategy
 
@@ -427,8 +453,8 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.1          | 13.1        |
 | 3.0          | 13.0        |
-| ...          | ...         |
 | 2.8          | 12.9        |
 | 2.7          | 12.8        |
 | 2.5          | 12.6        |

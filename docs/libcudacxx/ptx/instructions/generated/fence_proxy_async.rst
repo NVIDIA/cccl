@@ -3,7 +3,7 @@
 
 fence.proxy.async
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async; // 5. PTX ISA 80, SM_90
    template <typename = void>
@@ -11,7 +11,7 @@ fence.proxy.async
 
 fence.proxy.async.global
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }
@@ -21,7 +21,7 @@ fence.proxy.async.global
 
 fence.proxy.async.shared::cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }
@@ -31,7 +31,7 @@ fence.proxy.async.shared::cluster
 
 fence.proxy.async.shared::cta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async.space; // 6. PTX ISA 80, SM_90
    // .space     = { .global, .shared::cluster, .shared::cta }

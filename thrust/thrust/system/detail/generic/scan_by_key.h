@@ -32,13 +32,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -123,10 +118,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   T init,
   BinaryPredicate binary_pred,
   AssociativeOperator binary_op);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/scan_by_key.inl>

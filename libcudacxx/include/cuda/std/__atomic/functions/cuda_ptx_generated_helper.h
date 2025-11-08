@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
-#define _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#ifndef _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#define _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __atomic_cuda_memorder
 {
@@ -105,7 +105,7 @@ struct __atomic_cuda_operand_deduction
   using __tag  = _OpTag;
 };
 
-struct __atomic_longlong2
+struct _CCCL_ALIGNAS(16) __atomic_longlong2
 {
   uint64_t __x;
   uint64_t __y;
@@ -159,19 +159,26 @@ using __atomic_cuda_deduce_minmax = _If<
                     __type_default<__atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>;
 
 template <class _Type>
-using __atomic_enable_if_native_bitwise = bool;
+using __atomic_enable_if_native_bitwise = enable_if_t<(sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_arithmetic = enable_if_t<is_scalar_v<_Type>, bool>;
+using __atomic_enable_if_native_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type>, bool>;
+using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type> && (sizeof(_Type) < 16), bool>;
 
 template <class _Type>
-using __atomic_enable_if_not_native_minmax = enable_if_t<!is_integral_v<_Type>, bool>;
+using __atomic_enable_if_not_native_bitwise = enable_if_t<(sizeof(_Type) == 16), bool>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Type>
+using __atomic_enable_if_not_native_arithmetic = enable_if_t<is_scalar_v<_Type> && (sizeof(_Type) == 16), bool>;
+
+template <class _Type>
+using __atomic_enable_if_not_native_minmax =
+  enable_if_t<!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16), bool>;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H
+#endif // _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H

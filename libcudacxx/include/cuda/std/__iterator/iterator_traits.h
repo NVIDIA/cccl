@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
-#define _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
+#ifndef _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H
+#define _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
@@ -55,11 +56,11 @@
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
 template <class _Tp, class = void>
-struct __cccl_type_is_defined : _CUDA_VSTD::false_type
+struct __cccl_type_is_defined : ::cuda::std::false_type
 {};
 
 template <class _Tp>
-struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+struct __cccl_type_is_defined<_Tp, ::cuda::std::void_t<decltype(sizeof(_Tp))>> : ::cuda::std::true_type
 {};
 
 // detect whether the used STL has contiguous_iterator_tag defined
@@ -76,7 +77,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -172,17 +173,17 @@ _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::valu
 _CCCL_API inline auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
 #endif // _GLIBCXX_DEBUG
-#if defined(__GLIBCXX__)
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
 _CCCL_API inline auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
   -> contiguous_iterator_tag;
-#endif // __GLIBCXX__
-#if defined(_LIBCPP_VERSION)
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
+#if _CCCL_HOST_STD_LIB(LIBCXX)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
 _CCCL_API inline auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
-#elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
+#elif _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -207,7 +208,7 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
 _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-#endif // _MSVC_STL_VERSION
+#endif // _CCCL_HOST_STD_LIB(STL)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _CCCL_API inline auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
@@ -222,7 +223,7 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<0>)
                  random_access_iterator_tag>;
 
 template <class _Iter>
-using __iter_concept_t = decltype(_CUDA_VSTD::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
+using __iter_concept_t = decltype(::cuda::std::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
 
 template <class _Iter, class = void>
 struct __iter_concept_cache
@@ -238,30 +239,13 @@ template <class _Iter>
 using _ITER_CONCEPT = typename __iter_concept_cache<_Iter>::type;
 
 template <class _Tp>
-struct __has_iterator_category
-{
-private:
-  template <class _Up>
-  _CCCL_API inline static false_type __test(...);
-  template <class _Up>
-  _CCCL_API inline static true_type __test(typename _Up::iterator_category* = nullptr);
-
-public:
-  static const bool value = decltype(__test<_Tp>(nullptr))::value;
-};
+_CCCL_CONCEPT __has_member_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::reference));
 
 template <class _Tp>
-struct __has_iterator_concept
-{
-private:
-  template <class _Up>
-  _CCCL_API inline static false_type __test(...);
-  template <class _Up>
-  _CCCL_API inline static true_type __test(typename _Up::iterator_concept* = nullptr);
+_CCCL_CONCEPT __has_member_pointer = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::pointer));
 
-public:
-  static const bool value = decltype(__test<_Tp>(nullptr))::value;
-};
+template <class _Tp>
+_CCCL_CONCEPT __has_member_iterator_category = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::iterator_category));
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -319,15 +303,6 @@ concept __cpp17_random_access_iterator =
 // We need to consider if a user has specialized std::iterator_traits
 template <class _Ip>
 concept __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
-
-template <class _Ip>
-concept __has_member_reference = requires { typename _Ip::reference; };
-
-template <class _Ip>
-concept __has_member_pointer = requires { typename _Ip::pointer; };
-
-template <class _Ip>
-concept __has_member_iterator_category = requires { typename _Ip::iterator_category; };
 
 template <class _Ip>
 concept __specifies_members = !__specialized_from_std<_Ip> && requires {
@@ -596,24 +571,6 @@ _CCCL_CONCEPT __cpp17_random_access_iterator =
 template <class _Ip>
 inline constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
 
-template <class, class = void>
-inline constexpr bool __has_member_reference = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
-
-template <class, class = void>
-inline constexpr bool __has_member_pointer = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
-
-template <class, class = void>
-inline constexpr bool __has_member_iterator_category = false;
-
-template <class _Tp>
-inline constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
-
 template <class _Ip>
 _CCCL_CONCEPT __specifies_members =
   !__specialized_from_std<_Ip> && __has_member_value_type<_Ip> && __has_member_difference_type<_Ip>
@@ -654,11 +611,11 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
   using type = typename _Ip::pointer;
 };
 
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__cccl_unused(__i.operator->())));
+template <class _Ip, class = void>
+inline constexpr bool __has_operator_arrow = false;
 
 template <class _Ip>
-_CCCL_CONCEPT __has_operator_arrow = _CCCL_FRAGMENT(__has_operator_arrow_, _Ip);
+inline constexpr bool __has_operator_arrow<_Ip, decltype((void) ::cuda::std::declval<_Ip&>().operator->())> = true;
 
 // Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
 // type.
@@ -823,95 +780,53 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   using iterator_concept  = contiguous_iterator_tag;
 };
 
-template <class _Tp, class _Up, bool = __has_iterator_category<iterator_traits<_Tp>>::value>
-struct __has_iterator_category_convertible_to : is_convertible<typename iterator_traits<_Tp>::iterator_category, _Up>
-{};
+template <class _Iter, class _Tag>
+_CCCL_CONCEPT __has_iterator_category_convertible_to = _CCCL_REQUIRES_EXPR((_Iter, _Tag)) //
+  (typename(typename iterator_traits<_Iter>::iterator_category),
+   requires(is_convertible_v<typename iterator_traits<_Iter>::iterator_category, _Tag>));
 
-template <class _Tp, class _Up>
-struct __has_iterator_category_convertible_to<_Tp, _Up, false> : false_type
-{};
+template <class _Iter, class _Tag>
+_CCCL_CONCEPT __has_iterator_concept_convertible_to = _CCCL_REQUIRES_EXPR((_Iter, _Tag)) //
+  (typename(typename _Iter::iterator_concept), requires(is_convertible_v<typename _Iter::iterator_concept, _Tag>));
 
-template <class _Tp, class _Up, bool = __has_iterator_concept<_Tp>::value>
-struct __has_iterator_concept_convertible_to : is_convertible<typename _Tp::iterator_concept, _Up>
-{};
+template <class _Iter>
+inline constexpr bool __has_input_traversal =
+  __has_iterator_category_convertible_to<_Iter, input_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, input_iterator_tag>;
 
-template <class _Tp, class _Up>
-struct __has_iterator_concept_convertible_to<_Tp, _Up, false> : false_type
-{};
+template <class _Iter>
+inline constexpr bool __has_forward_traversal =
+  __has_iterator_category_convertible_to<_Iter, forward_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, forward_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_input_iterator : public __has_iterator_category_convertible_to<_Tp, input_iterator_tag>
-{};
+template <class _Iter>
+inline constexpr bool __has_bidirectional_traversal =
+  __has_iterator_category_convertible_to<_Iter, bidirectional_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, bidirectional_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_forward_iterator : public __has_iterator_category_convertible_to<_Tp, forward_iterator_tag>
-{};
+template <class _Iter>
+inline constexpr bool __has_random_access_traversal =
+  __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
-template <class _Tp>
-struct __is_cpp17_bidirectional_iterator
-    : public __has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>
-{};
-
-template <class _Tp>
-struct __is_cpp17_random_access_iterator
-    : public __has_iterator_category_convertible_to<_Tp, random_access_iterator_tag>
-{};
-
-// __is_cpp17_contiguous_iterator determines if an iterator is known by
+// __has_contiguous_traversal determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
 // (in C++20) or because it is a pointer type or a known trivial wrapper
 // around a (possibly fancy) pointer type, such as __wrap_iter<T*>.
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-template <class _Tp>
-struct __is_cpp17_contiguous_iterator
-    : _Or<__has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,
-          __has_iterator_concept_convertible_to<_Tp, contiguous_iterator_tag>>
-{};
+template <class _Iter>
+inline constexpr bool __has_contiguous_traversal =
+  __has_iterator_category_convertible_to<_Iter, contiguous_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, contiguous_iterator_tag>;
 
 // Any native pointer which is an iterator is also a contiguous iterator.
-template <class _Up>
-struct __is_cpp17_contiguous_iterator<_Up*> : true_type
-{};
+template <class _Tp>
+inline constexpr bool __has_contiguous_traversal<_Tp*> = true;
 
 template <class _Iter>
-class __wrap_iter;
-
-template <class _Tp>
-struct __is_exactly_cpp17_input_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, input_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, forward_iterator_tag>::value>
-{};
-
-template <class _Tp>
-struct __is_exactly_cpp17_forward_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, forward_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>::value>
-{};
-
-template <class _Tp>
-struct __is_exactly_cpp17_bidirectional_iterator
-    : public integral_constant<bool,
-                               __has_iterator_category_convertible_to<_Tp, bidirectional_iterator_tag>::value
-                                 && !__has_iterator_category_convertible_to<_Tp, random_access_iterator_tag>::value>
-{};
-
-template <class _InputIterator>
-using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;
-
-template <class _InputIterator>
-using __iter_key_type = typename remove_const<typename iterator_traits<_InputIterator>::value_type::first_type>::type;
-
-template <class _InputIterator>
-using __iter_mapped_type = typename iterator_traits<_InputIterator>::value_type::second_type;
-
-template <class _InputIterator>
-using __iter_to_alloc_type =
-  pair<typename add_const<typename iterator_traits<_InputIterator>::value_type::first_type>::type,
-       typename iterator_traits<_InputIterator>::value_type::second_type>;
+using __iter_value_type = typename iterator_traits<_Iter>::value_type;
 
 template <class _Iter>
 using __iterator_category_type = typename iterator_traits<_Iter>::iterator_category;
@@ -922,11 +837,11 @@ using __iterator_pointer_type = typename iterator_traits<_Iter>::pointer;
 template <class _Iter>
 using __iter_diff_t = typename iterator_traits<_Iter>::difference_type;
 
-template <class _InputIterator>
-using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;
+template <class _Iter>
+using __iter_value_type = typename iterator_traits<_Iter>::value_type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
+#endif // _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H

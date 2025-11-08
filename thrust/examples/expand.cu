@@ -22,7 +22,7 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
 {
   using difference_type = typename cuda::std::iterator_traits<InputIterator1>::difference_type;
 
-  difference_type input_size  = ::cuda::std::distance(first1, last1);
+  difference_type input_size  = cuda::std::distance(first1, last1);
   difference_type output_size = thrust::reduce(first1, last1);
 
   // scan the counts to obtain output offsets for each input element
@@ -40,13 +40,13 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
 
   // compute max-scan over the output indices, filling in the holes
   thrust::inclusive_scan(
-    output_indices.begin(), output_indices.end(), output_indices.begin(), ::cuda::maximum<difference_type>());
+    output_indices.begin(), output_indices.end(), output_indices.begin(), cuda::maximum<difference_type>{});
 
   // gather input values according to index array (output = first2[output_indices])
   thrust::gather(output_indices.begin(), output_indices.end(), first2, output);
 
   // return output + output_size
-  ::cuda::std::advance(output, output_size);
+  cuda::std::advance(output, output_size);
   return output;
 }
 
@@ -62,15 +62,10 @@ void print(const std::string& s, const Vector& v)
 
 int main()
 {
-  int counts[] = {3, 5, 2, 0, 1, 3, 4, 2, 4};
-  int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> d_counts = {3, 5, 2, 0, 1, 3, 4, 2, 4};
+  thrust::device_vector<int> d_values = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  size_t input_size  = sizeof(counts) / sizeof(int);
-  size_t output_size = thrust::reduce(counts, counts + input_size);
-
-  // copy inputs to device
-  thrust::device_vector<int> d_counts(counts, counts + input_size);
-  thrust::device_vector<int> d_values(values, values + input_size);
+  const size_t output_size = thrust::reduce(d_counts.begin(), d_counts.end());
   thrust::device_vector<int> d_output(output_size);
 
   // expand values according to counts

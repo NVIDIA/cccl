@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___STRING_STRING_VIEW_H
-#define _LIBCUDACXX___STRING_STRING_VIEW_H
+#ifndef _CUDA_STD___STRING_STRING_VIEW_H
+#define _CUDA_STD___STRING_STRING_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,14 +23,14 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif
+#include <cuda/std/__exception/throw_error.h>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __string_view
 {
@@ -170,16 +170,16 @@ public:
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr auto operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return __lhs.compare(__rhs) <=> 0;
   }
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -223,13 +223,13 @@ private:
 
   [[nodiscard]] _CCCL_API static constexpr size_t __strlen_(char const* __str) noexcept
   {
-    return _CUDA_VSTD::char_traits<char>::length(__str);
+    return ::cuda::std::char_traits<char>::length(__str);
   }
 
   [[nodiscard]] _CCCL_API static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
     return __diff < 0 || static_cast<size_t>(__diff) > __len
-           ? (_CUDA_VSTD::__throw_out_of_range("__string_view index out of range"), size_t(0))
+           ? (::cuda::std::__throw_out_of_range("__string_view index out of range"), size_t(0))
            : static_cast<size_t>(__diff);
   }
 
@@ -237,8 +237,8 @@ private:
   size_t __len_;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___STRING_STRING_VIEW_H
+#endif // _CUDA_STD___STRING_STRING_VIEW_H

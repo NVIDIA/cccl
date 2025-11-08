@@ -23,12 +23,12 @@
 #include <cuda/std/__cccl/execution_space.h>
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
 namespace cuda::experimental::stf
 {
-
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 class stream_ctx;
@@ -39,7 +39,6 @@ struct owning_container_of;
 
 namespace reserved
 {
-
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -79,28 +78,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
- * @brief Create a trait to select useful types during the reduction phase
- * using Partial Specialization
- *
- * Oi are the operator type (no op (= monostate), or reducer::sum for example)
- * Ai are the argument type (slice<T>, or scalar_view<T> for example)
- * If Oi is not monostate, it will correspond to the container of Ai, otherwise
- * we don't need to manipulate that argument during a reduction phase, so this
- * is a monostate
- */
-template <typename Oi, typename Ai>
-struct get_owning_container_of
-{
-  using type = typename owning_container_of<Ai>::type; // Default case
-};
-
-template <typename Ai>
-struct get_owning_container_of<::std::monostate, Ai>
-{
-  using type = ::std::monostate;
-};
-
-/**
  * @brief This wraps tuple of arguments and operators into a class that stores
  * a tuple of arguments which include local variables for reductions.
  *
@@ -110,6 +87,28 @@ struct get_owning_container_of<::std::monostate, Ai>
 template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
+  /**
+   * @brief Create a trait to select useful types during the reduction phase
+   * using Partial Specialization
+   *
+   * Oi are the operator type (no op (= monostate), or reducer::sum for example)
+   * Ai are the argument type (slice<T>, or scalar_view<T> for example)
+   * If Oi is not monostate, it will correspond to the container of Ai, otherwise
+   * we don't need to manipulate that argument during a reduction phase, so this
+   * is a monostate
+   */
+  template <typename Oi, typename Ai>
+  struct get_owning_container_of
+  {
+    using type = typename owning_container_of<Ai>::type; // Default case
+  };
+
+  template <typename Ai>
+  struct get_owning_container_of<::std::monostate, Ai>
+  {
+    using type = ::std::monostate;
+  };
+
   /**
    * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
    *
@@ -399,6 +398,34 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
+ * @brief Resource wrapper for managing parallel_for host callback arguments
+ *
+ * This manages the memory allocated for parallel_for host callback arguments using the
+ * ctx_resource system instead of manual delete in each callback.
+ */
+template <typename ArgsType>
+class parallel_for_args_resource : public ctx_resource
+{
+public:
+  explicit parallel_for_args_resource(ArgsType* args)
+      : args_(args)
+  {}
+
+  bool can_release_in_callback() const override
+  {
+    return true;
+  }
+
+  void release_in_callback() override
+  {
+    delete args_;
+  }
+
+private:
+  ArgsType* args_;
+};
+
+/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -452,8 +479,7 @@ public:
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
   parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
-      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
-      , deps(mv(deps)...)
+      : deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
@@ -530,15 +556,11 @@ public:
       }
     }
 
-    t.add_post_submission_hook(dump_hooks);
-
     t.add_deps(deps);
     if (!symbol.empty())
     {
       t.set_symbol(symbol);
     }
-
-    cudaEvent_t start_event, end_event;
 
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
 
@@ -546,6 +568,7 @@ public:
     t.start();
 
     int device = -1;
+    cudaEvent_t start_event, end_event;
 
     SCOPE(exit)
     {
@@ -585,11 +608,6 @@ public:
         cuda_safe_call(cudaEventCreate(&end_event));
         cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
       }
-    }
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename context::task_type, logical_data_untyped>(t);
     }
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
@@ -947,16 +965,20 @@ public:
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the callback
+    // that will be deleted by the resource system or immediately in callback
     auto args = new args_t(mv(instances), n, mv(f), shape);
+
+    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
+    // For stream contexts, delete immediately in callback (better memory efficiency)
+    if constexpr (::std::is_same_v<context, graph_ctx>)
+    {
+      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+      ctx.add_resource(mv(resource));
+    }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      SCOPE(exit)
-      {
-        delete p;
-      };
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
@@ -976,6 +998,13 @@ public:
       for (size_t i = 0; i < n; ++i)
       {
         ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+      }
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<context, graph_ctx>)
+      {
+        delete p;
       }
     };
 
@@ -1000,7 +1029,6 @@ public:
   }
 
 private:
-  ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
   exec_place_t e_place;
@@ -1010,5 +1038,4 @@ private:
 } // end namespace reserved
 
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
-
 } // end namespace cuda::experimental::stf

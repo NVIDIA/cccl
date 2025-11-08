@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#define _CUDA___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! \brief Casts one __basic_any reference type to another __basic_any type using
 //! runtime information to determine the validity of the conversion.
@@ -42,7 +42,7 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any<_DstInt
 [[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>&& __src) -> __basic_any<_DstInterface>
 {
   auto __dst = __basic_any_access::__make<_DstInterface>();
-  __basic_any_access::__cast_to(_CUDA_VSTD::move(__src), __dst);
+  __basic_any_access::__cast_to(::cuda::std::move(__src), __dst);
   return __dst;
 }
 
@@ -78,7 +78,7 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>*, __basic_any<_DstIn
 [[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface>* __src) -> __basic_any<_DstInterface>
 {
   static_assert(
-    _CUDA_VSTD::is_pointer_v<_DstInterface>,
+    ::cuda::std::is_pointer_v<_DstInterface>,
     "when __dynamic_any_cast-ing from a pointer to a __basic_any, the destination type must be a pointer to an "
     "interface type.");
   auto __dst = __basic_any_access::__make<_DstInterface>();
@@ -92,7 +92,7 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<
 [[nodiscard]] _CCCL_API auto __dynamic_any_cast(__basic_any<_SrcInterface> const* __src) -> __basic_any<_DstInterface>
 {
   static_assert(
-    _CUDA_VSTD::is_pointer_v<_DstInterface>,
+    ::cuda::std::is_pointer_v<_DstInterface>,
     "when __dynamic_any_cast-ing from a pointer to a __basic_any, the destination type must be a pointer to an "
     "interface type.");
   auto __dst = __basic_any_access::__make<_DstInterface>();
@@ -100,8 +100,8 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<
   return __dst;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H
+#endif // _CUDA___UTILITY_BASIC_ANY_DYNAMIC_ANY_CAST_H

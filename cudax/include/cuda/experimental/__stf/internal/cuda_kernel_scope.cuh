@@ -33,16 +33,13 @@
 
 namespace cuda::experimental::stf
 {
-
 class graph_ctx;
 class stream_ctx;
 
 namespace reserved
 {
-
 template <typename T>
 inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
-
 } // end namespace reserved
 
 /**
@@ -270,7 +267,6 @@ private:
 
 namespace reserved
 {
-
 /**
  * @brief Implementation of the CUDA kernel construct
  *
@@ -296,6 +292,12 @@ public:
   cuda_kernel_scope& operator=(const cuda_kernel_scope&) = delete;
   // move-constructible
   cuda_kernel_scope(cuda_kernel_scope&&) = default;
+
+  auto& set_exec_place(exec_place e_place_)
+  {
+    e_place = mv(e_place_);
+    return *this;
+  }
 
   /// Add a set of dependencies
   template <typename... Pack>
@@ -370,12 +372,6 @@ public:
       }
     }
 
-    auto& dot = *ctx.get_dot();
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
     return *this;
   }
 
@@ -446,7 +442,7 @@ public:
     // should be executed one after the other.
     if constexpr (chained)
     {
-      kernel_descs = ::std::apply(f, deps.instance(t));
+      kernel_descs = ::std::apply(f, deps.non_void_instance(t));
       assert(!kernel_descs.empty());
     }
     else
@@ -456,7 +452,7 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      cuda_kernel_desc res = ::std::apply(f, deps.non_void_instance(t));
       kernel_descs.push_back(res);
     }
   }
@@ -530,7 +526,11 @@ private:
           kernel_descs[i].launch_in_graph(chain[i], g);
           if (i > 0)
           {
+#if _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], nullptr, 1));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
             cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
           }
         }
       }
@@ -570,6 +570,5 @@ private:
   int record_time_device;
   cudaEvent_t start_event, end_event;
 };
-
 } // end namespace reserved
 } // end namespace cuda::experimental::stf

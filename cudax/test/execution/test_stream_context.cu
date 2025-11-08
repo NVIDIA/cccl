@@ -15,6 +15,7 @@
 #include <thrust/equal.h>
 
 #include <cuda/experimental/container.cuh>
+#include <cuda/experimental/memory_resource.cuh>
 
 #include <nv/target>
 
@@ -24,8 +25,6 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(177) // function "_is_on_device" was declared but n
 
 namespace ex = cuda::experimental::execution;
 
-namespace
-{
 __host__ __device__ bool _is_on_device() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, //
@@ -84,7 +83,7 @@ void stream_context_test2()
         return i + 1;
       })
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
-    | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
+    | ex::then([] __host__ __device__(int i) -> int { // run a lambda on the CPU
         CUDAX_CHECK(!_is_on_device());
         NV_IF_TARGET(NV_IS_HOST,
                      (printf("Hello from lambda on host! i = %d\n", i);),
@@ -135,8 +134,10 @@ void bulk_on_stream_scheduler()
   auto sch = sctx.get_scheduler();
 
   using _env_t = cudax::env_t<cuda::mr::device_accessible>;
-  _env_t env{cudax::device_memory_resource{_dev}, cuda::get_stream(sch), ex::par_unseq};
-  cudax::async_device_buffer<int> buf{env, 10, 40}; // a device buffer of 10 integers, initialized to 40
+  auto mr      = cuda::device_default_memory_pool(_dev);
+  auto mr2     = cuda::mr::any_resource<cuda::mr::device_accessible>(mr);
+  _env_t env{mr, cuda::get_stream(sch), ex::par_unseq};
+  auto buf = cudax::make_buffer<int>(sctx, mr2, 10, 40, env); // a device buffer of 10 integers, initialized to 40
   cuda::std::span data{buf};
 
   auto start = //
@@ -153,7 +154,8 @@ void bulk_on_stream_scheduler()
         data[i] += 2;
       });
 
-  cudax::async_device_buffer<int> expected{env, 10, 42}; // a device buffer of 10 integers, initialized to 42
+  auto expected = cudax::make_buffer<int>(sctx, mr2, 10, 42, env); // a device buffer of 10 integers, initialized
+                                                                   // to 42
 
   // start the sender and wait for it to finish
   auto [span] = ex::sync_wait(std::move(start)).value();
@@ -206,6 +208,8 @@ void starts_on_with_stream_scheduler2()
   CHECK(i == 43);
 }
 
+namespace
+{
 // Test code is placed in separate functions to avoid an nvc++ issue with
 // extended lambdas in functions with internal linkage (as is the case
 // with C2H tests).

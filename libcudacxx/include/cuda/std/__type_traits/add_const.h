@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_ADD_CONST_H
-#define _LIBCUDACXX___TYPE_TRAITS_ADD_CONST_H
+#ifndef _CUDA_STD___TYPE_TRAITS_ADD_CONST_H
+#define _CUDA_STD___TYPE_TRAITS_ADD_CONST_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_const
@@ -33,8 +33,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT add_const
 template <class _Tp>
 using add_const_t _CCCL_NODEBUG_ALIAS = typename add_const<_Tp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ADD_CONST_H
+#endif // _CUDA_STD___TYPE_TRAITS_ADD_CONST_H

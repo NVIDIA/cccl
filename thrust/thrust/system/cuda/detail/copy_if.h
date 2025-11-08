@@ -53,7 +53,7 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/cstdint>
@@ -84,10 +84,8 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
@@ -218,7 +216,6 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
 
   return output;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -247,7 +244,6 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(policy, first, last, stencil, result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

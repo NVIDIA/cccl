@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_ACCESS_H
+#define _CUDA___UTILITY_BASIC_ANY_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __basic_any_access
@@ -39,50 +39,50 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 struct __basic_any_access
 {
   template <class _Interface>
-  _CCCL_TRIVIAL_API static auto __make() noexcept -> __basic_any<_Interface>
+  _CCCL_NODEBUG_API static auto __make() noexcept -> __basic_any<_Interface>
   {
     return __basic_any<_Interface>{};
   }
 
   _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, __basic_any<_DstInterface>>)
-  _CCCL_TRIVIAL_API static auto __cast_to(_SrcCvAny&& __from, __basic_any<_DstInterface>& __to) noexcept(
+  _CCCL_NODEBUG_API static auto __cast_to(_SrcCvAny&& __from, __basic_any<_DstInterface>& __to) noexcept(
     noexcept(__to.__convert_from(static_cast<_SrcCvAny&&>(__from)))) -> void
   {
-    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_SrcCvAny>, __basic_any>);
+    static_assert(__is_specialization_of_v<::cuda::std::remove_cvref_t<_SrcCvAny>, __basic_any>);
     __to.__convert_from(static_cast<_SrcCvAny&&>(__from));
   }
 
   _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny*, __basic_any<_DstInterface>>)
-  _CCCL_TRIVIAL_API static auto
+  _CCCL_NODEBUG_API static auto
   __cast_to(_SrcCvAny* __from, __basic_any<_DstInterface>& __to) noexcept(noexcept(__to.__convert_from(__from))) -> void
   {
-    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_const_t<_SrcCvAny>, __basic_any>);
+    static_assert(__is_specialization_of_v<::cuda::std::remove_const_t<_SrcCvAny>, __basic_any>);
     __to.__convert_from(__from);
   }
 
   template <class _Interface>
-  _CCCL_TRIVIAL_API static auto __get_vptr(__basic_any<_Interface> const& __self) noexcept -> __vptr_for<_Interface>
+  _CCCL_NODEBUG_API static auto __get_vptr(__basic_any<_Interface> const& __self) noexcept -> __vptr_for<_Interface>
   {
     return __self.__get_vptr();
   }
 
   template <class _Interface>
-  _CCCL_TRIVIAL_API static auto __get_optr(__basic_any<_Interface>& __self) noexcept -> void*
+  _CCCL_NODEBUG_API static auto __get_optr(__basic_any<_Interface>& __self) noexcept -> void*
   {
     return __self.__get_optr();
   }
 
   template <class _Interface>
-  _CCCL_TRIVIAL_API static auto __get_optr(__basic_any<_Interface> const& __self) noexcept -> void const*
+  _CCCL_NODEBUG_API static auto __get_optr(__basic_any<_Interface> const& __self) noexcept -> void const*
   {
     return __self.__get_optr();
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_ACCESS_H
+#endif // _CUDA___UTILITY_BASIC_ANY_ACCESS_H

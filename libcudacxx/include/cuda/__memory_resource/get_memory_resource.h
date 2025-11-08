@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
-#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,27 +23,28 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/stream_ref>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 struct __get_memory_resource_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(resource<_CUDA_VSTD::remove_cvref_t<decltype(__t.get_memory_resource())>>));
+  requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
   requires(
-    resource<_CUDA_VSTD::remove_cvref_t<_CUDA_STD_EXEC::__query_result_t<const _Env&, __get_memory_resource_t>>>));
+    resource<
+      ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, __get_memory_resource_t>>>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
@@ -74,8 +75,8 @@ using get_memory_resource_t = __get_memory_resource_t;
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#endif //_CUDA__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H

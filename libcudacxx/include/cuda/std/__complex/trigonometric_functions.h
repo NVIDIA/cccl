@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H
-#define _LIBCUDACXX___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H
+#ifndef _CUDA_STD___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H
+#define _CUDA_STD___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,14 +26,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // sin
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> sin(const complex<_Tp>& __x)
 {
-  complex<_Tp> __z = _CUDA_VSTD::sinh(complex<_Tp>(-__x.imag(), __x.real()));
+  complex<_Tp> __z = ::cuda::std::sinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
@@ -42,7 +42,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> cos(const complex<_Tp>& __x)
 {
-  return _CUDA_VSTD::cosh(complex<_Tp>(-__x.imag(), __x.real()));
+  return ::cuda::std::cosh(complex<_Tp>(-__x.imag(), __x.real()));
 }
 
 // tan
@@ -50,12 +50,12 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> tan(const complex<_Tp>& __x)
 {
-  complex<_Tp> __z = _CUDA_VSTD::tanh(complex<_Tp>(-__x.imag(), __x.real()));
+  complex<_Tp> __z = ::cuda::std::tanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H
+#endif // _CUDA_STD___COMPLEX_TRIGONOMETRIC_FUNCTIONS_H

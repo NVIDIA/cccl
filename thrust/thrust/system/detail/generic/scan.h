@@ -25,32 +25,41 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/scan.h>
+#include <thrust/system/detail/generic/scan.h>
+
+#include <cuda/functional>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
+  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
+{
+  // assume plus as the associative operator
+  return thrust::inclusive_scan(exec, first, last, result, ::cuda::std::plus<>());
+} // end inclusive_scan()
 
-// XXX it is an error to call this function; it has no implementation
+// Note: it is an error to call this function: this should be provided by a backend system
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
   OutputIterator result,
-  BinaryFunction binary_op);
+  BinaryFunction binary_op) = delete;
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
+  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
+{
+  // Use the input iterator's value type per https://wg21.link/P0571
+  using ValueType = thrust::detail::it_value_t<InputIterator>;
+  return thrust::exclusive_scan(exec, first, last, result, ValueType{});
+}
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
@@ -58,9 +67,13 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
-  T init);
+  T init)
+{
+  // assume plus as the associative operator
+  return thrust::exclusive_scan(exec, first, last, result, init, ::cuda::std::plus<>());
+}
 
-// XXX it is an error to call this function; it has no implementation
+// Note: it is an error to call this function: this should be provided by a backend system
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,
@@ -68,11 +81,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   InputIterator last,
   OutputIterator result,
   T init,
-  BinaryFunction binary_op);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+  BinaryFunction binary_op) = delete;
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/scan.inl>

@@ -7,7 +7,7 @@
 Test runner for CCCL examples.
 
 This module automatically discovers and runs all example scripts from both
-cooperative and parallel directories to ensure they execute without errors.
+coop and compute directories to ensure they execute without errors.
 """
 
 import importlib
@@ -22,8 +22,8 @@ def discover_examples():
     tests_dir = Path(__file__).parent
     examples = []
 
-    # Look for examples in both cooperative and parallel directories
-    example_directories = ["cooperative/examples", "parallel/examples"]
+    # Look for examples in both coop and compute directories
+    example_directories = ["coop/examples", "compute/examples"]
 
     for example_dir in example_directories:
         example_path = tests_dir / example_dir
@@ -41,19 +41,20 @@ def discover_examples():
             # Calculate the relative path from the tests directory
             rel_path = python_file.relative_to(tests_dir)
 
-            # Convert path to module name (e.g., "cooperative/examples/block/reduce.py" -> "cooperative.examples.block.reduce")
-            module_name = str(rel_path.with_suffix("")).replace("/", ".")
+            # Convert path to module name (OS-agnostic)
+            # Example: coop/examples/block/reduce.py -> coop.examples.block.reduce
+            module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
             parts = rel_path.parts
             if len(parts) >= 3:
-                # e.g., cooperative/examples/block/reduce.py
-                framework = parts[0].title()  # Cooperative or Parallel
+                # e.g., coop/examples/block/reduce.py
+                framework = parts[0].title()  # Coop or Compute
                 category = parts[2].title()  # Block, Warp, Reduction, etc.
                 filename = parts[3].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {category} - {filename}"
             elif len(parts) >= 2:
-                # e.g., cooperative/examples/reduce.py
+                # e.g., coop/examples/reduce.py
                 framework = parts[0].title()
                 filename = parts[-1].replace(".py", "").replace("_", " ").title()
                 display_name = f"{framework} - {filename}"
@@ -137,7 +138,7 @@ def create_test_functions():
         # Create the test function
         def make_test_func(mod_name, disp_name):
             def test_func():
-                run_example_module(mod_name, disp_name)
+                assert run_example_module(mod_name, disp_name)
 
             return test_func
 

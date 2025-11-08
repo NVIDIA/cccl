@@ -7,7 +7,10 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
-cd /home/coder/cccl
+readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+
+cd "$repo_root"
 
 if ! ci/util/workflow/has_consumers.sh; then
   echo "No consumers found for this job. Exiting." >&2
@@ -39,24 +42,30 @@ preset_variants=($(echo "${preset_variants[@]}" | tr ' ' '\n' | sort -u | tr '\n
 
 artifact_prefix=z_cub-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 
+# BUILD_INFIX is undefined on windows CI
+build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/cub-[^/]+"
+
 # Just collect the minimum set of files needed for running each ctest preset:
 for preset_variant in ${preset_variants[@]}; do
 
   # Shared across all presets:
   ci/util/artifacts/stage.sh "$artifact_prefix-$preset_variant" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/build\.ninja$" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/.*rules\.ninja$" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/CMakeCache\.txt$" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/.*VerifyGlobs\.cmake$" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/.*CTestTestfile\.cmake$" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/lib/.*" \
+      "$build_dir_regex/build\.ninja$" \
+      "$build_dir_regex/.*rules\.ninja$" \
+      "$build_dir_regex/CMakeCache\.txt$" \
+      "$build_dir_regex/.*VerifyGlobs\.cmake$" \
+      "$build_dir_regex/.*CTestTestfile\.cmake$" \
       > /dev/null
 
   # Add per-preset executables:
   if [[ "$preset_variant" == lid_* ]]; then
     ci/util/artifacts/stage.sh  \
         "$artifact_prefix-$preset_variant" \
-        "build/${DEVCONTAINER_NAME}/cub-[^/]+/bin/.*$preset_variant.*" > /dev/null
+        "$build_dir_regex/bin/.*\.$preset_variant.*" > /dev/null
+    # Windows builds generate binaries for the header tests, remove these:
+    ci/util/artifacts/unstage.sh  \
+        "$artifact_prefix-$preset_variant" \
+        "$build_dir_regex/.*\.headers\..*" > /dev/null || :
 
     ci/util/artifacts/upload_stage_packed.sh "$artifact_prefix-$preset_variant"
   fi
@@ -66,20 +75,24 @@ if [[ " ${preset_variants[@]} " =~ " no_lid " ]]; then
   # Initially add all binaries to no_lid, then remove the lid variants in later passes:
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-no_lid" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/bin/.*" > /dev/null
-  # Remove the benchmarks, we don't run those in CI, just build them:
+      "$build_dir_regex/bin/.*" > /dev/null
+  # Remove the benchmarks if present, we don't run those in CI, just build them:
   ci/util/artifacts/unstage.sh \
       "$artifact_prefix-no_lid" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/bin/cub\.bench\..*" > /dev/null
+      "$build_dir_regex/.*\.bench\..*" > /dev/null || :
   # Remove all lid variants:
   ci/util/artifacts/unstage.sh \
       "$artifact_prefix-no_lid" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/bin/.*lid_[0-2].*" > /dev/null
+      "$build_dir_regex/.*\.lid_[0-2].*" > /dev/null
+  # Windows builds generate binaries for the header tests, remove these:
+  ci/util/artifacts/unstage.sh  \
+      "$artifact_prefix-no_lid" \
+      "$build_dir_regex/.*\.headers\..*" > /dev/null || :
 
-  # These ptx outputs are needed for FileCheck tests in test/ptx-json
+  # These cubin outputs are needed for FileCheck tests in test/ptx-json
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-no_lid" \
-      "build/${DEVCONTAINER_NAME}/cub-[^/]+/cub/test/ptx-json/.*\.ptx$" > /dev/null
+      "$build_dir_regex/cub/test/ptx-json/.*\.cubin$" > /dev/null
 
   ci/util/artifacts/upload_stage_packed.sh "$artifact_prefix-no_lid"
 fi

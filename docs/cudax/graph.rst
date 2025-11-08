@@ -7,7 +7,7 @@ Graphs library
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/struct*graph*
+   api/struct*graph*
 
 The headers of the graph library provide facilities to create and manage CUDA graphs.
 

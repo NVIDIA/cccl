@@ -3,7 +3,7 @@
 
 mbarrier.init.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.init.shared.b64 [addr], count; // PTX ISA 70, SM_80
    template <typename = void>

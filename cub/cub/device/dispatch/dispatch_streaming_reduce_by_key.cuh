@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,7 +22,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/offset_iterator.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -35,7 +33,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
@@ -90,12 +87,12 @@ struct DispatchStreamingReduceByKey
   // Types and constants
   //-------------------------------------------------------------------------
   // Offsets to index items within one partition (i.e., a single kernel invocation)
-  using local_offset_t = _CUDA_VSTD::int32_t;
+  using local_offset_t = ::cuda::std::int32_t;
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = _CUDA_VSTD::numeric_limits<OffsetT>::max()
-                                                 > _CUDA_VSTD::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
+                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -167,14 +164,15 @@ struct DispatchStreamingReduceByKey
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
-      capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
+      capped_num_items_per_invocation =
+        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % (block_threads * items_per_thread));
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? _CUDA_VSTD::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -220,26 +218,6 @@ struct DispatchStreamingReduceByKey
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      streaming_context_t streaming_context{};
-      if constexpr (use_streaming_invocation)
-      {
-        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix      = static_cast<AccumT*>(allocations[2]);
-
-        const bool is_first_partition = (partition_idx == 0);
-        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
-        const int buffer_selector     = partition_idx % 2;
-
-        streaming_context = streaming_context_t{
-          is_first_partition,
-          is_last_partition,
-          is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
-          &tmp_prefix[buffer_selector],
-          &tmp_prefix[buffer_selector ^ 0x01],
-          &tmp_num_uniques[buffer_selector],
-          &tmp_num_uniques[buffer_selector ^ 0x01]};
-      }
-
       // Construct the tile status interface
       const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
 
@@ -252,7 +230,7 @@ struct DispatchStreamingReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
@@ -293,20 +271,57 @@ struct DispatchStreamingReduceByKey
 #endif // CUB_DEBUG_LOG
 
       // Invoke reduce_by_key_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-        .doit(reduce_by_key_kernel,
-              d_keys_in + current_partition_offset,
-              d_unique_out,
-              d_values_in + current_partition_offset,
-              d_aggregates_out,
-              d_num_runs_out,
-              tile_state,
-              0,
-              equality_op,
-              reduction_op,
-              static_cast<local_offset_t>(current_num_items),
-              streaming_context,
-              cub::detail::vsmem_t{nullptr});
+
+      if constexpr (use_streaming_invocation)
+      {
+        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+        auto tmp_prefix      = static_cast<AccumT*>(allocations[2]);
+
+        const bool is_first_partition = (partition_idx == 0);
+        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
+        const int buffer_selector     = partition_idx % 2;
+
+        streaming_context_t streaming_context{
+          is_first_partition,
+          is_last_partition,
+          is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
+          &tmp_prefix[buffer_selector],
+          &tmp_prefix[buffer_selector ^ 0x01],
+          &tmp_num_uniques[buffer_selector],
+          &tmp_num_uniques[buffer_selector ^ 0x01]};
+
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(reduce_by_key_kernel,
+                d_keys_in + current_partition_offset,
+                d_unique_out,
+                d_values_in + current_partition_offset,
+                d_aggregates_out,
+                d_num_runs_out,
+                tile_state,
+                0,
+                equality_op,
+                reduction_op,
+                static_cast<local_offset_t>(current_num_items),
+                streaming_context,
+                cub::detail::vsmem_t{nullptr});
+      }
+      else
+      {
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(reduce_by_key_kernel,
+                d_keys_in + current_partition_offset,
+                d_unique_out,
+                d_values_in + current_partition_offset,
+                d_aggregates_out,
+                d_num_runs_out,
+                tile_state,
+                0,
+                equality_op,
+                reduction_op,
+                static_cast<local_offset_t>(current_num_items),
+                NullType{},
+                cub::detail::vsmem_t{nullptr});
+      }
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -434,7 +449,6 @@ struct DispatchStreamingReduceByKey
     return error;
   }
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

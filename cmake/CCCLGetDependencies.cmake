@@ -14,7 +14,7 @@ endmacro()
 
 macro(cccl_get_catch2)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:catchorg/Catch2@3.8.0")
+  CPMAddPackage("gh:catchorg/Catch2@3.8.1")
 endmacro()
 
 macro(cccl_get_fmt)
@@ -32,6 +32,13 @@ mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
+endmacro()
+
+# CCCL-specific NVBench utilities
+macro(cccl_get_nvbench_helper)
+  if (NOT TARGET cccl.nvbench_helper)
+    add_subdirectory("${CCCL_SOURCE_DIR}/nvbench_helper" "${CCCL_BINARY_DIR}/nvbench_helper")
+  endif()
 endmacro()
 
 macro(cccl_get_nvtx)

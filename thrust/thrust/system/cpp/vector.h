@@ -36,11 +36,8 @@
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::cpp
 {
-namespace cpp
-{
-
 /*! \p cpp::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
  *  and removal of elements at the beginning or in the middle. The number of
@@ -87,8 +84,7 @@ using universal_vector = thrust::detail::vector_base<T, Allocator>;
 //! \see universal_vector
 template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 namespace cpp
 {

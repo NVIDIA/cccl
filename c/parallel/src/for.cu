@@ -14,11 +14,14 @@
 
 #include <format>
 #include <type_traits>
+#include <vector>
 
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
 #include <util/types.h>
@@ -43,8 +46,16 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunct
 
   void* args[] = {&num_items, for_kernel_state.get()};
 
-  int thread_count = 256;
-  int block_count  = (num_items + 511) / 512;
+  const unsigned int thread_count = 256;
+  const size_t items_per_block    = 512;
+  const size_t block_sz           = cuda::ceil_div(num_items, items_per_block);
+
+  if (block_sz > std::numeric_limits<unsigned int>::max())
+  {
+    return cudaErrorInvalidValue;
+  }
+  const unsigned int block_count = static_cast<unsigned int>(block_sz);
+
   check(cuLaunchKernel(static_kernel, block_count, 1, 1, thread_count, 1, 1, 0, stream, args, 0));
 
   // Check for failure to launch
@@ -59,13 +70,13 @@ static std::string get_device_for_kernel_name()
 {
   std::string offset_t;
   std::string function_op_t;
-  check(nvrtcGetTypeName<for_each_wrapper>(&function_op_t));
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<for_each_wrapper>(&function_op_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
-CUresult cccl_device_for_build(
+CUresult cccl_device_for_build_ex(
   cccl_device_for_build_result_t* build_ptr,
   cccl_iterator_t d_data,
   cccl_op_t op,
@@ -74,7 +85,8 @@ CUresult cccl_device_for_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -94,36 +106,39 @@ CUresult cccl_device_for_build(
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     std::string lowered_name;
 
-    auto cl =
+    // Collect all LTO-IRs to be linked
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
+
+    // Add operation if it's LTO-IR (C++ source not yet supported in for)
+    appender.append_operation(op);
+
+    // Add iterator definitions if present
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
+    {
+      appender.append_operation(d_data.advance);
+      appender.append_operation(d_data.dereference);
+    }
+
+    nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
         ->add_program(nvrtc_translation_unit{device_for_kernel, name})
         ->add_expression({for_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({for_kernel_name, lowered_name})
         ->link_program()
-        ->add_link({op.ltoir, op.ltoir_size});
-
-    nvrtc_link_result result{};
-
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == d_data.type)
-    {
-      result = cl->add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
-                 ->add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
-                 ->finalize_program();
-    }
-    else
-    {
-      result = cl->finalize_program();
-    }
+        ->add_link_list(linkable_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->static_kernel, build_ptr->library, lowered_name.c_str()));
@@ -163,6 +178,21 @@ CUresult cccl_device_for(
   }
 
   return error;
+}
+
+CUresult cccl_device_for_build(
+  cccl_device_for_build_result_t* build,
+  cccl_iterator_t d_data,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_for_build_ex(
+    build, d_data, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
 }
 
 CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* build_ptr)

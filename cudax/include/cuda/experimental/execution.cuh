@@ -14,6 +14,7 @@
 // IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/bulk.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/conditional.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
@@ -21,6 +22,7 @@
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
+#include <cuda/experimental/__execution/inline_scheduler.cuh>
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>
@@ -29,7 +31,6 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
-#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
 #include <cuda/experimental/__execution/start_detached.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>

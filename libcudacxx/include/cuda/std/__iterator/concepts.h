@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_CONCEPTS_H
-#define _LIBCUDACXX___ITERATOR_CONCEPTS_H
+#ifndef _CUDA_STD___ITERATOR_CONCEPTS_H
+#define _CUDA_STD___ITERATOR_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -53,7 +53,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -65,7 +65,7 @@ concept __indirectly_readable_impl =
     typename iter_reference_t<_In>;
     typename iter_rvalue_reference_t<_In>;
     { *__i } -> same_as<iter_reference_t<_In>>;
-    { _CUDA_VRANGES::iter_move(__i) } -> same_as<iter_rvalue_reference_t<_In>>;
+    { ::cuda::std::ranges::iter_move(__i) } -> same_as<iter_rvalue_reference_t<_In>>;
   } && common_reference_with<iter_reference_t<_In>&&, iter_value_t<_In>&>
   && common_reference_with<iter_reference_t<_In>&&, iter_rvalue_reference_t<_In>&&>
   && common_reference_with<iter_rvalue_reference_t<_In>&&, const iter_value_t<_In>&>;
@@ -203,7 +203,7 @@ concept contiguous_iterator =
   random_access_iterator<_Ip> && derived_from<_ITER_CONCEPT<_Ip>, contiguous_iterator_tag>
   && is_lvalue_reference_v<iter_reference_t<_Ip>> && same_as<iter_value_t<_Ip>, remove_cvref_t<iter_reference_t<_Ip>>>
   && requires(const _Ip& __i) {
-       { _CUDA_VSTD::to_address(__i) } -> same_as<add_pointer_t<iter_reference_t<_Ip>>>;
+       { ::cuda::std::to_address(__i) } -> same_as<add_pointer_t<iter_reference_t<_Ip>>>;
      };
 
 template <class _Ip>
@@ -295,7 +295,7 @@ _CCCL_CONCEPT_FRAGMENT(
     typename(iter_reference_t<_In>),
     typename(iter_rvalue_reference_t<_In>),
     requires(same_as<iter_reference_t<_In>, decltype(*__i)>),
-    requires(same_as<iter_rvalue_reference_t<_In>, decltype(_CUDA_VRANGES::iter_move(__i))>),
+    requires(same_as<iter_rvalue_reference_t<_In>, decltype(::cuda::std::ranges::iter_move(__i))>),
     requires(common_reference_with<iter_reference_t<_In>&&, iter_value_t<_In>&>),
     requires(common_reference_with<iter_reference_t<_In>&&, iter_rvalue_reference_t<_In>&&>),
     requires(common_reference_with<iter_rvalue_reference_t<_In>&&, const iter_value_t<_In>&>)));
@@ -472,7 +472,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(derived_from<_ITER_CONCEPT<_Ip>, contiguous_iterator_tag>),
     requires(is_lvalue_reference_v<iter_reference_t<_Ip>>),
     requires(same_as<iter_value_t<_Ip>, remove_cvref_t<iter_reference_t<_Ip>>>),
-    requires(same_as<add_pointer_t<iter_reference_t<_Ip>>, decltype(_CUDA_VSTD::to_address(__i))>)));
+    requires(same_as<add_pointer_t<iter_reference_t<_Ip>>, decltype(::cuda::std::to_address(__i))>)));
 
 template <class _Ip>
 _CCCL_CONCEPT contiguous_iterator = _CCCL_FRAGMENT(__contiguous_iterator_, _Ip);
@@ -638,8 +638,8 @@ inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_conc
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_CONCEPTS_H
+#endif // _CUDA_STD___ITERATOR_CONCEPTS_H

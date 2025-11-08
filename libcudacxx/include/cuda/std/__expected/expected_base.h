@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H
-#define _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H
+#ifndef _CUDA_STD___EXPECTED_EXPECTED_BASE_H
+#define _CUDA_STD___EXPECTED_EXPECTED_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -52,7 +53,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -87,14 +88,14 @@ union __expected_union_t
   template <class... _Args>
   _CCCL_API constexpr __expected_union_t(in_place_t,
                                          _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+      : __val_(::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr __expected_union_t(unexpect_t,
                                          _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
+      : __unex_(::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -104,7 +105,7 @@ union __expected_union_t
     in_place_t,
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
-      : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __val_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -114,7 +115,7 @@ union __expected_union_t
     unexpect_t,
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
-      : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
   // the __expected_destruct's destructor handles this
@@ -150,14 +151,14 @@ union __expected_union_t<_Tp, _Err, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_union_t(in_place_t,
                                          _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
+      : __val_(::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API constexpr __expected_union_t(unexpect_t,
                                          _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
+      : __unex_(::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -167,7 +168,7 @@ union __expected_union_t<_Tp, _Err, true>
     in_place_t,
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
-      : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __val_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -177,7 +178,7 @@ union __expected_union_t<_Tp, _Err, true>
     unexpect_t,
     _Fun&& __fun,
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
-      : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+      : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
   _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -203,14 +204,14 @@ struct __expected_destruct<_Tp, _Err, false, false>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -222,8 +223,8 @@ struct __expected_destruct<_Tp, _Err, false, false>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
@@ -235,8 +236,8 @@ struct __expected_destruct<_Tp, _Err, false, false>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -269,14 +270,14 @@ struct __expected_destruct<_Tp, _Err, true, false>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -288,8 +289,8 @@ struct __expected_destruct<_Tp, _Err, true, false>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
@@ -301,8 +302,8 @@ struct __expected_destruct<_Tp, _Err, true, false>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -331,14 +332,14 @@ struct __expected_destruct<_Tp, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -350,8 +351,8 @@ struct __expected_destruct<_Tp, _Err, false, true>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
@@ -363,8 +364,8 @@ struct __expected_destruct<_Tp, _Err, false, true>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -394,14 +395,14 @@ struct __expected_destruct<_Tp, _Err, true, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -413,8 +414,8 @@ struct __expected_destruct<_Tp, _Err, true, true>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
@@ -426,8 +427,8 @@ struct __expected_destruct<_Tp, _Err, true, true>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 };
@@ -437,7 +438,7 @@ _CCCL_DIAG_POP
 template <class _Tp, class _Err>
 struct __expected_storage : __expected_destruct<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T1, class _T2, class... _Args)
@@ -445,8 +446,8 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
   __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
   {
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
+    ::cuda::std::__construct_at(::cuda::std::addressof(__newval), ::cuda::std::forward<_Args>(__args)...);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -454,9 +455,9 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _CCCL_REQUIRES((!is_nothrow_constructible_v<_T1, _Args...>) _CCCL_AND is_nothrow_move_constructible_v<_T1>)
   static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
-    _T1 __tmp(_CUDA_VSTD::forward<_Args>(__args)...);
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::move(__tmp));
+    _T1 __tmp(::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
+    ::cuda::std::__construct_at(::cuda::std::addressof(__newval), ::cuda::std::move(__tmp));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -468,12 +469,12 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
       is_nothrow_move_constructible_v<_T2>,
       "To provide strong exception guarantee, T2 has to satisfy `is_nothrow_move_constructible_v` so that it can "
       "be reverted to the previous state in case an exception is thrown during the assignment.");
-    _T2 __tmp(_CUDA_VSTD::move(__oldval));
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
-    auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__oldval), _CUDA_VSTD::move(__tmp));
+    _T2 __tmp(::cuda::std::move(__oldval));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__oldval));
+    auto __trans = ::cuda::std::__make_exception_guard([&] {
+      ::cuda::std::__construct_at(::cuda::std::addressof(__oldval), ::cuda::std::move(__tmp));
     });
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__newval), _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__newval), ::cuda::std::forward<_Args>(__args)...);
     __trans.__complete();
   }
 
@@ -483,16 +484,16 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
-    _Err __tmp(_CUDA_VSTD::move(__with_err.__union_.__unex_));
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
-    auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_), _CUDA_VSTD::move(__tmp));
+    _Err __tmp(::cuda::std::move(__with_err.__union_.__unex_));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__with_err.__union_.__unex_));
+    auto __trans = ::cuda::std::__make_exception_guard([&] {
+      ::cuda::std::__construct_at(::cuda::std::addressof(__with_err.__union_.__unex_), ::cuda::std::move(__tmp));
     });
-    _CUDA_VSTD::__construct_at(
-      _CUDA_VSTD::addressof(__with_err.__union_.__val_), _CUDA_VSTD::move(__with_val.__union_.__val_));
+    ::cuda::std::__construct_at(
+      ::cuda::std::addressof(__with_err.__union_.__val_), ::cuda::std::move(__with_val.__union_.__val_));
     __trans.__complete();
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_));
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__tmp));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__with_val.__union_.__val_));
+    ::cuda::std::__construct_at(::cuda::std::addressof(__with_val.__union_.__unex_), ::cuda::std::move(__tmp));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
   }
@@ -506,16 +507,16 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     static_assert(is_nothrow_move_constructible_v<_Tp>,
                   "To provide strong exception guarantee, Tp has to satisfy `is_nothrow_move_constructible_v` so "
                   "that it can be reverted to the previous state in case an exception is thrown during swap.");
-    _Tp __tmp(_CUDA_VSTD::move(__with_val.__union_.__val_));
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_));
-    auto __trans = _CUDA_VSTD::__make_exception_guard([&] {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_val.__union_.__val_), _CUDA_VSTD::move(__tmp));
+    _Tp __tmp(::cuda::std::move(__with_val.__union_.__val_));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__with_val.__union_.__val_));
+    auto __trans = ::cuda::std::__make_exception_guard([&] {
+      ::cuda::std::__construct_at(::cuda::std::addressof(__with_val.__union_.__val_), ::cuda::std::move(__tmp));
     });
-    _CUDA_VSTD::__construct_at(
-      _CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__with_err.__union_.__unex_));
+    ::cuda::std::__construct_at(
+      ::cuda::std::addressof(__with_val.__union_.__unex_), ::cuda::std::move(__with_err.__union_.__unex_));
     __trans.__complete();
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
-    _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(__with_err.__union_.__val_), _CUDA_VSTD::move(__tmp));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__with_err.__union_.__unex_));
+    ::cuda::std::__construct_at(::cuda::std::addressof(__with_err.__union_.__val_), ::cuda::std::move(__tmp));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
   }
@@ -532,13 +533,13 @@ inline constexpr __smf_availability __expected_can_copy_construct =
 template <class _Tp, class _Err, __smf_availability = __expected_can_copy_construct<_Tp, _Err>>
 struct __expected_copy : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __expected_copy(const __expected_copy& __other) noexcept(
     is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_constructible_v<_Err>)
@@ -546,11 +547,11 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__val_), __other.__union_.__val_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -562,7 +563,7 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_
 template <class _Tp, class _Err>
 struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_storage<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   __expected_copy(const __expected_copy&)                                = delete;
   _CCCL_HIDE_FROM_ABI __expected_copy(__expected_copy&&)                 = default;
@@ -581,13 +582,13 @@ inline constexpr __smf_availability __expected_can_move_construct =
 template <class _Tp, class _Err, __smf_availability = __expected_can_move_construct<_Tp, _Err>>
 struct __expected_move : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&) = default;
 
@@ -597,13 +598,13 @@ struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_
   {
     if (__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__val_), _CUDA_VSTD::move(__other.__union_.__val_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::move(__other.__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -614,7 +615,7 @@ struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_
 template <class _Tp, class _Err>
 struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_copy<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&)            = default;
   __expected_move(__expected_move&&)                                     = delete;
@@ -639,13 +640,13 @@ inline constexpr __smf_availability __expected_can_copy_assign =
 template <class _Tp, class _Err, __smf_availability = __expected_can_copy_assign<_Tp, _Err>>
 struct __expected_copy_assign : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
@@ -683,7 +684,7 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __ex
 template <class _Tp, class _Err>
 struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_move<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&)       = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)            = default;
@@ -706,13 +707,13 @@ inline constexpr __smf_availability __expected_can_move_assign =
 template <class _Tp, class _Err, __smf_availability = __expected_can_move_assign<_Tp, _Err>>
 struct __expected_move_assign : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
@@ -725,21 +726,22 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __ex
   {
     if (this->__has_val_ && __other.__has_val_)
     {
-      this->__union_.__val_ = _CUDA_VSTD::move(__other.__union_.__val_);
+      this->__union_.__val_ = ::cuda::std::move(__other.__union_.__val_);
     }
     else if (this->__has_val_ && !__other.__has_val_)
     {
-      this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      this->__reinit_expected(
+        this->__union_.__unex_, this->__union_.__val_, ::cuda::std::move(__other.__union_.__unex_));
       this->__has_val_ = false;
     }
     else if (!this->__has_val_ && __other.__has_val_)
     {
-      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__val_));
+      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, ::cuda::std::move(__other.__union_.__val_));
       this->__has_val_ = true;
     }
     else
     { // !this->__has_val_ && !__other.__has_val_
-      this->__union_.__unex_ = _CUDA_VSTD::move(__other.__union_.__unex_);
+      this->__union_.__unex_ = ::cuda::std::move(__other.__union_.__unex_);
     }
     return *this;
   }
@@ -748,7 +750,7 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __ex
 template <class _Tp, class _Err>
 struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_copy_assign<_Tp, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
@@ -777,7 +779,7 @@ struct __expected_destruct<void, _Err, false, false>
     template <class... _Args>
     _CCCL_API constexpr __expected_union_t(unexpect_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-        : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
+        : __unex_(::cuda::std::forward<_Args>(__args)...)
     {}
 
     _CCCL_EXEC_CHECK_DISABLE
@@ -787,7 +789,7 @@ struct __expected_destruct<void, _Err, false, false>
       unexpect_t,
       _Fun&& __fun,
       _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
-        : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+        : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
     {}
 
     // the __expected_destruct's destructor handles this
@@ -809,7 +811,7 @@ struct __expected_destruct<void, _Err, false, false>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -822,8 +824,8 @@ struct __expected_destruct<void, _Err, false, false>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -854,7 +856,7 @@ struct __expected_destruct<void, _Err, false, true>
     template <class... _Args>
     _CCCL_API constexpr __expected_union_t(unexpect_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-        : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
+        : __unex_(::cuda::std::forward<_Args>(__args)...)
     {}
 
     _CCCL_EXEC_CHECK_DISABLE
@@ -864,7 +866,7 @@ struct __expected_destruct<void, _Err, false, true>
       unexpect_t,
       _Fun&& __fun,
       _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
-        : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
+        : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
     {}
 
     _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -885,7 +887,7 @@ struct __expected_destruct<void, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(unexpect_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
-      : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __union_(unexpect, ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -898,8 +900,8 @@ struct __expected_destruct<void, _Err, false, true>
     _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
-                 _CUDA_VSTD::forward<_Fun>(__fun),
-                 _CUDA_VSTD::forward<_Args>(__args)...)
+                 ::cuda::std::forward<_Fun>(__fun),
+                 ::cuda::std::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
 
@@ -913,15 +915,15 @@ _CCCL_DIAG_POP
 template <class _Err>
 struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
   _CCCL_EXEC_CHECK_DISABLE
   static _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
     __expected_storage& __with_val, __expected_storage& __with_err) noexcept(is_nothrow_move_constructible_v<_Err>)
   {
-    _CUDA_VSTD::__construct_at(
-      _CUDA_VSTD::addressof(__with_val.__union_.__unex_), _CUDA_VSTD::move(__with_err.__union_.__unex_));
-    _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
+    ::cuda::std::__construct_at(
+      ::cuda::std::addressof(__with_val.__union_.__unex_), ::cuda::std::move(__with_err.__union_.__unex_));
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__with_err.__union_.__unex_));
     __with_val.__has_val_ = false;
     __with_err.__has_val_ = true;
   }
@@ -930,7 +932,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 template <class _Err>
 struct __expected_copy<void, _Err, __smf_availability::__available> : __expected_storage<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20
   __expected_copy(const __expected_copy& __other) noexcept(is_nothrow_copy_constructible_v<_Err>)
@@ -938,7 +940,7 @@ struct __expected_copy<void, _Err, __smf_availability::__available> : __expected
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
@@ -950,7 +952,7 @@ struct __expected_copy<void, _Err, __smf_availability::__available> : __expected
 template <class _Err>
 struct __expected_move<void, _Err, __smf_availability::__available> : __expected_copy<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move(const __expected_move&) = default;
 
@@ -960,8 +962,8 @@ struct __expected_move<void, _Err, __smf_availability::__available> : __expected
   {
     if (!__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
@@ -972,7 +974,7 @@ struct __expected_move<void, _Err, __smf_availability::__available> : __expected
 template <class _Err>
 struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __expected_move<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
@@ -988,12 +990,12 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
     }
     else if (this->__has_val_ && !__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
       this->__has_val_ = false;
     }
     else if (!this->__has_val_ && __other.__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
     else
@@ -1009,7 +1011,7 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
 template <class _Err>
 struct __expected_move_assign<void, _Err, __smf_availability::__available> : __expected_copy_assign<void, _Err>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
+  _CCCL_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
 
   _CCCL_HIDE_FROM_ABI __expected_move_assign(const __expected_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
@@ -1025,25 +1027,25 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
     }
     else if (this->__has_val_ && !__other.__has_val_)
     {
-      _CUDA_VSTD::__construct_at(
-        _CUDA_VSTD::addressof(this->__union_.__unex_), _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
       this->__has_val_ = false;
     }
     else if (!this->__has_val_ && __other.__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
     else
     { // !this->__has_val_ && !__other.__has_val_
-      this->__union_.__unex_ = _CUDA_VSTD::move(__other.__union_.__unex_);
+      this->__union_.__unex_ = ::cuda::std::move(__other.__union_.__unex_);
     }
     return *this;
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H
+#endif // _CUDA_STD___EXPECTED_EXPECTED_BASE_H

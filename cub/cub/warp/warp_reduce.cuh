@@ -1,25 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
- *       following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
- *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
- *       products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! @rst
@@ -47,10 +28,12 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
-#include <cuda/functional>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/bit>
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -103,6 +86,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)
 //!        int warp_id   = threadIdx.x / 32;
 //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
 //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will be
@@ -128,6 +112,8 @@ CUB_NAMESPACE_BEGIN
 //!            int thread_data = ...
 //!            // Return the warp-wide sum to lane0
 //!            int aggregate = WarpReduce(temp_storage).Sum(thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is ``{0, 1, 2, 3, ..., 31}``.
 //! The corresponding output ``aggregate`` in thread0 will be ``496`` (and is undefined in other threads).
@@ -148,14 +134,14 @@ class WarpReduce
                 "LogicalWarpThreads must be in the range [1, 32]");
 
   static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
-  static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
+  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LogicalWarpThreads});
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LogicalWarpThreads is a power-of-two
-  using InternalWarpReduce = _CUDA_VSTD::
+  using InternalWarpReduce = ::cuda::std::
     _If<is_power_of_two, detail::WarpReduceShfl<T, LogicalWarpThreads>, detail::WarpReduceSmem<T, LogicalWarpThreads>>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -216,6 +202,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int warp_id = threadIdx.x / 32;
   //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
   //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will ``496``, ``1520``, ``2544``, and
@@ -224,16 +211,16 @@ public:
   //!
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
   _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    auto thread_reduction = cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
+    auto thread_reduction = cub::ThreadReduce(input, ::cuda::std::plus<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
-      thread_reduction, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
+      thread_reduction, LogicalWarpThreads, ::cuda::std::plus<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
@@ -297,8 +284,8 @@ public:
   //!            thread_data = d_data[threadIdx.x];
   //!
   //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).Sum(
-  //!            thread_data, valid_items);
+  //!        int aggregate = WarpReduce(temp_storage).Sum(thread_data, valid_items);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
   //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
@@ -314,7 +301,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::std::plus<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
@@ -361,6 +348,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedSum(
   //!            thread_data, head_flag);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
   //! is ``{0, 1, 2, 3, ..., 31`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0``,
@@ -380,7 +368,7 @@ public:
   template <typename FlagT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
   {
-    return HeadSegmentedReduce(input, head_flag, _CUDA_VSTD::plus<>{});
+    return HeadSegmentedReduce(input, head_flag, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -434,7 +422,7 @@ public:
   template <typename FlagT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
   {
-    return TailSegmentedReduce(input, tail_flag, _CUDA_VSTD::plus<>{});
+    return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
 
   //! @}  end member group
@@ -729,7 +717,7 @@ public:
   _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
-    return cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
+    return cub::ThreadReduce(input, ::cuda::std::plus<>{});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)

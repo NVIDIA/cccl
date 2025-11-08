@@ -45,14 +45,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_generic_impl(_Tp __lhs, _Tp __rhs) noexcept
 {
-  using _Up  = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  using _Up  = ::cuda::std::make_unsigned_t<_Tp>;
   auto __sum = static_cast<_Tp>(static_cast<_Up>(__lhs) + static_cast<_Up>(__rhs));
-  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     return overflow_result<_Tp>{__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
   }
@@ -67,7 +71,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __add_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && _CUDA_VSTD::is_unsigned_v<_Tp>)
+  if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && ::cuda::std::is_unsigned_v<_Tp>)
   {
     _Tp __result;
     int __overflow;
@@ -104,7 +108,7 @@ template <class _Tp>
   if constexpr (sizeof(_Tp) <= 8)
   {
 #    if _CCCL_COMPILER(MSVC, >=, 19, 37)
-    if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+    if constexpr (::cuda::std::is_signed_v<_Tp>)
     {
       overflow_result<_Tp> __result;
       if constexpr (sizeof(_Tp) == 1)
@@ -127,7 +131,7 @@ template <class _Tp>
     }
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 37)
-      if constexpr (_CUDA_VSTD::is_unsigned_v<_Tp>)
+      if constexpr (::cuda::std::is_unsigned_v<_Tp>)
       { // unsigned
         overflow_result<_Tp> __result;
         if constexpr (sizeof(_Tp) == 1)
@@ -165,7 +169,7 @@ template <class _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (return ::cuda::__add_overflow_device(__lhs, __rhs);),
@@ -174,6 +178,12 @@ template <typename _Tp>
   return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
 }
 
+template <typename _Result, typename _Lhs, typename _Rhs>
+inline constexpr bool __is_add_representable_v =
+  sizeof(_Result) > sizeof(_Lhs) && sizeof(_Result) > sizeof(_Rhs)
+  && (::cuda::std::is_signed_v<_Result>
+      || (::cuda::std::is_unsigned_v<_Lhs> && ::cuda::std::is_unsigned_v<_Rhs> && ::cuda::std::is_unsigned_v<_Result>) );
+
 /***********************************************************************************************************************
  * Public interface
  **********************************************************************************************************************/
@@ -181,12 +191,12 @@ template <typename _Tp>
 _CCCL_TEMPLATE(typename _Result = void,
                typename _Lhs,
                typename _Rhs,
-               typename _Common       = _CUDA_VSTD::common_type_t<_Lhs, _Rhs>,
-               typename _ActualResult = _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_void_v<_Result>, _Common, _Result>)
-_CCCL_REQUIRES((_CUDA_VSTD::is_void_v<_Result> || _CUDA_VSTD::__cccl_is_integer_v<_Result>)
-                 _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Lhs> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Rhs>)
-[[nodiscard]] _CCCL_API constexpr overflow_result<_ActualResult>
-add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
+               typename _Common       = ::cuda::std::common_type_t<_Lhs, _Rhs>,
+               typename _ActualResult = ::cuda::std::conditional_t<::cuda::std::is_void_v<_Result>, _Common, _Result>)
+_CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_integer_v<_Result>)
+                 _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
+[[nodiscard]]
+_CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
 // (1) __builtin_add_overflow is not available in a constant expression with gcc + nvcc
 // (2) __builtin_add_overflow generates suboptimal code with nvc++ and clang-cuda for device code
@@ -196,17 +206,17 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
   return __result;
 #else
-  using _CUDA_VSTD::__make_nbit_int_t;
-  using _CUDA_VSTD::__make_nbit_uint_t;
-  using _CUDA_VSTD::__num_bits_v;
-  using _CUDA_VSTD::is_same_v;
-  using _CUDA_VSTD::is_signed_v;
-  using _CUDA_VSTD::is_unsigned_v;
-  using _CommonAll                             = _CUDA_VSTD::common_type_t<_Common, _ActualResult>;
+  using ::cuda::std::__make_nbit_int_t;
+  using ::cuda::std::__make_nbit_uint_t;
+  using ::cuda::std::__num_bits_v;
+  using ::cuda::std::is_same_v;
+  using ::cuda::std::is_signed_v;
+  using ::cuda::std::is_unsigned_v;
+  using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActualResult>;
   [[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
   [[maybe_unused]] const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
   // shortcut for the case where inputs are representable with the max type
-  if constexpr (__is_integer_representable_v<_Lhs, _CommonAll> && __is_integer_representable_v<_Rhs, _CommonAll>)
+  if constexpr (__is_add_representable_v<_ActualResult, _Lhs, _Rhs>)
   {
     const auto __lhs1 = static_cast<_CommonAll>(__lhs);
     const auto __rhs1 = static_cast<_CommonAll>(__rhs);
@@ -270,8 +280,8 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
     const auto __rhs1 = static_cast<_CommonAll>(__rhs);
     const auto __sum  = static_cast<_CommonAll>(__lhs1 + __rhs1); // no overflow because of opposite signs
     // check if lhs + rhs is < 0,  e.g. lhs >= 0 && lhs < |rhs|
-    if ((is_unsigned_v<_Lhs> && _CUDA_VSTD::cmp_less(__lhs, ::cuda::uabs(__rhs)))
-        || (is_unsigned_v<_Rhs> && _CUDA_VSTD::cmp_greater(::cuda::uabs(__lhs), __rhs)))
+    if ((is_unsigned_v<_Lhs> && ::cuda::std::cmp_less(__lhs, ::cuda::uabs(__rhs)))
+        || (is_unsigned_v<_Rhs> && ::cuda::std::cmp_greater(::cuda::uabs(__lhs), __rhs)))
     {
       if constexpr (is_unsigned_v<_ActualResult>)
       {
@@ -279,7 +289,7 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
       }
       else
       {
-        using _Sp = _CUDA_VSTD::make_signed_t<_Common>;
+        using _Sp = ::cuda::std::make_signed_t<_Common>;
         return ::cuda::overflow_cast<_ActualResult>(static_cast<_Sp>(__sum));
       }
     }
@@ -290,8 +300,8 @@ add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 
 //! @brief Adds two numbers \p __lhs and \p __rhs with overflow detection
 _CCCL_TEMPLATE(typename _Result, typename _Lhs, typename _Rhs)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Result> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Lhs> _CCCL_AND
-                 _CUDA_VSTD::__cccl_is_integer_v<_Rhs>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Result> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Lhs>
+                 _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Rhs>)
 [[nodiscard]] _CCCL_API constexpr bool add_overflow(_Result& __result, const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
   const auto __res = ::cuda::add_overflow<_Result>(__lhs, __rhs);
@@ -299,7 +309,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Result> _CCCL_AND _CUDA_VSTD::__
   return __res.overflow;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

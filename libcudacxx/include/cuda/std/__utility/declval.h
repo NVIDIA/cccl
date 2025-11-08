@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_DECLVAL_H
-#define _LIBCUDACXX___UTILITY_DECLVAL_H
+#ifndef _CUDA_STD___UTILITY_DECLVAL_H
+#define _CUDA_STD___UTILITY_DECLVAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,25 +20,38 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+// Handy in concept definitions for turning:
+//   requires (T&& t) { ... std::forward<T>(t) ...; }
+// into:
+//   requires (__declfn_t<T> t) { ... t() ...; }
+//
+// NOTE: Unlike std::declval, the return type of __declfn_t is not
+// rvalue-reference-qualified. In most cases this does not matter, except when _Tp is an
+// incomplete class type. In places where that matters, use __declfn_t<_Tp&&> instead of
+// __declfn_t<_Tp>.
+template <class _Tp, bool _Noexcept = true>
+using __declfn_t _CCCL_NODEBUG_ALIAS = _Tp (*)() noexcept(_Noexcept);
+#endif // _CCCL_DOXYGEN_INVOKED
 
 // When variable templates and noexcept function types are available, a faster
 // implementation of declval is available. It compiles approximately 2x faster
 // than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
 // MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
-// `type_identity_t` alias is help MSVC parse the declaration correctly.
+// `__declfn_t` alias is help MSVC parse the declaration correctly.
 #if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 4) && !_CCCL_COMPILER(MSVC, <, 19, 39)
 
 template <class _Tp, class = void>
-extern type_identity_t<void (*)() noexcept> declval;
+extern __declfn_t<void> declval;
 
 template <class _Tp>
-extern type_identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
+extern __declfn_t<_Tp&&> declval<_Tp, void_t<_Tp&&>>;
 
 #else // ^^^ fast declval ^^^ / vvv default impl vvv
 
@@ -52,12 +65,12 @@ _CCCL_API inline _Tp __declval(long);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_CCCL_API inline decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
+_CCCL_API inline decltype(::cuda::std::__declval<_Tp>(0)) declval() noexcept;
 
 #endif // default impl
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_DECLVAL_H
+#endif // _CUDA_STD___UTILITY_DECLVAL_H

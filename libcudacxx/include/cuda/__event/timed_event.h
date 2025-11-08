@@ -26,15 +26,17 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__event/event.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/chrono>
+#  include <cuda/std/__chrono/duration.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
 class timed_event : public event
@@ -44,20 +46,20 @@ public:
   //!        and record the event on the specified stream.
   //!
   //! @throws cuda_error if the event creation fails.
-  explicit timed_event(stream_ref __stream, flags __flags = flags::none);
+  _CCCL_HOST_API explicit timed_event(stream_ref __stream, event_flags __flags = event_flags::none);
 
   //! @brief Construct a new `timed_event` object with the specified flags. The event can only be recorded on streams
   //! from the specified device.
   //!
   //! @throws cuda_error if the event creation fails.
-  explicit timed_event(device_ref __device, flags __flags = flags::none)
-      : event(__device, static_cast<unsigned int>(__flags))
+  _CCCL_HOST_API explicit timed_event(device_ref __device, event_flags __flags = event_flags::none)
+      : event(__device, ::cuda::std::to_underlying(__flags))
   {}
 
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr timed_event(no_init_t) noexcept
+  _CCCL_HOST_API explicit constexpr timed_event(no_init_t) noexcept
       : event(no_init)
   {}
 
@@ -73,7 +75,7 @@ public:
   //! @return timed_event The constructed `timed_event` object
   //!
   //! @note The constructed `timed_event` object takes ownership of the native handle.
-  [[nodiscard]] static timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
+  [[nodiscard]] static _CCCL_HOST_API timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
     return timed_event(__evnt);
   }
@@ -82,7 +84,7 @@ public:
   static timed_event from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static timed_event from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static timed_event from_native_handle(::cuda::std::nullptr_t) = delete;
 
   //! @brief Compute the time elapsed between two `timed_event` objects.
   //!
@@ -94,22 +96,22 @@ public:
   //! @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
   //!
   //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
-  [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
+  [[nodiscard]] friend _CCCL_HOST_API ::cuda::std::chrono::nanoseconds
+  operator-(const timed_event& __end, const timed_event& __start)
   {
-    float __ms = 0.0f;
-    _CUDA_DRIVER::__eventElapsedTime(__start.get(), __end.get(), &__ms);
-    return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
+    const auto __ms = ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get());
+    return ::cuda::std::chrono::nanoseconds(static_cast<::cuda::std::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
 private:
   // Use `timed_event::from_native_handle(e)` to construct an owning `timed_event`
   // object from a `cudaEvent_t` handle.
-  explicit constexpr timed_event(::cudaEvent_t __evnt) noexcept
+  _CCCL_HOST_API explicit constexpr timed_event(::cudaEvent_t __evnt) noexcept
       : event(__evnt)
   {}
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

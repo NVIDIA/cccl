@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
-#define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
+#ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
+#define _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
 
 #include <cuda/std/__type_traits/type_list.h>
 
@@ -19,66 +19,60 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
 namespace hierarchy
 {
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto rank(const Unit& = Unit(), const Level& = Level());
+template <class _Unit, class _Level>
+_CCCL_DEVICE auto rank(const _Unit& = _Unit(), const _Level& = _Level());
 
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto count(const Unit& = Unit(), const Level& = Level());
+template <class _Unit, class _Level>
+_CCCL_DEVICE auto count(const _Unit& = _Unit(), const _Level& = _Level());
 
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto index(const Unit& = Unit(), const Level& = Level());
+template <class _Unit, class _Level>
+_CCCL_DEVICE auto index(const _Unit& = _Unit(), const _Level& = _Level());
 
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto extents(const Unit& = Unit(), const Level& = Level());
+template <class _Unit, class _Level>
+_CCCL_DEVICE auto extents(const _Unit& = _Unit(), const _Level& = _Level());
 } // namespace hierarchy
 
 namespace __detail
 {
-template <typename Level>
-struct dimensions_query;
-
-template <typename Level>
-struct dimensions_query
+template <class _Level>
+struct __dimensions_query
 {
-  template <typename Unit>
-  /* [[nodiscard]] */ _CCCL_DEVICE static auto rank(const Unit& = Unit())
+  template <class _Unit>
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto rank(const _Unit& = _Unit())
   {
-    return hierarchy::rank<Unit, Level>();
+    return hierarchy::rank<_Unit, _Level>();
   }
 
-  template <typename Unit>
-  /* [[nodiscard]] */ _CCCL_DEVICE static auto count(const Unit& = Unit())
+  template <class _Unit>
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto count(const _Unit& = _Unit())
   {
-    return hierarchy::count<Unit, Level>();
+    return hierarchy::count<_Unit, _Level>();
   }
 
-  template <typename Unit>
-  /* [[nodiscard]] */ _CCCL_DEVICE static auto index(const Unit& = Unit())
+  template <class _Unit>
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto index(const _Unit& = _Unit())
   {
-    return hierarchy::index<Unit, Level>();
+    return hierarchy::index<_Unit, _Level>();
   }
 
-  template <typename Unit>
-  /* [[nodiscard]] */ _CCCL_DEVICE static auto extents(const Unit& = Unit())
+  template <class _Unit>
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto extents(const _Unit& = _Unit())
   {
-    return hierarchy::extents<Unit, Level>();
+    return hierarchy::extents<_Unit, _Level>();
   }
 };
-
 } // namespace __detail
 
 // Struct to represent levels allowed below or above a certain level,
 //  used for hierarchy sorting, validation and for hierarchy traversal
-template <typename... Levels>
+template <typename... _Levels>
 struct allowed_levels
 {
-  using default_unit = ::cuda::std::__type_index_c<0, Levels..., void>;
+  using default_unit = ::cuda::std::__type_index_c<0, _Levels..., void>;
 };
 
 namespace __detail
@@ -86,23 +80,23 @@ namespace __detail
 template <typename LevelType>
 using __default_unit_below = typename LevelType::allowed_below::default_unit;
 
-template <typename QueryLevel, typename AllowedLevels>
-inline constexpr bool is_level_allowed = false;
+template <class _QueryLevel, class _AllowedLevels>
+inline constexpr bool __is_level_allowed = false;
 
-template <typename QueryLevel, typename... Levels>
-inline constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
-  ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
+template <class _QueryLevel, class... _Levels>
+inline constexpr bool __is_level_allowed<_QueryLevel, allowed_levels<_Levels...>> =
+  ::cuda::std::disjunction_v<::cuda::std::is_same<_QueryLevel, _Levels>...>;
 
-template <typename L1, typename L2>
-inline constexpr bool can_rhs_stack_on_lhs =
-  is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
+template <class _L1, class _L2>
+inline constexpr bool __can_rhs_stack_on_lhs =
+  __is_level_allowed<_L1, typename _L2::allowed_below> || __is_level_allowed<_L2, typename _L1::allowed_above>;
 
-template <typename Unit, typename Level>
-inline constexpr bool legal_unit_for_level =
-  can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
+template <class _Unit, class _Level>
+inline constexpr bool __legal_unit_for_level =
+  __can_rhs_stack_on_lhs<_Unit, _Level> || __legal_unit_for_level<_Unit, __default_unit_below<_Level>>;
 
-template <typename Unit>
-inline constexpr bool legal_unit_for_level<Unit, void> = false;
+template <class _Unit>
+inline constexpr bool __legal_unit_for_level<_Unit, void> = false;
 } // namespace __detail
 
 // Base type for all hierarchy levels
@@ -130,7 +124,7 @@ struct thread_level;
  */
 struct grid_level
     : public hierarchy_level
-    , public __detail::dimensions_query<grid_level>
+    , public __detail::__dimensions_query<grid_level>
 {
   using product_type  = unsigned long long;
   using allowed_above = allowed_levels<>;
@@ -148,7 +142,7 @@ _CCCL_GLOBAL_CONSTANT grid_level grid;
  */
 struct cluster_level
     : public hierarchy_level
-    , public __detail::dimensions_query<cluster_level>
+    , public __detail::__dimensions_query<cluster_level>
 {
   using product_type  = unsigned int;
   using allowed_above = allowed_levels<grid_level>;
@@ -166,7 +160,7 @@ _CCCL_GLOBAL_CONSTANT cluster_level cluster;
  */
 struct block_level
     : public hierarchy_level
-    , public __detail::dimensions_query<block_level>
+    , public __detail::__dimensions_query<block_level>
 {
   using product_type  = unsigned int;
   using allowed_above = allowed_levels<grid_level, cluster_level>;
@@ -184,7 +178,7 @@ _CCCL_GLOBAL_CONSTANT block_level block;
  */
 struct thread_level
     : public hierarchy_level
-    , public __detail::dimensions_query<thread_level>
+    , public __detail::__dimensions_query<thread_level>
 {
   using product_type  = unsigned int;
   using allowed_above = allowed_levels<block_level>;
@@ -192,19 +186,18 @@ struct thread_level
 };
 _CCCL_GLOBAL_CONSTANT thread_level thread;
 
-template <typename Level>
+template <typename _Level>
 constexpr bool is_core_cuda_hierarchy_level =
-  ::cuda::std::is_same_v<Level, grid_level> || ::cuda::std::is_same_v<Level, cluster_level>
-  || ::cuda::std::is_same_v<Level, block_level> || ::cuda::std::is_same_v<Level, thread_level>;
+  ::cuda::std::is_same_v<_Level, grid_level> || ::cuda::std::is_same_v<_Level, cluster_level>
+  || ::cuda::std::is_same_v<_Level, block_level> || ::cuda::std::is_same_v<_Level, thread_level>;
 
 namespace __detail
 {
+template <typename _Unit, typename _Level>
+struct __dims_helper;
 
-template <typename Unit, typename Level>
-struct dims_helper;
-
-template <typename Level>
-struct dims_helper<Level, Level>
+template <typename _Level>
+struct __dims_helper<_Level, _Level>
 {
   [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
@@ -218,7 +211,7 @@ struct dims_helper<Level, Level>
 };
 
 template <>
-struct dims_helper<thread_level, block_level>
+struct __dims_helper<thread_level, block_level>
 {
   [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
@@ -232,7 +225,7 @@ struct dims_helper<thread_level, block_level>
 };
 
 template <>
-struct dims_helper<block_level, cluster_level>
+struct __dims_helper<block_level, cluster_level>
 {
   [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
@@ -246,7 +239,7 @@ struct dims_helper<block_level, cluster_level>
 };
 
 template <>
-struct dims_helper<block_level, grid_level>
+struct __dims_helper<block_level, grid_level>
 {
   [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
@@ -260,7 +253,7 @@ struct dims_helper<block_level, grid_level>
 };
 
 template <>
-struct dims_helper<cluster_level, grid_level>
+struct __dims_helper<cluster_level, grid_level>
 {
   [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
@@ -275,35 +268,36 @@ struct dims_helper<cluster_level, grid_level>
 
 // Seems like a compiler bug, where NODISCARD is marked as ignored due to void return type,
 // while its not possible to ever have void return type here
-template <typename Unit, typename Level>
-/* [[nodiscard]] */ _CCCL_DEVICE auto extents_impl()
+template <typename _Unit, typename _Level>
+/* [[nodiscard]] */ _CCCL_DEVICE auto __extents_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || can_rhs_stack_on_lhs<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<_Unit, _Level> || __can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return dim3_to_dims(dims_helper<Unit, Level>::extents());
+    return ::cuda::experimental::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::extents());
   }
   else
   {
-    using SplitLevel = __detail::__default_unit_below<Level>;
-    return dims_product<typename Level::product_type>(
-      extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
+    using _SplitLevel = __detail::__default_unit_below<_Level>;
+    return ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(
+      __extents_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>());
   }
   _CCCL_UNREACHABLE();
 }
 
-template <typename Unit, typename Level>
-/* [[nodiscard]] */ _CCCL_DEVICE auto index_impl()
+template <typename _Unit, typename _Level>
+/* [[nodiscard]] */ _CCCL_DEVICE auto __index_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || __detail::can_rhs_stack_on_lhs<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<_Unit, _Level> || __detail::__can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return dim3_to_dims(dims_helper<Unit, Level>::index());
+    return ::cuda::experimental::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::index());
   }
   else
   {
-    using SplitLevel = __detail::__default_unit_below<Level>;
-    return dims_sum<typename Level::product_type>(
-      dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
-      index_impl<Unit, SplitLevel>());
+    using _SplitLevel = __detail::__default_unit_below<_Level>;
+    return ::cuda::experimental::__detail::__dims_sum<typename _Level::product_type>(
+      ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(
+        __index_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>()),
+      __index_impl<_Unit, _SplitLevel>());
   }
   _CCCL_UNREACHABLE();
 }
@@ -311,7 +305,6 @@ template <typename Unit, typename Level>
 
 namespace hierarchy
 {
-
 /**
  * @brief Counts the number of entities in a CUDA hierarchy level
  *
@@ -344,12 +337,12 @@ namespace hierarchy
  * @tparam Level
  *  Specifies at what CUDA hierarchy level the count should happen
  */
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto count(const Unit&, const Level&)
+template <typename _Unit, typename _Level>
+_CCCL_DEVICE auto count(const _Unit&, const _Level&)
 {
-  static_assert(__detail::legal_unit_for_level<Unit, Level>);
-  auto d = __detail::extents_impl<Unit, Level>();
-  return d.extent(0) * d.extent(1) * d.extent(2);
+  static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
+  auto __dims = __detail::__extents_impl<_Unit, _Level>();
+  return __dims.extent(0) * __dims.extent(1) * __dims.extent(2);
 }
 
 /**
@@ -385,21 +378,21 @@ _CCCL_DEVICE auto count(const Unit&, const Level&)
  * @tparam Level
  *  Specifies at what CUDA hierarchy level the rank is requested
  */
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto rank(const Unit&, const Level&)
+template <typename _Unit, typename _Level>
+_CCCL_DEVICE auto rank(const _Unit&, const _Level&)
 {
-  static_assert(__detail::legal_unit_for_level<Unit, Level>);
-  if constexpr (__detail::can_rhs_stack_on_lhs<Unit, Level>)
+  static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
+  if constexpr (__detail::__can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return __detail::index_to_linear<typename Level::product_type>(
-      __detail::index_impl<Unit, Level>(), __detail::extents_impl<Unit, Level>());
+    return ::cuda::experimental::__detail::__index_to_linear<typename _Level::product_type>(
+      __detail::__index_impl<_Unit, _Level>(), __detail::__extents_impl<_Unit, _Level>());
   }
   else
   {
     /* Its interesting that there is a need for else here, but using the above in all cases would result in
         a different numbering scheme, where adjacent ranks in lower level would not be adjacent in this level */
-    using SplitLevel = __detail::__default_unit_below<Level>;
-    return rank<SplitLevel, Level>() * count<Unit, SplitLevel>() + rank<Unit, SplitLevel>();
+    using _SplitLevel = __detail::__default_unit_below<_Level>;
+    return rank<_SplitLevel, _Level>() * count<_Unit, _SplitLevel>() + rank<_Unit, _SplitLevel>();
   }
 }
 
@@ -440,11 +433,11 @@ _CCCL_DEVICE auto rank(const Unit&, const Level&)
  * @tparam Level
  *  Specifies at what CUDA hierarchy level the extents are requested
  */
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto extents(const Unit&, const Level&)
+template <typename _Unit, typename _Level>
+_CCCL_DEVICE auto extents(const _Unit&, const _Level&)
 {
-  static_assert(__detail::legal_unit_for_level<Unit, Level>);
-  return hierarchy_query_result(__detail::extents_impl<Unit, Level>());
+  static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
+  return ::cuda::experimental::__detail::__convert_to_query_result(__detail::__extents_impl<_Unit, _Level>());
 }
 
 /**
@@ -484,16 +477,15 @@ _CCCL_DEVICE auto extents(const Unit&, const Level&)
  * @tparam Level
  *  Specifies at what hierarchy level the index is requested
  */
-template <typename Unit, typename Level>
-_CCCL_DEVICE auto index(const Unit&, const Level&)
+template <typename _Unit, typename _Level>
+_CCCL_DEVICE auto index(const _Unit&, const _Level&)
 {
-  static_assert(__detail::legal_unit_for_level<Unit, Level>);
-  return hierarchy_query_result(__detail::index_impl<Unit, Level>());
+  static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
+  return ::cuda::experimental::__detail::__convert_to_query_result(__detail::__index_impl<_Unit, _Level>());
 }
 } // namespace hierarchy
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_HIERARCHY_LEVELS
+#endif // _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH

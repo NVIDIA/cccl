@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FILL_N_H
-#define _LIBCUDACXX___ALGORITHM_FILL_N_H
+#ifndef _CUDA_STD___ALGORITHM_FILL_N_H
+#define _CUDA_STD___ALGORITHM_FILL_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _OutputIterator, class _Size, class _Tp>
@@ -41,11 +41,11 @@ _CCCL_API constexpr _OutputIterator __fill_n(_OutputIterator __first, _Size __n,
 template <class _OutputIterator, class _Size, class _Tp>
 _CCCL_API constexpr _OutputIterator fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
-  return _CUDA_VSTD::__fill_n(__first, __convert_to_integral(__n), __value_);
+  return ::cuda::std::__fill_n(__first, __convert_to_integral(__n), __value_);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FILL_N_H
+#endif // _CUDA_STD___ALGORITHM_FILL_N_H

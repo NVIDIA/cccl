@@ -14,35 +14,43 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
-#include <cub/block/block_load.cuh>
+#include <cub/block/block_load_to_shared.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
+#include <cuda/__memory/ptr_rebind.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
-{
-namespace merge
+namespace detail::merge
 {
 template <int ThreadsPerBlock,
           int ItemsPerThread,
-          BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadCacheModifier,
-          BlockStoreAlgorithm StoreAlgorithm>
+          BlockStoreAlgorithm StoreAlgorithm,
+          bool UseBlockLoadToShared = false>
 struct agent_policy_t
 {
   // do not change data member names, policy_wrapper_t depends on it
   static constexpr int BLOCK_THREADS                   = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD                = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE                  = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadCacheModifier;
   static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+  static constexpr bool use_block_load_to_shared       = UseBlockLoadToShared;
 };
 
 // TODO(bgruber): can we unify this one with AgentMerge in agent_merge_sort.cuh?
@@ -57,111 +65,195 @@ template <typename Policy,
           typename CompareOp>
 struct agent_t
 {
-  using policy = Policy;
+  using policy                           = Policy;
+  static constexpr int items_per_thread  = Policy::ITEMS_PER_THREAD;
+  static constexpr int threads_per_block = Policy::BLOCK_THREADS;
+  static constexpr int items_per_tile    = Policy::ITEMS_PER_TILE;
 
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
 
-  using keys_load_it1  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt1>;
-  using keys_load_it2  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt2>;
-  using items_load_it1 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt1>;
-  using items_load_it2 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt2>;
+  using block_load_to_shared = cub::detail::BlockLoadToShared<threads_per_block>;
+  using block_store_keys     = typename BlockStoreType<Policy, KeysOutputIt, key_type>::type;
+  using block_store_items    = typename BlockStoreType<Policy, ItemsOutputIt, item_type>::type;
 
-  using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
-  using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;
-  using block_load_items1 = typename BlockLoadType<Policy, items_load_it1>::type;
-  using block_load_items2 = typename BlockLoadType<Policy, items_load_it2>::type;
+  template <typename ValueT, typename Iter1, typename Iter2>
+  static constexpr bool use_block_load_to_shared =
+    Policy::use_block_load_to_shared && (sizeof(ValueT) == alignof(ValueT))
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<ValueT> //
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iter1> //
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<Iter2>
+    && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter1>>
+    && ::cuda::std::is_same_v<ValueT, cub::detail::it_value_t<Iter2>>;
 
-  using block_store_keys  = typename BlockStoreType<Policy, KeysOutputIt, key_type>::type;
-  using block_store_items = typename BlockStoreType<Policy, ItemsOutputIt, item_type>::type;
+  static constexpr bool keys_use_bl2sh     = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
+  static constexpr bool items_use_bl2sh    = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
+  static constexpr int bl2sh_minimum_align = block_load_to_shared::template SharedBufferAlignBytes<char>();
 
-  union temp_storages
+  template <typename ValueT>
+  struct alignas(block_load_to_shared::template SharedBufferAlignBytes<ValueT>()) buffer_t
   {
-    typename block_load_keys1::TempStorage load_keys1;
-    typename block_load_keys2::TempStorage load_keys2;
-    typename block_load_items1::TempStorage load_items1;
-    typename block_load_items2::TempStorage load_items2;
-    typename block_store_keys::TempStorage store_keys;
-    typename block_store_items::TempStorage store_items;
+    // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
+    static constexpr int bytes_needed = block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
+                                      + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
-    key_type keys_shared[Policy::ITEMS_PER_TILE + 1];
-    item_type items_shared[Policy::ITEMS_PER_TILE + 1];
+    char c_array[bytes_needed];
   };
 
-  struct TempStorage : Uninitialized<temp_storages>
-  {};
+  struct temp_storages_without_bl2sh
+  {
+    using keys_smem  = ::cuda::std::conditional_t<keys_use_bl2sh, buffer_t<key_type>, key_type[items_per_tile + 1]>;
+    using items_smem = ::cuda::std::conditional_t<items_use_bl2sh, buffer_t<item_type>, item_type[items_per_tile + 1]>;
+    union
+    {
+      typename block_store_keys::TempStorage store_keys;
+      typename block_store_items::TempStorage store_items;
+      keys_smem keys_shared;
+      items_smem items_shared;
+    };
+  };
 
-  static constexpr int items_per_thread  = Policy::ITEMS_PER_THREAD;
-  static constexpr int threads_per_block = Policy::BLOCK_THREADS;
-  static constexpr Offset items_per_tile = Policy::ITEMS_PER_TILE;
+  // inherit from data storage, so it's positioned at the start of the shared memory
+  struct temp_storages_with_bl2sh : temp_storages_without_bl2sh
+  {
+    typename block_load_to_shared::TempStorage load2sh;
+  };
+
+  using temp_storages =
+    ::cuda::std::conditional_t<keys_use_bl2sh || items_use_bl2sh, temp_storages_with_bl2sh, temp_storages_without_bl2sh>;
+
+  using TempStorage = Uninitialized<temp_storages>;
 
   // Per thread data
   temp_storages& storage;
-  keys_load_it1 keys1_in;
-  items_load_it1 items1_in;
+  KeysIt1 keys1_in;
+  ItemsIt1 items1_in;
   Offset keys1_count;
-  keys_load_it2 keys2_in;
-  items_load_it2 items2_in;
+  KeysIt2 keys2_in;
+  ItemsIt2 items2_in;
   Offset keys2_count;
   KeysOutputIt keys_out;
   ItemsOutputIt items_out;
   CompareOp compare_op;
-  Offset* merge_partitions;
+  Offset* key1_beg_offsets;
 
   template <bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset tile_base, int num_remaining)
   {
-    const Offset partition_beg = merge_partitions[tile_idx + 0];
-    const Offset partition_end = merge_partitions[tile_idx + 1];
-
     const Offset diag0 = items_per_tile * tile_idx;
-    const Offset diag1 = (::cuda::std::min) (keys1_count + keys2_count, diag0 + items_per_tile);
+    Offset diag1       = diag0 + items_per_tile;
+    if constexpr (IsFullTile)
+    {
+      _CCCL_ASSERT(diag1 <= keys1_count + keys2_count, "");
+    }
+    else
+    {
+      diag1 = keys1_count + keys2_count;
+    }
 
     // compute bounding box for keys1 & keys2
-    const Offset keys1_beg = partition_beg;
-    const Offset keys1_end = partition_end;
+    const Offset keys1_beg = key1_beg_offsets[tile_idx + 0];
+    const Offset keys1_end = key1_beg_offsets[tile_idx + 1];
     const Offset keys2_beg = diag0 - keys1_beg;
     const Offset keys2_end = diag1 - keys1_end;
 
     // number of keys per tile
-    const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
-    const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
+    const int keys1_count_tile = static_cast<int>(keys1_end - keys1_beg);
+    const int keys2_count_tile = static_cast<int>(keys2_end - keys2_beg);
+    if constexpr (IsFullTile)
+    {
+      _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == items_per_tile, "");
+    }
+    else
+    {
+      _CCCL_ASSERT(keys1_count_tile + keys2_count_tile == num_remaining, "");
+    }
+
+    [[maybe_unused]] auto load2sh = [&] {
+      if constexpr (keys_use_bl2sh || items_use_bl2sh)
+      {
+        return block_load_to_shared{storage.load2sh};
+      }
+      else
+      {
+        return NullType{};
+      }
+    }();
 
     key_type keys_loc[items_per_thread];
-    merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
-      keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
-    merge_sort::reg_to_shared<threads_per_block>(&storage.keys_shared[0], keys_loc);
-    __syncthreads();
+    key_type* keys1_shared;
+    key_type* keys2_shared;
+    int keys2_offset;
+    if constexpr (keys_use_bl2sh)
+    {
+      ::cuda::std::span keys1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys1_in + keys1_beg),
+                                  static_cast<::cuda::std::size_t>(keys1_count_tile)};
+      ::cuda::std::span keys2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys2_in + keys2_beg),
+                                  static_cast<::cuda::std::size_t>(keys2_count_tile)};
+      ::cuda::std::span keys_buffers{storage.keys_shared.c_array};
+      auto keys1_buffer =
+        keys_buffers.first(block_load_to_shared::template SharedBufferSizeBytes<key_type>(keys1_count_tile));
+      auto keys2_buffer =
+        keys_buffers.last(block_load_to_shared::template SharedBufferSizeBytes<key_type>(keys2_count_tile));
+      _CCCL_ASSERT(keys1_buffer.end() <= keys2_buffer.begin(),
+                   "Keys buffer needs to be appropriately sized (internal)");
+      keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
+      keys2_shared = data(load2sh.CopyAsync(keys2_buffer, keys2_src));
+      auto token   = load2sh.Commit();
+      // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
+      keys2_offset = static_cast<int>(keys2_shared - keys1_shared);
+      load2sh.Wait(token);
+    }
+    else
+    {
+      auto keys1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys1_in);
+      auto keys2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(keys2_in);
+      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
+        keys_loc, keys1_in_cm + keys1_beg, keys2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
+      keys1_shared = &storage.keys_shared[0];
+      // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
+      keys2_offset = keys1_count_tile;
+      keys2_shared = keys1_shared + keys2_offset;
+      merge_sort::reg_to_shared<threads_per_block>(keys1_shared, keys_loc);
+      __syncthreads();
+    }
 
-    // use binary search in shared memory to find merge path for each of thread.
-    // we can use int type here, because the number of items in shared memory is limited
-    const int diag0_loc = (::cuda::std::min) (num_keys1 + num_keys2, static_cast<int>(items_per_thread * threadIdx.x));
+    // Now find the merge path for each of the threads.
+    // We can use int type here, because the number of items in shared memory is limited.
+    int diag0_thread = items_per_thread * static_cast<int>(threadIdx.x);
+    if constexpr (IsFullTile)
+    {
+      _CCCL_ASSERT(num_remaining == items_per_tile, "");
+      _CCCL_ASSERT(diag0_thread < num_remaining, "");
+    }
+    else
+    { // for partial tiles, clamp the thread diagonal to the valid items
+      diag0_thread = (::cuda::std::min) (diag0_thread, num_remaining);
+    }
 
-    const int keys1_beg_loc =
-      MergePath(&storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_loc, compare_op);
-    const int keys1_end_loc = num_keys1;
-    const int keys2_beg_loc = diag0_loc - keys1_beg_loc;
-    const int keys2_end_loc = num_keys2;
+    const int keys1_beg_thread =
+      MergePath(keys1_shared, keys2_shared, keys1_count_tile, keys2_count_tile, diag0_thread, compare_op);
+    const int keys2_beg_thread = diag0_thread - keys1_beg_thread;
 
-    const int num_keys1_loc = keys1_end_loc - keys1_beg_loc;
-    const int num_keys2_loc = keys2_end_loc - keys2_beg_loc;
+    const int keys1_count_thread = keys1_count_tile - keys1_beg_thread;
+    const int keys2_count_thread = keys2_count_tile - keys2_beg_thread;
 
     // perform serial merge
     int indices[items_per_thread];
     cub::SerialMerge(
-      &storage.keys_shared[0],
-      keys1_beg_loc,
-      keys2_beg_loc + num_keys1,
-      num_keys1_loc,
-      num_keys2_loc,
+      keys1_shared,
+      keys1_beg_thread,
+      keys2_offset + keys2_beg_thread,
+      keys1_count_thread,
+      keys2_count_thread,
       keys_loc,
       indices,
       compare_op);
-    __syncthreads();
 
     // write keys
-    if (IsFullTile)
+    __syncthreads(); // sync after reading from SMEM before so block store can use SMEM again
+    if constexpr (IsFullTile)
     {
       block_store_keys{storage.store_keys}.Store(keys_out + tile_base, keys_loc);
     }
@@ -174,24 +266,75 @@ struct agent_t
     static constexpr bool have_items = !::cuda::std::is_same_v<item_type, NullType>;
     if constexpr (have_items)
     {
+      // Both of these are only needed when either keys or items or both use BlockLoadToShared introducing padding (that
+      // can differ between the keys and items)
+      [[maybe_unsused]] const auto translate_indices = [&](int items2_offset) -> void {
+        const int diff = items2_offset - keys2_offset;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < items_per_thread; ++i)
+        {
+          if (indices[i] >= keys2_offset)
+          {
+            indices[i] += diff;
+          }
+        }
+      };
+      // WAR for MSVC erroring ("declared but never referenced") despite [[maybe_unused]]
+      (void) translate_indices;
+
       item_type items_loc[items_per_thread];
-      merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
-        items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
-      __syncthreads(); // block_store_keys above uses shared memory, so make sure all threads are done before we write
-                       // to it
-      merge_sort::reg_to_shared<threads_per_block>(&storage.items_shared[0], items_loc);
-      __syncthreads();
+      item_type* items1_shared;
+      if constexpr (items_use_bl2sh)
+      {
+        ::cuda::std::span items1_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items1_in + keys1_beg),
+                                     static_cast<::cuda::std::size_t>(keys1_count_tile)};
+        ::cuda::std::span items2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items2_in + keys2_beg),
+                                     static_cast<::cuda::std::size_t>(keys2_count_tile)};
+        ::cuda::std::span items_buffers{storage.items_shared.c_array};
+        auto items1_buffer =
+          items_buffers.first(block_load_to_shared::template SharedBufferSizeBytes<item_type>(keys1_count_tile));
+        auto items2_buffer =
+          items_buffers.last(block_load_to_shared::template SharedBufferSizeBytes<item_type>(keys2_count_tile));
+        _CCCL_ASSERT(items1_buffer.end() <= items2_buffer.begin(),
+                     "Items buffer needs to be appropriately sized (internal)");
+        // block_store_keys above uses shared memory, so make sure all threads are done before we write
+        __syncthreads();
+        items1_shared            = data(load2sh.CopyAsync(items1_buffer, items1_src));
+        item_type* items2_shared = data(load2sh.CopyAsync(items2_buffer, items2_src));
+        auto token               = load2sh.Commit();
+        const int items2_offset  = static_cast<int>(items2_shared - items1_shared);
+        translate_indices(items2_offset);
+        load2sh.Wait(token);
+      }
+      else
+      {
+        {
+          auto items1_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items1_in);
+          auto items2_in_cm = try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(items2_in);
+          merge_sort::gmem_to_reg<threads_per_block, IsFullTile>(
+            items_loc, items1_in_cm + keys1_beg, items2_in_cm + keys2_beg, keys1_count_tile, keys2_count_tile);
+          __syncthreads(); // block_store_keys above uses SMEM, so make sure all threads are done before we write to it
+          items1_shared = &storage.items_shared[0];
+          if constexpr (keys_use_bl2sh)
+          {
+            const int items2_offset = keys1_count_tile;
+            translate_indices(items2_offset);
+          }
+          merge_sort::reg_to_shared<threads_per_block>(items1_shared, items_loc);
+          __syncthreads();
+        }
+      }
 
       // gather items from shared mem
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
-        items_loc[i] = storage.items_shared[indices[i]];
+        items_loc[i] = items1_shared[indices[i]];
       }
       __syncthreads();
 
       // write from reg to gmem
-      if (IsFullTile)
+      if constexpr (IsFullTile)
       {
         block_store_items{storage.store_items}.Store(items_out + tile_base, items_loc);
       }
@@ -204,23 +347,19 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
   {
-    // XXX with 8.5 changing type to Offset (or long long) results in error!
-    // TODO(bgruber): is the above still true?
-    const int tile_idx     = static_cast<int>(blockIdx.x);
+    const Offset tile_idx  = blockIdx.x;
     const Offset tile_base = tile_idx * items_per_tile;
-    // TODO(bgruber): random mixing of int and Offset
     const int items_in_tile =
       static_cast<int>((::cuda::std::min) (static_cast<Offset>(items_per_tile), keys1_count + keys2_count - tile_base));
     if (items_in_tile == items_per_tile)
     {
-      consume_tile<true>(tile_idx, tile_base, items_per_tile); // full tile
+      consume_tile</* IsFullTile = */ true>(tile_idx, tile_base, items_per_tile);
     }
     else
     {
-      consume_tile<false>(tile_idx, tile_base, items_in_tile); // partial tile
+      consume_tile</* IsFullTile = */ false>(tile_idx, tile_base, items_in_tile);
     }
   }
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 CUB_NAMESPACE_END

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
-#define _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
+#ifndef _CUDA_STD___TYPE_TRAITS_TYPE_SET_H
+#define _CUDA_STD___TYPE_TRAITS_TYPE_SET_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
 struct __type_list;
@@ -124,8 +124,8 @@ struct __is_included_in : __fold_or<is_same_v<_Ty, _Ts>...>
 template <class _Ty, class... _Ts>
 inline constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
+#endif // _CUDA_STD___TYPE_TRAITS_TYPE_SET_H

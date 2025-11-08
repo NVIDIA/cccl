@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H
-#define _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H
+#ifndef _CUDA_STD___UTILITY_EXCEPTION_GUARD_H
+#define _CUDA_STD___UTILITY_EXCEPTION_GUARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,13 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __exception_guard is a helper class for writing code with the strong exception guarantee.
 //
@@ -54,11 +55,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
 //        typedef typename iterator_traits<Iterator>::value_type value_type;
 //        __exception_guard guard([start=out, &out] {
-//            _CUDA_VSTD::destroy(start, out);
+//            ::cuda::std::destroy(start, out);
 //        });
 //
 //        for (; n > 0; ++iter, ++out, --n) {
-//            ::new ((void*)_CUDA_VSTD::addressof(*out)) value_type(*iter);
+//            ::new ((void*)::cuda::std::addressof(*out)) value_type(*iter);
 //        }
 //        guard.__complete();
 //        return out;
@@ -71,13 +72,13 @@ struct __exception_guard_exceptions
   __exception_guard_exceptions() = delete;
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __exception_guard_exceptions(_Rollback __rollback)
-      : __rollback_(_CUDA_VSTD::move(__rollback))
+      : __rollback_(::cuda::std::move(__rollback))
       , __completed_(false)
   {}
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(__exception_guard_exceptions&& __other) noexcept(
     is_nothrow_move_constructible_v<_Rollback>)
-      : __rollback_(_CUDA_VSTD::move(__other.__rollback_))
+      : __rollback_(::cuda::std::move(__other.__rollback_))
       , __completed_(__other.__completed_)
   {
     __other.__completed_ = true;
@@ -105,7 +106,7 @@ private:
   bool __completed_;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_exceptions);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_exceptions);
 
 template <class _Rollback>
 struct __exception_guard_noexceptions
@@ -138,7 +139,7 @@ private:
   bool __completed_ = false;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>
@@ -151,11 +152,11 @@ using __exception_guard = __exception_guard_exceptions<_Rollback>;
 template <class _Rollback>
 _CCCL_API constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
 {
-  return __exception_guard<_Rollback>(_CUDA_VSTD::move(__rollback));
+  return __exception_guard<_Rollback>(::cuda::std::move(__rollback));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H
+#endif // _CUDA_STD___UTILITY_EXCEPTION_GUARD_H

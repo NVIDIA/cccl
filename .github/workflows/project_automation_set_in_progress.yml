@@ -42,6 +42,7 @@ env:
 
 jobs:
   query_and_mutate_project_fields:
+    if: github.repository == 'NVIDIA/cccl'
     runs-on: ubuntu-latest
 
     permissions:

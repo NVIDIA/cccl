@@ -33,13 +33,8 @@
 #include <thrust/system/detail/generic/merge.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -147,8 +142,5 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
     values_result,
     ::cuda::std::less<value_type>());
 } // end merge_by_key()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

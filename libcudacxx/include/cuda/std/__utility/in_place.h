@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_IN_PLACE_H
-#define _LIBCUDACXX___UTILITY_IN_PLACE_H
+#ifndef _CUDA_STD___UTILITY_IN_PLACE_H
+#define _CUDA_STD___UTILITY_IN_PLACE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
@@ -51,27 +51,36 @@ template <size_t _Idx>
 inline constexpr in_place_index_t<_Idx> in_place_index{};
 
 template <class _Tp>
-struct __is_inplace_type_imp : false_type
-{};
+inline constexpr bool __is_cuda_std_inplace_type_v = false;
 template <class _Tp>
-struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type
-{};
+inline constexpr bool __is_cuda_std_inplace_type_v<in_place_type_t<_Tp>> = true;
 
 template <class _Tp>
-using __is_inplace_type = __is_inplace_type_imp<remove_cvref_t<_Tp>>;
-
-template <class _Tp>
-struct __is_inplace_index_imp : false_type
-{};
+inline constexpr bool __is_cuda_std_inplace_index_v = false;
 template <size_t _Idx>
-struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
-{};
+inline constexpr bool __is_cuda_std_inplace_index_v<in_place_index_t<_Idx>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+// CCCL extensions below
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_from_t
+{
+  _CCCL_HIDE_FROM_ABI explicit in_place_from_t() = default;
+};
+_CCCL_GLOBAL_CONSTANT in_place_from_t in_place_from{};
 
 template <class _Tp>
-using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_from_type_t
+{
+  _CCCL_HIDE_FROM_ABI explicit in_place_from_type_t() = default;
+};
+template <class _Tp>
+inline constexpr in_place_from_type_t<_Tp> in_place_from_type{};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_IN_PLACE_H
+#endif // _CUDA_STD___UTILITY_IN_PLACE_H

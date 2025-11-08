@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::AgentReduce implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduction.
@@ -50,9 +26,12 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/memory>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -62,31 +41,30 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NOMINAL_BLOCK_THREADS_4B Threads per thread block
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _BLOCK_ALGORITHM Cooperative block-wide reduction algorithm to use
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  int _VECTOR_LOAD_LENGTH,
-  BlockReduceAlgorithm _BLOCK_ALGORITHM,
-  CacheLoadModifier _LOAD_MODIFIER,
-  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Cooperative block-wide reduction algorithm to use
-  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = _BLOCK_ALGORITHM;
+  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = BlockAlgorithm;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
@@ -111,36 +89,36 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam _BLOCK_THREADS Threads per thread block
- * @tparam _WARP_THREADS Threads per warp
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam BlockThreads Threads per thread block
+ * @tparam WarpThreads Threads per warp
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int _BLOCK_THREADS,
-          int _WARP_THREADS,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
+template <int BlockThreads,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
           typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
-          CacheLoadModifier _LOAD_MODIFIER>
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
-  static constexpr int WARP_THREADS = _WARP_THREADS;
+  static constexpr int WARP_THREADS = WarpThreads;
 
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
   /// Number of items per thread
   static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
+    detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   /// Number of items per tile
   constexpr static int ITEMS_PER_TILE = ITEMS_PER_THREAD * WARP_THREADS;
@@ -157,7 +135,6 @@ struct AgentWarpReducePolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceImpl implements a stateful abstraction of CUDA thread blocks
  *        and warps, for participating in device-wide reduction .
@@ -171,9 +148,6 @@ namespace detail::reduce
  *
  * @tparam InputIteratorT
  *   Random-access iterator type for input
- *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
@@ -199,7 +173,6 @@ namespace detail::reduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -230,7 +203,7 @@ struct AgentReduceImpl
   /// Constants
   static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = _CUDA_VSTD::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int VECTOR_LOAD_LENGTH = ::cuda::std::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
@@ -271,7 +244,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::is_aligned(d_in, sizeof(VectorT));
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
     }
     else
     {
@@ -309,51 +282,48 @@ struct AgentReduceImpl
    * @param block_offset The offset the tile to consume
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
-  template <int IsFirstTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset, bool input_is_vector_aligned)
+  template <int IsFirstTile, bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
   {
-    if constexpr (ATTEMPT_VECTORIZATION)
+    if constexpr (CanVectorize)
     {
-      if (input_is_vector_aligned)
+      // Fabricate a vectorized input iterator
+      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
+      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
+        reinterpret_cast<VectorT*>(d_in_unqualified));
+
+      // Load items as vector items
+      InputT input_items[ITEMS_PER_THREAD];
+      VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
+
+      // Alias items as an array of VectorT and load it in striped fashion
+      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < words; ++i)
       {
-        // Fabricate a vectorized input iterator
-        InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
-        CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
-          reinterpret_cast<VectorT*>(d_in_unqualified));
-
-        // Load items as vector items
-        InputT input_items[ITEMS_PER_THREAD];
-        VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-
-        // Alias items as an array of VectorT and load it in striped fashion
-        static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < words; ++i)
-        {
-          vec_items[i] = d_vec_in[NumThreads * i];
-        }
-
-        // Convert from input type to output type
-        AccumT items[ITEMS_PER_THREAD];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < ITEMS_PER_THREAD; ++i)
-        {
-          items[i] = transform_op(input_items[i]);
-        }
-
-        // Reduce items within each thread stripe
-        thread_aggregate = IsFirstTile ? cub::ThreadReduce(items, reduction_op)
-                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
-        return;
+        vec_items[i] = d_vec_in[NumThreads * i];
       }
-    }
 
-    // Scalar path: load items in striped fashion and reduce items within each thread stripe
-    AccumT items[ITEMS_PER_THREAD];
-    load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
-    thread_aggregate =
-      IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      // Convert from input type to output type
+      AccumT items[ITEMS_PER_THREAD];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+      {
+        items[i] = transform_op(input_items[i]);
+      }
+
+      // Reduce items within each thread stripe
+      thread_aggregate =
+        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+    }
+    else
+    {
+      // Scalar path: load items in striped fashion and reduce items within each thread stripe
+      AccumT items[ITEMS_PER_THREAD];
+      load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
+      thread_aggregate =
+        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+    }
   }
 
   /**
@@ -393,7 +363,8 @@ struct AgentReduceImpl
    * @brief Reduce a contiguous segment of input tiles
    * @param even_share GridEvenShare descriptor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share, bool input_is_vector_aligned)
+  template <bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
   {
     AccumT thread_aggregate{};
 
@@ -414,7 +385,7 @@ struct AgentReduceImpl
 
     // Extracting this into a function saves 8% of generated kernel size by allowing to reuse
     // the block reduction below. This also workaround hang in nvcc.
-    ConsumeFullTileRange(thread_aggregate, even_share, input_is_vector_aligned);
+    ConsumeFullTileRange<CanVectorize>(thread_aggregate, even_share);
 
     // Compute block-wide reduction (all threads have valid items)
     return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op);
@@ -430,8 +401,9 @@ struct AgentReduceImpl
     GridEvenShare<OffsetT> even_share;
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
 
-    const bool input_is_vector_aligned = IsAligned(d_in + block_offset);
-    return ConsumeRange(even_share, input_is_vector_aligned);
+    return IsAligned(d_in + block_offset)
+           ? ConsumeRange<ATTEMPT_VECTORIZATION>(even_share)
+           : ConsumeRange<false>(even_share);
   }
 
   /**
@@ -443,8 +415,7 @@ struct AgentReduceImpl
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
 
-    const bool input_is_vector_aligned = IsAligned(d_in);
-    return ConsumeRange(even_share, input_is_vector_aligned);
+    return IsAligned(d_in) ? ConsumeRange<ATTEMPT_VECTORIZATION>(even_share) : ConsumeRange<false>(even_share);
   }
 
 private:
@@ -453,11 +424,11 @@ private:
    * @param even_share GridEvenShare descriptor
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share, bool input_is_vector_aligned)
+  template <bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
   {
     // At least one full block
-    ConsumeFullTile<true>(thread_aggregate, even_share.block_offset, input_is_vector_aligned);
+    ConsumeFullTile<true, CanVectorize>(thread_aggregate, even_share.block_offset);
 
     if (even_share.block_end - even_share.block_offset < even_share.block_stride)
     {
@@ -471,7 +442,7 @@ private:
     // `even_share.block_end >= TILE_ITEMS`
     while (even_share.block_offset <= even_share.block_end - TILE_ITEMS)
     {
-      ConsumeFullTile<false>(thread_aggregate, even_share.block_offset, input_is_vector_aligned);
+      ConsumeFullTile<false, CanVectorize>(thread_aggregate, even_share.block_offset);
 
       if (even_share.block_end - even_share.block_offset < even_share.block_stride)
       {
@@ -505,9 +476,6 @@ private:
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -523,7 +491,6 @@ private:
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -531,7 +498,6 @@ template <typename AgentReducePolicy,
 struct AgentReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -542,7 +508,6 @@ struct AgentReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,
@@ -573,9 +538,6 @@ struct AgentReduce
  * @tparam InputIteratorT
  *   Random-access iterator type for input
  *
- * @tparam OutputIteratorT
- *   Random-access iterator type for output
- *
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
@@ -591,7 +553,6 @@ struct AgentReduce
  */
 template <typename AgentReducePolicy,
           typename InputIteratorT,
-          typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
           typename AccumT,
@@ -599,7 +560,6 @@ template <typename AgentReducePolicy,
 struct AgentWarpReduce
     : AgentReduceImpl<AgentReducePolicy,
                       InputIteratorT,
-                      OutputIteratorT,
                       OffsetT,
                       ReductionOp,
                       AccumT,
@@ -611,7 +571,6 @@ struct AgentWarpReduce
   using base_t =
     AgentReduceImpl<AgentReducePolicy,
                     InputIteratorT,
-                    OutputIteratorT,
                     OffsetT,
                     ReductionOp,
                     AccumT,
@@ -628,7 +587,6 @@ struct AgentWarpReduce
       : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x % AgentReducePolicy::WARP_THREADS)
   {}
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

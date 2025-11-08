@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_WRAP_ITER_H
-#define _LIBCUDACXX___ITERATOR_WRAP_ITER_H
+#ifndef _CUDA_STD___ITERATOR_WRAP_ITER_H
+#define _CUDA_STD___ITERATOR_WRAP_ITER_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Iter>
 class __wrap_iter
@@ -53,9 +53,8 @@ public:
       : __i_()
   {}
   template <class _Up>
-  _CCCL_API constexpr __wrap_iter(
-    const __wrap_iter<_Up>& __u,
-    typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
+  _CCCL_API constexpr __wrap_iter(const __wrap_iter<_Up>& __u,
+                                  typename enable_if<is_convertible_v<_Up, iterator_type>>::type* = nullptr) noexcept
       : __i_(__u.base())
   {}
   _CCCL_API constexpr reference operator*() const noexcept
@@ -64,7 +63,7 @@ public:
   }
   _CCCL_API constexpr pointer operator->() const noexcept
   {
-    return _CUDA_VSTD::__to_address(__i_);
+    return ::cuda::std::__to_address(__i_);
   }
   _CCCL_API constexpr __wrap_iter& operator++() noexcept
   {
@@ -223,9 +222,8 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
 
 #if _CCCL_STD_VER <= 2017
 template <class _It>
-struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
-{};
-#endif
+inline constexpr bool __has_contiguous_traversal<__wrap_iter<_It>> = true;
+#endif // _CCCL_STD_VER <= 2017
 
 template <class _It>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
@@ -236,12 +234,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 
   _CCCL_API constexpr static element_type* to_address(pointer __w) noexcept
   {
-    return _CUDA_VSTD::__to_address(__w.base());
+    return ::cuda::std::__to_address(__w.base());
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_WRAP_ITER_H
+#endif // _CUDA_STD___ITERATOR_WRAP_ITER_H

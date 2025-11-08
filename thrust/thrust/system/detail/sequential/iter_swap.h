@@ -31,21 +31,13 @@
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::sequential
 {
-namespace detail
-{
-namespace sequential
-{
-
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 _CCCL_HOST_DEVICE void iter_swap(sequential::execution_policy<DerivedPolicy>&, Pointer1 a, Pointer2 b)
 {
   using ::cuda::std::swap;
   swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));
 } // end iter_swap()
-
-} // namespace sequential
-} // namespace detail
-} // namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -84,6 +84,7 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   set(example_meta_target thrust.all.example.${example_name})
 
   add_executable(${example_target} "${real_example_src}")
+  cccl_configure_target(${example_target} DIALECT ${config_dialect})
   target_link_libraries(${example_target} ${thrust_target})
   target_include_directories(${example_target} PRIVATE "${Thrust_SOURCE_DIR}/examples")
   thrust_clone_target_properties(${example_target} ${thrust_target})
@@ -91,6 +92,12 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
   endif()
+
+  # We do not want to explicitly include `host_device.h` if not needed, so force include the file for non CUDA targets
+  target_compile_options(${example_target} PRIVATE
+    $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/FI include/host_device.h>
+    $<$<COMPILE_LANGUAGE:CXX>:-include include/host_device.h>
+  )
 
   # Add to the active configuration's meta target
   add_dependencies(${config_meta_target} ${example_target})

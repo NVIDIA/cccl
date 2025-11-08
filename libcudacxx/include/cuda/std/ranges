@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_RANGES
-#define _CUDA_RANGES
+#ifndef _CUDA_STD_RANGES
+#define _CUDA_STD_RANGES
 
 #include <cuda/std/detail/__config>
 
@@ -66,4 +66,4 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _CCCL_DIAG_POP
 
-#endif //_CUDA_RANGES
+#endif //_CUDA_STD_RANGES

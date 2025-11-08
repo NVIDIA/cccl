@@ -17,7 +17,6 @@
 
 namespace user1
 {
-
 template <class ElementType>
 class AccessorB;
 
@@ -90,7 +89,6 @@ public:
     return p + i;
   }
 };
-
 } // namespace user1
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -98,7 +96,6 @@ public:
 
 namespace user2
 {
-
 // Imagine that a different user1 writes AccessorC.
 // They can't change the public interface of AccessorA, but they want to permit a conversion from AccessorC to
 // AccessorA. AccessorA happens to be more type-erased than AccessorC, so this is a conversion without preconditions;
@@ -171,7 +168,6 @@ public:
     return p + i;
   }
 };
-
 } // namespace user2
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -247,7 +243,7 @@ __host__ __device__ void test_conversion()
     // Test explicit and implicit conversion from cuda::__restrict_accessor<AccessorC<T>> to
     // cuda::__restrict_accessor<AccessorA<T>>. This works because cuda::__restrict_accessor<AccessorC<T>> publicly
     // inherits from AccessorC<T>, so it inherits AccessorC<T>'s conversion operators.
-    WrapperA wrapper_acc1{WrapperC{}};
+    [[maybe_unused]] WrapperA wrapper_acc1{WrapperC{}};
     auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
@@ -257,7 +253,7 @@ __host__ __device__ void test_conversion()
     // Test explicit conversion from cuda::__restrict_accessor<AccessorD<T>> to cuda::__restrict_accessor<AccessorB<T>>.
     // This works because cuda::__restrict_accessor<AccessorD<T>> publicly inherits from AccessorD<T>,
     // so it inherits AccessorD<T>'s conversion operators.
-    WrapperB wrapper_acc1{WrapperD{}};
+    [[maybe_unused]] WrapperB wrapper_acc1{WrapperD{}};
     auto f1 = [](const WrapperD& w) -> WrapperB {
       return WrapperB{};
       // return w; // rightfully does not compile

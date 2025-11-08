@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the square root of the given non-negative integer rounded down
 //! @param __v The input number
@@ -38,10 +38,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @return The square root of \p __v rounded down
 //! @warning If \p __v is negative, the behavior is undefined
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp isqrt(_Tp __v) noexcept
 {
-  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__v >= _Tp{0}, "cuda::isqrt requires non-negative input");
   }
@@ -51,11 +51,11 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
     return __v;
   }
 
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
 
   _Up __uv = static_cast<_Up>(__v);
   _Up __ret{};
-  _Up __bit = static_cast<_Up>(_Up{1} << ((_CUDA_VSTD::bit_width(__uv) - 1) & (~1)));
+  _Up __bit = static_cast<_Up>(_Up{1} << ((::cuda::std::bit_width(__uv) - 1) & (~1)));
 
   while (__bit != 0)
   {
@@ -73,7 +73,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
   return static_cast<_Tp>(__ret);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

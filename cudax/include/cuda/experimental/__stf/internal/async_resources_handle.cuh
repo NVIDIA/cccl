@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class green_context_helper;
 
 // Needed to set/get affinity
@@ -394,7 +393,7 @@ private:
     mutable exec_affinity affinity;
   };
 
-  ::std::shared_ptr<impl> pimpl;
+  mutable ::std::shared_ptr<impl> pimpl;
 
 public:
   async_resources_handle()
@@ -408,7 +407,7 @@ public:
     return pimpl != nullptr;
   }
 
-  stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
+  stream_pool& get_device_stream_pool(int dev_id, bool for_computation) const
   {
     assert(pimpl);
     return pimpl->get_device_stream_pool(dev_id, for_computation);
@@ -432,7 +431,7 @@ public:
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
   }
 
-  _CUDA_VSTD::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
   cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     assert(pimpl);
@@ -445,6 +444,17 @@ public:
     assert(pimpl);
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
     return pimpl->per_device_gc_helper[dev_id];
+  }
+
+  // Get green context helper with lazy initialization
+  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count);
+
+  // Register an external green context helper
+  void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
+  {
+    assert(pimpl);
+    assert(dev_id < int(pimpl->per_device_gc_helper.size()));
+    pimpl->per_device_gc_helper[dev_id] = ::std::move(helper);
   }
 
   exec_affinity& get_affinity()
@@ -550,5 +560,4 @@ UNITTEST("async_resources_handle is_default_constructible")
                 "async_resources_handle must be default constructible");
 };
 #endif
-
 } // namespace cuda::experimental::stf

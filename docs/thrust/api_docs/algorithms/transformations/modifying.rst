@@ -7,4 +7,4 @@ Modifying
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__modifying*
+   ../../../api/group__modifying*

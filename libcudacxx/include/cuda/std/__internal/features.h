@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FEATURES_H
-#define _LIBCUDACXX___INTERNAL_FEATURES_H
+#ifndef _CUDA_STD___INTERNAL_FEATURES_H
+#define _CUDA_STD___INTERNAL_FEATURES_H
 
 #include <cuda/__cccl_config>
 
@@ -21,7 +21,6 @@
 #endif // no system header
 
 #define _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS() (!_CCCL_COMPILER(CLANG) || _CCCL_STD_VER >= 2020)
-#define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP()   1
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
@@ -44,6 +43,12 @@
 #  define _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS() 1
 #endif
 
+#if _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+#  define _CCCL_CONSTEXPR_COMPLEX constexpr
+#else
+#  define _CCCL_CONSTEXPR_COMPLEX
+#endif // !_LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+
 #ifndef _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
@@ -63,9 +68,38 @@
 #  define _LIBCUDACXX_HAS_NVBF16() 0
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
-// NVCC does not have a way of silencing non '_' prefixed UDLs
-#if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-#  define _LIBCUDACXX_HAS_STL_LITERALS
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      __declspec(align(x))
+#elif _CCCL_HAS_FEATURE(cxx_alignas)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      alignas(x)
+#else
+#  define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(alignof(x))))
+#  define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
+#endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
-#endif // _LIBCUDACXX___INTERNAL_FEATURES_H
+// We can only expose constexpr allocations if the compiler supports it
+// For now disable constexpr allocation support until we can actually use
+#if 0 && defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
+  && !_CCCL_COMPILER(NVRTC)
+#  define _CCCL_HAS_CONSTEXPR_ALLOCATION
+#  define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
+#else // ^^^ __cpp_constexpr_dynamic_alloc ^^^ / vvv !__cpp_constexpr_dynamic_alloc vvv
+#  define _CCCL_CONSTEXPR_CXX20_ALLOCATION
+#endif
+
+// Enable removed C++17 features
+#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
+#  define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
+#endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
+
+#ifndef _CCCL_DISABLE_ADDITIONAL_DIAGNOSTICS
+#  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG) _CCCL_DIAGNOSE_IF(_COND, _MSG, "warning")
+#  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)   _CCCL_DIAGNOSE_IF(_COND, _MSG, "error")
+#else
+#  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG)
+#  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
+#endif
+
+#endif // _CUDA_STD___INTERNAL_FEATURES_H

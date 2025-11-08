@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_EQUAL_H
-#define _LIBCUDACXX___ALGORITHM_EQUAL_H
+#ifndef _CUDA_STD___ALGORITHM_EQUAL_H
+#define _CUDA_STD___ALGORITHM_EQUAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
@@ -47,7 +47,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
 template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
 {
-  return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
+  return ::cuda::std::equal(__first1, __last1, __first2, __equal_to{});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -85,7 +85,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
   {
     return false;
   }
-  return _CUDA_VSTD::equal<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
+  return ::cuda::std::equal<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
     __first1, __last1, __first2, __pred);
 }
 
@@ -97,7 +97,7 @@ equal(_InputIterator1 __first1,
       _InputIterator2 __last2,
       _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__equal<add_lvalue_reference_t<_BinaryPredicate>>(
+  return ::cuda::std::__equal<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,
@@ -111,7 +111,7 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::__equal(
+  return ::cuda::std::__equal(
     __first1,
     __last1,
     __first2,
@@ -121,8 +121,8 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
     typename iterator_traits<_InputIterator2>::iterator_category());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_EQUAL_H
+#endif // _CUDA_STD___ALGORITHM_EQUAL_H

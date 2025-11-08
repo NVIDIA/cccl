@@ -13,4 +13,4 @@ Reductions
    reductions/logical
    reductions/predicates
    reductions/transformed
-   ${repo_docs_api_path}/*function_group__reductions*
+   ../../api/group__reductions*

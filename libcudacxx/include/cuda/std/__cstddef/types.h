@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDDEF_TYPES_H
-#define _LIBCUDACXX___CSTDDEF_TYPES_H
+#ifndef _CUDA_STD___CSTDDEF_TYPES_H
+#define _CUDA_STD___CSTDDEF_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(NVRTC)
 using max_align_t = long double;
@@ -45,8 +45,8 @@ using nullptr_t = decltype(nullptr);
 using ::ptrdiff_t;
 using ::size_t;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CSTDDEF_TYPES_H
+#endif // _CUDA_STD___CSTDDEF_TYPES_H

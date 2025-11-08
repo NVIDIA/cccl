@@ -33,13 +33,8 @@
 #include <thrust/system/detail/generic/reduce.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
@@ -99,8 +94,5 @@ _CCCL_HOST_DEVICE void reduce_into(
   // use reduce by default
   *output = thrust::reduce(exec, first, last, init, binary_op);
 } // end reduce_into()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

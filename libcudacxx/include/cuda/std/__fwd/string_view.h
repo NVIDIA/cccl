@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_STRING_VIEW_H
-#define _LIBCUDACXX___FWD_STRING_VIEW_H
+#ifndef _CUDA_STD___FWD_STRING_VIEW_H
+#define _CUDA_STD___FWD_STRING_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT, class _Traits>
+class basic_string_view;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+
+// cuda::std:: forward declarations
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view;
@@ -52,8 +65,27 @@ _CCCL_PREFERRED_NAME(wstring_view)
 #endif // _CCCL_HAS_WCHAR_T()
       basic_string_view;
 // clang-format on
-_LIBCUDACXX_END_NAMESPACE_STD
+
+template <class _Tp>
+inline constexpr bool __is_std_basic_string_view_v = false;
+#if _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+template <class _CharT, class _Traits>
+inline constexpr bool __is_std_basic_string_view_v<::std::basic_string_view<_CharT, _Traits>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB() && __cpp_lib_string_view >= 201606L
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<const _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<volatile _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_basic_string_view_v<const volatile _Tp> = __is_cuda_std_basic_string_view_v<_Tp>;
+template <class _CharT, class _Traits>
+inline constexpr bool __is_cuda_std_basic_string_view_v<basic_string_view<_CharT, _Traits>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_STRING_VIEW_H
+#endif // _CUDA_STD___FWD_STRING_VIEW_H

@@ -541,15 +541,23 @@ struct only_set_when_expected_it
   {
     return *this;
   }
+
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator++(int) const
+  {
+    return *this;
+  }
+
   _CCCL_HOST_DEVICE only_set_when_expected_it operator*() const
   {
     return *this;
   }
+
   template <typename Difference>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator+(Difference) const
   {
     return *this;
   }
+
   template <typename Index>
   _CCCL_HOST_DEVICE only_set_when_expected_it operator[](Index) const
   {
@@ -576,7 +584,7 @@ struct iterator_traits<only_set_when_expected_it>
 };
 } // namespace std
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
@@ -585,7 +593,7 @@ struct iterator_traits<only_set_when_expected_it>
   using iterator_category = thrust::random_access_device_iterator_tag;
   using difference_type   = ::cuda::std::ptrdiff_t;
 };
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {

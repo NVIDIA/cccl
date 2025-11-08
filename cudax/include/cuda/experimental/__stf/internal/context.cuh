@@ -34,7 +34,6 @@
 
 namespace cuda::experimental::stf
 {
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * @brief Invokes the provided callable on the value of the given variant.
@@ -92,6 +91,22 @@ class context
       return payload->*[&](auto& self) {
         return self.get_symbol();
       };
+    }
+
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
     }
 
     auto& set_symbol(::std::string s) &
@@ -164,6 +179,7 @@ class context
     ::std::variant<T1, T2> payload;
   };
 
+public:
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -192,6 +208,45 @@ class context
         self.set_symbol(mv(s));
       };
       return mv(*this);
+    }
+
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
+    }
+
+    void enable_capture()
+    {
+      payload->*[&](auto& self) {
+        self.enable_capture();
+      };
     }
 
     /**
@@ -234,11 +289,17 @@ class context
       };
     }
 
+    cudaStream_t get_stream() const
+    {
+      return payload->*[&](auto& self) {
+        return self.get_stream();
+      };
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
 
-public:
   /**
    * @brief Default constructor for the context class.
    */
@@ -412,6 +473,17 @@ public:
   template <typename T>
   frozen_logical_data<T>
   freeze(::cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
+  {
+    return payload->*[&](auto& self) {
+      return self.freeze(mv(d), m, mv(where), user_freeze);
+    };
+  }
+
+  frozen_logical_data_untyped
+  freeze(::cuda::experimental::stf::logical_data_untyped d,
          access_mode m    = access_mode::read,
          data_place where = data_place::invalid(),
          bool user_freeze = true)
@@ -624,6 +696,29 @@ public:
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
       self.finalize();
+    };
+  }
+
+  //! Release context resources using the provided stream.
+  //!
+  //! Normally this is called automatically during finalize(), but when using
+  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
+  //! times, resources must be released manually once the graph will no longer
+  //! be used, since the same resources may be accessed repeatedly during graph replay.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
+    };
+  }
+
+  //! Add a resource to be managed by this context
+  void add_resource(::std::shared_ptr<ctx_resource> resource)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&resource](auto& self) {
+      self.add_resource(mv(resource));
     };
   }
 
@@ -1360,7 +1455,6 @@ UNITTEST("unit_test_partitioner_product")
 {
   unit_test_partitioner_product();
 };
-
 } // namespace reserved
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
@@ -1391,23 +1485,6 @@ UNITTEST("make_tuple_indexwise")
   });
   static_assert(::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
   EXPECT(t2 == ::std::tuple(0, 2));
-};
-
-UNITTEST("auto_dump set/get")
-{
-  context ctx;
-
-  int A[1024];
-  int B[1024];
-  auto lA = ctx.logical_data(A);
-  auto lB = ctx.logical_data(B);
-
-  // Disable auto dump
-  lA.set_auto_dump(false);
-  EXPECT(lA.get_auto_dump() == false);
-
-  // Enabled by default
-  EXPECT(lB.get_auto_dump() == true);
 };
 
 UNITTEST("cuda stream place")
@@ -1508,6 +1585,44 @@ UNITTEST("token vector")
   ctx.finalize();
 };
 
-#endif // UNITTESTED_FILE
+UNITTEST("get_stream")
+{
+  context ctx;
 
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s != nullptr);
+  t.end();
+  ctx.finalize();
+};
+
+UNITTEST("get_stream graph")
+{
+  graph_ctx ctx;
+
+  auto token = ctx.token();
+
+  auto t = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  // We are not capturing so there is no stream associated
+  EXPECT(s == nullptr);
+  cudaGraphNode_t n;
+  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  t.end();
+
+  auto t2 = ctx.task(token.rw());
+  t2.enable_capture();
+  t2.start();
+  cudaStream_t s2 = t2.get_stream();
+  // We are capturing so the stream used for capture is associated to the task
+  EXPECT(s2 != nullptr);
+  t2.end();
+
+  ctx.finalize();
+};
+
+#endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf

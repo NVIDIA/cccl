@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_BYTESWAP_H
-#define _LIBCUDACXX___BIT_BYTESWAP_H
+#ifndef _CUDA_STD___BIT_BYTESWAP_H
+#define _CUDA_STD___BIT_BYTESWAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/prmt.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -36,7 +35,35 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap32) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap64) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap128) // Only available in GCC >= 11 which supports __has_builtin
+#  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
+
+// nvcc doesn't support these builtins in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_BSWAP16
+#  undef _CCCL_BUILTIN_BSWAP32
+#  undef _CCCL_BUILTIN_BSWAP64
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// gcc fails to use the builtin when compiling with nvcc
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
+#  undef _CCCL_BUILTIN_BSWAP128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
@@ -49,8 +76,8 @@ template <class _Full>
 
   if constexpr (sizeof(_Full) > 2)
   {
-    return static_cast<_Full>(_CUDA_VSTD::__byteswap_impl(static_cast<_Half>(__val >> __shift)))
-         | (static_cast<_Full>(_CUDA_VSTD::__byteswap_impl(static_cast<_Half>(__val))) << __shift);
+    return static_cast<_Full>(::cuda::std::__byteswap_impl(static_cast<_Half>(__val >> __shift)))
+         | (static_cast<_Full>(::cuda::std::__byteswap_impl(static_cast<_Half>(__val))) << __shift);
   }
   else
   {
@@ -58,33 +85,32 @@ template <class _Full>
   }
 }
 
+#if _CCCL_CUDA_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
-#if __cccl_ptx_isa >= 200
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-    return static_cast<uint16_t>(_CUDA_VPTX::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
+    return static_cast<uint16_t>(::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x3201u));
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    return _CUDA_VPTX::prmt(__val, uint32_t{0}, uint32_t{0x0123});
+    return ::__byte_perm(__val, 0u, 0x0123u);
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    const auto __hi     = static_cast<uint32_t>(__val >> 32);
-    const auto __lo     = static_cast<uint32_t>(__val);
-    const auto __new_lo = _CUDA_VPTX::prmt(__hi, uint32_t{0}, uint32_t{0x0123});
-    const auto __new_hi = _CUDA_VPTX::prmt(__lo, uint32_t{0}, uint32_t{0x0123});
-
-    return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
+    const auto __lo = ::__byte_perm(static_cast<uint32_t>(__val >> 32), 0u, 0x0123u);
+    const auto __hi = ::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x0123u);
+    return (static_cast<uint64_t>(__hi) << 32) | static_cast<uint64_t>(__lo);
   }
   else
-#endif // __cccl_ptx_isa >= 200
   {
-    return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+    return ::cuda::std::__byteswap_impl_recursive(__val);
   }
 }
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept
@@ -108,14 +134,14 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP16)
   return _CCCL_BUILTIN_BSWAP16(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
+    NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
   }
-  return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+  return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP16
 }
 
@@ -124,14 +150,14 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP32)
   return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
+    NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
   }
-  return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+  return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
 }
 
@@ -140,14 +166,14 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP64)
   return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_DEVICE, return _CUDA_VSTD::__byteswap_impl_device(__val);)
+    NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
   }
-  return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+  return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP64
 }
 
@@ -157,7 +183,7 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_BSWAP128)
   return _CCCL_BUILTIN_BSWAP128(__val);
 #  else // ^^^ _CCCL_BUILTIN_BSWAP128 ^^^ / vvv !_CCCL_BUILTIN_BSWAP128 vvv
-  return _CUDA_VSTD::__byteswap_impl_recursive(__val);
+  return ::cuda::std::__byteswap_impl_recursive(__val);
 #  endif // !_CCCL_BUILTIN_BSWAP128
 }
 #endif // _CCCL_HAS_INT128()
@@ -168,7 +194,7 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
 {
   if constexpr (sizeof(_Integer) > 1)
   {
-    return static_cast<_Integer>(_CUDA_VSTD::__byteswap_impl(_CUDA_VSTD::__to_unsigned_like(__val)));
+    return static_cast<_Integer>(::cuda::std::__byteswap_impl(::cuda::std::__to_unsigned_like(__val)));
   }
   else
   {
@@ -176,8 +202,8 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_BYTESWAP_H
+#endif // _CUDA_STD___BIT_BYTESWAP_H

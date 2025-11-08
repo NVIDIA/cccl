@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
-#define _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
+#ifndef _CUDA_STD___CUDA_COMPLEX_NVFP16_H
+#define _CUDA_STD___CUDA_COMPLEX_NVFP16_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,17 +23,17 @@
 
 #if _LIBCUDACXX_HAS_NVFP16()
 
-#  include <cuda/std/__cmath/nvfp16.h>
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__floating_point/nvfp_types.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
 
+// todo: find a way to get rid of this include
 #  if !_CCCL_COMPILER(NVRTC)
-#    include <sstream> // for std::basic_ostringstream
+#    include <complex> // for std::complex stream operators
 #  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -66,7 +66,7 @@ struct __is_non_narrowing_convertible<double, __half>
 };
 } // namespace __cccl_internal
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <>
 inline constexpr size_t __complex_alignment_v<__half> = alignof(__half2);
@@ -279,7 +279,7 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr __half&& get(complex<__half>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
@@ -291,11 +291,11 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr const __half&& get(const complex<__half>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 };
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) && !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
 {
@@ -311,12 +311,12 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& _
 {
   return __os << complex<float>{__x};
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
-#endif // _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
+#endif // _CUDA_STD___CUDA_COMPLEX_NVFP16_H

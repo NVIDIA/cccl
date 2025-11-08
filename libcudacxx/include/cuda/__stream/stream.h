@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___STREAM_STREAM
-#define _CUDA___STREAM_STREAM
+#ifndef _CUDA___STREAM_STREAM_H
+#define _CUDA___STREAM_STREAM_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,13 +24,14 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
-#  include <cuda/std/__cuda/api_wrapper.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
@@ -43,20 +44,19 @@ struct stream : stream_ref
   //! Priority is defaulted to stream::default_priority
   //!
   //! @throws cuda_error if stream creation fails
-  explicit stream(device_ref __dev, int __priority = default_priority)
-      : stream_ref(__detail::__invalid_stream)
+  _CCCL_HOST_API explicit stream(device_ref __dev, int __priority = default_priority)
+      : stream_ref(::cuda::__invalid_stream())
   {
     [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamNonBlocking, __priority);
+    __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle
   // Can't be constexpr because __invalid_stream isn't
-  explicit stream(no_init_t) noexcept
-      : stream_ref(__detail::__invalid_stream)
+  _CCCL_HOST_API explicit stream(no_init_t) noexcept
+      : stream_ref(::cuda::__invalid_stream())
   {}
 
   //! @brief Move-construct a new `stream` object
@@ -64,8 +64,8 @@ struct stream : stream_ref
   //! @param __other
   //!
   //! @post `__other` is in moved-from state.
-  stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, __detail::__invalid_stream))
+  _CCCL_HOST_API stream(stream&& __other) noexcept
+      : stream(::cuda::std::exchange(__other.__stream, ::cuda::__invalid_stream()))
   {}
 
   stream(const stream&) = delete;
@@ -73,13 +73,13 @@ struct stream : stream_ref
   //! Destroy the `stream` object
   //!
   //! @note If the stream fails to be destroyed, the error is silently ignored.
-  ~stream()
+  _CCCL_HOST_API ~stream()
   {
-    if (__stream != __detail::__invalid_stream)
+    if (__stream != ::cuda::__invalid_stream())
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = _CUDA_DRIVER::__streamDestroyNoThrow(__stream);
+      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
     }
   }
 
@@ -88,10 +88,10 @@ struct stream : stream_ref
   //! @param __other
   //!
   //! @post `__other` is in a moved-from state.
-  stream& operator=(stream&& __other) noexcept
+  _CCCL_HOST_API stream& operator=(stream&& __other) noexcept
   {
-    stream __tmp(_CUDA_VSTD::move(__other));
-    _CUDA_VSTD::swap(__stream, __tmp.__stream);
+    stream __tmp(::cuda::std::move(__other));
+    ::cuda::std::swap(__stream, __tmp.__stream);
     return *this;
   }
 
@@ -104,7 +104,7 @@ struct stream : stream_ref
   //! @return stream The constructed `stream` object
   //!
   //! @note The constructed `stream` object takes ownership of the native handle.
-  [[nodiscard]] static stream from_native_handle(::cudaStream_t __handle)
+  [[nodiscard]] static _CCCL_HOST_API stream from_native_handle(::cudaStream_t __handle)
   {
     return stream(__handle);
   }
@@ -113,30 +113,33 @@ struct stream : stream_ref
   static stream from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static stream from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static stream from_native_handle(::cuda::std::nullptr_t) = delete;
+
+  // Disallow construction from `invalid_stream_t`.
+  static stream from_native_handle(invalid_stream_t) = delete;
 
   //! @brief Retrieve the native `cudaStream_t` handle and give up ownership.
   //!
   //! @return cudaStream_t The native handle being held by the `stream` object.
   //!
   //! @post The stream object is in a moved-from state.
-  [[nodiscard]] ::cudaStream_t release()
+  [[nodiscard]] _CCCL_HOST_API ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, __detail::__invalid_stream);
+    return ::cuda::std::exchange(__stream, ::cuda::__invalid_stream());
   }
 
 private:
   // Use `stream::from_native_handle(s)` to construct an owning `stream`
   // object from a `cudaStream_t` handle.
-  explicit stream(::cudaStream_t __handle)
+  _CCCL_HOST_API explicit stream(::cudaStream_t __handle)
       : stream_ref(__handle)
   {}
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA___STREAM_STREAM
+#endif // _CUDA___STREAM_STREAM_H

@@ -22,12 +22,15 @@
 #include "../mappings/operation.h"
 #include "../mappings/type_info.h"
 
+template <cccl_type_info_mapping RetT>
+using cccl_mapping_to_type = decltype(RetT)::Type;
+
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
   // Note: The user provided C f  unction (Operation.operation) must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args) const
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args) const
   {
     using TargetCFuncPtr = void (*)(const decltype(args, void())*..., void*);
 
@@ -54,7 +57,7 @@ template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT
 struct stateful_user_operation
 {
   user_operation_state<Operation.size, Operation.alignment> state;
-  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args)
+  __device__ cccl_mapping_to_type<RetT> operator()(cccl_mapping_to_type<ArgTs>... args)
   {
     // Note: The user provided C function (Operation.operation) must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
@@ -85,7 +88,7 @@ struct user_operation_traits
   using operator_builder = std::string (*)(cuda::std::span<std::string_view>, const char*, const char*);
   using argument_matcher = operator_builder (*)(cuda::std::span<cccl_type_enum>, std::string_view);
 
-  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -97,14 +100,14 @@ __device__ {1} operator{2}(const {3} & arg)
   return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -116,25 +119,25 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != types[1])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -142,19 +145,19 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return unary_builder;
   }
 
-  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -162,7 +165,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -170,37 +173,37 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return binary_builder;
   }
 
-  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != cccl_type_enum::CCCL_BOOLEAN)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
     return unary_builder;
   }
 
-  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -208,7 +211,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
@@ -220,6 +223,13 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     std::format_string<const char*> name;
     argument_matcher check;
     std::optional<const char*> symbol = std::nullopt;
+
+    constexpr well_known_description(
+      std::format_string<const char*> name, argument_matcher check, std::optional<const char*> symbol = std::nullopt)
+        : name(name)
+        , check(check)
+        , symbol(symbol)
+    {}
   };
 
   static cuda::std::optional<well_known_description> well_known_operation_description(cccl_op_kind_t kind)
@@ -267,7 +277,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
       case cccl_op_kind_t::CCCL_BIT_NOT:
         return well_known_description{"::cuda::std::bit_not<{}>", unary_matcher, "~"};
       case cccl_op_kind_t::CCCL_IDENTITY:
-        return well_known_description{"::cuda::std::identity<{}>", unary_matcher};
+        return well_known_description{"::cuda::std::identity", unary_matcher};
       case cccl_op_kind_t::CCCL_NEGATE:
         return well_known_description{"::cuda::std::negate<{}>", unary_matcher, "-"};
       case cccl_op_kind_t::CCCL_MINIMUM:
@@ -282,7 +292,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
   template <typename, typename... Args>
   static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info ret, Args... arguments)
   {
-    auto&& entry = well_known_operation_description(operation.type);
+    auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
       return cuda::std::nullopt;

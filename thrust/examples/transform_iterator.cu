@@ -8,8 +8,6 @@
 #include <iterator>
 #include <string>
 
-#include "include/host_device.h"
-
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
 struct clamp
@@ -112,10 +110,10 @@ int main()
 
   ////
   // combine transform_iterator with another transform_iterator
-  using NegatedClampedCountingIterator = thrust::transform_iterator<::cuda::std::negate<int>, ClampedCountingIterator>;
+  using NegatedClampedCountingIterator = thrust::transform_iterator<cuda::std::negate<int>, ClampedCountingIterator>;
 
-  NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, ::cuda::std::negate<int>());
-  NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, ::cuda::std::negate<int>());
+  NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, cuda::std::negate<int>());
+  NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, cuda::std::negate<int>());
 
   print_range("negated sequence ", ncs_begin, ncs_end);
 

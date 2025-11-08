@@ -1,19 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
+// SPDX-FileCopyrightText: Copyright (c) 2008-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -25,66 +11,103 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/detail/allocator_aware_execution_policy.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-// put the canonical tag in the same ns as the backend's entry points
-namespace cpp
+namespace system::cpp
 {
 namespace detail
 {
-
-// this awkward sequence of definitions arise
-// from the desire both for tag to derive
-// from execution_policy and for execution_policy
-// to convert to tag (when execution_policy is not
-// an ancestor of tag)
-
-// forward declaration of tag
+// note: the tag and execution policy need to be defined in the same namespace as the algorithms for ADL to find them
 struct tag;
 
-// forward declaration of execution_policy
-template <typename>
+template <typename DerivedPolicy>
 struct execution_policy;
 
-// specialize execution_policy for tag
 template <>
-struct execution_policy<tag> : thrust::system::detail::sequential::execution_policy<tag>
-{};
+struct execution_policy<tag> : system::detail::sequential::execution_policy<tag>
+{
+  using tag_type = tag;
+};
 
-// tag's definition comes before the
-// generic definition of execution_policy
 struct tag : execution_policy<tag>
 {};
 
-// allow conversion to tag when it is not a successor
 template <typename Derived>
-struct execution_policy : thrust::system::detail::sequential::execution_policy<Derived>
+struct execution_policy : system::detail::sequential::execution_policy<Derived>
 {
   using tag_type = tag;
+
+  // allow conversion to tag when it is not a successor
   _CCCL_HOST_DEVICE operator tag() const
   {
-    return tag();
+    return {};
   }
 };
 
+struct par_t
+    : execution_policy<par_t>
+    , thrust::detail::allocator_aware_execution_policy<execution_policy>
+{};
 } // namespace detail
 
-// alias execution_policy and tag here
-using thrust::system::cpp::detail::execution_policy;
-using thrust::system::cpp::detail::tag;
+//! \addtogroup execution_policies
+//! \{
 
-} // namespace cpp
-} // namespace system
+//! \p thrust::cpp::tag is a type representing Thrust's standard C++ backend system in C++'s type system.
+//! Iterators "tagged" with a type which is convertible to \p cpp::tag assert that they may be
+//! "dispatched" to algorithm implementations in the \p cpp system.
+using detail::tag;
 
-// alias items at top-level
+//! \p thrust::cpp::execution_policy is the base class for all Thrust parallel execution
+//! policies which are derived from Thrust's standard C++ backend system.
+using detail::execution_policy;
+
+//! \p thrust::system::cpp::par is the parallel execution policy associated with Thrust's standard C++ backend system.
+//!
+//! Instead of relying on implicit algorithm dispatch through iterator system tags, users may directly target Thrust's
+//! C++ backend system by providing \p thrust::cpp::par as an algorithm parameter.
+//!
+//! Explicit dispatch can be useful in avoiding the introduction of data copies into containers such as \p
+//! thrust::cpp::vector.
+//!
+//! The type of \p thrust::cpp::par is implementation-defined.
+//!
+//! The following code snippet demonstrates how to use \p thrust::cpp::par to explicitly dispatch an invocation of \p
+//! thrust::for_each to the standard C++ backend system:
+//!
+//! \code
+//! #include <thrust/for_each.h>
+//! #include <thrust/system/cpp/execution_policy.h>
+//! #include <cstdio>
+//!
+//! struct printf_functor
+//! {
+//!   __host__ __device__
+//!   void operator()(int x)
+//!   {
+//!     printf("%d\n", x);
+//!   }
+//! };
+//! ...
+//! int vec[3]{0, 1, 2}
+//! thrust::for_each(thrust::cpp::par, vec.begin(), vec.end(), printf_functor{});
+//!
+//! // 0 1 2 is printed to standard output in some unspecified order
+//! \endcode
+_CCCL_GLOBAL_CONSTANT detail::par_t par;
+
+//! \}
+} // namespace system::cpp
+
+// aliases:
 namespace cpp
 {
-
-using thrust::system::cpp::execution_policy;
-using thrust::system::cpp::tag;
-
+using system::cpp::execution_policy;
+using system::cpp::par;
+using system::cpp::tag;
 } // namespace cpp
 THRUST_NAMESPACE_END

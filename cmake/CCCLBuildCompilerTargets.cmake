@@ -100,6 +100,11 @@ function(cccl_build_compiler_targets)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
 
+  #  if (CCCL_USE_LIBCXX)
+  #    list(APPEND cxx_compile_options "-stdlib=libc++")
+  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
+  #  endif()
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")
@@ -146,6 +151,13 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
+    # Require the conforming preprocessor
+    append_option_if_available("/Zc:preprocessor" cxx_compile_options)
+    if (MSVC_TOOLSET_VERSION LESS 143)
+      # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+      append_option_if_available("/wd5105" cxx_compile_options)
+    endif()
+
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
@@ -160,7 +172,7 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Woverloaded-virtual" cxx_compile_options)
     append_option_if_available("-Wcast-qual" cxx_compile_options)
     append_option_if_available("-Wpointer-arith" cxx_compile_options)
-    append_option_if_available("-Wunused-local-typedef" cxx_compile_options)
+    append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
     # Disable GNU extensions (flag is clang only)
@@ -187,6 +199,12 @@ function(cccl_build_compiler_targets)
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
+  )
+
+  # Clang-cuda only:
+  target_compile_options(cccl.compiler_interface INTERFACE
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
 
   # These targets are used for dialect-specific options:

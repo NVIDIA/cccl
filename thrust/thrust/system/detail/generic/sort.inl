@@ -35,13 +35,8 @@
 #include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
@@ -174,8 +169,5 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator1, false>::value,
                 "unimplemented for this system");
 } // end stable_sort_by_key()
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

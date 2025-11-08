@@ -1,27 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! Thread reduction over statically-sized array-like types
@@ -45,23 +24,17 @@
 #include <cub/thread/thread_simd.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/functional> // cuda::maximum
-#include <cuda/std/array> // array
-#include <cuda/std/cassert> // assert
-#include <cuda/std/cstdint> // uint16_t
-#include <cuda/std/functional> // cuda::std::plus
-#include <cuda/std/iterator> // cuda::std::iter_value_t
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
+#include <cuda/__cmath/round_down.h>
+#include <cuda/__functional/maximum.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/array>
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -142,6 +115,7 @@ CUB_NAMESPACE_BEGIN
 //!    {
 //!        int array[4] = {1, 2, 3, 4};
 //!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>{}); // sum = 10
+//!    }
 //!
 //! @endrst
 //!
@@ -181,7 +155,6 @@ template <typename Input,
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace detail
 {
-
 /***********************************************************************************************************************
  * Enable SIMD/Tree reduction heuristics (Trait)
  **********************************************************************************************************************/
@@ -369,7 +342,7 @@ template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
   using cub::detail::unsafe_bitcast;
-  using T                       = _CUDA_VSTD::iter_value_t<Input>;
+  using T                       = ::cuda::std::iter_value_t<Input>;
   using SimdReduceOp            = cuda_operator_to_simd_x2_t<ReductionOp, T>;
   using SimdType                = vector_type_x2_t<T>;
   constexpr auto length         = static_size_v<Input>;
@@ -428,7 +401,6 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
     return cub::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
   }
 }
-
 } // namespace detail
 
 /***********************************************************************************************************************
@@ -443,10 +415,13 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
-  if constexpr (static_size_v<Input> == 1)
+
+  static constexpr auto length = static_size_v<Input>;
+  if constexpr (length == 1)
   {
     return static_cast<AccumT>(input[0]);
   }
+
   using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_simd_enabled_cuda_operator<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
@@ -455,38 +430,41 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
 
-  constexpr auto length = static_size_v<Input>;
-  if constexpr (::cuda::std::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm90_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (::cuda::std::is_same_v<Input, AccumT> && enable_sm80_simd_reduction_v<Input, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm80_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (::cuda::std::is_same_v<Input, AccumT> && enable_sm70_simd_reduction_v<Input, ReductionOp, length>)
+  if constexpr (::cuda::std::is_same_v<ValueT, AccumT> && enable_sm70_simd_reduction_v<ValueT, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (enable_ternary_reduction_sm90_v<Input, ReductionOp>)
+  if constexpr (length >= 6)
   {
-    // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-    if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
-                   && is_one_of_v<PromT, int32_t, uint32_t>)
-                  // the compiler generates bad code for int8/uint8 and min/max for SM90
-                  || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
+    // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
+    if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+      // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
+      if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
+                     && is_one_of_v<PromT, int32_t, uint32_t>)
+                    // the compiler generates bad code for int8/uint8 and min/max for SM90
+                    || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+      }
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
     }
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
-  }
 
-  if constexpr (enable_ternary_reduction_sm50_v<Input, ReductionOp>)
-  {
-    NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+    if constexpr (enable_ternary_reduction_sm50_v<ValueT, ReductionOp>)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
+    }
   }
 
   return ThreadReduceBinaryTree<PromT>(input, reduction_op);

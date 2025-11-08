@@ -1,5 +1,10 @@
 .. _cub-module-releases-changelog:
 
+.. warning::
+    This changelog is no longer maintained since Thrust was merged into the CCCL project.
+    For the latest changes, see the release notes for each CCCL release
+    on `GitHub <https://github.com/NVIDIA/cccl/releases>`_.
+
 CUB 2.1.0
 =========
 
@@ -59,7 +64,7 @@ Other Enhancements
 CUB 2.0.1
 =========
 
-.. _other-enhancements-1:
+.. _cub-other-enhancements-1:
 
 Other Enhancements
 ------------------
@@ -92,7 +97,7 @@ Several algorithms also have updated documentation, with a particular
 focus on clarifying which operations can and cannot be performed
 in-place.
 
-.. _breaking-changes-1:
+.. _cub-breaking-changes-1:
 
 Breaking Changes
 ----------------
@@ -202,11 +207,11 @@ Breaking Changes
    -  In addition to the behavioral changes, the interfaces for the
       ``Dispatch`` layer have changed:
 
-      -  ``DispatchScan``\ now accepts accumulator type as a template
+      -  ``DispatchScan`` now accepts accumulator type as a template
          parameter.
-      -  ``DispatchScanByKey``\ now accepts accumulator type as a
+      -  ``DispatchScanByKey`` now accepts accumulator type as a
          template parameter.
-      -  ``DispatchReduceByKey``\ now accepts accumulator type as the
+      -  ``DispatchReduceByKey`` now accepts accumulator type as the
          last template parameter.
 
 -  NVIDIA/cub#527: Deprecate the ``debug_synchronous`` flags on device
@@ -217,7 +222,7 @@ Breaking Changes
    -  Moving this option from run-time to compile-time avoids the
       compilation overhead of unused debugging paths in production code.
 
-.. _new-features-1:
+.. _cub-new-features-1:
 
 New Features
 ------------
@@ -228,7 +233,7 @@ New Features
 -  NVIDIA/cub#516: Use ``__reduce_add_sync`` hardware acceleration for
    ``WarpReduce`` on supported architectures.
 
-.. _bug-fixes-1:
+.. _cub-bug-fixes-1:
 
 Bug Fixes
 ---------
@@ -250,7 +255,7 @@ Bug Fixes
    to the ``AdjacentDifferenceCopy`` device algorithms.
 -  NVIDIA/cub#533: Fix debugging utilities when RDC is disabled.
 
-.. _other-enhancements-2:
+.. _cub-other-enhancements-2:
 
 Other Enhancements
 ------------------
@@ -288,7 +293,7 @@ Other Enhancements
 CUB 1.17.2
 ==========
 
-.. _summary-1:
+.. _cub-summary-1:
 
 Summary
 -------
@@ -303,7 +308,7 @@ CUB 1.17.2 is a minor bugfix release.
 CUB 1.17.1
 ==========
 
-.. _summary-2:
+.. _cub-summary-2:
 
 Summary
 -------
@@ -320,7 +325,7 @@ CUB 1.17.1 is a minor bugfix release.
 CUB 1.17.0
 ==========
 
-.. _summary-3:
+.. _cub-summary-3:
 
 Summary
 -------
@@ -343,7 +348,7 @@ algorithms are known to be affected. We’re currently evaluating the
 scope and impact of correcting this in a future CUB release. See
 NVIDIA/cub#471 for details.
 
-.. _bug-fixes-2:
+.. _cub-bug-fixes-2:
 
 Bug Fixes
 ---------
@@ -364,7 +369,7 @@ Bug Fixes
    ``BlockAdjacentDifference``. Thanks to @MKKnorr for this
    contribution.
 
-.. _other-enhancements-3:
+.. _cub-other-enhancements-3:
 
 Other Enhancements
 ------------------
@@ -392,7 +397,7 @@ Other Enhancements
 CUB 1.16.0
 ==========
 
-.. _summary-4:
+.. _cub-summary-4:
 
 Summary
 -------
@@ -477,7 +482,7 @@ as their names did not clearly describe their intent. The ``FlagHeads``
 method is now ``SubtractLeft``, and ``FlagTails`` has been replaced by
 ``SubtractRight``.
 
-.. _breaking-changes-2:
+.. _cub-breaking-changes-2:
 
 Breaking Changes
 ----------------
@@ -489,7 +494,7 @@ Breaking Changes
    replaced by the equivalent traits in ``<type_traits>`` as described
    above.
 
-.. _new-features-2:
+.. _cub-new-features-2:
 
 New Features
 ------------
@@ -511,7 +516,7 @@ Enhancements
    values in Thrust’s CMake install rules. Thanks for @robertmaynard for
    this contribution.
 
-.. _bug-fixes-3:
+.. _cub-bug-fixes-3:
 
 Bug Fixes
 ---------
@@ -540,7 +545,7 @@ Bug Fixes
 CUB 1.15.0 (NVIDIA HPC SDK 22.1, CUDA Toolkit 11.6)
 ===================================================
 
-.. _summary-5:
+.. _cub-summary-5:
 
 Summary
 -------
@@ -587,7 +592,7 @@ obtain the intermediate result, which was passed by value into
 ExclusiveScan. This new feature enables better performance in workflows
 that use cub::DeviceScan.
 
-.. _deprecation-notices-1:
+.. _cub-deprecation-notices-1:
 
 Deprecation Notices
 -------------------
@@ -601,7 +606,7 @@ device-side code with ``debug_synchronous = true``. These algorithms
 will continue to print extra debugging information, but they will no
 longer synchronize after kernel launches.
 
-.. _breaking-changes-3:
+.. _cub-breaking-changes-3:
 
 Breaking Changes
 ----------------
@@ -614,7 +619,7 @@ Breaking Changes
    without returning a temporary object’s address. Thanks to Xiang Gao
    (@zasdfgbnm) for this contribution.
 
-.. _new-features-3:
+.. _cub-new-features-3:
 
 New Features
 ------------
@@ -632,7 +637,7 @@ New Features
 -  NVIDIA/cub#376: Add “by key” overloads to ``cub::DeviceScan``. Thanks
    to Xiang Gao (@zasdfgbnm) for this contribution.
 
-.. _bug-fixes-4:
+.. _cub-bug-fixes-4:
 
 Bug Fixes
 ---------
@@ -654,7 +659,7 @@ Bug Fixes
 CUB 1.14.0 (NVIDIA HPC SDK 21.9)
 ================================
 
-.. _summary-6:
+.. _cub-summary-6:
 
 Summary
 -------
@@ -678,7 +683,7 @@ macros are still supported, but now require a new ``CUB_NS_QUALIFIER``
 macro to be defined, which provides the fully qualified CUB namespace
 (e.g. ``::foo::cub``). See ``cub/util_namespace.cuh`` for details.
 
-.. _breaking-changes-4:
+.. _cub-breaking-changes-4:
 
 Breaking Changes
 ----------------
@@ -689,7 +694,7 @@ Breaking Changes
    this is handled automatically when using the new
    ``[THRUST_]CUB_WRAPPED_NAMESPACE`` mechanism.
 
-.. _new-features-4:
+.. _cub-new-features-4:
 
 New Features
 ------------
@@ -700,7 +705,7 @@ New Features
 -  NVIDIA/cub#326: Simplify the namespace wrapper macros, and detect
    when Thrust’s symbols are in a wrapped namespace.
 
-.. _bug-fixes-5:
+.. _cub-bug-fixes-5:
 
 Bug Fixes
 ---------
@@ -716,7 +721,7 @@ Bug Fixes
 -  NVIDIA/cub#351: Fixed some errors in the ``cub::DeviceHistogram``
    documentation.
 
-.. _enhancements-1:
+.. _cub-enhancements-1:
 
 Enhancements
 ------------
@@ -741,7 +746,7 @@ is extended to and integrated with Thrust. Simply define
 Using different wrapped namespaces for each shared library will prevent
 issues like those reported in NVIDIA/thrust#1401.
 
-.. _new-features-5:
+.. _cub-new-features-5:
 
 New Features
 ------------
@@ -767,7 +772,7 @@ This release also includes several user-contributed documentation fixes
 that will be reflected in CUB’s online documentation in the coming
 weeks.
 
-.. _breaking-changes-5:
+.. _cub-breaking-changes-5:
 
 Breaking Changes
 ----------------
@@ -776,7 +781,7 @@ Breaking Changes
    ``cub::TexRefInputIterator<T, UNIQUE_ID>``. Use
    ``cub::TexObjInputIterator<T>`` as a replacement.
 
-.. _new-features-6:
+.. _cub-new-features-6:
 
 New Features
 ------------
@@ -794,7 +799,7 @@ New Features
 -  NVIDIA/cub#320: Introduce a new ``CUB_IGNORE_DEPRECATED_API`` macro
    that disables deprecation warnings on Thrust and CUB APIs.
 
-.. _bug-fixes-6:
+.. _cub-bug-fixes-6:
 
 Bug Fixes
 ---------
@@ -815,7 +820,7 @@ Bug Fixes
 -  NVIDIA/cub#320: Fixed harmless missing return statement warning in
    unreachable ``cub::TexObjInputIterator`` code path.
 
-.. _other-enhancements-4:
+.. _cub-other-enhancements-4:
 
 Other Enhancements
 ------------------
@@ -856,7 +861,7 @@ of a deprecation message.
 CUB 1.12.0 (NVIDIA HPC SDK 21.3)
 ================================
 
-.. _summary-7:
+.. _cub-summary-7:
 
 Summary
 -------
@@ -872,14 +877,14 @@ when ``num_items`` was close to (but not exceeding) ``INT32_MAX``.
 Support for Clang < 7.0 and MSVC < 2019 (aka 19.20/16.0/14.20) is now
 deprecated.
 
-.. _breaking-changes-6:
+.. _cub-breaking-changes-6:
 
 Breaking Changes
 ----------------
 
 -  NVIDIA/cub#256: Deprecate Clang < 7 and MSVC < 2019.
 
-.. _new-features-7:
+.. _cub-new-features-7:
 
 New Features
 ------------
@@ -888,7 +893,7 @@ New Features
    floating point types, which is required for the sort to be stable.
    Thanks to Andy Adinets for this contribution.
 
-.. _bug-fixes-7:
+.. _cub-bug-fixes-7:
 
 Bug Fixes
 ---------
@@ -911,7 +916,7 @@ Bug Fixes
 -  NVIDIA/cub#259: Remove some problematic ``__forceinline__``
    annotations.
 
-.. _other-enhancements-5:
+.. _cub-other-enhancements-5:
 
 Other Enhancements
 ------------------
@@ -922,7 +927,7 @@ Other Enhancements
 CUB 1.11.0 (CUDA Toolkit 11.3)
 ==============================
 
-.. _summary-8:
+.. _cub-summary-8:
 
 Summary
 -------
@@ -940,7 +945,7 @@ other features that make CUB easier to use from CMake projects.
 The release includes several other bugfixes and modernizations, and
 received updates from 11 contributors.
 
-.. _breaking-changes-7:
+.. _cub-breaking-changes-7:
 
 Breaking Changes
 ----------------
@@ -951,7 +956,7 @@ Breaking Changes
    different results for some edge cases when compared with earlier
    releases of CUB.
 
-.. _new-features-8:
+.. _cub-new-features-8:
 
 New Features
 ------------
@@ -968,7 +973,7 @@ New Features
    CMake’s ``add_subdirectory``. Thanks to Kai Germaschewski for this
    contribution.
 
-.. _bug-fixes-8:
+.. _cub-bug-fixes-8:
 
 Bug Fixes
 ---------
@@ -1011,7 +1016,7 @@ Bug Fixes
 -  Clean up unused code in ``DispatchScan``. Thanks to ByteHamster for
    this contribution.
 
-.. _other-enhancements-6:
+.. _cub-other-enhancements-6:
 
 Other Enhancements
 ------------------
@@ -1028,7 +1033,7 @@ Other Enhancements
 CUB 1.10.0 (NVIDIA HPC SDK 20.9, CUDA Toolkit 11.2)
 ===================================================
 
-.. _summary-9:
+.. _cub-summary-9:
 
 Summary
 -------
@@ -1039,7 +1044,7 @@ GCC < 5, Clang < 6, and MSVC < 2017. It also overhauls CMake support.
 Finally, we now have a Code of Conduct for contributors:
 https://github.com/NVIDIA/cub/blob/main/CODE_OF_CONDUCT.md
 
-.. _breaking-changes-8:
+.. _cub-breaking-changes-8:
 
 Breaking Changes
 ----------------
@@ -1054,7 +1059,7 @@ Breaking Changes
 -  CMake < 3.15 is no longer supported.
 -  The default branch on GitHub is now called ``main``.
 
-.. _other-enhancements-7:
+.. _cub-other-enhancements-7:
 
 Other Enhancements
 ------------------
@@ -1062,7 +1067,7 @@ Other Enhancements
 -  Added install targets to CMake builds.
 -  C++17 support.
 
-.. _bug-fixes-9:
+.. _cub-bug-fixes-9:
 
 Bug Fixes
 ---------
@@ -1073,7 +1078,7 @@ Bug Fixes
    construct items in uninitialized memory. Thanks to Hugh Winkler for
    this contribution.
 -  NVIDIA/cub#38: Fix ``cub::DeviceHistogram`` for ``size_t``
-   ``OffsetT``\ s. Thanks to Leo Fang for this contribution.
+   ``OffsetT`` s. Thanks to Leo Fang for this contribution.
 -  NVIDIA/cub#35: Fix GCC-5 maybe-uninitialized warning. Thanks to Rong
    Ou for this contribution.
 -  NVIDIA/cub#36: Qualify namespace for ``va_printf`` in ``_CubLog``.
@@ -1082,7 +1087,7 @@ Bug Fixes
 CUB 1.9.10-1 (NVIDIA HPC SDK 20.7, CUDA Toolkit 11.1)
 =====================================================
 
-.. _summary-10:
+.. _cub-summary-10:
 
 Summary
 -------
@@ -1090,7 +1095,7 @@ Summary
 CUB 1.9.10-1 is the minor release accompanying the NVIDIA HPC SDK 20.7
 release and the CUDA Toolkit 11.1 release.
 
-.. _bug-fixes-10:
+.. _cub-bug-fixes-10:
 
 Bug Fixes
 ---------
@@ -1102,7 +1107,7 @@ Bug Fixes
 CUB 1.9.10 (NVIDIA HPC SDK 20.5)
 ================================
 
-.. _summary-11:
+.. _cub-summary-11:
 
 Summary
 -------
@@ -1112,7 +1117,7 @@ release. It adds CMake ``find_package`` support. C++03, C++11, GCC < 5,
 Clang < 6, and MSVC < 2017 are now deprecated. Starting with the
 upcoming 1.10.0 release, C++03 support will be dropped entirely.
 
-.. _breaking-changes-9:
+.. _cub-breaking-changes-9:
 
 Breaking Changes
 ----------------
@@ -1135,7 +1140,7 @@ Breaking Changes
    Suppression is only a short term solution. We will be dropping
    support for these compilers in the near future.
 
-.. _new-features-9:
+.. _cub-new-features-9:
 
 New Features
 ------------
@@ -1149,7 +1154,7 @@ New Features
 CUB 1.9.9 (CUDA 11.0)
 =====================
 
-.. _summary-12:
+.. _cub-summary-12:
 
 Summary
 -------
@@ -1162,7 +1167,7 @@ dispatch layer was refactored and modernized. C++03, C++11, GCC < 5,
 Clang < 6, and MSVC < 2017 are now deprecated. Starting with the
 upcoming 1.10.0 release, C++03 support will be dropped entirely.
 
-.. _breaking-changes-10:
+.. _cub-breaking-changes-10:
 
 Breaking Changes
 ----------------
@@ -1185,7 +1190,7 @@ Breaking Changes
    Suppression is only a short term solution. We will be dropping
    support for these compilers in the near future.
 
-.. _new-features-10:
+.. _cub-new-features-10:
 
 New Features
 ------------
@@ -1204,12 +1209,12 @@ New Features
    -  ``<cub/util_cpp_dialect.cuh>``: Detects the C++ standard dialect.
    -  ``<cub/util_compiler.cuh>``: host and device compiler detection.
    -  ``<cub/util_deprecated.cuh>``: ``CUB_DEPRECATED``.
-   -  <cub/config.cuh>\ ``: Includes``\ <cub/util_arch.cuh>\ ``,``\ <cub/util_compiler.cuh>\ ``,``\ <cub/util_cpp_dialect.cuh>\ ``,``\ <cub/util_deprecated.cuh>\ ``,``\ <cub/util_macro.cuh>\ ``,``\ <cub/util_namespace.cuh>\`
+   -  ``<cub/config.cuh>``: Includes ``<cub/util_arch.cuh>``, ``<cub/util_compiler.cuh>``, ``<cub/util_cpp_dialect.cuh>``, ``<cub/util_deprecated.cuh>``, ``<cub/util_macro.cuh>``, ``<cub/util_namespace.cuh>``
 
 -  ``cub::DeviceCount`` and ``cub::DeviceCountUncached``, caching
    abstractions for ``cudaGetDeviceCount``.
 
-.. _other-enhancements-8:
+.. _cub-other-enhancements-8:
 
 Other Enhancements
 ------------------
@@ -1221,7 +1226,7 @@ Other Enhancements
 -  Make ``cub::SwitchDevice`` avoid setting/resetting the device if the
    current device is the same as the target device.
 
-.. _bug-fixes-11:
+.. _cub-bug-fixes-11:
 
 Bug Fixes
 ---------
@@ -1248,7 +1253,7 @@ Bug Fixes
 CUB 1.9.8-1 (NVIDIA HPC SDK 20.3)
 =================================
 
-.. _summary-13:
+.. _cub-summary-13:
 
 Summary
 -------
@@ -1260,7 +1265,7 @@ implementation of NVC++’s GPU-accelerated C++17 Parallel Algorithms.
 CUB 1.9.8 (CUDA 11.0 Early Access)
 ==================================
 
-.. _summary-14:
+.. _cub-summary-14:
 
 Summary
 -------
@@ -1271,7 +1276,7 @@ caches calls to CUDA attribute query APIs, which improves performance of
 these queries by 20x to 50x when they are called concurrently by
 multiple host threads.
 
-.. _enhancements-2:
+.. _cub-enhancements-2:
 
 Enhancements
 ------------
@@ -1287,7 +1292,7 @@ Enhancements
 -  Radix sort tuning policies updates to fix performance issues for
    element types smaller than 4 bytes.
 
-.. _bug-fixes-12:
+.. _cub-bug-fixes-12:
 
 Bug Fixes
 ---------
@@ -1302,14 +1307,14 @@ Bug Fixes
 CUB 1.8.0
 =========
 
-.. _summary-15:
+.. _cub-summary-15:
 
 Summary
 -------
 
 CUB 1.8.0 introduces changes to the ``cub::Shuffle*`` interfaces.
 
-.. _breaking-changes-11:
+.. _cub-breaking-changes-11:
 
 Breaking Changes
 ----------------
@@ -1319,18 +1324,18 @@ Breaking Changes
    computation of the PTX SHFL control constant for logical warps
    smaller than 32 threads.
 
-.. _bug-fixes-13:
+.. _cub-bug-fixes-13:
 
 Bug Fixes
 ---------
 
--  #112: Fix ``cub::WarpScan``\ ’s broadcast of warp-wide aggregate for
+-  #112: Fix ``cub::WarpScan``'s broadcast of warp-wide aggregate for
    logical warps smaller than 32 threads.
 
 CUB 1.7.5
 =========
 
-.. _summary-16:
+.. _cub-summary-16:
 
 Summary
 -------
@@ -1339,7 +1344,7 @@ CUB 1.7.5 adds support for radix sorting ``__half`` keys and improved
 sorting performance for 1 byte keys. It was incorporated into Thrust
 1.9.2.
 
-.. _enhancements-3:
+.. _cub-enhancements-3:
 
 Enhancements
 ------------
@@ -1347,7 +1352,7 @@ Enhancements
 -  Radix sort support for ``__half`` keys.
 -  Radix sort tuning policy updates to improve 1 byte key performance.
 
-.. _bug-fixes-14:
+.. _cub-bug-fixes-14:
 
 Bug Fixes
 ---------
@@ -1360,14 +1365,14 @@ Bug Fixes
 CUB 1.7.4
 =========
 
-.. _summary-17:
+.. _cub-summary-17:
 
 Summary
 -------
 
 CUB 1.7.4 is a minor release that was incorporated into Thrust 1.9.1-2.
 
-.. _bug-fixes-15:
+.. _cub-bug-fixes-15:
 
 Bug Fixes
 ---------
@@ -1379,14 +1384,14 @@ Bug Fixes
 CUB 1.7.3
 =========
 
-.. _summary-18:
+.. _cub-summary-18:
 
 Summary
 -------
 
 CUB 1.7.3 is a minor release.
 
-.. _bug-fixes-16:
+.. _cub-bug-fixes-16:
 
 Bug Fixes
 ---------
@@ -1397,14 +1402,14 @@ Bug Fixes
 CUB 1.7.2
 =========
 
-.. _summary-19:
+.. _cub-summary-19:
 
 Summary
 -------
 
 CUB 1.7.2 is a minor release.
 
-.. _bug-fixes-17:
+.. _cub-bug-fixes-17:
 
 Bug Fixes
 ---------
@@ -1416,7 +1421,7 @@ Bug Fixes
 CUB 1.7.1
 =========
 
-.. _summary-20:
+.. _cub-summary-20:
 
 Summary
 -------
@@ -1424,14 +1429,14 @@ Summary
 CUB 1.7.1 delivers improved radix sort performance on SM7x (Volta) GPUs
 and a number of bug fixes.
 
-.. _enhancements-4:
+.. _cub-enhancements-4:
 
 Enhancements
 ------------
 
 -  Radix sort tuning policies updated for SM7x (Volta).
 
-.. _bug-fixes-18:
+.. _cub-bug-fixes-18:
 
 Bug Fixes
 ---------
@@ -1451,7 +1456,7 @@ Bug Fixes
 CUB 1.7.0
 =========
 
-.. _summary-21:
+.. _cub-summary-21:
 
 Summary
 -------
@@ -1460,7 +1465,7 @@ CUB 1.7.0 brings support for CUDA 9.0 and SM7x (Volta) GPUs. It is
 compatible with independent thread scheduling. It was incorporated into
 Thrust 1.9.0-5.
 
-.. _breaking-changes-12:
+.. _cub-breaking-changes-12:
 
 Breaking Changes
 ----------------
@@ -1472,7 +1477,7 @@ Breaking Changes
    lacking the lane-mask needed for collectives to run on SM7x and newer
    GPUs which have independent thread scheduling.
 
-.. _other-enhancements-9:
+.. _cub-other-enhancements-9:
 
 Other Enhancements
 ------------------
@@ -1480,7 +1485,7 @@ Other Enhancements
 -  Remove any assumptions of implicit warp synchronization to be
    compatible with SM7x’s (Volta) independent thread scheduling.
 
-.. _bug-fixes-19:
+.. _cub-bug-fixes-19:
 
 Bug Fixes
 ---------
@@ -1490,7 +1495,7 @@ Bug Fixes
 CUB 1.6.4
 =========
 
-.. _summary-22:
+.. _cub-summary-22:
 
 Summary
 -------
@@ -1498,7 +1503,7 @@ Summary
 CUB 1.6.4 improves radix sorting performance for SM5x (Maxwell) and SM6x
 (Pascal) GPUs.
 
-.. _enhancements-5:
+.. _cub-enhancements-5:
 
 Enhancements
 ------------
@@ -1507,7 +1512,7 @@ Enhancements
    (Pascal) - 3.5B and 3.4B 32 byte keys/s on TitanX and GTX 1080,
    respectively.
 
-.. _bug-fixes-20:
+.. _cub-bug-fixes-20:
 
 Bug Fixes
 ---------
@@ -1522,7 +1527,7 @@ Bug Fixes
 CUB 1.6.3
 =========
 
-.. _summary-23:
+.. _cub-summary-23:
 
 Summary
 -------
@@ -1531,7 +1536,7 @@ CUB 1.6.3 improves support for Windows, changes
 ``cub::BlockLoad``/``cub::BlockStore`` interface to take the local data
 type, and enhances radix sort performance for SM6x (Pascal) GPUs.
 
-.. _breaking-changes-13:
+.. _cub-breaking-changes-13:
 
 Breaking Changes
 ----------------
@@ -1541,7 +1546,7 @@ Breaking Changes
    output iterators having ``void`` as their ``value_type`` (e.g.
    discard iterators).
 
-.. _other-enhancements-10:
+.. _cub-other-enhancements-10:
 
 Other Enhancements
 ------------------
@@ -1550,7 +1555,7 @@ Other Enhancements
    byte keys/s on GP100.
 -  Improved support for Windows (warnings, alignment, etc).
 
-.. _bug-fixes-21:
+.. _cub-bug-fixes-21:
 
 Bug Fixes
 ---------
@@ -1561,14 +1566,14 @@ Bug Fixes
 -  #71: ``cub::KeyValuePair`` won’t work if ``Key`` has non-trivial
    constructor.
 -  #69:
-   cub::BlockStore::Store\ ``doesn't compile if``\ OutputIteratorT::value_type\ ``isn't``\ T`.
--  #68: ``cub::TilePrefixCallbackOp::WarpReduce`` doesn’t permit PTX
+   ``cub::BlockStore::Store`` doesn't compile if ``OutputIteratorT::value_type`` isn't ``T``.
+-  #68: ``cub::TilePrefixCallbackOp::WarpReduce`` doesn't permit PTX
    arch specialization.
 
 CUB 1.6.2 (previously 1.5.5)
 ============================
 
-.. _summary-24:
+.. _cub-summary-24:
 
 Summary
 -------
@@ -1576,14 +1581,14 @@ Summary
 CUB 1.6.2 (previously 1.5.5) improves radix sort performance for SM6x
 (Pascal) GPUs.
 
-.. _enhancements-6:
+.. _cub-enhancements-6:
 
 Enhancements
 ------------
 
 -  Radix sort tuning policies updated for SM6x (Pascal) GPUs.
 
-.. _bug-fixes-22:
+.. _cub-bug-fixes-22:
 
 Bug Fixes
 ---------
@@ -1593,14 +1598,14 @@ Bug Fixes
 CUB 1.6.1 (previously 1.5.4)
 ============================
 
-.. _summary-25:
+.. _cub-summary-25:
 
 Summary
 -------
 
 CUB 1.6.1 (previously 1.5.4) is a minor release.
 
-.. _bug-fixes-23:
+.. _cub-bug-fixes-23:
 
 Bug Fixes
 ---------
@@ -1610,7 +1615,7 @@ Bug Fixes
 CUB 1.6.0 (previously 1.5.3)
 ============================
 
-.. _summary-26:
+.. _cub-summary-26:
 
 Summary
 -------
@@ -1620,7 +1625,7 @@ accept an “initial value” instead of an “identity value”. Scans and
 reductions now support differing input and output sequence types.
 Additionally, many bugs have been fixed.
 
-.. _breaking-changes-14:
+.. _cub-breaking-changes-14:
 
 Breaking Changes
 ----------------
@@ -1632,7 +1637,7 @@ Breaking Changes
    that are different from output sequence types (as long as they are
    convertible).
 
-.. _other-enhancements-11:
+.. _cub-other-enhancements-11:
 
 Other Enhancements
 ------------------
@@ -1641,7 +1646,7 @@ Other Enhancements
    repository.
 -  Minor reduction in ``cub::BlockScan`` instruction counts.
 
-.. _bug-fixes-24:
+.. _cub-bug-fixes-24:
 
 Bug Fixes
 ---------
@@ -1662,7 +1667,7 @@ Bug Fixes
 CUB 1.5.2
 =========
 
-.. _summary-27:
+.. _cub-summary-27:
 
 Summary
 -------
@@ -1670,7 +1675,7 @@ Summary
 CUB 1.5.2 enhances ``cub::CachingDeviceAllocator`` and improves scan
 performance for SM5x (Maxwell).
 
-.. _enhancements-7:
+.. _cub-enhancements-7:
 
 Enhancements
 ------------
@@ -1685,7 +1690,7 @@ Enhancements
    -  Now respects max-bin, fixing an issue where blocks in excess of
       max-bin were still being retained in the free cache.
 
-.. _bug-fixes-25:
+.. _cub-bug-fixes-25:
 
 Bug fixes:
 ----------
@@ -1696,14 +1701,14 @@ Bug fixes:
 CUB 1.5.1
 =========
 
-.. _summary-28:
+.. _cub-summary-28:
 
 Summary
 -------
 
 CUB 1.5.1 is a minor release.
 
-.. _bug-fixes-26:
+.. _cub-bug-fixes-26:
 
 Bug Fixes
 ---------
@@ -1717,7 +1722,7 @@ CUB 1.5.0
 
 CUB 1.5.0 introduces segmented sort and reduction primitives.
 
-.. _new-features-11:
+.. _cub-new-features-11:
 
 New Features:
 -------------
@@ -1725,7 +1730,7 @@ New Features:
 -  Segmented device-wide operations for device-wide sort and reduction
    primitives.
 
-.. _bug-fixes-27:
+.. _cub-bug-fixes-27:
 
 Bug Fixes:
 ----------
@@ -1747,14 +1752,14 @@ Bug Fixes:
 CUB 1.4.1
 =========
 
-.. _summary-29:
+.. _cub-summary-29:
 
 Summary
 -------
 
 CUB 1.4.1 is a minor release.
 
-.. _enhancements-8:
+.. _cub-enhancements-8:
 
 Enhancements
 ------------
@@ -1762,7 +1767,7 @@ Enhancements
 -  Allow ``cub::DeviceRadixSort`` and ``cub::BlockRadixSort`` on bool
    types.
 
-.. _bug-fixes-28:
+.. _cub-bug-fixes-28:
 
 Bug Fixes
 ---------
@@ -1777,7 +1782,7 @@ Bug Fixes
 CUB 1.4.0
 =========
 
-.. _summary-30:
+.. _cub-summary-30:
 
 Summary
 -------
@@ -1787,7 +1792,7 @@ CUB 1.4.0 adds ``cub::DeviceSpmv``,
 ``cub::DeviceHistogram``, and introduces support for SM5x (Maxwell)
 GPUs.
 
-.. _new-features-12:
+.. _cub-new-features-12:
 
 New Features:
 -------------
@@ -1802,7 +1807,7 @@ New Features:
    1) of keys in a given sequence. Useful for top-down partitioning
    algorithms like MSD sorting of very-large keys.
 
-.. _other-enhancements-12:
+.. _cub-other-enhancements-12:
 
 Other Enhancements
 ------------------
@@ -1817,14 +1822,14 @@ Other Enhancements
 CUB 1.3.2
 =========
 
-.. _summary-31:
+.. _cub-summary-31:
 
 Summary
 -------
 
 CUB 1.3.2 is a minor release.
 
-.. _bug-fixes-29:
+.. _cub-bug-fixes-29:
 
 Bug Fixes
 ---------
@@ -1837,14 +1842,14 @@ Bug Fixes
 CUB 1.3.1
 =========
 
-.. _summary-32:
+.. _cub-summary-32:
 
 Summary
 -------
 
 CUB 1.3.1 is a minor release.
 
-.. _bug-fixes-30:
+.. _cub-bug-fixes-30:
 
 Bug Fixes
 ---------
@@ -1860,7 +1865,7 @@ Bug Fixes
 CUB 1.3.0
 =========
 
-.. _summary-33:
+.. _cub-summary-33:
 
 Summary
 -------
@@ -1868,7 +1873,7 @@ Summary
 CUB 1.3.0 improves how thread blocks are expressed in block- and
 warp-wide primitives and adds an enhanced version of ``cub::WarpScan``.
 
-.. _breaking-changes-15:
+.. _cub-breaking-changes-15:
 
 Breaking Changes
 ----------------
@@ -1894,7 +1899,7 @@ Breaking Changes
    -  Most CUB programs having typical 1D usage should not require any
       changes to accommodate these updates.
 
-.. _new-features-13:
+.. _cub-new-features-13:
 
 New Features
 ------------
@@ -1902,7 +1907,7 @@ New Features
 -  Added “combination” ``cub::WarpScan`` methods for efficiently
    computing both inclusive and exclusive prefix scans (and sums).
 
-.. _bug-fixes-31:
+.. _cub-bug-fixes-31:
 
 Bug Fixes
 ---------
@@ -1922,14 +1927,14 @@ Bug Fixes
 CUB 1.2.3
 =========
 
-.. _summary-34:
+.. _cub-summary-34:
 
 Summary
 -------
 
 CUB 1.2.3 is a minor release.
 
-.. _bug-fixes-32:
+.. _cub-bug-fixes-32:
 
 Bug Fixes
 ---------
@@ -1941,7 +1946,7 @@ Bug Fixes
 CUB 1.2.2
 =========
 
-.. _summary-35:
+.. _cub-summary-35:
 
 Summary
 -------
@@ -1949,7 +1954,7 @@ Summary
 CUB 1.2.2 adds a new variant of ``cub::BlockReduce`` and MSVC project
 solections for examples.
 
-.. _new-features-14:
+.. _cub-new-features-14:
 
 New Features
 ------------
@@ -1958,7 +1963,7 @@ New Features
 -  New algorithmic variant of cub::BlockReduce for improved performance
    when using commutative operators (e.g., numeric addition).
 
-.. _bug-fixes-33:
+.. _cub-bug-fixes-33:
 
 Bug Fixes
 ---------
@@ -1969,7 +1974,7 @@ Bug Fixes
 CUB 1.2.0
 =========
 
-.. _summary-36:
+.. _cub-summary-36:
 
 Summary
 -------
@@ -1977,7 +1982,7 @@ Summary
 CUB 1.2.0 adds ``cub::DeviceReduce::ReduceByKey`` and
 ``cub::DeviceReduce::RunLengthEncode`` and support for CUDA 6.0.
 
-.. _new-features-15:
+.. _cub-new-features-15:
 
 New Features
 ------------
@@ -1985,7 +1990,7 @@ New Features
 -  ``cub::DeviceReduce::ReduceByKey``.
 -  ``cub::DeviceReduce::RunLengthEncode``.
 
-.. _other-enhancements-13:
+.. _cub-other-enhancements-13:
 
 Other Enhancements
 ------------------
@@ -2003,7 +2008,7 @@ Other Enhancements
    ``cub::DeviceScan`` (and similar) to be safe for current code run on
    future platforms (now uses proper fences).
 
-.. _bug-fixes-34:
+.. _cub-bug-fixes-34:
 
 Bug Fixes
 ---------
@@ -2020,7 +2025,7 @@ Bug Fixes
 CUB 1.1.1
 =========
 
-.. _summary-37:
+.. _cub-summary-37:
 
 Summary
 -------
@@ -2031,7 +2036,7 @@ sorting, ``cub::DeviceSelect``, ``cub::DevicePartition``,
 sort performance for older GPUs has been improved and many bugs have
 been fixed.
 
-.. _breaking-changes-16:
+.. _cub-breaking-changes-16:
 
 Breaking Changes
 ----------------
@@ -2042,7 +2047,7 @@ Breaking Changes
    ``cub::CacheModifiedOutputIterator`` should now be used with
    ``cub::BlockLoad`` and ``cub::BlockStore`` to effect that behavior.
 
-.. _new-features-16:
+.. _cub-new-features-16:
 
 New Features
 ------------
@@ -2063,7 +2068,7 @@ New Features
 -  ``cub::MaxSmOccupancy`` for accurately determining SM occupancy for
    any given kernel function pointer.
 
-.. _other-enhancements-14:
+.. _cub-other-enhancements-14:
 
 Other Enhancements
 ------------------
@@ -2080,7 +2085,7 @@ Other Enhancements
 -  Improved test coverege to include up to 21,000 kernel variants and
    851,000 unit tests (per architecture, per platform).
 
-.. _bug-fixes-35:
+.. _cub-bug-fixes-35:
 
 Bug Fixes
 ---------
@@ -2105,14 +2110,14 @@ Bug Fixes
 CUB 1.0.2
 =========
 
-.. _summary-38:
+.. _cub-summary-38:
 
 Summary
 -------
 
 CUB 1.0.2 is a minor release.
 
-.. _bug-fixes-36:
+.. _cub-bug-fixes-36:
 
 Bug Fixes
 ---------
@@ -2126,7 +2131,7 @@ Bug Fixes
 CUB 1.0.1
 =========
 
-.. _summary-39:
+.. _cub-summary-39:
 
 Summary
 -------
@@ -2134,14 +2139,14 @@ Summary
 CUB 1.0.1 adds ``cub::DeviceRadixSort`` and ``cub::DeviceScan``.
 Numerous other performance and correctness fixes and included.
 
-.. _breaking-changes-17:
+.. _cub-breaking-changes-17:
 
 Breaking Changes
 ----------------
 
 -  New collective interface idiom (specialize/construct/invoke).
 
-.. _new-features-17:
+.. _cub-new-features-17:
 
 New Features
 ------------
@@ -2151,7 +2156,7 @@ New Features
 -  ``cub::DeviceScan``. Implements single-pass “adaptive-lookback”
    strategy.
 
-.. _other-enhancements-15:
+.. _cub-other-enhancements-15:
 
 Other Enhancements
 ------------------
@@ -2168,7 +2173,7 @@ Other Enhancements
 -  ``cub::DeviceHistogram`` now supports histograms of arbitrary bins.
 -  Updates to accommodate CUDA 5.5 dynamic parallelism.
 
-.. _bug-fixes-37:
+.. _cub-bug-fixes-37:
 
 Bug Fixes
 ---------
@@ -2179,21 +2184,21 @@ Bug Fixes
 CUB 0.9.4
 =========
 
-.. _summary-40:
+.. _cub-summary-40:
 
 Summary
 -------
 
 CUB 0.9.3 is a minor release.
 
-.. _enhancements-9:
+.. _cub-enhancements-9:
 
 Enhancements
 ------------
 
 -  Various documentation updates and corrections.
 
-.. _bug-fixes-38:
+.. _cub-bug-fixes-38:
 
 Bug Fixes
 ---------
@@ -2205,7 +2210,7 @@ Bug Fixes
 CUB 0.9.3
 =========
 
-.. _summary-41:
+.. _cub-summary-41:
 
 Summary
 -------
@@ -2213,7 +2218,7 @@ Summary
 CUB 0.9.3 adds histogram algorithms and work management utility
 descriptors.
 
-.. _new-features-18:
+.. _cub-new-features-18:
 
 New Features
 ------------
@@ -2225,7 +2230,7 @@ New Features
 -  ``cub::GridQueue``, ``cub::GridEvenShare``, work management utility
    descriptors.
 
-.. _other-enhancements-16:
+.. _cub-other-enhancements-16:
 
 Other Enhancements
 ------------------
@@ -2236,7 +2241,7 @@ Other Enhancements
    ``cub::WarpScan::*Sum`` methods if they only have ``operator+``
    overloaded. Previously they also required to support assignment from
    ``int(0)``.
--  Update ``cub::BlockReduce``\ ’s ``BLOCK_REDUCE_WARP_REDUCTIONS``
+-  Update ``cub::BlockReduce``'s ``BLOCK_REDUCE_WARP_REDUCTIONS``
    algorithm to work even when block size is not an even multiple of
    warp size.
 -  Refactoring of ``cub::DeviceAllocator`` interface and
@@ -2245,14 +2250,14 @@ Other Enhancements
 CUB 0.9.2
 =========
 
-.. _summary-42:
+.. _cub-summary-42:
 
 Summary
 -------
 
 CUB 0.9.2 adds ``cub::WarpReduce``.
 
-.. _new-features-19:
+.. _cub-new-features-19:
 
 New Features
 ------------
@@ -2261,14 +2266,14 @@ New Features
    ``cub::BlockReduce`` now uses this ``cub::WarpReduce`` instead of
    implementing its own.
 
-.. _enhancements-10:
+.. _cub-enhancements-10:
 
 Enhancements
 ------------
 
 -  Documentation updates and corrections.
 
-.. _bug-fixes-39:
+.. _cub-bug-fixes-39:
 
 Bug Fixes
 ---------
@@ -2278,14 +2283,14 @@ Bug Fixes
 CUB 0.9.1
 =========
 
-.. _summary-43:
+.. _cub-summary-43:
 
 Summary
 -------
 
 CUB 0.9.1 is a minor release.
 
-.. _bug-fixes-40:
+.. _cub-bug-fixes-40:
 
 Bug Fixes
 ---------
@@ -2298,7 +2303,7 @@ Bug Fixes
 CUB 0.9.0
 =========
 
-.. _summary-44:
+.. _cub-summary-44:
 
 Summary
 -------

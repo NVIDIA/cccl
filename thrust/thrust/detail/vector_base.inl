@@ -46,7 +46,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base()
     : m_storage()
@@ -286,8 +285,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
@@ -297,8 +295,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -1206,7 +1203,6 @@ bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
 {
   return !(lhs == rhs);
 }
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

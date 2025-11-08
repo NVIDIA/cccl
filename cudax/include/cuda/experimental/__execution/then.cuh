@@ -23,11 +23,12 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -53,14 +54,14 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(exception_ptr)>;
 };
 
 template <>
@@ -79,11 +80,10 @@ struct __completion_fn<true, true>
 
 template <class _Result, bool _Nothrow>
 using __completion_ _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
+  ::cuda::std::__type_call1<__completion_fn<__same_as<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
-using __completion _CCCL_NODEBUG_ALIAS =
-  __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 
 template <class _Fn, class _Rcvr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
@@ -110,12 +110,12 @@ struct __upon_t
     using receiver_concept = receiver_t;
 
     _CCCL_EXEC_CHECK_DISABLE
-    template <bool _CanThrow = false, class... _Ts>
-    _CCCL_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
+    template <class... _Ts>
+    _CCCL_API void __set(_Ts&&... __ts) noexcept
     {
-      if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
+      _CCCL_TRY
       {
-        if constexpr (_CUDA_VSTD::is_same_v<void, _CUDA_VSTD::__call_result_t<_Fn, _Ts...>>)
+        if constexpr (__same_as<void, __call_result_t<_Fn, _Ts...>>)
         {
           static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...);
           execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_));
@@ -127,21 +127,17 @@ struct __upon_t
                                static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...));
         }
       }
-      else
+      _CCCL_CATCH_ALL
       {
-        _CCCL_TRY
+        if constexpr (!__nothrow_callable<_Fn, _Ts...>)
         {
-          __set<true>(static_cast<_Ts&&>(__ts)...);
-        }
-        _CCCL_CATCH_ALL
-        {
-          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), execution::current_exception());
         }
       }
     }
 
     template <class _Tag, class... _Ts>
-    _CCCL_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CCCL_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_Tag{} == _SetTag{})
       {
@@ -206,7 +202,7 @@ struct __upon_t
     template <class... _Ts>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
-      if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
+      if constexpr (__callable<_Fn, _Ts...>)
       {
         return __upon::__completion<_Fn, _Ts...>{};
       }
@@ -228,14 +224,14 @@ struct __upon_t
                                                        // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_API constexpr auto operator()(_Sndr __sndr) -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
-      -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+      -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
     }
@@ -245,10 +241,10 @@ struct __upon_t
 
 public:
   template <class _Sndr, class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  _CCCL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
+  _CCCL_API constexpr auto operator()(_Fn __fn) const;
 };
 
 struct then_t : __upon_t<then_t, set_value_t>
@@ -331,7 +327,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_UponTag, _SetTag>::__sndr_base_t
     return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __upon_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __upon_tag_t __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
 };
@@ -366,10 +362,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__closure_t
 
 template <class _UponTag, class _SetTag>
 template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+_CCCL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __sndr_t   = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
-  using __domain_t = __early_domain_of_t<_Sndr>;
+  using __sndr_t = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
 
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -378,12 +373,12 @@ _CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr _
     __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
   }
 
-  return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
+  return __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}};
 }
 
 template <class _UponTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
+_CCCL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
 {
   using __closure_t = typename _UponTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};
@@ -399,7 +394,6 @@ inline constexpr size_t structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, 
 _CCCL_GLOBAL_CONSTANT auto then         = then_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

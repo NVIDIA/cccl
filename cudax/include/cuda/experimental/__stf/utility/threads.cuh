@@ -23,84 +23,11 @@
 #include <cuda/std/source_location>
 
 #include <atomic>
+#include <cstdio>
 #include <mutex>
 
 namespace cuda::experimental::stf::reserved
 {
-
-/**
- * @brief A simple RAII-style wrapper for ensuring single-threaded access to a code section. The interface is the same
- * as for `std::lock_guard`.
- *
- * The `single_threaded_section` class is designed to ensure, in debug (i.e., non-`NDEBUG`) mode, that only one thread
- * can execute a specific code section at a time. There is no guarantee that a passing program has no related bugs,
- * but there are no false positives.
- *
- * If `NDEBUG` is defined, all member functions are defined to do nothing. If `NDEBUG` is not defined, the constructor
- * `assert`s that the mutex can be acquired with no contention.
- *
- * `single_threaded_section` is reentrant even if `Mutex` is not, i.e. a function defining a `single_threaded_section`
- * object may call another function that in turn defines a `single_threaded_section` object on the same mutex.
- *
- * Logic: In a single-threaded section of code, the mutex is never contested. If another thread has the mutex locked
- * (hence the `assert` fails), then this section is not single-threaded.
- *
- * @tparam Mutex The type of mutex to use for synchronization.
- */
-template <typename Mutex>
-class single_threaded_section
-{
-public:
-  using mutex_type = Mutex;
-
-#ifndef NDEBUG
-
-  explicit single_threaded_section(mutex_type& m,
-                                   const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
-      : mutex(m)
-  {
-    if (mutex.try_lock())
-    {
-      if constexpr (!::std::is_same_v<mutex_type, ::std::recursive_mutex>)
-      {
-        // Would not be able to reenter this mutex, so release immediately.
-        mutex.unlock();
-      }
-      return;
-    }
-    fprintf(stderr, "%s(%u) Error: contested single-threaded section.\n", loc.file_name(), loc.line());
-    abort();
-  }
-
-  single_threaded_section(mutex_type& m, ::std::adopt_lock_t) noexcept
-      : mutex(m)
-  {} // calling thread owns mutex
-
-  single_threaded_section(const single_threaded_section&)            = delete;
-  single_threaded_section& operator=(const single_threaded_section&) = delete;
-
-  ~single_threaded_section()
-  {
-    if constexpr (::std::is_same_v<mutex_type, ::std::recursive_mutex>)
-    {
-      // Keep the recursive mutex up until destruction.
-      mutex.unlock();
-    }
-  }
-
-private:
-  mutex_type& mutex;
-
-#else
-
-  explicit single_threaded_section(mutex_type&) {}
-  single_threaded_section(mutex_type&, ::std::adopt_lock_t) noexcept {}
-  single_threaded_section(const single_threaded_section&)            = delete;
-  single_threaded_section& operator=(const single_threaded_section&) = delete;
-
-#endif
-};
-
 /**
  * @brief Generates a unique `std::atomic<unsigned long>` counter object for each literal usage.
  *
@@ -195,5 +122,4 @@ public:
 private:
   static inline ::std::atomic<unsigned long> tracker{0};
 };
-
 } // namespace cuda::experimental::stf::reserved

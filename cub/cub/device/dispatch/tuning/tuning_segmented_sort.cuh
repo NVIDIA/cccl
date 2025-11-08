@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -43,10 +19,119 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::segmented_sort
 {
-namespace segmented_sort
+template <typename PolicyT, typename = void>
+struct SegmentedSortPolicyWrapper : PolicyT
 {
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct SegmentedSortPolicyWrapper<StaticPolicyT,
+                                  ::cuda::std::void_t<typename StaticPolicyT::LargeSegmentPolicy,
+                                                      typename StaticPolicyT::SmallSegmentPolicy,
+                                                      typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
+  {
+    return StaticPolicyT::PARTITIONING_THRESHOLD;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::SEGMENTS_PER_BLOCK;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SegmentsPerMediumBlock()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::SEGMENTS_PER_BLOCK;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SmallPolicyItemsPerTile()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::ITEMS_PER_TILE;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MediumPolicyItemsPerTile()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::ITEMS_PER_TILE;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr CacheLoadModifier LargeSegmentLoadModifier()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr BlockLoadAlgorithm LargeSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm MediumSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr WarpLoadAlgorithm SmallSegmentLoadAlgorithm()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::LOAD_ALGORITHM;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm MediumSegmentStoreAlgorithm()
+  {
+    return StaticPolicyT::MediumSegmentPolicy::STORE_ALGORITHM;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr WarpStoreAlgorithm SmallSegmentStoreAlgorithm()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"LargeSegmentPolicy">()    = LargeSegment().EncodedPolicy(),
+                  key<"SmallSegmentPolicy">()    = SmallSegment().EncodedPolicy(),
+                  key<"MediumSegmentPolicy">()   = MediumSegment().EncodedPolicy(),
+                  key<"PartitioningThreshold">() = value<StaticPolicyT::PARTITIONING_THRESHOLD>()>();
+  }
+#endif
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
+{
+  return SegmentedSortPolicyWrapper<PolicyT>{policy};
+}
+
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
@@ -71,12 +156,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(7);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<4 /* Threads per segment */, ITEMS_PER_SMALL_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  4 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
@@ -97,12 +189,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<4 /* Threads per segment */, ITEMS_PER_SMALL_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  4 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
@@ -123,12 +222,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<4 /* Threads per segment */, ITEMS_PER_SMALL_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  4 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
@@ -149,12 +255,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(9);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<4 /* Threads per segment */, ITEMS_PER_SMALL_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  4 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
@@ -175,15 +288,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(7);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 11 : 7);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<KEYS_ONLY ? 4 : 8 /* Threads per segment */,
-                                      ITEMS_PER_SMALL_THREAD,
-                                      WARP_LOAD_DIRECT,
-                                      LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_DIRECT, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  KEYS_ONLY ? 4 : 8 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_DIRECT,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
@@ -202,15 +319,19 @@ struct policy_hub
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(KEYS_ONLY ? 7 : 11);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<KEYS_ONLY ? 4 : 2 /* Threads per segment */,
-                                      ITEMS_PER_SMALL_THREAD,
-                                      WARP_LOAD_TRANSPOSE,
-                                      LOAD_DEFAULT>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<32 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  KEYS_ONLY ? 4 : 2 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_TRANSPOSE,
+                                  LOAD_DEFAULT>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  32 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_TRANSPOSE,
+                                  LOAD_DEFAULT>;
   };
 
   struct Policy860 : ChainedPolicy<860, Policy860, Policy800>
@@ -230,20 +351,23 @@ struct policy_hub
     static constexpr bool LARGE_ITEMS            = sizeof(DominantT) > 4;
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 7 : 9);
     static constexpr int ITEMS_PER_MEDIUM_THREAD = Nominal4BItemsToItems<DominantT>(LARGE_ITEMS ? 9 : 7);
-    using SmallAndMediumSegmentedSortPolicyT     = AgentSmallAndMediumSegmentedSortPolicy<
-          BLOCK_THREADS,
-          // Small policy
-          AgentSubWarpMergeSortPolicy<LARGE_ITEMS ? 8 : 2 /* Threads per segment */,
-                                      ITEMS_PER_SMALL_THREAD,
-                                      WARP_LOAD_TRANSPOSE,
-                                      LOAD_LDG>,
-          // Medium policy
-          AgentSubWarpMergeSortPolicy<16 /* Threads per segment */, ITEMS_PER_MEDIUM_THREAD, WARP_LOAD_TRANSPOSE, LOAD_LDG>>;
+
+    using SmallSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  LARGE_ITEMS ? 8 : 2 /* Threads per segment */,
+                                  ITEMS_PER_SMALL_THREAD,
+                                  WARP_LOAD_TRANSPOSE,
+                                  LOAD_LDG>;
+    using MediumSegmentPolicy =
+      AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
+                                  16 /* Threads per segment */,
+                                  ITEMS_PER_MEDIUM_THREAD,
+                                  WARP_LOAD_TRANSPOSE,
+                                  LOAD_LDG>;
   };
 
   using MaxPolicy = Policy860;
 };
-} // namespace segmented_sort
-} // namespace detail
+} // namespace detail::segmented_sort
 
 CUB_NAMESPACE_END

@@ -44,15 +44,14 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/cstdint>
@@ -80,10 +79,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
 
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived,
           typename KeyInputIt,
           typename ValInputIt,
@@ -239,7 +236,6 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
 
   return result_end;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -301,7 +297,6 @@ unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInput
   using key_type = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::unique_by_key(policy, keys_first, keys_last, values_first, ::cuda::std::equal_to<key_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

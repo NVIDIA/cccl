@@ -14,6 +14,7 @@ ci/ @nvidia/cccl-infra-codeowners
 .clang-format @nvidia/cccl-infra-codeowners
 .clangd @nvidia/cccl-infra-codeowners
 c2h/ @nvidia/cccl-infra-codeowners
+nvbench_helper/ @nvidia/cccl-infra-codeowners
 .vscode @nvidia/cccl-infra-codeowners
 
 # cmake
@@ -27,5 +28,6 @@ benchmarks/ @nvidia/cccl-benchmark-codeowners
 **/benchmarks @nvidia/cccl-benchmark-codeowners
 
 # docs
+README.md @nvidia/cccl-codeowners
 docs/ @nvidia/cccl-codeowners
 examples/ @nvidia/cccl-codeowners

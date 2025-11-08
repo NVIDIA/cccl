@@ -33,13 +33,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
@@ -51,10 +46,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   RandomIterator last,
   OutputIterator result,
   URBG&& g);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/shuffle.inl>

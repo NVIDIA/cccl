@@ -33,7 +33,7 @@ __host__ __device__ constexpr void test_comparison(bool equal, To dest_exts, Fro
 
 template <class E1, class E2>
 _CCCL_CONCEPT can_compare_layouts = _CCCL_REQUIRES_EXPR((E1, E2), E1 e1, E2 e2)(
-  (void) (cuda::std::layout_right::mapping<E1>(e1) == cuda::std::layout_right::mapping<E2>(e2)));
+  static_cast<void>(cuda::std::layout_right::mapping<E1>(e1) == cuda::std::layout_right::mapping<E2>(e2)));
 
 struct X
 {

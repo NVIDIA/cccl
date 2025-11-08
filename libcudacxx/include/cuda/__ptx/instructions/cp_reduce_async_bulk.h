@@ -41,7 +41,7 @@ struct __nv_bfloat16;
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
@@ -53,7 +53,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #  include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk_bf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

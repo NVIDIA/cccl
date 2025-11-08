@@ -12,23 +12,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <int LogicalWarpSize>
 inline constexpr bool is_valid_logical_warp_size_v = LogicalWarpSize >= 1 && LogicalWarpSize <= detail::warp_threads;
 
 template <int LogicalWarpSize>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
-logical_lane_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
+[[nodiscard]] _CCCL_DEVICE
+_CCCL_FORCEINLINE int logical_lane_id(::cuda::std::integral_constant<int, LogicalWarpSize> = {})
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
-  auto lane                             = _CUDA_VPTX::get_sreg_laneid();
+  auto lane                             = ::cuda::ptx::get_sreg_laneid();
   constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
   constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
   auto logical_lane =
@@ -38,11 +37,11 @@ logical_lane_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
 }
 
 template <int LogicalWarpSize>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
-logical_warp_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
+[[nodiscard]] _CCCL_DEVICE
+_CCCL_FORCEINLINE int logical_warp_id(::cuda::std::integral_constant<int, LogicalWarpSize> = {})
 {
   static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
-  auto lane                             = _CUDA_VPTX::get_sreg_laneid();
+  auto lane                             = ::cuda::ptx::get_sreg_laneid();
   constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
   constexpr auto is_single_logical_warp = is_full_warp || !::cuda::is_power_of_two(LogicalWarpSize);
   auto logical_warp_id                  = static_cast<int>(is_single_logical_warp ? 0 : lane / LogicalWarpSize);
@@ -52,10 +51,9 @@ logical_warp_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
 
 template <int LogicalWarpSize>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
-logical_warp_base_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
+logical_warp_base_id(::cuda::std::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
 {
   return cub::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
 }
-
 } // namespace detail
 CUB_NAMESPACE_END
