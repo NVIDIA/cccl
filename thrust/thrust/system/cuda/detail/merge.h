@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cub/device/device_merge.cuh>
 
@@ -202,4 +202,4 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

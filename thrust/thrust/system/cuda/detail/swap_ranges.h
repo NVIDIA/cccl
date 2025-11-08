@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
@@ -96,4 +96,4 @@ swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, 
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

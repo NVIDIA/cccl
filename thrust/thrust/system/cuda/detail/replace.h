@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/detail/internal_functional.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
@@ -118,4 +118,4 @@ OutputIt _CCCL_HOST_DEVICE replace_copy(
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()
