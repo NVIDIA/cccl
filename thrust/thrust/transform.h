@@ -34,7 +34,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/incrementable_traits.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/transform.h>

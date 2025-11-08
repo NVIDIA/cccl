@@ -1,4 +1,3 @@
-
 #include <cstdint>
 #include <cstdlib>
 #include <iostream> // std::cerr

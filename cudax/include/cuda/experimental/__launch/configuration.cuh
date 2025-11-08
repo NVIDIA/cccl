@@ -220,7 +220,7 @@ private:
     cudaError_t status = cudaSuccess;
 
     int max_dynamic_shared_size{};
-    status = _CUDA_DRIVER::__functionGetAttributeNoThrow(
+    status = ::cuda::__driver::__functionGetAttributeNoThrow(
       max_dynamic_shared_size, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, kernel);
     if (status != cudaSuccess)
     {
@@ -233,7 +233,7 @@ private:
     {
       // TODO since 12.6 there is a per launch option available, we should switch once compatibility is not an issue
       // TODO should we validate the max amount with device props or just pass it through and rely on driver error?
-      status = _CUDA_DRIVER::__functionSetAttributeNoThrow(
+      status = ::cuda::__driver::__functionSetAttributeNoThrow(
         kernel, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, size_needed);
       if (status != cudaSuccess)
       {
@@ -351,7 +351,7 @@ struct __filter_options
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
 
-template <typename _T>
+template <typename _Tp>
 inline constexpr bool __is_kernel_config = false;
 
 template <typename _Dimensions, typename... _Options>

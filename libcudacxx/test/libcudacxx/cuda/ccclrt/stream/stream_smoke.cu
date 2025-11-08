@@ -155,3 +155,33 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     CCCLRT_REQUIRE(ref2.id() == id1);
   }
 }
+
+C2H_CCCLRT_TEST("Invalid stream", "[stream]")
+{
+  // 1. Test the signature
+  STATIC_REQUIRE(cuda::std::is_same_v<const cuda::invalid_stream_t, decltype(cuda::invalid_stream)>);
+
+  // 2. Test explicit construction of stream_ref from invalid_stream
+  STATIC_REQUIRE(cuda::std::is_constructible_v<cuda::stream_ref, cuda::invalid_stream_t>);
+  STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::invalid_stream_t, cuda::stream_ref>);
+  {
+    cuda::stream_ref stream{cuda::invalid_stream};
+    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull));
+  }
+
+  // 3. Test stream_ref comparisons
+  {
+    cuda::stream_ref valid_stream{(cudaStream_t) (123ull)};
+    cuda::stream_ref invalid_stream{cuda::invalid_stream};
+
+    CCCLRT_REQUIRE(!(valid_stream == cuda::invalid_stream));
+    CCCLRT_REQUIRE(invalid_stream == cuda::invalid_stream);
+    CCCLRT_REQUIRE(!(cuda::invalid_stream == valid_stream));
+    CCCLRT_REQUIRE(cuda::invalid_stream == invalid_stream);
+
+    CCCLRT_REQUIRE(valid_stream != cuda::invalid_stream);
+    CCCLRT_REQUIRE(!(invalid_stream != cuda::invalid_stream));
+    CCCLRT_REQUIRE(cuda::invalid_stream != valid_stream);
+    CCCLRT_REQUIRE(!(cuda::invalid_stream != invalid_stream));
+  }
+}

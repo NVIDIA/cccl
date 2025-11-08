@@ -44,7 +44,6 @@
 #  include <cub/util_type.cuh>
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -54,6 +53,8 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

@@ -1,55 +1,11 @@
 #include <thrust/find.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
 #include <cuda/std/cstdint>
 
 #include <unittest/unittest.h>
-
-template <typename T>
-struct equal_to_value_pred
-{
-  T value;
-
-  equal_to_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v == value;
-  }
-};
-
-template <typename T>
-struct not_equal_to_value_pred
-{
-  T value;
-
-  not_equal_to_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v != value;
-  }
-};
-
-template <typename T>
-struct less_than_value_pred
-{
-  T value;
-
-  less_than_value_pred(T value)
-      : value(value)
-  {}
-
-  _CCCL_HOST_DEVICE bool operator()(T v) const
-  {
-    return v < value;
-  }
-};
 
 template <class Vector>
 void TestFindSimple()
@@ -107,12 +63,13 @@ void TestFindIfSimple()
 
   Vector vec{1, 2, 3, 3, 5};
 
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(0)) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(1)) - vec.begin(), 0);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(2)) - vec.begin(), 1);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(3)) - vec.begin(), 2);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(4)) - vec.begin(), 5);
-  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(5)) - vec.begin(), 4);
+  using thrust::placeholders::_1;
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin(), 5);
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin(), 0);
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin(), 1);
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{3}) - vec.begin(), 2);
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{4}) - vec.begin(), 5);
+  ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), _1 == T{5}) - vec.begin(), 4);
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfSimple);
 
@@ -158,12 +115,13 @@ void TestFindIfNotSimple()
 
   Vector vec{0, 1, 2, 3, 4};
 
-  ASSERT_EQUAL(0, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(0)) - vec.begin());
-  ASSERT_EQUAL(1, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(1)) - vec.begin());
-  ASSERT_EQUAL(2, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(2)) - vec.begin());
-  ASSERT_EQUAL(3, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(3)) - vec.begin());
-  ASSERT_EQUAL(4, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(4)) - vec.begin());
-  ASSERT_EQUAL(5, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(5)) - vec.begin());
+  using thrust::placeholders::_1;
+  ASSERT_EQUAL(0, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{0}) - vec.begin());
+  ASSERT_EQUAL(1, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{1}) - vec.begin());
+  ASSERT_EQUAL(2, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{2}) - vec.begin());
+  ASSERT_EQUAL(3, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{3}) - vec.begin());
+  ASSERT_EQUAL(4, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{4}) - vec.begin());
+  ASSERT_EQUAL(5, thrust::find_if_not(vec.begin(), vec.end(), _1 < T{5}) - vec.begin());
 }
 DECLARE_VECTOR_UNITTEST(TestFindIfNotSimple);
 
@@ -239,15 +197,16 @@ struct TestFindIf
     typename thrust::host_vector<T>::iterator h_iter;
     typename thrust::device_vector<T>::iterator d_iter;
 
-    h_iter = thrust::find_if(h_data.begin(), h_data.end(), equal_to_value_pred<T>(0));
-    d_iter = thrust::find_if(d_data.begin(), d_data.end(), equal_to_value_pred<T>(0));
+    using thrust::placeholders::_1;
+    h_iter = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{0});
+    d_iter = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{0});
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
-      h_iter   = thrust::find_if(h_data.begin(), h_data.end(), equal_to_value_pred<T>(sample));
-      d_iter   = thrust::find_if(d_data.begin(), d_data.end(), equal_to_value_pred<T>(sample));
+      h_iter   = thrust::find_if(h_data.begin(), h_data.end(), _1 == T{sample});
+      d_iter   = thrust::find_if(d_data.begin(), d_data.end(), _1 == T{sample});
       ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
     }
   }
@@ -265,15 +224,16 @@ struct TestFindIfNot
     typename thrust::host_vector<T>::iterator h_iter;
     typename thrust::device_vector<T>::iterator d_iter;
 
-    h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), not_equal_to_value_pred<T>(0));
-    d_iter = thrust::find_if_not(d_data.begin(), d_data.end(), not_equal_to_value_pred<T>(0));
+    using thrust::placeholders::_1;
+    h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{0});
+    d_iter = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{0});
     ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
 
     for (size_t i = 1; i < n; i *= 2)
     {
       T sample = h_data[i];
-      h_iter   = thrust::find_if_not(h_data.begin(), h_data.end(), not_equal_to_value_pred<T>(sample));
-      d_iter   = thrust::find_if_not(d_data.begin(), d_data.end(), not_equal_to_value_pred<T>(sample));
+      h_iter   = thrust::find_if_not(h_data.begin(), h_data.end(), _1 != T{sample});
+      d_iter   = thrust::find_if_not(d_data.begin(), d_data.end(), _1 != T{sample});
       ASSERT_EQUAL(h_iter - h_data.begin(), d_iter - d_data.begin());
     }
   }

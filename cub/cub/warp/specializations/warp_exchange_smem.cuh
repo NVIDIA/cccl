@@ -22,6 +22,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
@@ -31,7 +32,7 @@ namespace detail
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeSmem
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS + 1;
 
@@ -41,7 +42,7 @@ class WarpExchangeSmem
 
   // Insert padding if the number of items per thread is a power of two
   // and > 4 (otherwise we can typically use 128b loads)
-  static constexpr bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) && (PowerOfTwo<ITEMS_PER_THREAD>::VALUE);
+  static constexpr bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) && (::cuda::is_power_of_two(ITEMS_PER_THREAD));
 
   static constexpr int PADDING_ITEMS = INSERT_PADDING ? (ITEMS_PER_TILE >> LOG_SMEM_BANKS) : 0;
 

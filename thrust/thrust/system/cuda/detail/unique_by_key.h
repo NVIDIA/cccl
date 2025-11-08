@@ -45,7 +45,6 @@
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -54,6 +53,8 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

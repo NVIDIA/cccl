@@ -43,7 +43,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/iterator/counting_iterator.h>
 #  include <thrust/iterator/transform_iterator.h>
@@ -51,8 +50,9 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

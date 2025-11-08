@@ -27,12 +27,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  define _CCCL_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#  define _CCCL_PREFERRED_ALIGNOF(_Tp) alignof(_Tp)
+#endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __align_type
 {
-  static const size_t value = _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp);
+  static const size_t value = _CCCL_PREFERRED_ALIGNOF(_Tp);
   using type                = _Tp;
 };
 

@@ -33,6 +33,7 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
     outputs:
@@ -140,6 +141,7 @@ jobs:
 
   build-rapids:
     name: Build RAPIDS
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     secrets: inherit
     permissions:
       actions: read
@@ -153,6 +155,7 @@ jobs:
 
   build-matx:
     name: Build MatX
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     secrets: inherit
     permissions:
       id-token: write
@@ -163,6 +166,7 @@ jobs:
 
   build-pytorch:
     name: Build PyTorch
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     secrets: inherit
     permissions:
       id-token: write

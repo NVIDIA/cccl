@@ -44,7 +44,13 @@
 #include <cuda/__iterator/transform_output_iterator.h>
 #include <cuda/std/__cccl/memory_wrapper.h> // for ::new
 #include <cuda/std/__new/device_new.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__tuple_dir/get.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -240,7 +246,7 @@ struct device_destroy_functor
 
 template <typename System, typename T>
 struct destroy_functor
-    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible_v<System, thrust::host_system_tag>,
                               ::cuda::std::type_identity<host_destroy_functor<T>>,
                               ::cuda::std::type_identity<device_destroy_functor<T>>>
 {};

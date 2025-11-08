@@ -32,7 +32,8 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 
-#include <cuda/std/utility> // for use of std::swap in the WAR below
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
 #include <nv/target>
 

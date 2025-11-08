@@ -50,12 +50,12 @@ void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first,
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/advance.h>
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/copy.h>
 #  include <thrust/system/cuda/detail/swap_ranges.h>
 
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/reverse_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

@@ -48,7 +48,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -58,6 +57,13 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/is_sufficiently_aligned.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -214,9 +220,9 @@ struct ReduceAgent
     ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE,
     VECTOR_LOAD_LENGTH = ptx_plan::VECTOR_LOAD_LENGTH,
 
-    ATTEMPT_VECTORIZATION = (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-                         && ::cuda::std::is_pointer<InputIt>::value
-                         && ::cuda::std::is_arithmetic<typename ::cuda::std::remove_cv<T>>::value
+    ATTEMPT_VECTORIZATION =
+      (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
+      && ::cuda::std::is_pointer_v<InputIt> && ::cuda::std::is_arithmetic_v<::cuda::std::remove_cv_t<T>>
   };
 
   struct impl
