@@ -615,13 +615,13 @@ _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges:
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 template <class _Tp, size_t _Extent>
 inline constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
 
 template <class _Tp, size_t _Extent>
 inline constexpr bool enable_view<span<_Tp, _Extent>> = true;
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
