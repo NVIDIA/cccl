@@ -20,7 +20,7 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb

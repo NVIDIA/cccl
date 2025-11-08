@@ -30,12 +30,13 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/transform.h>
 #include <thrust/unique.h>
+
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

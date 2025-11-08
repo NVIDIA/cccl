@@ -33,7 +33,6 @@
 #include <thrust/system/detail/sequential/insertion_sort.h>
 
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/iterator>
 
 #include <nv/target>
 

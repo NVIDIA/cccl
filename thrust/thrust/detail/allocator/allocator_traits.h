@@ -39,8 +39,13 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <new>
 
