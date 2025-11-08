@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
@@ -39,73 +15,77 @@
 
 #include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
-#include <cuda/std/array> // cuda::std::array
-#include <cuda/std/cstddef> // size_t
-#include <cuda/std/mdspan>
-#include <cuda/std/type_traits> // make_unsigned_t
-#include <cuda/std/utility> // index_sequence
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
-
 namespace detail
 {
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
 
 // Compute the submdspan size of a given rank
-template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
-sub_size(const _CUDA_VSTD::extents<IndexType, Extent0, Extents...>& ext)
+template <typename IndexType, size_t... Extents>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+size_range(const ::cuda::std::extents<IndexType, Extents...>& ext, int start, int end)
 {
-  _CUDA_VSTD::make_unsigned_t<IndexType> s = 1;
-  for (IndexType i = Rank; i < IndexType{1 + sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
+  _CCCL_ASSERT(start >= 0 && end <= static_cast<int>(ext.rank()), "invalid start or end");
+  ::cuda::std::make_unsigned_t<IndexType> s = 1;
+  for (auto i = start; i < end; i++)
   {
     s *= ext.extent(i);
   }
   return s;
 }
 
-// avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <size_t Rank, typename IndexType>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
-sub_size(const _CUDA_VSTD::extents<IndexType>&)
+_CCCL_DIAG_POP // MSVC(4702)
+
+  template <typename IndexType, size_t... Extents>
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<IndexType>
+  size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
-  return _CUDA_VSTD::make_unsigned_t<IndexType>{1};
+  return cub::detail::size_range(ext, 0, static_cast<int>(ext.rank()));
 }
 
-// TODO: move to cuda::std
-template <typename IndexType, size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
-size(const _CUDA_VSTD::extents<IndexType, Extents...>& ext)
+template <bool IsLayoutRight, int Position, typename IndexType, size_t... E>
+[[nodiscard]] _CCCL_API auto sub_size_fast_div_mod_impl(const ::cuda::std::extents<IndexType, E...>& ext)
 {
-  return cub::detail::sub_size<0>(ext);
+  using fast_mod_div_t = fast_div_mod<IndexType>;
+  constexpr auto start = IsLayoutRight ? Position + 1 : 0;
+  constexpr auto end   = IsLayoutRight ? sizeof...(E) : Position;
+  return fast_mod_div_t(cub::detail::size_range(ext, start, end));
 }
 
 // precompute modulo/division for each submdspan size (by rank)
-template <typename IndexType, size_t... E, size_t... Ranks>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-sub_sizes_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
+template <bool IsLayoutRight, typename IndexType, size_t... E, size_t... Positions>
+[[nodiscard]] _CCCL_API auto
+sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
-  // deduction guides don't work with nvcc 11.x
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return _CUDA_VSTD::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
+  return array_t{cub::detail::sub_size_fast_div_mod_impl<IsLayoutRight, Positions>(ext)...};
 }
 
 // precompute modulo/division for each mdspan extent
-template <typename IndexType, size_t... E, size_t... Ranks>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-extents_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
+template <typename IndexType, size_t... E, size_t... Positions>
+[[nodiscard]] _CCCL_API auto
+extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Positions...> = {})
 {
   using fast_mod_div_t = fast_div_mod<IndexType>;
-  return _CUDA_VSTD::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
+  using array_t        = ::cuda::std::array<fast_mod_div_t, sizeof...(Positions)>;
+  return array_t{fast_mod_div_t(ext.extent(Positions))...};
 }
 
 // GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
-template <int Rank, typename Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_static()
+template <typename Extents>
+[[nodiscard]] _CCCL_API constexpr bool are_extents_in_range_static(int start, int end)
 {
-  using index_type = typename Extents::index_type;
-  for (index_type i = Rank; i < Extents::rank(); i++)
+  for (auto i = start; i < end; i++)
   {
-    if (Extents::static_extent(i) == _CUDA_VSTD::dynamic_extent)
+    if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
     {
       return false;
     }
@@ -113,6 +93,20 @@ template <int Rank, typename Extents>
   return true;
 }
 
+template <typename MappingTypeLhs, typename MappingTypeRhs>
+[[nodiscard]] _CCCL_API bool have_same_strides(const MappingTypeLhs& mapping_lhs, const MappingTypeRhs& mapping_rhs)
+{
+  auto extents_lhs = mapping_lhs.extents();
+  auto extents_rhs = mapping_rhs.extents();
+  _CCCL_ASSERT(extents_lhs.rank() == extents_rhs.rank(), "extents must have the same rank");
+  for (size_t i = 0; i < extents_lhs.rank(); i++)
+  {
+    if (mapping_lhs.stride(i) != mapping_rhs.stride(i))
+    {
+      return false;
+    }
+  }
+  return true;
+}
 } // namespace detail
-
 CUB_NAMESPACE_END

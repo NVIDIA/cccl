@@ -6,6 +6,9 @@
 #                            [GLOBS <glob1> [glob2 ...]]
 #                            [EXCLUDES <glob1> [glob2 ...]]
 #                            [HEADERS <header1> [header2 ...]]
+#                            [PER_HEADER_DEFINES
+#                               DEFINE <definition> <regex> [<regex> ...]
+#                              [DEFINE <definition> <regex> [<regex> ...]] ...]
 # )
 #
 # Options:
@@ -17,6 +20,7 @@
 # GLOBS: All files that match these globbing patterns will be included in the header tests, unless they also match EXCLUDES.
 # EXCLUDES: Files that match these globbing patterns will be excluded from the header tests.
 # HEADERS: An explicit list of headers to include in the header tests.
+# PER_HEADER_DEFINES: A list of definitions to add to specific headers. Each definition is followed by one or more regexes that match the headers it should be applied to.
 #
 # Notes:
 # - The header globs are applied relative to <project_include_path>.
@@ -26,7 +30,7 @@
 function(cccl_generate_header_tests target_name project_include_path)
   set(options)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
-  set(multiValueArgs GLOBS EXCLUDES HEADERS DEFINES)
+  set(multiValueArgs GLOBS EXCLUDES HEADERS PER_HEADER_DEFINES)
   cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (CGHT_UNPARSED_ARGUMENTS)
@@ -102,12 +106,37 @@ function(cccl_generate_header_tests target_name project_include_path)
   # Cleanup:
   list(REMOVE_DUPLICATES headers)
 
+  # Helper function for applying per-header defines:
+  # header: The original header filepath
+  # src: The generated source file for the header test
+  function(cght_apply_per_header_defines header src)
+    if (NOT DEFINED CGHT_PER_HEADER_DEFINES)
+      return()
+    endif()
+    set(current_definition)
+    foreach (item IN LISTS CGHT_PER_HEADER_DEFINES)
+      if (item STREQUAL "DEFINE")
+        # New definition
+        set(current_definition)
+      elseif (NOT current_definition)
+        # First item after DEFINE is the definition
+        set(current_definition "${item}")
+      else()
+        # Subsequent items are regexes to match against the header
+        if (header MATCHES ${item})
+          set_property(SOURCE "${src}" APPEND PROPERTY COMPILE_DEFINITIONS "${current_definition}")
+        endif()
+      endif()
+    endforeach()
+  endfunction()
+
   # Configure header templates:
   set(header_srcs)
   foreach (header IN LISTS headers)
     set(header_src "${CMAKE_CURRENT_BINARY_DIR}/headers/${target_name}/${header}.${extension}")
-    configure_file(${CGHT_HEADER_TEMPLATE} ${header_src} @ONLY)
-    list(APPEND header_srcs ${header_src})
+    configure_file("${CGHT_HEADER_TEMPLATE}" "${header_src}" @ONLY)
+    cght_apply_per_header_defines("${header}" "${header_src}")
+    list(APPEND header_srcs "${header_src}")
   endforeach()
 
   # Object library that compiles each header:

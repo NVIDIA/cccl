@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_PARAM_KIND
-#define _CUDAX__LAUNCH_PARAM_KIND
+#ifndef _CUDAX__LAUNCH_PARAM_KIND_CUH
+#define _CUDAX__LAUNCH_PARAM_KIND_CUH
 
 #include <cuda/__cccl_config>
 
@@ -75,15 +75,13 @@ struct __inout_t
     return {__v};
   }
 };
-
 } // namespace __detail
 
 _CCCL_GLOBAL_CONSTANT __detail::__in_t in{};
 _CCCL_GLOBAL_CONSTANT __detail::__out_t out{};
 _CCCL_GLOBAL_CONSTANT __detail::__inout_t inout{};
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__LAUNCH_PARAM_KIND
+#endif // _CUDAX__LAUNCH_PARAM_KIND_CUH

@@ -9,66 +9,76 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/devices>
+#include <cuda/std/cassert>
 
 #include <testing.cuh>
 
-__device__ int foo(const int& x)
+template <class T>
+__device__ T foo(const T& x)
 {
   return x;
 }
 
-template <cuda::arch::id Arch>
+template <cuda::arch_id Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
 {
+  assert(Arch == cuda::device::current_arch_id());
+
   // I will try to pack something like this into an API
-  if constexpr (cuda::arch::traits<Arch>().compute_capability != cuda::arch::current_traits().compute_capability)
+  if constexpr (cuda::arch_traits<Arch>().compute_capability != cuda::device::current_arch_traits().compute_capability)
   {
     return;
   }
 
-  [[maybe_unused]] __shared__ int array[cuda::arch::traits<Arch>().max_shared_memory_per_block / sizeof(int)];
+  [[maybe_unused]] __shared__ int array[cuda::arch_traits<Arch>().max_shared_memory_per_block / sizeof(int)];
 
   // constexpr is useless and I can't use intrinsics here :(
-  if constexpr (cuda::arch::current_traits().cluster_supported)
+  if (cuda::device::current_arch_traits().cluster_supported)
   {
     [[maybe_unused]] int dummy;
     asm volatile("mov.u32 %0, %%cluster_ctarank;" : "=r"(dummy));
   }
-  if constexpr (cuda::arch::current_traits().redux_intrinisic)
+  if (cuda::device::current_arch_traits().redux_intrinisic)
   {
     [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
-  if constexpr (cuda::arch::current_traits().cp_async_supported)
+  if (cuda::device::current_arch_traits().cp_async_supported)
   {
     asm volatile("cp.async.commit_group;");
   }
 
   // Confirm trait value is defined device code and usable as a reference
-  foo(cuda::arch::traits<Arch>().compute_capability);
-  foo(cuda::arch::current_traits().compute_capability);
+  foo(cuda::arch_traits<Arch>().compute_capability);
+  foo(cuda::device::current_arch_traits().compute_capability);
 }
 
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_70>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_75>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_80>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_86>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_89>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_90>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_100>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_103>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_120>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_90a>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_100a>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_103a>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_120a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_70>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_75>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_80>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_86>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_87>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_88>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_89>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120a>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121a>();
 
-template <unsigned int ComputeCapability>
+template <int ComputeCapability>
 void constexpr compare_static_and_dynamic()
 {
-  constexpr cuda::arch::traits_t static_traits =
-    cuda::arch::traits<cuda::arch::id_for_compute_capability(ComputeCapability)>();
-  constexpr cuda::arch::traits_t dynamic_traits = cuda::arch::traits_for_compute_capability(ComputeCapability);
+  constexpr cuda::compute_capability cc{ComputeCapability};
+  constexpr cuda::arch_traits_t static_traits  = cuda::arch_traits<cuda::to_arch_id(cc)>();
+  constexpr cuda::arch_traits_t dynamic_traits = cuda::arch_traits_for(cuda::to_arch_id(cc));
 
   static_assert(static_traits.arch_id == dynamic_traits.arch_id);
   static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
@@ -120,12 +130,15 @@ C2H_CCCLRT_TEST("Traits", "[device]")
   compare_static_and_dynamic<90>();
   compare_static_and_dynamic<100>();
   compare_static_and_dynamic<103>();
+  compare_static_and_dynamic<110>();
   compare_static_and_dynamic<120>();
 
   // Compare arch traits with attributes
-  for (const cuda::physical_device& dev : cuda::devices)
+  for (const cuda::device_ref& dev : cuda::devices)
   {
-    auto traits = dev.arch_traits();
+    const auto cc = dev.attribute(cuda::device_attributes::compute_capability);
+
+    const auto traits = cuda::arch_traits_for(cc);
 
     CCCLRT_REQUIRE(traits.max_threads_per_block == dev.attribute(cuda::device_attributes::max_threads_per_block));
     CCCLRT_REQUIRE(traits.max_block_dim_x == dev.attribute(cuda::device_attributes::max_block_dim_x));

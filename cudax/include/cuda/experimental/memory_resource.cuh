@@ -22,15 +22,13 @@
 #  endif // _CUDA_MEMORY_RESOURCE
 #endif // !LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
-#include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/legacy_pinned_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/managed_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
-#include <cuda/experimental/__memory_resource/pinned_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
-#include <cuda/experimental/__memory_resource/resource.cuh>
-#include <cuda/experimental/__memory_resource/shared_resource.cuh>
+#include <cuda/__memory_resource/any_resource.h>
+#include <cuda/__memory_resource/device_memory_pool.h>
+#include <cuda/__memory_resource/legacy_managed_memory_resource.h>
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
+#include <cuda/__memory_resource/managed_memory_pool.h>
+#include <cuda/__memory_resource/pinned_memory_pool.h>
+#include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource.h>
 
 #endif // __CUDAX_MEMORY_RESOURCE___

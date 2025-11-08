@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "../include/host_device.h"
-
 // This example demonstrates the use of a view: a non-owning wrapper for an
 // iterator range which presents a container-like interface to the user.
 //
@@ -40,7 +38,7 @@ public:
 
   __host__ __device__ difference_type size() const
   {
-    return ::cuda::std::distance(first, last);
+    return cuda::std::distance(first, last);
   }
 
   __host__ __device__ reference operator[](difference_type n)
@@ -69,21 +67,21 @@ public:
     return last;
   }
 
-  __host__ __device__ thrust::reverse_iterator<iterator> rbegin()
+  __host__ __device__ cuda::std::reverse_iterator<iterator> rbegin()
   {
-    return thrust::reverse_iterator<iterator>(end());
+    return cuda::std::reverse_iterator<iterator>(end());
   }
-  __host__ __device__ const thrust::reverse_iterator<const iterator> crbegin() const
+  __host__ __device__ const cuda::std::reverse_iterator<const iterator> crbegin() const
   {
-    return thrust::reverse_iterator<const iterator>(cend());
+    return cuda::std::reverse_iterator<const iterator>(cend());
   }
-  __host__ __device__ thrust::reverse_iterator<iterator> rend()
+  __host__ __device__ cuda::std::reverse_iterator<iterator> rend()
   {
-    return thrust::reverse_iterator<iterator>(begin());
+    return cuda::std::reverse_iterator<iterator>(begin());
   }
-  __host__ __device__ const thrust::reverse_iterator<const iterator> crend() const
+  __host__ __device__ const cuda::std::reverse_iterator<const iterator> crend() const
   {
-    return thrust::reverse_iterator<const iterator>(cbegin());
+    return cuda::std::reverse_iterator<const iterator>(cbegin());
   }
   __host__ __device__ reference front()
   {
@@ -196,7 +194,7 @@ int main()
     make_range_view(thrust::make_transform_iterator(X.cbegin(), f1()), thrust::make_transform_iterator(X.cend(), f1())),
 
     // range view of normal_iterators
-    make_range_view(Y.begin(), ::cuda::std::distance(Y.begin(), Y.end())),
+    make_range_view(Y.begin(), cuda::std::distance(Y.begin(), Y.end())),
 
     // range view of naked pointers
     make_range_view(Z.data().get(), 4));

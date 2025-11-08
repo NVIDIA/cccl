@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file DeviceScan provides device-wide, parallel operations for computing a
@@ -53,8 +29,12 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -64,7 +44,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan_by_key
 {
-
 /**
  * @brief Scan by key kernel entry point (multi-block)
  *
@@ -444,7 +423,7 @@ struct DispatchScanByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
+      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log scan_kernel configuration

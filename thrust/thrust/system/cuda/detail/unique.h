@@ -49,8 +49,8 @@
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/cstdint>
@@ -83,7 +83,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
@@ -212,7 +211,6 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
 
   return output;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -279,7 +277,6 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
   return 1
        + thrust::count_if(policy, it, ::cuda::std::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

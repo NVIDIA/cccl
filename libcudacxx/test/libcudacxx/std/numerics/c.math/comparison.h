@@ -15,32 +15,40 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ bool eq(T lhs, T rhs) noexcept
+__host__ __device__ constexpr bool eq(T lhs, T rhs) noexcept
 {
   return lhs == rhs;
 }
 
 template <typename T, typename U, cuda::std::enable_if_t<cuda::std::is_arithmetic_v<U>, int> = 0>
-__host__ __device__ bool eq(T lhs, U rhs) noexcept
+__host__ __device__ constexpr bool eq(T lhs, U rhs) noexcept
 {
   return eq(lhs, T(rhs));
 }
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 __host__ __device__ bool eq(__half lhs, __half rhs) noexcept
 {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   return ::__heq(lhs, rhs);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+  return ::__half2float(lhs) == ::__half2float(rhs);
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 __host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
 {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   return ::__heq(lhs, rhs);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+  return ::__bfloat162float(lhs) == ::__bfloat162float(rhs);
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
-template <class Integer>
+template <class Integer, cuda::std::enable_if_t<cuda::std::is_integral_v<Integer>, int> = 0>
 __host__ __device__ bool is_about(Integer x, Integer y)
 {
   return true;

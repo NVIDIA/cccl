@@ -1,27 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -46,9 +25,13 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda/functional> // cuda::maximum, cuda::minimum
-#include <cuda/std/cstdint> // cuda::std::uint32_t
-#include <cuda/std/type_traits> // is_same_v
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -69,7 +52,7 @@ struct InequalityWrapper
   template <typename T, typename U>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u)
   {
-    return !op(_CUDA_VSTD::forward<T>(t), _CUDA_VSTD::forward<U>(u));
+    return !op(::cuda::std::forward<T>(t), ::cuda::std::forward<U>(u));
   }
 };
 
@@ -123,7 +106,6 @@ struct ArgMin
 
 namespace detail
 {
-
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
 struct arg_max
@@ -227,7 +209,7 @@ struct basic_binary_op_t
 };
 
 template <typename T>
-struct basic_binary_op_t<_CUDA_VSTD::plus<T>>
+struct basic_binary_op_t<::cuda::std::plus<T>>
 {
   static constexpr bool value = true;
 };
@@ -401,7 +383,6 @@ struct ReduceByKeyOp
 
 namespace detail
 {
-
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
@@ -409,31 +390,31 @@ template <typename, typename = void>
 inline constexpr bool is_cuda_std_plus_v = false;
 
 template <typename T>
-inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<T>, void> = true;
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<T>, void> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<T>, T> = true;
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<T>, T> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<>, T> = true;
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<>, T> = true;
 
 template <>
-inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<>, void> = true;
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_std_mul_v = false;
 
 template <typename T>
-inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<T>, void> = true;
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<T>, void> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<T>, T> = true;
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<T>, T> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<>, T> = true;
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<>, T> = true;
 
 template <>
-inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<>, void> = true;
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_maximum_v = false;
@@ -469,76 +450,76 @@ template <typename, typename = void>
 inline constexpr bool is_cuda_std_bit_and_v = false;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<T>, void> = true;
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<T>, void> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<T>, T> = true;
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<T>, T> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<>, T> = true;
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<>, T> = true;
 
 template <>
-inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<>, void> = true;
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_std_bit_or_v = false;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<T>, void> = true;
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<T>, void> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<T>, T> = true;
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<T>, T> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<>, T> = true;
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<>, T> = true;
 
 template <>
-inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<>, void> = true;
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_std_bit_xor_v = false;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<T>, void> = true;
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<T>, void> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<T>, T> = true;
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<T>, T> = true;
 
 template <typename T>
-inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<>, T> = true;
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, T> = true;
 
 template <>
-inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<>, void> = true;
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_std_logical_and_v = false;
 
 template <>
-inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<bool>, void> = true;
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<bool>, void> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<bool>, bool> = true;
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<bool>, bool> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<>, bool> = true;
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<>, bool> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<>, void> = true;
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<>, void> = true;
 
 template <typename, typename = void>
 inline constexpr bool is_cuda_std_logical_or_v = false;
 
 template <>
-inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<bool>, void> = true;
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<bool>, void> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<bool>, bool> = true;
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<bool>, bool> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<>, bool> = true;
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<>, bool> = true;
 
 template <>
-inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<>, void> = true;
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<>, void> = true;
 
 template <typename Op, typename T = void>
 inline constexpr bool is_cuda_minimum_maximum_v = is_cuda_maximum_v<Op, T> || is_cuda_minimum_v<Op, T>;
@@ -606,77 +587,76 @@ template <typename Op, typename T = void>
 inline constexpr T identity_v;
 
 template <typename T>
-inline constexpr T identity_v<::cuda::minimum<>, T> = _CUDA_VSTD::numeric_limits<T>::max();
+inline constexpr T identity_v<::cuda::minimum<>, T> = ::cuda::std::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, T> = _CUDA_VSTD::numeric_limits<T>::max();
+inline constexpr T identity_v<::cuda::minimum<T>, T> = ::cuda::std::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, void> = _CUDA_VSTD::numeric_limits<T>::max();
+inline constexpr T identity_v<::cuda::minimum<T>, void> = ::cuda::std::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::maximum<>, T> = _CUDA_VSTD::numeric_limits<T>::lowest();
+inline constexpr T identity_v<::cuda::maximum<>, T> = ::cuda::std::numeric_limits<T>::lowest();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, T> = _CUDA_VSTD::numeric_limits<T>::lowest();
+inline constexpr T identity_v<::cuda::maximum<T>, T> = ::cuda::std::numeric_limits<T>::lowest();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, void> = _CUDA_VSTD::numeric_limits<T>::lowest();
+inline constexpr T identity_v<::cuda::maximum<T>, void> = ::cuda::std::numeric_limits<T>::lowest();
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::plus<T>, T> = T{};
+inline constexpr T identity_v<::cuda::std::plus<T>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::plus<>, T> = T{};
+inline constexpr T identity_v<::cuda::std::plus<>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::plus<T>, void> = T{};
+inline constexpr T identity_v<::cuda::std::plus<T>, void> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_and<>, T> = static_cast<T>(~T{});
+inline constexpr T identity_v<::cuda::std::bit_and<>, T> = static_cast<T>(~T{});
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_and<T>, T> = static_cast<T>(~T{});
+inline constexpr T identity_v<::cuda::std::bit_and<T>, T> = static_cast<T>(~T{});
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_and<T>, void> = static_cast<T>(~T{});
+inline constexpr T identity_v<::cuda::std::bit_and<T>, void> = static_cast<T>(~T{});
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_or<>, T> = T{};
+inline constexpr T identity_v<::cuda::std::bit_or<>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_or<T>, T> = T{};
+inline constexpr T identity_v<::cuda::std::bit_or<T>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_or<T>, void> = T{};
+inline constexpr T identity_v<::cuda::std::bit_or<T>, void> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_xor<>, T> = T{};
+inline constexpr T identity_v<::cuda::std::bit_xor<>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_xor<T>, T> = T{};
+inline constexpr T identity_v<::cuda::std::bit_xor<T>, T> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::bit_xor<T>, void> = T{};
+inline constexpr T identity_v<::cuda::std::bit_xor<T>, void> = T{};
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_and<>, T> = true;
+inline constexpr T identity_v<::cuda::std::logical_and<>, T> = true;
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_and<T>, T> = true;
+inline constexpr T identity_v<::cuda::std::logical_and<T>, T> = true;
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_and<T>, void> = true;
+inline constexpr T identity_v<::cuda::std::logical_and<T>, void> = true;
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_or<>, T> = false;
+inline constexpr T identity_v<::cuda::std::logical_or<>, T> = false;
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_or<T>, T> = false;
+inline constexpr T identity_v<::cuda::std::logical_or<T>, T> = false;
 
 template <typename T>
-inline constexpr T identity_v<_CUDA_VSTD::logical_or<T>, void> = false;
-
+inline constexpr T identity_v<::cuda::std::logical_or<T>, void> = false;
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

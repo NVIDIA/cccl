@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H
-#define _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H
+#ifndef _CUDA_STD___FUNCTIONAL_OPERATIONS_H
+#define _CUDA_STD___FUNCTIONAL_OPERATIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,11 +23,12 @@
 
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Arithmetic operations
 
@@ -41,7 +42,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus : __binary_function<_Tp, _Tp, _Tp>
     return __x + __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(plus);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT plus<void>
@@ -49,10 +50,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT plus<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) + ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -67,7 +68,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus : __binary_function<_Tp, _Tp, _Tp>
     return __x - __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(minus);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minus<void>
@@ -75,10 +76,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minus<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) - ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -93,7 +94,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies : __binary_function<_Tp, _Tp, _T
     return __x * __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies<void>
@@ -101,10 +102,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT multiplies<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) * ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -119,7 +120,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides : __binary_function<_Tp, _Tp, _Tp>
     return __x / __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(divides);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT divides<void>
@@ -127,10 +128,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT divides<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) / ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -145,7 +146,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus : __binary_function<_Tp, _Tp, _Tp>
     return __x % __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(modulus);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus<void>
@@ -153,10 +154,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT modulus<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) % ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -171,17 +172,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT negate : __unary_function<_Tp, _Tp>
     return -__x;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(negate);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT negate<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(-_CUDA_VSTD::forward<_Tp>(__x)))
-    -> decltype(-_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(-::cuda::std::forward<_Tp>(__x)))
+    -> decltype(-::cuda::std::forward<_Tp>(__x))
   {
-    return -_CUDA_VSTD::forward<_Tp>(__x);
+    return -::cuda::std::forward<_Tp>(__x);
   }
   using is_transparent = void;
 };
@@ -198,7 +199,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and : __binary_function<_Tp, _Tp, _Tp>
     return __x & __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and<void>
@@ -206,10 +207,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_and<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) & ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -223,17 +224,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not : __unary_function<_Tp, _Tp>
     return ~__x;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_not);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(bit_not);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x)))
-    -> decltype(~_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(~::cuda::std::forward<_Tp>(__x)))
+    -> decltype(~::cuda::std::forward<_Tp>(__x))
   {
-    return ~_CUDA_VSTD::forward<_Tp>(__x);
+    return ~::cuda::std::forward<_Tp>(__x);
   }
   using is_transparent = void;
 };
@@ -248,7 +249,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or : __binary_function<_Tp, _Tp, _Tp>
     return __x | __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or<void>
@@ -256,10 +257,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_or<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) | ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -274,7 +275,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor : __binary_function<_Tp, _Tp, _Tp>
     return __x ^ __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor<void>
@@ -282,10 +283,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bit_xor<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) ^ ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -302,7 +303,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to : __binary_function<_Tp, _Tp, bool
     return __x == __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to<void>
@@ -310,10 +311,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT equal_to<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) == ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -328,7 +329,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to : __binary_function<_Tp, _Tp, 
     return __x != __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to<void>
@@ -336,10 +337,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT not_equal_to<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) != ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -354,7 +355,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less : __binary_function<_Tp, _Tp, bool>
     return __x < __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(less);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT less<void>
@@ -362,10 +363,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) < ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -380,7 +381,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal : __binary_function<_Tp, _Tp, bo
     return __x <= __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal<void>
@@ -388,10 +389,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT less_equal<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) <= ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -406,7 +407,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal : __binary_function<_Tp, _Tp,
     return __x >= __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal<void>
@@ -414,10 +415,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater_equal<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) >= ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -432,7 +433,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater : __binary_function<_Tp, _Tp, bool>
     return __x > __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(greater);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT greater<void>
@@ -440,10 +441,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT greater<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) > ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -460,7 +461,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and : __binary_function<_Tp, _Tp, b
     return __x && __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and<void>
@@ -468,10 +469,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_and<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) && ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
@@ -486,17 +487,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not : __unary_function<_Tp, bool>
     return !__x;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_not<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x)))
-    -> decltype(!_CUDA_VSTD::forward<_Tp>(__x))
+  constexpr _CCCL_API inline auto operator()(_Tp&& __x) const noexcept(noexcept(!::cuda::std::forward<_Tp>(__x)))
+    -> decltype(!::cuda::std::forward<_Tp>(__x))
   {
-    return !_CUDA_VSTD::forward<_Tp>(__x);
+    return !::cuda::std::forward<_Tp>(__x);
   }
   using is_transparent = void;
 };
@@ -511,7 +512,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or : __binary_function<_Tp, _Tp, bo
     return __x || __y;
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
@@ -519,16 +520,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u)))
-      -> decltype(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u))
+    noexcept(noexcept(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u)))
+      -> decltype(::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u))
   {
-    return _CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u);
+    return ::cuda::std::forward<_T1>(__t) || ::cuda::std::forward<_T2>(__u);
   }
   using is_transparent = void;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H
+#endif // _CUDA_STD___FUNCTIONAL_OPERATIONS_H

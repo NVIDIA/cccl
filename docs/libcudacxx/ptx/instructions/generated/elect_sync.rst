@@ -3,7 +3,7 @@
 
 elect.sync
 ^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // elect.sync _|is_elected, membermask; // PTX ISA 80, SM_90
    template <typename = void>

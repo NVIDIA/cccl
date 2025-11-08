@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_ctx;
 
 template <typename... Data>
@@ -73,7 +72,7 @@ public:
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
   // CUDA stream
-  cudaStream_t get_stream()
+  cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
     if (e_place.is_grid())
@@ -89,7 +88,7 @@ public:
   }
 
   // TODO use a pos4 and check that we have a grid, of the proper dimension
-  cudaStream_t get_stream(size_t pos)
+  cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
@@ -203,6 +202,12 @@ public:
       insert_dependencies(stream_grid);
     }
 
+    auto& dot = ctx.get_dot();
+    if (dot->is_tracing())
+    {
+      dot->template add_vertex<task, logical_data_untyped>(*this);
+    }
+
     return *this;
   }
 
@@ -307,11 +312,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
@@ -574,11 +574,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
@@ -890,5 +885,4 @@ public:
   }
 };
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

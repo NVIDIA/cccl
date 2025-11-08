@@ -3,7 +3,7 @@
 
 fence.proxy.tensormap::generic.release.cta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -15,7 +15,7 @@ fence.proxy.tensormap::generic.release.cta
 
 fence.proxy.tensormap::generic.release.cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -27,7 +27,7 @@ fence.proxy.tensormap::generic.release.cluster
 
 fence.proxy.tensormap::generic.release.gpu
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -39,7 +39,7 @@ fence.proxy.tensormap::generic.release.gpu
 
 fence.proxy.tensormap::generic.release.sys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -51,7 +51,7 @@ fence.proxy.tensormap::generic.release.sys
 
 fence.proxy.tensormap::generic.acquire.cta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
    // .sem       = { .acquire }
@@ -65,7 +65,7 @@ fence.proxy.tensormap::generic.acquire.cta
 
 fence.proxy.tensormap::generic.acquire.cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
    // .sem       = { .acquire }
@@ -79,7 +79,7 @@ fence.proxy.tensormap::generic.acquire.cluster
 
 fence.proxy.tensormap::generic.acquire.gpu
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
    // .sem       = { .acquire }
@@ -93,7 +93,7 @@ fence.proxy.tensormap::generic.acquire.gpu
 
 fence.proxy.tensormap::generic.acquire.sys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
    // .sem       = { .acquire }

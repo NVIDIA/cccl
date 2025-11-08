@@ -12,6 +12,7 @@ import platform
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 
 import libcudacxx.util
@@ -189,10 +190,74 @@ class Configuration(object):
         self.lit_config.note(
             "Deduced compute capabilities are: %s" % deduced_compute_archs
         )
-        deduced_comput_archs_str = ", ".join(
+        deduced_comput_archs_str = ",".join(
             [str(element) for element in deduced_compute_archs]
         )
         return deduced_comput_archs_str
+
+    def _get_nvcc_archs(self):
+        if self.cxx.type != "nvcc":
+            self.lit_config.fatal(
+                "Retrieving compute capabilities is only supported for nvcc compiler type"
+            )
+            return []
+
+        cmd = (
+            f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+' | "
+            "sed -E 's/compute_//g' | sort -ug"
+        )
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        archs = result.stdout.strip().splitlines()
+
+        if not archs:
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
+            return []
+
+        return sorted(set(int(arch) for arch in archs))
+
+    def get_all_major_compute_capabilities(self):
+        archs = self._get_nvcc_archs()
+        if not archs:
+            return ""
+
+        # Build the same list used by --arch=all-major:
+
+        # Handle special case where the first architecture is not a round decade (e.g., first arch is 75, not 70).
+        oldest = archs[0]
+        archs = sorted(set((arch // 10 * 10) for arch in archs))
+        archs[0] = oldest
+        last_arch = archs[-1]
+        archs = [f"{arch}-real" for arch in archs]
+        archs.append(f"{last_arch}-virtual")
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced major compute capabilities are: %s" % archs)
+
+        return archs
+
+    def get_all_compute_capabilities(self):
+        archs = self._get_nvcc_archs()
+        if not archs:
+            return ""
+        last_arch = archs[-1]
+        archs = [f"{arch}-real" for arch in archs]
+        archs.append(f"{last_arch}-virtual")
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced compute capabilities are: %s" % archs)
+
+        return archs
 
     def get_modules_enabled(self):
         return self.get_lit_bool(
@@ -723,6 +788,8 @@ class Configuration(object):
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
+            self.cxx.compile_flags += ["-device-int128"]
+            self.cxx.compile_flags += ["-device-float128"]
         if self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["--extended-lambda"]
         real_arch_format = "-gencode=arch=compute_{0},code=sm_{0}"
@@ -752,8 +819,12 @@ class Configuration(object):
             self.lit_config.note("Compute Archs: %s" % compute_archs)
             if compute_archs == "native":
                 compute_archs = self.get_compute_capabilities()
+            elif compute_archs == "all":
+                compute_archs = self.get_all_compute_capabilities()
+            elif compute_archs == "all-major":
+                compute_archs = self.get_all_major_compute_capabilities()
 
-            compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
+            compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -1301,7 +1372,6 @@ class Configuration(object):
             return
         if debug_level not in ["0", "1"]:
             self.lit_config.fatal('Invalid value for debug_level "%s".' % debug_level)
-        self.cxx.compile_flags += ["-D_LIBCUDACXX_DEBUG=%s" % debug_level]
 
     def configure_warnings(self):
         default_enable_warnings = (
@@ -1393,7 +1463,7 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedef")
+                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()

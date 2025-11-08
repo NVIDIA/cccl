@@ -10,24 +10,24 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::async_resource_ref equality
+// cuda::mr::resource_ref equality
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "types.h"
 
-using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
-                                         property_with_value<int>,
-                                         property_with_value<double>,
-                                         property_without_value<std::size_t>>;
+using ref = cuda::mr::resource_ref<cuda::mr::host_accessible,
+                                   property_with_value<int>,
+                                   property_with_value<double>,
+                                   property_without_value<std::size_t>>;
 using different_properties =
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible,
-                               property_with_value<short>,
-                               property_with_value<int>,
-                               property_without_value<std::size_t>>;
+  cuda::mr::resource_ref<cuda::mr::host_accessible,
+                         property_with_value<short>,
+                         property_with_value<int>,
+                         property_without_value<std::size_t>>;
 
 using res = test_resource<cuda::mr::host_accessible,
                           property_with_value<int>,

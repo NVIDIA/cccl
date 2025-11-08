@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
@@ -67,28 +68,22 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
-template <class _Rcvr>
-struct __completion_fn
+struct __complete_rcvr
 {
-  template <class _Tag, class... _Args>
-  _CCCL_API void operator()(_Tag, _Args&&... __args) const noexcept
+  template <class _Rcvr, class _Tag, class... _Args>
+  _CCCL_API void operator()(_Rcvr& __rcvr, _Tag, _Args&&... __args) const noexcept
   {
-    _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Args&&>(__args)...);
+    _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_Args&&>(__args)...);
   }
-
-  _Rcvr& __rcvr_;
 };
 
-template <class _Rcvr>
-struct __results_visitor
+struct __visit_results
 {
-  template <class _Tuple>
-  _CCCL_API void operator()(_Tuple&& __tuple) const noexcept
+  template <class _Rcvr, class _Tuple>
+  _CCCL_API void operator()(_Rcvr& __rcvr, _Tuple&& __tuple) const noexcept
   {
-    _CUDA_VSTD::__apply(__completion_fn<_Rcvr>{__rcvr_}, static_cast<_Tuple&&>(__tuple));
+    ::cuda::std::__apply(__complete_rcvr{}, static_cast<_Tuple&&>(__tuple), __rcvr);
   }
-
-  _Rcvr& __rcvr_;
 };
 
 // __state_t lives in managed memory. It stores everything the operation state needs,
@@ -127,24 +122,24 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
-  _Variant::__visit(__results_visitor<_Rcvr>{__state->__rcvr_}, __state->__results_);
+  _Variant::__visit(__visit_results{}, __state->__results_, __state->__rcvr_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
 template <class _Env, class _Config>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 {
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-    -> __query_result_t<_Env, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _As)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _As...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _As&&... __args) const
+    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
-    return __env_.query(_Query{});
+    return __env_.query(_Query{}, static_cast<_As&&>(__args)...);
   }
 
   // This query is used to tell transform_sender that the child sender has been adapted to
   // the stream domain.
-  [[nodiscard]] _CCCL_API static constexpr auto query(__stream::__adapted_t) noexcept -> _CUDA_VSTD::__ignore_t
+  [[nodiscard]] _CCCL_API constexpr auto query(__stream::__adapted_t) const noexcept -> ::cuda::std::__ignore_t
   {
     return {};
   }
@@ -155,7 +150,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   }
 
   _Env __env_;
-  _CCCL_NO_UNIQUE_ADDRESS _Config __launch_config_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Config __launch_config_;
 };
 
 // This is the inner receiver that is used to connect the child sender.
@@ -171,22 +166,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
     else
     {
-      using __tuple_t = _CUDA_VSTD::__decayed_tuple<_Tag, _Args...>;
+      using __tuple_t = ::cuda::std::__decayed_tuple<_Tag, _Args...>;
       __state_->__results_.template __emplace<__tuple_t>(_Tag{}, static_cast<_Args&&>(__args)...);
     }
   }
 
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
-    if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>)
+    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, exception_ptr>)
     {
       __complete(execution::set_error, cudaErrorUnknown);
     }
@@ -196,7 +191,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+  _CCCL_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
@@ -226,23 +221,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 
   _CCCL_API constexpr void start() noexcept
   {
-    NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
+    NV_IF_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
   }
 
   // This is called by the continues_on adaptor after it has sync'ed the stream.
   template <class _Rcvr2>
-  _CCCL_HOST_API auto __set_results(_Rcvr2& __rcvr) noexcept
+  _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    __results_t::__visit(__results_visitor<_Rcvr2&>{__rcvr}, __get_state().__state_.__results_);
+    __results_t::__visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
 
 private:
-  using __sndr_config_t       = _CUDA_VSTD::__call_result_t<get_launch_config_t, env_of_t<_CvSndr>>;
-  using __rcvr_config_t       = _CUDA_VSTD::__call_result_t<get_launch_config_t, env_of_t<_Rcvr>>;
+  using __sndr_config_t       = __call_result_t<get_launch_config_t, env_of_t<_CvSndr>>;
+  using __rcvr_config_t       = __call_result_t<get_launch_config_t, env_of_t<_Rcvr>>;
   using __env_t               = __stream::__env_t<env_of_t<_Rcvr>, __sndr_config_t>;
   using __child_completions_t = completion_signatures_of_t<_CvSndr, __env_t>;
   using __completions_t       = decltype(__stream::__with_cuda_error(__child_completions_t{}));
-  using __results_t = typename __completions_t::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
+  using __results_t = typename __completions_t::template __transform_q<::cuda::std::__decayed_tuple, __variant>;
   using __rcvr_t    = __stream::__rcvr_t<_Rcvr, __sndr_config_t, __results_t>;
 
   _CCCL_HOST_API void __host_make_state(_CvSndr&& __sndr, _Rcvr __rcvr)
@@ -282,11 +277,6 @@ private:
     // of this operation.
     execution::start(__state.__opstate_);
 
-    // printf("Launching completion kernel for %s with %d block threads and %d grid blocks\n",
-    //        __name,
-    //        __block_threads,
-    //        __grid_blocks);
-
     // launch a kernel to pass the results to the receiver.
     __completion_kernel<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(&__state.__state_);
 
@@ -314,7 +304,7 @@ private:
   // This is the part of the operation state that is stored in managed memory.
   struct __state_t
   {
-    _CCCL_HOST_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
+    _CCCL_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
         : __state_{{static_cast<_Rcvr&&>(__rcvr), {}, false}, get_launch_config(execution::get_env(__sndr))}
         , __opstate_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_}))
     {}
@@ -331,7 +321,7 @@ private:
   }
 
   stream_ref __stream_;
-  __variant<__state_t, _CUDA_VSTD::unique_ptr<__managed_box<__state_t>>> __state_{};
+  __variant<__state_t, ::cuda::std::unique_ptr<__managed_box<__state_t>>> __state_{};
 };
 
 template <class _Sndr, class _GetStream>
@@ -340,32 +330,32 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 template <class _Sndr, class _GetStream>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
-  // This makes sure that when `connect` calls `transform_sender`, it will use the stream
-  // domain to find a customization.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
-  {
-    return {};
-  }
-
   // If the child sender knows how to provide a stream, make it available via the stream
   // adapter's attributes.
   _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<_GetStream2, _Sndr, env<>>)
+  _CCCL_REQUIRES(__callable<_GetStream2, _Sndr, env<>>)
   [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
   {
     return __sndr_.__get_stream_(__sndr_.__sndr_, env{});
+  }
+
+  // This sender executes asynchronously with respect to 'start()':
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+  {
+    return completion_behavior::asynchronous;
   }
 
   // This forwards even non-forwarding queries. A stream sender adaptor is not an ordinary
   // sender adaptor, like `then` or `let_value`. A stream sender adaptor is an
   // implementation detail that is not visible to the user. It should be as transparent as
   // possible.
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-    -> __query_result_t<env_of_t<_Sndr>, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
-    return execution::get_env(__sndr_.__sndr_).query(_Query{});
+    return execution::get_env(__sndr_.__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   const __sndr_t<_Sndr, _GetStream>& __sndr_;
@@ -380,8 +370,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    using __cv_sndr_t _CCCL_NODEBUG_ALIAS     = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
-    using __sndr_config_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
+    using __cv_sndr_t _CCCL_NODEBUG_ALIAS     = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
+    using __sndr_config_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
     using __env_t                             = __stream::__env_t<_Env, __sndr_config_t>;
     _CUDAX_LET_COMPLETIONS(auto(__completions) = execution::get_completion_signatures<__cv_sndr_t, __env_t>())
     {
@@ -407,8 +397,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     return __attrs_t<_Sndr, _GetStream>{*this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS _GetStream __get_stream_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _GetStream __get_stream_;
   _Sndr __sndr_;
 };
 
@@ -421,7 +411,6 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 
 template <class _Sndr, class _GetStream>
 inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

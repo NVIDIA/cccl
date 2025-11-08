@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -36,6 +12,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+#include <optional>
+#include <string>
 
 #include <cuda_runtime_api.h>
 
@@ -43,6 +21,26 @@ namespace c2h
 {
 namespace detail
 {
+inline std::optional<std::string> get_env(const char* name)
+{
+#ifdef _WIN32
+  char* buf       = nullptr;
+  std::size_t len = 0;
+  if (_dupenv_s(&buf, &len, name) || !buf)
+  {
+    return std::nullopt;
+  }
+  std::string val(buf);
+  free(buf);
+  return val;
+#else
+  if (const char* v = std::getenv(name))
+  {
+    return std::string(v);
+  }
+  return std::nullopt;
+#endif
+}
 
 struct memory_info
 {
@@ -55,15 +53,15 @@ struct memory_info
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static const char* override_str = std::getenv("C2H_DEVICE_MEMORY_LIMIT");
-  static std::size_t result       = override_str ? static_cast<std::size_t>(std::atoll(override_str)) : 0;
+  static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
+  static std::size_t result = override_str ? static_cast<std::size_t>(std::atoll(override_str->c_str())) : 0;
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static const char* debug_checked_allocs = std::getenv("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static bool result                      = debug_checked_allocs && (std::atoi(debug_checked_allocs) != 0);
+  static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
+  static bool result = debug_checked_allocs && (std::atoi(debug_checked_allocs->c_str()) != 0);
   return result;
 }
 
@@ -204,5 +202,4 @@ struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_
 
 template <typename T>
 using checked_host_allocator = THRUST_NS_QUALIFIER::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
-
 } // namespace c2h

@@ -37,10 +37,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 // We use this function as a detector for what __PRETTY_FUNCTION__ looks like
 template <typename T>
 constexpr ::std::string_view type_name_IMPL()
@@ -83,7 +81,6 @@ constexpr ::std::string_view type_name_impl()
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 #endif // !_CCCL_COMPILER(MSVC)
 }
-
 } // namespace reserved
 
 /**
@@ -92,7 +89,6 @@ constexpr ::std::string_view type_name_impl()
  *
  * @tparam T The type to show.
  *
- * @paragraph example Example
  * @snippet unittest.h type_name
  */
 template <class T>
@@ -106,10 +102,9 @@ inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
  * @tparam Fun Type of mapping function to apply
  * @param t Object to convert, must support `std::apply`
  * @param f function to convert each element of the tuple, must take a single parameter
- * @return constexpr auto The tuple resulting from the mapping
+ * @return auto The tuple resulting from the mapping
  *
- * @paragraph example Example
- * @snippet unittest.h tuple2tuple
+ * @snippet unittest.cuh tuple2tuple
  */
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
@@ -137,7 +132,6 @@ class print_type_name_and_fail
 
 namespace reserved
 {
-
 /**
  * @brief A singleton template class implementing the Meyers Singleton design pattern.
  *
@@ -197,7 +191,6 @@ public:
     return instance;
   }
 };
-
 } // end namespace reserved
 
 /**
@@ -249,7 +242,6 @@ static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size
 
 namespace reserved
 {
-
 /**
  * @brief Converts an `std::tuple` into a `cuda::std::array`.
  *
@@ -285,7 +277,6 @@ template <typename T, size_t N>
   }
   return result;
 }
-
 } // end namespace reserved
 
 /**
@@ -374,7 +365,7 @@ auto all_convertible(P&&... p)
     }
   };
 
-  auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
+  auto __guard = ::cuda::std::__make_exception_guard(rollback);
   each_in_pack(
     [&](auto&& e) {
       if constexpr (::std::is_convertible_v<decltype(e), T>)
@@ -559,7 +550,6 @@ auto shuffled_array_tuple(ArgTypes... args)
 
 namespace reserved
 {
-
 /**
  * @brief Trait class to check if a function can be invoked with `std::apply` using a tuple type
  */
@@ -584,7 +574,5 @@ template <typename T>
 struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
     : ::std::true_type
 {};
-
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

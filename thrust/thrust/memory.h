@@ -271,7 +271,7 @@ _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer 
  *  If the argument is not a reference wrapper, the result is a reference to the argument.
  *
  *  \param ref The reference of interest.
- *  \return <tt>*thrust::raw_pointer_cast(&ref)</tt>.
+ *  \return The raw reference obtained by dereferencing the result of \p raw_pointer_cast applied to the address of ref.
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
@@ -285,7 +285,7 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& 
  *  If the argument is not a reference wrapper, the result is a reference to the argument.
  *
  *  \param ref The reference of interest.
- *  \return <tt>*thrust::raw_pointer_cast(&ref)</tt>.
+ *  \return The raw reference obtained by dereferencing the result of \p raw_pointer_cast applied to the address of ref.
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast

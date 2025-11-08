@@ -77,6 +77,7 @@
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_execution_policy.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_final.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
@@ -111,7 +112,6 @@
 #include <cuda/std/__type_traits/is_polymorphic.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_scalar.h>

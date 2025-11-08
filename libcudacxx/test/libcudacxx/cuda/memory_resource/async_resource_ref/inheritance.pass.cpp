@@ -29,7 +29,7 @@ struct async_resource_base
 
   virtual void* allocate(cuda::stream_ref, std::size_t, std::size_t) = 0;
 
-  virtual void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) = 0;
+  virtual void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept = 0;
 
   bool operator==(const async_resource_base& other) const
   {
@@ -41,11 +41,11 @@ struct async_resource_base
   }
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend void get_property(const async_resource_base&, Property) noexcept {}
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES(cuda::property_with_value<Property>&& ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend typename Property::value_type get_property(const async_resource_base& res, Property) noexcept
   {
     return 42;
@@ -73,7 +73,7 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
     return &_val;
   }
 
-  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const async_resource_derived_first& other) const
   {
@@ -114,7 +114,7 @@ struct async_resource_derived_second : public async_resource_base<Properties...>
     return &_val->_val;
   }
 
-  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const async_resource_derived_second& other) const
   {
@@ -135,34 +135,8 @@ void test_async_resource_ref()
   async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
   async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
-
-  // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
-  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == second.allocate(::cudaStream_t{}, 0, 0));
-
-  // Ensure that assignment still works
-  ref_second = ref_first;
-  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
-}
-
-template <class... Properties>
-cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...>
-indirection(async_resource_base<cuda::mr::host_accessible, Properties...>* res)
-{
-  return {res};
-}
-
-template <class... Properties>
-void test_async_resource_ref_from_pointer()
-{
-  some_data input{1337};
-  async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
-  async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
-
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
@@ -188,11 +162,7 @@ int main(int, char**)
       // Test some basic combinations of properties w/o state
       test_async_resource_ref<property_with_value<short>, property_with_value<int>>();
       test_async_resource_ref<property_with_value<short>, property_without_value<int>>();
-      test_async_resource_ref<property_without_value<short>, property_without_value<int>>();
-
-      test_async_resource_ref_from_pointer<property_with_value<short>, property_with_value<int>>();
-      test_async_resource_ref_from_pointer<property_with_value<short>, property_without_value<int>>();
-      test_async_resource_ref_from_pointer<property_without_value<short>, property_without_value<int>>();))
+      test_async_resource_ref<property_without_value<short>, property_without_value<int>>();))
 
   return 0;
 }

@@ -40,11 +40,11 @@ public:
   _CCCL_API auto push(_Tp* __node) noexcept -> bool
   {
     _CCCL_ASSERT(__node != nullptr, "Cannot push a null pointer to the queue");
-    _Tp* __old_head = __head_.load(_CUDA_VSTD::memory_order_relaxed);
+    _Tp* __old_head = __head_.load(::cuda::std::memory_order_relaxed);
     do
     {
       __node->*_NextPtr = __old_head;
-    } while (!__head_.compare_exchange_weak(__old_head, __node, _CUDA_VSTD::memory_order_acq_rel));
+    } while (!__head_.compare_exchange_weak(__old_head, __node, ::cuda::std::memory_order_acq_rel));
 
     // If the queue was empty before, we notify the consumer thread that there is now an
     // item available. If the queue was not empty, we do not notify, because the consumer
@@ -69,12 +69,12 @@ public:
   [[nodiscard]]
   _CCCL_API auto pop_all() noexcept -> __intrusive_queue<_NextPtr>
   {
-    auto* const __list = __head_.exchange(nullptr, _CUDA_VSTD::memory_order_acquire);
+    auto* const __list = __head_.exchange(nullptr, ::cuda::std::memory_order_acquire);
     return __intrusive_queue<_NextPtr>::make_reversed(__list);
   }
 
 private:
-  _CUDA_VSTD::atomic<_Tp*> __head_{nullptr};
+  ::cuda::std::atomic<_Tp*> __head_{nullptr};
 };
 } // namespace cuda::experimental::execution
 

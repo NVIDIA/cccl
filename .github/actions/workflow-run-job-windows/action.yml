@@ -11,90 +11,244 @@ inputs:
   image:
     description: "The Docker image to use."
     required: true
+  runner:
+    description: "The GitHub Actions runner name."
+    required: true
+  cuda:
+    description: "The CUDA version to use when selecting a devcontainer."
+    required: true
+  host:
+    description: "The host compiler to use when selecting a devcontainer."
+    required: true
 
 runs:
+
   using: "composite"
   steps:
-    - name: Configure env
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
-    - name: Get AWS credentials for sccache bucket
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
-        aws-region: us-east-2
-        role-duration-seconds: 43200 # 12 hours
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
         path: ${{github.event.repository.name}}
         persist-credentials: false
-    - name: Fetch ${{ inputs.image }}
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
-      run: docker pull ${{ inputs.image }}
+      env:
+        COMMAND: "${{inputs.command}}"
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Use the job def info to setup the Github cache key:
+        pushd "${GITHUB_WORKSPACE}/${{github.event.repository.name}}" > /dev/null
+        job_hash=$(ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
+        job_project=$(ci/util/workflow/get_job_project.sh ${{ inputs.id }})
+        popd > /dev/null
+
+        echo "::group::️🔍 Job Vars"
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+
+        # Define the job input parameters as JOB_* environment variables that are visible in all steps:
+        echo "JOB_ID=${{inputs.id}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_RUNNER=${{inputs.runner}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+
+        # SCCACHE config:
+        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_DIR=C:\sccache\cache" | tee -a "${GITHUB_ENV}"
+
+        # Used to locate an appropriate existing cache:
+        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
+        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
+
+        # The new cache won't be uploaded unless the cache key is unique:
+        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
+        echo "::endgroup::"
+
+    - name: Create sccache dir
+      shell: powershell
+      run: |
+        mkdir $env:SCCACHE_DIR/preprocessor -Force > $null
+
+    - name: Setup sccache preprocessor cache
+      id: sccache-preprocessor-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{env.SCCACHE_DIR}}/preprocessor
+        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
+        restore-keys: |
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
+          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
+
+    - name: Install GPU driver
+      if: ${{ contains(inputs.runner, '-gpu-') }}
+      shell: powershell
+      env:
+        RUNNER: ${{ runner.name }}
+      run: |
+        echo "::group::Installing GPU driver"
+        ./.github/actions/workflow-run-job-windows/install_gpu_driver.ps1
+        nvidia-smi
+        echo "::endgroup::"
+
+    - name: Get AWS credentials for sccache bucket
+      if: ${{ github.repository == 'NVIDIA/cccl' }}
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+        aws-region: us-east-2
+        role-duration-seconds: 43200 # 12 hours
+
+    - name: Initialize artifact environment
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        repo_dir="${{ github.event.repository.name }}"
+        pushd "$repo_dir" > /dev/null
+        source ci/util/artifacts/common.sh
+        source ci/util/workflow/common.sh
+        popd > /dev/null
+
+        to_windows_path() {
+          local path="$1"
+
+          if [[ "$path" =~ ^/([a-z])/(.*)$ ]]; then
+            local drive="${BASH_REMATCH[1]^^}"
+            local rest="${BASH_REMATCH[2]}"
+            printf '%s:/%s\n' "$drive" "$rest"
+            return
+          fi
+
+          printf '%s\n' "$path"
+        }
+
+        printf 'ARTIFACT_UPLOAD_STAGE=%s\n' "$ARTIFACT_UPLOAD_STAGE" >> "$GITHUB_ENV"
+        printf 'ARTIFACT_ARCHIVES=%s\n' "$ARTIFACT_ARCHIVES" >> "$GITHUB_ENV"
+        printf 'ARTIFACT_UPLOAD_REGISTERY=%s\n' "$ARTIFACT_UPLOAD_REGISTERY" >> "$GITHUB_ENV"
+        printf 'WORKFLOW_ARTIFACT=%s\n' "$WORKFLOW_ARTIFACT" >> "$GITHUB_ENV"
+        printf 'WORKFLOW_DIR=%s\n' "$WORKFLOW_DIR" >> "$GITHUB_ENV"
+        printf 'RUNNER_TEMP_HOST=%s\n' "${RUNNER_TEMP:-}" >> "$GITHUB_ENV"
+
+        printf 'ARTIFACT_UPLOAD_STAGE_WIN=%s\n' "$(to_windows_path "$ARTIFACT_UPLOAD_STAGE")" >> "$GITHUB_ENV"
+        printf 'ARTIFACT_ARCHIVES_WIN=%s\n' "$(to_windows_path "$ARTIFACT_ARCHIVES")" >> "$GITHUB_ENV"
+        printf 'WORKFLOW_DIR_WIN=%s\n' "$(to_windows_path "$WORKFLOW_DIR")" >> "$GITHUB_ENV"
+
     - name: Prepare paths for docker
       shell: powershell
       id: paths
       run: |
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        cat $env:GITHUB_OUTPUT
-    - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+
+    - name: Fetch ${{ inputs.image }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        docker run \
-          --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
-          --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
-          --isolation=process \
-          --env COMMAND='& ${{inputs.command}}' \
-          ${{ inputs.image }} \
-          powershell -c "
-            [System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}');
-            [System.Environment]::SetEnvironmentVariable('AWS_SECRET_ACCESS_KEY','${{env.AWS_SECRET_ACCESS_KEY}}');
-            [System.Environment]::SetEnvironmentVariable('AWS_SESSION_TOKEN','${{env.AWS_SESSION_TOKEN }}');
-            [System.Environment]::SetEnvironmentVariable('SCCACHE_BUCKET','${{env.SCCACHE_BUCKET}}');
-            [System.Environment]::SetEnvironmentVariable('SCCACHE_REGION','${{env.SCCACHE_REGION}}');
-            [System.Environment]::SetEnvironmentVariable('SCCACHE_IDLE_TIMEOUT','${{env.SCCACHE_IDLE_TIMEOUT}}');
-            [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
-            [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
-            git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
-            Invoke-Expression \$env:COMMAND"
-    - name: Prepare job artifacts
-      shell: bash --noprofile --norc -euo pipefail {0}
-      id: done
-      run: |
-        echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
-
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
-
-        touch "$result_dir/success"
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$result_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || true # Ignore failures
-
-        echo "::group::Job artifacts"
-        find "$result_dir" # Tree not available in this image.
+        echo "::group::Pulling Docker image ${{ inputs.image }}"
+        docker pull ${{ inputs.image }}
         echo "::endgroup::"
 
+    - name: Run command
+      id: run
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ENABLE_GPU: ${{ contains(inputs.runner, '-gpu-') && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
+      run: |
+        cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
+        $ErrorActionPreference = 'Stop'
+
+        git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}'
+
+        # We've been seeing intermittent sccache auth issues on Windows. Make a few attempts to
+        # start the server and authenticate:
+        sccache --version
+        try { sccache --stop-server *>&1 | Out-Null } catch {}
+        & bash -c 'ci/util/retry.sh 5 30 sccache --start-server'
+
+        $exitCode = 0
+        try {
+          Write-Host "::group::>>>>> Executing command: $env:COMMAND <<<<<"
+          Write-Host "In directory: $(Get-Location)"
+          Invoke-Expression $env:COMMAND
+          $exitCode = $LASTEXITCODE
+          Write-Host "::endgroup::"
+          Write-Host "Command finished with exit code $exitCode"
+        } catch {
+          Write-Host 'Command failed with error'
+          Write-Host $_
+          $exitCode = 1
+        } finally {
+          Write-Host '::group::Uploading job result artifacts'
+          & bash 'ci/upload_job_result_artifacts.sh' $env:JOB_ID $exitCode
+          Write-Host '::endgroup::'
+        }
+
+        Write-Host "Container finished with exit code $exitCode"
+        exit $exitCode
+        EOF
+
+        docker_exit=0
+        set +e
+        docker run \
+          -v //./pipe/docker_engine://./pipe/docker_engine \
+          --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
+          --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
+          --mount type=bind,source="${{ env.ARTIFACT_ARCHIVES_WIN }}",target="${{ env.ARTIFACT_ARCHIVES_WIN }}" \
+          --mount type=bind,source="${{ env.WORKFLOW_DIR_WIN }}",target="${{ env.WORKFLOW_DIR_WIN }}" \
+          --mount type=bind,source="$SCCACHE_DIR",target="$SCCACHE_DIR" \
+          --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
+          --isolation=process \
+          ${{ env.ENABLE_GPU }} \
+          --env COMMAND='& ${{inputs.command}}' \
+          --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
+          --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
+          --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
+          --env "AWS_ACCESS_KEY_ID=${{env.AWS_ACCESS_KEY_ID}}" \
+          --env "AWS_SECRET_ACCESS_KEY=${{env.AWS_SECRET_ACCESS_KEY}}" \
+          --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN}}" \
+          --env "CONTAINER_WORKSPACE=${{steps.paths.outputs.MOUNT_REPO}}" \
+          --env "CI=true" \
+          --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
+          --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
+          --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
+          --env "GH_TOKEN=$GH_TOKEN" \
+          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+          --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+          --env "GITHUB_SHA=$GITHUB_SHA" \
+          --env "JOB_ID=${{inputs.id}}" \
+          --env "NVCC_APPEND_FLAGS=-t=100" \
+          --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
+          --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
+          --env "SCCACHE_DIR=${{env.SCCACHE_DIR}}" \
+          --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
+          --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
+          --env "SCCACHE_S3_NO_CREDENTIALS=${{env.SCCACHE_S3_NO_CREDENTIALS}}" \
+          --env "SCCACHE_S3_USE_SSL=${{env.SCCACHE_S3_USE_SSL}}" \
+          --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
+          --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
+          ${{ inputs.image }} \
+          powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
+
+        docker_exit=$?
+        set -e
+
+        artifacts=""
+        if artifacts=$(cd "${{ github.event.repository.name }}" && ci/util/artifacts/upload/print_matrix.sh); then
+          printf 'ARTIFACTS=%s\n' "$artifacts" >> "$GITHUB_OUTPUT"
+        fi
+
+        exit "$docker_exit"
+
     - name: Upload job artifacts
-      uses: actions/upload-artifact@v4
+      if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
+      uses: ./.github/actions/upload-artifacts
       with:
-        name: zz_jobs-${{inputs.id}}
-        path: jobs
-        compression-level: 0
+        artifacts: ${{ steps.run.outputs.ARTIFACTS }}

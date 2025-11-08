@@ -3,7 +3,7 @@
 
 shr.b16
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.b16 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
@@ -13,7 +13,7 @@ shr.b16
 
 shr.b32
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.b32 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -23,7 +23,7 @@ shr.b32
 
 shr.b64
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.b64 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>
@@ -33,7 +33,7 @@ shr.b64
 
 shr.s16
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.s16 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename = void>
@@ -43,7 +43,7 @@ shr.s16
 
 shr.s32
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.s32 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename = void>
@@ -53,7 +53,7 @@ shr.s32
 
 shr.s64
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shr.s64 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename = void>

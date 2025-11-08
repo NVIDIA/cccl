@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Typed numeric for representing memory allocation size (in bytes) for the `thread_hierarchy_spec` API below.
  * Use `mem(n)` to pass memory size requirements to the `par()` and `con()` family of functions.
@@ -125,7 +124,6 @@ class thread_hierarchy_spec;
 
 namespace reserved
 {
-
 template <bool, size_t, typename...>
 struct deduce_execution_policy;
 
@@ -148,7 +146,6 @@ struct deduce_execution_policy<b, s, thread_hierarchy_spec<P...>, Ts...>
                 "Only one argument of type deduce_execution_policy<...> is allowed.");
   using type = thread_hierarchy_spec<b, s, P...>;
 };
-
 } // namespace reserved
 
 template <auto... spec>
@@ -786,5 +783,4 @@ UNITTEST("spec with scope")
 };
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
@@ -21,6 +22,7 @@
 
 #include <format>
 #include <memory>
+#include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
 #include "jit_templates/templates/operation.h"
@@ -29,11 +31,11 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct device_reduce_policy;
 using TransformOpT = ::cuda::std::identity;
@@ -42,7 +44,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-
 struct reduce_runtime_tuning_policy
 {
   cub::detail::RuntimeReduceAgentPolicy single_tile;
@@ -82,7 +83,7 @@ std::string get_single_tile_kernel_name(
   bool is_second_kernel)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
 
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
@@ -92,11 +93,11 @@ std::string get_single_tile_kernel_name(
     // Second kernel is always invoked with an int offset.
     // See the definition of the local variable `reduce_grid_size`
     // in DispatchReduce::InvokePasses.
-    check(nvrtcGetTypeName<int>(&offset_t));
+    check(cccl_type_name_from_nvrtc<int>(&offset_t));
   }
   else
   {
-    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
   }
 
   return std::format(
@@ -114,13 +115,13 @@ std::string get_device_reduce_kernel_name(
   std::string_view reduction_op_t, std::string_view input_iterator_t, std::string_view accum_t)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_reduce_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   std::string transform_op_t;
-  check(nvrtcGetTypeName<cuda::std::identity>(&transform_op_t));
+  check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
 
   return std::format(
     "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
@@ -158,7 +159,7 @@ struct reduce_kernel_source
 struct reduce_iterator_tag;
 struct reduction_operation_tag;
 
-CUresult cccl_device_reduce_build(
+CUresult cccl_device_reduce_build_ex(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -169,7 +170,8 @@ CUresult cccl_device_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -189,55 +191,36 @@ CUresult cccl_device_reduce_build(
     const auto [op_name, op_src] =
       get_specialization<reduction_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    constexpr size_t ptx_num_args      = 5;
-    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
-
-    const std::string src = std::format(
-      R"XXX(
-#include <cub/block/block_reduce.cuh>
-{5}
-struct __align__({1}) storage_t {{
-  char data[{0}];
-}};
-{2}
-{3}
-{4}
-)XXX",
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      input_iterator_src, // 2
-      output_iterator_src, // 3
-      op_src, // 4
-      jit_template_header_contents); // 5
-
-    const auto offset_t           = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{}, {}, "
-                  "{}>::MaxPolicy::ActivePolicy{{}})",
-                  accum_cpp,
-                  offset_t,
-                  op_name),
-      "#include <cub/device/dispatch/tuning/tuning_reduce.cuh>\n" + src,
-      ptx_args);
-
-    using cub::detail::RuntimeReduceAgentPolicy;
-    auto [reduce_policy, reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
-    auto [st_policy, st_policy_str]         = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+    auto policy_hub_expr = std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
     std::string final_src = std::format(
-      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
-      "{0}\n"
-      "struct device_reduce_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    {1}\n"
-      "    {2}\n"
-      "  }};\n"
-      "}};",
-      src,
-      reduce_policy_str,
-      st_policy_str);
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
+{0}
+struct __align__({2}) storage_t {{
+  char data[{1}];
+}};
+{3}
+{4}
+{5}
+using device_reduce_policy = {6}::MaxPolicy;
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_reduce_policy")>()
+    = cub::detail::reduce::ReducePolicyWrapper<device_reduce_policy::ActivePolicy>::EncodedPolicy();
+}};
+)XXX",
+      jit_template_header_contents, // 0
+      input_it.value_type.size, // 1
+      input_it.value_type.alignment, // 2
+      input_iterator_src, // 3
+      output_iterator_src, // 4
+      op_src, // 5
+      policy_hub_expr); // 6
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -256,8 +239,8 @@ struct __align__({1}) storage_t {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 9;
-    const char* args[num_args] = {
+    // Build compilation arguments
+    std::vector<const char*> args = {
       arch.c_str(),
       cub_path,
       thrust_path,
@@ -266,16 +249,20 @@ struct __align__({1}) storage_t {{
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
+
+    // Add user's extra flags if config is provided
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input_it);
     appender.add_iterator_definition(output_it);
 
@@ -285,12 +272,12 @@ struct __align__({1}) storage_t {{
         ->add_expression({single_tile_kernel_name})
         ->add_expression({single_tile_second_kernel_name})
         ->add_expression({reduction_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
         ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -298,6 +285,13 @@ struct __align__({1}) storage_t {{
     check(cuLibraryGetKernel(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_reduce_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
+    auto st_policy     = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
 
     build->cc               = cc;
     build->cubin            = (void*) result.data.release();
@@ -402,4 +396,22 @@ CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr
   }
 
   return CUDA_SUCCESS;
+}
+
+// Backward compatibility wrapper
+CUresult cccl_device_reduce_build(
+  cccl_device_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_reduce_build_ex(
+    build, d_in, d_out, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
 }

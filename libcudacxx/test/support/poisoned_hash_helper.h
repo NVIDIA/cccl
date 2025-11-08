@@ -93,7 +93,6 @@ void test_library_hash_specializations_available(Types = Types{});
 
 namespace PoisonedHashDetail
 {
-
 template <class T, class = typename T::foo_bar_baz>
 constexpr bool instantiate(int)
 {
@@ -156,7 +155,6 @@ constexpr bool can_hash()
 {
   return can_hash<T>(0);
 }
-
 } // namespace PoisonedHashDetail
 
 template <class Hash, class Key, class InputKey>

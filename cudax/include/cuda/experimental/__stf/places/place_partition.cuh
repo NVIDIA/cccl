@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Defines a partitioning granularity
  *
@@ -185,18 +184,14 @@ private:
 
     if (place.is_device() && scope == place_partition_scope::green_context)
     {
-      // Find the device associated to the place, and get the cached green context helper in the
-      // async_resources_handle (if any)
-      int dev_id                                 = device_ordinal(place.affine_data_place());
-      ::std::shared_ptr<green_context_helper>& h = handle.gc_helper(dev_id);
-      // Lazy initialization : if this is a nullptr we haven't created the helper yet
-      if (h.get() == nullptr)
-      {
-        // 8 SMs per green context is a granularity that should work on any arch.
-        const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
-        int sm_cnt      = env ? atoi(env) : 8;
-        h               = ::std::make_shared<green_context_helper>(sm_cnt, dev_id);
-      }
+      // Find the device associated to the place, and get the green context helper
+      int dev_id = device_ordinal(place.affine_data_place());
+
+      // 8 SMs per green context is a granularity that should work on any arch.
+      const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
+      int sm_cnt      = env ? atoi(env) : 8;
+
+      auto h = handle.get_gc_helper(dev_id, sm_cnt);
 
       // Get views of green context out of the helper to create execution places
       size_t cnt = h->get_count();
@@ -214,5 +209,4 @@ private:
   /** A vector with all subplaces (computed once in compute_subplaces) */
   ::std::vector<exec_place> sub_places;
 };
-
 } // end namespace cuda::experimental::stf

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_STRING_H
-#define _LIBCUDACXX___FWD_STRING_H
+#ifndef _CUDA_STD___FWD_STRING_H
+#define _CUDA_STD___FWD_STRING_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+// libstdc++ puts basic_string to inline cxx11 namespace
+#  if _GLIBCXX_USE_CXX11_ABI
+inline _GLIBCXX_BEGIN_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+  template <class _CharT, class _Traits, class _Alloc>
+  class basic_string;
+
+#  if _GLIBCXX_USE_CXX11_ABI
+_GLIBCXX_END_NAMESPACE_CXX11
+#  endif // _GLIBCXX_USE_CXX11_ABI
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if 0 // we don't support these features
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
@@ -44,7 +66,7 @@ namespace pmr
 {
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-using basic_string = _CUDA_VSTD::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
+using basic_string = ::cuda::std::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
 
 using string  = basic_string<char>;
 using wstring = basic_string<wchar_t>;
@@ -76,8 +98,15 @@ class _CCCL_PREFERRED_NAME(string)
 // clang-format on
 #endif // 0
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+inline constexpr bool __is_std_basic_string_v = false;
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _CharT, class _Traits, class _Alloc>
+inline constexpr bool __is_std_basic_string_v<::std::basic_string<_CharT, _Traits, _Alloc>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_STRING_H
+#endif // _CUDA_STD___FWD_STRING_H

@@ -15,7 +15,7 @@
 // This test is an exception and shouldn't use C2H_CCCLRT_TEST macro
 C2H_TEST("Call each driver api", "[utility]")
 {
-  namespace driver = _CUDA_DRIVER;
+  namespace driver = ::cuda::__driver;
   cudaStream_t stream;
   // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
   // test leaves 2+ ctxs on the stack
@@ -57,8 +57,8 @@ C2H_TEST("Call each driver api", "[utility]")
 
   CCCLRT_REQUIRE(driver::__isPrimaryCtxActive(0));
   // Confirm we can reset the primary context with double release
-  driver::__primaryCtxRelease(0);
-  driver::__primaryCtxRelease(0);
+  CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
+  CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
 
   CCCLRT_REQUIRE(!driver::__isPrimaryCtxActive(0));
 

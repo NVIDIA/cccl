@@ -37,11 +37,8 @@
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::cpp
 {
-namespace cpp
-{
-
 /*! Allocates an area of memory available to Thrust's <tt>cpp</tt> system.
  *  \param n Number of bytes to allocate.
  *  \return A <tt>cpp::pointer<void></tt> pointing to the beginning of the newly
@@ -91,8 +88,7 @@ using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::
 template <typename T>
 using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::cpp::universal_host_pinned_memory_resource>;
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 /*! \namespace thrust::cpp
  *  \brief \p thrust::cpp is a top-level alias for thrust::system::cpp.

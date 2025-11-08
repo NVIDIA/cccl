@@ -7,12 +7,14 @@ CUDA C++ Core Libraries
    :hidden:
    :maxdepth: 3
 
-   libcu++ <https://nvidia.github.io/cccl/libcudacxx/>
-   CUB <https://nvidia.github.io/cccl/cub/>
-   Thrust <https://nvidia.github.io/cccl/thrust/>
-   Cuda Experimental <https://nvidia.github.io/cccl/cudax/>
-   CCCL 2.x ‐ CCCL 3.0 migration guide <cccl/3.0_migration_guide>
-   CCCL Development <cccl/development/index>
+   libcudacxx/index
+   cub/index
+   thrust/index
+   cudax/index
+   cccl/3.0_migration_guide
+   cccl/development/index
+   cccl/contributing
+   cccl/license
 
 Welcome to the CUDA Core Compute Libraries (CCCL) libraries for C++.
 
@@ -23,20 +25,20 @@ easy-to-use C++ abstractions for CUDA developers. Naturally, there was a lot
 of overlap among the three projects, and it became clear the community would
 be better served by unifying them into a single repository.
 
-- `libcu++ <https://nvidia.github.io/cccl/libcudacxx/>`__
+- :doc:`libcu++ <libcudacxx/index>`
   is the CUDA C++ Standard Library. It provides an implementation of the C++
   Standard Library that works in both host and device code. Additionally, it
   provides abstractions for CUDA-specific hardware features like
   synchronization primitives, cache control, atomics, and more.
 
-- `CUB <https://nvidia.github.io/cccl/cub/>`__
+- :doc:`CUB <cub/index>`
   is a lower-level, CUDA-specific library designed for speed-of-light parallel
   algorithms across all GPU architectures. In addition to device-wide
   algorithms, it provides *cooperative algorithms* like block-wide reduction
   and warp-wide scan, providing CUDA kernel developers with building blocks to
   create speed-of-light, custom kernels.
 
-- `Thrust <https://nvidia.github.io/cccl/thrust/>`__
+- :doc:`Thrust <thrust/index>`
   is the C++ parallel algorithms library which inspired the introduction of
   parallel algorithms to the C++ Standard Library. Thrust's high-level
   interface greatly enhances programmer productivity while enabling performance
@@ -44,7 +46,7 @@ be better served by unifying them into a single repository.
   allow using multiple parallel programming frameworks (such as CUDA, TBB, and
   OpenMP).
 
-- `Cuda Experimental <https://nvidia.github.io/cccl/cudax/>`__
+- :doc:`Cuda Experimental <cudax/index>`
   is a library of experimental features that are still in the design process.
 
 The main goal of the CCCL C++ libraries is to fill a similar role that the

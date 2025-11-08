@@ -23,6 +23,7 @@
 
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -45,11 +46,11 @@ struct __sync_wait_t : private sync_wait_t
     // The transformation would happen in due course in the connect cpo, so why transform
     // it here? This transformation shuffles the sender into one that can provide a
     // stream_ref, which is needed by __host_apply.
-    auto __new_sndr = execution::transform_sender(stream_domain{}, static_cast<_Sndr&&>(__sndr), __env);
+    auto __new_sndr = stream_domain{}.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), __env);
 
     NV_IF_TARGET(NV_IS_HOST,
-                 (return __host_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));),
-                 (return __device_apply(_CUDA_VSTD::move(__new_sndr), static_cast<_Env&&>(__env));))
+                 (return __host_apply(::cuda::std::move(__new_sndr), static_cast<_Env&&>(__env));),
+                 (return __device_apply(::cuda::std::move(__new_sndr), static_cast<_Env&&>(__env));))
     _CCCL_UNREACHABLE();
   }
 
@@ -61,20 +62,26 @@ struct __sync_wait_t : private sync_wait_t
 
 private:
   template <class _Sndr, class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __managed_state_t
   {
-    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
-    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
-    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
-    using __rcvr_t                       = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
+    using __partial_completions_t = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    using __all_nothrow_t =
+      typename __partial_completions_t::template __transform_q<__nothrow_decay_copyable_t, ::cuda::std::_And>;
 
-    _CCCL_HOST_API explicit __state_t(_Sndr&& __sndr, _Env&& __env)
+    using __completions_t =
+      __concat_completion_signatures_t<__partial_completions_t, __eptr_completion_if_t<!__all_nothrow_t::value>>;
+
+    using __values_t = __value_types<__completions_t, __decayed_tuple, ::cuda::std::__type_self_t>;
+    using __errors_t = __error_types<__completions_t, __decayed_variant>;
+    using __rcvr_t   = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
+
+    _CCCL_HOST_API explicit __managed_state_t(_Sndr&& __sndr, _Env&& __env)
         : __result_{}
-        , __state_{{{}, static_cast<_Env&&>(__env)}, &__result_, {}}
+        , __state_{static_cast<_Env&&>(__env), &__result_}
         , __opstate_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state_})}
     {}
 
-    _CUDA_VSTD::optional<__values_t> __result_;
+    ::cuda::std::optional<__values_t> __result_;
     sync_wait_t::__state_t<__values_t, __errors_t, _Env> __state_;
     connect_result_t<_Sndr, __rcvr_t> __opstate_;
   };
@@ -91,7 +98,7 @@ private:
     stream_ref __stream = __get_stream(__sndr, __env);
 
     // Launch the sender with a continuation that will fill in a variant
-    using __box_t = __managed_box<__state_t<_Sndr, _Env>>;
+    using __box_t = __managed_box<__managed_state_t<_Sndr, _Env>>;
     auto __box    = __box_t::__make_unique(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
     execution::start(__box->__value.__opstate_);
 
@@ -105,10 +112,10 @@ private:
 
     if (__state.__errors_.__index() != __npos)
     {
-      __state.__errors_.__visit(sync_wait_t::__throw_error_fn{}, _CUDA_VSTD::move(__state.__errors_));
+      __state.__errors_.__visit(sync_wait_t::__throw_error_fn{}, ::cuda::std::move(__state.__errors_));
     }
 
-    return _CUDA_VSTD::move(__box->__value.__result_);
+    return ::cuda::std::move(__box->__value.__result_);
   }
 };
 } // namespace __stream
@@ -116,7 +123,6 @@ private:
 template <>
 struct stream_domain::__apply_t<sync_wait_t> : __stream::__sync_wait_t
 {};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -34,7 +34,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
@@ -57,11 +58,11 @@ THRUST_NAMESPACE_BEGIN
  */
 
 /*! \addtogroup numerics
- *  \{
+ *!  \{
  */
 
 /*! \addtogroup complex_numbers Complex Numbers
- *  \{
+ *!  \{
  */
 
 /*! \p complex is the Thrust equivalent to <tt>std::complex</tt>. It is
@@ -844,6 +845,11 @@ _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y);
 
+/*!
+ * \} end group complex_numbers
+ * \} end group numerics
+ */
+
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/complex/complex.inl>
@@ -851,9 +857,3 @@ THRUST_NAMESPACE_END
 #undef THRUST_STD_COMPLEX_REAL
 #undef THRUST_STD_COMPLEX_IMAG
 #undef THRUST_STD_COMPLEX_DEVICE
-
-/*! \} // complex_numbers
- */
-
-/*! \} // numerics
- */

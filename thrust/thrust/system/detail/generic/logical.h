@@ -31,13 +31,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
 all_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
@@ -58,8 +53,5 @@ none_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, In
 {
   return !thrust::any_of(exec, first, last, pred);
 }
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

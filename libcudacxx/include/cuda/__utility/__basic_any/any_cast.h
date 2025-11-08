@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_ANY_CAST_H
+#define _CUDA___UTILITY_BASIC_ANY_ANY_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __valid_any_cast
@@ -45,17 +45,17 @@ inline constexpr bool __valid_any_cast<_Interface*, _Tp> = false;
 
 template <class _Interface, class _Tp>
 inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
-  !_CUDA_VSTD::is_const_v<_Interface> || _CUDA_VSTD::is_const_v<_Tp>;
+  !::cuda::std::is_const_v<_Interface> || ::cuda::std::is_const_v<_Tp>;
 
 //!
 //! __any_cast
 //!
 _CCCL_TEMPLATE(class _Tp, class _Interface)
-_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
+_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || ::cuda::std::is_void_v<_Tp>)
 [[nodiscard]] _CCCL_API auto __any_cast(__basic_any<_Interface>* __self) noexcept -> _Tp*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
-  if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
+  if (__self && (::cuda::std::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
   {
     return static_cast<_Tp*>(__basic_any_access::__get_optr(*__self));
   }
@@ -63,11 +63,11 @@ _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Interface)
-_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
+_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || ::cuda::std::is_void_v<_Tp>)
 [[nodiscard]] _CCCL_API auto __any_cast(__basic_any<_Interface> const* __self) noexcept -> _Tp const*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
-  if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
+  if (__self && (::cuda::std::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
   {
     return static_cast<_Tp const*>(__basic_any_access::__get_optr(*__self));
   }
@@ -76,8 +76,8 @@ _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 
 // TODO: implement the same overloads as for std::__any_cast
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H
+#endif // _CUDA___UTILITY_BASIC_ANY_ANY_CAST_H

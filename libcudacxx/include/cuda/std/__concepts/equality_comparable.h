@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_EQUALITY_COMPARABLE_H
-#define _LIBCUDACXX___CONCEPTS_EQUALITY_COMPARABLE_H
+#ifndef _CUDA_STD___CONCEPTS_EQUALITY_COMPARABLE_H
+#define _CUDA_STD___CONCEPTS_EQUALITY_COMPARABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,11 +24,12 @@
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_reference.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -56,10 +57,7 @@ concept equality_comparable_with =
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__with_lvalue_reference_, requires()(typename(__make_const_lvalue_ref<_Tp>)));
-
-template <class _Tp>
-_CCCL_CONCEPT _With_lvalue_reference = _CCCL_FRAGMENT(__with_lvalue_reference_, _Tp);
+_CCCL_CONCEPT _With_lvalue_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__make_const_lvalue_ref<_Tp>));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -93,8 +91,8 @@ _CCCL_CONCEPT equality_comparable_with = _CCCL_FRAGMENT(__equality_comparable_wi
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_EQUALITY_COMPARABLE_H
+#endif // _CUDA_STD___CONCEPTS_EQUALITY_COMPARABLE_H

@@ -49,8 +49,8 @@
 #  include <thrust/pair.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/find.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/reverse.h>
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/util.h>
@@ -60,10 +60,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
 struct DispatchPartitionIf
 {
@@ -253,7 +251,6 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
     partition(policy, tmp.data().get(), tmp.data().get() + num_items, stencil, first, predicate);
   return first + num_selected;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -399,7 +396,6 @@ is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, P
   ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
   return end == last;
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

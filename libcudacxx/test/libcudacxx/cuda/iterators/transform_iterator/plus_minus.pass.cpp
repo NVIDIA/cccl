@@ -40,10 +40,23 @@ __host__ __device__ constexpr void test()
     assert((iter1 + 2) - 2 == iter1);
     assert((iter1 - 2) + 2 == iter1);
   }
+  else if constexpr (::cuda::std::sized_sentinel_for<Iter, Iter>)
+  {
+    static_assert(!can_plus<cuda::transform_iterator<PlusOne, Iter>>);
+    static_assert(!can_minus<cuda::transform_iterator<PlusOne, Iter>>);
+
+    int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+
+    cuda::transform_iterator iter1{Iter{buffer + 4}, PlusOne{}};
+    cuda::transform_iterator iter2{Iter{buffer}, PlusOne{}};
+    assert(iter1 - iter2 == 4);
+    static_assert(noexcept(iter1 - iter2));
+    static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::iter_difference_t<Iter>>);
+  }
   else
   {
-    static_assert(!can_plus<cuda::transform_iterator<Iter, PlusOne>>);
-    static_assert(!can_minus<cuda::transform_iterator<Iter, PlusOne>>);
+    static_assert(!can_plus<cuda::transform_iterator<PlusOne, Iter>>);
+    static_assert(!can_minus<cuda::transform_iterator<PlusOne, Iter>>);
   }
 }
 
@@ -51,6 +64,7 @@ __host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<random_access_iterator<int*>>();
+  test<forward_sized_iterator<int*>>();
   test<int*>();
 
   return true;

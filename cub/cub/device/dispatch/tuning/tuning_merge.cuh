@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -42,11 +18,9 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::merge
 {
-namespace merge
-{
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_hub
 {
   static constexpr bool has_values = !::cuda::std::is_same_v<ValueT, NullType>;
@@ -56,36 +30,79 @@ struct policy_hub
   struct policy500 : ChainedPolicy<500, policy500, policy500>
   {
     using merge_policy =
-      agent_policy_t<256,
-                     Nominal4BItemsToItems<tune_type>(11),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<256, Nominal4BItemsToItems<tune_type>(11), LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   struct policy520 : ChainedPolicy<520, policy520, policy500>
   {
     using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(13),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<512, Nominal4BItemsToItems<tune_type>(13), LOAD_LDG, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
   struct policy600 : ChainedPolicy<600, policy600, policy520>
   {
     using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(15),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_DEFAULT,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
+      agent_policy_t<512, Nominal4BItemsToItems<tune_type>(15), LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  using max_policy = policy600;
+  struct policy800 : ChainedPolicy<800, policy800, policy600>
+  {
+  private:
+    static constexpr bool keys_only      = ::cuda::std::is_same_v<ValueT, NullType>;
+    static constexpr bool use_bl2sh_keys = sizeof(KeyT) < 4;
+    static constexpr bool use_bl2sh_pairs =
+      // enable for Key I8
+      sizeof(KeyT) == 1 ||
+      // enable for Key I16 when ValueT is I8 or I16
+      (sizeof(KeyT) == 2 && sizeof(ValueT) < 4) ||
+      // enable for Key I32/F32 when ValueT is I8
+      (sizeof(KeyT) == 4 && sizeof(ValueT) == 1);
+
+  public:
+    using merge_policy =
+      agent_policy_t<512,
+                     Nominal4BItemsToItems<tune_type>(15),
+                     LOAD_DEFAULT,
+                     BLOCK_STORE_WARP_TRANSPOSE,
+                     /* UseBlockLoadToShared = */ keys_only ? use_bl2sh_keys : use_bl2sh_pairs>;
+  };
+
+  struct policy900 : ChainedPolicy<900, policy900, policy800>
+  {
+  private:
+    static constexpr bool keys_only      = ::cuda::std::is_same_v<ValueT, NullType>;
+    static constexpr bool use_bl2sh_keys = sizeof(KeyT) != 8; // disable for Key I64
+    static constexpr bool use_bl2sh_pairs =
+      // disable for Key I64 Value I64, Key F64 Value I64
+      !(sizeof(KeyT) == 8 && sizeof(ValueT) == 8)
+      // disable for Key I128
+      && (sizeof(KeyT) != 16
+          // but re-enable for Key I128 Value I8 Offset I32
+          || (sizeof(KeyT) == 16 && sizeof(ValueT) == 1 && sizeof(OffsetT) == 4)
+          // but re-enable for Key I128 Value I64
+          || (sizeof(KeyT) == 16 && sizeof(ValueT) == 8));
+
+  public:
+    using merge_policy =
+      agent_policy_t<512,
+                     Nominal4BItemsToItems<tune_type>(15),
+                     LOAD_DEFAULT,
+                     BLOCK_STORE_WARP_TRANSPOSE,
+                     /* UseBlockLoadToShared = */ keys_only ? use_bl2sh_keys : use_bl2sh_pairs>;
+  };
+
+  struct policy1000 : ChainedPolicy<1000, policy1000, policy900>
+  {
+    using merge_policy =
+      agent_policy_t<512,
+                     Nominal4BItemsToItems<tune_type>(15),
+                     LOAD_DEFAULT,
+                     BLOCK_STORE_WARP_TRANSPOSE,
+                     /* UseBlockLoadToShared = */ true>;
+  };
+
+  using max_policy = policy1000;
 };
-} // namespace merge
-} // namespace detail
+} // namespace detail::merge
 
 CUB_NAMESPACE_END

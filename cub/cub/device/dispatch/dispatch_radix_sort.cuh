@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -44,8 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
-#include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -54,8 +29,12 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
@@ -153,7 +132,6 @@ struct DeviceSegmentedRadixSortKernelSource
     return sizeof(ValueT);
   }
 };
-
 } // namespace detail::radix_sort
 
 /******************************************************************************
@@ -373,7 +351,7 @@ struct DispatchRadixSort
     cudaError error = cudaSuccess;
     do
     {
-      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, end_bit - current_bit);
+      int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
 // Log upsweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -548,7 +526,7 @@ struct DispatchRadixSort
         max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
 
         even_share.DispatchInit(
-          num_items, max_downsweep_grid_size, _CUDA_VSTD::max(downsweep_config.tile_size, upsweep_config.tile_size));
+          num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
 
       } while (0);
       return error;
@@ -574,7 +552,7 @@ struct DispatchRadixSort
     int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
     OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
     PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
-      static_cast<int>(_CUDA_VSTD::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+      static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : kernel_source.ValueSize();
     size_t allocation_sizes[] = {
@@ -709,11 +687,11 @@ struct DispatchRadixSort
 
       for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
       {
-        int num_bits = _CUDA_VSTD::min(end_bit - current_bit, RADIX_BITS);
+        int num_bits = ::cuda::std::min(end_bit - current_bit, RADIX_BITS);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
           PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-            _CUDA_VSTD::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+            ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
           PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 
@@ -884,8 +862,9 @@ struct DispatchRadixSort
       }
 
       // Get maximum spine length
-      int max_grid_size = _CUDA_VSTD::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
-      int spine_length  = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
+      int max_grid_size =
+        ::cuda::std::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+      int spine_length = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
       // Temporary storage allocation requirements
       void* allocations[3]       = {};
@@ -919,7 +898,7 @@ struct DispatchRadixSort
       int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+      int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
       // Alias the temporary storage allocations
       OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -1361,7 +1340,7 @@ struct DispatchSegmentedRadixSort
     cudaError error = cudaSuccess;
 
     // The number of bits to process in this pass
-    int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
+    int pass_bits = ::cuda::std::min(pass_config.radix_bits, (end_bit - current_bit));
 
     // The offset type (used to specialize the kernel template), large enough to index any segment within a single
     // invocation
@@ -1373,14 +1352,6 @@ struct DispatchSegmentedRadixSort
 
     // Number of radix sort invocations until all segments have been processed
     const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
-
-    // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
-    // max_num_segments_per_invocation segments per invocation
-    if (num_invocations > 1
-        && !detail::all_iterators_support_add_assign_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
-    {
-      return cudaErrorInvalidValue;
-    }
 
     BeginOffsetIteratorT begin_offsets_current_it = d_begin_offsets;
     EndOffsetIteratorT end_offsets_current_it     = d_end_offsets;
@@ -1430,8 +1401,8 @@ struct DispatchSegmentedRadixSort
 
       if (invocation_index + 1 < num_invocations)
       {
-        detail::advance_iterators_inplace_if_supported(begin_offsets_current_it, num_current_segments);
-        detail::advance_iterators_inplace_if_supported(end_offsets_current_it, num_current_segments);
+        begin_offsets_current_it += num_current_segments;
+        end_offsets_current_it += num_current_segments;
       }
 
       // Sync the stream if specified to flush runtime errors
@@ -1541,10 +1512,10 @@ struct DispatchSegmentedRadixSort
       int radix_bits         = policy.RadixBits(policy.Segmented());
       int alt_radix_bits     = policy.RadixBits(policy.AltSegmented());
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
+      int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+      int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),

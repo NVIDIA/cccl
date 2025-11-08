@@ -38,7 +38,6 @@
 
 namespace cuda::experimental::stf
 {
-
 logical_data_untyped unpack_state(const ::std::shared_ptr<void>&);
 
 class logical_data_untyped_impl;
@@ -102,7 +101,6 @@ private:
 
 namespace reserved
 {
-
 /**
  * @brief This class describes the status of a logical data (e.g. previous writer,
  * readers...) in a specific task context.
@@ -366,21 +364,6 @@ public:
 
     enable_write_back = flag;
   }
-
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    enable_auto_dump = flag;
-  }
-
-  bool get_auto_dump() const
-  {
-    return enable_auto_dump;
-  }
-
-  bool enable_auto_dump = true;
 
   bool was_erased = false;
 
@@ -944,7 +927,6 @@ public:
 private:
   ::std::mutex mutex;
 };
-
 } // namespace reserved
 
 /** @brief Base class of all `logical_data<T>` types. It does not "know" the type of the data, so most of the time it's
@@ -1650,19 +1632,6 @@ public:
     pimpl->set_write_back(flag);
   }
 
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    pimpl->set_auto_dump(flag);
-  }
-
-  bool get_auto_dump() const
-  {
-    return pimpl->get_auto_dump();
-  }
-
   reserved::logical_data_state& get_state()
   {
     return pimpl->get_state();
@@ -1699,12 +1668,12 @@ public:
     return pimpl->get_mutex();
   }
 
-private:
   int get_unique_id() const
   {
     return pimpl->get_unique_id();
   }
 
+private:
   ::std::shared_ptr<reserved::logical_data_untyped_impl> pimpl;
 };
 
@@ -1868,7 +1837,6 @@ inline void reserved::logical_data_untyped_impl::erase()
 
 namespace reserved
 {
-
 /**
  * @brief Implements STF dependencies.
  *
@@ -1989,18 +1957,25 @@ inline event_list enforce_stf_deps_before(
       // writer
       assert(ctx_.current_writer.has_value());
       ctx_.previous_writer = mv(ctx_.current_writer);
-      const auto& pw       = ctx_.previous_writer;
 
-      result.merge(pw->get_done_prereqs());
-
-      const int pw_id = pw->get_unique_id();
-
-      if (dot_is_tracing)
+      if (ctx_.previous_writer.has_value())
       {
-        dot.add_edge(pw_id, task.get_unique_id());
-      }
+        const auto& pw = ctx_.previous_writer.value();
+        result.merge(pw.get_done_prereqs());
 
-      ctx_st.leaves.remove(pw_id);
+        const int pw_id = pw.get_unique_id();
+
+        if (dot_is_tracing)
+        {
+          dot.add_edge(pw_id, task.get_unique_id());
+        }
+
+        ctx_st.leaves.remove(pw_id);
+      }
+      else
+      {
+        EXPECT(false, "Internal error: previous_writer must be set");
+      }
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2083,7 +2058,6 @@ inline void fetch_data(
   // because we are reclaiming data for instance.
   result.merge(mv(stf_prereq));
 }
-
 }; // namespace reserved
 
 // This implementation is deferred because we need the logical_data_untyped type in it
@@ -2624,5 +2598,4 @@ inline void reclaim_memory(
     }
   }
 }
-
 } // namespace cuda::experimental::stf

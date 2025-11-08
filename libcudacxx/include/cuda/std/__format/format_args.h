@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMAT_ARGS_H
-#define _LIBCUDACXX___FORMAT_FORMAT_ARGS_H
+#ifndef _CUDA_STD___FORMAT_FORMAT_ARGS_H
+#define _CUDA_STD___FORMAT_FORMAT_ARGS_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Context>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_args
@@ -40,7 +40,7 @@ public:
   {
     if constexpr (sizeof...(_Args) != 0)
     {
-      if constexpr (_CUDA_VSTD::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
+      if constexpr (::cuda::std::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
       {
         __packed_.__values = __store.__storage.__values_;
         __packed_.__types  = __store.__storage.__types_;
@@ -59,10 +59,10 @@ public:
       return basic_format_arg<_Context>{};
     }
 
-    if (_CUDA_VSTD::__fmt_use_packed_format_arg_store(__size_))
+    if (::cuda::std::__fmt_use_packed_format_arg_store(__size_))
     {
       return basic_format_arg<_Context>{
-        _CUDA_VSTD::__fmt_get_packed_type(__packed_.__types, __id), __packed_.__values[__id]};
+        ::cuda::std::__fmt_get_packed_type(__packed_.__types, __id), __packed_.__values[__id]};
     }
 
     return __unpacked_.__args[__id];
@@ -115,8 +115,8 @@ template <class... _Args>
 }
 #endif // _CCCL_HAS_WCHAR_T()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_ARGS_H
+#endif // _CUDA_STD___FORMAT_FORMAT_ARGS_H

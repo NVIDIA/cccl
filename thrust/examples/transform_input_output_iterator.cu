@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // Base 2 fixed point
 class ScaledInteger
 {
@@ -92,7 +90,7 @@ int main()
     C.begin(), ValueToScaledInteger{C_scale}, ScaledIntegerToValue{C_scale});
 
   // Sum A and B as ScaledIntegers, storing the scaled result in C
-  thrust::transform(A_begin, A_end, B_begin, C_begin, ::cuda::std::plus<ScaledInteger>{});
+  thrust::transform(A_begin, A_end, B_begin, C_begin, cuda::std::plus<ScaledInteger>{});
 
   thrust::host_vector<int> A_h(A);
   thrust::host_vector<int> B_h(B);
@@ -109,9 +107,9 @@ int main()
   std::cout << "] \n";
 
   std::cout << "Result   [ ";
-  for (size_t i = 0; i < size; i++)
+  for (const auto& value : C_h)
   {
-    std::cout << C_h[i] << " ";
+    std::cout << value << " ";
   }
   std::cout << "] \n";
 

@@ -33,13 +33,8 @@
 #include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
@@ -78,8 +73,5 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
   return result + (last - first);
 }
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

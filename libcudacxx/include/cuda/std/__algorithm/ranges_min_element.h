@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_RANGES_MIN_ELEMENT_H
-#define _LIBCUDACXX___ALGORITHM_RANGES_MIN_ELEMENT_H
+#ifndef _CUDA_STD___ALGORITHM_RANGES_MIN_ELEMENT_H
+#define _CUDA_STD___ALGORITHM_RANGES_MIN_ELEMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,36 +33,36 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__min_element)
+_CCCL_BEGIN_NAMESPACE_CPO(__min_element)
 struct __fn
 {
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
+  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
                    indirect_strict_weak_order<_Comp, projected<_Ip, _Proj>>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __first, _Sp __last, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    return _CUDA_VSTD::__min_element(__first, __last, __comp, __proj);
+    return ::cuda::std::__min_element(__first, __last, __comp, __proj);
   }
 
-  _CCCL_TEMPLATE(class _Rp, class _Proj = identity, class _Comp = _CUDA_VRANGES::less)
+  _CCCL_TEMPLATE(class _Rp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
   _CCCL_REQUIRES(forward_range<_Rp> _CCCL_AND indirect_strict_weak_order<_Comp, projected<iterator_t<_Rp>, _Proj>>)
   [[nodiscard]] _CCCL_API constexpr borrowed_iterator_t<_Rp>
   operator()(_Rp&& __r, _Comp __comp = {}, _Proj __proj = {}) const
   {
-    return _CUDA_VSTD::__min_element(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r), __comp, __proj);
+    return ::cuda::std::__min_element(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r), __comp, __proj);
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto min_element = __min_element::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_RANGES_MIN_ELEMENT_H
+#endif // _CUDA_STD___ALGORITHM_RANGES_MIN_ELEMENT_H

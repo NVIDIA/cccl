@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <cub/config.cuh>
 
 #include <cub/device/device_for.cuh>
@@ -41,6 +18,7 @@
 #include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_TYPES types 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
@@ -49,23 +27,21 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  **********************************************************************************************************************/
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
-static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
-  _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
+static void fill_linear_impl(
+  c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
-  vector[pos++] = {indices...};
-  return void(); // nvc++ requires a return statement
-}
-
-template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
-static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
-  _CCCL_TRAILING_REQUIRES(void)((Rank < ExtentType::rank()))
-{
-  using IndexType = typename ExtentType::index_type;
-  for (IndexType i = 0; i < ext.extent(Rank); ++i)
+  if constexpr (Rank == ExtentType::rank())
   {
-    fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
+    vector[pos++] = {indices...};
   }
-  return void(); // nvc++ requires a return statement
+  else
+  {
+    using IndexType = typename ExtentType::index_type;
+    for (IndexType i = 0; i < ext.extent(Rank); ++i)
+    {
+      fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
+    }
+  }
 }
 
 template <typename T, typename IndexType, size_t... Extents>
@@ -98,32 +74,38 @@ struct LinearStore
  * TEST CASES
  **********************************************************************************************************************/
 
-using index_types =
-  c2h::type_list<int8_t,
-                 uint8_t,
-                 int16_t,
-                 uint16_t,
-                 int32_t,
-                 uint32_t
-#if _CCCL_HAS_INT128()
-                 ,
-                 int64_t,
-                 uint64_t
-#endif
-                 >;
+using index_types = c2h::type_list<
+#if TEST_TYPES == 0
+  int8_t,
+  uint8_t,
+  int16_t,
+  uint16_t
+#elif TEST_TYPES == 1
+  int32_t,
+  uint32_t
+#  if _CCCL_HAS_INT128()
+  ,
+  int64_t,
+  uint64_t
+#  endif // _CCCL_HAS_INT128()
+#endif // TEST_TYPES
+  >;
 
 // int8_t/uint8_t are not enabled because they easily overflow
-using index_types_dynamic =
-  c2h::type_list<int16_t,
-                 uint16_t,
-                 int32_t,
-                 uint32_t
-#if _CCCL_HAS_INT128()
-                 ,
-                 int64_t,
-                 uint64_t
-#endif
-                 >;
+using index_types_dynamic = c2h::type_list<
+#if TEST_TYPES == 0
+  int16_t,
+  uint16_t
+#elif TEST_TYPES == 1
+  int32_t,
+  uint32_t
+#  if _CCCL_HAS_INT128()
+  ,
+  int64_t,
+  uint64_t
+#  endif // _CCCL_HAS_INT128()
+#endif // TEST_TYPES
+  >;
 
 using dimensions =
   c2h::type_list<cuda::std::index_sequence<>,

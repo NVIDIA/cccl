@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -47,14 +23,17 @@
 #include <cub/agent/agent_rle.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -66,7 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle
 {
-
 template <typename PrecedingKeyItT, typename RunLengthT, typename GlobalOffsetT>
 struct streaming_context
 {
@@ -268,12 +246,12 @@ struct DeviceRleDispatch
    * Types and constants
    ******************************************************************************/
   // Offsets to index items within one partition (i.e., a single kernel invocation)
-  using local_offset_t = _CUDA_VSTD::int32_t;
+  using local_offset_t = ::cuda::std::int32_t;
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = _CUDA_VSTD::numeric_limits<OffsetT>::max()
-                                                 > _CUDA_VSTD::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
+                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -337,38 +315,6 @@ struct DeviceRleDispatch
    * @tparam DeviceRleSweepKernelPtr
    *   Function type of cub::DeviceRleSweepKernelPtr
    *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to
-   *   `temp_storage_bytes` and no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param d_offsets_out
-   *   Pointer to the output sequence of run-offsets
-   *
-   * @param d_lengths_out
-   *   Pointer to the output sequence of run-lengths
-   *
-   * @param d_num_runs_out
-   *   Pointer to the total number of runs encountered (i.e., length of `d_offsets_out`)
-   *
-   * @param equality_op
-   *   Equality operator for input items
-   *
-   * @param num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   *
-   * @param ptx_version
-   *   PTX version of dispatch kernels
-   *
    * @param device_scan_init_kernel
    *   Kernel function pointer to parameterization of cub::DeviceScanInitKernel
    *
@@ -389,14 +335,15 @@ struct DeviceRleDispatch
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
-      capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
+      capped_num_items_per_invocation =
+        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? _CUDA_VSTD::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -442,26 +389,6 @@ struct DeviceRleDispatch
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      streaming_context_t streaming_context{};
-      if constexpr (use_streaming_invocation)
-      {
-        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
-        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
-
-        const bool is_first_partition = (partition_idx == 0);
-        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
-        const int buffer_selector     = partition_idx % 2;
-
-        streaming_context = streaming_context_t{
-          is_first_partition,
-          is_last_partition,
-          current_partition_offset,
-          &tmp_prefix[buffer_selector],
-          &tmp_prefix[buffer_selector ^ 0x01],
-          &tmp_num_uniques[buffer_selector],
-          &tmp_num_uniques[buffer_selector ^ 0x01]};
-      }
-
       // Construct the tile status interface
       const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
 
@@ -474,7 +401,7 @@ struct DeviceRleDispatch
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -518,17 +445,50 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-        .doit(device_rle_sweep_kernel,
-              d_in + current_partition_offset,
-              d_offsets_out,
-              d_lengths_out,
-              d_num_runs_out,
-              tile_status,
-              equality_op,
-              static_cast<local_offset_t>(current_num_items),
-              num_current_tiles,
-              streaming_context);
+      if constexpr (use_streaming_invocation)
+      {
+        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+        auto tmp_prefix      = static_cast<length_t*>(allocations[2]);
+
+        const bool is_first_partition = (partition_idx == 0);
+        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
+        const int buffer_selector     = partition_idx % 2;
+
+        streaming_context_t streaming_context{
+          is_first_partition,
+          is_last_partition,
+          current_partition_offset,
+          &tmp_prefix[buffer_selector],
+          &tmp_prefix[buffer_selector ^ 0x01],
+          &tmp_num_uniques[buffer_selector],
+          &tmp_num_uniques[buffer_selector ^ 0x01]};
+
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                streaming_context);
+      }
+      else
+      {
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+          .doit(device_rle_sweep_kernel,
+                d_in + current_partition_offset,
+                d_offsets_out,
+                d_lengths_out,
+                d_num_runs_out,
+                tile_status,
+                equality_op,
+                static_cast<local_offset_t>(current_num_items),
+                num_current_tiles,
+                NullType{});
+      }
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());

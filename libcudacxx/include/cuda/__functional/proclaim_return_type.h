@@ -30,10 +30,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
-
 template <class _Ret, class _DecayFn>
 class __return_type_wrapper
 {
@@ -43,65 +42,64 @@ private:
 public:
   __return_type_wrapper() = delete;
 
-  template <class _Fn, class = _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::decay_t<_Fn>, _DecayFn>::value>>
+  template <class _Fn, class = ::cuda::std::enable_if_t<::cuda::std::is_same_v<::cuda::std::decay_t<_Fn>, _DecayFn>>>
   _CCCL_API constexpr explicit __return_type_wrapper(_Fn&& __fn) noexcept
-      : __fn_(_CUDA_VSTD::forward<_Fn>(__fn))
+      : __fn_(::cuda::std::forward<_Fn>(__fn))
   {}
 
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) & noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn&, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<_DecayFn&, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
-    return _CUDA_VSTD::__invoke(__fn_, _CUDA_VSTD::forward<_As>(__as)...);
+    return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) && noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<_DecayFn, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
-    return _CUDA_VSTD::__invoke(_CUDA_VSTD::move(__fn_), _CUDA_VSTD::forward<_As>(__as)...);
+    return ::cuda::std::__invoke(::cuda::std::move(__fn_), ::cuda::std::forward<_As>(__as)...);
   }
 
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn&, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<const _DecayFn&, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
-    return _CUDA_VSTD::__invoke(__fn_, _CUDA_VSTD::forward<_As>(__as)...);
+    return ::cuda::std::__invoke(__fn_, ::cuda::std::forward<_As>(__as)...);
   }
 
   template <class... _As>
   _CCCL_API constexpr _Ret operator()(_As&&... __as) const&& noexcept
   {
 #if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
-    static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn, _As...>::type>::value,
+    static_assert(::cuda::std::is_same_v<_Ret, ::cuda::std::invoke_result_t<const _DecayFn, _As...>>,
                   "Return type shall match the proclaimed one exactly");
 #endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
-    return _CUDA_VSTD::__invoke(_CUDA_VSTD::move(__fn_), _CUDA_VSTD::forward<_As>(__as)...);
+    return ::cuda::std::__invoke(::cuda::std::move(__fn_), ::cuda::std::forward<_As>(__as)...);
   }
 };
-
 } // namespace __detail
 
 template <class _Ret, class _Fn>
-_CCCL_API inline __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::decay_t<_Fn>>
+_CCCL_API inline __detail::__return_type_wrapper<_Ret, ::cuda::std::decay_t<_Fn>>
 proclaim_return_type(_Fn&& __fn) noexcept
 {
-  return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__fn));
+  return __detail::__return_type_wrapper<_Ret, ::cuda::std::decay_t<_Fn>>(::cuda::std::forward<_Fn>(__fn));
 }
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

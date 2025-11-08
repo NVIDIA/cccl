@@ -38,13 +38,8 @@
 // Contributed by Erich Elsen
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename T>
 _CCCL_HOST_DEVICE InputIterator
 find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const T& value)
@@ -136,8 +131,5 @@ find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, 
 {
   return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred));
 } // end find()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

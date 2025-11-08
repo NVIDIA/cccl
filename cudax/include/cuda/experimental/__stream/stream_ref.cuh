@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM_REF
-#define _CUDAX__STREAM_STREAM_REF
+#ifndef _CUDAX__STREAM_STREAM_REF_CUH
+#define _CUDAX__STREAM_STREAM_REF_CUH
 
 #include <cuda/std/detail/__config>
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,10 +22,11 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__event/timed_event.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/stream_ref>
+#include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/stream_ref.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -48,7 +49,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Converting constructor from \c ::cuda::stream_ref
   //!
   //! @post `*this == __other`
-  _CCCL_HOST_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
+  _CCCL_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
       : ::cuda::stream_ref(__other)
   {}
 
@@ -63,7 +64,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Returns a \c execution::sender that completes on this stream.
   //!
   //! @note Equivalent to `execution::schedule(execution::stream_scheduler{*this})`.
-  _CCCL_HOST_API auto schedule() const noexcept;
+  _CCCL_API auto schedule() const noexcept;
 
   //! @brief Get the logical device under which this stream was created.
   //!
@@ -76,10 +77,10 @@ struct stream_ref : ::cuda::stream_ref
 #if _CCCL_CTK_AT_LEAST(12, 5)
     if (__driver::__getVersion() >= 12050)
     {
-      auto __ctx = _CUDA_DRIVER::__streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind_ == _CUDA_DRIVER::__ctx_from_stream::__kind::__green)
+      auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = _CUDA_DRIVER::__ctxFromGreenCtx(__ctx.__ctx_green_);
+        __stream_ctx = ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -91,7 +92,7 @@ struct stream_ref : ::cuda::stream_ref
     else
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
     {
-      __stream_ctx = _CUDA_DRIVER::__streamGetCtx(__stream);
+      __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
@@ -102,18 +103,35 @@ struct stream_ref : ::cuda::stream_ref
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_forward_progress_guarantee_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_forward_progress_guarantee_t&) const noexcept
     -> execution::forward_progress_guarantee
   {
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_domain_t&) noexcept
-    -> execution::stream_domain;
-};
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_completion_behavior_t&) const noexcept
+  {
+    return execution::completion_behavior::asynchronous;
+  }
 
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> execution::__scheduler_of_t<const _Env&>;
+
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept -> execution::stream_domain;
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto
+  query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
+    -> __call_result_t<execution::get_domain_t, const _Env&>;
+};
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM_REF
+#endif // _CUDAX__STREAM_STREAM_REF_CUH

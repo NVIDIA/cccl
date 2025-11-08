@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_MDSPAN_H
-#define _LIBCUDACXX___FWD_MDSPAN_H
+#ifndef _CUDA_STD___FWD_MDSPAN_H
+#define _CUDA_STD___FWD_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,11 +28,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [mdspan.accessor.default]
 template <class _ElementType>
@@ -78,13 +79,44 @@ template <class _ElementType,
 class mdspan;
 
 template <class _Tp>
-inline constexpr bool __is_std_mdspan_v = false;
+inline constexpr bool __is_cuda_std_mdspan_v = false;
 
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
-inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
+inline constexpr bool __is_cuda_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <typename _Layout>
+inline constexpr bool __is_cuda_std_layout_left_mapping_v = false;
+
+template <typename _Extents>
+inline constexpr bool __is_cuda_std_layout_left_mapping_v<layout_left::mapping<_Extents>> = true;
+
+template <typename _Layout>
+inline constexpr bool __is_cuda_std_layout_right_mapping_v = false;
+
+template <typename _Extents>
+inline constexpr bool __is_cuda_std_layout_right_mapping_v<layout_right::mapping<_Extents>> = true;
+
+template <typename _Layout>
+inline constexpr bool __is_cuda_std_layout_left_or_right_mapping_v =
+  __is_cuda_std_layout_left_mapping_v<_Layout> || __is_cuda_std_layout_right_mapping_v<_Layout>;
+
+// TODO (fbusato): Add support for layout_right_padded and layout_left_padded
+// template<>
+// inline constexpr bool __is_cuda_std_layout_right_mapping_v<layout_right_padded> = true;
+
+// template<>
+// inline constexpr bool __is_cuda_std_layout_left_mapping_v<layout_left_padded> = true;
+
+template <class _IndexType, size_t... _Extents>
+class extents;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_extents_v = false;
+template <class _IndexType, size_t... _Extents>
+inline constexpr bool __is_cuda_std_extents_v<extents<_IndexType, _Extents...>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_MDSPAN_H
+#endif // _CUDA_STD___FWD_MDSPAN_H

@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -40,12 +16,19 @@
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 #include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
-#include <cuda/cmath> // cuda::std::ceil_div
-#include <cuda/std/bit> // cuda::std::has_single_bit
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
-#include <cuda/std/limits> // numeric_limits
-#include <cuda/std/type_traits> // ::cuda::std::is_integral
+#include <cuda/std/limits>
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
@@ -55,7 +38,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 /***********************************************************************************************************************
  * larger_unsigned_type
  **********************************************************************************************************************/
@@ -236,7 +218,6 @@ private:
   unsigned _shift_right  = 0;
 };
 _CCCL_DIAG_POP
-
 } // namespace detail
 
 CUB_NAMESPACE_END

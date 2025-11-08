@@ -32,13 +32,8 @@
 #include <cuda/std/functional>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
 _CCCL_HOST_DEVICE bool
 equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
@@ -59,8 +54,5 @@ equal(thrust::execution_policy<DerivedPolicy>& exec,
 {
   return thrust::mismatch(exec, first1, last1, first2, binary_pred).first == last1;
 }
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

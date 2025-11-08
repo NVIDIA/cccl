@@ -88,6 +88,55 @@ struct IterNotDefaultConstructible
 #endif // TEST_STD_VER <=2017
 };
 
+struct IterNotDefaultConstructibleSized
+{
+  int i; // deliberately uninitialised
+
+  __host__ __device__ constexpr IterNotDefaultConstructibleSized(const int val) noexcept
+      : i(val)
+  {}
+
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = int;
+  using difference_type   = intptr_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  __host__ __device__ constexpr int operator*() const
+  {
+    return i;
+  }
+
+  __host__ __device__ constexpr IterNotDefaultConstructibleSized& operator++()
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr void operator++(int) {}
+
+#if TEST_STD_VER >= 2020
+  __host__ __device__ friend constexpr bool
+  operator==(const IterNotDefaultConstructibleSized&, const IterNotDefaultConstructibleSized&) = default;
+#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+  __host__ __device__ friend constexpr bool
+  operator==(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
+  {
+    return lhs.i == rhs.i;
+  }
+  __host__ __device__ friend constexpr bool
+  operator!=(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
+  {
+    return lhs.i != rhs.i;
+  }
+#endif // TEST_STD_VER <=2017
+
+  __host__ __device__ friend constexpr difference_type
+  operator-(const IterNotDefaultConstructibleSized& x, const IterNotDefaultConstructibleSized& y)
+  {
+    return x.i - y.i;
+  }
+};
+static_assert(::cuda::std::__has_random_access_traversal<IterNotDefaultConstructibleSized>);
+
 template <class Base = int*>
 struct forward_sized_iterator
 {
@@ -217,7 +266,6 @@ struct iter_move_swap_iterator
     ++y.iter_swap_called_times;
   }
 };
-
 } // namespace adltest
 
 // This is for testing that zip iterator never calls underlying iterator's >, >=, <=, !=.

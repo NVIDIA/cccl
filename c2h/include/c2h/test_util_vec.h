@@ -299,7 +299,7 @@ C2H_VEC_OVERLOAD_4(double4_32a)
 #  define REPEAT_TO_LIST(N, a) _CCCL_PP_CAT(REPEAT_TO_LIST_, N)(a)
 
 #  define C2H_VEC_TRAITS_OVERLOAD_IMPL(T, BaseT, N)                               \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD                                               \
+    _CCCL_BEGIN_NAMESPACE_CUDA_STD                                                \
     template <>                                                                   \
     class numeric_limits<T>                                                       \
     {                                                                             \
@@ -318,7 +318,7 @@ C2H_VEC_OVERLOAD_4(double4_32a)
         return {REPEAT_TO_LIST(N, ::cuda::std::numeric_limits<BaseT>::lowest())}; \
       }                                                                           \
     };                                                                            \
-    _LIBCUDACXX_END_NAMESPACE_STD
+    _CCCL_END_NAMESPACE_CUDA_STD
 
 #  define C2H_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT)      \
     C2H_VEC_TRAITS_OVERLOAD_IMPL(COMPONENT_T##1, BaseT, 1) \

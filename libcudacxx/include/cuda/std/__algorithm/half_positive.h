@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_HALF_POSITIVE_H
-#define _LIBCUDACXX___ALGORITHM_HALF_POSITIVE_H
+#ifndef _CUDA_STD___ALGORITHM_HALF_POSITIVE_H
+#define _CUDA_STD___ALGORITHM_HALF_POSITIVE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Perform division by two quickly for positive integers (llvm.org/PR39129)
 
@@ -42,8 +42,8 @@ template <class _Tp, enable_if_t<!is_integral_v<_Tp>, int> = 0>
   return __value / 2;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_HALF_POSITIVE_H
+#endif // _CUDA_STD___ALGORITHM_HALF_POSITIVE_H

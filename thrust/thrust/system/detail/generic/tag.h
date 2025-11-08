@@ -31,13 +31,8 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 // tag exists only to make the generic entry points the least priority match
 // during ADL. tag should not be derived from and is constructible from anything
 struct tag
@@ -46,8 +41,5 @@ struct tag
   _CCCL_HOST_DEVICE inline tag(const T&)
   {}
 };
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

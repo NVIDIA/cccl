@@ -25,6 +25,13 @@ inputs:
     description: "Path to the matrix parser script (default if blank: build-workflow.py from action dir)"
     default: ""
     required: false
+  github_token:
+    description: "The GitHub token to use for commenting on the PR. No comment will be made if not provided."
+    required: false
+  pr_number:
+    description: "The associated PR number, if any, to leave a comment on."
+    default: ""
+    required: false
   slack_token:
     description: "The Slack token to use for notifications. No notifications will be sent if not provided."
     required: false
@@ -66,37 +73,97 @@ runs:
         base_ref: ${{ inputs.inspect_changes_base_sha }}
       run: |
         echo "Running inspect-changes script..."
-        ${{ inputs.inspect_changes_script }} ${base_ref} ${GITHUB_SHA}
-        echo "Exporting summary..."
         mkdir workflow
-        cp ${GITHUB_STEP_SUMMARY} workflow/changes.md
+        ${{ inputs.inspect_changes_script }} ${base_ref} ${GITHUB_SHA} workflow/changes.md
 
     - name: Parse matrix file into a workflow
       id: build-workflow
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
-        dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
-        dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
+        full_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--full-build-projects' || ''}}
+        full_build_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.FULL_BUILD || ''}}
+        lite_build_projects_flag: ${{ inputs.inspect_changes_script != '' && '--lite-build-projects' || ''}}
+        lite_build_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.LITE_BUILD || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
       run: |
         echo "Parsing matrix file into a workflow..."
 
-        ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
-            --workflows ${{ inputs.workflows }}                      \
-            ${{ env.allow_override }}                                \
-            ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
+        echo "::group::Generating GHA workflow from matrix.yaml"
+        ${{ env.matrix_parser }} ${{ inputs.matrix_file }}                     \
+            --workflows ${{ inputs.workflows }}                                \
+            ${{ env.allow_override }}                                          \
+            ${{ env.full_build_projects_flag }} ${{ env.full_build_projects }} \
+            ${{ env.lite_build_projects_flag }} ${{ env.lite_build_projects }}
+        echo "::endgroup::"
+
+        if [[ -f workflow/override.json ]]; then
+          echo "::group::Override matrix"
+          cat workflow/override.json
+          (
+            echo "<details><summary><h3>🛠️ Override Matrix</h3></summary>"
+            echo "<pre>"
+            cat workflow/override.json
+            echo "</pre>"
+            echo "</details>"
+          ) > workflow/override.md
+          echo "::endgroup::"
+        fi
 
         echo "::group::Workflow"
         cat workflow/workflow.json
         echo "::endgroup::"
 
         echo "::group::Runners"
-        cat workflow/runner_summary.json | jq -r '"# \(.heading)\n\n\(.body)"' | tee -a "${GITHUB_STEP_SUMMARY}"
+        heading=$(jq -r '.heading' workflow/runner_summary.json || :)
+        body=$(jq -r '.body' workflow/runner_summary.json || :)
+        (
+          echo "<details><summary><h3>${heading}</h3></summary>"
+          echo
+          echo "${body}"
+          echo
+          echo "</details>"
+        ) > workflow/runner_summary.md
         echo "::endgroup::"
 
         echo "::group::Job List"
-        cat workflow/job_list.txt
+        cat workflow/job_list.txt || :
+        (
+          echo "<details><summary><h3>🗒️ Job List</h3></summary>"
+          echo "<pre>"
+          cat workflow/job_list.txt || :
+          echo
+          echo "</pre>"
+          echo "</details>"
+        ) > workflow/job_list.md
+        echo "::endgroup::"
+
+        # Extract the number of total jobs:
+        num_jobs=($(jq -r '. | length' workflow/job_ids.json))
+
+        (
+          declare -a files=(
+            workflow/override.md
+            workflow/changes.md
+            workflow/job_list.md
+            workflow/runner_summary.md
+          )
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              cat "$file"
+            fi
+          done
+        ) > workflow/job_matrix_details.md
+
+        echo -n "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}" > workflow/summary_url.txt
+
+        echo "::group::Job Matrix Details"
+        (
+          echo "## [⚙️ Job Matrix Details]($(cat workflow/summary_url.txt))"
+          echo "<details><summary><h3>🟨 Running $num_jobs jobs...</h3></summary>"
+          cat workflow/job_matrix_details.md
+          echo "</details>"
+        ) | tee -a "${GITHUB_STEP_SUMMARY}"
         echo "::endgroup::"
 
     - name: Create dispatch workflows

@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename T>
 _CCCL_HOST_DEVICE InputIterator
 find(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const T& value);
@@ -46,10 +41,7 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/find.inl>

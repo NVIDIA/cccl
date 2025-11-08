@@ -10,14 +10,10 @@
 #ifndef SUPPORT_TEST_ITERATORS_H
 #define SUPPORT_TEST_ITERATORS_H
 
-#include <cuda/std/iterator>
-
-#if defined(_LIBCUDACXX_HAS_STDEXCEPT)
-#  include <cuda/std/stdexcept>
-#endif
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -207,6 +203,11 @@ public:
   __host__ __device__ friend constexpr bool operator!=(const forward_iterator& x, const forward_iterator& y)
   {
     return x.it_ != y.it_;
+  }
+
+  __host__ __device__ constexpr It base() const
+  {
+    return it_;
   }
 
   __host__ __device__ friend constexpr It base(const forward_iterator& i)
@@ -700,6 +701,7 @@ public:
   void operator,(T const&) = delete;
 };
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
@@ -1440,7 +1442,6 @@ private:
 
 namespace adl
 {
-
 class Iterator
 {
 public:
@@ -1595,7 +1596,6 @@ public:
   }
 #endif // TEST_STD_VER< 2020
 };
-
 } // namespace adl
 
 // Proxy
@@ -1738,9 +1738,7 @@ struct Proxy
 _CCCL_END_NV_DIAG_SUPPRESS()
 #endif // TEST_COMPILER(MSVC)
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 // This is to make ProxyIterator model `cuda::std::indirectly_readable`
 template <class T, class U, template <class> class TQual, template <class> class UQual>
@@ -1753,8 +1751,7 @@ template <class T, class U>
 struct common_type<Proxy<T>, Proxy<U>>
     : public enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 // ProxyIterator
 // ======================================================================

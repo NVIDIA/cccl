@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
@@ -110,10 +105,7 @@ is_sorted_until(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator f
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
 _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Compare comp);
-
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/sort.inl>

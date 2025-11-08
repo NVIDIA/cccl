@@ -29,13 +29,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_difference(
   thrust::execution_policy<ExecutionPolicy>& exec,
@@ -279,10 +274,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
   OutputIterator1 keys_result,
   OutputIterator2 values_result,
   StrictWeakOrdering comp);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/set_operations.inl>

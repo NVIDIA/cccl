@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class logical_data_untyped;
 class data_place;
 class task;
@@ -51,7 +50,6 @@ struct owning_container_of;
 
 namespace reserved
 {
-
 // Helper `struct` for deducing read-only types
 template <typename T>
 struct readonly_type_of
@@ -83,7 +81,6 @@ struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 
 template <class T>
 inline constexpr bool always_false = false;
-
 } // namespace reserved
 
 /**
@@ -111,11 +108,11 @@ rw_type_of<T> to_rw_type_of(const T& t)
 template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
 mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Extents, Layout, Accessor<const T>>& md)
 {
-  if constexpr (_CUDA_VSTD::is_default_constructible_v<Accessor<T>>)
+  if constexpr (::cuda::std::is_default_constructible_v<Accessor<T>>)
   {
     return mdspan<T, Extents, Layout, Accessor<T>>{const_cast<T*>(md.data_handle()), md.mapping()};
   }
-  else if constexpr (_CUDA_VSTD::is_constructible_v<Accessor<T>, const Accessor<const T>&>)
+  else if constexpr (::cuda::std::is_constructible_v<Accessor<T>, const Accessor<const T>&>)
   {
     return mdspan<T, Extents, Layout, Accessor<T>>{
       const_cast<T*>(md.data_handle()), md.mapping(), Accessor<T>{md.accessor()}};
@@ -483,5 +480,4 @@ inline _CCCL_HOST_DEVICE shape_of<T> shape(const T& inst)
 {
   return shape_of<T>(inst);
 }
-
 } // namespace cuda::experimental::stf

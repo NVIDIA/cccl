@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -46,7 +22,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 #include <nv/target>
 
@@ -64,8 +41,8 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   /// The value type of the input iterator
   using T = cub::detail::it_value_t<AIteratorT>;
 
-  OffsetT split_min = _CUDA_VSTD::max(diagonal - b_len, 0);
-  OffsetT split_max = _CUDA_VSTD::min(diagonal, a_len);
+  OffsetT split_min = ::cuda::std::max(diagonal - b_len, 0);
+  OffsetT split_max = ::cuda::std::min(diagonal, a_len);
 
   while (split_min < split_max)
   {
@@ -82,7 +59,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     }
   }
 
-  path_coordinate.x = _CUDA_VSTD::min(split_min, a_len);
+  path_coordinate.x = ::cuda::std::min(split_min, a_len);
   path_coordinate.y = diagonal - split_min;
 }
 

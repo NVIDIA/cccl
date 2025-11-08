@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2008-2021 NVIDIA Corporation
  *
@@ -35,8 +34,8 @@
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>

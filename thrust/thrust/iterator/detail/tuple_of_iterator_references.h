@@ -38,7 +38,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename... Ts>
 class tuple_of_iterator_references;
 
@@ -131,16 +130,15 @@ public:
     return {maybe_unwrap_nested<Us, Ts>{}(get<Id>(*this))...};
   }
 };
-
 } // namespace detail
 
 THRUST_NAMESPACE_END
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... Ts>
-struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>> : true_type
-{};
+inline constexpr bool
+  __is_tuple_of_iterator_references_v<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>> = true;
 
 // define tuple_size, tuple_element, etc.
 template <class... Ts>
@@ -150,16 +148,15 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : _CUDA_VSTD::tuple_element<Id, _CUDA_VSTD::tuple<Ts...>>
+    : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // structured bindings support
 #if !_CCCL_COMPILER(NVRTC)
 namespace std
 {
-
 template <class... Ts>
 struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : integral_constant<size_t, sizeof...(Ts)>
@@ -167,8 +164,7 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : _CUDA_VSTD::tuple_element<Id, _CUDA_VSTD::tuple<Ts...>>
+    : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
-
 } // namespace std
 #endif // !_CCCL_COMPILER(NVRTC)

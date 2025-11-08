@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP
-#define _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATE_TRANSPOSED_H
+#define _CUDA_STD___LINALG_CONJUGATE_TRANSPOSED_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,21 +34,19 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
-
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
 [[nodiscard]] _CCCL_API constexpr auto conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   return conjugated(transposed(__a));
 }
-
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP
+#endif // _CUDA_STD___LINALG_CONJUGATE_TRANSPOSED_HPP

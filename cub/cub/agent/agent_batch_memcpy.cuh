@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -52,15 +28,17 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace batch_memcpy
+namespace detail::batch_memcpy
 {
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
 _CCCL_FORCEINLINE _CCCL_DEVICE void
@@ -470,33 +448,33 @@ private:
 /**
  * Parameterizable tuning policy type for AgentBatchMemcpy
  */
-template <uint32_t _BLOCK_THREADS,
-          uint32_t _BUFFERS_PER_THREAD,
-          uint32_t _TLEV_BYTES_PER_THREAD,
-          bool _PREFER_POW2_BITS,
-          uint32_t _BLOCK_LEVEL_TILE_SIZE,
-          uint32_t _WARP_LEVEL_THRESHOLD,
-          uint32_t _BLOCK_LEVEL_THRESHOLD,
+template <uint32_t BlockThreads,
+          uint32_t BuffersPerThread,
+          uint32_t TlevBytesPerThread,
+          bool PreferPow2Bits,
+          uint32_t BlockLevelTileSize,
+          uint32_t WarpLevelThreshold,
+          uint32_t BlockLevelThreshold,
           class BuffDelayConstructor,
           class BlockDelayConstructor>
 struct AgentBatchMemcpyPolicy
 {
   /// Threads per thread block
-  static constexpr uint32_t BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr uint32_t BLOCK_THREADS = BlockThreads;
   /// Items per thread (per tile of input)
-  static constexpr uint32_t BUFFERS_PER_THREAD = _BUFFERS_PER_THREAD;
+  static constexpr uint32_t BUFFERS_PER_THREAD = BuffersPerThread;
   /// The number of bytes that each thread will work on with each iteration of reading in bytes
   /// from one or more
   // source-buffers and writing them out to the respective destination-buffers.
-  static constexpr uint32_t TLEV_BYTES_PER_THREAD = _TLEV_BYTES_PER_THREAD;
+  static constexpr uint32_t TLEV_BYTES_PER_THREAD = TlevBytesPerThread;
   /// Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
   /// counter
-  static constexpr uint32_t PREFER_POW2_BITS = _PREFER_POW2_BITS;
+  static constexpr uint32_t PREFER_POW2_BITS = PreferPow2Bits;
   /// BLEV tile size granularity
-  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = _BLOCK_LEVEL_TILE_SIZE;
+  static constexpr uint32_t BLOCK_LEVEL_TILE_SIZE = BlockLevelTileSize;
 
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = _WARP_LEVEL_THRESHOLD;
-  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = _BLOCK_LEVEL_THRESHOLD;
+  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = WarpLevelThreshold;
+  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = BlockLevelThreshold;
 
   using buff_delay_constructor  = BuffDelayConstructor;
   using block_delay_constructor = BlockDelayConstructor;
@@ -1175,7 +1153,6 @@ private:
   // buffers
   BLevBlockOffsetTileState blev_block_scan_state;
 };
-} // namespace batch_memcpy
-} // namespace detail
+} // namespace detail::batch_memcpy
 
 CUB_NAMESPACE_END

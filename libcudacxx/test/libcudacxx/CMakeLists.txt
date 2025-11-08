@@ -9,8 +9,6 @@ endmacro()
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-set(LIBCUDACXX_HIGHEST_COMPUTE_ARCH 90)
-
 foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
   set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
   set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}")
@@ -26,18 +24,21 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
   # Should also set up dependency on the project when NVRTC is enabled
   foreach (include IN ITEMS ${CUDA_INCLUDE_DIR})
-    set(LIBCUDACXX_TEST_COMPILER_FLAGS "${LIBCUDACXX_TEST_COMPILER_FLAGS} -I'${include}'")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I'${include}'")
   endforeach()
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
   # Use the NVRTCC utility to run the built test outputs
   set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
+  # Enable 128-bit types for NVRTC
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-int128")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-float128")
 else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
   set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h")
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "False")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
 endif()
 
 # enable exceptions and assertions in tests
@@ -50,6 +51,10 @@ string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
+endif()
+
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
@@ -61,6 +66,13 @@ if (MSVC)
   # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
   if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
     string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
+
+  # Require the conforming preprocessor
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:preprocessor")
+  if (MSVC_TOOLSET_VERSION LESS 143)
+    # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/wd5105")
   endif()
 endif()
 
@@ -173,7 +185,7 @@ function(libcudacxx_add_test target_name_var source)
   target_link_libraries(${target_name} PRIVATE
     libcudacxx::libcudacxx
     cccl.c2h.main
-    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    libcudacxx.compiler_interface
   )
 
   add_dependencies(${c2h_all_target} ${target_name})

@@ -37,14 +37,7 @@
 #endif // no system header
 #include <thrust/system/cuda/config.h>
 
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/util_temporary_storage.cuh>
-
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/cuda/detail/util.h>
-#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/type_traits>
 
@@ -52,11 +45,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
-{
-namespace detail
+namespace cuda_cub::core::detail
 {
 /// Typelist - a container of types
 template <typename...>
@@ -396,15 +385,6 @@ struct get_arch<Plan<Arch>>
   using type = Arch;
 };
 
-// BlockLoad
-// -----------
-// a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-struct BlockLoad
-{
-  using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
-};
-
 // cuda_optional
 // --------------
 // used for function that return cudaError_t along with the result
@@ -601,9 +581,6 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

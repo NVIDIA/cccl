@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
-#define _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
+#ifndef _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H
+#define _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,13 +44,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Extents>
-class layout_right::mapping : private __mdspan_ebco<_Extents>
+class _CCCL_DECLSPEC_EMPTY_BASES layout_right::mapping : private __mdspan_ebco<_Extents>
 {
 public:
-  static_assert(__mdspan_detail::__is_extents<_Extents>::value,
+  static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_right::mapping template argument must be a specialization of extents.");
 
   using extents_type = _Extents;
@@ -291,8 +291,8 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherExtents, class _Extents2 = _Extents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr auto operator!=(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((_OtherExtents::rank() == _Extents2::rank()))
   {
     return __lhs.extents() != __rhs.extents();
@@ -300,8 +300,8 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
+#endif // _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H

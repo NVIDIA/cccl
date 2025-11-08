@@ -21,44 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__algorithm/fill.h>
 #include <cuda/std/__concepts/concept_macros.h>
 
-#include <cuda/experimental/__algorithm/common.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh>
+#include <cuda/experimental/__stream/device_transform.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-namespace __detail
-{
-template <typename _DstTy, _CUDA_VSTD::size_t _DstSize>
-_CCCL_HOST_API void
-__fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> __dst, _CUDA_VSTD::uint8_t __value)
-{
-  static_assert(!_CUDA_VSTD::is_const_v<_DstTy>, "Fill destination can't be const");
-  static_assert(_CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
-
-  // TODO do a host callback if not device accessible?
-  _CUDA_DRIVER::__memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());
-}
-
-template <typename _DstElem, typename _DstExtents, typename _DstLayout, typename _DstAccessor>
-_CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
-                                      _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst,
-                                      _CUDA_VSTD::uint8_t __value)
-{
-  // Check if the mdspan is exhaustive
-  if (!__dst.is_exhaustive())
-  {
-    _CUDA_VSTD::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
-  }
-
-  ::cuda::experimental::__detail::__fill_bytes_impl(
-    __stream, _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()), __value);
-}
-} // namespace __detail
-
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
 //!
 //! The destination needs to either be a `contiguous_range` or transform into one. It can
@@ -72,11 +43,11 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__spannable<transformed_device_argument_t<_DstTy>>)
-_CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, _CUDA_VSTD::uint8_t __value)
+_CCCL_REQUIRES(::cuda::__spannable<transformed_device_argument_t<_DstTy>>)
+_CCCL_HOST_API void fill_bytes(::cuda::stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
-  ::cuda::experimental::__detail::__fill_bytes_impl(
-    __stream, _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))), __value);
+  ::cuda::__detail::__fill_bytes_impl(
+    __stream, ::cuda::std::span(device_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
@@ -94,15 +65,12 @@ _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, _CUDA_VSTD::
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
-_CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, _CUDA_VSTD::uint8_t __value)
+_CCCL_REQUIRES(::cuda::__mdspannable<transformed_device_argument_t<_DstTy>>)
+_CCCL_HOST_API void fill_bytes(::cuda::stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)
 {
-  ::cuda::experimental::__detail::__fill_bytes_impl(
-    __stream,
-    ::cuda::experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))),
-    __value);
+  ::cuda::__detail::__fill_bytes_impl(
+    __stream, ::cuda::__as_mdspan(device_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

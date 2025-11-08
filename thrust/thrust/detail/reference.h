@@ -32,15 +32,39 @@
 #endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/assign_value.h>
-#include <thrust/system/detail/adl/get_value.h>
-#include <thrust/system/detail/adl/iter_swap.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
 #include <cuda/std/type_traits>
 
 #include <ostream>
+
+// Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
+#include <thrust/system/detail/sequential/assign_value.h>
+#include <thrust/system/detail/sequential/get_value.h>
+#include <thrust/system/detail/sequential/iter_swap.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/assign_value.h>
+#  include <thrust/system/cpp/detail/get_value.h>
+#  include <thrust/system/cpp/detail/iter_swap.h>
+#  include <thrust/system/cuda/detail/assign_value.h>
+#  include <thrust/system/cuda/detail/get_value.h>
+#  include <thrust/system/cuda/detail/iter_swap.h>
+#  include <thrust/system/omp/detail/assign_value.h>
+#  include <thrust/system/omp/detail/get_value.h>
+#  include <thrust/system/omp/detail/iter_swap.h>
+#  include <thrust/system/tbb/detail/assign_value.h>
+#  include <thrust/system/tbb/detail/get_value.h>
+#  include <thrust/system/tbb/detail/iter_swap.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
@@ -156,11 +180,9 @@ public:
    */
   _CCCL_HOST_DEVICE void swap(derived_type other)
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    swap(system, other);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag;
+    swap(&tag, other);
   }
 
   _CCCL_HOST_DEVICE pointer operator&() const
@@ -172,11 +194,9 @@ public:
   // about what system the object is on.
   _CCCL_HOST_DEVICE operator value_type() const
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    return convert_to_value_type(system);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag;
+    return convert_to_value_type(&tag);
   }
 
   _CCCL_HOST_DEVICE derived_type& operator++()
@@ -347,12 +367,10 @@ private:
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE void assign_from(OtherPointer src) const
   {
-    // Avoid default-constructing systems; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system0      = nullptr;
-    typename thrust::iterator_system<OtherPointer>::type* system1 = nullptr;
-    assign_from(system0, system1, src);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag0;
+    typename iterator_system_t<OtherPointer>::tag_type tag1;
+    assign_from(&tag0, &tag1, src);
   }
 
   template <typename System, typename OtherPointer>

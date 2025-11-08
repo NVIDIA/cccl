@@ -28,13 +28,8 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename UnaryFunction,
@@ -47,10 +42,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   UnaryFunction unary_op,
   OutputType init,
   BinaryFunction binary_op);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+}
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_reduce.inl>

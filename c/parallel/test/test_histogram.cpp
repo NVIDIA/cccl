@@ -8,15 +8,26 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <array>
 #include <cstdint>
+#include <vector>
 
 #include <cuda_runtime.h>
 
 #include "test_util.h"
 #include <cccl/c/histogram.h>
 
-using sample_types = c2h::type_list<std::int8_t, std::uint16_t, std::int32_t, std::uint64_t, float, double>;
-using LevelT       = double;
+using sample_types =
+  c2h::type_list<std::int8_t,
+                 std::uint16_t,
+                 std::int32_t,
+                 std::uint64_t,
+#if _CCCL_HAS_NVFP16()
+                 __half,
+#endif
+                 float,
+                 double>;
+using LevelT = double;
 
 constexpr int num_channels        = 1;
 constexpr int num_active_channels = 1;
@@ -197,7 +208,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   using counter_t = int;
 
   int num_samples = 10;
-  std::vector<float> d_samples{2.2, 6.1, 7.1, 2.9, 3.5, 0.3, 2.9, 2.1, 6.1, 999.5};
+  std::vector<float> d_samples{2.2f, 6.1f, 7.1f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f, 6.1f, 999.5f};
 
   int num_rows = 1;
 
@@ -305,7 +316,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     }
     else
     {
-      return static_cast<int>((sample - min) * fp_scales[channel]);
+      return static_cast<int>((static_cast<common_t>(sample) - min) * fp_scales[channel]);
     }
     _CCCL_UNREACHABLE();
   };

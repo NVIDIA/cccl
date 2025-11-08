@@ -11,6 +11,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -55,6 +56,8 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // Two iterator should have pair value type
@@ -62,8 +65,10 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::pair<int, Foo>>);
+    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // !=2 views should have tuple value_type
@@ -73,6 +78,8 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // If one iterator is not random access then the whole zip_iterator is not random access
@@ -82,6 +89,8 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::bidirectional_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // If one iterator is not bidirectional_iterator then the whole zip_iterator is not bidirectional_iterator
@@ -91,6 +100,8 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo, int>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::forward_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // If one iterator is not forward_iterator then the whole zip_iterator is not forward_iterator
@@ -99,6 +110,7 @@ __host__ __device__ void test()
     static_assert(!HasIterCategory<Iter>);
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, Foo, int>>);
+    static_assert(cuda::std::input_iterator<Iter>);
   }
 
   { // nested iterator has the right value type
@@ -106,19 +118,23 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::difference_type, cuda::std::ptrdiff_t>);
-    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::pair<int, cuda::std::pair<Foo, int>>>);
+    static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<int, cuda::std::tuple<Foo, int>>>);
     static_assert(HasIterCategory<Iter>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // Takes the difference type from the base iterator
     using Iter = cuda::zip_iterator<DiffTypeIter<intptr_t>>;
     static_assert(cuda::std::is_same_v<Iter::difference_type, intptr_t>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   { // Difference type is the common type of the difference types
     using Iter = cuda::zip_iterator<DiffTypeIter<intptr_t>, DiffTypeIter<cuda::std::ptrdiff_t>>;
     static_assert(
       cuda::std::is_same_v<Iter::difference_type, cuda::std::common_type_t<intptr_t, cuda::std::ptrdiff_t>>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 }
 

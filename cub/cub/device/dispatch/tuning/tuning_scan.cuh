@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -46,14 +22,14 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/functional>
-#include <cuda/std/functional>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace scan
+namespace detail::scan
 {
 enum class keep_rejects
 {
@@ -101,13 +77,13 @@ enum class accum_size
 };
 
 template <class AccumT>
-constexpr primitive_accum is_primitive_accum()
+constexpr _CCCL_HOST_DEVICE primitive_accum is_primitive_accum()
 {
   return is_primitive<AccumT>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ScanOpT>
-constexpr primitive_op is_primitive_op()
+constexpr _CCCL_HOST_DEVICE primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ScanOpT>::value ? primitive_op::yes : primitive_op::no;
 }
@@ -125,13 +101,13 @@ struct is_plus<::cuda::std::plus<T>>
 };
 
 template <class ScanOpT>
-constexpr op_type classify_op()
+constexpr _CCCL_HOST_DEVICE op_type classify_op()
 {
   return is_plus<ScanOpT>::value ? op_type::plus : op_type::unknown;
 }
 
 template <class ValueT>
-constexpr value_size classify_value_size()
+constexpr _CCCL_HOST_DEVICE value_size classify_value_size()
 {
   return sizeof(ValueT) == 1 ? value_size::_1
        : sizeof(ValueT) == 2 ? value_size::_2
@@ -143,7 +119,7 @@ constexpr value_size classify_value_size()
 }
 
 template <class AccumT>
-constexpr accum_size classify_accum_size()
+constexpr _CCCL_HOST_DEVICE accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -155,7 +131,7 @@ constexpr accum_size classify_accum_size()
 }
 
 template <class OffsetT>
-constexpr offset_size classify_offset_size()
+constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
@@ -438,7 +414,7 @@ struct sm100_tuning<double, AccumT, OffsetT, op_type::plus, primitive_accum::yes
 template <typename PolicyT, typename = void, typename = void>
 struct ScanPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE ScanPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -447,30 +423,40 @@ template <typename StaticPolicyT>
 struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::ScanPolicyT::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION ScanPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE ScanPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto Scan()
+  _CCCL_HOST_DEVICE static constexpr auto Scan()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
+  _CCCL_HOST_DEVICE static constexpr CacheLoadModifier LoadModifier()
   {
     return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
   }
 
-  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  _CCCL_HOST_DEVICE constexpr void CheckLoadModifier()
   {
     static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture "
                   "accesses");
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ScanPolicyT">() = Scan().EncodedPolicy(),
+                  key<"DelayConstructor">() =
+                    StaticPolicyT::ScanPolicyT::detail::delay_constructor_t::EncodedConstructor()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT policy)
 {
   return ScanPolicyWrapper<PolicyT>{policy};
 }
@@ -511,7 +497,7 @@ struct policy_hub
 
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
-  static auto select_agent_policy(int)
+  _CCCL_HOST_DEVICE static auto select_agent_policy(int)
     -> AgentScanPolicy<Tuning::threads,
                        Tuning::items,
                        AccumT,
@@ -522,7 +508,7 @@ struct policy_hub
                        cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
+  _CCCL_HOST_DEVICE static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
   struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
   {
@@ -537,7 +523,7 @@ struct policy_hub
               ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
                                          && sizeof(IVT) == sizeof(OutputValueT),
                                        int> = 0>
-    static auto select_agent_policy750(int)
+    _CCCL_HOST_DEVICE static auto select_agent_policy750(int)
       -> AgentScanPolicy<Tuning::threads,
                          Tuning::items,
                          AccumT,
@@ -548,7 +534,7 @@ struct policy_hub
                          MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                          typename Tuning::delay_constructor>;
     template <typename Tuning, typename IVT>
-    static auto select_agent_policy750(long) -> typename Policy600::ScanPolicyT;
+    _CCCL_HOST_DEVICE static auto select_agent_policy750(long) -> typename Policy600::ScanPolicyT;
 
     using ScanPolicyT =
       decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
@@ -583,7 +569,7 @@ struct policy_hub
               ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
                                          && sizeof(IVT) == sizeof(OutputValueT),
                                        int> = 0>
-    static auto select_agent_policy100(int)
+    _CCCL_HOST_DEVICE static auto select_agent_policy100(int)
       -> AgentScanPolicy<Tuning::threads,
                          Tuning::items,
                          AccumT,
@@ -594,7 +580,7 @@ struct policy_hub
                          MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                          typename Tuning::delay_constructor>;
     template <typename Tuning, typename IVT>
-    static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
+    _CCCL_HOST_DEVICE static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
     using ScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
@@ -603,7 +589,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace scan
-} // namespace detail
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

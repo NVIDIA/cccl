@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,15 +25,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-pointer_to_unary_function : public __unary_function<_Arg, _Result>
+class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
 {
   _Result (*__f_)(_Arg);
 
@@ -48,7 +47,7 @@ public:
 };
 
 template <class _Arg, class _Result>
-_LIBCUDACXX_DEPRECATED _CCCL_API inline pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__f)(_Arg))
+CCCL_DEPRECATED _CCCL_API inline pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__f)(_Arg))
 {
   return pointer_to_unary_function<_Arg, _Result>(__f);
 }
@@ -57,8 +56,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H

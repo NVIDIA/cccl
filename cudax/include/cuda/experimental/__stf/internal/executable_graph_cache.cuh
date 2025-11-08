@@ -35,7 +35,6 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
 // This tries to instantiate the graph by updating an existing executable graph
@@ -65,7 +64,6 @@ inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 
   return res;
 }
-
 } // end namespace reserved
 
 // To get information about how it was used
@@ -152,7 +150,7 @@ public:
 
   // Check if there is a matching entry (and update it if necessary)
   // the returned bool indicate is this is a cache hit (true = cache hit, false = cache miss)
-  _CUDA_VSTD::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
   query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     int dev_id = cuda_try<cudaGetDevice>();
@@ -168,7 +166,7 @@ public:
         e.lru_refresh();
 
         // We have successfully updated the graph, this is a cache hit
-        return _CUDA_VSTD::make_pair(e.exec_g, true);
+        return ::cuda::std::make_pair(e.exec_g, true);
       }
     }
 
@@ -192,7 +190,7 @@ public:
       total_cache_footprint[dev_id] += footprint;
     }
 
-    return _CUDA_VSTD::make_pair(exec_g, false);
+    return ::cuda::std::make_pair(exec_g, false);
   }
 
 private:
@@ -251,5 +249,4 @@ private:
 
   size_t cache_size_limit;
 };
-
 } // namespace cuda::experimental::stf

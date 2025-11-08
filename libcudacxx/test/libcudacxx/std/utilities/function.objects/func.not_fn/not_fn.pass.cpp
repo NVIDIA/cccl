@@ -14,6 +14,7 @@
 
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
 
@@ -387,11 +388,11 @@ __host__ __device__ void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
     assert(ret2() == true);
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
     ret = ret2;
     assert(ret() == true);
     assert(ret2() == true);
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   }
   {
     using T = MoveAssignableWrapper;
@@ -406,10 +407,10 @@ __host__ __device__ void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(cuda::std::move(value2));
     assert(ret2() == true);
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
     ret = cuda::std::move(ret2);
     assert(ret() == true);
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   }
 }
 
@@ -659,7 +660,7 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = NoExceptCallable<bool>;
     T value(true);
     [[maybe_unused]] auto ret = cuda::std::not_fn(value);
-    static_assert(noexcept(!_CUDA_VSTD::__invoke(value)), "");
+    static_assert(noexcept(!::cuda::std::__invoke(value)), "");
     static_assert(noexcept(!cuda::std::invoke(value)), "");
 // TODO: nvcc gets this wrong, investigate
 #if !_CCCL_CUDA_COMPILATION()

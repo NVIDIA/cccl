@@ -34,10 +34,15 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename... Ts>
 struct unrelated_systems
 {};
+
+template <typename System>
+inline constexpr bool is_unrelated_systems = false;
+
+template <typename... Ts>
+inline constexpr bool is_unrelated_systems<unrelated_systems<Ts...>> = true;
 
 template <typename... Ts>
 _CCCL_HOST_DEVICE auto minimum_system_impl(int) -> minimum_type<Ts...>;
@@ -48,6 +53,5 @@ _CCCL_HOST_DEVICE auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
 // otherwise, collect the arguments and report them as unrelated
 template <typename... Ts>
 using minimum_system_t = decltype(minimum_system_impl<Ts...>(0));
-
 } // namespace detail
 THRUST_NAMESPACE_END

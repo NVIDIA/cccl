@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_PARTITION_POINT_H
-#define _LIBCUDACXX___ALGORITHM_PARTITION_POINT_H
+#ifndef _CUDA_STD___ALGORITHM_PARTITION_POINT_H
+#define _CUDA_STD___ALGORITHM_PARTITION_POINT_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
@@ -35,12 +35,12 @@ _CCCL_API constexpr _ForwardIterator
 partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using difference_type = typename iterator_traits<_ForwardIterator>::difference_type;
-  difference_type __len = _CUDA_VSTD::distance(__first, __last);
+  difference_type __len = ::cuda::std::distance(__first, __last);
   while (__len != 0)
   {
-    difference_type __l2 = _CUDA_VSTD::__half_positive(__len);
+    difference_type __l2 = ::cuda::std::__half_positive(__len);
     _ForwardIterator __m = __first;
-    _CUDA_VSTD::advance(__m, __l2);
+    ::cuda::std::advance(__m, __l2);
     if (__pred(*__m))
     {
       __first = ++__m;
@@ -54,8 +54,8 @@ partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __
   return __first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_PARTITION_POINT_H
+#endif // _CUDA_STD___ALGORITHM_PARTITION_POINT_H

@@ -48,14 +48,14 @@
 #  define _CCCL_PTX_ARCH() __CUDA_ARCH__
 #endif
 
-// Compile with NVCC compiler and only device code, Volta+  GPUs
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH() >= 700
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 20)) \
+  && _CCCL_PTX_ARCH() >= 700
 #  define _CCCL_HAS_GRID_CONSTANT() 1
 #  define _CCCL_GRID_CONSTANT       __grid_constant__
-#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
+#else // ^^^ has __grid_constant__ ^^^ / vvv no __grid_constant__ vvv
 #  define _CCCL_HAS_GRID_CONSTANT() 0
 #  define _CCCL_GRID_CONSTANT
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH() >= 700
+#endif // ^^^ no __grid_constant__ ^^^
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if _CCCL_CUDA_COMPILER(NVCC)
@@ -64,5 +64,11 @@
 #    define _CCCL_EXEC_CHECK_DISABLE
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // !_CCCL_EXEC_CHECK_DISABLE
+
+#if _CCCL_CUDA_COMPILER(NVHPC)
+#  define _CCCL_TARGET_CONSTEXPR
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#  define _CCCL_TARGET_CONSTEXPR constexpr
+#endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
 #endif // __CCCL_EXECUTION_SPACE_H

@@ -27,7 +27,7 @@ __global__ void test_cp_reduce_async_bulk_bf16(void** fn_ptr)
                                cuda::ptx::op_min_t,
                                __nv_bfloat16*,
                                const __nv_bfloat16*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -41,7 +41,7 @@ __global__ void test_cp_reduce_async_bulk_bf16(void** fn_ptr)
                                cuda::ptx::op_max_t,
                                __nv_bfloat16*,
                                const __nv_bfloat16*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -55,6 +55,6 @@ __global__ void test_cp_reduce_async_bulk_bf16(void** fn_ptr)
                                cuda::ptx::op_add_t,
                                __nv_bfloat16*,
                                const __nv_bfloat16*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 }

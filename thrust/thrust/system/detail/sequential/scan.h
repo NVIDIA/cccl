@@ -37,13 +37,8 @@
 #include <cuda/std/__functional/invoke.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::sequential
 {
-namespace detail
-{
-namespace sequential
-{
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
@@ -153,8 +148,5 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
 
   return result;
 }
-
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

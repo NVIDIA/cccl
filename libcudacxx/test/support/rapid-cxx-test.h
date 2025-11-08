@@ -1005,7 +1005,6 @@ bool check_equal_collections_impl(Iter1 start1, Iter1 const end1, Iter2 start2, 
   return (start1 == end1 && start2 == end2);
 }
 } // namespace detail
-
 } // namespace rapid_cxx_test
 
 #if defined(__GNUC__)

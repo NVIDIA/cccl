@@ -1,69 +1,24 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025, NVIDIA CORPORATION.
 #
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-from .algorithms import (
-    DoubleBuffer,
-    SortOrder,
-    binary_transform,
-    exclusive_scan,
-    histogram_even,
-    inclusive_scan,
-    make_binary_transform,
-    make_exclusive_scan,
-    make_histogram_even,
-    make_inclusive_scan,
-    make_merge_sort,
-    make_radix_sort,
-    make_reduce_into,
-    make_segmented_reduce,
-    make_unary_transform,
-    make_unique_by_key,
-    merge_sort,
-    radix_sort,
-    reduce_into,
-    segmented_reduce,
-    unary_transform,
-    unique_by_key,
-)
-from .iterators import (
-    CacheModifiedInputIterator,
-    ConstantIterator,
-    CountingIterator,
-    ReverseInputIterator,
-    ReverseOutputIterator,
-    TransformIterator,
-)
-from .struct import gpu_struct
+# alias for backwards compatibility
 
-__all__ = [
-    "binary_transform",
-    "CacheModifiedInputIterator",
-    "ConstantIterator",
-    "CountingIterator",
-    "DoubleBuffer",
-    "exclusive_scan",
-    "gpu_struct",
-    "histogram_even",
-    "inclusive_scan",
-    "make_binary_transform",
-    "make_exclusive_scan",
-    "make_histogram_even",
-    "make_inclusive_scan",
-    "make_merge_sort",
-    "make_radix_sort",
-    "make_reduce_into",
-    "make_segmented_reduce",
-    "make_unary_transform",
-    "make_unique_by_key",
-    "merge_sort",
-    "radix_sort",
-    "reduce_into",
-    "ReverseInputIterator",
-    "ReverseOutputIterator",
-    "segmented_reduce",
-    "SortOrder",
-    "TransformIterator",
-    "unary_transform",
-    "unique_by_key",
-]
+from warnings import warn
+
+from cuda.compute import *  # noqa: F403
+
+warn(
+    "The module cuda.cccl.parallel.experimental is deprecated. Use cuda.compute instead.",
+    FutureWarning,
+)

@@ -34,13 +34,8 @@
 #include <thrust/system/detail/generic/set_operations.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_difference(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -475,8 +470,5 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_union()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

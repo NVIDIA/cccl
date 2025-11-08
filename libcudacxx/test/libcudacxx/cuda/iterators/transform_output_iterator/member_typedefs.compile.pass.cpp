@@ -11,8 +11,6 @@
 // Test iterator category and iterator concepts.
 
 #include <cuda/iterator>
-#include <cuda/std/cassert>
-#include <cuda/std/cstdint>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -21,25 +19,51 @@
 __host__ __device__ void test()
 {
   {
-    using Iter = cuda::transform_output_iterator<int*, PlusOne>;
-    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
+    using Iter = cuda::transform_output_iterator<PlusOne, int*>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
     static_assert(cuda::std::same_as<Iter::reference, void>);
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   {
-    using Iter = cuda::transform_output_iterator<random_access_iterator<int*>, PlusOne>;
-    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::output_iterator_tag>);
+    using Iter = cuda::transform_output_iterator<PlusOne, random_access_iterator<int*>>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::pointer, void>);
     static_assert(cuda::std::same_as<Iter::reference, void>);
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
+  {
+    using Iter = cuda::transform_output_iterator<PlusOne, bidirectional_iterator<int*>>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::pointer, void>);
+    static_assert(cuda::std::same_as<Iter::reference, void>);
+    static_assert(cuda::std::same_as<Iter::value_type, void>);
+    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
+
+  {
+    using Iter = cuda::transform_output_iterator<PlusOne, forward_iterator<int*>>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::pointer, void>);
+    static_assert(cuda::std::same_as<Iter::reference, void>);
+    static_assert(cuda::std::same_as<Iter::value_type, void>);
+    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 }
 

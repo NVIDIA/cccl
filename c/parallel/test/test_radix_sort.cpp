@@ -19,8 +19,15 @@
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
 
-using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
-using item_t    = float;
+using key_types =
+  c2h::type_list<uint8_t,
+                 int16_t,
+                 uint32_t,
+#if _CCCL_HAS_NVFP16()
+                 __half,
+#endif
+                 double>;
+using item_t = float;
 
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
 struct TestParameters
@@ -67,8 +74,15 @@ auto& get_cache()
   return fixture<radix_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool CheckSASS = true>
 struct radix_sort_build
 {
+  static constexpr auto should_check_sass(int cc_major)
+  {
+    // TODO: re-enable w/ nvrtc version check
+    return CheckSASS && cc_major < 9;
+  }
+
   // operator arguments are (build_ptr, <all_args_of_algo_driver>, cc_major, cc_minor, <paths>)
   //   of all_args_of_algo_driver we pick out what gets passed to cccl_algo_build function
   CUresult operator()(
@@ -129,7 +143,7 @@ struct radix_sort_run
   }
 };
 
-template <typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
+template <bool CheckSASS = true, typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
 void radix_sort(
   cccl_sort_order_t sort_order,
   cccl_iterator_t d_keys_in,
@@ -146,7 +160,7 @@ void radix_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, radix_sort_build, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, radix_sort_build<CheckSASS>, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
     cache,
     lookup_key,
     sort_order,
@@ -279,7 +293,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
 
-  radix_sort(
+  radix_sort<false>(
     order,
     input_keys_it,
     output_keys_it,
@@ -300,7 +314,7 @@ C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
   if (is_descending)
   {
     std::sort(expected_keys.begin(), expected_keys.end(), std::greater<KeyT>());
-    std::sort(expected_items.begin(), expected_items.end(), std::greater<KeyT>());
+    std::sort(expected_items.begin(), expected_items.end(), std::greater<ItemT>());
   }
   else
   {

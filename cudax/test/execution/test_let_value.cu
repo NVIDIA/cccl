@@ -10,10 +10,11 @@
 
 #include <cuda/experimental/execution.cuh>
 
+// IWYU pragma: keep
 #include "common/checked_receiver.cuh"
+#include "common/dummy_scheduler.cuh" // IWYU pragma: keep
 #include "common/error_scheduler.cuh" // IWYU pragma: keep
 #include "common/impulse_scheduler.cuh" // IWYU pragma: keep
-#include "common/inline_scheduler.cuh" // IWYU pragma: keep
 #include "common/stopped_scheduler.cuh" // IWYU pragma: keep
 #include "common/utility.cuh"
 #include "testing.cuh" // IWYU pragma: keep
@@ -25,31 +26,35 @@ namespace
 // Return a different sender when we invoke this custom defined let_value implementation
 struct let_value_test_domain
 {
-  _CCCL_TEMPLATE(class Sender)
-  _CCCL_REQUIRES(_CUDA_VSTD::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
-  static auto transform_sender(Sender&&)
+  _CCCL_TEMPLATE(class Sender, class Env)
+  _CCCL_REQUIRES(ex::sender_for<Sender, ex::let_value_t>)
+  static auto transform_sender(ex::set_value_t, Sender&&, const Env&)
   {
     return ex::just(std::string{"hallo"});
   }
 };
 
-// C2H_TEST("let_value returns a sender", "[adaptors][let_value]")
-// {
-//   auto sndr = ex::let_value(ex::just(), [] {
-//     return ex::just();
-//   });
-//   static_assert(ex::sender<decltype(sndr)>);
-//   (void) sndr;
-// }
+C2H_TEST("let_value returns a sender", "[adaptors][let_value]")
+{
+  auto sndr  = ex::let_value(ex::just(), [] {
+    return ex::just();
+  });
+  using Sndr = decltype(sndr);
+  static_assert(ex::sender<Sndr>);
+  static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
+  (void) sndr;
+}
 
-// C2H_TEST("let_value with environment returns a sender", "[adaptors][let_value]")
-// {
-//   auto sndr = ex::let_value(ex::just(), [] {
-//     return ex::just();
-//   });
-//   static_assert(ex::sender_in<decltype(sndr), ex::env<>>);
-//   (void) sndr;
-// }
+C2H_TEST("let_value with environment returns a sender", "[adaptors][let_value]")
+{
+  auto sndr  = ex::let_value(ex::just(), [] {
+    return ex::just();
+  });
+  using Sndr = decltype(sndr);
+  static_assert(ex::sender_in<Sndr, ex::env<>>);
+  static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
+  (void) sndr;
+}
 
 C2H_TEST("let_value simple example", "[adaptors][let_value]")
 {
@@ -172,7 +177,7 @@ C2H_TEST("let_value can throw, and set_error will be called", "[adaptors][let_va
             | ex::let_value([](int&) -> decltype(ex::just(0)) {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{::std::exception_ptr{}});
+  auto op = ex::connect(std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -296,33 +301,32 @@ C2H_TEST("let_value exposes a parameter that is destructed when the main operati
   CHECK(param_destructed);
 }
 
-// NOT YET SUPPORTED
-// C2H_TEST("let_value works when changing threads", "[adaptors][let_value]")
-// {
-//   exec::static_thread_pool pool{2};
-//   std::atomic<bool> called{false};
-//   {
-//     // lunch some work on the thread pool
-//     auto sndr = ex::transfer_just(pool.get_scheduler(), 7) //
-//              | ex::let_value([]_CCCL_HOST_DEVICE(int& x) {
-//                  return ex::just(x * 2 - 1);
-//                }) //
-//              | ex::then([&]_CCCL_HOST_DEVICE(int x) {
-//                  CHECK(x == 13);
-//                  called.store(true);
-//                });
-//     ex::start_detached(std::move(sndr));
-//   }
-//   // wait for the work to be executed, with timeout
-//   // perform a poor-man's sync
-//   // NOTE: it's a shame that the `join` method in static_thread_pool is not public
-//   for (int i = 0; i < 1000 && !called.load(); i++)
-//   {
-//     std::this_thread::sleep_for(1ms);
-//   }
-//   // the work should be executed
-//   REQUIRE(called);
-// }
+C2H_TEST("let_value works when changing threads", "[adaptors][let_value]")
+{
+  ex::thread_context worker;
+  cuda::std::atomic<bool> called{false};
+  {
+    // lunch some work on the worker thread
+    auto sndr =
+      ex::just(7) //
+      | ex::continues_on(worker.get_scheduler()) //
+      | ex::let_value([](int& x) {
+          return ex::just(x * 2 - 1);
+        }) //
+      | ex::then([&](int x) {
+          CHECK(x == 13);
+          called.store(true);
+        });
+
+    using Sndr = decltype(sndr);
+
+    static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::asynchronous);
+    ex::start_detached(std::move(sndr));
+  }
+  worker.join();
+  // the work should be executed
+  REQUIRE(called);
+}
 
 C2H_TEST("let_value has the values_type corresponding to the given values", "[adaptors][let_value]")
 {
@@ -339,19 +343,19 @@ C2H_TEST("let_value has the values_type corresponding to the given values", "[ad
 
 C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]")
 {
-  inline_scheduler sched1{};
-  error_scheduler sched2{::std::exception_ptr{}};
+  dummy_scheduler sched1{};
+  error_scheduler sched2{ex::exception_ptr{}};
   error_scheduler<int> sched3{43};
 
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched1) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched2) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<int, std::exception_ptr>( //
+  check_error_types<int, ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched3) | ex::let_value([] {
       return ex::just();
     }));
@@ -361,7 +365,7 @@ C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]
   //   ex::just() | ex::continues_on(sched1) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
-  // check_error_types<std::exception_ptr>( //
+  // check_error_types<ex::exception_ptr>( //
   //   ex::just() | ex::continues_on(sched2) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
@@ -373,9 +377,8 @@ C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]
 
 C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_value]")
 {
-  inline_scheduler sched1{};
-  error_scheduler sched2{::std::exception_ptr{}};
-  stopped_scheduler sched3{};
+  dummy_scheduler sched1{};
+  stopped_scheduler sched2{};
 
   check_sends_stopped<false>( //
     ex::just() | ex::continues_on(sched1) | ex::let_value([] {
@@ -385,20 +388,17 @@ C2H_TEST("let_value keeps sends_stopped from input sender", "[adaptors][let_valu
     ex::just() | ex::continues_on(sched2) | ex::let_value([] {
       return ex::just();
     }));
-  check_sends_stopped<true>( //
-    ex::just() | ex::continues_on(sched3) | ex::let_value([] {
-      return ex::just();
-    }));
 }
 
 C2H_TEST("let_value can be customized", "[adaptors][let_value]")
 {
+  auto env = ex::prop{ex::get_domain, let_value_test_domain{}};
   // The customization will return a different value
-  auto sndr = ex::just(std::string{"hello"}) | ex::write_attrs(ex::prop{ex::get_domain, let_value_test_domain{}})
+  auto sndr = ex::just(std::string{"hello"}) //
             | ex::let_value([](std::string& x) {
                 return ex::just(x + ", world");
               });
-  wait_for_value(std::move(sndr), std::string{"hallo"});
+  wait_for_value_with_env(std::move(sndr), env, std::string{"hallo"});
 }
 
 C2H_TEST("let_value can nest", "[adaptors][let_value]")
@@ -413,7 +413,7 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
   wait_for_value(std::move(work), 2);
 }
 
-constexpr struct test_query_t
+constexpr struct test_query_t : ex::forwarding_query_t
 {
   template <class Env>
   _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
@@ -453,7 +453,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 //   bool& completed_;
 // };
 
-// C2H_TEST("let_value does not add std::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
+// C2H_TEST("let_value does not add ex::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
 // {
 //   auto sndr = ex::let_value(ex::just(), []_CCCL_HOST_DEVICE() noexcept {
 //     return ex::just();
@@ -467,14 +467,35 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 
 #endif // _CCCL_HOST_COMPILATION()
 
+#if !_CCCL_CUDA_COMPILER(NVCC)
+// This example causes nvcc to segfault
+struct let_value_test_domain2
+{};
+
+C2H_TEST("let_value predecessor's domain is accessible via the receiver connected to the secondary sender",
+         "[adaptors][let_value]")
+{
+  auto attrs  = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain2{}};
+  using Sndr2 = decltype(ex::read_env(ex::get_domain));
+
+  auto sndr = ex::just() //
+            | ex::write_attrs(attrs) //
+            | ex::let_value([]() noexcept -> Sndr2 {
+                return ex::read_env(ex::get_domain);
+              });
+  auto [result] = ex::sync_wait(std::move(sndr)).value();
+  static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
+  (void) result;
+}
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
+
 C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
 {
-  auto attrs = ex::prop{ex::get_domain, let_value_test_domain{}};
+  auto attrs = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain{}};
   auto sndr  = ex::just() | ex::let_value([=] {
                 return ex::write_attrs(ex::just(), attrs);
               });
-  auto dom   = ex::get_domain(ex::get_env(sndr));
-  static_assert(_CUDA_VSTD::is_same_v<decltype(dom), let_value_test_domain>);
+  auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
+  static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
-
 } // namespace

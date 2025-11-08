@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_MAKE_NBIT_INT_H
-#define _LIBCUDACXX___TYPE_TRAITS_MAKE_NBIT_INT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_MAKE_NBIT_INT_H
+#define _CUDA_STD___TYPE_TRAITS_MAKE_NBIT_INT_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _NBits, bool _IsSigned>
 _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
@@ -100,8 +100,8 @@ using __make_nbit_int_t = decltype(__make_nbit_int_impl<_NBits, _IsSigned>());
 template <size_t _NBits>
 using __make_nbit_uint_t = __make_nbit_int_t<_NBits, false>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_NBIT_INT_H
+#endif // _CUDA_STD___TYPE_TRAITS_MAKE_NBIT_INT_H

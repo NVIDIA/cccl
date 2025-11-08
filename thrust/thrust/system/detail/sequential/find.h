@@ -33,13 +33,8 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::sequential
 {
-namespace detail
-{
-namespace sequential
-{
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator
@@ -61,8 +56,5 @@ find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator las
   // return first so zip_iterator works correctly
   return first;
 }
-
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

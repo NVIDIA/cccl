@@ -30,13 +30,8 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::sequential
 {
-namespace detail
-{
-namespace sequential
-{
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -97,8 +92,5 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
   return thrust::make_pair(keys_output, values_output);
 }
-
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

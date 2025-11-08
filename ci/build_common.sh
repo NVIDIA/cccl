@@ -24,7 +24,7 @@ CONFIGURE_ONLY=false
 function usage {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
+    echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores minus one."
     echo
     echo "Options:"
     echo "  -v/-verbose: enable shell echo for debugging"
@@ -43,6 +43,24 @@ function usage {
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
+}
+
+# Check for required dependencies
+function check_required_dependencies() {
+    local missing_deps=()
+
+    # Check for essential tools
+    local required_tools=("cmake" "git" "ninja" "nproc")
+    for tool in "${required_tools[@]}"; do
+        command -v "$tool" &>/dev/null || missing_deps+=("$tool")
+    done
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "❌ Error: Missing required dependencies:" >&2
+        printf "   • %s\n" "${missing_deps[@]}" >&2
+        echo >&2
+        exit 1
+    fi
 }
 
 # Parse options
@@ -75,9 +93,35 @@ while [ "${#args[@]}" -ne 0 ]; do
     esac
 done
 
-# Convert to full paths:
-HOST_COMPILER=$(which ${HOST_COMPILER})
-CUDA_COMPILER=$(which ${CUDA_COMPILER})
+# Convert to full paths and validate compilers exist:
+function validate_and_resolve_compiler() {
+    local compiler_name="$1"
+    local compiler_var="$2"
+    local compiler_path
+
+    compiler_path=$(which "${compiler_var}" 2>/dev/null)
+    if [ -z "$compiler_path" ]; then
+        echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
+        exit 1
+    fi
+
+    echo "$compiler_path"
+}
+
+HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
+CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
+
+if [[ "$(basename "$CUDA_COMPILER")" == nvcc* ]]; then
+    NVCC_VERSION=$("$CUDA_COMPILER" --version | grep "release" | sed 's/.*, V//')
+    # Verify that we have an X.Y.Z version in case the output format changes:
+    if ! [[ "$NVCC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "❌ Error: Detected nvcc version is not a valid X.Y.Z triple: '$NVCC_VERSION'" >&2
+        echo "$CUDA_COMPILER --version" >&2 || :
+        $CUDA_COMPILER --version >&2 || :
+        exit 1
+    fi
+fi
+
 
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
@@ -87,22 +131,38 @@ if [ $VERBOSE ]; then
     set -x
 fi
 
+# Check for required dependencies
+check_required_dependencies
+
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
 fi
 
-# Presets will be configured in this directory:
-BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
+mkdir -p ../build
+# Absolute path to cccl/build
+BUILD_ROOT=$(cd "../build" && pwd)
 
-# The most recent build will always be symlinked to cccl/build/latest
+# Absolute path to per-devcontainer build directory
+BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
+
+# The most recent devcontainer build dir will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
-rm -f ../build/latest
-ln -sf $BUILD_DIR ../build/latest
+rm -f $BUILD_ROOT/latest
+ln -sf $BUILD_DIR $BUILD_ROOT/latest
+
+# The more recent preset build dir will always be symlinked to:
+# cccl/preset-latest
+function symlink_latest_preset {
+    local PRESET=$1
+    mkdir -p "$BUILD_DIR/$PRESET"
+    rm -f "$BUILD_ROOT/preset-latest"
+    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
+}
 
 # Now that BUILD_DIR exists, use readlink to canonicalize the path:
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
@@ -119,6 +179,11 @@ source ./pretty_printing.sh
 
 print_environment_details() {
   begin_group "⚙️ Environment Details"
+
+  echo "free -h:"
+  free -h || :
+
+  echo "nproc=$(nproc || :)"
 
   echo "pwd=$(pwd)"
 
@@ -143,6 +208,12 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v sccache &> /dev/null; then
+    sccache --version
+  else
+    echo "sccache not found"
   fi
 
   if command -v cmake &> /dev/null; then
@@ -192,6 +263,8 @@ function configure_preset()
     local CMAKE_OPTIONS=$3
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
+    symlink_latest_preset "$PRESET"
+
     pushd .. > /dev/null
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
       # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
@@ -223,30 +296,42 @@ function build_preset() {
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
 
+    symlink_latest_preset "$PRESET"
+
     if $CONFIGURE_ONLY; then
         return 0
     fi
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
+    local memmon_log="${preset_dir}/memmon.log"
 
-    source "./sccache_stats.sh" "start" || :
+    sccache -z > /dev/null || :
+
+    # Track memory usage on CI:
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --start \
+          --log-threshold ${MEMMON_LOG_THRESHOLD:-2} \
+          --print-threshold ${MEMMON_PRINT_THRESHOLD:-5} \
+          --log-file "$memmon_log" \
+          --poll ${MEMMON_POLL_INTERVAL:-5} \
+          || :
+    fi
 
     pushd .. > /dev/null
     status=0
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
     popd > /dev/null
 
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
-
-    minimal_sccache_stats=$(source "./sccache_stats.sh" "end" || :)
+    if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
+      util/memmon.sh --stop || :
+      run_command "📝 Memory Monitor Log" head -n20 "$memmon_log" || :
+    fi
 
     # Only print detailed stats in actions workflow
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        begin_group "💲 sccache stats"
-        echo "${minimal_sccache_stats}"
-        sccache -s || :
-        end_group
+        sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
+        run_command "📊 sccache stats" sccache --show-adv-stats || :
 
         begin_group "🥷 ninja build times"
         echo "The "weighted" time is the elapsed time of each build step divided by the number
@@ -258,7 +343,7 @@ function build_preset() {
         ./ninja_summary.py -C ${BUILD_DIR}/${PRESET} || echo "Warning: ninja_summary.py failed to execute properly."
         end_group
     else
-      echo $minimal_sccache_stats
+      sccache -s
     fi
 
     return $status
@@ -269,6 +354,8 @@ function test_preset()
     local BUILD_NAME=$1
     local PRESET=$2
     local GPU_REQUIRED=${3:-true}
+
+    symlink_latest_preset "$PRESET"
 
     if $CONFIGURE_ONLY; then
         return 0

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // We need to detect whether there is already a free function swap that would end up being ambiguous.
 // This can happen when a type pulls in both namespace std and namespace cuda::std via ADL.
@@ -59,14 +59,13 @@ _CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __r
 _CCCL_API inline auto __swap(...) -> __hidden_friend_swap_found;
 template <class _Tp>
 struct __has_hidden_friend_swap
-    : is_same<decltype(__detect_hidden_friend_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
+    : is_same<decltype(__detect_hidden_friend_swap::__swap(::cuda::std::declval<_Tp&>(), ::cuda::std::declval<_Tp&>())),
               void>
 {};
 } // namespace __detect_hidden_friend_swap
 
 namespace __detect_adl_swap
 {
-
 template <class _Tp>
 void swap(_Tp&, _Tp&) = delete;
 
@@ -77,13 +76,13 @@ _CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __r
 _CCCL_API inline auto __swap(...) -> __no_adl_swap_found;
 template <class _Tp>
 struct __has_no_adl_swap
-    : is_same<decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
+    : is_same<decltype(__detect_adl_swap::__swap(::cuda::std::declval<_Tp&>(), ::cuda::std::declval<_Tp&>())),
               __no_adl_swap_found>
 {};
 template <class _Tp, size_t _Np>
 struct __has_no_adl_swap_array
     : is_same<
-        decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp (&)[_Np]>(), _CUDA_VSTD::declval<_Tp (&)[_Np]>())),
+        decltype(__detect_adl_swap::__swap(::cuda::std::declval<_Tp (&)[_Np]>(), ::cuda::std::declval<_Tp (&)[_Np]>())),
         __no_adl_swap_found>
 {};
 
@@ -122,7 +121,7 @@ template <class _Tp, class _Up = _Tp, bool _NotVoid = !is_void_v<_Tp> && !is_voi
 struct __swappable_with
 {
   template <class _LHS, class _RHS>
-  _CCCL_API inline static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>())) __test_swap(int);
+  _CCCL_API inline static decltype(swap(::cuda::std::declval<_LHS>(), ::cuda::std::declval<_RHS>())) __test_swap(int);
   template <class, class>
   _CCCL_API inline static __nat __test_swap(long);
 
@@ -140,14 +139,13 @@ struct __swappable_with<_Tp, _Up, false> : false_type
 template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>::value>
 struct __nothrow_swappable_with
 {
-  static const bool value = noexcept(swap(_CUDA_VSTD::declval<_Tp>(), _CUDA_VSTD::declval<_Up>()))
-                         && noexcept(swap(_CUDA_VSTD::declval<_Up>(), _CUDA_VSTD::declval<_Tp>()));
+  static const bool value = noexcept(swap(::cuda::std::declval<_Tp>(), ::cuda::std::declval<_Up>()))
+                         && noexcept(swap(::cuda::std::declval<_Up>(), ::cuda::std::declval<_Tp>()));
 };
 
 template <class _Tp, class _Up>
 struct __nothrow_swappable_with<_Tp, _Up, false> : false_type
 {};
-
 } // namespace __detail
 
 template <class _Tp>
@@ -159,43 +157,44 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_swappable_v<_Tp, true> =
+  is_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
+
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+inline constexpr bool is_nothrow_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool is_nothrow_swappable_v<_Tp, true> =
+  is_nothrow_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
+
+template <class _Tp, class _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with : public bool_constant<is_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable : public bool_constant<is_swappable_v<_Tp>>
 {};
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp, _Up>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
-    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
-                           is_nothrow_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
-                           false_type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
 
-template <class _Tp, class _Up>
-inline constexpr bool is_swappable_with_v = is_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-inline constexpr bool is_swappable_v = is_swappable<_Tp>::value;
-
-template <class _Tp, class _Up>
-inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_Tp, _Up>::value;
-
-template <class _Tp>
-inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
-
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H

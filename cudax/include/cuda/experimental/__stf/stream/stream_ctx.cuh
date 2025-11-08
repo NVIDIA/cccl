@@ -42,7 +42,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 struct streamed_interface_of;
 
@@ -233,12 +232,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-
-    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
   }
 
   template <typename... Deps>
@@ -513,6 +507,10 @@ public:
       submit();
       assert(state.submitted_stream);
     }
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
@@ -587,14 +585,7 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_stage()
-  {
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
-  }
+  void change_stage() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
@@ -847,9 +838,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-
 static __global__ void dummy() {}
-
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")
@@ -1322,10 +1311,8 @@ UNITTEST("basic launch test")
 {
   unit_test_launch();
 };
-
 } // end namespace reserved
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_LOGICAL_DEVICE
-#define _CUDAX__DEVICE_LOGICAL_DEVICE
+#ifndef _CUDAX__DEVICE_LOGICAL_DEVICE_CUH
+#define _CUDAX__DEVICE_LOGICAL_DEVICE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__device/all_devices.h>
+#include <cuda/__device/physical_device.h>
 
 #include <cuda/experimental/__green_context/green_ctx.cuh>
 
@@ -70,7 +71,7 @@ public:
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __kind(kinds::device)
-      , __ctx(devices[__id].primary_context())
+      , __ctx(::cuda::__physical_devices()[__id].__primary_context())
   {}
 
   //! @brief Construct logical_device from a device_ref
@@ -78,15 +79,6 @@ public:
   //! Constructing a logical_device for a given device_ref has a side effect of initializing that device
   explicit logical_device(device_ref __dev)
       : logical_device(__dev.get())
-  {}
-
-  // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
-  //!
-  //! Constructing a logical_device for a given device has a side effect of initializing that device
-  logical_device(const ::cuda::physical_device& __dev)
-      : __dev_id(__dev.get())
-      , __kind(kinds::device)
-      , __ctx(__dev.primary_context())
   {}
 
 #if _CCCL_CTK_AT_LEAST(12, 5)
@@ -141,9 +133,8 @@ struct __logical_device_access
     return logical_device(__id, __context, __k);
   }
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_DEVICE_REF
+#endif // _CUDAX__DEVICE_LOGICAL_DEVICE_CUH

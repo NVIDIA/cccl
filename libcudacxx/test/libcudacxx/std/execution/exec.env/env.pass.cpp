@@ -50,6 +50,16 @@ struct custom_env
   }
 };
 
+struct derived_env : cuda::std::execution::env<>
+{
+  using env::query;
+
+  __host__ __device__ auto query(query1_t) const
+  {
+    return 42;
+  }
+};
+
 template <class Ty>
 __host__ __device__ constexpr bool is_trivial_aggregate()
 {

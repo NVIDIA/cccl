@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file cub::AgentReduceByKey implements a stateful abstraction of CUDA thread
@@ -50,8 +26,10 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/std/type_traits>
-
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -61,47 +39,47 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentReduceByKey
  *
- * @tparam _BLOCK_THREADS
+ * @tparam BlockThreads
  *   Threads per thread block
  *
- * @tparam _ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   Items per thread (per tile of input)
  *
- * @tparam _LOAD_ALGORITHM
+ * @tparam LoadAlgorithm
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading input elements
  *
- * @tparam _SCAN_ALGORITHM
+ * @tparam ScanAlgorithm
  *   The BlockScan algorithm to use
  *
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentReduceByKeyPolicy
 {
   ///< Threads per thread block
-  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
   ///< Items per thread (per tile of input)
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   ///< The BlockLoad algorithm to use
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
 
   ///< Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   ///< The BlockScan algorithm to use
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {
@@ -115,7 +93,6 @@ struct AgentReduceByKeyPolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
  *        blocks for participating in device-wide reduce-value-by-key
@@ -164,7 +141,7 @@ template <typename AgentReduceByKeyPolicyT,
 struct AgentReduceByKey
 {
   // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
-  static constexpr bool is_streaming_invocation = !_CUDA_VSTD::is_same_v<StreamingContextT, NullType>;
+  static constexpr bool is_streaming_invocation = !::cuda::std::is_same_v<StreamingContextT, NullType>;
 
   //---------------------------------------------------------------------
   // Types and constants
@@ -798,7 +775,6 @@ struct AgentReduceByKey
     }
   }
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

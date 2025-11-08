@@ -10,17 +10,17 @@
 
 #include <cuda/experimental/execution.cuh>
 
-#include "common/inline_scheduler.cuh"
+#include "common/dummy_scheduler.cuh"
 #include "testing.cuh" // IWYU pragma: keep
 
-namespace async = ::cuda::experimental::execution;
+namespace ex = ::cuda::experimental::execution;
 
 struct not_a_receiver
 {};
 
 struct a_receiver
 {
-  using receiver_concept   = async::receiver_t;
+  using receiver_concept   = ex::receiver_t;
   a_receiver(a_receiver&&) = default;
 
   void set_value(int) && noexcept {}
@@ -29,15 +29,15 @@ struct a_receiver
 
 C2H_TEST("tests for the receiver concepts", "[concepts]")
 {
-  static_assert(!async::receiver<not_a_receiver>);
-  static_assert(async::receiver<a_receiver>);
+  static_assert(!ex::receiver<not_a_receiver>);
+  static_assert(ex::receiver<a_receiver>);
 
-  using yes_completions = async::completion_signatures<async::set_value_t(int), async::set_stopped_t()>;
-  static_assert(async::receiver_of<a_receiver, yes_completions>);
+  using yes_completions = ex::completion_signatures<ex::set_value_t(int), ex::set_stopped_t()>;
+  static_assert(ex::receiver_of<a_receiver, yes_completions>);
 
-  using no_completions = async::
-    completion_signatures<async::set_value_t(int), async::set_stopped_t(), async::set_error_t(::std::exception_ptr)>;
-  static_assert(!async::receiver_of<a_receiver, no_completions>);
+  using no_completions =
+    ex::completion_signatures<ex::set_value_t(int), ex::set_stopped_t(), ex::set_error_t(ex::exception_ptr)>;
+  static_assert(!ex::receiver_of<a_receiver, no_completions>);
 }
 
 struct not_a_sender
@@ -45,42 +45,42 @@ struct not_a_sender
 
 struct a_sender
 {
-  using sender_concept = async::sender_t;
+  using sender_concept = ex::sender_t;
 
   template <class _Self>
   static constexpr auto get_completion_signatures()
   {
-    return async::completion_signatures<async::set_value_t(int), async::set_stopped_t()>{};
+    return ex::completion_signatures<ex::set_value_t(int), ex::set_stopped_t()>{};
   }
 };
 
 struct non_constexpr_complsigs
 {
-  using sender_concept = async::sender_t;
+  using sender_concept = ex::sender_t;
 
   template <class _Self, class...>
   _CCCL_HOST_DEVICE static auto get_completion_signatures()
   {
-    return async::completion_signatures<async::set_value_t(int), async::set_stopped_t()>{};
+    return ex::completion_signatures<ex::set_value_t(int), ex::set_stopped_t()>{};
   }
 };
 
 C2H_TEST("tests for the sender concepts", "[concepts]")
 {
-  static_assert(!async::sender<not_a_sender>);
-  static_assert(async::sender<a_sender>);
+  static_assert(!ex::sender<not_a_sender>);
+  static_assert(ex::sender<a_sender>);
 
-  static_assert(async::sender_in<a_sender>);
-  static_assert(async::sender_in<a_sender, async::env<>>);
+  static_assert(ex::sender_in<a_sender>);
+  static_assert(ex::sender_in<a_sender, ex::env<>>);
 
-  static_assert(async::sender<non_constexpr_complsigs>);
-  static_assert(!async::sender_in<non_constexpr_complsigs>);
-  static_assert(!async::sender_in<non_constexpr_complsigs, async::env<>>);
+  static_assert(ex::sender<non_constexpr_complsigs>);
+  static_assert(!ex::sender_in<non_constexpr_complsigs>);
+  static_assert(!ex::sender_in<non_constexpr_complsigs, ex::env<>>);
 
-  [[maybe_unused]] auto read_env = async::read_env(async::get_scheduler);
+  [[maybe_unused]] auto read_env = ex::read_env(ex::get_scheduler);
   using read_env_t               = decltype(read_env);
-  static_assert(async::sender<read_env_t>);
-  static_assert(!async::sender_in<read_env_t>);
-  static_assert(!async::sender_in<read_env_t, async::env<>>);
-  static_assert(async::sender_in<read_env_t, async::prop<async::get_scheduler_t, inline_scheduler<>>>);
+  static_assert(ex::sender<read_env_t>);
+  static_assert(!ex::sender_in<read_env_t>);
+  static_assert(!ex::sender_in<read_env_t, ex::env<>>);
+  static_assert(ex::sender_in<read_env_t, ex::prop<ex::get_scheduler_t, dummy_scheduler<>>>);
 }

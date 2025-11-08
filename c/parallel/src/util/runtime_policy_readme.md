@@ -21,22 +21,17 @@ For the purpose of this document, the following phrases are defined:
 
 2. CUB defines algorithm policy wrappers.
 
-3. c.parallel build functions construct a TU containing all code necessary for a policy wrapper instantiation to
-   compile, and constructs an expression naming an object of an algorithm policy wrapper type.
+3. c.parallel build functions include code generating a JSON representation of the selected CUB policy in the TUs
+   they build.
 
-4. c.parallel build functions use the `get_policy` function, declared in
-   [`runtime_policy.h`](/c/parallel/src/util/runtime_policy.h), to compile its definition to PTX and obtain a
-   `nlohmann::json` object containing the information in the relevant policy in the device TU.
+4. c.parallel build functions parse the JSON from the resulting CUBIN, using `cub::detail::ptx_json::parse`.
 
 5. c.parallel build functions extract the relevant subpolicies (using the `from_json` functions described later) into
-   policy objects and strings containing the definitions of equivalent policies for device code.
+   runtime policy objects containing the definitions of equivalent policies for device code.
 
-6. c.parallel build functions use the aforementioned strings in the construction of a final TU, which allows it to
-   compile the correct versions of device kernels.
+6. c.parallel build functions save the runtime policy objects in the build result.
 
-7. c.parallel build functions save the runtime policy objects in the build result.
-
-8. c.parallel launch functions pass the saved runtime policies into the CUB dispatch layers, together with kernels
+7. c.parallel launch functions pass the saved runtime policies into the CUB dispatch layers, together with kernels
    compiled using the same policies.
 
 ## CUB policy wrapper types
@@ -69,9 +64,9 @@ Next, we define a specialization that matches a CUB-style reduce policy. These a
 ```cpp
 template <typename StaticPolicyT>
 struct ReducePolicyWrapper<StaticPolicyT,
-                           _CUDA_VSTD::void_t<typename StaticPolicyT::ReducePolicy,
-                                              typename StaticPolicyT::SingleTilePolicy,
-                                              typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
+                           ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
+                                               typename StaticPolicyT::SingleTilePolicy,
+                                               typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -225,5 +220,4 @@ int ConstantValue() const {
 
 This function accepts an `nlohmann::json` object describing an algorithm policy, which under a subpolicy name also
 provided to this function contains a agent policy matching the category of the defined wrappers, and returns an instance
-of `Runtime<Name>` filled in with those values. It *also* returns a string that can be used in an NVRTC translation unit
-to define a CUB-style policy with those same values.
+of `Runtime<Name>` filled in with those values.

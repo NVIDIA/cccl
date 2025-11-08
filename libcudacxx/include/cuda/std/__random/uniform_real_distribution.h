@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_UNIFORM_REAL_DISTRIBUTION_H
-#define _LIBCUDACXX___RANDOM_UNIFORM_REAL_DISTRIBUTION_H
+#ifndef _CUDA_STD___RANDOM_UNIFORM_REAL_DISTRIBUTION_H
+#define _CUDA_STD___RANDOM_UNIFORM_REAL_DISTRIBUTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _RealType = double>
 class uniform_real_distribution
@@ -97,8 +97,8 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__libcpp_random_is_valid_urng<_URng>, "");
-    return (__p.b() - __p.a()) * _CUDA_VSTD::generate_canonical<_RealType, numeric_limits<_RealType>::digits>(__g)
+    static_assert(__cccl_random_is_valid_urng<_URng>, "");
+    return (__p.b() - __p.a()) * ::cuda::std::generate_canonical<_RealType, numeric_limits<_RealType>::digits>(__g)
          + __p.a();
   }
 
@@ -176,8 +176,8 @@ operator>>(basic_istream<_CharT, _Traits>& __is, uniform_real_distribution<_RT>&
 }
 #endif // Not implemented
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_UNIFORM_REAL_DISTRIBUTION_H
+#endif // _CUDA_STD___RANDOM_UNIFORM_REAL_DISTRIBUTION_H

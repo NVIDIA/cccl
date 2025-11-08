@@ -27,8 +27,8 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_categories.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -57,6 +57,9 @@ struct iterator_category_to_traversal
                                 CategoryOrTraversal,
                                 decltype(cat_to_traversal_impl(CategoryOrTraversal{}))>;
 };
+
+template <typename CategoryOrTraversal>
+using iterator_category_to_traversal_t = typename iterator_category_to_traversal<CategoryOrTraversal>::type;
 } // namespace detail
 
 THRUST_NAMESPACE_END

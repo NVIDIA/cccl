@@ -45,8 +45,8 @@ private:
   //! @tparam _Domain The domain to check.
   //! @tparam _Args The arguments to validate against the domain.
   template <class _Domain, class... _Args>
-  using __apply_domain_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::
-    _If<_CUDA_VSTD::_IsValidExpansion<__apply_sender_result_t, _Domain, _Args...>::value, _Domain, default_domain>;
+  using __apply_domain_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
+    _If<::cuda::std::_IsValidExpansion<__apply_sender_result_t, _Domain, _Args...>::value, _Domain, default_domain>;
 
 public:
   //! Applies a sender to a domain, tag, and arguments.
@@ -63,7 +63,7 @@ public:
   //! @throws Any exception thrown by the underlying domain's `apply_sender`.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Domain, class _Tag, class _Sndr, class... _Args>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Tag, _Sndr&& __sndr, _Args&&... __args) const
+  _CCCL_API constexpr auto operator()(_Domain, _Tag, _Sndr&& __sndr, _Args&&... __args) const
     noexcept(noexcept(__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>{}.apply_sender(
       _Tag{}, static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...)))
       -> __apply_sender_result_t<__apply_domain_t<_Domain, _Tag, _Sndr, _Args...>, _Tag, _Sndr, _Args...>
@@ -77,7 +77,6 @@ public:
 //! A global constant instance of `apply_sender_t`.
 //! This can be used directly to invoke the `apply_sender` functionality.
 _CCCL_GLOBAL_CONSTANT apply_sender_t apply_sender{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

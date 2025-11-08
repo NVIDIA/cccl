@@ -38,13 +38,8 @@
 #include <thrust/system/detail/generic/partition.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -206,8 +201,5 @@ is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator firs
                            thrust::make_transform_iterator(first, ::cuda::std::not_fn(pred)),
                            thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

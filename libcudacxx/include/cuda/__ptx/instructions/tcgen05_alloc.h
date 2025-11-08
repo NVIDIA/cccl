@@ -30,11 +30,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/tcgen05_alloc.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

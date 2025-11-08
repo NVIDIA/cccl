@@ -18,9 +18,13 @@ __device__ static inline void tensormap_cp_fenceproxy(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_cp_fenceproxy_is_not_supported_before_SM_90__();
-template <int _N32, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-tensormap_cp_fenceproxy(sem_release_t, scope_t<_Scope> __scope, void* __dst, const void* __src, n32_t<_N32> __size)
+template <int _N32, ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
+  ::cuda::ptx::sem_release_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  void* __dst,
+  const void* __src,
+  ::cuda::ptx::n32_t<_N32> __size)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");

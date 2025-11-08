@@ -33,12 +33,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace system
+namespace system::detail
 {
-
-namespace detail
-{
-
 static const int eafnosupport    = 9901;
 static const int eaddrinuse      = 9902;
 static const int eaddrnotavail   = 9903;
@@ -117,9 +113,6 @@ static const int eagain          = 9976;
 static const int enfile          = 9977;
 static const int emfile          = 9978;
 static const int emlink          = 9979;
-
-} // namespace detail
-
-} // namespace system
+} // namespace system::detail
 
 THRUST_NAMESPACE_END

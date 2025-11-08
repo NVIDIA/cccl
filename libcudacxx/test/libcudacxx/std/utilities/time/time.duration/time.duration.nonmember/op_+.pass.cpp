@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -16,10 +17,11 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+#include <cuda/std/ratio>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
     cuda::std::chrono::seconds s1(3);
@@ -45,30 +47,13 @@ int main(int, char**)
     cuda::std::chrono::duration<double, cuda::std::ratio<1, 15>> r = s1 + s2;
     assert(r.count() == 75);
   }
-  {
-    constexpr cuda::std::chrono::seconds s1(3);
-    constexpr cuda::std::chrono::seconds s2(5);
-    constexpr cuda::std::chrono::seconds r = s1 + s2;
-    static_assert(r.count() == 8, "");
-  }
-  {
-    constexpr cuda::std::chrono::seconds s1(3);
-    constexpr cuda::std::chrono::microseconds s2(5);
-    constexpr cuda::std::chrono::microseconds r = s1 + s2;
-    static_assert(r.count() == 3000005, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(3);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<3, 5>> s2(5);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<1, 15>> r = s1 + s2;
-    static_assert(r.count() == 75, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(3);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5>> s2(5);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<1, 15>> r = s1 + s2;
-    static_assert(r.count() == 75, "");
-  }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

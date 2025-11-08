@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
-#define _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
+#ifndef _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H
+#define _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Pred, class _Proj>
 struct _ProjectedPred
@@ -47,32 +47,24 @@ struct _ProjectedPred
   {}
 
   template <class _Tp>
-  typename __invoke_of<
-    _Pred&,
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::type constexpr
-    _CCCL_API inline
-    operator()(_Tp&& __v) const
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _Tp>> constexpr _CCCL_API inline operator()(_Tp&& __v) const
   {
-    return _CUDA_VSTD::__invoke(__pred, _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_Tp>(__v)));
+    return ::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
-  typename __invoke_of<
-    _Pred&,
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::type constexpr
-    _CCCL_API inline
-    operator()(_T1&& __lhs, _T2&& __rhs) const
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _T1>, invoke_result_t<_Proj&, _T2>> _CCCL_API inline
+  operator()(_T1&& __lhs, _T2&& __rhs) const
   {
-    return _CUDA_VSTD::__invoke(__pred,
-                                _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_T1>(__lhs)),
-                                _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_T2>(__rhs)));
+    return ::cuda::std::invoke(__pred,
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
   }
 };
 
 template <class _Pred,
           class _Proj,
-          enable_if_t<!(!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value), int> = 0>
+          enable_if_t<!(!is_member_pointer_v<decay_t<_Pred>> && __is_identity_v<decay_t<_Proj>>), int> = 0>
 _CCCL_API constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred, _Proj& __proj)
 {
   return _ProjectedPred<_Pred, _Proj>(__pred, __proj);
@@ -83,14 +75,14 @@ _CCCL_API constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred,
 // the call stack when the comparator is invoked, even in an unoptimized build.
 template <class _Pred,
           class _Proj,
-          enable_if_t<!is_member_pointer<decay_t<_Pred>>::value && __is_identity<decay_t<_Proj>>::value, int> = 0>
+          enable_if_t<!is_member_pointer_v<decay_t<_Pred>> && __is_identity_v<decay_t<_Proj>>, int> = 0>
 _CCCL_API constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
 {
   return __pred;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
+#endif // _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H

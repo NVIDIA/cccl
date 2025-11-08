@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::async_resource_ref construction
+// cuda::mr::resource_ref construction
 
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
@@ -20,10 +20,10 @@
 
 namespace constructible
 {
-using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
-                                         property_with_value<int>,
-                                         property_with_value<double>,
-                                         property_without_value<std::size_t>>;
+using ref = cuda::mr::resource_ref<cuda::mr::host_accessible,
+                                   property_with_value<int>,
+                                   property_with_value<double>,
+                                   property_without_value<std::size_t>>;
 
 using matching_properties =
   test_resource<cuda::mr::host_accessible,
@@ -41,16 +41,11 @@ static_assert(is_constructible<ref, matching_properties&>::value, "");
 static_assert(!is_constructible<ref, missing_stateful_property&>::value, "");
 static_assert(!is_constructible<ref, missing_stateless_property&>::value, "");
 
-static_assert(is_constructible<ref, matching_properties*>::value, "");
-static_assert(!is_constructible<ref, missing_stateful_property*>::value, "");
-static_assert(!is_constructible<ref, missing_stateless_property*>::value, "");
-
 static_assert(is_constructible<ref, ref&>::value, "");
 
 // Ensure we require a mutable valid reference and do not bind against rvalues
 static_assert(!is_constructible<ref, matching_properties>::value, "");
 static_assert(!is_constructible<ref, const matching_properties&>::value, "");
-static_assert(!is_constructible<ref, const matching_properties*>::value, "");
 
 static_assert(cuda::std::is_copy_constructible<ref>::value, "");
 static_assert(cuda::std::is_move_constructible<ref>::value, "");
@@ -58,10 +53,10 @@ static_assert(cuda::std::is_move_constructible<ref>::value, "");
 
 namespace assignable
 {
-using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
-                                         property_with_value<int>,
-                                         property_with_value<double>,
-                                         property_without_value<std::size_t>>;
+using ref = cuda::mr::resource_ref<cuda::mr::host_accessible,
+                                   property_with_value<int>,
+                                   property_with_value<double>,
+                                   property_without_value<std::size_t>>;
 
 using res = test_resource<cuda::mr::host_accessible,
                           property_with_value<int>,
