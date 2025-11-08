@@ -47,8 +47,8 @@ macro(cccl_get_nvtx)
     NAME NVTX
     GITHUB_REPOSITORY NVIDIA/NVTX
     GIT_TAG release-v3
-    DOWNLOAD_ONLY
-    SYSTEM
+    DOWNLOAD_ONLY ON
+    SYSTEM ON
   )
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
 endmacro()
