@@ -46,7 +46,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
-
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr int __ffs_constexpr_impl(_Tp __v) noexcept
 {
@@ -134,8 +133,7 @@ template <class _Tp>
   return 0;
 }
 #  endif // _CCCL_HAS_INT128()
-#endif   // _CCCL_CUDA_COMPILATION()
-
+#endif // _CCCL_CUDA_COMPILATION()
 } // namespace __detail
 
 template <class _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, int> = 0>
