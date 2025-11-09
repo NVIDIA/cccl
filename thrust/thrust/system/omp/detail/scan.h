@@ -106,7 +106,25 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, wrapped_binary_op);
+      if constexpr (has_init)
+      {
+        if (tid == 0)
+        {
+          block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, wrapped_binary_op);
+        }
+        else
+        {
+          block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, wrapped_binary_op);
+        }
+      }
+      else
+      {
+        // No init value: reduce uses first element as init
+        if (end > start)
+        {
+          block_sums[tid] = ::cuda::std::reduce(first + start + 1, first + end, *(first + start), wrapped_binary_op);
+        }
+      }
     }
   }
 
@@ -117,7 +135,18 @@ OutputIterator scan_impl(
   }
   else
   {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), accum_t{}, wrapped_binary_op);
+    // For no init inclusive scan, use inclusive_scan on block_sums, then shift
+    if (num_threads > 1)
+    {
+      temporary_array<accum_t, DerivedPolicy> block_sums_copy(exec, num_threads);
+      for (int i = 0; i < num_threads; ++i)
+      {
+        block_sums_copy[i] = block_sums[i];
+      }
+      ::cuda::std::inclusive_scan(
+        block_sums_copy.begin(), block_sums_copy.begin() + num_threads - 1, block_sums.begin() + 1, wrapped_binary_op);
+      // block_sums[0] stays as-is (no prefix for first block)
+    }
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
@@ -130,13 +159,30 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      const accum_t prefix = block_sums[tid];
       if constexpr (IsInclusive)
       {
-        ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+        if constexpr (has_init)
+        {
+          const accum_t prefix = block_sums[tid];
+          ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+        }
+        else
+        {
+          // For no init: thread 0 has no prefix, others use block_sums
+          if (tid == 0)
+          {
+            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op);
+          }
+          else
+          {
+            const accum_t prefix = block_sums[tid];
+            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+          }
+        }
       }
       else
       {
+        const accum_t prefix = block_sums[tid];
         ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, wrapped_binary_op);
       }
     }
