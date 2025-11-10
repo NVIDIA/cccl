@@ -277,7 +277,7 @@ public:
       uint64_t __acc_mult                  = 1;
       [[maybe_unused]] uint64_t __acc_plus = 0;
       uint64_t __cur_mult                  = multiplier;
-      [[maybe_unused]] uint64_t __cur_plus                  = increment;
+      [[maybe_unused]] uint64_t __cur_plus = increment;
       while (__z > 0)
       {
         if (__z & 1)
