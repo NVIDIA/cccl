@@ -81,8 +81,11 @@ enum class address_space
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      [[maybe_unused]] bool __p = static_cast<bool>(::__isGlobal(__ptr));
-      _CCCL_ASSUME(__p);
+      bool __p = static_cast<bool>(::__isGlobal(__ptr));
+      if (__p)
+      {
+        _CCCL_ASSUME(__p);
+      }
       return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
@@ -101,8 +104,11 @@ enum class address_space
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      [[maybe_unused]] bool __p = static_cast<bool>(::__isShared(__ptr));
-      _CCCL_ASSUME(__p);
+      bool __p = static_cast<bool>(::__isShared(__ptr));
+      if (__p)
+      {
+        _CCCL_ASSUME(__p);
+      }
       return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
@@ -120,8 +126,11 @@ enum class address_space
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      [[maybe_unused]] bool __p = static_cast<bool>(::__isConstant(__ptr));
-      _CCCL_ASSUME(__p);
+      bool __p = static_cast<bool>(::__isConstant(__ptr));
+      if (__p)
+      {
+        _CCCL_ASSUME(__p);
+      }
       return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
@@ -140,8 +149,11 @@ enum class address_space
       return static_cast<bool>(__ret);
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) vvv
-      [[maybe_unused]] bool __p = static_cast<bool>(::__isLocal(__ptr));
-      _CCCL_ASSUME(__p);
+      bool __p = static_cast<bool>(::__isLocal(__ptr));
+      if (__p)
+      {
+        _CCCL_ASSUME(__p);
+      }
       return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) ^^^
     }
@@ -149,8 +161,11 @@ enum class address_space
 #  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 3)
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_70,
-        ([[maybe_unused]] bool __p = static_cast<bool>(::__isGridConstant(__ptr)); //
-         _CCCL_ASSUME(__p); //
+        (bool __p = static_cast<bool>(::__isGridConstant(__ptr)); //
+         if (__p) //
+         { //
+           _CCCL_ASSUME(__p); //
+         } //
          return __p;),
         (return false;))
 #  else // ^^^ has functional __isGridConstant() ^^^ / vvv no functional __isGridConstant() vvv
@@ -182,8 +197,11 @@ enum class address_space
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_90,
-        ([[maybe_unused]] bool __p = static_cast<bool>(::__isClusterShared(__ptr)); //
-         _CCCL_ASSUME(__p); //
+        (bool __p = static_cast<bool>(::__isClusterShared(__ptr)); //
+         if (__p) //
+         { //
+           _CCCL_ASSUME(__p); //
+         } //
          return __p;),
         (return false;))
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
