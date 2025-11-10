@@ -44,12 +44,13 @@ __host__ __device__ constexpr bool test_against_reference()
   }
   return true;
 }
+#endif // _CCCL_HAS_INT128()
 
 int main(int, char**)
 {
+#if _CCCL_HAS_INT128()
   test_engine<cuda::pcg64, 11135645891219275043ul>();
   test_against_reference();
+#endif // _CCCL_HAS_INT128()
   return 0;
 }
-
-#endif // _CCCL_HAS_INT128()
