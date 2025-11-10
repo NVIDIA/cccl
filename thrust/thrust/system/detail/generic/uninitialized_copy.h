@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename InputIterator, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, ForwardIterator result);
@@ -38,7 +37,6 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 template <typename ExecutionPolicy, typename InputIterator, typename Size, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, Size n, ForwardIterator result);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

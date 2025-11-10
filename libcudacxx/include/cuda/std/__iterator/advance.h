@@ -77,7 +77,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.advance]
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__advance)
 struct __fn
 {
@@ -221,7 +221,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

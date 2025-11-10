@@ -22,8 +22,8 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__event/timed_event.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
@@ -130,7 +130,6 @@ struct stream_ref : ::cuda::stream_ref
   query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> __call_result_t<execution::get_domain_t, const _Env&>;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

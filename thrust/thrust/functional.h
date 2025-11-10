@@ -32,8 +32,14 @@
 
 #include <thrust/detail/functional/actor.h>
 
-#include <cuda/functional>
-#include <cuda/std/functional>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__utility/forward.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -343,7 +349,6 @@ _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
  */
 namespace placeholders
 {
-
 /*! \p thrust::placeholders::_1 is the placeholder for the first function parameter.
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
@@ -383,7 +388,6 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
 /*! \p thrust::placeholders::_10 is the placeholder for the tenth function parameter.
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
-
 } // namespace placeholders
 
 /*! \} // placeholder_objects

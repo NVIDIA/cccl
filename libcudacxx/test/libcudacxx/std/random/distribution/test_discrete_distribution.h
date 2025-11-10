@@ -49,7 +49,6 @@ __host__ __device__ bool test_discrete_distribution(
   DiscreteDistribution dist(param);
   URNG g{};
   assert(expected_probabilities.size() >= 2 && expected_probabilities.size() <= 10);
-  using result_type = typename DiscreteDistribution::result_type;
   cuda::std::array<cuda::std::size_t, N> observed_frequencies{};
 
   // Generate samples and record observed frequencies.

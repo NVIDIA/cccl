@@ -28,6 +28,7 @@
 #  include <cuda/__event/timed_event.h>
 #  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__utility/to_underlying.h>
@@ -36,13 +37,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-namespace __detail
-{
-// 0 is a valid stream in CUDA, so we need some other invalid stream representation
-// Can't make it constexpr, because cudaStream_t is a pointer type
-static const ::cudaStream_t __invalid_stream = reinterpret_cast<::cudaStream_t>(~0ULL);
-} // namespace __detail
 
 //! @brief A type representing a stream ID.
 enum class stream_id : unsigned long long
@@ -77,6 +71,13 @@ public:
       : __stream{__stream_}
   {}
 
+  //! @brief Constructs a `stream_ref` from the `cuda::invalid_stream_t`.
+  //!
+  //! @note Any CUDA APIs called on the created object will result in an CUDA error.
+  _CCCL_API explicit stream_ref(invalid_stream_t) noexcept
+      : __stream{::cuda::__invalid_stream()}
+  {}
+
   //! Disallow construction from an `int`, e.g., `0`.
   stream_ref(int) = delete;
 
@@ -88,12 +89,38 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param lhs The first `stream_ref` to compare
-  //! @param rhs The second `stream_ref` to compare
+  //! @param __lhs The first `stream_ref` to compare
+  //! @param __rhs The second `stream_ref` to compare
   //! @return true if equal, false if unequal
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
+  }
+
+  //! @brief Compares `stream_ref` with `invalid_stream_t` for equality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `stream_ref` to compare
+  //! @param __rhs The `invalid_stream_t` to compare
+  //! @return true if equal, false if unequal
+  [[nodiscard]] _CCCL_API friend bool operator==(const stream_ref& __lhs, const invalid_stream_t&) noexcept
+  {
+    return __lhs.__stream == ::cuda::__invalid_stream();
+  }
+
+  //! @brief Compares `invalid_stream_t` with `stream_ref` for equality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `invalid_stream_t` to compare
+  //! @param __rhs The `stream_ref` to compare
+  //! @return true if equal, false if unequal
+  [[nodiscard]] _CCCL_API friend bool operator==(const invalid_stream_t&, const stream_ref& __rhs) noexcept
+  {
+    return ::cuda::__invalid_stream() == __rhs.__stream;
   }
 
   //! @brief Compares two `stream_ref`s for inequality
@@ -101,12 +128,38 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param lhs The first `stream_ref` to compare
-  //! @param rhs The second `stream_ref` to compare
+  //! @param __lhs The first `stream_ref` to compare
+  //! @param __rhs The second `stream_ref` to compare
   //! @return true if unequal, false if equal
   [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
+  }
+
+  //! @brief Compares `stream_ref` with `invalid_stream_t` for inequality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `stream_ref` to compare
+  //! @param __rhs The `invalid_stream_t` to compare
+  //! @return false if equal, true if unequal
+  [[nodiscard]] _CCCL_API friend bool operator!=(const stream_ref& __lhs, const invalid_stream_t&) noexcept
+  {
+    return __lhs.__stream != ::cuda::__invalid_stream();
+  }
+
+  //! @brief Compares `invalid_stream_t` with `stream_ref` for inequality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `invalid_stream_t` to compare
+  //! @param __rhs The `stream_ref` to compare
+  //! @return false if equal, true if unequal
+  [[nodiscard]] _CCCL_API friend bool operator!=(const invalid_stream_t&, const stream_ref& __rhs) noexcept
+  {
+    return ::cuda::__invalid_stream() != __rhs.__stream;
   }
 
   //! Returns the wrapped `cudaStream_t` handle.
@@ -153,7 +206,7 @@ public:
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    _CCCL_ASSERT(__stream != __detail::__invalid_stream, "cuda::stream_ref::wait invalid stream passed");
+    _CCCL_ASSERT(__stream != ::cuda::__invalid_stream(), "cuda::stream_ref::wait invalid stream passed");
     if (*this != __other)
     {
       event __tmp(__other);

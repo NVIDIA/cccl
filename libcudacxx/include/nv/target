@@ -34,13 +34,10 @@
 #    define _NV_BITSET_ATTRIBUTE
 #  endif
 
-namespace nv
-{
-namespace target
+namespace nv::target
 {
 namespace detail
 {
-
 typedef unsigned long long base_int_t;
 
 // No host specialization
@@ -230,8 +227,7 @@ constexpr sm_selector sm_121 = sm_selector::sm_121;
 
 using detail::is_exactly;
 using detail::provides;
-} // namespace target
-} // namespace nv
+} // namespace nv::target
 
 #endif // C++  && !defined(__CUDACC_RTC__)
 

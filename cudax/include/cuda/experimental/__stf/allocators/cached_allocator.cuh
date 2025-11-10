@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Cached block allocator that implements block_allocator_interface.
  *
@@ -380,5 +379,4 @@ protected:
 
   ::std::mutex allocator_mutex;
 };
-
 } // end namespace cuda::experimental::stf

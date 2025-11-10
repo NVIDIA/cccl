@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::AgentReduce implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduction.
@@ -65,31 +41,30 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam NOMINAL_BLOCK_THREADS_4B Threads per thread block
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam NominalBlockThreads4B Threads per thread block
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _BLOCK_ALGORITHM Cooperative block-wide reduction algorithm to use
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam BlockAlgorithm Cooperative block-wide reduction algorithm to use
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  int _VECTOR_LOAD_LENGTH,
-  BlockReduceAlgorithm _BLOCK_ALGORITHM,
-  CacheLoadModifier _LOAD_MODIFIER,
-  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          BlockReduceAlgorithm BlockAlgorithm,
+          CacheLoadModifier LoadModifier,
+          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Cooperative block-wide reduction algorithm to use
-  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = _BLOCK_ALGORITHM;
+  static constexpr BlockReduceAlgorithm BLOCK_ALGORITHM = BlockAlgorithm;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
@@ -114,36 +89,36 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 /**
  * Parameterizable tuning policy type for AgentReduce
- * @tparam _BLOCK_THREADS Threads per thread block
- * @tparam _WARP_THREADS Threads per warp
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
+ * @tparam BlockThreads Threads per thread block
+ * @tparam WarpThreads Threads per warp
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
- * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
- * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
+ * @tparam VectorLoadLength Number of items per vectorized load
+ * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int _BLOCK_THREADS,
-          int _WARP_THREADS,
-          int NOMINAL_ITEMS_PER_THREAD_4B,
+template <int BlockThreads,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
           typename ComputeT,
-          int _VECTOR_LOAD_LENGTH,
-          CacheLoadModifier _LOAD_MODIFIER>
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
-  static constexpr int WARP_THREADS = _WARP_THREADS;
+  static constexpr int WARP_THREADS = WarpThreads;
 
   /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int VECTOR_LOAD_LENGTH = VectorLoadLength;
 
   /// Number of threads per block
-  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
   /// Number of items per thread
   static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
+    detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   /// Number of items per tile
   constexpr static int ITEMS_PER_TILE = ITEMS_PER_THREAD * WARP_THREADS;
@@ -160,7 +135,6 @@ struct AgentWarpReducePolicy
 
 namespace detail::reduce
 {
-
 /**
  * @brief AgentReduceImpl implements a stateful abstraction of CUDA thread blocks
  *        and warps, for participating in device-wide reduction .
@@ -613,7 +587,6 @@ struct AgentWarpReduce
       : base_t(temp_storage, d_in, reduction_op, transform_op, threadIdx.x % AgentReducePolicy::WARP_THREADS)
   {}
 };
-
 } // namespace detail::reduce
 
 CUB_NAMESPACE_END

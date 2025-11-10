@@ -1,4 +1,4 @@
-#define CUB_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false, "");
+#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false, "");
 #define CCCL_DISABLE_NVTX
 
 #include <cub/device/device_for.cuh>

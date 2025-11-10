@@ -28,13 +28,12 @@
 
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/lerp.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename RealType>
 _CCCL_HOST_DEVICE uniform_real_distribution<RealType>::uniform_real_distribution(RealType a, RealType b)
     : m_param(a, b)
@@ -194,7 +193,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, uniform_real_distribution<Real
 {
   return thrust::random::detail::random_core_access::stream_in(is, d);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

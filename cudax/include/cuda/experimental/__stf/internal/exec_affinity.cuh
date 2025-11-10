@@ -40,7 +40,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class exec_place;
 
 /**
@@ -105,5 +104,4 @@ private:
 
 // Define the static thread_local member outside the class
 inline thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> exec_affinity::s;
-
 } // end namespace cuda::experimental::stf

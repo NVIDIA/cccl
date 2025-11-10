@@ -42,9 +42,9 @@ struct __atomic_ref_common
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
 };
@@ -58,9 +58,9 @@ struct __atomic_ref_arithmetic
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
@@ -75,9 +75,9 @@ struct __atomic_ref_bitwise
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(const, )
@@ -93,9 +93,9 @@ struct __atomic_ref_pointer
 
   __atomic_ref_storage<_Tp> __a;
 
-#if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
-#endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
+#if defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
+  static constexpr bool is_always_lock_free = _CCCL_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+#endif // defined(_CCCL_ATOMIC_ALWAYS_LOCK_FREE)
 
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(const, )
   _LIBCUDACXX_ATOMIC_POINTER_IMPL(const, )

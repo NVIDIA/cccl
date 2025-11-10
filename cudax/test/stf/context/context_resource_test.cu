@@ -20,7 +20,6 @@ using namespace cuda::experimental::stf;
 
 namespace
 {
-
 // Counters for tracking resource lifecycle
 std::atomic<int> stream_resource_construct_count{0};
 std::atomic<int> stream_resource_release_count{0};
@@ -209,7 +208,6 @@ void test_graph_ctx_manual_resource_release()
 
   check_all_resources_released();
 }
-
 } // anonymous namespace
 
 int main()

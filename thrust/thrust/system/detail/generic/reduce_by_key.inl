@@ -36,7 +36,9 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -44,7 +46,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 template <typename ValueType, typename TailFlagType, typename AssociativeOperator>
 struct reduce_by_key_functor
 {
@@ -62,7 +63,6 @@ struct reduce_by_key_functor
                        thrust::get<1>(a) | thrust::get<1>(b));
   }
 };
-
 } // end namespace detail
 
 template <typename ExecutionPolicy,
@@ -171,16 +171,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = ::cuda::std::
-
-    _If<thrust::detail::is_output_iterator<OutputIterator2>,
-        thrust::detail::it_value_t<InputIterator2>,
-        thrust::detail::it_value_t<OutputIterator2>>;
+  using T = ::cuda::std::_If<thrust::detail::is_output_iterator<OutputIterator2>,
+                             thrust::detail::it_value_t<InputIterator2>,
+                             thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, ::cuda::std::plus<T>());
 } // end reduce_by_key()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

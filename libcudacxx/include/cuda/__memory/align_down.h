@@ -22,9 +22,9 @@
 #endif // no system header
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -34,6 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Tp>
 [[nodiscard]] _CCCL_API inline _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
+  using ::cuda::std::uintptr_t;
   _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
   if constexpr (!::cuda::std::is_void_v<_Tp>)
   {
@@ -44,8 +45,15 @@ template <typename _Tp>
       return __ptr;
     }
   }
-  auto __tmp = static_cast<::cuda::std::uintptr_t>(__alignment - 1);
-  auto __ret = reinterpret_cast<_Tp*>(reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
+  // all code below is translated to a single LOP3.LUT instruction
+  using _Up                = ::cuda::std::remove_cv_t<_Tp>;
+  const auto __char_ptr    = reinterpret_cast<char*>(const_cast<_Up*>(__ptr));
+  const auto __tmp         = static_cast<uintptr_t>(__alignment - 1);
+  const auto __aligned_ptr = reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(__ptr) & ~__tmp);
+  // __aligned_ptr and __ptr must be pointers (not values) to apply the optimization
+  // __ptr - (ptr - aligned_ptr) -> __ptr + (aligned_ptr - ptr)
+  const auto __diff = static_cast<::cuda::std::size_t>(__aligned_ptr - __char_ptr);
+  const auto __ret  = reinterpret_cast<_Tp*>(__char_ptr + __diff);
   return ::cuda::std::__runtime_assume_aligned(__ret, __alignment);
 }
 

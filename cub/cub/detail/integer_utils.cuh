@@ -31,7 +31,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename Input>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 {
@@ -83,6 +82,5 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(IntegerType
   auto value1           = static_cast<IntegerType>(value < 0 ? lowest - value : value);
   return cub::detail::unsafe_bitcast<FloatingPointType>(value1);
 }
-
 } // namespace detail
 CUB_NAMESPACE_END

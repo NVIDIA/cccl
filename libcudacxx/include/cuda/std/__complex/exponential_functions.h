@@ -199,7 +199,8 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   {
     __exp_r_ldexp_factor = 278.0f;
   }
-  if (__exp_r_ldexp_factor < -151.0f)
+  // Catch NaN's here to avoid UB
+  if (!(__exp_r_ldexp_factor >= -151.0f))
   {
     __exp_r_ldexp_factor = -151.0f;
   }
@@ -290,7 +291,8 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   {
     __exp_r_ldexp_factor = 2099.0;
   }
-  if (__exp_r_ldexp_factor < -1076.0)
+  // Catch NaN's here to avoid UB
+  if (!(__exp_r_ldexp_factor >= -1076.0))
   {
     __exp_r_ldexp_factor = -1076.0;
   }

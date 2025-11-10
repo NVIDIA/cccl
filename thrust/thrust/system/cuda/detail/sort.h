@@ -45,7 +45,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/trivial_sequence.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/sequence.h>
 #  include <thrust/sort.h>
@@ -56,16 +55,20 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
-#  include <cuda/cmath>
+#  include <cuda/__cmath/round_up.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __merge_sort
 {
-
 template <class KeysIt, class ItemsIt, class Size, class CompareOp>
 THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   void* d_temp_storage,
@@ -171,7 +174,6 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
 
 namespace __radix_sort
 {
-
 template <class SORT_ITEMS, class Comparator>
 struct dispatch;
 
@@ -303,23 +305,22 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 
 namespace __smart_sort
 {
-
 template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
-  (::cuda::std::is_arithmetic<Key>::value
+  (::cuda::std::is_arithmetic_v<Key>
 #  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-   || ::cuda::std::is_same<Key, __half>::value
+   || ::cuda::std::is_same_v<Key, __half>
 #  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
 #  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   || ::cuda::std::is_same<Key, __nv_bfloat16>::value
+   || ::cuda::std::is_same_v<Key, __nv_bfloat16>
 #  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
          // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
    )
-    && (::cuda::std::is_same<CompareOp, ::cuda::std::less<Key>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::less<void>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<Key>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<void>>::value)>;
+    && (::cuda::std::is_same_v<CompareOp, ::cuda::std::less<Key>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::less<void>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<Key>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<void>>)>;
 
 template <
   class SORT_ITEMS,
@@ -344,12 +345,16 @@ template <
   class CompareOp,
   ::cuda::std::enable_if_t<can_use_primitive_sort<thrust::detail::it_value_t<KeysIt>, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
-  execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+  execution_policy<Policy>& policy,
+  KeysIt keys_first,
+  KeysIt keys_last,
+  [[maybe_unused]] ItemsIt items_first,
+  CompareOp compare_op)
 {
   // ensure sequences have trivial iterators
   thrust::detail::trivial_sequence<KeysIt, Policy> keys(policy, keys_first, keys_last);
 
-  if (SORT_ITEMS::value)
+  if constexpr (SORT_ITEMS::value)
   {
     thrust::detail::trivial_sequence<ItemsIt, Policy> values(
       policy, items_first, items_first + (keys_last - keys_first));
@@ -361,7 +366,7 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
       keys_last - keys_first,
       compare_op);
 
-    if (!is_contiguous_iterator_v<ItemsIt>)
+    if constexpr (!is_contiguous_iterator_v<ItemsIt>)
     {
       cuda_cub::copy(policy, values.begin(), values.end(), items_first);
     }
@@ -377,7 +382,7 @@ THRUST_RUNTIME_FUNCTION void smart_sort(
   }
 
   // copy results back, if necessary
-  if (!is_contiguous_iterator_v<KeysIt>)
+  if constexpr (!is_contiguous_iterator_v<KeysIt>)
   {
     cuda_cub::copy(policy, keys.begin(), keys.end(), keys_first);
   }
@@ -463,7 +468,6 @@ stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt 
   using key_type = thrust::detail::it_value_t<KeysIt>;
   cuda_cub::stable_sort_by_key(policy, keys_first, keys_last, values, ::cuda::std::less<key_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

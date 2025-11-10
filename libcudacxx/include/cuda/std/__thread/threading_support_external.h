@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 
 #  include <cuda/std/__chrono/duration.h>
 
@@ -36,6 +36,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#endif // _CCCL_HAS_THREAD_API_EXTERNAL
 
 #endif // _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H

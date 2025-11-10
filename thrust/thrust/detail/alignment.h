@@ -29,9 +29,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/alignment_of.h>
 #include <cuda/std/cstddef> // For `std::size_t` and `std::max_align_t`.
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

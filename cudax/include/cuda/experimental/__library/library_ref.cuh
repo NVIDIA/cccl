@@ -31,7 +31,6 @@
 
 namespace cuda::experimental
 {
-
 template <class _Signature>
 class kernel_ref;
 
@@ -74,7 +73,7 @@ public:
   [[nodiscard]] bool has_kernel(const char* __name) const
   {
     ::CUkernel __kernel{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetKernelNoThrow(__kernel, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
@@ -98,7 +97,7 @@ public:
   [[nodiscard]] kernel_ref<_Signature> kernel(const char* __name) const
   {
     ::CUkernel __kernel{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetKernelNoThrow(__kernel, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name);
         __res != ::cudaSuccess)
     {
       ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from the library");
@@ -120,7 +119,7 @@ public:
 
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
@@ -145,7 +144,7 @@ public:
 
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
     {
       ::cuda::__throw_cuda_error(__res, "Failed to get the global symbol from the library");
@@ -166,7 +165,7 @@ public:
   {
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    switch (const auto __res = _CUDA_DRIVER::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name))
+    switch (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name))
     {
       case ::cudaSuccess:
         return true;
@@ -190,7 +189,7 @@ public:
   {
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
-    if (const auto __res = _CUDA_DRIVER::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
+    if (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
         __res != ::cudaSuccess)
     {
       ::cuda::__throw_cuda_error(__res, "Failed to get the managed symbol from the library");
@@ -229,7 +228,6 @@ public:
 protected:
   ::CUlibrary __library_;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

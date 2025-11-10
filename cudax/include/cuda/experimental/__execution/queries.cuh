@@ -245,6 +245,10 @@ private:
       return __declfn<decltype(__recurse_query_t{}(
         get_scheduler(declval<_Env>()...), __hide_scheduler{declval<_Env>()}...))>;
     }
+    else if constexpr (__is_scheduler<_Attrs> && sizeof...(_Env) == 0)
+    {
+      return __declfn<_Attrs>;
+    }
     // Otherwise, no completion scheduler can be determined. Return void.
   }
 
@@ -262,9 +266,13 @@ public:
     // Otherwise, if __attrs indicates that its sender completes inline, then we can ask
     // the environment for the current scheduler and return that (after checking the
     // scheduler for _its_ completion scheduler).
-    else
+    else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_scheduler_t, const _Env&...>)
     {
       return __check_domain<_Attrs, _Env...>(__recurse_query_t{}(get_scheduler(__env...), __hide_scheduler{__env}...));
+    }
+    else
+    {
+      return __attrs;
     }
   }
 
@@ -338,7 +346,6 @@ _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
     return true;
   }
 } get_launch_config{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

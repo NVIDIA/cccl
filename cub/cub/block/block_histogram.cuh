@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -105,7 +81,7 @@ enum BlockHistogramAlgorithm
 //!   each of the disjoint categories (known as *bins*).
 //! - The ``T`` type must be implicitly castable to an integer type.
 //! - BlockHistogram expects each integral ``input[i]`` value to satisfy
-//!   ``0 <= input[i] < BINS``. Values outside of this range result in undefined behavior.
+//!   ``0 <= input[i] < Bins``. Values outside of this range result in undefined behavior.
 //! - BlockHistogram can be optionally specialized to use different algorithms:
 //!
 //!   #. :cpp:enumerator:`cub::BLOCK_HISTO_SORT`: Sorting followed by differentiation.
@@ -146,7 +122,7 @@ enum BlockHistogramAlgorithm
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - @granularity
-//! - All input values must fall between ``[0, BINS)``, or behavior is undefined.
+//! - All input values must fall between ``[0, Bins)``, or behavior is undefined.
 //! - The histogram output can be constructed in shared or device-accessible memory
 //! - See ``cub::BlockHistogramAlgorithm`` for performance details regarding algorithmic alternatives
 //!
@@ -161,32 +137,32 @@ enum BlockHistogramAlgorithm
 //! @tparam T
 //!   The sample type being histogrammed (must be castable to an integer bin identifier)
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of items per thread
 //!
-//! @tparam BINS
+//! @tparam Bins
 //!   The number bins within the histogram
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockHistogramAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_HISTO_SORT)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          int BINS,
-          BlockHistogramAlgorithm ALGORITHM = BLOCK_HISTO_SORT,
-          int BLOCK_DIM_Y                   = 1,
-          int BLOCK_DIM_Z                   = 1>
+          int BlockDimX,
+          int ItemsPerThread,
+          int Bins,
+          BlockHistogramAlgorithm Algorithm = BLOCK_HISTO_SORT,
+          int BlockDimY                     = 1,
+          int BlockDimZ                     = 1>
 class BlockHistogram
 {
 private:
@@ -194,14 +170,14 @@ private:
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
   /// Internal specialization.
   using InternalBlockHistogram =
-    ::cuda::std::_If<ALGORITHM == BLOCK_HISTO_SORT,
-                     detail::BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
-                     detail::BlockHistogramAtomic<BINS>>;
+    ::cuda::std::_If<Algorithm == BLOCK_HISTO_SORT,
+                     detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
+                     detail::BlockHistogramAtomic<Bins>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;
@@ -230,7 +206,7 @@ public:
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -241,7 +217,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group
@@ -289,18 +265,18 @@ public:
   //! @tparam CounterT
   //!   **[inferred]** Histogram counter type
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    for (; histo_offset + BLOCK_THREADS <= Bins; histo_offset += BLOCK_THREADS)
     {
       histogram[histo_offset + linear_tid] = 0;
     }
     // Finish up with guarded initialization if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+    if ((Bins % BLOCK_THREADS != 0) && (histo_offset + linear_tid < Bins))
     {
       histogram[histo_offset + linear_tid] = 0;
     }
@@ -353,7 +329,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     // Initialize histogram bin counts to zeros
     InitHistogram(histogram);
@@ -415,7 +391,7 @@ public:
   //! @param[out] histogram
   //!   Reference to shared/device-accessible memory histogram
   template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
     InternalBlockHistogram(temp_storage).Composite(items, histogram);
   }

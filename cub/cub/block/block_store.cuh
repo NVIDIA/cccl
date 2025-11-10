@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! Operations for writing linear segments of data from the CUDA thread block
@@ -60,7 +36,7 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -75,15 +51,15 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @param[in] items
 //!   Data to store
-template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
     thread_itr[ITEM] = items[ITEM];
   }
@@ -100,7 +76,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -118,17 +94,17 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
+  OutputIteratorT thread_itr = block_itr + (linear_tid * ItemsPerThread);
 
   // Store directly in thread-blocked order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    if (ITEM + (linear_tid * ITEMS_PER_THREAD) < valid_items)
+    if (ITEM + (linear_tid * ItemsPerThread) < valid_items)
     {
       thread_itr[ITEM] = items[ITEM];
     }
@@ -147,7 +123,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //! The following conditions will prevent vectorization and storing will
 //! fall back to cub::BLOCK_STORE_DIRECT:
 //!
-//!   - ``ITEMS_PER_THREAD`` is odd
+//!   - ``ItemsPerThread`` is odd
 //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
 //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
 //!
@@ -156,7 +132,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @param[in] linear_tid
@@ -168,20 +144,20 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //!
 //! @param[in] items
 //!   Data to store
-template <typename T, int ITEMS_PER_THREAD>
+template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_THREAD])
+StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerThread])
 {
   enum
   {
     // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = ::cuda::std::min(4, ITEMS_PER_THREAD),
+    MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread),
 
     // Vector size must be a power of two and an even divisor of the items per thread
     VEC_SIZE =
-      ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ITEMS_PER_THREAD % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1,
+      ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1,
 
-    VECTORS_PER_THREAD = ITEMS_PER_THREAD / VEC_SIZE,
+    VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE,
   };
 
   // Vector type
@@ -199,7 +175,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
 
     // Copy
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
     {
       raw_items[ITEM] = items[ITEM];
     }
@@ -232,7 +208,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -247,15 +223,15 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
 //!
 //! @param[in] items
 //!   Data to store
-template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
   // Store directly in striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
     thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
   }
@@ -275,7 +251,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -293,15 +269,15 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <int BLOCK_THREADS, typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
   // Store directly in striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
     if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
     {
@@ -330,7 +306,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -345,19 +321,19 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 //!
 //! @param[out] items
 //!   Data to load
-template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
   int tid         = linear_tid & (detail::warp_threads - 1);
   int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
   // Store directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
     thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
   }
@@ -379,7 +355,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 //! @tparam T
 //!   **[inferred]** The data type to store.
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   **[inferred]** The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam OutputIteratorT
@@ -397,19 +373,19 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
+template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
   int tid         = linear_tid & (detail::warp_threads - 1);
   int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
   // Store directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
     if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
@@ -465,7 +441,7 @@ enum BlockStoreAlgorithm
   //! A :ref:`blocked arrangement <flexible-data-arrangement>` of data is written directly
   //! to memory using CUDA's built-in vectorized stores as a coalescing optimization.
   //! For example, ``st.global.v4.s32`` instructions will be generated
-  //! when ``T = int`` and ``ITEMS_PER_THREAD % 4 == 0``.
+  //! when ``T = int`` and ``ItemsPerThread % 4 == 0``.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -475,7 +451,7 @@ enum BlockStoreAlgorithm
   //!   maximum vector store width (typically 4 items or 64B, whichever is lower).
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
   //!
-  //!   - ``ITEMS_PER_THREAD`` is odd
+  //!   - ``ItemsPerThread`` is odd
   //!   - The ``OutputIteratorT`` is not a simple pointer type
   //!   - The block output offset is not quadword-aligned
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
@@ -634,34 +610,34 @@ enum BlockStoreAlgorithm
 //! @tparam T
 //!   The type of data to be written.
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
 //! @tparam ALGORITHM
 //!   **[optional]** cub::BlockStoreAlgorithm tuning policy enumeration (default: cub::BLOCK_STORE_DIRECT)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          BlockStoreAlgorithm ALGORITHM = BLOCK_STORE_DIRECT,
-          int BLOCK_DIM_Y               = 1,
-          int BLOCK_DIM_Z               = 1>
+          int BlockDimX,
+          int ItemsPerThread,
+          BlockStoreAlgorithm Algorithm = BLOCK_STORE_DIRECT,
+          int BlockDimY                 = 1,
+          int BlockDimZ                 = 1>
 class BlockStore
 {
 private:
   enum
   {
     /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
   };
 
   /// Store helper
@@ -692,7 +668,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
@@ -710,7 +686,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
@@ -743,7 +719,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
     }
@@ -761,7 +737,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
     }
@@ -794,7 +770,7 @@ private:
      * @param[in] items
      *   Data to store
      */
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
     }
@@ -810,7 +786,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
@@ -828,7 +804,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
     }
@@ -841,7 +817,7 @@ private:
   struct StoreInternal<BLOCK_STORE_TRANSPOSE, DUMMY>
   {
     // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -876,7 +852,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       BlockExchange(temp_storage).BlockedToStriped(items);
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
@@ -895,7 +871,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       BlockExchange(temp_storage).BlockedToStriped(items);
       if (linear_tid == 0)
@@ -924,7 +900,7 @@ private:
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -959,7 +935,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       BlockExchange(temp_storage).BlockedToWarpStriped(items);
       StoreDirectWarpStriped(linear_tid, block_itr, items);
@@ -978,7 +954,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       BlockExchange(temp_storage).BlockedToWarpStriped(items);
       if (linear_tid == 0)
@@ -1007,7 +983,7 @@ private:
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, true, BlockDimY, BlockDimZ>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -1042,7 +1018,7 @@ private:
      *   Data to store
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
     {
       BlockExchange(temp_storage).BlockedToWarpStriped(items);
       StoreDirectWarpStriped(linear_tid, block_itr, items);
@@ -1061,7 +1037,7 @@ private:
      *   Number of valid items to write
      */
     template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
     {
       BlockExchange(temp_storage).BlockedToWarpStriped(items);
       if (linear_tid == 0)
@@ -1076,7 +1052,7 @@ private:
   };
 
   /// Internal load implementation to use
-  using InternalStore = StoreInternal<ALGORITHM, 0>;
+  using InternalStore = StoreInternal<Algorithm, 0>;
 
   /// Shared memory storage layout type
   using _TempStorage = typename InternalStore::TempStorage;
@@ -1107,7 +1083,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
@@ -1118,7 +1094,7 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @}  end member group
@@ -1172,7 +1148,7 @@ public:
   //! @param[in] items
   //!   Data to store
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
   {
     InternalStore(temp_storage, linear_tid).Store(block_itr, items);
   }
@@ -1228,7 +1204,7 @@ public:
   //! @param[in] valid_items
   //!   Number of valid items to write
   template <typename OutputIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
     InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
   }
