@@ -1,4 +1,3 @@
-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -13,6 +12,8 @@
 #include <cuda/__random/pcg_engine.h>
 
 #include "../../std/random/engine/test_engine.h"
+
+#if _CCCL_HAS_INT128()
 
 __host__ __device__ constexpr bool test_against_reference()
 {
@@ -35,7 +36,7 @@ __host__ __device__ constexpr bool test_against_reference()
   {
     for (auto discard : discards)
     {
-      cuda::pcg64_engine rng(seed);
+      cuda::pcg64 rng(seed);
       rng.discard(discard);
       assert(rng() == reference_values[ref_index]);
       ref_index++;
@@ -50,3 +51,5 @@ int main(int, char**)
   test_against_reference();
   return 0;
 }
+
+#endif // _CCCL_HAS_INT128()
