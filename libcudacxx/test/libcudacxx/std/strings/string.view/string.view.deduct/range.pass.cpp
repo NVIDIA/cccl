@@ -26,8 +26,7 @@ __host__ __device__ constexpr void test_range_deduct()
 {
   // 1. Test construction of a string_view from an cuda::std::array
   {
-    constexpr auto str = TEST_STRLIT(CharT, "test");
-    cuda::std::array<CharT, 4> val{str[0], str[1], str[2], str[3]};
+    cuda::std::array<CharT, 4> val{};
     auto sv = cuda::std::basic_string_view(val);
     static_assert(cuda::std::is_same_v<decltype(sv), cuda::std::basic_string_view<CharT>>);
     assert(sv.size() == val.size());
@@ -36,11 +35,19 @@ __host__ __device__ constexpr void test_range_deduct()
 
   // 2. Test construction of a string_view from a custom type
   {
-    struct Widget
+    class Widget
     {
+      cuda::std::array<CharT, 3> data_{};
+
+    public:
+      __host__ __device__ constexpr Widget()
+      {
+        cuda::std::char_traits<CharT>::copy(data_.data(), TEST_STRLIT(CharT, "foo"), 3);
+      }
+
       __host__ __device__ constexpr const CharT* data() const
       {
-        return data_;
+        return data_.data();
       }
       __host__ __device__ constexpr contiguous_iterator<const CharT*> begin() const
       {
@@ -50,14 +57,13 @@ __host__ __device__ constexpr void test_range_deduct()
       {
         return contiguous_iterator<const CharT*>(data() + 3);
       }
-
-      const CharT* data_;
     };
-    const auto widget_data           = TEST_STRLIT(CharT, "foo");
-    cuda::std::basic_string_view bsv = cuda::std::basic_string_view(Widget{widget_data});
+
+    Widget widget{};
+    cuda::std::basic_string_view bsv = cuda::std::basic_string_view(widget);
     static_assert(cuda::std::is_same_v<decltype(bsv), cuda::std::basic_string_view<CharT>>);
     assert(bsv.size() == 3);
-    assert(bsv.data() == widget_data);
+    assert(bsv.data() == widget.data());
   }
 }
 

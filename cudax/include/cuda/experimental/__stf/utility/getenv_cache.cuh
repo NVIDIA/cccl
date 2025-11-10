@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief Retrieves the value of an environment variable, caching the result for subsequent calls.
  *
@@ -62,5 +61,4 @@ inline const char* cached_getenv(const char* name)
 
   return value;
 }
-
 } // end namespace cuda::experimental::stf::reserved

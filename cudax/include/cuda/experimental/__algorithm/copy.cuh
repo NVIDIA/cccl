@@ -32,7 +32,6 @@
 
 namespace cuda::experimental
 {
-
 //! @brief Launches a bytewise memory copy from source to destination into the provided
 //! stream.
 //!
@@ -88,7 +87,6 @@ copy_bytes(::cuda::stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_con
     ::cuda::__as_mdspan(device_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
     __config);
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

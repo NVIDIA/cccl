@@ -40,7 +40,6 @@ using __cref_t _CCCL_NODEBUG_ALIAS = _Ty const&;
 
 using __cp _CCCL_NODEBUG_ALIAS    = ::cuda::std::__type_self;
 using __cpclr _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_quote1<__cref_t>;
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

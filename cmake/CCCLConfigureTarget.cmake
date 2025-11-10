@@ -22,12 +22,6 @@ function(cccl_configure_target target_name)
       PROPERTIES
         CXX_STANDARD ${CCT_DIALECT}
         CUDA_STANDARD ${CCT_DIALECT}
-        # Must manually request that the standards above are actually respected
-        # or else CMake will silently fail to configure the targets correctly...
-        # Note that this doesn't actually work as of CMake 3.16:
-        # https://gitlab.kitware.com/cmake/cmake/-/issues/20953
-        # We'll leave these properties enabled in hopes that they will someday
-        # work.
         CXX_STANDARD_REQUIRED ON
         CUDA_STANDARD_REQUIRED ON
     )

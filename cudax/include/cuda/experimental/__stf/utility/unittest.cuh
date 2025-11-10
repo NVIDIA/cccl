@@ -83,7 +83,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /*
  * @brief Entry point for all comparisons (equality, inequality, and ordering) tested.
  *
@@ -480,7 +479,6 @@ public:
 private:
   Param param;
 };
-
 } // namespace cuda::experimental::stf
 
 // Try to detect when __VA_OPT__ is available

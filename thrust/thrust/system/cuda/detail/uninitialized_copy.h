@@ -43,8 +43,11 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__new/device_new.h>
-#  include <cuda/std/iterator>
+#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -105,7 +108,6 @@ uninitialized_copy(execution_policy<Derived>& policy, InputIt first, InputIt las
 {
   return cuda_cub::uninitialized_copy_n(policy, first, ::cuda::std::distance(first, last), result);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

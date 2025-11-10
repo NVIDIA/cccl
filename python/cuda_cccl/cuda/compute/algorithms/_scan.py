@@ -11,7 +11,12 @@ import numpy as np
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._cccl_interop import (
+    call_build,
+    get_value_type,
+    set_cccl_iterator_state,
+    to_cccl_value_state,
+)
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -61,14 +66,8 @@ class _Scan:
 
         match self.init_kind:
             case _bindings.InitKind.NO_INIT:
-                # TODO: we just need to extract the dtype from the input iterator
-                if not isinstance(d_in, DeviceArrayLike):
-                    raise ValueError(
-                        "No init value not supported for non-DeviceArrayLike input"
-                    )
-
                 self.init_value_cccl = None
-                value_type = numba.from_dtype(protocols.get_dtype(d_in))
+                value_type = get_value_type(d_in)
                 init_value_type_info = self.d_in_cccl.value_type
 
             case _bindings.InitKind.FUTURE_VALUE_INIT:

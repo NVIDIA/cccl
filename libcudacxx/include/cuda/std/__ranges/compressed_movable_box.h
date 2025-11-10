@@ -46,6 +46,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
@@ -346,7 +347,7 @@ inline constexpr __smf_availability __compressed_box_copy_construct_available =
 template <size_t _Index, class _Tp, __smf_availability = __compressed_box_copy_construct_available<_Tp>>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_base : __compressed_box_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
 };
 
 //! @brief We must ensure we only copy when engaged
@@ -354,7 +355,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES
 __compressed_box_copy_base<_Index, _Tp, __smf_availability::__available> : __compressed_box_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
 
   _CCCL_API _CCCL_CONSTEXPR_CXX20
   __compressed_box_copy_base(const __compressed_box_copy_base& __other) noexcept(is_nothrow_copy_constructible_v<_Tp>)
@@ -376,7 +377,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES
 __compressed_box_copy_base<_Index, _Tp, __smf_availability::__deleted> : __compressed_box_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_base, __compressed_box_base, _Index, _Tp);
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_base(const __compressed_box_copy_base&)            = delete;
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_base(__compressed_box_copy_base&&)                 = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_base& operator=(const __compressed_box_copy_base&) = default;
@@ -396,7 +397,7 @@ inline constexpr __smf_availability __compressed_box_move_construct_available =
 template <size_t _Index, class _Tp, __smf_availability = __compressed_box_move_construct_available<_Tp>>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_base : __compressed_box_copy_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
 };
 
 //! @brief We must ensure we only move when engaged
@@ -404,7 +405,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES
 __compressed_box_move_base<_Index, _Tp, __smf_availability::__available> : __compressed_box_copy_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
 
   _CCCL_HIDE_FROM_ABI __compressed_box_move_base(const __compressed_box_move_base&) = default;
   _CCCL_API _CCCL_CONSTEXPR_CXX20
@@ -426,7 +427,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES
 __compressed_box_move_base<_Index, _Tp, __smf_availability::__deleted> : __compressed_box_copy_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_base, __compressed_box_copy_base, _Index, _Tp);
   _CCCL_HIDE_FROM_ABI __compressed_box_move_base(const __compressed_box_move_base&)            = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_move_base(__compressed_box_move_base&&)                 = delete;
   _CCCL_HIDE_FROM_ABI __compressed_box_move_base& operator=(const __compressed_box_move_base&) = default;
@@ -444,7 +445,7 @@ inline constexpr __smf_availability __compressed_box_copy_assign_available =
 template <size_t _Index, class _Tp, __smf_availability = __compressed_box_copy_assign_available<_Tp>>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_assign_base : __compressed_box_move_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
 };
 
 //! @brief If we can either assign or copy construct we do so
@@ -452,7 +453,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_assign_base<_Index, _Tp, __smf_availability::__available>
     : __compressed_box_move_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
 
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base(const __compressed_box_copy_assign_base&) = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base(__compressed_box_copy_assign_base&&)      = default;
@@ -521,7 +522,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES
 __compressed_box_copy_assign_base<_Index, _Tp, __smf_availability::__deleted> : __compressed_box_move_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_copy_assign_base, __compressed_box_move_base, _Index, _Tp);
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base(const __compressed_box_copy_assign_base&)            = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base(__compressed_box_copy_assign_base&&)                 = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base& operator=(const __compressed_box_copy_assign_base&) = delete;
@@ -539,7 +540,7 @@ inline constexpr __smf_availability __compressed_box_move_assign_available =
 template <size_t _Index, class _Tp, __smf_availability = __compressed_box_move_assign_available<_Tp>>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base : __compressed_box_copy_assign_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
 };
 
 //! @brief If we can either assign or copy construct we do so
@@ -547,7 +548,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp, __smf_availability::__available>
     : __compressed_box_copy_assign_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
 
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base(const __compressed_box_move_assign_base&)            = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base(__compressed_box_move_assign_base&&)                 = default;
@@ -616,7 +617,7 @@ template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp, __smf_availability::__deleted>
     : __compressed_box_copy_assign_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box_move_assign_base, __compressed_box_copy_assign_base, _Index, _Tp);
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base(const __compressed_box_move_assign_base&)            = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base(__compressed_box_move_assign_base&&)                 = default;
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base& operator=(const __compressed_box_move_assign_base&) = default;
@@ -626,7 +627,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp,
 template <size_t _Index, class _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box : __compressed_box_move_assign_base<_Index, _Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compressed_box, __compressed_box_move_assign_base, _Index, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__compressed_box, __compressed_box_move_assign_base, _Index, _Tp);
 };
 
 template <class...>

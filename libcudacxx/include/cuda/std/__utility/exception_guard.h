@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
@@ -105,7 +106,7 @@ private:
   bool __completed_;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_exceptions);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_exceptions);
 
 template <class _Rollback>
 struct __exception_guard_noexceptions
@@ -138,7 +139,7 @@ private:
   bool __completed_ = false;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
 #if !_CCCL_HAS_EXCEPTIONS()
 template <class _Rollback>

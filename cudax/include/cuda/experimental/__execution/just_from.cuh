@@ -191,7 +191,6 @@ inline constexpr size_t structured_binding_size<just_stopped_from_t::__sndr_t<_F
 _CCCL_GLOBAL_CONSTANT auto just_from         = just_from_t{};
 _CCCL_GLOBAL_CONSTANT auto just_error_from   = just_error_from_t{};
 _CCCL_GLOBAL_CONSTANT auto just_stopped_from = just_stopped_from_t{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

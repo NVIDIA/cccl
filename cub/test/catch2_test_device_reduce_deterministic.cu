@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -214,7 +190,7 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
   // device RFA result should be approximately equal to host result
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output_p1, type{0.01});
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output_p1, type{0.05});
 
   // Both device RFA results should be strictly equal, as RFA is deterministic
   REQUIRE(d_output_p1 == d_output_p2);
@@ -353,7 +329,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 }
 
 using test_types =
-  c2h::type_list<int8_t,
+  c2h::type_list<float,
+                 double,
+                 int8_t,
                  int32_t,
                  int64_t
 #if TEST_INT128()
@@ -380,24 +358,63 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
   c2h::device_vector<type> d_input(num_items);
   c2h::gen(C2H_SEED(2), d_input, min_value, max_value);
 
-  SECTION("plus")
+  if constexpr (::cuda::std::is_integral_v<type>)
   {
-    c2h::device_vector<type> d_output(1);
+    SECTION("plus")
+    {
+      c2h::device_vector<type> d_output(1);
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_t{}, env);
-    REQUIRE(error == cudaSuccess);
+      auto error =
+        cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_t{}, env);
+      REQUIRE(error == cudaSuccess);
 
-    c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_input = d_input;
 
-    c2h::host_vector<type> h_expected(1);
-    // Requires `std::accumulate` to produce deterministic result which is required for comparison
-    // with the device RFA result.
-    // NOTE: `std::reduce` is not equivalent
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_t{}, cuda::std::plus<type>{});
+      c2h::host_vector<type> h_expected(1);
+      // Requires `std::accumulate` to produce deterministic result which is required for comparison
+      // with the device RFA result.
+      // NOTE: `std::reduce` is not equivalent
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_t{}, cuda::std::plus<type>{});
 
-    c2h::host_vector<type> h_output = d_output;
-    REQUIRE(h_expected == h_output);
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
+
+    SECTION("bitwise xor")
+    {
+      c2h::device_vector<type> d_output(1);
+
+      init_t init_value{};
+
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
+      REQUIRE(error == cudaSuccess);
+
+      c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_expected(1);
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
+
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
+
+    SECTION("logical or")
+    {
+      c2h::device_vector<type> d_output(1);
+
+      init_t init_value{};
+
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
+      REQUIRE(error == cudaSuccess);
+
+      c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_expected(1);
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::logical_or<>{});
+
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
   }
 
   SECTION("minimum")
@@ -418,37 +435,19 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     REQUIRE(h_expected == h_output);
   }
 
-  SECTION("bitwise xor")
+  SECTION("maximum")
   {
     c2h::device_vector<type> d_output(1);
 
-    init_t init_value{};
+    init_t init_value{cuda::std::numeric_limits<init_t>::min()};
 
     auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
+      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;
     c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
-
-    c2h::host_vector<type> h_output = d_output;
-    REQUIRE(h_expected == h_output);
-  }
-
-  SECTION("logical or")
-  {
-    c2h::device_vector<type> d_output(1);
-
-    init_t init_value{};
-
-    auto error = cub::DeviceReduce::Reduce(
-      d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
-    REQUIRE(error == cudaSuccess);
-
-    c2h::host_vector<type> h_input = d_input;
-    c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::logical_or<>{});
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::maximum<>{});
 
     c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);

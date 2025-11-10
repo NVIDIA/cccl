@@ -17,7 +17,7 @@
 #ifdef _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
 # error <atomic> is not implemented
 #endif
-#ifdef _LIBCUDACXX_UNSUPPORTED_THREAD_API
+#ifdef _CCCL_UNSUPPORTED_THREAD_API
 # error "<atomic> is not supported on this system"
 #endif
 #ifdef kill_dependency
@@ -562,40 +562,40 @@ atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 
 struct atomic_flag
 {
-  __atomic_storage_t<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a;
+  __atomic_storage_t<_CCCL_ATOMIC_FLAG_TYPE> __a;
 
   _CCCL_API inline bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
   {
-    return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
+    return _CCCL_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
   _CCCL_API inline bool test(memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
+    return _CCCL_ATOMIC_FLAG_TYPE(true) == __atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});
   }
 
   _CCCL_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
   _CCCL_API inline bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
   {
-    return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
+    return __atomic_exchange_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});
   }
   _CCCL_API inline void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    __atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
+    __atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
   _CCCL_API inline void clear(memory_order __m = memory_order_seq_cst) noexcept
   {
-    __atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
+    __atomic_store_dispatch(&__a, _CCCL_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});
   }
 
-  _CCCL_API inline void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const
+  _CCCL_API inline void wait(_CCCL_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const
     volatile noexcept
   {
     __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }
-  _CCCL_API inline void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
+  _CCCL_API inline void wait(_CCCL_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
   {
     __atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});
   }

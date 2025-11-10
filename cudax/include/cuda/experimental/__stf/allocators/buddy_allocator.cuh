@@ -32,10 +32,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 /**
  * @brief Buddy allocator for one data place
  *
@@ -224,7 +222,6 @@ private:
 
   ::std::vector<::std::vector<avail_block>> free_lists_;
 };
-
 } // end namespace reserved
 
 /**
@@ -365,5 +362,4 @@ UNITTEST("buddy allocator meta data")
 };
 
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

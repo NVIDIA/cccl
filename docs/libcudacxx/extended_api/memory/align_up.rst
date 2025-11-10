@@ -29,13 +29,15 @@ The function returns the original pointer or closest pointer larger than ``ptr``
 **Performance considerations**
 
 - The function is optimized for compile-time values of ``alignment``.
+- The function does not perform any operations if ``alignment == alignof(T)``.
+- The function is translated to ``LOP3.LUT`` + ``IADD.64`` instructions for other values of ``alignment``.
 - The returned pointer is decorated with ``__builtin_assume_aligned`` to help the compiler generate better code.
 - The returned pointer maintains the same memory space, for example shared memory, as the input pointer.
 
 Example
 -------
 
-.. code:: cuda
+.. code:: cudas
 
     #include <cuda/memory>
 

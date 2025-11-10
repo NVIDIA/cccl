@@ -15,8 +15,7 @@
 
 inline void FormatHeader(std::ostream& out)
 {
-  std::string header = R"XXX(
-//===----------------------------------------------------------------------===//
+  std::string header = R"XXX(//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.

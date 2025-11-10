@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred);
@@ -122,7 +121,6 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool is_partitioned(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
