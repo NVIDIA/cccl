@@ -168,7 +168,7 @@ CUresult cccl_device_reduce_build_ex(
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
     auto policy_hub_expr =
-      std::format("cub::detail::reduce::typed_arch_policies<{}, {}, {}>", accum_cpp, offset_t, op_name);
+      std::format("cub::detail::reduce::arch_policies_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
     std::string final_src = std::format(
       R"XXX(

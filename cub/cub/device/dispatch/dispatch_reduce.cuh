@@ -571,7 +571,7 @@ template <
   typename TransformOpT = ::cuda::std::identity,
   typename AccumT =
     decltype(select_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(static_cast<OverrideAccumT*>(nullptr))),
-  typename ArchPolicies = typed_arch_policies<AccumT, OffsetT, ReductionOpT>,
+  typename ArchPolicies = arch_policies_from_types<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource =
     DeviceReduceKernelSource<ArchPolicies, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>

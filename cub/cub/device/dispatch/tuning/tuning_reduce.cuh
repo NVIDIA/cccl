@@ -440,7 +440,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
 
 // stateless version which can be passed to kernels
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct typed_arch_policies
+struct arch_policies_from_types
 {
   _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
