@@ -370,7 +370,7 @@ _CCCL_API constexpr void
 linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept
 {
   constexpr uint32_t __k = 1;
-  uint32_t __ar[__k + 3];
+  uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
   result_type __s = static_cast<result_type>(__ar[3] % __m);
   __x_            = __c == 0 && __s == 0 ? result_type(1) : __s;
@@ -382,7 +382,7 @@ _CCCL_API constexpr void
 linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept
 {
   constexpr uint32_t __k = 2;
-  uint32_t __ar[__k + 3];
+  uint32_t __ar[__k + 3] = {};
   __q.generate(__ar, __ar + __k + 3);
   result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % __m);
   __x_            = __c == 0 && __s == 0 ? result_type(1) : __s;
