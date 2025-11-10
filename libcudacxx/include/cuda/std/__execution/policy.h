@@ -20,62 +20,42 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__fwd/execution_policy.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
-//! @brief Enumerates the standard execution policies
-enum class __execution_policy : uint8_t
+[[nodiscard]] _CCCL_API constexpr bool __has_unique_backend(const __execution_backend __backends) noexcept
 {
-  __invalid_execution_policy = 0,
-  __sequenced                = 1 << 0,
-  __parallel                 = 1 << 1,
-  __unsequenced              = 1 << 2,
-  __parallel_unsequenced     = __execution_policy::__parallel | __execution_policy::__unsequenced,
-};
-
-//! @brief Enumerates the different backends we support
-//! @note Not an enum class because a user might specify multiple backends
-enum __execution_backend : uint8_t
-{
-  // The backends we provide
-  __none = 0,
-#if _CCCL_HAS_BACKEND_CUDA()
-  __cuda = 1 << 1,
-#endif // _CCCL_HAS_BACKEND_CUDA()
-#if _CCCL_HAS_BACKEND_OMP()
-  __omp = 1 << 2,
-#endif // _CCCL_HAS_BACKEND_OMP()
-#if _CCCL_HAS_BACKEND_TBB()
-  __tbb = 1 << 3,
-#endif // _CCCL_HAS_BACKEND_TBB()
-};
+  return ::cuda::std::has_single_bit(static_cast<uint32_t>(__backends));
+}
 
 //! @brief Base class for our execution policies.
 //! It takes an untagged uint32_t because we want to be able to store 3 different enumerations in it.
-template <uint32_t _Policy>
+template <uint32_t _Policy, __execution_backend _Backend>
 struct __execution_policy_base
 {
-  template <uint32_t _OtherPolicy>
+  //! @brief Tag that identifies this and all derived classes as a CCCL execution policy
+  static constexpr uint32_t __cccl_policy_ = _Policy;
+
+  template <uint32_t _OtherPolicy, __execution_backend _OtherBackend>
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy>&) noexcept
+  operator==(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy, _OtherBackend>&) noexcept
   {
-    return _Policy == _OtherPolicy;
+    return _Policy == _OtherPolicy && _Backend == _OtherBackend;
   }
 
 #if _CCCL_STD_VER <= 2017
-  template <uint32_t _OtherPolicy>
+  template <uint32_t _OtherPolicy, __execution_backend _OtherBackend>
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy>&) noexcept
+  operator!=(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy, _OtherBackend>&) noexcept
   {
-    return _Policy != _OtherPolicy;
+    return _Policy != _OtherPolicy || _Backend != _OtherBackend;
   }
 #endif // _CCCL_STD_VER <= 2017
-
-  //! @brief Tag that identifies this and all derived classes as a CCCL execution policy
-  static constexpr uint32_t __cccl_policy_ = _Policy;
 
   //! @brief Extracts the execution policy from the stored _Policy
   [[nodiscard]] _CCCL_API static constexpr __execution_policy __get_policy() noexcept

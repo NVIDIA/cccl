@@ -53,5 +53,7 @@ function(libcudacxx_build_compiler_targets)
       # order matters here, we need the libcudacxx options to override the cccl options.
       cccl.compiler_interface
       libcudacxx.compiler_flags
+      Thrust::Thrust
+      CUB::CUB
   )
 endfunction()
