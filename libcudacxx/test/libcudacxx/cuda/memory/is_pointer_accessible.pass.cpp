@@ -24,12 +24,7 @@ int host_ptr1[] = {1, 2, 3, 4};
 
 template <typename Pointer>
 void test_accessible_pointer(
-  Pointer ptr,
-  bool is_host_accessible,
-  bool is_device_accessible,
-  bool is_managed_accessible,
-  cuda::device_ref device,
-  [[maybe_unused]] bool skip_plus_one = false)
+  Pointer ptr, bool is_host_accessible, bool is_device_accessible, bool is_managed_accessible, cuda::device_ref device)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   (void) (cuda::is_device_accessible(ptr, device));
@@ -37,12 +32,9 @@ void test_accessible_pointer(
   assert(cuda::is_managed(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
   {
-    if (!skip_plus_one)
-    {
-      assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
-      assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
-      assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
-    }
+    assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
+    assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
+    assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
   }
 }
 
@@ -76,7 +68,7 @@ bool test_basic()
   test_accessible_pointer(host_ptr4, true, false, false, dev); // stack-allocated host memory
   test_accessible_pointer(host_ptr5, true, false, false, dev); // pinned host memory
 
-  test_accessible_pointer(device_ptr1, false, false, false, dev, true); // global device array pointer with offset
+  test_accessible_pointer(device_ptr1, false, false, false, dev); // global device array pointer
   test_accessible_pointer(device_ptr2, false, true, false, dev); // cudaMalloc device pointer
   test_accessible_pointer(device_ptr3, false, true, false, dev); // cudaMallocAsync device pointer
 

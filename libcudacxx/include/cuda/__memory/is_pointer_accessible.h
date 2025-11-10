@@ -71,9 +71,6 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   {
     return false;
   }
-  [[maybe_unused]] void* __tmp_ptr = nullptr;
-  const auto __status1             = ::cudaGetSymbolAddress(&__tmp_ptr, __p);
-  ::cudaGetLastError();
   ::CUpointer_attribute __attrs[3] = {
     ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED, ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
   ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
@@ -85,16 +82,12 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   {
     ::cuda::__throw_cuda_error(__status2, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
-  if (__status1 == ::cudaSuccess && !(__is_managed || __memory_type == ::CU_MEMORYTYPE_UNIFIED))
-  {
-    return false;
-  }
-  // (2) check if the pointer is unregistered
+  // (1) check if the pointer is unregistered
   if (__memory_type == static_cast<::CUmemorytype>(0))
   {
     return true;
   }
-  // (3) check if a memory pool is associated with the pointer
+  // (2) check if a memory pool is associated with the pointer
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_HOST, 0};
