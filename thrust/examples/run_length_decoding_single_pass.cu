@@ -64,9 +64,12 @@ OutputIterator run_length_decode(
   using ValueType = typename ValueIterator::value_type;
 
   // Zip the values and counts together and convert the resulting tuples to a named struct.
-  auto runs = cuda::zip_transform_iterator([] __host__ __device__(ValueType v, CountType c) {
-    return run{v, c};
-  }, values, counts);
+  auto runs = cuda::zip_transform_iterator(
+    [] __host__ __device__(ValueType v, CountType c) {
+      return run{v, c};
+    },
+    values,
+    counts);
 
   // Allocate storage for the expanded size. If we were using CUB directly, we could read this
   // from the final ScanTileState.
@@ -132,8 +135,9 @@ int main()
   }
   std::cout << std::endl;
 
-  auto gold = cuda::std::views::iota(CountType{0}, size * repeat)
-            | cuda::std::views::transform([=](CountType idx) { return ValueType(idx / repeat); });
+  auto gold = cuda::std::views::iota(CountType{0}, size * repeat) | cuda::std::views::transform([=](CountType idx) {
+                return ValueType(idx / repeat);
+              });
 
   if (!std::equal(observed.begin(), observed.end(), gold.begin()))
   {
