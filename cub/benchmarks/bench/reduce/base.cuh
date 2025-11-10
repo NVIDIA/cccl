@@ -23,6 +23,85 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
+struct caching_last_alloc_mr
+{
+  void* last_ptr = nullptr;
+  ::cuda::stream_ref last_stream;
+  size_t last_size;
+  bool in_use = false;
+
+  caching_last_alloc_mr() = default;
+
+  caching_last_alloc_mr(const caching_last_alloc_mr& other)
+  {
+    if (other.last_ptr)
+    {
+      throw std::runtime_error("Copying caching_last_alloc_mr after first allocation is not implemented");
+    }
+  }
+
+  caching_last_alloc_mr& operator=(const caching_last_alloc_mr&) = delete;
+
+  ~caching_last_alloc_mr()
+  {
+    if (last_ptr)
+    {
+      _CCCL_TRY_CUDA_API(::cudaFreeAsync, "cudaFreeAsync failed", last_ptr, last_stream.get());
+    }
+  }
+
+  void* allocate(::cuda::stream_ref stream, size_t size, size_t alignment = 1)
+  {
+    if (last_ptr && (stream != last_stream || size != last_size))
+    {
+      throw std::runtime_error("Cannot allocate again with a different stream or size");
+    }
+    if (in_use)
+    {
+      throw std::runtime_error("Cannot allocate again before deallocating");
+    }
+    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "cudaMallocAsync failed", &last_ptr, size, stream.get());
+    _CCCL_ASSERT(cuda::is_aligned(last_ptr, alignment), "");
+    last_stream = stream;
+    last_size   = size;
+    in_use      = true;
+    return last_ptr;
+  }
+
+  void deallocate(::cuda::stream_ref /* stream */, void* /* ptr */, size_t /* size */, size_t /* alignment */ = 1)
+  {
+    in_use = false;
+  }
+
+  void* allocate_sync(size_t /* size */, size_t /* alignment */)
+  {
+    throw std::runtime_error("Not implemented");
+  }
+
+  void deallocate_sync(void* /* ptr */, size_t /* size */, size_t /* alignment */)
+  {
+    throw std::runtime_error("Not implemented");
+  }
+
+  friend auto operator==(const caching_last_alloc_mr& a, const caching_last_alloc_mr& b) -> bool
+  {
+    return a.last_ptr == b.last_ptr;
+  }
+
+  friend auto operator!=(const caching_last_alloc_mr& a, const caching_last_alloc_mr& b) -> bool
+  {
+    return !(a == b);
+  }
+
+  // to support querying when used as environment
+  auto get_memory_resource() const -> caching_last_alloc_mr
+  {
+    return {};
+  }
+};
+
+static_assert(cuda::mr::resource<caching_last_alloc_mr>);
+
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -43,34 +122,21 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
-  // Allocate temporary storage:
-  caching_allocator_t alloc;
-  (void) cub::DeviceReduce::Reduce(
-    d_in,
-    d_out,
-    elements,
-    op_t{},
-    init_t{},
-    ::cuda::std::execution::env{::cuda::stream_ref{::cudaStream_t{nullptr}}, alloc});
-
+  caching_last_alloc_mr mr;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    (void) cub::DeviceReduce::Reduce(
-      d_in,
-      d_out,
-      elements,
-      op_t{},
-      init_t{},
-      ::cuda::std::execution::env{
-        ::cuda::stream_ref{launch.get_stream().get_stream()},
-        alloc
+    auto env = ::cuda::std::execution::env{
+      ::cuda::stream_ref{launch.get_stream().get_stream()},
+      ::cuda::std::execution::prop{::cuda::mr::__get_memory_resource, mr}
 #if !TUNE_BASE
-        ,
-        ::cuda::std::execution::prop{
-          ::cuda::execution::__get_tuning_t,
-          ::cuda::std::execution::env{
-            ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, policy_hub_t{}}}}
+      ,
+      ::cuda::std::execution::prop{
+        ::cuda::execution::__get_tuning_t,
+        ::cuda::std::execution::env{
+          ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, policy_hub_t{}}}}
 #endif
-      });
+    };
+    static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);
+    (void) cub::DeviceReduce::Reduce(d_in, d_out, elements, op_t{}, init_t{}, env);
   });
 }
 
