@@ -15,28 +15,20 @@
 #include <thrust/sequence.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/cstdint>
+#include <cuda/std/ranges>
 
 #include <algorithm>
 #include <iostream>
-#include <ranges>
 
 template <typename ValueType, typename CountType>
 struct run
 {
-  ValueType value;
-  CountType count;
-  CountType offset; // Offset where we should begin outputting the run.
-  CountType run_id; // 1-index of the run in the input sequence; subtract by 1 to get the 0-index.
-
-  __host__ __device__ run(ValueType value = ValueType{}, CountType count = 0, CountType offset = 0, CountType run_id = 1)
-      : value(value)
-      , count(count)
-      , offset(offset)
-      , run_id(run_id)
-  {}
-  run(run const& other)            = default;
-  run& operator=(run const& other) = default;
+  ValueType value{};
+  CountType count{0};
+  CountType offset{0}; // Offset where we should begin outputting the run.
+  CountType run_id{1}; // 1-index of the run in the input sequence; subtract by 1 to get the 0-index.
 
   __host__ __device__ friend run operator+(run l, run r)
   {
@@ -52,18 +44,10 @@ struct expand
   CountType runs_size;
   ExpandedSizeIterator expanded_size;
 
-  __host__ __device__
-  expand(OutputIterator out, CountType out_size, CountType runs_size, ExpandedSizeIterator expanded_size)
-      : out(out)
-      , out_size(out_size)
-      , runs_size(runs_size)
-      , expanded_size(expanded_size)
-  {}
-
   template <typename ValueType>
   __host__ __device__ CountType operator()(run<ValueType, CountType> r) const
   {
-    cuda::std::size_t end = cuda::minimum()(r.offset + r.count, out_size);
+    cuda::std::size_t end = cuda::std::min(r.offset + r.count, out_size);
     thrust::fill(thrust::seq, out + r.offset, out + end, r.value);
     if (r.run_id == runs_size) // If we're the last run, write the expanded size.
     {
@@ -80,10 +64,9 @@ OutputIterator run_length_decode(
   using ValueType = typename ValueIterator::value_type;
 
   // Zip the values and counts together and convert the resulting tuples to a named struct.
-  auto runs = thrust::make_transform_iterator(
-    thrust::make_zip_iterator(values, counts), [] __host__ __device__(thrust::tuple<ValueType, CountType> tup) {
-      return run{thrust::get<0>(tup), thrust::get<1>(tup)};
-    });
+  auto runs = cuda::zip_transform_iterator([] __host__ __device__(ValueType v, CountType c) {
+    return run{v, c};
+  }, values, counts);
 
   // Allocate storage for the expanded size. If we were using CUB directly, we could read this
   // from the final ScanTileState.
@@ -91,7 +74,7 @@ OutputIterator run_length_decode(
 
   // Iterator that writes the expanded sequence to the output and discards the actual scan results.
   auto expand_out = thrust::make_transform_output_iterator(
-    thrust::make_discard_iterator(), expand(out, out_size, runs_size, expanded_size.begin()));
+    thrust::make_discard_iterator(), expand{out, out_size, runs_size, expanded_size.begin()});
 
   // Scan to compute output offsets and then write the expanded sequence.
   thrust::inclusive_scan(thrust::device, runs, runs + runs_size, expand_out);
@@ -123,11 +106,7 @@ int main()
   std::cout << "Compressed input (first 32 runs):" << std::endl;
   for (CountType i = 0; i < 32; ++i)
   {
-    std::cout << "(" << values_h[i] << "," << counts_h[i] << ")";
-    if (i < 31)
-    {
-      std::cout << " ";
-    }
+    std::cout << "(" << values_h[i] << "," << counts_h[i] << ") ";
   }
   std::cout << std::endl << std::endl;
 
@@ -135,9 +114,11 @@ int main()
 
   auto out_end = run_length_decode(values.begin(), counts.begin(), values.size(), output.begin(), output.size());
 
-  if (static_cast<CountType>(out_end - output.begin()) != size * repeat)
+  if (CountType(out_end - output.begin()) != size * repeat)
   {
-    throw int{};
+    std::cerr << "Error: Output size mismatch. Expected " << size * repeat << " but got "
+              << static_cast<CountType>(out_end - output.begin()) << std::endl;
+    return 1;
   }
 
   thrust::host_vector<ValueType> observed(size * repeat);
@@ -147,23 +128,16 @@ int main()
   std::cout << "Decompressed output (first 32 elements):" << std::endl;
   for (CountType i = 0; i < 32; ++i)
   {
-    std::cout << observed[i];
-    if (i < 31)
-    {
-      std::cout << " ";
-    }
+    std::cout << observed[i] << " ";
   }
   std::cout << std::endl;
 
-  auto gold = std::views::iota(CountType{0}) | std::views::transform([=](auto x) {
-                return std::views::iota(CountType{0}, repeat) | std::views::transform([=](auto) {
-                         return x;
-                       });
-              })
-            | std::views::join;
+  auto gold = cuda::std::views::iota(CountType{0}, size * repeat)
+            | cuda::std::views::transform([=](CountType idx) { return ValueType(idx / repeat); });
 
   if (!std::equal(observed.begin(), observed.end(), gold.begin()))
   {
-    throw int{};
+    std::cerr << "Error: Output does not match expected values" << std::endl;
+    return 1;
   }
 }

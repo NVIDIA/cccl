@@ -1,18 +1,12 @@
-# This example uses C++20 ranges, so it requires C++20.
-if (NOT "20" STREQUAL "${config_dialect}")
+# This example uses a single-pass algorithm that performs side effects during scan.
+# The algorithm relies on the scan functor being called exactly once per element with the final
+# scan value, which is guaranteed by CUDA but not by CPU-parallel backends like OMP/TBB where
+# the functor may be called multiple times with intermediate values during parallel reduction.
+# Therefore, disable this example for non-CUDA backends.
+if (NOT "CUDA" STREQUAL "${config_device}")
     set_target_properties(${example_target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     set_tests_properties(${example_target} PROPERTIES DISABLED TRUE)
     return()
-endif()
-
-# CUDA 13 nvcc has incompatibilities with GCC 14's libstdc++ ranges implementation.
-# Disable this example for CUDA 13 + GCC 14 combination.
-if ("CUDA" STREQUAL "${config_device}" AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS "14.0")
-    if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
-        set_target_properties(${example_target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
-        set_tests_properties(${example_target} PROPERTIES DISABLED TRUE)
-        return()
-    endif()
 endif()
 
 # GCC 7 has issues with capturing lambdas in non-CUDA backends triggering unused parameter warnings
@@ -20,7 +14,6 @@ endif()
 if ("GNU" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
     set_target_properties(${example_target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     set_tests_properties(${example_target} PROPERTIES DISABLED TRUE)
-    return()
 endif()
 
 target_compile_options(${example_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda>)
