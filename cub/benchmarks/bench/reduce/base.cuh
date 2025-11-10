@@ -5,71 +5,38 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#ifndef TUNE_BASE
-#  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
-#endif
+#include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-template <typename AccumT, typename OffsetT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(int /*arch*/) const -> ::cub::reduce_arch_policy
   {
-    static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
-    static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
-    static constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
-
-    using ReducePolicy =
-      cub::AgentReducePolicy<threads_per_block,
-                             items_per_thread,
-                             AccumT,
-                             items_per_vec_load,
-                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                             cub::LOAD_DEFAULT>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = policy_t;
+    const auto policy = cub::agent_reduce_policy{
+      TUNE_THREADS_PER_BLOCK,
+      TUNE_ITEMS_PER_THREAD,
+      1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      cub::LOAD_DEFAULT};
+    return {policy, policy, policy, policy};
+  }
 };
 #endif // !TUNE_BASE
 
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using accum_t     = T;
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-  using offset_t    = cub::detail::choose_offset_t<OffsetT>;
-  using output_t    = T;
-  using init_t      = T;
-  using dispatch_t  = cub::DispatchReduce<
-     input_it_t,
-     output_it_t,
-     offset_t,
-     op_t,
-     init_t,
-     accum_t
-#if !TUNE_BASE
-    ,
-    ::cuda::std::identity, // pass the default TransformOpT which due to policy_hub_t instantiation is not deduced
-                           // automatically
-    policy_hub_t<accum_t, offset_t>
-#endif // !TUNE_BASE
-    >;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
+  using init_t   = T;
 
   // Retrieve axis parameters
-  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<offset_t>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
 
-  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+  auto d_in  = thrust::raw_pointer_cast(in.data());
+  auto d_out = thrust::raw_pointer_cast(out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -77,16 +44,30 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<T>(1);
 
   // Allocate temporary storage:
-  std::size_t temp_size;
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, 0 /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
+  caching_allocator_t alloc;
+  (void) cub::DeviceReduce::Reduce(
+    d_in,
+    d_out,
+    elements,
+    op_t{},
+    init_t{},
+    ::cuda::std::execution::env{::cuda::stream_ref{::cudaStream_t{nullptr}}, alloc});
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, launch.get_stream());
+    (void) cub::DeviceReduce::Reduce(
+      d_in,
+      d_out,
+      elements,
+      op_t{},
+      init_t{},
+      ::cuda::std::execution::env{
+        ::cuda::stream_ref{launch.get_stream().get_stream()},
+        alloc
+#if !TUNE_BASE
+        ,
+        ::cuda::std::execution::prop{::cuda::std::execution::__get_tuning_t, policy_hub_t{}}
+#endif
+      });
   });
 }
 
