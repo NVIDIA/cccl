@@ -13,11 +13,11 @@ struct policy_hub_t
   _CCCL_API constexpr auto operator()(int /*arch*/) const -> ::cub::reduce_arch_policy
   {
     const auto policy = cub::agent_reduce_policy{
-      TUNE_THREADS_PER_BLOCK,
-      TUNE_ITEMS_PER_THREAD,
-      1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
-      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-      cub::LOAD_DEFAULT};
+      .block_threads      = TUNE_THREADS_PER_BLOCK,
+      .items_per_thread   = TUNE_ITEMS_PER_THREAD,
+      .vector_load_length = 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
+      .block_algorithm    = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+      .load_modifier      = cub::LOAD_DEFAULT};
     return {policy, policy, policy, policy};
   }
 };

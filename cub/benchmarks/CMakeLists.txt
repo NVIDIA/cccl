@@ -73,7 +73,7 @@ function(add_bench target_name bench_name bench_src)
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
   add_executable(${bench_target} "${bench_src}")
-  cccl_configure_target(${bench_target} DIALECT 17)
+  cccl_configure_target(${bench_target} DIALECT 20)
   target_link_libraries(
     ${bench_target}
     PRIVATE #
