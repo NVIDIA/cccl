@@ -186,10 +186,6 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
   }
 
-  if (cuda::std::is_same_v<memory_pool, cuda::device_memory_pool>)
-  {
-  }
-
   SECTION("Take ownership of native handle")
   {
     ::cudaMemPoolProps pool_properties{};
@@ -225,6 +221,91 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
     memory_pool from_handle = memory_pool::from_native_handle(new_pool);
     CHECK(from_handle.get() == new_pool);
+  }
+}
+
+C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_TYPES)
+{
+  int current_device = 0;
+  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+
+  int driver_version = 0;
+  {
+    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+  }
+
+  ::cudaMemPool_t current_default_pool{};
+  {
+    _CCCL_TRY_CUDA_API(::cudaDeviceGetDefaultMemPool,
+                       "Failed to call cudaDeviceGetDefaultMemPool",
+                       &current_default_pool,
+                       current_device);
+  }
+
+  using memory_pool = TestType;
+
+  SECTION("Construct with max pool size")
+  {
+    cuda::memory_pool_properties props{};
+    props.max_pool_size = 1 << 20; // 1MB
+
+#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    if constexpr (cuda::std::is_same_v<memory_pool, cuda::managed_memory_pool>)
+    {
+      CHECK_THROWS_AS(construct_pool<memory_pool>(current_device, props), std::invalid_argument);
+    }
+    else
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+    {
+      memory_pool with_max_pool_size = construct_pool<memory_pool>(current_device, props);
+
+      ::cudaMemPool_t get = with_max_pool_size.get();
+      CHECK(get != current_default_pool);
+
+      // Ensure we use the right release threshold
+      CHECK(ensure_release_threshold(get, cuda::std::numeric_limits<size_t>::max()));
+
+      // Ensure that we disable reuse with unsupported drivers
+      CHECK(ensure_disable_reuse(get));
+
+      // Ensure that we disable export
+      CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
+
+      void* ptr{nullptr};
+
+      ::cudaStream_t stream{0};
+      // make an allocation smaller than the max pool size
+      _CCCL_TRY_CUDA_API(
+        ::cudaMallocAsync,
+        "Failed to allocate with pool passed to cuda::device_memory_pool_ref",
+        &ptr,
+        42,
+        current_default_pool,
+        stream);
+      CHECK(ptr != nullptr);
+
+      _CCCL_ASSERT_CUDA_API(
+        ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, stream);
+      // make an allocation larger than the max pool size
+      // NOTE: currently cuda driver rounds up max size to 32MB. So we need to allocate 32MB + 1 byte.
+      cudaError_t status = ::cudaMallocAsync(&ptr, 33 << 20, get, stream);
+      CHECK(status == cudaErrorMemoryAllocation);
+      CHECK(ptr == nullptr);
+    }
+#else
+    // max_pool_size is not supported on this CUDA driver version
+    CHECK_THROWS_AS(construct_pool<memory_pool>(current_device, props), std::invalid_argument);
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
+  }
+
+  SECTION("Construct with max pool size < initial pool size")
+  {
+    cuda::memory_pool_properties props{};
+    props.max_pool_size     = 1 << 20; // 1MB
+    props.initial_pool_size = 10 << 20; // 10MB
+    // this should fail in any driver version (12.2< this will fail because max pool size is set)
+    CHECK_THROWS_AS(construct_pool<memory_pool>(current_device, props), std::invalid_argument);
   }
 }
 

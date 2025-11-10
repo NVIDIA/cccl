@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -12,46 +12,55 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/omp/detail/execution_policy.h>
+#include <thrust/system/detail/generic/remove.h>
+#include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system::omp::detail
+namespace system::tbb::detail
 {
-
-template <typename ExecutionPolicy, typename ForwardIterator, typename Predicate>
+template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 ForwardIterator
-remove_if(execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred);
+remove_if(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
+{
+  // tbb prefers generic::remove_if to cpp::remove_if
+  return thrust::system::detail::generic::remove_if(exec, first, last, pred);
+}
 
-template <typename ExecutionPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
+template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(
-  execution_policy<ExecutionPolicy>& exec,
+  execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   InputIterator stencil,
-  Predicate pred);
+  Predicate pred)
+{
+  // tbb prefers generic::remove_if to cpp::remove_if
+  return thrust::system::detail::generic::remove_if(exec, first, last, stencil, pred);
+}
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(
-  execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  Predicate pred);
+  execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
+{
+  // tbb prefers generic::remove_copy_if to cpp::remove_copy_if
+  return thrust::system::detail::generic::remove_copy_if(exec, first, last, result, pred);
+}
 
-template <typename ExecutionPolicy,
+template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator,
           typename Predicate>
 OutputIterator remove_copy_if(
-  execution_policy<ExecutionPolicy>& exec,
+  execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
   OutputIterator result,
-  Predicate pred);
-
-} // end namespace system::omp::detail
+  Predicate pred)
+{
+  // tbb prefers generic::remove_copy_if to cpp::remove_copy_if
+  return thrust::system::detail::generic::remove_copy_if(exec, first, last, stencil, result, pred);
+}
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/tbb/detail/remove.inl>

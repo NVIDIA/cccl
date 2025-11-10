@@ -84,6 +84,7 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   set(example_meta_target thrust.all.example.${example_name})
 
   add_executable(${example_target} "${real_example_src}")
+  cccl_configure_target(${example_target} DIALECT ${config_dialect})
   target_link_libraries(${example_target} ${thrust_target})
   target_include_directories(${example_target} PRIVATE "${Thrust_SOURCE_DIR}/examples")
   thrust_clone_target_properties(${example_target} ${thrust_target})

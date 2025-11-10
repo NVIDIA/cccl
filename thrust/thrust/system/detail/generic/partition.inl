@@ -25,7 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/advance.h>
+
 #include <thrust/count.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
@@ -37,10 +37,12 @@
 #include <thrust/sort.h>
 #include <thrust/system/detail/generic/partition.h>
 
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__iterator/advance.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -202,6 +204,5 @@ is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator firs
                            thrust::make_transform_iterator(first, ::cuda::std::not_fn(pred)),
                            thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

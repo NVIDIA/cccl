@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -13,19 +13,23 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/pair.h>
+#include <thrust/system/detail/generic/unique_by_key.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
   ForwardIterator2 values_first,
-  BinaryPredicate binary_pred);
+  BinaryPredicate binary_pred)
+{
+  // tbb prefers generic::unique_by_key to cpp::unique_by_key
+  return thrust::system::detail::generic::unique_by_key(exec, keys_first, keys_last, values_first, binary_pred);
+} // end unique_by_key()
 
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -40,9 +44,11 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator2 values_first,
   OutputIterator1 keys_output,
   OutputIterator2 values_output,
-  BinaryPredicate binary_pred);
-
+  BinaryPredicate binary_pred)
+{
+  // tbb prefers generic::unique_by_key_copy to cpp::unique_by_key_copy
+  return thrust::system::detail::generic::unique_by_key_copy(
+    exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
+} // end unique_by_key_copy()
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/tbb/detail/unique_by_key.inl>

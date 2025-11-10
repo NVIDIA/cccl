@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__utility/ctad_support.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,7 +49,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
     }
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minimum);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(minimum);
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>

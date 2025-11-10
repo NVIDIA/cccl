@@ -50,7 +50,6 @@
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -61,8 +60,12 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -83,10 +86,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
 namespace cuda_cub
 {
-
 namespace __reduce_by_key
 {
-
 template <bool>
 struct is_true : thrust::detail::false_type
 {};
@@ -209,8 +210,8 @@ struct ReduceByKeyAgent
 
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
-    HAS_IDENTITY_ZERO = ::cuda::std::is_same<ReductionOp, ::cuda::std::plus<value_type>>::value
-                     && ::cuda::std::is_arithmetic<value_type>::value
+    HAS_IDENTITY_ZERO =
+      ::cuda::std::is_same_v<ReductionOp, ::cuda::std::plus<value_type>> && ::cuda::std::is_arithmetic_v<value_type>
   };
 
   struct impl
@@ -912,7 +913,6 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 
   return result;
 }
-
 } // namespace __reduce_by_key
 
 //-------------------------
@@ -990,7 +990,6 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

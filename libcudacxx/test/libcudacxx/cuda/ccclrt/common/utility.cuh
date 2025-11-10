@@ -28,7 +28,6 @@ namespace
 {
 namespace test
 {
-
 struct _malloc_pinned
 {
 private:
@@ -160,7 +159,6 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
   CUDART(cudaGetLastError());
 }
-
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__

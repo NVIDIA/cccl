@@ -31,14 +31,14 @@
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename... Ts>
 class tuple_of_iterator_references;
 
@@ -131,7 +131,6 @@ public:
     return {maybe_unwrap_nested<Us, Ts>{}(get<Id>(*this))...};
   }
 };
-
 } // namespace detail
 
 THRUST_NAMESPACE_END
@@ -159,7 +158,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #if !_CCCL_COMPILER(NVRTC)
 namespace std
 {
-
 template <class... Ts>
 struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : integral_constant<size_t, sizeof...(Ts)>
@@ -169,6 +167,5 @@ template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
-
 } // namespace std
 #endif // !_CCCL_COMPILER(NVRTC)

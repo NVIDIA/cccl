@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -24,10 +24,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace merge_detail
 {
-
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
 struct range
 {
@@ -110,12 +108,10 @@ struct body
     thrust::merge(thrust::seq, r.first1, r.last1, r.first2, r.last2, r.result, r.comp);
   }
 };
-
 } // end namespace merge_detail
 
 namespace merge_by_key_detail
 {
-
 template <typename InputIterator1,
           typename InputIterator2,
           typename InputIterator3,
@@ -231,7 +227,6 @@ struct body
       r.comp);
   }
 };
-
 } // end namespace merge_by_key_detail
 
 template <typename DerivedPolicy,
@@ -303,6 +298,5 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
   return thrust::make_pair(keys_result, values_result);
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

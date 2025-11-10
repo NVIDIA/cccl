@@ -31,7 +31,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename ForwardIterator1, typename ForwardIterator2>
 _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
@@ -74,7 +73,6 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator1 keys_output,
   OutputIterator2 values_output,
   BinaryPredicate binary_pred);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

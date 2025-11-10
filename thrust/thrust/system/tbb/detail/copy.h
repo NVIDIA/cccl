@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -18,12 +18,11 @@
 #include <thrust/system/detail/sequential/copy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_convertible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 OutputIterator
 copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
@@ -56,6 +55,5 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
     return system::detail::sequential::copy_n(exec, first, n, result);
   }
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

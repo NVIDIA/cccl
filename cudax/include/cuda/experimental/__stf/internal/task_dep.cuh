@@ -26,7 +26,6 @@
 
 namespace cuda::experimental::stf
 {
-
 ::std::shared_ptr<void> pack_state(const logical_data_untyped&);
 
 class task;
@@ -354,5 +353,4 @@ public:
   template <typename...>
   friend class task_dep_vector;
 };
-
 } // end namespace cuda::experimental::stf

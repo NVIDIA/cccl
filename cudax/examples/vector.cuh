@@ -31,7 +31,6 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 using ::cuda::std::span;
@@ -141,8 +140,6 @@ private:
   mutable device_vector<_Ty> __d_{};
   mutable bool __dirty_ = true;
 };
-
 } // namespace cuda::experimental
 
-#endif
 #endif

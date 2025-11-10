@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -15,21 +15,20 @@
 #include <thrust/detail/copy.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__iterator/distance.h>
 
 #include <tbb/parallel_invoke.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace sort_detail
 {
-
 // TODO tune this based on data type and comp
 const static int threshold = 128 * 1024;
 
@@ -115,12 +114,10 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
     thrust::merge(exec, first1, mid1, mid1, last1, first2, comp);
   }
 }
-
 } // end namespace sort_detail
 
 namespace sort_by_key_detail
 {
-
 // TODO tune this based on data type and comp
 const static int threshold = 128 * 1024;
 
@@ -238,7 +235,6 @@ void merge_sort_by_key(
     thrust::merge_by_key(exec, first1, mid1, mid1, last1, first2, mid2, first3, first4, comp);
   }
 }
-
 } // namespace sort_by_key_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
@@ -273,6 +269,5 @@ void stable_sort_by_key(
 
   sort_by_key_detail::merge_sort_by_key(exec, first1, last1, first2, temp1.begin(), temp2.begin(), comp, true);
 }
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

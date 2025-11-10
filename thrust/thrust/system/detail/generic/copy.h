@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
 copy(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
@@ -38,7 +37,6 @@ copy(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIt
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
 copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

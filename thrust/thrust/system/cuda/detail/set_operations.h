@@ -43,7 +43,6 @@
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/pair.h>
 #  include <thrust/set_operations.h>
@@ -56,16 +55,16 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__bit/popcount.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 namespace __set_operations
 {
-
 template <bool UpperBound, class IntT, class Size, class It, class T, class Comp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
@@ -1729,7 +1728,6 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items_result,
     ::cuda::std::less<value_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -28,20 +28,23 @@
 
 #include <thrust/detail/type_traits.h>
 
-#include <cuda/std/utility> // for std::declval
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/declval.h>
 
-#define __THRUST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                       \
-  template <typename T, typename Signature, typename = void>                                                        \
-  struct trait_name : thrust::false_type                                                                            \
-  {};                                                                                                               \
-                                                                                                                    \
-  template <typename T, typename ResultT, typename... Args>                                                         \
-  struct trait_name<                                                                                                \
-    T,                                                                                                              \
-    ResultT(Args...),                                                                                               \
-    ::cuda::std::enable_if_t<                                                                                       \
-      ::cuda::std::is_same<ResultT, void>::value                                                                    \
-      || ::cuda::std::                                                                                              \
-        is_convertible<ResultT, decltype(std::declval<T>().member_function_name(std::declval<Args>()...))>::value>> \
-      : thrust::true_type                                                                                           \
+#define __THRUST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                          \
+  template <typename T, typename Signature, typename = void>                                                           \
+  struct trait_name : thrust::false_type                                                                               \
+  {};                                                                                                                  \
+                                                                                                                       \
+  template <typename T, typename ResultT, typename... Args>                                                            \
+  struct trait_name<                                                                                                   \
+    T,                                                                                                                 \
+    ResultT(Args...),                                                                                                  \
+    ::cuda::std::enable_if_t<::cuda::std::is_void_v<ResultT>                                                           \
+                             || ::cuda::std::is_convertible_v<ResultT,                                                 \
+                                                              decltype(::cuda::std::declval<T>().member_function_name( \
+                                                                ::cuda::std::declval<Args>()...))>>>                   \
+      : thrust::true_type                                                                                              \
   {};

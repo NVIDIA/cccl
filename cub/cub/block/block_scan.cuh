@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! The cub::BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix
@@ -386,56 +362,17 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin block-prefix-callback-op
+  //!     :end-before: example-end block-prefix-callback-op
   //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    // A stateful callback functor that maintains a running prefix to be applied
-  //!    // during consecutive scan operations.
-  //!    struct BlockPrefixCallbackOp
-  //!    {
-  //!        // Running prefix
-  //!        int running_total;
-  //!
-  //!        // Constructor
-  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
-  //!
-  //!        // Callback operator to be entered by the first warp of threads in the block.
-  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-  //!        __device__ int operator()(int block_aggregate)
-  //!        {
-  //!            int old_prefix = running_total;
-  //!            running_total += block_aggregate;
-  //!            return old_prefix;
-  //!        }
-  //!    };
-  //!
-  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Initialize running total
-  //!        BlockPrefixCallbackOp prefix_op(0);
-  //!
-  //!        // Have the block iterate over segments of items
-  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128)
-  //!        {
-  //!            // Load a segment of consecutive items that are blocked across threads
-  //!            int thread_data = d_data[block_offset + threadIdx.x];
-  //!
-  //!            // Collectively compute the block-wide exclusive prefix sum
-  //!            BlockScan(temp_storage).ExclusiveSum(
-  //!                thread_data, thread_data, prefix_op);
-  //!            __syncthreads();
-  //!
-  //!            // Store scanned items to output segment
-  //!            d_data[block_offset + threadIdx.x] = thread_data;
-  //!        }
-  //!    }
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-single-prefix-callback
+  //!     :end-before: example-end exclusive-sum-single-prefix-callback
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
   //! The corresponding output for the first segment will be ``0, 1, ..., 127``.
@@ -484,25 +421,11 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide exclusive prefix sum
-  //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data);
-  //!    }
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-array
+  //!     :end-before: example-end exclusive-sum-array
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
@@ -545,26 +468,11 @@ public:
   //! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide exclusive prefix sum
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data, block_aggregate);
-  //!    }
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-array-aggregate
+  //!     :end-before: example-end exclusive-sum-array-aggregate
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
@@ -681,25 +589,11 @@ public:
   //! The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide exclusive prefix max scan
-  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
-  //!    }
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-single
+  //!     :end-before: example-end exclusive-scan-single
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -1338,25 +1232,11 @@ public:
   //! The code snippet below illustrates an inclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix sum
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveSum(thread_data, thread_data, block_aggregate);
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-sum-single-aggregate
+  //!     :end-before: example-end inclusive-sum-single-aggregate
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``1, 1, ..., 1``.
   //! The corresponding output ``thread_data`` in those threads will be ``1, 2, ..., 128``.
@@ -1550,25 +1430,11 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix sum
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveSum(thread_data, thread_data, block_aggregate);
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-sum-array-aggregate
+  //!     :end-before: example-end inclusive-sum-array-aggregate
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``. The
@@ -1710,24 +1576,11 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-single
+  //!     :end-before: example-end inclusive-scan-single
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
@@ -1903,24 +1756,11 @@ public:
   //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-array
+  //!     :end-before: example-end inclusive-scan-array
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.

@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -14,26 +14,27 @@
 #endif // no system header
 
 // OMP parallel scan implementation
-#include <thrust/advance.h>
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/pragma_omp.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/reduce.h>
-#include <cuda/std/cmath>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <omp.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-
 struct __no_init_tag
 {};
 
@@ -186,6 +187,5 @@ OutputIterator exclusive_scan(
 {
   return scan_impl<false>(exec, first, last, result, init, binary_op);
 }
-
 } // namespace system::omp::detail
 THRUST_NAMESPACE_END

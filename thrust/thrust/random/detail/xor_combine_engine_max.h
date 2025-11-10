@@ -32,7 +32,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace random::detail

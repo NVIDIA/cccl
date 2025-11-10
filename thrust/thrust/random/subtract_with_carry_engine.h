@@ -42,7 +42,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_templates
  *  \{
  */
@@ -234,7 +233,6 @@ using ranlux48_base = subtract_with_carry_engine<std::uint64_t, 48, 5, 12>;
 
 /*! \} // end predefined_random
  */
-
 } // namespace random
 
 // import names into thrust::

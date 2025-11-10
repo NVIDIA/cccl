@@ -77,7 +77,6 @@ public:
 //! A global constant instance of `apply_sender_t`.
 //! This can be used directly to invoke the `apply_sender` functionality.
 _CCCL_GLOBAL_CONSTANT apply_sender_t apply_sender{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

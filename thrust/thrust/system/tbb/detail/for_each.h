@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -12,11 +12,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/seq.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__iterator/distance.h>
 
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
@@ -24,10 +26,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
-
 namespace for_each_detail
 {
-
 template <typename RandomAccessIterator, typename Size, typename UnaryFunction>
 struct body
 {
@@ -51,7 +51,6 @@ body<RandomAccessIterator, Size, UnaryFunction> make_body(RandomAccessIterator f
 {
   return body<RandomAccessIterator, Size, UnaryFunction>(first, f);
 } // end make_body()
-
 } // namespace for_each_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename Size, typename UnaryFunction>
@@ -69,6 +68,5 @@ for_each(execution_policy<DerivedPolicy>& s, RandomAccessIterator first, RandomA
 {
   return tbb::detail::for_each_n(s, first, ::cuda::std::distance(first, last), f);
 } // end for_each()
-
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

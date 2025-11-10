@@ -12,7 +12,7 @@
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh> // cub::DispatchThreeWayPartitionIf
-#include <cub/device/dispatch/kernels/three_way_partition.cuh> // DeviceThreeWayPartition kernels
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh> // DeviceThreeWayPartition kernels
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh> // policy_hub
 
 #include <exception>
@@ -47,7 +47,6 @@ static_assert(sizeof(OffsetT) == sizeof(cuda::std::int64_t));
 
 namespace three_way_partition
 {
-
 struct three_way_partition_runtime_tuning_policy
 {
   cub::detail::RuntimeThreeWayPartitionAgentPolicy three_way_partition;
@@ -196,7 +195,7 @@ CUresult cccl_device_three_way_partition_build_ex(
     std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 {0}
 struct __align__({2}) storage_t {{
   char data[{1}];
