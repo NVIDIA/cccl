@@ -1,5 +1,5 @@
 # Create meta targets that build all tests for a single configuration:
-foreach(thrust_target IN LISTS THRUST_TARGETS)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
   set(config_meta_target ${config_prefix}.tests)
   add_custom_target(${config_meta_target})
@@ -77,11 +77,24 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   add_executable(${test_target} "${real_test_src}")
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
   if (is_catch2_test)
-    target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${thrust_target}
+        Catch2::Catch2WithMain
+    )
   else()
-    target_link_libraries(${test_target} PRIVATE ${thrust_target} ${config_framework_target})
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${thrust_target}
+        ${config_framework_target}
+    )
   endif()
-  target_include_directories(${test_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/testing"
+  )
   thrust_clone_target_properties(${test_target} ${thrust_target})
 
   if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
@@ -103,11 +116,15 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   if (is_catch2_test)
     add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
   else()
-    add_test(NAME ${test_target}
-      COMMAND "${CMAKE_COMMAND}"
-      "-DTHRUST_BINARY=$<TARGET_FILE:${test_target}>"
-      "-DTHRUST_SOURCE=${Thrust_SOURCE_DIR}"
-      -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunTest.cmake"
+    add_test(
+      NAME ${test_target}
+      # gersemi: off
+      COMMAND
+        "${CMAKE_COMMAND}"
+          "-DTHRUST_BINARY=$<TARGET_FILE:${test_target}>"
+          "-DTHRUST_SOURCE=${Thrust_SOURCE_DIR}"
+          -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunTest.cmake"
+      # gersemi: on
     )
   endif()
 
@@ -124,7 +141,8 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   get_filename_component(test_cmake_script "${test_src}" NAME_WLE)
   set(test_cmake_script "${CMAKE_CURRENT_LIST_DIR}/${test_cmake_script}.cmake")
   # Use a glob so we can detect if this changes:
-  file(GLOB test_cmake_script
+  file(
+    GLOB test_cmake_script
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     CONFIGURE_DEPENDS
     "${test_cmake_script}"
@@ -134,27 +152,33 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   endif()
 endfunction()
 
-file(GLOB test_srcs
+file(
+  GLOB test_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
-  *.cu *.cpp
+  *.cu
+  *.cpp
 )
 
 # Add common tests to all configs:
-foreach(thrust_target IN LISTS THRUST_TARGETS)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_host ${thrust_target} HOST)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
 
-  foreach(test_src IN LISTS test_srcs)
+  foreach (test_src IN LISTS test_srcs)
     get_filename_component(test_name "${test_src}" NAME_WLE)
     string(REGEX REPLACE "^catch2_test_" "" test_name "${test_name}")
 
     # Is this test restricted to only certain host/device combinations?
-    if(${test_name} IN_LIST restricted_tests)
+    if (${test_name} IN_LIST restricted_tests)
       # Is the current host/device combination supported?
-      if (NOT "${config_host}.${config_device}" IN_LIST
-            ${test_name}_host.device_allowed)
+      if (
+        NOT
+          "${config_host}.${config_device}"
+            IN_LIST
+            ${test_name}_host.device_allowed
+      )
         continue()
       endif()
     endif()

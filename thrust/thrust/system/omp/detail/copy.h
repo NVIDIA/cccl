@@ -18,7 +18,7 @@
 #include <thrust/system/detail/sequential/copy.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_convertible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail

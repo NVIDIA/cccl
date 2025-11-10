@@ -16,12 +16,19 @@ project(CCCLTestExport LANGUAGES CXX)
 include(CTest)
 enable_testing()
 
-set(CCCL_ROOT "" CACHE PATH
-  "Root of the CCCL repo, or an installation root.")
-set(COMPONENTS "" CACHE STRING
-  "DEFAULT for no components, or semi-colon delimited list of Thrust, CUB, and/or libcudacxx.")
-set(PACKAGE_TYPE "" CACHE STRING
-  "CCCL: Find CCCL with subpackages as components; NATIVE: Find subpackages directly; SUBDIR: add_subdirectory(${CCCL_ROOT}")
+set(CCCL_ROOT "" CACHE PATH "Root of the CCCL repo, or an installation root.")
+set(
+  COMPONENTS
+  ""
+  CACHE STRING
+  "DEFAULT for no components, or semi-colon delimited list of Thrust, CUB, and/or libcudacxx."
+)
+set(
+  PACKAGE_TYPE
+  ""
+  CACHE STRING
+  "CCCL: Find CCCL with subpackages as components; NATIVE: Find subpackages directly; SUBDIR: add_subdirectory(${CCCL_ROOT}"
+)
 set_property(CACHE PACKAGE_TYPE PROPERTY STRINGS CCCL NATIVE SUBDIR)
 
 message(STATUS "CCCL_ROOT=${CCCL_ROOT}")
@@ -29,11 +36,13 @@ message(STATUS "COMPONENTS=${COMPONENTS}")
 message(STATUS "PACKAGE_TYPE=${PACKAGE_TYPE}")
 
 function(do_find_package pkg_name pkg_prefix)
-  list(APPEND arg_list
+  list(
+    APPEND arg_list
     REQUIRED
     ${ARGN}
     NO_DEFAULT_PATH
-    HINTS "${pkg_prefix}"
+    HINTS
+    "${pkg_prefix}"
   )
   list(JOIN arg_list " " arg_str)
   message(STATUS "Executing: find_package(${pkg_name} ${arg_str})")
@@ -52,14 +61,17 @@ if (PACKAGE_TYPE STREQUAL "CCCL")
   else()
     do_find_package(CCCL "${CCCL_ROOT}" COMPONENTS ${COMPONENTS})
   endif()
-elseif(PACKAGE_TYPE STREQUAL "NATIVE")
+elseif (PACKAGE_TYPE STREQUAL "NATIVE")
   if (COMPONENTS STREQUAL "DEFAULT")
-    message(FATAL_ERROR "COMPONENTS=DEFAULT incompatible with PACKAGE_TYPE=NATIVE")
+    message(
+      FATAL_ERROR
+      "COMPONENTS=DEFAULT incompatible with PACKAGE_TYPE=NATIVE"
+    )
   endif()
   foreach (component IN LISTS COMPONENTS)
     do_find_package(${component} "${CCCL_ROOT}")
   endforeach()
-elseif(PACKAGE_TYPE STREQUAL "SUBDIR")
+elseif (PACKAGE_TYPE STREQUAL "SUBDIR")
   if (COMPONENTS STREQUAL "DEFAULT")
     set(CCCL_REQUIRED_COMPONENTS)
   else()
@@ -86,42 +98,69 @@ foreach (component IN LISTS COMPONENTS)
   add_test(NAME ${test_target} COMMAND ${test_target})
 
   if (component STREQUAL "libcudacxx")
-    math(EXPR component_cmake_version
+    math(
+      EXPR
+      component_cmake_version
       "(${LIBCUDACXX_VERSION_MAJOR} * 1000000) +
         ${LIBCUDACXX_VERSION_MINOR} * 1000 +
-        ${LIBCUDACXX_VERSION_PATCH}")
-    target_compile_definitions(${test_target} PRIVATE
-      "VERSION_HEADER=cuda/std/version"
-      "VERSION_MACRO=_LIBCUDACXX_CUDA_API_VERSION"
-      "EXPECTED_VERSION=${component_cmake_version}")
+        ${LIBCUDACXX_VERSION_PATCH}"
+    )
+    target_compile_definitions(
+      ${test_target}
+      PRIVATE
+        "VERSION_HEADER=cuda/std/version"
+        "VERSION_MACRO=_LIBCUDACXX_CUDA_API_VERSION"
+        "EXPECTED_VERSION=${component_cmake_version}"
+    )
   elseif (component STREQUAL "CUB")
-    math(EXPR component_cmake_version
+    math(
+      EXPR
+      component_cmake_version
       "(${CUB_VERSION_MAJOR} * 100000) +
         ${CUB_VERSION_MINOR} * 100 +
-        ${CUB_VERSION_PATCH}")
-    target_compile_definitions(${test_target} PRIVATE
-      "VERSION_HEADER=cub/version.cuh"
-      "VERSION_MACRO=CUB_VERSION"
-      "EXPECTED_VERSION=${component_cmake_version}")
+        ${CUB_VERSION_PATCH}"
+    )
+    target_compile_definitions(
+      ${test_target}
+      PRIVATE
+        "VERSION_HEADER=cub/version.cuh"
+        "VERSION_MACRO=CUB_VERSION"
+        "EXPECTED_VERSION=${component_cmake_version}"
+    )
   elseif (component STREQUAL "Thrust")
-    math(EXPR component_cmake_version
+    math(
+      EXPR
+      component_cmake_version
       "(${THRUST_VERSION_MAJOR} * 100000) +
         ${THRUST_VERSION_MINOR} * 100 +
-        ${THRUST_VERSION_PATCH}")
-    target_compile_definitions(${test_target} PRIVATE
-      "VERSION_HEADER=thrust/version.h"
-      "VERSION_MACRO=THRUST_VERSION"
-      "EXPECTED_VERSION=${component_cmake_version}")
-    elseif (component STREQUAL "cudax")
-      math(EXPR component_cmake_version
+        ${THRUST_VERSION_PATCH}"
+    )
+    target_compile_definitions(
+      ${test_target}
+      PRIVATE
+        "VERSION_HEADER=thrust/version.h"
+        "VERSION_MACRO=THRUST_VERSION"
+        "EXPECTED_VERSION=${component_cmake_version}"
+    )
+  elseif (component STREQUAL "cudax")
+    math(
+      EXPR
+      component_cmake_version
       "(${CUDAX_VERSION_MAJOR} * 1000000) +
         ${CUDAX_VERSION_MINOR} * 1000 +
-        ${CUDAX_VERSION_PATCH}")
-      target_compile_definitions(${test_target} PRIVATE
+        ${CUDAX_VERSION_PATCH}"
+    )
+    target_compile_definitions(
+      ${test_target}
+      PRIVATE
         "VERSION_HEADER=cuda/experimental/version.cuh"
         "VERSION_MACRO=CUDAX_VERSION"
-        "EXPECTED_VERSION=${component_cmake_version}")
+        "EXPECTED_VERSION=${component_cmake_version}"
+    )
   else()
-    message(FATAL_ERROR "Valid COMPONENTS are (case-sensitive): Thrust;CUB;libcudacxx;cudax")
+    message(
+      FATAL_ERROR
+      "Valid COMPONENTS are (case-sensitive): Thrust;CUB;libcudacxx;cudax"
+    )
   endif()
 endforeach()

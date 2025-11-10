@@ -43,9 +43,10 @@
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
-#  include <cuda/functional>
-#  include <cuda/std/__algorithm_>
-#  include <cuda/std/iterator>
+#  include <cuda/__functional/address_stability.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/iter_swap.h>
+#  include <cuda/std/__utility/swap.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

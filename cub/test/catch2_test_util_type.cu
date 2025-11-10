@@ -3,9 +3,7 @@
 
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
@@ -14,8 +12,8 @@
 C2H_TEST("Tests non_void_value_t", "[util][type]")
 {
   using fallback_t        = float;
-  using void_fancy_it     = thrust::discard_iterator<std::size_t>;
-  using non_void_fancy_it = thrust::counting_iterator<int>;
+  using void_fancy_it     = cuda::discard_iterator;
+  using non_void_fancy_it = cuda::counting_iterator<int>;
 
   // falls back for const void*
   STATIC_REQUIRE(cuda::std::is_same_v<fallback_t, //

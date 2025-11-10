@@ -29,8 +29,6 @@
 #include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/minimum_type.h>
 
-#include <cuda/std/type_traits>
-
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {

@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 enum class __execution_policy : uint32_t
 {
@@ -81,7 +81,7 @@ struct unsequenced_policy : public __policy<__execution_policy::__unsequenced>
 {};
 _CCCL_GLOBAL_CONSTANT unsequenced_policy unseq{};
 
-_CCCL_END_NAMESPACE_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

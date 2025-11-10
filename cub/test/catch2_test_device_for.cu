@@ -8,8 +8,9 @@
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -107,7 +108,7 @@ C2H_TEST("Device for each works with bad operators", "[for][device]")
 
   device_for_each(input.begin(), input.end(), referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
 C2H_TEST("Device for each works with unaligned vectors", "[for][device]")
@@ -189,7 +190,7 @@ C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_t
 
   device_for_each_n(input.begin(), num_items, referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
 C2H_TEST("Device for each n works with unaligned vectors", "[for][device]", offset_type)
@@ -235,7 +236,7 @@ C2H_TEST("Device for each works with counting iterator", "[for][device]")
       max_items,
     }));
 
-  const auto it = thrust::counting_iterator<int>{0};
+  const auto it = cuda::counting_iterator<int>{0};
   c2h::device_vector<int> counts(num_items);
   device_for_each(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())});
 

@@ -15,7 +15,7 @@
 #
 function(detect_supported_standards prefix lang)
   string(TOLOWER "${lang}_std" feature_prefix)
-  foreach(standard IN LISTS ARGN)
+  foreach (standard IN LISTS ARGN)
     set(var_name "${prefix}_${lang}_${standard}_SUPPORTED")
     if ("${feature_prefix}_${standard}" IN_LIST CMAKE_${lang}_COMPILE_FEATURES)
       set(${var_name} TRUE)
@@ -23,13 +23,22 @@ function(detect_supported_standards prefix lang)
       set(${var_name} FALSE)
     endif()
 
-
-    if (standard EQUAL 17 AND
-        (lang STREQUAL "CXX" OR lang STREQUAL "CUDA") AND
-        ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
-          CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7) OR
-         (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
-          CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)))
+    if (
+      standard EQUAL 17
+      AND (lang STREQUAL "CXX" OR lang STREQUAL "CUDA")
+      AND
+        (
+          (
+            CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+            AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7
+          )
+          OR
+            (
+              CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+              AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8
+            )
+        )
+    )
       # Special cases:
       # gcc < 7 and clang < 8 don't fully support C++17.
       # They accept the flag and have partial support, but nvcc will refuse
