@@ -65,7 +65,10 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
         alloc
 #if !TUNE_BASE
         ,
-        ::cuda::std::execution::prop{::cuda::execution::__get_tuning_t, policy_hub_t{}}
+        ::cuda::std::execution::prop{
+          ::cuda::execution::__get_tuning_t,
+          ::cuda::std::execution::env{
+            ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, policy_hub_t{}}}}
 #endif
       });
   });

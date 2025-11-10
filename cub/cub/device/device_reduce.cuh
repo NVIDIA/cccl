@@ -57,11 +57,9 @@ inline constexpr bool is_non_deterministic_v =
 
 namespace reduce
 {
-// TODO(bgruber): drop this, it's a duplicate of ::cuda::execution::__get_tuning_t
 struct get_tuning_query_t
 {};
 
-// TODO(bgruber): drop this, it's a duplicate of ::cuda::execution::__get_tuning_t
 template <class Derived>
 struct tuning
 {
@@ -147,7 +145,7 @@ private:
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
       TuningEnvT,
-      ::cuda::execution::__get_tuning_t,
+      detail::reduce::get_tuning_query_t,
       detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
 
     return detail::reduce::dispatch<accum_t>(
@@ -221,12 +219,19 @@ private:
 
     using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
 
-    using policy_t = ::cuda::std::execution::__query_result_or_t<
+    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
       TuningEnvT,
-      ::cuda::execution::__get_tuning_t,
+      detail::reduce::get_tuning_query_t,
       detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
-    using dispatch_t = detail::
-      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
+    using dispatch_t = detail::DispatchReduceNondeterministic<
+      InputIteratorT,
+      output_t,
+      offset_t,
+      ReductionOpT,
+      T,
+      accum_t,
+      TransformOpT,
+      reduce_tuning_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage,
