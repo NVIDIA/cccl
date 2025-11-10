@@ -28,7 +28,7 @@
 #include <cuda/std/numeric>
 #include <cuda/std/span>
 
-#include "../test_discrete_distribution.h"
+#include "random_utilities/test_discrete_distribution.h"
 #include "test_macros.h"
 
 __host__ __device__ void test_distributions()

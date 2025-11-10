@@ -45,7 +45,7 @@ public:
     using distribution_type = bernoulli_distribution;
 
     _CCCL_API constexpr explicit param_type(double __p = 0.5) noexcept
-        : __p_(__p)
+        : __p_{__p}
     {}
 
     [[nodiscard]] _CCCL_API constexpr double p() const noexcept
@@ -74,10 +74,10 @@ public:
       : bernoulli_distribution{0.5}
   {}
   _CCCL_API constexpr explicit bernoulli_distribution(double __p) noexcept
-      : __p_(param_type(__p))
+      : __p_{param_type(__p)}
   {}
   _CCCL_API constexpr explicit bernoulli_distribution(const param_type& __p) noexcept
-      : __p_(__p)
+      : __p_{__p}
   {}
   _CCCL_API constexpr void reset() noexcept {}
 
