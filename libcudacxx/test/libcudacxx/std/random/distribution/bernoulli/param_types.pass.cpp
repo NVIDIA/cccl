@@ -14,6 +14,7 @@
 //     class param_type;
 
 #include <cuda/std/__random_>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -23,7 +24,7 @@ __host__ __device__ constexpr bool test()
     using D                 = cuda::std::bernoulli_distribution;
     using param_type        = D::param_type;
     using distribution_type = param_type::distribution_type;
-    static_assert((std::is_same<D, distribution_type>::value), "");
+    static_assert((cuda::std::is_same<D, distribution_type>::value), "");
   }
 
   return true;

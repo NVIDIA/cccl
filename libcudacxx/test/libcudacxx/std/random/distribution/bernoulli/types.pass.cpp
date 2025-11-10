@@ -14,6 +14,7 @@
 //     typedef bool result_type;
 
 #include <cuda/std/__random_>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -22,7 +23,7 @@ __host__ __device__ constexpr bool test()
   {
     using D           = cuda::std::bernoulli_distribution;
     using result_type = D::result_type;
-    static_assert((std::is_same<result_type, bool>::value), "");
+    static_assert((cuda::std::is_same<result_type, bool>::value), "");
   }
 
   return true;
