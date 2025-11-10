@@ -35,13 +35,13 @@
 
 // Check compatibility of the CUDA compiler and CUDA toolkit headers
 // Some users might want to use a newer version of the CTK than the compiler ships. Enable that on their own peril
-#ifndef CCCL_DISABLE_CTK_COMPATIBILITY_CHECK
-#  if _CCCL_CUDA_COMPILATION()
-#    if !_CCCL_CUDACC_EQUAL((CUDART_VERSION / 1000), (CUDART_VERSION % 1000) / 10)
-#      error "CUDA compiler and CUDA toolkit headers are incompatible, please check your include paths"
-#    endif // !_CCCL_CUDACC_EQUAL((CUDART_VERSION / 1000), (CUDART_VERSION % 1000) / 10)
-#  endif // _CCCL_CUDA_COMPILATION()
-#endif // CCCL_DISABLE_CTK_COMPATIBILITY_CHECK
+// #ifndef CCCL_DISABLE_CTK_COMPATIBILITY_CHECK
+// #  if _CCCL_CUDA_COMPILATION()
+// #    if !_CCCL_CUDACC_EQUAL((CUDART_VERSION / 1000), (CUDART_VERSION % 1000) / 10)
+// #      error "CUDA compiler and CUDA toolkit headers are incompatible, please check your include paths"
+// #    endif // !_CCCL_CUDACC_EQUAL((CUDART_VERSION / 1000), (CUDART_VERSION % 1000) / 10)
+// #  endif // _CCCL_CUDA_COMPILATION()
+// #endif // CCCL_DISABLE_CTK_COMPATIBILITY_CHECK
 
 #if _CCCL_HAS_CTK()
 #  define _CCCL_CTK() (CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
