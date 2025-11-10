@@ -275,7 +275,7 @@ using device_reduce_policy = {6};
         break;
       case CCCL_MINIMUM:
       case CCCL_MAXIMUM:
-        ot = op_type::plus;
+        ot = op_type::min_or_max;
         break;
       default:
         break;
