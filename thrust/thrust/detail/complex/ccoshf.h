@@ -54,6 +54,12 @@
 #include <thrust/detail/complex/cexpf.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
@@ -77,45 +83,46 @@ _CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
   {
     if (iy == 0)
     {
-      return (complex<float>(coshf(x), x * y));
+      return (complex<float>(::cuda::std::coshf(x), x * y));
     }
     if (ix < 0x41100000)
     { /* small x: normal case */
-      return (complex<float>(coshf(x) * cosf(y), sinhf(x) * sinf(y)));
+      return (
+        complex<float>(::cuda::std::coshf(x) * ::cuda::std::cosf(y), ::cuda::std::sinhf(x) * ::cuda::std::sinf(y)));
     }
     /* |x| >= 9, so cosh(x) ~= exp(|x|) */
     if (ix < 0x42b17218)
     {
       /* x < 88.7: expf(|x|) won't overflow */
-      h = expf(fabsf(x)) * 0.5f;
-      return (complex<float>(h * cosf(y), copysignf(h, x) * sinf(y)));
+      h = ::cuda::std::expf(::cuda::std::fabsf(x)) * 0.5f;
+      return (complex<float>(h * ::cuda::std::cosf(y), ::cuda::std::copysignf(h, x) * ::cuda::std::sinf(y)));
     }
     else if (ix < 0x4340b1e7)
     {
       /* x < 192.7: scale to avoid overflow */
       thrust::complex<float> z_;
-      z_ = ldexp_cexpf(complex<float>(fabsf(x), y), -1);
-      return (complex<float>(z_.real(), z_.imag() * copysignf(1.0f, x)));
+      z_ = ldexp_cexpf(complex<float>(::cuda::std::fabsf(x), y), -1);
+      return (complex<float>(z_.real(), z_.imag() * ::cuda::std::copysignf(1.0f, x)));
     }
     else
     {
       /* x >= 192.7: the result always overflows */
       h = huge * x;
-      return (complex<float>(h * h * cosf(y), h * sinf(y)));
+      return (complex<float>(h * h * ::cuda::std::cosf(y), h * ::cuda::std::sinf(y)));
     }
   }
 
   if (ix == 0 && iy >= 0x7f800000)
   {
-    return (complex<float>(y - y, copysignf(0.0f, x * (y - y))));
+    return (complex<float>(y - y, ::cuda::std::copysignf(0.0f, x * (y - y))));
   }
   if (iy == 0 && ix >= 0x7f800000)
   {
     if ((hx & 0x7fffff) == 0)
     {
-      return (complex<float>(x * x, copysignf(0.0f, x) * y));
+      return (complex<float>(x * x, ::cuda::std::copysignf(0.0f, x) * y));
     }
-    return (complex<float>(x * x, copysignf(0.0f, (x + x) * y)));
+    return (complex<float>(x * x, ::cuda::std::copysignf(0.0f, (x + x) * y)));
   }
 
   if (ix < 0x7f800000 && iy >= 0x7f800000)
@@ -129,7 +136,7 @@ _CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
     {
       return (complex<float>(x * x, x * (y - y)));
     }
-    return (complex<float>((x * x) * cosf(y), x * sinf(y)));
+    return (complex<float>((x * x) * ::cuda::std::cosf(y), x * ::cuda::std::sinf(y)));
   }
   return (complex<float>((x * x) * (y - y), (x + x) * (y - y)));
 }

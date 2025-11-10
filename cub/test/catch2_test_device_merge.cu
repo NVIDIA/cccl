@@ -5,8 +5,10 @@
 
 #include <cub/device/device_merge.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -154,6 +156,8 @@ C2H_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]")
 
 namespace
 {
+// must use thrust::make_zip_iterator for now
+// see https://github.com/NVIDIA/cccl/issues/6400
 template <typename... Its>
 auto zip(Its... its) -> decltype(thrust::make_zip_iterator(its...))
 {
@@ -351,8 +355,8 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
     }
   };
 
-  auto key_it   = thrust::counting_iterator<key_t>{};
-  auto value_it = thrust::counting_iterator<value_t>{values_start};
+  auto key_it   = cuda::counting_iterator<key_t>{};
+  auto value_it = cuda::counting_iterator<key_t>{values_start};
 
   c2h::device_vector<key_t> keys_vec(larger_size);
   thrust::sequence(keys_vec.begin(), keys_vec.end());

@@ -34,11 +34,11 @@ NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 using complex = cuda::std::complex<float>;
 
 #if _CCCL_HAS_NVFP16()
-NVBENCH_DECLARE_TYPE_STRINGS(__half, "Half", "half");
+NVBENCH_DECLARE_TYPE_STRINGS(__half, "F16", "half");
 NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__half>, "C16", "complex_half");
 #endif
 #if _CCCL_HAS_NVBF16()
-NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "Bfloat16", "bfloat16");
+NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "BF16", "bfloat16");
 NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__nv_bfloat16>, "CB16", "complex_bfloat16");
 #endif
 NVBENCH_DECLARE_TYPE_STRINGS(complex, "C32", "complex32");

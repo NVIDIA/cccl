@@ -13,7 +13,7 @@
 
 #include <testing.cuh>
 
-#include "test_resource.cuh"
+#include "../test_resource.cuh"
 
 static_assert(cuda::has_property<cuda::mr::any_synchronous_resource<cuda::mr::host_accessible, get_data>,
                                  ::cuda::mr::host_accessible>);

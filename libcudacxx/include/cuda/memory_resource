@@ -36,5 +36,6 @@
 #include <cuda/__memory_resource/pinned_memory_pool.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__memory_resource/shared_resource.h>
 
 #endif //_CCCL_BEGIN_NAMESPACE_CUDA
