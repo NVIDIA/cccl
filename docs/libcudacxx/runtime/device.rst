@@ -1,11 +1,11 @@
-.. _libcudacxx-extended-api-runtime-device:
+.. _cccl-runtime-device:
 
 Devices
 =======
 
 ``cuda::device_ref``
 ---------------------
-.. _libcudacxx-extended-api-runtime-device-device-ref:
+.. _cccl-runtime-device-device-ref:
 
 ``cuda::device_ref`` is a lightweight, non-owning handle to a CUDA device ordinal.
 It offers:
@@ -21,7 +21,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 ``cuda::devices``
 ------------------
-.. _libcudacxx-extended-api-runtime-device-devices:
+.. _cccl-runtime-device-devices:
 
 ``cuda::devices`` is a random-access view of all available CUDA devices in form of ``cuda::device_ref`` objects`. It provides indexing, size, and iteration for use
 in range-based loops.
@@ -43,7 +43,7 @@ Example:
 
 Device attributes
 -----------------
-.. _libcudacxx-extended-api-runtime-device-attributes:
+.. _cccl-runtime-device-attributes:
 
 ``cuda::device_attributes`` provides strongly-typed attribute query objects usable with
 ``device_ref::attribute``. Selected examples:
@@ -68,7 +68,7 @@ Example:
 
 ``cuda::arch_traits``
 ---------------------
-.. _libcudacxx-extended-api-runtime-device-arch-traits:
+.. _cccl-runtime-device-arch-traits:
 
 Per-architecture trait accessors providing limits and capabilities common to all devices of an architecture.
 Compared to ``device_attributes``, ``cuda::arch_traits`` provide a compile-time accessible structure that describes common characteristics of all devices of an architecture, while attributes are run-time queries of a single characteristic of a specific device.

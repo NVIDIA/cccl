@@ -1,11 +1,11 @@
-.. _libcudacxx-extended-api-runtime-stream:
+.. _cccl-runtime-stream:
 
 Streams
 =======
 
 ``cuda::stream_ref``
 ---------------------
-.. _libcudacxx-extended-api-runtime-stream-stream-ref:
+.. _cccl-runtime-stream-stream-ref:
 
 ``cuda::stream_ref`` is a non-owning wrapper around a ``cudaStream_t``. It prevents unsafe implicit constructions from
 ``nullptr`` or integer literals and provides convenient helpers for:
@@ -37,7 +37,7 @@ Example:
 
 ``cuda::stream``
 -----------------
-.. _libcudacxx-extended-api-runtime-stream-stream:
+.. _cccl-runtime-stream-stream:
 
 ``cuda::stream`` is an owning wrapper around a ``cudaStream_t`` that manages the lifetime of the underlying CUDA stream.
 It derives from ``stream_ref``, provides all of its functionality, and can be used anywhere a ``stream_ref`` is expected.

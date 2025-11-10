@@ -1,11 +1,11 @@
-.. _libcudacxx-extended-api-runtime-event:
+.. _cccl-runtime-event:
 
 Events
 ======
 
 ``cuda::event_ref``
 --------------------------------------------------
-.. _libcudacxx-extended-api-runtime-event-event-ref:
+.. _cccl-runtime-event-event-ref:
 
 ``cuda::event_ref`` is a non-owning wrapper around a ``cudaEvent_t``. It prevents unsafe implicit constructions from
 ``nullptr`` or integer literals and provides convenient helpers:
@@ -29,7 +29,7 @@ Example:
      e.record(stream);
    }
 
-.. _libcudacxx-extended-api-runtime-event-event:
+.. _cccl-runtime-event-event:
 ``cuda::event``
 --------------------------------------------
 
@@ -54,7 +54,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
      }
    }
 
-.. _libcudacxx-extended-api-runtime-event-timed-event:
+.. _cccl-runtime-event-timed-event:
 ``cuda::timed_event``
 -----------------------------------------------------
 
