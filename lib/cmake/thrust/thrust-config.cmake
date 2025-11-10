@@ -949,7 +949,8 @@ if (NOT TARGET Thrust::libcudacxx)
         ${Thrust_VERSION}
         EXACT
         CONFIG
-        REQUIRED ${_THRUST_QUIET_FLAG}
+        REQUIRED
+        ${_THRUST_QUIET_FLAG}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
         HINTS "${_THRUST_CMAKE_DIR}/../libcudacxx/"
       )

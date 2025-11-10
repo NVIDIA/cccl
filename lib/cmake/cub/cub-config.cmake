@@ -95,7 +95,8 @@ if (NOT TARGET CUB::libcudacxx)
         ${CUB_VERSION}
         EXACT
         CONFIG
-        REQUIRED ${_CUB_QUIET_FLAG}
+        REQUIRED
+        ${_CUB_QUIET_FLAG}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
         HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
       )
