@@ -10,19 +10,19 @@ Defined in the header ``<cuda/memory>``.
     namespace cuda {
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ 
+    [[nodiscard]] __host__ __device__
     U* ptr_rebind(T* ptr) noexcept;
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ 
+    [[nodiscard]] __host__ __device__
     const U* ptr_rebind(const T* ptr) noexcept;
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ 
+    [[nodiscard]] __host__ __device__
     volatile U* ptr_rebind(volatile T* ptr) noexcept;
 
     template <typename U, typename T>
-    [[nodiscard]] __host__ __device__ 
+    [[nodiscard]] __host__ __device__
     const volatile U* ptr_rebind(const volatile T* ptr) noexcept;
 
     } // namespace cuda

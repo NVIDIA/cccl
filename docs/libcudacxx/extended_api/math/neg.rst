@@ -12,7 +12,7 @@ Defined in the ``<cuda/cmath>`` header.
    template <typename T>
    [[nodiscard]] __host__ __device__ constexpr
    T neg(T value) noexcept;
-   
+
    } // namespace cuda
 
 The function computes the negation of the input value accepting both signed and unsigned integer types. It doesn't emit any warnings for signed integer overflow and applying ``-`` to unsigned integer types.

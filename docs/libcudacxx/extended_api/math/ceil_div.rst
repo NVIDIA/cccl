@@ -12,7 +12,7 @@ Defined in the ``<cuda/cmath>`` header.
    template <typename T, typename U>
    [[nodiscard]] __host__ __device__ constexpr
    cuda::std::common_type_t<T, U> ceil_div(T value, U divisor) noexcept;
-   
+
    } // namespace cuda
 
 The function computes the ceiling division between two integral or enumerator values :math:`ceil(\frac{value}{base\_multiple})`.
