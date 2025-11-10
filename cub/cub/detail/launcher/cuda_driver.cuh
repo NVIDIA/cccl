@@ -81,7 +81,7 @@ struct CudaDriverLauncherFactory
 
   ::cudaError_t PtxVersion(int& version) const
   {
-    version = cc;
+    version = cc * 10;
     return cudaSuccess;
   }
 
