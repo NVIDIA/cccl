@@ -7,6 +7,9 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/util_allocator.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
@@ -292,16 +295,6 @@ struct ModOp
   }
 };
 
-template <typename TargetT>
-struct CastOp
-{
-  template <typename U>
-  __host__ __device__ __forceinline__ TargetT operator()(const U& x) const
-  {
-    return static_cast<TargetT>(x);
-  }
-};
-
 template <uint32_t RUNS_PER_THREAD,
           uint32_t DECODED_ITEMS_PER_THREAD,
           uint32_t BLOCK_DIM_X,
@@ -316,11 +309,10 @@ void TestAlgorithmSpecialisation()
 
   using RunItemT      = float;
   using RunLengthT    = uint32_t;
-  using CasterOp      = CastOp<RunItemT>;
-  using ItemItT       = cuda::transform_iterator<CasterOp, cuda::counting_iterator<uint64_t>>;
+  using ItemItT       = thrust::counting_iterator<RunItemT>;
   using RunLengthsItT = cuda::transform_iterator<ModOp, cuda::counting_iterator<RunLengthT>>;
 
-  ItemItT d_unique_items(cuda::counting_iterator<uint64_t>(1000U), CasterOp{});
+  ItemItT d_unique_items(1000U);
   RunLengthsItT d_run_lengths(cuda::counting_iterator<RunLengthT>(0), ModOp{});
 
   constexpr uint32_t num_runs   = 10000;
