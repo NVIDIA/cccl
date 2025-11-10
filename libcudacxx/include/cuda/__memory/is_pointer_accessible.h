@@ -93,8 +93,9 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_HOST, 0};
-    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
-    return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
+    return !(__pool_flags & ~unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READWRITE})
+        && (__pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ});
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
   return false;
@@ -143,8 +144,9 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
-    return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
+    return !(__pool_flags & ~unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READWRITE})
+        && (__pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ});
   }
   // (4) check if the pointer is allocated on the specified device
   if (__ptr_dev_id == __device.get())
