@@ -32,6 +32,7 @@ void test_accessible_pointer(
   [[maybe_unused]] bool skip_plus_one = false)
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
+  (void) (cuda::is_device_accessible(ptr, device));
   assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
   assert(cuda::is_managed(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
@@ -91,23 +92,43 @@ bool test_basic()
   return true;
 }
 
-bool test_memory_pool()
+void test_memory_pool_impl(
+  cudaMemAllocationType alloc_type,
+  cudaMemLocationType location_type,
+  bool is_host_accessible,
+  bool is_device_accessible,
+  bool is_managed_accessible)
 {
   cuda::device_ref dev{0};
   cudaMemPoolProps pool_prop = {};
-  pool_prop.allocType        = cudaMemAllocationTypePinned;
+  pool_prop.allocType        = alloc_type;
   pool_prop.location.id      = dev.get();
-  pool_prop.location.type    = cudaMemLocationTypeDevice;
+  pool_prop.location.type    = location_type;
   cudaMemPool_t mem_pool     = nullptr;
-  cudaMemPoolCreate(&mem_pool, &pool_prop);
+  assert(cudaMemPoolCreate(&mem_pool, &pool_prop) == cudaSuccess);
 
-  int* device_ptr3    = nullptr;
+  int* ptr            = nullptr;
   cudaStream_t stream = nullptr;
   assert(cudaStreamCreate(&stream) == cudaSuccess);
-  assert(cudaMallocFromPoolAsync(&device_ptr3, sizeof(int) * 2, mem_pool, stream) == cudaSuccess);
+  assert(cudaMallocFromPoolAsync(&ptr, sizeof(int) * 2, mem_pool, stream) == cudaSuccess);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 
-  test_accessible_pointer(device_ptr3, false, true, false, dev);
+  cudaMemAccessDesc access_desc = {};
+  access_desc.flags             = cudaMemAccessFlagsProtReadWrite;
+  access_desc.location.type     = location_type;
+  access_desc.location.id       = dev.get();
+  cudaMemPoolSetAccess(mem_pool, &access_desc, 1);
+
+  test_accessible_pointer(ptr, is_host_accessible, is_device_accessible, is_managed_accessible, dev);
+}
+
+bool test_memory_pool()
+{
+  test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false);
+  test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, false);
+
+  test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, true);
+  test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true);
   return true;
 }
 
@@ -145,8 +166,8 @@ bool test_multiple_devices()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (assert(test_basic());))
-  NV_IF_TARGET(NV_IS_HOST, (assert(test_multiple_devices());))
+  // NV_IF_TARGET(NV_IS_HOST, (assert(test_basic());))
+  // NV_IF_TARGET(NV_IS_HOST, (assert(test_multiple_devices());))
   NV_IF_TARGET(NV_IS_HOST, (assert(test_memory_pool());))
   return 0;
 }

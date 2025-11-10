@@ -74,11 +74,13 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   [[maybe_unused]] void* __tmp_ptr = nullptr;
   const auto __status1             = ::cudaGetSymbolAddress(&__tmp_ptr, __p);
   ::cudaGetLastError();
-  ::CUpointer_attribute __attrs[2] = {::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED};
-  ::CUmemorytype __memory_type     = static_cast<::CUmemorytype>(0);
-  int __is_managed                 = 0;
-  void* __results[2]               = {&__memory_type, &__is_managed};
-  const auto __status2             = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+  ::CUpointer_attribute __attrs[3] = {
+    ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED, ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
+  ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
+  int __is_managed             = 0;
+  ::CUmemoryPool __mempool     = nullptr;
+  void* __results[3]           = {&__memory_type, &__is_managed, &__mempool};
+  const auto __status2         = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status2 != ::cudaSuccess)
   {
     ::cuda::__throw_cuda_error(__status2, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
@@ -87,9 +89,17 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   {
     return false;
   }
-  if (__memory_type == static_cast<::CUmemorytype>(0)) // check if the pointer is unregistered
+  // (2) check if the pointer is unregistered
+  if (__memory_type == static_cast<::CUmemorytype>(0))
   {
     return true;
+  }
+  // (3) check if a memory pool is associated with the pointer
+  if (__mempool != nullptr)
+  {
+    ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_HOST, 0};
+    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
+    return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
   return (__is_managed || __memory_type == ::CU_MEMORYTYPE_UNIFIED || __memory_type == ::CU_MEMORYTYPE_HOST);
 }
@@ -116,8 +126,8 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
   int __is_managed             = 0;
   int __ptr_dev_id             = 0;
-  ::CUmemoryPool __ptr_mempool = nullptr;
-  void* __results[4]           = {&__memory_type, &__is_managed, &__ptr_dev_id, &__ptr_mempool};
+  ::CUmemoryPool __mempool     = nullptr;
+  void* __results[4]           = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
   const auto __status2         = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status2 != ::cudaSuccess)
   {
@@ -134,10 +144,10 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
     return false;
   }
   // (3) check if a memory pool is associated with the pointer
-  if (__ptr_mempool != nullptr)
+  if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__ptr_mempool, &__prop);
+    const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
     return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
   // (4) check if the pointer is allocated on the specified device
