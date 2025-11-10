@@ -24,17 +24,34 @@ option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
 
-function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
+function(
+  cccl_build_compiler_interface
+  interface_target
+  cuda_compile_options
+  cxx_compile_options
+  compile_defs
+)
   # We test to see if C++ compiler options exist using try-compiles in the CXX lang, and then reuse those flags as
   # -Xcompiler flags for CUDA targets. This requires that the CXX compiler and CUDA_HOST compilers are the same when
   # using nvcc.
   if (CCCL_TOPLEVEL_PROJECT AND CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
     set(cuda_host_matches_cxx_compiler FALSE)
     if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
-      set(host_info "${CMAKE_CUDA_HOST_COMPILER} (${CMAKE_CUDA_HOST_COMPILER_ID} ${CMAKE_CUDA_HOST_COMPILER_VERSION})")
-      set(cxx_info "${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
-      if (CMAKE_CUDA_HOST_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID AND
-          CMAKE_CUDA_HOST_COMPILER_VERSION VERSION_EQUAL CMAKE_CXX_COMPILER_VERSION)
+      set(
+        host_info
+        "${CMAKE_CUDA_HOST_COMPILER} (${CMAKE_CUDA_HOST_COMPILER_ID} ${CMAKE_CUDA_HOST_COMPILER_VERSION})"
+      )
+      set(
+        cxx_info
+        "${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})"
+      )
+      if (
+        CMAKE_CUDA_HOST_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID
+        AND
+          CMAKE_CUDA_HOST_COMPILER_VERSION
+            VERSION_EQUAL
+            CMAKE_CXX_COMPILER_VERSION
+      )
         set(cuda_host_matches_cxx_compiler TRUE)
       endif()
     else() # CMake < 3.31 doesn't have the CMAKE_CUDA_HOST_COMPILER_ID/VERSION variables
@@ -46,7 +63,8 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
     endif()
 
     if (NOT cuda_host_matches_cxx_compiler)
-      message(FATAL_ERROR
+      message(
+        FATAL_ERROR
         "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER matches "
         "CMAKE_CXX_COMPILER when using nvcc:\n"
         "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
@@ -61,21 +79,22 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
   add_library(${interface_target} INTERFACE)
 
   foreach (cuda_option IN LISTS cuda_compile_options)
-    target_compile_options(${interface_target} INTERFACE
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:${cuda_option}>
+    target_compile_options(
+      ${interface_target}
+      INTERFACE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:${cuda_option}>
     )
   endforeach()
 
   foreach (cxx_option IN LISTS cxx_compile_options)
-    target_compile_options(${interface_target} INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
+    target_compile_options(
+      ${interface_target}
+      INTERFACE
+        $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
     )
   endforeach()
 
-  target_compile_definitions(${interface_target} INTERFACE
-    ${compile_defs}
-  )
+  target_compile_definitions(${interface_target} INTERFACE ${compile_defs})
 endfunction()
 
 function(cccl_build_compiler_targets)
@@ -157,7 +176,6 @@ function(cccl_build_compiler_targets)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
       append_option_if_available("/wd5105" cxx_compile_options)
     endif()
-
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
@@ -181,7 +199,10 @@ function(cccl_build_compiler_targets)
     # Calling a variadic macro with zero args is a GNU extension until C++20,
     # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
     # is a real problem worth fixing.
-    append_option_if_available("-Wno-gnu-zero-variadic-macro-arguments" cxx_compile_options)
+    append_option_if_available(
+      "-Wno-gnu-zero-variadic-macro-arguments"
+      cxx_compile_options
+    )
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)
@@ -195,22 +216,28 @@ function(cccl_build_compiler_targets)
     endif()
   endif()
 
-  cccl_build_compiler_interface(cccl.compiler_interface
+  cccl_build_compiler_interface(
+    cccl.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
   # Clang-cuda only:
-  target_compile_options(cccl.compiler_interface INTERFACE
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
+  target_compile_options(
+    cccl.compiler_interface
+    INTERFACE
+      $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
+      $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
 
   # These targets are used for dialect-specific options:
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
+    target_link_libraries(
+      cccl.compiler_interface_cpp${dialect}
+      INTERFACE cccl.compiler_interface
+    )
   endforeach()
 
   # Some of our unit tests unconditionally throw exceptions, and compilers will
@@ -219,9 +246,11 @@ function(cccl_build_compiler_targets)
   # unreachable code warnings.
   add_library(cccl.silence_unreachable_code_warnings INTERFACE)
   if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(cccl.silence_unreachable_code_warnings INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4702>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4702>
+    target_compile_options(
+      cccl.silence_unreachable_code_warnings
+      INTERFACE
+        $<$<COMPILE_LANGUAGE:CXX>:/wd4702>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4702>
     )
   endif()
 endfunction()

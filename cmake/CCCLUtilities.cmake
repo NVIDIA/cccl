@@ -24,14 +24,19 @@
 # is not successful (e.g. the last command does not return zero), a non-fatal
 # warning is printed.
 function(cccl_execute_non_fatal_process)
-  execute_process(${ARGN}
+  # Skip parsing this function's signature -- it is handled by .gersemi/ext/cccl.py.
+  # gersemi: ignore
+
+  execute_process(
+    ${ARGN}
     RESULT_VARIABLE cccl_process_exit_code
     OUTPUT_VARIABLE cccl_process_stdout
     ERROR_VARIABLE cccl_process_stderr
   )
 
   if (NOT cccl_process_exit_code EQUAL 0)
-    message(WARNING
+    message(
+      WARNING
       "execute_process failed with non-zero exit code: ${cccl_process_exit_code}\n"
       "${ARGN}\n"
       "stdout:\n${cccl_process_stdout}\n"
@@ -55,13 +60,16 @@ function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
   set(test_name ${name_prefix}.${subdir}.${test_id})
   set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
   set(build_dir "${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${test_id}")
-  add_test(NAME ${test_name}
-    COMMAND "${CMAKE_CTEST_COMMAND}"
-      --build-and-test "${src_dir}" "${build_dir}"
-      --build-generator "${CMAKE_GENERATOR}"
-      --build-options
-        ${ARGN}
-      --test-command "${CMAKE_CTEST_COMMAND}" --output-on-failure
+  add_test(
+    NAME ${test_name}
+    # gersemi: off
+    COMMAND
+      "${CMAKE_CTEST_COMMAND}"
+        --build-and-test "${src_dir}" "${build_dir}"
+        --build-generator "${CMAKE_GENERATOR}"
+        --build-options ${ARGN}
+        --test-command "${CMAKE_CTEST_COMMAND}" --output-on-failure
+    # gersemi: on
   )
   set(${full_test_name_var} ${test_name} PARENT_SCOPE)
 endfunction()
@@ -109,7 +117,9 @@ endfunction()
 # current directory's CMAKE_CONFIGURE_DEPENDS to ensure that changes to the file will re-trigger CMake.
 function(cccl_add_xfail_compile_target_test target_name)
   set(options)
-  set(oneValueArgs
+  set(
+    oneValueArgs
+    TEST_NAME
     ERROR_REGEX
     SOURCE_FILE
     ERROR_REGEX_LABEL
@@ -117,7 +127,13 @@ function(cccl_add_xfail_compile_target_test target_name)
     ERROR_NUMBER_TARGET_NAME_REGEX
   )
   set(multiValueArgs)
-  cmake_parse_arguments(cccl_xfail "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  cmake_parse_arguments(
+    cccl_xfail
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
 
   if (cccl_xfail_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unparsed arguments: ${cccl_xfail_UNPARSED_ARGUMENTS}")
@@ -131,7 +147,10 @@ function(cccl_add_xfail_compile_target_test target_name)
   set(regex)
   if (DEFINED cccl_xfail_ERROR_REGEX)
     set(regex "${cccl_xfail_ERROR_REGEX}")
-  elseif (DEFINED cccl_xfail_SOURCE_FILE AND DEFINED cccl_xfail_ERROR_REGEX_LABEL)
+  elseif (
+    DEFINED cccl_xfail_SOURCE_FILE
+    AND DEFINED cccl_xfail_ERROR_REGEX_LABEL
+  )
     get_filename_component(src_absolute "${cccl_xfail_SOURCE_FILE}" ABSOLUTE)
     set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
 
@@ -146,18 +165,32 @@ function(cccl_add_xfail_compile_target_test target_name)
       get_property(error_cache GLOBAL PROPERTY "${error_cache_property}")
     else()
       file(READ "${src_absolute}" source_contents)
-      string(REGEX MATCHALL "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}" error_cache "${source_contents}")
+      string(
+        REGEX MATCHALL
+        "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}"
+        error_cache
+        "${source_contents}"
+      )
       set_property(GLOBAL PROPERTY "${error_cache_property}" "${error_cache}")
     endif()
 
     # Changes to the source file should re-run CMake to pick-up new error specs:
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${src_absolute}")
+    set_property(
+      DIRECTORY
+      APPEND
+      PROPERTY CMAKE_CONFIGURE_DEPENDS "${src_absolute}"
+    )
 
     set(error_number)
     if (DEFINED cccl_xfail_ERROR_NUMBER)
       set(error_number "${cccl_xfail_ERROR_NUMBER}")
     elseif (DEFINED cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX)
-      string(REGEX MATCH "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}" matched ${target_name})
+      string(
+        REGEX MATCH
+        "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}"
+        matched
+        ${target_name}
+      )
       if (matched)
         set(error_number "${CMAKE_MATCH_1}")
       endif()
@@ -165,7 +198,12 @@ function(cccl_add_xfail_compile_target_test target_name)
 
     # Look for a labeled error with the specific error number.
     if (NOT "${error_number}" STREQUAL "") # Check strings to allow "0"
-      string(REGEX MATCH "//[ \t]*${error_label_regex}-${error_number}[ \t]*{{\"([^\"]+)\"}}" matched "${error_cache}")
+      string(
+        REGEX MATCH
+        "//[ \t]*${error_label_regex}-${error_number}[ \t]*{{\"([^\"]+)\"}}"
+        matched
+        "${error_cache}"
+      )
       if (matched)
         set(regex "${CMAKE_MATCH_1}")
       endif()
@@ -173,7 +211,12 @@ function(cccl_add_xfail_compile_target_test target_name)
 
     if (NOT regex)
       # Look for a labeled error without an error number.
-      string(REGEX MATCH "//[ \t]*${error_label_regex}[ \t]*{{\"([^\"]+)\"}}" matched "${error_cache}")
+      string(
+        REGEX MATCH
+        "//[ \t]*${error_label_regex}[ \t]*{{\"([^\"]+)\"}}"
+        matched
+        "${error_cache}"
+      )
       if (matched)
         set(regex "${CMAKE_MATCH_1}")
       endif()
@@ -191,24 +234,42 @@ function(cccl_add_xfail_compile_target_test target_name)
   # may exist if using a regex to check for warnings. Add a setup fixture to
   # delete the output file before each test run.
   if (NOT TEST ${target_name}.clean)
-    add_test(NAME ${target_name}.clean COMMAND "${CMAKE_COMMAND}" -E rm -f
-      "$<TARGET_FILE:${target_name}>"
-      "$<TARGET_OBJECTS:${target_name}>"
+    add_test(
+      NAME ${target_name}.clean
+      # gersemi: off
+      COMMAND
+        "${CMAKE_COMMAND}" -E rm -f
+          "$<TARGET_FILE:${target_name}>"
+          "$<TARGET_OBJECTS:${target_name}>"
+      # gersemi: on
     )
-    set_tests_properties(${test_name}.clean PROPERTIES FIXTURES_SETUP ${target_name}.clean)
+    set_tests_properties(
+      ${test_name}.clean
+      PROPERTIES FIXTURES_SETUP ${target_name}.clean
+    )
   endif()
 
-  add_test(NAME ${test_name}
-           COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                                    --target ${test_target}
-                                    --config $<CONFIGURATION>
+  add_test(
+    NAME ${test_name}
+    # gersemi: off
+    COMMAND
+      "${CMAKE_COMMAND}"
+        --build "${CMAKE_BINARY_DIR}"
+        --target ${test_target}
+        --config $<CONFIGURATION>
+    # gersemi: on
   )
-  set_tests_properties(${test_name} PROPERTIES FIXTURES_CLEANUP ${target_name}.clean)
+  set_tests_properties(
+    ${test_name}
+    PROPERTIES FIXTURES_CLEANUP ${target_name}.clean
+  )
 
   if (regex)
-    set_tests_properties(${test_name} PROPERTIES PASS_REGULAR_EXPRESSION "${regex}")
+    set_tests_properties(
+      ${test_name}
+      PROPERTIES PASS_REGULAR_EXPRESSION "${regex}"
+    )
   else()
     set_tests_properties(${test_name} PROPERTIES WILL_FAIL true)
   endif()
-
 endfunction()

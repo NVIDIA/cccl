@@ -34,9 +34,13 @@
 #     `cudax_clone_target_properties(${my_cudax_test} ${some_cudax_target})`
 
 # Define available dialects:
-set(cudax_CPP_DIALECT_OPTIONS
-  17 20
-  CACHE INTERNAL "C++ dialects supported by CUDA Experimental." FORCE
+set(
+  cudax_CPP_DIALECT_OPTIONS
+  17
+  20
+  CACHE INTERNAL
+  "C++ dialects supported by CUDA Experimental."
+  FORCE
 )
 
 # Create CMake options:
@@ -46,17 +50,22 @@ foreach (dialect IN LISTS cudax_CPP_DIALECT_OPTIONS)
     set(default_value ON)
   endif()
 
-  option(cudax_ENABLE_DIALECT_CPP${dialect}
+  option(
+    cudax_ENABLE_DIALECT_CPP${dialect}
     "Generate C++${dialect} build configurations."
     ${default_value}
   )
 endforeach()
 
-define_property(TARGET PROPERTY _cudax_DIALECT
+define_property(
+  TARGET
+  PROPERTY _cudax_DIALECT
   BRIEF_DOCS "A target's C++ dialect."
   FULL_DOCS "A target's C++ dialect."
 )
-define_property(TARGET PROPERTY _cudax_PREFIX
+define_property(
+  TARGET
+  PROPERTY _cudax_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'cudax.cpp17'."
   FULL_DOCS "A prefix describing the config, eg. 'cudax.cpp17'."
 )
@@ -64,8 +73,9 @@ define_property(TARGET PROPERTY _cudax_PREFIX
 function(cudax_set_target_properties target_name dialect prefix)
   cccl_configure_target(${target_name} DIALECT ${dialect})
 
-  set_target_properties(${target_name}
-    PROPERTIES
+  set_target_properties(
+    ${target_name}
+    PROPERTIES #
       _cudax_DIALECT ${dialect}
       _cudax_PREFIX ${prefix}
   )
@@ -112,9 +122,11 @@ function(_cudax_add_target_to_target_list target_name dialect prefix)
 
   cudax_set_target_properties(${target_name} ${dialect} ${prefix})
 
-  target_link_libraries(${target_name} INTERFACE
-    cudax::cudax
-    cudax.compiler_interface_cpp${dialect}
+  target_link_libraries(
+    ${target_name}
+    INTERFACE #
+      cudax::cudax
+      cudax.compiler_interface_cpp${dialect}
   )
 
   set(cudax_TARGETS ${cudax_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)
@@ -139,15 +151,18 @@ function(cudax_build_target_list)
   set(cudax_NO_IMPORTED_TARGETS ON)
 
   # Set up the cudax::cudax target while testing out our find_package scripts.
-  find_package(cudax REQUIRED CONFIG
+  find_package(
+    cudax
+    REQUIRED
+    CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
   )
 
   # Build cudax_TARGETS
-  foreach(dialect IN LISTS cudax_CPP_DIALECT_OPTIONS)
+  foreach (dialect IN LISTS cudax_CPP_DIALECT_OPTIONS)
     _cudax_is_config_valid(config_valid ${dialect})
-   if (config_valid)
+    if (config_valid)
       set(prefix "cudax.cpp${dialect}")
       set(target_name "${prefix}")
       _cudax_add_target_to_target_list(${target_name} ${dialect} ${prefix})
@@ -159,7 +174,8 @@ function(cudax_build_target_list)
 
   # Top level meta-target. Makes it easier to just build cudax targets.
   # Add all project files here so IDEs will be aware of them. This will not generate build rules.
-  file(GLOB_RECURSE all_sources
+  file(
+    GLOB_RECURSE all_sources
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     "${cudax_SOURCE_DIR}/include/cuda/experimental/*.hpp"
     "${cudax_SOURCE_DIR}/include/cuda/experimental/*.cuh"
@@ -167,7 +183,7 @@ function(cudax_build_target_list)
   add_custom_target(cudax.all SOURCES ${all_sources})
 
   # Create meta targets for each config:
-  foreach(cudax_target IN LISTS cudax_TARGETS)
+  foreach (cudax_target IN LISTS cudax_TARGETS)
     cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
     add_custom_target(${config_prefix}.all)
     add_dependencies(cudax.all ${config_prefix}.all)
