@@ -126,8 +126,9 @@ struct s5_op
 #pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
-      result.A[i]  = y.A[i] * x.A[i];
-      result.Bu[i] = y.A[i] * x.Bu[i] + y.Bu[i];
+      auto y_A_i   = y.A[i];
+      result.A[i]  = y_A_i * x.A[i];
+      result.Bu[i] = y_A_i * x.Bu[i] + y.Bu[i];
     }
 
     return result;
@@ -240,16 +241,16 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   raw_output_t d_output_Bu = thrust::raw_pointer_cast(output_Bu.data());
 
   auto row_ptr_A_in =
-    cuda::make_transform_iterator(cuda::counting_iterator(0), index_to_input_ptr_t(d_input_A, state_dim));
+    cuda::make_transform_iterator(cuda::counting_iterator<int>(0), index_to_input_ptr_t(d_input_A, state_dim));
   auto row_ptr_Bu_in =
-    cuda::make_transform_iterator(cuda::counting_iterator(0), index_to_input_ptr_t(d_input_Bu, state_dim));
+    cuda::make_transform_iterator(cuda::counting_iterator<int>(0), index_to_input_ptr_t(d_input_Bu, state_dim));
   auto zipped_input = cuda::make_zip_iterator(row_ptr_A_in, row_ptr_Bu_in);
   input_it_t inp_it(zipped_input, impl::load_row_functor<value_t, state_dim>{});
 
   auto row_ptr_A_out =
-    cuda::make_transform_iterator(cuda::counting_iterator(0), index_to_output_ptr_t(d_output_A, state_dim));
+    cuda::make_transform_iterator(cuda::counting_iterator<int>(0), index_to_output_ptr_t(d_output_A, state_dim));
   auto row_ptr_Bu_out =
-    cuda::make_transform_iterator(cuda::counting_iterator(0), index_to_output_ptr_t(d_output_Bu, state_dim));
+    cuda::make_transform_iterator(cuda::counting_iterator<int>(0), index_to_output_ptr_t(d_output_Bu, state_dim));
   auto zipped_output = cuda::make_zip_iterator(row_ptr_A_out, row_ptr_Bu_out);
   output_it_t out_it(zipped_output, impl::pointers_to_write_proxy_functor<value_t, state_dim>{});
 
