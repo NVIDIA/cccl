@@ -126,9 +126,8 @@ enum class address_space
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
     case address_space::local: {
-      // __isLocal is buggy, see nvbug 5254298
-      // let's always use the inline PTX instead of the intrinsic
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)
+      // __isLocal is buggy until CUDA 13.1, see nvbug 5254298
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1)
       unsigned __ret;
       asm volatile(
         "{\n\t"
@@ -139,7 +138,7 @@ enum class address_space
         : "=r"(__ret)
         : "l"(__ptr));
       return static_cast<bool>(__ret);
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) ^^^ /
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 13, 1) || _CCCL_CUDA_COMPILER(NVRTC, <, 13, 1) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) vvv
       [[maybe_unused]] bool __p = static_cast<bool>(::__isLocal(__ptr));
       _CCCL_ASSUME(__p);
