@@ -407,6 +407,216 @@ struct DeviceSegmentedReduce
     _CCCL_UNREACHABLE();
   }
 
+  /*
+  Remi Bourgeois:
+  env-based overload of the device segmented reduce taking offset iterators.
+  Heavily inspired from the env-based device reduce.
+  */
+
+  //! @rst
+  //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! - Uses ``0`` as the initial value of the reduction for each segment.
+  //! - When input a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - Does not support ``+`` operators that are non-commutative.
+  //! - Let ``s`` be in ``[0, num_segments)``. The range
+  //!   ``[d_out + d_begin_offsets[s], d_out + d_end_offsets[s])`` shall not
+  //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
+  //! - Can use a specific stream or cuda memory resource through the `env` parameter
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! TODO (a new snippet)
+  //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-sum
+  //!     :end-before: example-end segmented-reduce-sum
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments`, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_in``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the *i*\ :sup:`th` is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      BeginOffsetIteratorT d_begin_offsets,
+      EndOffsetIteratorT d_end_offsets,
+      EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Sum");
+
+    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
+    using init_t  = OutputT;
+
+    // Remi Bourgeois: copy-pasted from device_reduce.cuh but device segmented reduce has no determinism option ATM,
+    // left as comment
+    /*
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
+
+    // The output iterator must be a contiguous iterator or we fall back to
+    // run-to-run determinism.
+    constexpr auto is_contiguous_fallback =
+      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    // Since atomics for types of size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+    // determinism.
+    constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
+
+    using determinism_t =
+      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 default_determinism_t>;
+    */
+
+    // Remi Bourgeois copy-pasted from device_reduce.cuh but device segmented reduce has no tuning option ATM, left as
+    // comment
+    /*
+    using tuning_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t,
+    ::cuda::std::execution::env<>>;
+    */
+
+    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
+    if constexpr (::cuda::std::is_integral_v<OffsetT>)
+    {
+      auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+      auto mr =
+        ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+      void* d_temp_storage      = nullptr;
+      size_t temp_storage_bytes = 0;
+
+      // Query the required temporary storage size
+      cudaError_t error = DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ::cuda::std::plus<>,
+        init_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          ::cuda::std::plus<>{},
+                          init_t{}, // zero-initialize
+                          stream.get());
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // TODO(gevtushenko): use uninitialized buffer whenit's available
+      error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // Run the algorithm
+      error = DispatchSegmentedReduce<
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ::cuda::std::plus<>,
+        init_t>::Dispatch(d_temp_storage,
+                          temp_storage_bytes,
+                          d_in,
+                          d_out,
+                          num_segments,
+                          d_begin_offsets,
+                          d_end_offsets,
+                          ::cuda::std::plus<>{},
+                          init_t{}, // zero-initialize
+                          stream.get());
+
+      // Try to deallocate regardless of the error to avoid memory leaks
+      cudaError_t deallocate_error =
+        CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+      if (error != cudaSuccess)
+      {
+        // Reduction error takes precedence over deallocation error since it happens first
+        return error;
+      }
+      return deallocate_error;
+    }
+    _CCCL_UNREACHABLE();
+  }
+
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
   //!
