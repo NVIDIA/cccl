@@ -274,6 +274,7 @@ _CCCL_API constexpr auto get_sm100_tuning(accum_type at, op_type ot, offset_size
 
 // For min or max, verification showed the benefits were too small (within noise)
 
+// TODO(bgruber): drop after migrating DispatchSegmentedReduce to the new tuning API
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
