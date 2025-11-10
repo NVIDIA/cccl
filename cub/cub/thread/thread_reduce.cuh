@@ -155,7 +155,6 @@ template <typename Input,
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace detail
 {
-
 template <typename PreferredT, typename ValueT, typename ReductionOp, typename L, typename R>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(const ReductionOp& reduction_op, L&& lhs, R&& rhs)
 {
