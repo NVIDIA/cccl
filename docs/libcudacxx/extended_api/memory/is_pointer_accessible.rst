@@ -10,44 +10,26 @@ Defined in the ``<cuda/memory>`` header.
    namespace cuda {
 
    [[nodiscard]] inline
-   bool is_host_accessible(const void* ptr);
-
-   } // namespace cuda
-
-Determines whether the memory referenced by ``ptr`` is accessible from the host.
-
-----
-
-.. code:: cuda
-
-   namespace cuda {
+   bool is_host_accessible(const void* ptr); // (1)
 
    [[nodiscard]] inline
-   bool is_device_accessible(const void* ptr, device_ref device);
-
-   } // namespace cuda
-
-Determines whether the memory referenced by ``ptr`` is accessible from the specified ``device``. The function also checks whether the memory is peer-accessible or allocated from a memory pool accessible to the specified ``device``.
-
-----
-
-.. code:: cuda
-
-   namespace cuda {
+   bool is_device_accessible(const void* ptr, device_ref device); // (2)
 
    [[nodiscard]] inline
-   bool is_managed(const void* ptr);
+   bool is_managed(const void* ptr); // (3)
 
    } // namespace cuda
 
-Determines whether the memory referenced by ``ptr`` is backed by Unified Memory (managed memory).
+Determines whether the memory referenced by ``ptr`` is accessible from the host (1), from the specified ``device`` (2), or is backed by Unified Memory (managed memory) (3).
+
+``is_device_accessible()`` also checks whether the memory is peer-accessible or allocated from a memory pool accessible to the specified ``device``.
 
 ----
 
 **Parameters**
 
 - ``ptr``: A pointer to the memory location to query.
-- ``device``: A ``device_ref`` that denotes the device to query.
+- ``device``: A ``device_ref`` that denotes the device to query. (2)
 
 **Return value**
 
