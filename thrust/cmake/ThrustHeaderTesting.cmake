@@ -9,6 +9,7 @@ set(
   deprecated_headers_regexes
   "thrust/iterator/tabulate_output_iterator\\.h"
   "thrust/iterator/strided_iterator\\.h"
+  "thrust/iterator/constant_iterator\\.h"
 )
 
 cccl_get_cudatoolkit()

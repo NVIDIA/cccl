@@ -4,8 +4,6 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
