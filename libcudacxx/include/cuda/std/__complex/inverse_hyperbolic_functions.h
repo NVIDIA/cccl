@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // It can happen that the double 1/sqrt() on device gets optimized better than CUDA rsqrt(),
 // but it depends on the calling function. We needs to optimize on an individual basis.
 template <class _Tp>
-[[nodiscard]] _CCCL_API _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE _Tp __internal_rsqrt_inverse_hyperbloic(_Tp __x) noexcept
 {
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (is_same_v<_Tp, float>)
@@ -68,7 +68,8 @@ struct _CCCL_ALIGNAS(2 * sizeof(_Tp)) __cccl_asinh_sqrt_return_hilo
 
 // An unsafe sqrt(_Tp + _Tp) extended precision sqrt.
 template <typename _Tp>
-[[nodiscard]] _CCCL_API __cccl_asinh_sqrt_return_hilo<_Tp> __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE __cccl_asinh_sqrt_return_hilo<_Tp>
+__internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 {
   // rsqrt
   const _Tp __initial_guess = __internal_rsqrt_inverse_hyperbloic<_Tp>(__hi);
@@ -112,7 +113,7 @@ template <typename _Tp>
 // asinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API complex<_Tp> asinh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<_Tp> asinh(const complex<_Tp>& __x)
 {
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
@@ -387,7 +388,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::asinh(complex<float>{__x})};
 }
@@ -395,7 +396,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API complex<__half> asinh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::asinh(complex<float>{__x})};
 }
@@ -404,7 +405,7 @@ template <>
 // acosh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API complex<_Tp> acosh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<_Tp> acosh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.real()))
@@ -449,7 +450,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::acosh(complex<float>{__x})};
 }
@@ -457,7 +458,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API complex<__half> acosh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::acosh(complex<float>{__x})};
 }
@@ -466,7 +467,7 @@ template <>
 // atanh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API complex<_Tp> atanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<_Tp> atanh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.imag()))
@@ -501,7 +502,7 @@ template <class _Tp>
 // We have performance issues with some trigonometric functions with extended floating point types
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-[[nodiscard]] _CCCL_API complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{::cuda::std::atanh(complex<float>{__x})};
 }
@@ -509,7 +510,7 @@ template <>
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-[[nodiscard]] _CCCL_API complex<__half> atanh(const complex<__half>& __x)
+[[nodiscard]] _CCCL_API _CCCL_FORCEINLINE complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{::cuda::std::atanh(complex<float>{__x})};
 }
