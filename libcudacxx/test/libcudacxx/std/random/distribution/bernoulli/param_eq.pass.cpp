@@ -15,8 +15,6 @@
 
 #include <cuda/std/__random_>
 
-#include <limits>
-
 #include "test_macros.h"
 
 __host__ __device__ constexpr bool test()
