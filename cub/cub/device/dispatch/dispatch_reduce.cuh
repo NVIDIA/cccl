@@ -130,7 +130,7 @@ template <typename InputIteratorT,
             AccumT,
             TransformOpT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchReduce
+struct [[deprecated("Please use cub::DeviceReduce::Reduce")]] DispatchReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -506,6 +506,7 @@ struct DispatchReduce
  * @tparam InitT
  *   Initial value type
  */
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <
   typename InputIteratorT,
   typename OutputIteratorT,
@@ -528,7 +529,7 @@ template <
     AccumT,
     TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-using DispatchTransformReduce [[deprecated]] =
+using DispatchTransformReduce [[deprecated("Please use cub::DeviceReduce::TransformReduce")]] =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
                  OffsetT,
@@ -539,6 +540,7 @@ using DispatchTransformReduce [[deprecated]] =
                  PolicyHub,
                  KernelSource,
                  KernelLauncherFactory>;
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace detail::reduce
 {
