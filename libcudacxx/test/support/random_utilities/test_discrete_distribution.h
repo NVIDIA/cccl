@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
@@ -24,7 +25,7 @@ __host__ __device__ constexpr bool test_constexpr()
 
 // Perform a chi-squared test, comparing the observed and expected frequencies
 // of outcomes from a discrete distribution. Tests to significance level 0.01. Accepts 2-10 buckets.
-template <class DiscreteDistribution, class URNG, std::size_t N>
+template <class DiscreteDistribution, class URNG, cuda::std::size_t N>
 __host__ __device__ bool test_discrete_distribution(
   const typename DiscreteDistribution::param_type param,
   const cuda::std::array<double, N>& expected_probabilities,
