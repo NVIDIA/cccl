@@ -21,6 +21,41 @@
 
 CUB_NAMESPACE_BEGIN
 
+struct agent_reduce_policy // equivalent of AgentReducePolicy
+{
+  int block_threads;
+  int items_per_thread;
+  int vector_load_length;
+  BlockReduceAlgorithm block_algorithm;
+  CacheLoadModifier load_modifier;
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
+  {
+    return os << "agent_reduce_policy { block_threads = " << p.block_threads
+              << ", items_per_thread = " << p.items_per_thread << ", vector_load_length = " << p.vector_load_length
+              << ", block_algorithm = " << p.block_algorithm << ", load_modifier = " << p.load_modifier << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+struct reduce_arch_policy // equivalent of a policy for a single CUDA architecture
+{
+  agent_reduce_policy reduce_policy;
+  agent_reduce_policy single_tile_policy;
+  agent_reduce_policy segmented_reduce_policy;
+  agent_reduce_policy reduce_nondeterministic_policy;
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_arch_policy& p)
+  {
+    return os << "reduce_arch_policy { reduce_policy = " << p.reduce_policy << ", single_tile_policy = "
+              << p.single_tile_policy << ", segmented_reduce_policy = " << p.segmented_reduce_policy
+              << ", reduce_nondeterministic_policy = " << p.reduce_nondeterministic_policy << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
 namespace detail
 {
 namespace reduce
@@ -322,44 +357,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-// TODO(bgruber): this would become a public type
-struct agent_reduce_policy // equivalent of AgentReducePolicy
-{
-  int block_threads;
-  int items_per_thread;
-  int vector_load_length;
-  BlockReduceAlgorithm block_algorithm;
-  CacheLoadModifier load_modifier;
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
-  {
-    return os << "agent_reduce_policy { block_threads = " << p.block_threads
-              << ", items_per_thread = " << p.items_per_thread << ", vector_load_length = " << p.vector_load_length
-              << ", block_algorithm = " << p.block_algorithm << ", load_modifier = " << p.load_modifier << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-// TODO(bgruber): this would become a public type
-struct arch_policy // equivalent of a policy for a single CUDA architecture
-{
-  agent_reduce_policy reduce_policy;
-  agent_reduce_policy single_tile_policy;
-  agent_reduce_policy segmented_reduce_policy;
-  agent_reduce_policy reduce_nondeterministic_policy;
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const arch_policy& p)
-  {
-    return os
-        << "arch_policy { reduce_policy = " << p.reduce_policy << ", single_tile_policy = " << p.single_tile_policy
-        << ", segmented_reduce_policy = " << p.segmented_reduce_policy
-        << ", reduce_nondeterministic_policy = " << p.reduce_nondeterministic_policy << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
 struct arch_policies // equivalent to the policy_hub, holds policies for a bunch of CUDA architectures
 {
   accum_type at;
@@ -367,10 +364,10 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
   offset_size os;
   int accum_size;
 
-  // IDEA(bgruber): instead of the constexpr function, we could also provide a map<int, arch_policy> and move the
+  // IDEA(bgruber): instead of the constexpr function, we could also provide a map<int, reduce_arch_policy> and move the
   // selection mechanism elsewhere
 
-  _CCCL_API constexpr auto operator()(int arch) const -> arch_policy
+  _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
     if (arch >= 1000)
     {
@@ -436,6 +433,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
       return {rp, rp, rp, rp_nondet};
     }
 
+    _CCCL_ASSERT(false, "Unsupported PTX version");
     ::cuda::std::terminate();
   }
 };
@@ -444,7 +442,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct typed_arch_policies
 {
-  _CCCL_API constexpr auto operator()(int arch) const -> arch_policy
+  _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
     return arch_policies{
       classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), classify_offset_size<OffsetT>(), int{sizeof(AccumT)}}(

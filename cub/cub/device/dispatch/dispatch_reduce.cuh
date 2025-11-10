@@ -594,7 +594,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const arch_policy active_policy = arch_policies(ptx_version);
+  const reduce_arch_policy active_policy = arch_policies(ptx_version);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST,
                (std::stringstream ss; ss << active_policy;
