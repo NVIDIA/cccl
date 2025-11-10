@@ -6,11 +6,11 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -401,7 +401,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
     std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
-    auto begin = thrust::make_constant_iterator(key_t{0});
+    auto begin = cuda::constant_iterator(key_t{0});
     auto end   = begin + num_empty_segments;
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), end_offsets.begin());
@@ -468,8 +468,8 @@ try
   segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
 
-  auto offsets = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(std::size_t{0}),
+  auto offsets = cuda::transform_iterator(
+    cuda::counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
   sort_keys(
