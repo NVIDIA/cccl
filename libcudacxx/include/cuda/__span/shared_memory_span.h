@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_SHARED_MEMORY_SPAN
-#define _CUDA_SHARED_MEMORY_SPAN
+#ifndef _CUDA___SPAN_SHARED_MEMORY_SPAN_H
+#define _CUDA___SPAN_SHARED_MEMORY_SPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,47 +35,52 @@
 #  include <cuda/std/array>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
-//#  include <cuda/std/initializer_list>
+// #  include <cuda/std/initializer_list>
 #  include <cuda/std/span>
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp* __smem_to_pointer(_CUDA_VSTD::uint32_t __raw_smem_ptr) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp* __smem_to_pointer(::cuda::std::uint32_t __raw_smem_ptr) noexcept
 {
   auto __ptr = reinterpret_cast<_Tp*>(::__cvta_shared_to_generic(__raw_smem_ptr));
   _CCCL_ASSUME(::__isShared(__ptr));
   return __ptr;
 }
 
-[[nodiscard]] _CCCL_DEVICE_API inline constexpr _CUDA_VSTD::uint32_t __pointer_to_smem(const void* __smem_ptr) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline constexpr ::cuda::std::uint32_t __pointer_to_smem(const void* __smem_ptr) noexcept
 {
   _CCCL_ASSERT(::cuda::is_address_from(__smem_ptr, ::cuda::address_space::shared), "invalid smem pointer");
   // TODO: _CCCL_ASSERT(__is_valid_smem_pointer(__smem_ptr), "invalid smem pointer");
-  return static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__smem_ptr));
+  return static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__smem_ptr));
 }
 
 /***********************************************************************************************************************
  * Static Extent
  **********************************************************************************************************************/
 
-template <typename _Tp, size_t _Extent>
-class _CCCL_TYPE_VISIBILITY_DEFAULT shared_mem_span
+struct shared_memory_tag_t;
+
+template <typename _Tag, typename _Tp, ::cuda::std::size_t _Extent>
+class _CCCL_TYPE_VISIBILITY_DEFAULT span;
+
+template <typename _Tp, ::cuda::std::size_t _Extent>
+class _CCCL_TYPE_VISIBILITY_DEFAULT span<shared_memory_tag_t, _Tp, _Extent>
 {
 public:
   //  constants and types
   using element_type     = _Tp;
-  using value_type       = _CUDA_VSTD::remove_cv_t<_Tp>;
+  using value_type       = ::cuda::std::remove_cv_t<_Tp>;
   using size_type        = size_t;
   using difference_type  = ptrdiff_t;
   using pointer          = _Tp*;
   using const_pointer    = const _Tp*;
   using reference        = _Tp&;
   using const_reference  = const _Tp&;
-  using iterator         = _CUDA_VSTD::__wrap_iter<pointer>;
-  using reverse_iterator = _CUDA_VSTD::reverse_iterator<iterator>;
+  using iterator         = pointer;
+  using reverse_iterator = ::cuda::std::reverse_iterator<iterator>;
 
   static constexpr size_type extent = _Extent;
 
@@ -87,8 +92,8 @@ public:
   {}
 
   //_CCCL_TEMPLATE(typename _Tp2 = _Tp)
-  //_CCCL_REQUIRES(_CUDA_VSTD::is_const_v<_Tp2>)
-  //_CCCL_DEVICE_API constexpr explicit shared_mem_span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
+  //_CCCL_REQUIRES(::cuda::std::is_const_v<_Tp2>)
+  //_CCCL_DEVICE_API constexpr explicit shared_mem_span(::cuda::std::initializer_list<value_type> __il) noexcept
   //    : __data_{__il.begin()}
   //{
   //  _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in shared_mem_span's constructor (initializer_list).");
@@ -98,18 +103,18 @@ public:
   _CCCL_HIDE_FROM_ABI shared_mem_span& operator=(const shared_mem_span&) noexcept = default;
 
   _CCCL_TEMPLATE(typename _It)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_iterator<_It, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_iterator<_It, element_type>)
   _CCCL_DEVICE_API constexpr explicit shared_mem_span(_It __first, [[maybe_unused]] size_type __count)
-      : __data_{::cuda::device::__pointer_to_smem(_CUDA_VSTD::to_address(__first))}
+      : __data_{::cuda::device::__pointer_to_smem(::cuda::std::to_address(__first))}
   {
     _CCCL_ASSERT(_Extent == __count, "size mismatch in shared_mem_span's constructor (iterator, len)");
   }
 
   _CCCL_TEMPLATE(typename _It, typename _End)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_iterator<_It, element_type> _CCCL_AND
-                   _CUDA_VSTD::__span_compatible_sentinel_for<_End, _It>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_iterator<_It, element_type>
+                   _CCCL_AND ::cuda::std::__span_compatible_sentinel_for<_End, _It>)
   _CCCL_DEVICE_API constexpr explicit shared_mem_span(_It __first, [[maybe_unused]] _End __last)
-      : __data_{::cuda::device::__pointer_to_smem(_CUDA_VSTD::to_address(__first))}
+      : __data_{::cuda::device::__pointer_to_smem(::cuda::std::to_address(__first))}
   {
     _CCCL_ASSERT((__last - __first >= 0), "invalid range in shared_mem_span's constructor (iterator, sentinel)");
     _CCCL_ASSERT(__last - __first == _Extent,
@@ -118,24 +123,24 @@ public:
 
   _CCCL_TEMPLATE(size_type _Sz = _Extent)
   _CCCL_REQUIRES((_Sz != 0))
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr)}
   {}
 
   _CCCL_TEMPLATE(typename _OtherElementType)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<_OtherElementType, element_type>)
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::array<_OtherElementType, _Extent>& __arr) noexcept
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr.data())}
   {}
 
   _CCCL_TEMPLATE(typename _OtherElementType)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<const _OtherElementType, element_type>)
-  _CCCL_DEVICE_API constexpr shared_mem_span(const _CUDA_VSTD::array<_OtherElementType, _Extent>& __arr) noexcept
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<const _OtherElementType, element_type>)
+  _CCCL_DEVICE_API constexpr shared_mem_span(const ::cuda::std::array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr.data())}
   {}
 
   _CCCL_TEMPLATE(typename _Range)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_range<_Range, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_range<_Range, element_type>)
   _CCCL_DEVICE_API constexpr explicit shared_mem_span(_Range&& __r)
       : __data_{::cuda::device::__pointer_to_smem(_CUDA_VRANGES::data(__r))}
   {
@@ -143,16 +148,16 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _OtherElementType, size_type _Extent2 = _Extent)
-  _CCCL_REQUIRES((_Extent2 != _CUDA_VSTD::dynamic_extent)
-                   _CCCL_AND _CUDA_VSTD::__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_REQUIRES((_Extent2 != ::cuda::std::dynamic_extent)
+                   _CCCL_AND ::cuda::std::__span_array_convertible<_OtherElementType, element_type>)
   _CCCL_DEVICE_API constexpr shared_mem_span(const shared_mem_span<_OtherElementType, _Extent2>& __other) noexcept
       : __data_{__other.__data_}
   {}
 
   _CCCL_TEMPLATE(typename _OtherElementType)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<_OtherElementType, element_type>)
   _CCCL_DEVICE_API constexpr explicit shared_mem_span(
-    const shared_mem_span<_OtherElementType, _CUDA_VSTD::dynamic_extent>& __other) noexcept
+    const shared_mem_span<_OtherElementType, ::cuda::std::dynamic_extent>& __other) noexcept
       : __data_{__other.__data_}
   {
     _CCCL_ASSERT(_Extent == __other.size(), "size mismatch in shared_mem_span's constructor (other shared_mem_span)");
@@ -164,7 +169,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _Count> first() const noexcept
   {
     static_assert(_Count <= _Extent, "shared_mem_span<T, N>::first<Count>(): Count out of range");
-    constexpr auto __count1 = _CUDA_VSTD::uint32_t{_Count};
+    constexpr auto __count1 = ::cuda::std::uint32_t{_Count};
     return shared_mem_span<element_type, _Count>{__data_, __count1};
   }
 
@@ -172,57 +177,57 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _Count> last() const noexcept
   {
     static_assert(_Count <= _Extent, "shared_mem_span<T, N>::last<Count>(): Count out of range");
-    constexpr auto __count1 = _CUDA_VSTD::uint32_t{_Count};
+    constexpr auto __count1 = ::cuda::std::uint32_t{_Count};
     return shared_mem_span<element_type, _Count>{__data_ + __size32() - __count1, __count1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, ::cuda::std::dynamic_extent>
   first(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "shared_mem_span<T, N>::first(count): count out of range");
-    auto __count1 = static_cast<_CUDA_VSTD::uint32_t>(__count);
+    auto __count1 = static_cast<::cuda::std::uint32_t>(__count);
     return {__data_, __count1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, ::cuda::std::dynamic_extent>
   last(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "shared_mem_span<T, N>::last(count): count out of range");
-    auto __count1 = static_cast<_CUDA_VSTD::uint32_t>(__count);
+    auto __count1 = static_cast<::cuda::std::uint32_t>(__count);
     return {__data_ + __size32() - __count, __count};
   }
 
   template <size_type _Offset, size_type _Count>
   using __subspan_t =
-    shared_mem_span<element_type, (_Count != _CUDA_VSTD::dynamic_extent) ? _Count : _Extent - _Offset>;
+    shared_mem_span<element_type, (_Count != ::cuda::std::dynamic_extent) ? _Count : _Extent - _Offset>;
 
-  template <size_type _Offset, size_type _Count = _CUDA_VSTD::dynamic_extent>
+  template <size_type _Offset, size_type _Count = ::cuda::std::dynamic_extent>
   [[nodiscard]] _CCCL_DEVICE_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     static_assert(_Offset <= _Extent, "shared_mem_span<T, N>::subspan<Offset, Count>(): Offset out of range");
-    static_assert(_Count == _CUDA_VSTD::dynamic_extent || _Count <= _Extent - _Offset,
+    static_assert(_Count == ::cuda::std::dynamic_extent || _Count <= _Extent - _Offset,
                   "shared_mem_span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
-    constexpr auto __offset1 = _CUDA_VSTD::uint32_t{_Offset};
-    constexpr auto __count1  = _CUDA_VSTD::uint32_t{_Count};
-    constexpr auto __size1   = (_Count == _CUDA_VSTD::dynamic_extent) ? __size32() - __offset1 : __count1;
+    constexpr auto __offset1 = ::cuda::std::uint32_t{_Offset};
+    constexpr auto __count1  = ::cuda::std::uint32_t{_Count};
+    constexpr auto __size1   = (_Count == ::cuda::std::dynamic_extent) ? __size32() - __offset1 : __count1;
     auto __data1             = __data_ + __offset1;
     return __subspan_t<_Offset, _Count>{__data1, __size1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
-  subspan(size_type __offset, size_type __count = _CUDA_VSTD::dynamic_extent) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, ::cuda::std::dynamic_extent>
+  subspan(size_type __offset, size_type __count = ::cuda::std::dynamic_extent) const noexcept
   {
     _CCCL_ASSERT(__offset <= size(), "shared_mem_span<T, N>::subspan(offset, count): offset out of range");
-    _CCCL_ASSERT(__count <= size() || __count == _CUDA_VSTD::dynamic_extent,
+    _CCCL_ASSERT(__count <= size() || __count == ::cuda::std::dynamic_extent,
                  "shared_mem_span<T, N>::subspan(offset, count): count out of range");
-    auto __offset1 = static_cast<_CUDA_VSTD::uint32_t>(__offset);
-    if (__count == _CUDA_VSTD::dynamic_extent)
+    auto __offset1 = static_cast<::cuda::std::uint32_t>(__offset);
+    if (__count == ::cuda::std::dynamic_extent)
     {
       return {__data_ + __offset1, __size32() - __offset1};
     }
     _CCCL_ASSERT(__count <= size() - __offset,
                  "shared_mem_span<T, N>::subspan(offset, count): offset + count out of range");
-    return {__data_ + __offset1, static_cast<_CUDA_VSTD::uint32_t>(__count)};
+    return {__data_ + __offset1, static_cast<::cuda::std::uint32_t>(__count)};
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr size_type size() const noexcept
@@ -243,13 +248,13 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr reference operator[](size_type __idx) const noexcept
   {
     _CCCL_ASSERT(__idx < size(), "shared_mem_span<T, N>::operator[](index): index out of range");
-    auto __idx1 = static_cast<_CUDA_VSTD::uint32_t>(__idx);
+    auto __idx1 = static_cast<::cuda::std::uint32_t>(__idx);
     return *::cuda::device::__smem_to_pointer<_Tp>(__data_ + __idx1);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr reference at(size_type __idx) const
   {
-    if (static_cast<_CUDA_VSTD::uint32_t>(__idx) >= __size32())
+    if (static_cast<::cuda::std::uint32_t>(__idx) >= __size32())
     {
       _CCCL_ASSERT(false, "shared_mem_span::at");
       _CUDA_VSTD_NOVERSION::terminate();
@@ -296,9 +301,9 @@ public:
   }
 
 private:
-  _CUDA_VSTD::uint32_t __data_;
+  ::cuda::std::uint32_t __data_;
 
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::uint32_t __data, [[maybe_unused]] size_type __count) noexcept
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::uint32_t __data, [[maybe_unused]] size_type __count) noexcept
       : __data_{__data}
   {
     _CCCL_ASSERT(_Extent == __count, "size mismatch in shared_mem_span's constructor (iterator, len)");
@@ -306,7 +311,7 @@ private:
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr size_type __size32() const noexcept
   {
-    return _CUDA_VSTD::uint32_t{_Extent};
+    return ::cuda::std::uint32_t{_Extent};
   }
 };
 
@@ -315,22 +320,22 @@ private:
  **********************************************************************************************************************/
 
 template <typename _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT shared_mem_span<_Tp, _CUDA_VSTD::dynamic_extent>
+class _CCCL_TYPE_VISIBILITY_DEFAULT shared_mem_span<_Tp, ::cuda::std::dynamic_extent>
 {
 public:
   //  constants and types
   using element_type     = _Tp;
-  using value_type       = _CUDA_VSTD::remove_cv_t<_Tp>;
+  using value_type       = ::cuda::std::remove_cv_t<_Tp>;
   using size_type        = size_t;
   using difference_type  = ptrdiff_t;
   using pointer          = _Tp*;
   using const_pointer    = const _Tp*;
   using reference        = _Tp&;
   using const_reference  = const _Tp&;
-  using iterator         = _CUDA_VSTD::__wrap_iter<pointer>;
-  using reverse_iterator = _CUDA_VSTD::reverse_iterator<iterator>;
+  using iterator         = ::cuda::std::__wrap_iter<pointer>;
+  using reverse_iterator = ::cuda::std::reverse_iterator<iterator>;
 
-  static constexpr size_type extent = _CUDA_VSTD::dynamic_extent;
+  static constexpr size_type extent = ::cuda::std::dynamic_extent;
 
   // [shared_mem_span.cons], shared_mem_span constructors, copy, assignment, and destructor
   _CCCL_DEVICE_API constexpr shared_mem_span() noexcept
@@ -339,10 +344,10 @@ public:
   {}
 
   //_CCCL_TEMPLATE(typename _Tp2 = _Tp)
-  //_CCCL_REQUIRES(_CUDA_VSTD::is_const_v<_Tp2>)
-  //_CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
+  //_CCCL_REQUIRES(::cuda::std::is_const_v<_Tp2>)
+  //_CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::initializer_list<value_type> __il) noexcept
   //    : __data_{__il.begin()}
-  //    , __size_{static_cast<_CUDA_VSTD::uint32_t>(__il.size())}
+  //    , __size_{static_cast<::cuda::std::uint32_t>(__il.size())}
   //{
   //  _CCCL_ASSERT(__il.size() <= __max_size, "size mismatch in shared_mem_span's constructor (initializer_list).");
   //}
@@ -351,27 +356,27 @@ public:
   _CCCL_HIDE_FROM_ABI shared_mem_span& operator=(const shared_mem_span&) noexcept = default;
 
   _CCCL_TEMPLATE(typename _It)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_iterator<_It, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_iterator<_It, element_type>)
   _CCCL_DEVICE_API constexpr shared_mem_span(_It __first, size_type __count)
-      : __data_{::cuda::device::__pointer_to_smem(_CUDA_VSTD::to_address(__first))}
-      , __size_{static_cast<_CUDA_VSTD::uint32_t>(__count)}
+      : __data_{::cuda::device::__pointer_to_smem(::cuda::std::to_address(__first))}
+      , __size_{static_cast<::cuda::std::uint32_t>(__count)}
   {
     _CCCL_ASSERT(__count <= __max_size, "size mismatch in shared_mem_span's constructor (iterator, len)");
   }
 
   _CCCL_TEMPLATE(typename _It, typename _End)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_iterator<_It, element_type> _CCCL_AND
-                   _CUDA_VSTD::__span_compatible_sentinel_for<_End, _It>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_iterator<_It, element_type>
+                   _CCCL_AND ::cuda::std::__span_compatible_sentinel_for<_End, _It>)
   _CCCL_DEVICE_API constexpr shared_mem_span(_It __first, _End __last)
-      : __data_(::cuda::device::__pointer_to_smem(_CUDA_VSTD::to_address(__first)))
-      , __size_(static_cast<_CUDA_VSTD::uint32_t>(__last) - static_cast<_CUDA_VSTD::uint32_t>(__first))
+      : __data_(::cuda::device::__pointer_to_smem(::cuda::std::to_address(__first)))
+      , __size_(static_cast<::cuda::std::uint32_t>(__last) - static_cast<::cuda::std::uint32_t>(__first))
   {
     _CCCL_ASSERT(__last - __first >= 0, "invalid range in shared_mem_span's constructor (iterator, sentinel)");
     _CCCL_ASSERT(__last - __first <= __max_size, "size mismatch in shared_mem_span's constructor (iterator, sentinel)");
   }
 
   template <size_type _Sz>
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr)}
       , __size_{_Sz}
   {
@@ -379,8 +384,8 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _OtherElementType, size_type _Sz)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<_OtherElementType, element_type>)
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::array<_OtherElementType, _Sz>& __arr) noexcept
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr.data())}
       , __size_{_Sz}
   {
@@ -388,8 +393,8 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _OtherElementType, size_type _Sz)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<const _OtherElementType, element_type>)
-  _CCCL_DEVICE_API constexpr shared_mem_span(const _CUDA_VSTD::array<_OtherElementType, _Sz>& __arr) noexcept
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<const _OtherElementType, element_type>)
+  _CCCL_DEVICE_API constexpr shared_mem_span(const ::cuda::std::array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{::cuda::device::__pointer_to_smem(__arr.data())}
       , __size_{_Sz}
   {
@@ -397,16 +402,16 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _Range)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_compatible_range<_Range, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_compatible_range<_Range, element_type>)
   _CCCL_DEVICE_API constexpr shared_mem_span(_Range&& __r)
       : __data_{::cuda::device::__pointer_to_smem(_CUDA_VRANGES::data(__r))}
-      , __size_{static_cast<_CUDA_VSTD::uint32_t>(_CUDA_VRANGES::size(__r))}
+      , __size_{static_cast<::cuda::std::uint32_t>(_CUDA_VRANGES::size(__r))}
   {
     _CCCL_ASSERT(_CUDA_VRANGES::size(__r) <= __max_size, "size mismatch in shared_mem_span's constructor (range).");
   }
 
   _CCCL_TEMPLATE(typename _OtherElementType, size_type _OtherExtent)
-  _CCCL_REQUIRES(_CUDA_VSTD::__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_REQUIRES(::cuda::std::__span_array_convertible<_OtherElementType, element_type>)
   _CCCL_DEVICE_API constexpr shared_mem_span(const shared_mem_span<_OtherElementType, _OtherExtent>& __other) noexcept
       : __data_{__other.__data_}
       , __size_{__other.__size_}
@@ -419,7 +424,7 @@ public:
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "shared_mem_span<T>::first<Count>(): Count out of range");
-    constexpr auto __count1 = _CUDA_VSTD::uint32_t{_Count};
+    constexpr auto __count1 = ::cuda::std::uint32_t{_Count};
     return shared_mem_span<element_type, _Count>{__data_, __count1};
   }
 
@@ -428,52 +433,52 @@ public:
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "shared_mem_span<T>::last<Count>(): Count out of range");
-    constexpr auto __count1 = _CUDA_VSTD::uint32_t{_Count};
+    constexpr auto __count1 = ::cuda::std::uint32_t{_Count};
     return shared_mem_span<element_type, _Count>{__data_ + __size_ - __count1, __count1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, ::cuda::std::dynamic_extent>
   first(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "shared_mem_span<T>::first(count): count out of range");
-    auto __count1 = static_cast<_CUDA_VSTD::uint32_t>(__count);
+    auto __count1 = static_cast<::cuda::std::uint32_t>(__count);
     return {__data_, __count1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr shared_mem_span<element_type, ::cuda::std::dynamic_extent>
   last(size_type __count) const noexcept
   {
     _CCCL_ASSERT(__count <= size(), "shared_mem_span<T>::last(count): count out of range");
-    auto __count1 = static_cast<_CUDA_VSTD::uint32_t>(__count);
+    auto __count1 = static_cast<::cuda::std::uint32_t>(__count);
     return {__data_ + __size_ - __count1, __count1};
   }
 
   template <size_type _Offset, size_type _Count>
   using __subspan_t = shared_mem_span<element_type, _Count>;
 
-  template <size_type _Offset, size_type _Count = _CUDA_VSTD::dynamic_extent>
+  template <size_type _Offset, size_type _Count = ::cuda::std::dynamic_extent>
   [[nodiscard]] _CCCL_DEVICE_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Offset == 0 ? true : _Offset <= size(),
                  "shared_mem_span<T>::subspan<Offset, Count>(): Offset out of range");
-    _CCCL_ASSERT(_Count == _CUDA_VSTD::dynamic_extent || _Count == 0 ? true : _Count <= size() - _Offset,
+    _CCCL_ASSERT(_Count == ::cuda::std::dynamic_extent || _Count == 0 ? true : _Count <= size() - _Offset,
                  "shared_mem_span<T>::subspan<Offset, Count>(): Offset + Count out of range");
-    constexpr auto __offset1 = _CUDA_VSTD::uint32_t{_Offset};
-    constexpr auto __count1  = _CUDA_VSTD::uint32_t{_Count};
+    constexpr auto __offset1 = ::cuda::std::uint32_t{_Offset};
+    constexpr auto __count1  = ::cuda::std::uint32_t{_Count};
     return __subspan_t<_Offset, _Count>{
-      __data_ + __offset1, (_Count == _CUDA_VSTD::dynamic_extent) ? __size_ - __offset1 : __count1};
+      __data_ + __offset1, (_Count == ::cuda::std::dynamic_extent) ? __size_ - __offset1 : __count1};
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr inline shared_mem_span<element_type, _CUDA_VSTD::dynamic_extent>
-  subspan(size_type __offset, size_type __count = _CUDA_VSTD::dynamic_extent) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr inline shared_mem_span<element_type, ::cuda::std::dynamic_extent>
+  subspan(size_type __offset, size_type __count = ::cuda::std::dynamic_extent) const noexcept
   {
     _CCCL_ASSERT(__offset <= size(), "shared_mem_span<T>::subspan(offset, count): offset out of range");
-    _CCCL_ASSERT(__count <= size() || __count == _CUDA_VSTD::dynamic_extent,
+    _CCCL_ASSERT(__count <= size() || __count == ::cuda::std::dynamic_extent,
                  "shared_mem_span<T>::subspan(offset, count): count out of range");
-    auto __offset1 = static_cast<_CUDA_VSTD::uint32_t>(__offset);
-    auto __count1  = static_cast<_CUDA_VSTD::uint32_t>(__count);
-    if (__count == _CUDA_VSTD::dynamic_extent) // potential performance penalty
+    auto __offset1 = static_cast<::cuda::std::uint32_t>(__offset);
+    auto __count1  = static_cast<::cuda::std::uint32_t>(__count);
+    if (__count == ::cuda::std::dynamic_extent) // potential performance penalty
     {
       return {__data_ + __offset1, __size_ - __offset1};
     }
@@ -500,7 +505,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API constexpr reference operator[](size_type __idx) const noexcept
   {
     _CCCL_ASSERT(__idx < size(), "shared_mem_span<T>::operator[](index): index out of range");
-    return *::cuda::device::__smem_to_pointer<_Tp>(__data_ + static_cast<_CUDA_VSTD::uint32_t>(__idx));
+    return *::cuda::device::__smem_to_pointer<_Tp>(__data_ + static_cast<::cuda::std::uint32_t>(__idx));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr reference at(size_type __idx) const
@@ -510,7 +515,7 @@ public:
       _CCCL_ASSERT(false, "shared_mem_span::at");
       _CUDA_VSTD_NOVERSION::terminate();
     }
-    return operator[](static_cast<_CUDA_VSTD::uint32_t>(__idx));
+    return operator[](static_cast<::cuda::std::uint32_t>(__idx));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr reference front() const noexcept
@@ -552,12 +557,12 @@ public:
   }
 
 private:
-  _CUDA_VSTD::uint32_t __data_;
-  _CUDA_VSTD::uint32_t __size_;
+  ::cuda::std::uint32_t __data_;
+  ::cuda::std::uint32_t __size_;
 
-  static constexpr auto __max_size = _CUDA_VSTD::numeric_limits<_CUDA_VSTD::uint32_t>::max();
+  static constexpr auto __max_size = ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max();
 
-  _CCCL_DEVICE_API constexpr shared_mem_span(_CUDA_VSTD::uint32_t __data, _CUDA_VSTD::uint32_t __count) noexcept
+  _CCCL_DEVICE_API constexpr shared_mem_span(::cuda::std::uint32_t __data, ::cuda::std::uint32_t __count) noexcept
       : __data_{__data}
       , __size_{__count}
   {}
@@ -582,27 +587,27 @@ private:
 //}
 
 //  Deduction guides
-template <class _Tp, _CUDA_VSTD::uint32_t _Sz>
+template <class _Tp, ::cuda::std::uint32_t _Sz>
 _CCCL_HOST_DEVICE shared_mem_span(_Tp (&)[_Sz]) -> shared_mem_span<_Tp, _Sz>;
 
-template <class _Tp, _CUDA_VSTD::uint32_t _Sz>
-_CCCL_HOST_DEVICE shared_mem_span(_CUDA_VSTD::array<_Tp, _Sz>&) -> shared_mem_span<_Tp, _Sz>;
+template <class _Tp, ::cuda::std::uint32_t _Sz>
+_CCCL_HOST_DEVICE shared_mem_span(::cuda::std::array<_Tp, _Sz>&) -> shared_mem_span<_Tp, _Sz>;
 
-template <class _Tp, _CUDA_VSTD::uint32_t _Sz>
-_CCCL_HOST_DEVICE shared_mem_span(const _CUDA_VSTD::array<_Tp, _Sz>&) -> shared_mem_span<const _Tp, _Sz>;
+template <class _Tp, ::cuda::std::uint32_t _Sz>
+_CCCL_HOST_DEVICE shared_mem_span(const ::cuda::std::array<_Tp, _Sz>&) -> shared_mem_span<const _Tp, _Sz>;
 
 //_CCCL_TEMPLATE(typename _It, typename _EndOrSize)
-//_CCCL_REQUIRES(_CUDA_VSTD::contiguous_iterator<_It>)
+//_CCCL_REQUIRES(::cuda::std::contiguous_iterator<_It>)
 //_CCCL_HOST_DEVICE shared_mem_span(_It, _EndOrSize)
-//  -> shared_mem_span<_CUDA_VSTD::remove_reference_t<_CUDA_VSTD::iter_reference_t<_It>>,
+//  -> shared_mem_span<::cuda::std::remove_reference_t<::cuda::std::iter_reference_t<_It>>,
 //  __maybe_static_ext<_EndOrSize>>;
 //
 //_CCCL_TEMPLATE(typename _Range)
 //_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
 //_CCCL_HOST_DEVICE shared_mem_span(_Range&&)
-//  -> shared_mem_span<_CUDA_VSTD::remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
+//  -> shared_mem_span<::cuda::std::remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 //_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 // template <class _Tp, size_t _Extent>
@@ -616,4 +621,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDA_SHARED_MEMORY_SPAN
+#endif // _CUDA___SPAN_SHARED_MEMORY_SPAN_H
