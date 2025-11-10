@@ -194,14 +194,6 @@ struct __lce_ta<__a, __c, __m, static_cast<uint16_t>(~0), __b>
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 class _CCCL_TYPE_VISIBILITY_DEFAULT linear_congruential_engine;
 
-template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-_CCCL_API ::std::basic_ostream<_CharT, _Traits>&
-operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine<_Up, _Ap, _Cp, _Np>&);
-
-template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
-_CCCL_API ::std::basic_istream<_CharT, _Traits>&
-operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_Up, _Ap, _Cp, _Np>& __x);
-
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 class _CCCL_TYPE_VISIBILITY_DEFAULT linear_congruential_engine
 {
@@ -280,36 +272,26 @@ public:
         (void) operator()();
       }
     }
-    else if constexpr (increment == 0)
-    {
-      // minstd_rand and minstd_rand0 can use this efficient implementation
-      uint64_t __acc_mult = 1;
-      uint64_t __cur_mult = multiplier;
-      while (__z > 0)
-      {
-        if (__z & 1)
-        {
-          __acc_mult = (__acc_mult * __cur_mult) % modulus;
-        }
-        __cur_mult = (__cur_mult * __cur_mult) % modulus;
-        __z >>= 1;
-      }
-      __x_ = (__acc_mult * __x_) % modulus;
-    }
     else
     {
-      uint64_t __acc_mult = 1;
-      uint64_t __acc_plus = 0;
-      uint64_t __cur_mult = multiplier;
-      uint64_t __cur_plus = increment;
+      uint64_t __acc_mult                  = 1;
+      [[maybe_unused]] uint64_t __acc_plus = 0;
+      uint64_t __cur_mult                  = multiplier;
+      uint64_t __cur_plus                  = increment;
       while (__z > 0)
       {
         if (__z & 1)
         {
           __acc_mult = (__acc_mult * __cur_mult) % modulus;
-          __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+          if constexpr (increment != 0)
+          {
+            __acc_plus = (__acc_plus * __cur_mult + __cur_plus) % modulus;
+          }
         }
-        __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+        if constexpr (increment != 0)
+        {
+          __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
+        }
         __cur_mult = (__cur_mult * __cur_mult) % modulus;
         __z >>= 1;
       }
@@ -328,6 +310,7 @@ public:
     return !(__x == __y);
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine& __e)
@@ -355,6 +338,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 private:
   _CCCL_API constexpr void seed(true_type, true_type, result_type __s) noexcept
