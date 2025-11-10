@@ -73,11 +73,11 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   }
   ::CUpointer_attribute __attrs[3] = {
     ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE, ::CU_POINTER_ATTRIBUTE_IS_MANAGED, ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
-  ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
-  int __is_managed             = 0;
-  ::CUmemoryPool __mempool     = nullptr;
-  void* __results[3]           = {&__memory_type, &__is_managed, &__mempool};
-  const auto __status          = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+  auto __memory_type       = static_cast<::CUmemorytype>(0);
+  int __is_managed         = 0;
+  ::CUmemoryPool __mempool = nullptr;
+  void* __results[3]       = {&__memory_type, &__is_managed, &__mempool};
+  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status != ::cudaSuccess)
   {
     ::cuda::__throw_cuda_error(__status, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
@@ -120,15 +120,15 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
     ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
     ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
     ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
-  ::CUmemorytype __memory_type = static_cast<::CUmemorytype>(0);
-  int __is_managed             = 0;
-  int __ptr_dev_id             = 0;
-  ::CUmemoryPool __mempool     = nullptr;
-  void* __results[4]           = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
-  const auto __status2         = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
-  if (__status2 != ::cudaSuccess)
+  auto __memory_type       = static_cast<::CUmemorytype>(0);
+  int __is_managed         = 0;
+  int __ptr_dev_id         = 0;
+  ::CUmemoryPool __mempool = nullptr;
+  void* __results[4]       = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
+  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+  if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status2, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   // (1) check if the pointer is unregistered
   if (__memory_type == static_cast<::CUmemorytype>(0))
