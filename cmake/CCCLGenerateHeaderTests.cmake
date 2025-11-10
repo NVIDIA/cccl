@@ -31,7 +31,13 @@ function(cccl_generate_header_tests target_name project_include_path)
   set(options)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
   set(multiValueArgs GLOBS EXCLUDES HEADERS PER_HEADER_DEFINES)
-  cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  cmake_parse_arguments(
+    CGHT
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
 
   if (CGHT_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unrecognized arguments: ${CGHT_UNPARSED_ARGUMENTS}")
@@ -51,7 +57,7 @@ function(cccl_generate_header_tests target_name project_include_path)
     set(extension "c")
   elseif (${CGHT_LANGUAGE} STREQUAL "CXX")
     set(extension "cpp")
-  elseif(${CGHT_LANGUAGE} STREQUAL "CUDA")
+  elseif (${CGHT_LANGUAGE} STREQUAL "CUDA")
     set(extension "cu")
   else()
     message(FATAL_ERROR "Unsupported language: ${CGHT_LANGUAGE}")
@@ -81,7 +87,8 @@ function(cccl_generate_header_tests target_name project_include_path)
 
   # Add globs:
   if (DEFINED CGHT_GLOBS)
-    file(GLOB_RECURSE headers
+    file(
+      GLOB_RECURSE headers
       RELATIVE "${base_path}"
       CONFIGURE_DEPENDS
       ${CGHT_GLOBS}
@@ -90,7 +97,8 @@ function(cccl_generate_header_tests target_name project_include_path)
 
   # Remove excludes:
   if (DEFINED CGHT_EXCLUDES)
-    file(GLOB_RECURSE header_excludes
+    file(
+      GLOB_RECURSE header_excludes
       RELATIVE "${base_path}"
       CONFIGURE_DEPENDS
       ${CGHT_EXCLUDES}
@@ -124,7 +132,11 @@ function(cccl_generate_header_tests target_name project_include_path)
       else()
         # Subsequent items are regexes to match against the header
         if (header MATCHES ${item})
-          set_property(SOURCE "${src}" APPEND PROPERTY COMPILE_DEFINITIONS "${current_definition}")
+          set_property(
+            SOURCE "${src}"
+            APPEND
+            PROPERTY COMPILE_DEFINITIONS "${current_definition}"
+          )
         endif()
       endif()
     endforeach()
@@ -133,7 +145,10 @@ function(cccl_generate_header_tests target_name project_include_path)
   # Configure header templates:
   set(header_srcs)
   foreach (header IN LISTS headers)
-    set(header_src "${CMAKE_CURRENT_BINARY_DIR}/headers/${target_name}/${header}.${extension}")
+    set(
+      header_src
+      "${CMAKE_CURRENT_BINARY_DIR}/headers/${target_name}/${header}.${extension}"
+    )
     configure_file("${CGHT_HEADER_TEMPLATE}" "${header_src}" @ONLY)
     cght_apply_per_header_defines("${header}" "${header_src}")
     list(APPEND header_srcs "${header_src}")
@@ -150,9 +165,10 @@ function(cccl_generate_header_tests target_name project_include_path)
   # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
   # link the same objects twice. The compiler will complain about duplicate symbols if
   # any functions are missing inline markup.
-  target_link_libraries(${link_target} PRIVATE
-    ${target_name}
-    $<TARGET_OBJECTS:${target_name}>
+  target_link_libraries(
+    ${link_target}
+    PRIVATE #
+      ${target_name}
+      $<TARGET_OBJECTS:${target_name}>
   )
-
 endfunction()

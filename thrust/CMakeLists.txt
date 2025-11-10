@@ -25,21 +25,38 @@ endif()
 # We use 3.17 features when building our tests, etc.
 cmake_minimum_required(VERSION 3.17)
 
-option(THRUST_ENABLE_HEADER_TESTING "Test that all public headers compile." "ON")
+option(
+  THRUST_ENABLE_HEADER_TESTING
+  "Test that all public headers compile."
+  "ON"
+)
 option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 
 # Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
-set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch.")
-set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")
+set(
+  THRUST_DISPATCH_TYPE
+  "Dynamic"
+  CACHE STRING
+  "Select Thrust offset type dispatch."
+)
+set_property(
+  CACHE THRUST_DISPATCH_TYPE
+  PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit"
+)
 
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.
-if (NOT (THRUST_ENABLE_HEADER_TESTING OR
-         THRUST_ENABLE_TESTING OR
-         THRUST_ENABLE_EXAMPLES OR
-         CCCL_ENABLE_BENCHMARKS))
+if (
+  NOT
+    (
+      THRUST_ENABLE_HEADER_TESTING
+      OR THRUST_ENABLE_TESTING
+      OR THRUST_ENABLE_EXAMPLES
+      OR CCCL_ENABLE_BENCHMARKS
+    )
+)
   return()
 endif()
 
@@ -53,13 +70,19 @@ include(cmake/ThrustMultiConfig.cmake)
 
 # Add cache string options for CMAKE_BUILD_TYPE and default to RelWithDebInfo.
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
-  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+  set(
+    CMAKE_BUILD_TYPE
+    "RelWithDebInfo"
+    CACHE STRING
+    "Choose the type of build."
+    FORCE
+  )
 
   set_property(
     CACHE CMAKE_BUILD_TYPE
     PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel
   )
-endif ()
+endif()
 
 # Disable compiler extensions:
 set(CMAKE_CXX_EXTENSIONS OFF)

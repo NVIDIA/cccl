@@ -26,7 +26,8 @@ function(thrust_build_compiler_targets)
     append_option_if_available("/wd4146" cxx_compile_options)
   endif()
 
-  cccl_build_compiler_interface(thrust.compiler_interface
+  cccl_build_compiler_interface(
+    thrust.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
@@ -34,10 +35,12 @@ function(thrust_build_compiler_targets)
 
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(thrust.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(thrust.compiler_interface_cpp${dialect} INTERFACE
-      # order matters here, we need the project options to override the cccl options.
-      cccl.compiler_interface_cpp${dialect}
-      thrust.compiler_interface
+    target_link_libraries(
+      thrust.compiler_interface_cpp${dialect}
+      INTERFACE
+        # order matters here, we need the project options to override the cccl options.
+        cccl.compiler_interface_cpp${dialect}
+        thrust.compiler_interface
     )
   endforeach()
 endfunction()
