@@ -31,6 +31,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+/**
+ * @brief Checks if a pointer is a managed pointer.
+ *
+ * @param __p The pointer to check.
+ * @return `true` if the pointer is a managed pointer, `false` otherwise.
+ */
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_managed(const void* __p)
 {
@@ -52,6 +58,12 @@ _CCCL_HOST_API inline bool is_managed(const void* __p)
   }
 }
 
+/**
+ * @brief Checks if a pointer is a host accessible pointer.
+ *
+ * @param __p The pointer to check.
+ * @return `true` if the pointer is a host accessible pointer, `false` otherwise.
+ */
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
 {
@@ -82,6 +94,13 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   return (__is_managed || __memory_type == ::CU_MEMORYTYPE_UNIFIED || __memory_type == ::CU_MEMORYTYPE_HOST);
 }
 
+/**
+ * @brief Checks if a pointer is a device accessible pointer.
+ *
+ * @param __p The pointer to check.
+ * @param __device The device to check.
+ * @return `true` if the pointer is a device accessible pointer, `false` otherwise.
+ */
 [[nodiscard]]
 _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __device)
 {
