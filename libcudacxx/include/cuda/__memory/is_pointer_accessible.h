@@ -83,7 +83,8 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
     ::cuda::__throw_cuda_error(__status, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   // (1) check if the pointer is unregistered
-  if (__memory_type == static_cast<::CUmemorytype>(0) || __is_managed || __memory_type == ::CU_MEMORYTYPE_HOST)
+  if (__memory_type == static_cast<::CUmemorytype>(0)
+      || (__mempool == nullptr && (__is_managed || __memory_type == ::CU_MEMORYTYPE_HOST)))
   {
     return true;
   }
