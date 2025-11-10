@@ -88,14 +88,14 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
     return true;
   }
   // (2) check if a memory pool is associated with the pointer
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_HOST, 0};
     const auto __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
     return (__pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READ || __pool_flags == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
   return false;
 }
 
