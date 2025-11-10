@@ -413,28 +413,24 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
       return {rp, rp, rp, rp_nondet};
     }
 
-    if (arch >= 500)
-    {
-      constexpr int threads_per_block  = 256;
-      constexpr int items_per_thread   = 20;
-      constexpr int items_per_vec_load = 4;
+    // base policy is for 500
+    // GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B items
+    constexpr int threads_per_block  = 256;
+    constexpr int items_per_thread   = 20;
+    constexpr int items_per_vec_load = 4;
 
-      // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B items)
-      auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
-      const auto rp =
-        agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+    auto [scaled_items,
+          scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+    const auto rp =
+      agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
-      const auto rp_nondet = agent_reduce_policy{
-        rp.block_threads,
-        rp.items_per_thread,
-        rp.vector_load_length,
-        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        rp.load_modifier};
-      return {rp, rp, rp, rp_nondet};
-    }
-
-    _CCCL_ASSERT(false, "Unsupported PTX version");
-    ::cuda::std::terminate();
+    const auto rp_nondet = agent_reduce_policy{
+      rp.block_threads,
+      rp.items_per_thread,
+      rp.vector_load_length,
+      BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+      rp.load_modifier};
+    return {rp, rp, rp, rp_nondet};
   }
 };
 
@@ -444,9 +440,9 @@ struct arch_policies_from_types
 {
   _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
-    return arch_policies{
-      classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), classify_offset_size<OffsetT>(), int{sizeof(AccumT)}}(
-      arch);
+    constexpr auto policies = arch_policies{
+      classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), classify_offset_size<OffsetT>(), int{sizeof(AccumT)}};
+    return policies(arch);
   }
 };
 } // namespace reduce
