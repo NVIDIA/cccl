@@ -218,7 +218,6 @@ using device_reduce_policy = {6};
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
 
     // Add user's extra flags if config is provided
