@@ -57,9 +57,11 @@ inline constexpr bool is_non_deterministic_v =
 
 namespace reduce
 {
+// TODO(bgruber): drop this, it's a duplicate of ::cuda::execution::__get_tuning_t
 struct get_tuning_query_t
 {};
 
+// TODO(bgruber): drop this, it's a duplicate of ::cuda::execution::__get_tuning_t
 template <class Derived>
 struct tuning
 {
@@ -69,13 +71,7 @@ struct tuning
   }
 };
 
-struct default_tuning : tuning<default_tuning>
-{
-  template <class AccumT, class Offset, class OpT>
-  using fn = policy_hub<AccumT, Offset, OpT>;
-};
-
-struct default_rfa_tuning : tuning<default_tuning>
+struct default_rfa_tuning : tuning<default_rfa_tuning>
 {
   template <class AccumT, class Offset, class OpT>
   using fn = detail::rfa::policy_hub<AccumT, Offset, OpT>;
@@ -146,13 +142,13 @@ private:
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     cudaStream_t stream)
   {
-    using offset_t        = detail::choose_offset_t<NumItemsT>;
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
-
-    using accum_t = ::cuda::std::
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
+      TuningEnvT,
+      ::cuda::execution::__get_tuning_t,
+      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
 
     return detail::reduce::dispatch<accum_t>(
       d_temp_storage,
@@ -163,7 +159,8 @@ private:
       reduction_op,
       init,
       stream,
-      transform_op);
+      transform_op,
+      reduce_tuning_t{});
   }
 
   template <typename TuningEnvT,
@@ -224,9 +221,10 @@ private:
 
     using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
 
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
-    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using policy_t = ::cuda::std::execution::__query_result_or_t<
+      TuningEnvT,
+      ::cuda::execution::__get_tuning_t,
+      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
     using dispatch_t = detail::
       DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
 

@@ -57,15 +57,13 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
 };
 
 #if _CCCL_STD_VER >= 2020
-template <auto V>
-struct needs_a_constexpr_value
-{};
+consteval void needs_a_constexpr_value(auto value) {}
 
 template <typename T>
 concept reduce_policy_hub = requires(T hub, int arch) {
   requires ::cuda::std::is_empty_v<T>;
   { hub(arch) } -> ::cuda::std::same_as<reduce_arch_policy>;
-  { needs_a_constexpr_value<hub(0)> };
+  { needs_a_constexpr_value(hub(0)) };
 };
 #endif
 

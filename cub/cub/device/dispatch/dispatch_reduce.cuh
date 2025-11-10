@@ -588,9 +588,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   InitT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
+  ArchPolicies arch_policies             = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {},
-  ArchPolicies arch_policies             = {})
+  KernelLauncherFactory launcher_factory = {})
 {
   // from Dispatch()
   int ptx_version = 0;

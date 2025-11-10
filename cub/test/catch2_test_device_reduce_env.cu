@@ -59,7 +59,6 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   using num_items_t = int;
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
-  using policy_t    = cub::detail::reduce::default_tuning::fn<value_t, offset_t, block_size_check_t>::MaxPolicy;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
@@ -67,9 +66,9 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   int ptx_version{};
   REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
 
-  int target_block_size{};
-  block_size_retreiver_t block_size_retreiver{&target_block_size};
-  REQUIRE(cudaSuccess == policy_t::Invoke(ptx_version, block_size_retreiver));
+  int target_block_size =
+    cub::detail::reduce::arch_policies_from_types<value_t, offset_t, block_size_check_t>{}(ptx_version)
+      .single_tile_policy.block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
@@ -108,45 +107,12 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
 template <int BlockThreads>
 struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
 {
-  template <class /* AccumT */, class /* Offset */, class /* OpT */>
-  struct fn
+  _CCCL_API constexpr auto operator()(int /*arch*/) const -> cub::reduce_arch_policy
   {
-    struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
-    {
-      struct ReducePolicy
-      {
-        static constexpr int VECTOR_LOAD_LENGTH = 1;
-
-        static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
-
-        static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
-
-        static constexpr int ITEMS_PER_THREAD = 1;
-        static constexpr int BLOCK_THREADS    = BlockThreads;
-      };
-
-      using SingleTilePolicy      = ReducePolicy;
-      using SegmentedReducePolicy = ReducePolicy;
-    };
-
-    using MaxPolicy = Policy500;
-  };
-};
-
-struct get_scan_tuning_query_t
-{};
-
-struct scan_tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
-  {
-    return *this;
+    const auto policy =
+      cub::agent_reduce_policy{BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    return {policy, policy, policy, policy};
   }
-
-  // Make sure this is not used
-  template <class /* AccumT */, class /* Offset */, class /* OpT */>
-  struct fn
-  {};
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
@@ -162,7 +128,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `scan_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{} /*, scan_tuning{}*/);
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -178,7 +144,7 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `scan_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{} /*, scan_tuning{}*/);
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
@@ -215,7 +181,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
         cudaSuccess
         == cub::DeviceReduce::Reduce(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, op_t{}, init));
 
-      using policy_t = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
@@ -241,7 +207,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t   = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
       using dispatch_t = cub::detail::DispatchReduceNondeterministic<
         decltype(d_in),
@@ -339,7 +305,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     {
       REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
-      using policy_t = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
       return cuda::std::array<void*, 3>{
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
@@ -365,7 +331,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t   = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
       using dispatch_t = cub::detail::DispatchReduceNondeterministic<
         decltype(d_in),

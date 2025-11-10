@@ -491,7 +491,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 }
 
-template <typename ChainedPolicyT,
+template <typename ArchPolicies,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -499,15 +499,19 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename InitT,
           typename TransformOpT>
+#if _CCCL_STD_VER >= 2020
+  requires reduce_policy_hub<ArchPolicies>
+#endif
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
-    BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
-                                                                  OutputIteratorT d_out,
-                                                                  OffsetT num_items,
-                                                                  GridEvenShare<OffsetT> even_share,
-                                                                  ReductionOpT reduction_op,
-                                                                  InitT init,
-                                                                  TransformOpT transform_op)
+  ArchPolicies{}(CUB_PTX_ARCH)
+    .reduce_nondeterministic_policy
+    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
+                                                                   OutputIteratorT d_out,
+                                                                   OffsetT num_items,
+                                                                   GridEvenShare<OffsetT> even_share,
+                                                                   ReductionOpT reduction_op,
+                                                                   InitT init,
+                                                                   TransformOpT transform_op)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_60,
                (),
@@ -529,13 +533,16 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
-                InputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  static constexpr agent_reduce_policy policy = ArchPolicies{}(CUB_PTX_ARCH).reduce_nondeterministic_policy;
+  using agent_policy_t =
+    AgentReducePolicy<policy.block_threads,
+                      policy.items_per_thread,
+                      AccumT,
+                      policy.vector_load_length,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
