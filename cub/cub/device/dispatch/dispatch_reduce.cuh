@@ -87,6 +87,7 @@ struct DeviceReduceKernelSource
   }
 };
 
+// TODO(bgruber): remove in CCCL 4.0
 template <typename PolicyHub>
 struct arch_policies_from_hub
 {
@@ -122,8 +123,8 @@ struct arch_policies_from_hub
  *****************************************************************************/
 
 /**
- * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide reduction
+ * @brief Utility class for dispatching the appropriately-tuned kernels for device-wide reduction.
+ *        Deprecated [Since 3.2]
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -141,6 +142,7 @@ struct arch_policies_from_hub
  * @tparam InitT
  *   Initial value type
  */
+// TODO(bgruber): remove in CCCL 4.0
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -512,8 +514,8 @@ struct [[deprecated("Please use cub::DeviceReduce::Reduce")]] DispatchReduce
 };
 
 /**
- * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide transform reduce
+ * @brief Utility class for dispatching the appropriately-tuned kernels for device-wide transform reduce.
+ *        Deprecated [Since 3.2]
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -535,6 +537,7 @@ struct [[deprecated("Please use cub::DeviceReduce::Reduce")]] DispatchReduce
  * @tparam InitT
  *   Initial value type
  */
+// TODO(bgruber): remove in CCCL 4.0
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <
   typename InputIteratorT,
