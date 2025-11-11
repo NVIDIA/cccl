@@ -2,6 +2,8 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/mr/device_memory_resource.h>
+#include <thrust/mr/host_memory_resource.h>
 #include <thrust/universal_vector.h>
 
 #include "unittest/testframework.h"
