@@ -36,6 +36,9 @@ struct run
   }
 };
 
+template <typename ValueType, typename CountType>
+run(ValueType, CountType) -> run<ValueType, CountType>;
+
 template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
 struct expand
 {
@@ -56,6 +59,10 @@ struct expand
     return end;
   }
 };
+
+template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
+expand(OutputIterator, CountType, CountType, ExpandedSizeIterator)
+  -> expand<OutputIterator, CountType, ExpandedSizeIterator>;
 
 template <typename ValueIterator, typename CountIterator, typename OutputIterator, typename CountType>
 OutputIterator run_length_decode(
