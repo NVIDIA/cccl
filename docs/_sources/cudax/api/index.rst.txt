@@ -288,7 +288,6 @@ Variables
 
 * :doc:`cuda::experimental::block <namespacecuda_1_1experimental_1ae17283ae4112741c42dfd6d76f122350>`
 * :doc:`cuda::experimental::cluster <namespacecuda_1_1experimental_1ab1bc6a1f595a5f5bb9559aeedbc894fd>`
-* :doc:`cuda::experimental::device_transform <namespacecuda_1_1experimental_1a23fa8e60cb63ed8f206e9a003088dec1>`
 * :doc:`cuda::experimental::graph_dependency <namespacecuda_1_1experimental_1a0c9948bfe5d3a18def3c7be615062928>`
 * :doc:`cuda::experimental::graph_inserter <namespacecuda_1_1experimental_1a83e404642d89549ec95c95a057bf341e>`
 * :doc:`cuda::experimental::grid <namespacecuda_1_1experimental_1a073c3ac46bbdc534a677526d79483947>`
@@ -565,7 +564,6 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1aabada0bc94a44064d40bed511a02b6df
    namespacecuda_1_1experimental_1ae17283ae4112741c42dfd6d76f122350
    namespacecuda_1_1experimental_1ab1bc6a1f595a5f5bb9559aeedbc894fd
-   namespacecuda_1_1experimental_1a23fa8e60cb63ed8f206e9a003088dec1
    namespacecuda_1_1experimental_1a0c9948bfe5d3a18def3c7be615062928
    namespacecuda_1_1experimental_1a83e404642d89549ec95c95a057bf341e
    namespacecuda_1_1experimental_1a073c3ac46bbdc534a677526d79483947
