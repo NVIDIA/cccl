@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/iterator/permutation_iterator.h>
 #  include <thrust/system/cuda/detail/transform.h>
 
@@ -87,4 +87,4 @@ void _CCCL_HOST_DEVICE scatter_if(
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()
