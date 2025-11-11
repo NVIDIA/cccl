@@ -7,7 +7,6 @@
 #include <limits>
 #include <vector>
 
-#include "catch2_test_helper.h"
 #include "special_types.h"
 #include "util.h"
 
