@@ -26,18 +26,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/distance.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -64,7 +66,7 @@ struct copy_construct_with_allocator
 template <typename Allocator, typename T>
 inline constexpr bool needs_copy_construct_via_allocator =
   allocator_traits_detail::has_member_construct2<Allocator, T, T>::value
-  || !::cuda::std::is_trivially_copy_constructible<T>::value;
+  || !::cuda::std::is_trivially_copy_constructible_v<T>;
 
 // we know that std::allocator::construct's only effect is to call T's
 // copy constructor, so we needn't consider or use its construct() member for copy construction

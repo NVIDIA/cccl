@@ -3,11 +3,17 @@
 ``cuda::isqrt``
 ====================================
 
-.. code:: cpp
+Defined in the ``<cuda/cmath>`` header.
+
+.. code:: cuda
+
+   namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    T isqrt(T value) noexcept;
+
+   } // namespace cuda
 
 The function computes the integer square root of the input value rounded down.
 
@@ -30,7 +36,7 @@ The function computes the integer square root of the input value rounded down.
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -48,4 +54,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/enP8cW6nY>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/xPcj35dq6>`__

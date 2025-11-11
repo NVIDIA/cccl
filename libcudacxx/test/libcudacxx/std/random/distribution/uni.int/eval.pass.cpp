@@ -28,7 +28,21 @@
 #include <cuda/std/numeric>
 #include <cuda/std/span>
 
+#include "random_utilities/test_discrete_distribution.h"
 #include "test_macros.h"
+
+__host__ __device__ void test_distributions()
+{
+  using D     = cuda::std::uniform_int_distribution<uint64_t>;
+  using G     = cuda::std::philox4x64;
+  const int n = 1000;
+  auto result = test_discrete_distribution<D, G, 2>(D::param_type{0, 1}, {0.5, 0.5}, n);
+  assert(result);
+  ::cuda::std::array<double, 10> expected_probabilities = {
+    1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0, 1 / 10.0};
+  result = test_discrete_distribution<D, G, 10>(D::param_type{0, 9}, expected_probabilities, n);
+  assert(result);
+}
 
 template <class T>
 __host__ __device__ T sqr(T x)
@@ -169,5 +183,6 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   test();
+  test_distributions();
   return 0;
 }

@@ -257,11 +257,11 @@ C2H_TEST("Can use query to construct various objects", "[execution][env]")
     CHECK(resource == test_resource{});
   }
 
-  SECTION("Can create an uninitialized_async_buffer")
+  SECTION("Can create an __uninitialized_async_buffer")
   {
     cudax::stream stream_{cuda::device_ref{0}};
     env_t env{test_resource{}, stream_};
-    cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> buf{
+    cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible> buf{
       env.query(cuda::mr::get_memory_resource), env.query(cuda::get_stream), 0ull};
     CHECK(buf.memory_resource() == test_resource{});
     CHECK(buf.stream() == stream_);

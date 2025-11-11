@@ -3,7 +3,7 @@
 cccl_get_c2h()
 
 # Create meta targets that build all examples for a single configuration:
-foreach(cub_target IN LISTS CUB_TARGETS)
+foreach (cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
   set(config_meta_target ${config_prefix}.examples)
   add_custom_target(${config_meta_target})
@@ -34,13 +34,18 @@ function(cub_add_example target_name_var example_name example_src cub_target)
   set(example_meta_target cub.all.example.${example_name})
 
   add_executable(${example_target} "${example_src}")
-  target_link_libraries(${example_target} PRIVATE
-    ${cub_target}
-    cccl.c2h
+  target_link_libraries(
+    ${example_target}
+    PRIVATE #
+      ${cub_target}
+      cccl.c2h
   )
   cub_clone_target_properties(${example_target} ${cub_target})
   cub_configure_cuda_target(${example_target} RDC ${CUB_FORCE_RDC})
-  target_include_directories(${example_target} PRIVATE "${CUB_SOURCE_DIR}/examples")
+  target_include_directories(
+    ${example_target}
+    PRIVATE "${CUB_SOURCE_DIR}/examples"
+  )
 
   # Add to the active configuration's meta target
   add_dependencies(${config_meta_target} ${example_target})
@@ -51,9 +56,7 @@ function(cub_add_example target_name_var example_name example_src cub_target)
   endif()
   add_dependencies(${example_meta_target} ${example_target})
 
-  add_test(NAME ${example_target}
-    COMMAND "$<TARGET_FILE:${example_target}>"
-  )
+  add_test(NAME ${example_target} COMMAND "$<TARGET_FILE:${example_target}>")
 endfunction()
 
 add_subdirectory(block)

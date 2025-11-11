@@ -29,7 +29,6 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
@@ -37,6 +36,9 @@
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
