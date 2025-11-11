@@ -23,56 +23,29 @@
 #include <cuda/std/numeric>
 #include <cuda/std/span>
 
+#include "random_utilities/test_continuous_distribution.h"
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ inline T sqr(T x)
+__host__ __device__ void test()
 {
-  return x * x;
+  using D                       = cuda::std::normal_distribution<T>;
+  using P                       = D::param_type;
+  using G                       = cuda::std::philox4x64;
+  cuda::std::array<P, 5> params = {P(0, 1), P(10, 2), P(-5, 0.5), P(4, 5), P(1000, 100)};
+  for (auto p : params)
+  {
+    bool res = test_continuous_distribution<D, G>(p, [=] __host__ __device__(double x) {
+      // CDF for normal distribution
+      return 0.5 * (1 + cuda::std::erf((x - (p.mean())) / (p.stddev() * cuda::std::sqrt(2))));
+    });
+    assert(res);
+  }
 }
 
 int main(int, char**)
 {
-  {
-    using D = cuda::std::normal_distribution<double>;
-    typedef cuda::std::philox4x64 G;
-    G g;
-    D d(5, 4);
-
-    const int N                           = 100000;
-    cuda::std::unique_ptr<double[]> array = cuda::std::make_unique<double[]>(N);
-    cuda::std::span<double> u{array.get(), array.get() + N};
-
-    for (int i = 0; i < N; ++i)
-    {
-      u[i] = d(g);
-    }
-    double mean     = cuda::std::accumulate(u.begin(), u.end(), 0.0) / u.size();
-    double var      = 0;
-    double skew     = 0;
-    double kurtosis = 0;
-    for (std::size_t i = 0; i < u.size(); ++i)
-    {
-      double dbl = (u[i] - mean);
-      double d2  = sqr(dbl);
-      var += d2;
-      skew += dbl * d2;
-      kurtosis += d2 * d2;
-    }
-    var /= u.size();
-    double dev = cuda::std::sqrt(var);
-    skew /= u.size() * dev * var;
-    kurtosis /= u.size() * var * var;
-    kurtosis -= 3;
-    double x_mean     = d.mean();
-    double x_var      = sqr(d.stddev());
-    double x_skew     = 0;
-    double x_kurtosis = 0;
-    assert(cuda::std::abs((mean - x_mean) / x_mean) < 0.01);
-    assert(cuda::std::abs((var - x_var) / x_var) < 0.01);
-    assert(cuda::std::abs(skew - x_skew) < 0.01);
-    assert(cuda::std::abs(kurtosis - x_kurtosis) < 0.01);
-  }
-
+  test<double>();
+  test<float>();
   return 0;
 }

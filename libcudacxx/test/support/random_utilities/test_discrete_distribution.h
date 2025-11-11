@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#pragma once
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 
