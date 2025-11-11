@@ -30,10 +30,10 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
+#include <cuda/algorithm>
 #include <cuda/devices>
 #include <cuda/memory_resource>
 
-#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
@@ -91,11 +91,11 @@ void benchmark_cross_device_ping_pong_copy(
     // Ping-pong copy between GPUs
     if (i % 2 == 0)
     {
-      cudax::copy_bytes(dev1_stream, dev0_buffer, dev1_buffer);
+      cuda::copy_bytes(dev1_stream, dev0_buffer, dev1_buffer);
     }
     else
     {
-      cudax::copy_bytes(dev1_stream, dev1_buffer, dev0_buffer);
+      cuda::copy_bytes(dev1_stream, dev1_buffer, dev0_buffer);
     }
   }
 
@@ -126,7 +126,7 @@ void test_cross_device_access_from_kernel(
     return static_cast<float>((i++) % 4096);
   });
 
-  cudax::copy_bytes(dev0_stream, host_buffer, dev0_buffer);
+  cuda::copy_bytes(dev0_stream, host_buffer, dev0_buffer);
   dev1_stream.wait(dev0_stream);
 
   // Kernel launch configuration
@@ -151,7 +151,7 @@ void test_cross_device_access_from_kernel(
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());
-  cudax::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
+  cuda::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
   dev0_stream.sync();
 
   int error_count = 0;

@@ -51,7 +51,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t) == 2);
   }
 // testing extensions
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   {
     using T = cuda::std::tuple<alloc_first, alloc_last>;
     T t0(2, 3);

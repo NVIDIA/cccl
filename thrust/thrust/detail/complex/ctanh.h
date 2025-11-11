@@ -92,7 +92,15 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -134,14 +142,15 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
       return (complex<double>(x, (y == 0 ? y : x * y)));
     }
     set_high_word(x, hx - 0x40000000); /* x = copysign(1, x) */
-    return (complex<double>(x, copysign(0.0, isinf(y) ? y : sin(y) * cos(y))));
+    return (complex<double>(
+      x, ::cuda::std::copysign(0.0, ::cuda::std::isinf(y) ? y : ::cuda::std::sin(y) * ::cuda::std::cos(y))));
   }
 
   /*
    * ctanh(x + i NAN) = NaN + i NaN
    * ctanh(x +- i Inf) = NaN + i NaN
    */
-  if (!isfinite(y))
+  if (!::cuda::std::isfinite(y))
   {
     return (complex<double>(y - y, y - y));
   }
@@ -153,15 +162,16 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
    */
   if (ix >= 0x40360000)
   { /* x >= 22 */
-    double exp_mx = exp(-fabs(x));
-    return (complex<double>(copysign(1.0, x), 4.0 * sin(y) * cos(y) * exp_mx * exp_mx));
+    double exp_mx = ::cuda::std::exp(-fabs(x));
+    return (complex<double>(::cuda::std::copysign(1.0, x),
+                            4.0 * ::cuda::std::sin(y) * ::cuda::std::cos(y) * exp_mx * exp_mx));
   }
 
   /* Kahan's algorithm */
-  t     = tan(y);
+  t     = ::cuda::std::tan(y);
   beta  = 1.0 + t * t; /* = 1 / cos^2(y) */
-  s     = sinh(x);
-  rho   = sqrt(1.0 + s * s); /* = cosh(x) */
+  s     = ::cuda::std::sinh(x);
+  rho   = ::cuda::std::sqrt(1.0 + s * s); /* = cosh(x) */
   denom = 1.0 + beta * s * s;
   return (complex<double>((beta * rho * s) / denom, t / denom));
 }

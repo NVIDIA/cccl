@@ -16,7 +16,8 @@ function(cub_build_compiler_targets)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
 
-  cccl_build_compiler_interface(cub.compiler_interface
+  cccl_build_compiler_interface(
+    cub.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
@@ -24,10 +25,12 @@ function(cub_build_compiler_targets)
 
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(cub.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(cub.compiler_interface_cpp${dialect} INTERFACE
-      # order matters here, we need the project options to override the cccl options.
-      cccl.compiler_interface_cpp${dialect}
-      cub.compiler_interface
+    target_link_libraries(
+      cub.compiler_interface_cpp${dialect}
+      INTERFACE
+        # order matters here, we need the project options to override the cccl options.
+        cccl.compiler_interface_cpp${dialect}
+        cub.compiler_interface
     )
   endforeach()
 endfunction()

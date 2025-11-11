@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // generate_canonical
 _CCCL_EXEC_CHECK_DISABLE
 template <class _RealType, size_t __bits, class _URng>
-[[nodiscard]] _CCCL_API _RealType generate_canonical(_URng& __g) noexcept
+[[nodiscard]] _CCCL_API constexpr _RealType generate_canonical(_URng& __g) noexcept
 {
   constexpr size_t __dt = numeric_limits<_RealType>::digits;
   const size_t __b      = __dt < __bits ? __dt : __bits;
@@ -39,12 +39,12 @@ template <class _RealType, size_t __bits, class _URng>
   const size_t __k      = __b / __log_r + (__b % __log_r != 0) + (__b == 0);
   const _RealType __rp  = static_cast<_RealType>((_URng::max) () - (_URng::min) ()) + _RealType(1);
   _RealType __base      = __rp;
-  _RealType __sp        = __g() - (_URng::min) ();
+  _RealType __sp        = static_cast<_RealType>(__g() - (_URng::min) ());
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (size_t __i = 1; __i < __k; ++__i, __base *= __rp)
   {
-    __sp += (__g() - (_URng::min) ()) * __base;
+    __sp += static_cast<_RealType>(__g() - (_URng::min) ()) * __base;
   }
   return __sp / __base;
 }

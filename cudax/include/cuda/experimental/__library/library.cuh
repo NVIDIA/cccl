@@ -79,7 +79,7 @@ struct library : public library_ref
   {
     if (__library_ != value_type{})
     {
-      [[maybe_unused]] const auto __status = _CUDA_DRIVER::__libraryUnloadNoThrow(__library_);
+      [[maybe_unused]] const auto __status = ::cuda::__driver::__libraryUnloadNoThrow(__library_);
     }
   }
 

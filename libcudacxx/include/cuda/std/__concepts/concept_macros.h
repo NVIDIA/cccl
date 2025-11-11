@@ -290,7 +290,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
-#  define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_COUNTER(), __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_REQUIRES_EXPR_ID(_TY), __VA_ARGS__)
 #  define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                                    \
     ::__cccl_requires_expr_impl<                                                                                     \
       struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) _CCCL_REQUIRES_EXPR_TPARAM_REFS                         \
@@ -319,6 +319,32 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_DEFAULT(_TY)  _TY
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)...
+
+// NVRTC does not support __COUNTER__ so we need a better way of defining unique identifiers
+#  if _CCCL_COMPILER(NVRTC)
+
+// Expands ((Ty...), Ty...) into _CCCL_REQUIRES_EXPR_ID_NO_PAREN(Ty...)
+#    define _CCCL_REQUIRES_EXPR_ID(_TY, ...) _CCCL_REQUIRES_EXPR_ID_NO_PAREN _TY
+
+// Expands "T1, T2, variadic T3" to "T1_T2_T3_##__LINE__"
+#    define _CCCL_REQUIRES_EXPR_ID_NO_PAREN(...) \
+      _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL(_CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_ID_IMPL, __VA_ARGS__), _CCCL_COUNTER())
+
+// Expands "T1, T2, T3" to "T1T2T3"
+#    define _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL_IMPL(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, ...) \
+      _0##_1##_2##_3##_4##_5##_6##_7##_8##_9
+#    define _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL(...) \
+      _CCCL_PP_EVAL(_CCCL_REQUIRES_EXPR_ID_CONCAT_ALL_IMPL, __VA_ARGS__, , , , , , , , , )
+
+// Expands "TY" to "TY" and "variadic TY" to "TY"
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL(_TY)               , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_ID_IMPL, _TY)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_DEFAULT(_TY)  _TY
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
+
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^^/ vvv !_CCCL_COMPILER(NVRTC)
+#    define _CCCL_REQUIRES_EXPR_ID(...) _CCCL_COUNTER()
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 #  define _CCCL_REQUIRES_EXPR_EAT_VARIADIC_variadic
 

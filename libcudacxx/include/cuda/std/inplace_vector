@@ -63,6 +63,7 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -165,7 +166,7 @@ struct __inplace_vector_storage : public __inplace_vector_destruct_base<_Tp, _Ca
   using iterator       = _Tp*;
   using const_iterator = const _Tp*;
 
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_storage, __inplace_vector_destruct_base, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_storage, __inplace_vector_destruct_base, _Tp, _Capacity);
 
   // [containers.sequences.inplace.vector.members] size/capacity
   [[nodiscard]] _CCCL_API constexpr size_type size() const noexcept
@@ -336,7 +337,7 @@ protected:
 template <class _Tp, size_t _Capacity, bool = is_trivially_copy_constructible_v<_Tp>>
 struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
 
   _CCCL_API inline __inplace_vector_copy(const __inplace_vector_copy& __other) noexcept(
     is_nothrow_copy_constructible_v<_Tp>)
@@ -353,7 +354,7 @@ struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
 template <class _Tp, size_t _Capacity>
 struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy(const __inplace_vector_copy&)            = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
@@ -365,7 +366,7 @@ struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_T
 template <class _Tp, size_t _Capacity, bool = is_trivially_move_constructible_v<_Tp>>
 struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&) = default;
 
@@ -382,7 +383,7 @@ struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
 template <class _Tp, size_t _Capacity>
 struct __inplace_vector_move<_Tp, _Capacity, true> : __inplace_vector_copy<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&)            = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_move(__inplace_vector_move&&)                 = default;
@@ -397,7 +398,7 @@ template <class _Tp,
           bool = is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_assignable_v<_Tp>>
 struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
@@ -423,7 +424,7 @@ struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
 template <class _Tp, size_t _Capacity>
 struct __inplace_vector_copy_assign<_Tp, _Capacity, true> : __inplace_vector_move<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)                 = default;
@@ -438,7 +439,7 @@ template <class _Tp,
           bool = is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>>
 struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
@@ -464,7 +465,7 @@ struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacit
 template <class _Tp, size_t _Capacity>
 struct __inplace_vector_move_assign<_Tp, _Capacity, true> : __inplace_vector_copy_assign<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
@@ -478,7 +479,7 @@ template <class _Tp,
           __inplace_vector_specialization _Spec = __select_inplace_vector_specialization<_Tp, _Capacity>()>
 struct __inplace_vector_base : __inplace_vector_move_assign<_Tp, _Capacity>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_base, __inplace_vector_move_assign, _Tp, _Capacity);
+  _CCCL_DELEGATE_CONSTRUCTORS(__inplace_vector_base, __inplace_vector_move_assign, _Tp, _Capacity);
 };
 
 template <class _Tp, size_t _Capacity>

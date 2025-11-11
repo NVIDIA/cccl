@@ -31,8 +31,9 @@
 #include <thrust/pair.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 

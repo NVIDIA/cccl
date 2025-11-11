@@ -37,7 +37,8 @@
 #include <thrust/functional.h>
 #include <thrust/tuple.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::functional

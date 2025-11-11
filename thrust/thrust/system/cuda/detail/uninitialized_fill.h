@@ -37,13 +37,15 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__new/device_new.h>
+#  include <cuda/std/__type_traits/is_trivially_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 

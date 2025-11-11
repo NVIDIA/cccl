@@ -33,6 +33,12 @@ macro(cccl_get_dlpack)
 endmacro()
 
 set(CCCL_NVBENCH_SHA "0c24f0250bf4414ab5ad19709090c6396e76516b" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
+set(
+  CCCL_NVBENCH_SHA
+  "0c24f0250bf4414ab5ad19709090c6396e76516b"
+  CACHE STRING
+  "SHA/tag to use for CCCL's NVBench."
+)
 mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
@@ -42,7 +48,10 @@ endmacro()
 # CCCL-specific NVBench utilities
 macro(cccl_get_nvbench_helper)
   if (NOT TARGET cccl.nvbench_helper)
-    add_subdirectory("${CCCL_SOURCE_DIR}/nvbench_helper" "${CCCL_BINARY_DIR}/nvbench_helper")
+    add_subdirectory(
+      "${CCCL_SOURCE_DIR}/nvbench_helper"
+      "${CCCL_BINARY_DIR}/nvbench_helper"
+    )
   endif()
 endmacro()
 
@@ -52,8 +61,8 @@ macro(cccl_get_nvtx)
     NAME NVTX
     GITHUB_REPOSITORY NVIDIA/NVTX
     GIT_TAG release-v3
-    DOWNLOAD_ONLY
-    SYSTEM
+    DOWNLOAD_ONLY ON
+    SYSTEM ON
   )
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
 endmacro()
