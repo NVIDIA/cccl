@@ -12,11 +12,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/seq.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__iterator/distance.h>
 
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>

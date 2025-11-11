@@ -32,9 +32,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 

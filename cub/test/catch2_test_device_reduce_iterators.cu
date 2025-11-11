@@ -5,8 +5,7 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -31,7 +30,7 @@ using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::in
 template <typename T, typename offset_t>
 void test_big_indices_helper(offset_t num_items)
 {
-  thrust::constant_iterator<T> const_iter(T{1});
+  cuda::constant_iterator<T> const_iter(T{1});
   c2h::device_vector<std::size_t> out(1);
   std::size_t* d_out = thrust::raw_pointer_cast(out.data());
   device_sum(const_iter, d_out, num_items);
@@ -70,7 +69,7 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   // Prepare input data
   item_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::constant_iterator(default_constant);
 
   using op_t   = cuda::std::plus<>;
   using init_t = output_t;
@@ -109,7 +108,7 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   // Prepare input data
   item_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::constant_iterator(default_constant);
 
   using op_t   = cuda::std::plus<>;
   using init_t = output_t;
@@ -118,5 +117,5 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   auto reduction_op = op_t{};
 
   // Run test
-  device_reduce(in_it, thrust::make_discard_iterator(), num_items, reduction_op, init_t{});
+  device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_t{});
 }

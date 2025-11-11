@@ -35,9 +35,9 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

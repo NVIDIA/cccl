@@ -48,13 +48,13 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__take)
 struct __fn;
 _CCCL_END_NAMESPACE_CPO
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Tp>
 _CCCL_CONCEPT __integer_like_with_usable_difference_type =
@@ -302,10 +302,10 @@ private:
 template <class _Tp, class _Bound>
 _CCCL_HOST_DEVICE repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 // clang-format off
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn {
   template <class _Tp>
@@ -328,9 +328,9 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Tp>
 inline constexpr bool __is_repeat_specialization = false;
@@ -338,7 +338,7 @@ inline constexpr bool __is_repeat_specialization = false;
 template <class _Tp, class _Bound>
 inline constexpr bool __is_repeat_specialization<repeat_view<_Tp, _Bound>> = true;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -34,17 +34,32 @@ endfunction()
 #
 
 # Pull in the include dir detected by cub-config-version.cmake
-set(_CUB_INCLUDE_DIR "${_CUB_VERSION_INCLUDE_DIR}"
-  CACHE INTERNAL "Location of CUB headers."
+set(
+  _CUB_INCLUDE_DIR
+  "${_CUB_VERSION_INCLUDE_DIR}"
+  CACHE INTERNAL
+  "Location of CUB headers."
   FORCE
 )
 unset(_CUB_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
 
 if (${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
-  set(_CUB_QUIET ON CACHE INTERNAL "Quiet mode enabled for CUB find_package calls." FORCE)
+  set(
+    _CUB_QUIET
+    ON
+    CACHE INTERNAL
+    "Quiet mode enabled for CUB find_package calls."
+    FORCE
+  )
   set(_CUB_QUIET_FLAG "QUIET" CACHE INTERNAL "" FORCE)
 else()
-  set(_CUB_QUIET OFF CACHE INTERNAL "Quiet mode enabled for CUB find_package calls." FORCE)
+  set(
+    _CUB_QUIET
+    OFF
+    CACHE INTERNAL
+    "Quiet mode enabled for CUB find_package calls."
+    FORCE
+  )
   set(_CUB_QUIET_FLAG "" CACHE INTERNAL "" FORCE)
 endif()
 
@@ -61,7 +76,10 @@ if (NOT TARGET CUB::libcudacxx)
     if (NOT TARGET libcudacxx::libcudacxx)
       # First do a non-required search for any co-packaged versions.
       # These are preferred.
-      find_package(libcudacxx ${cub_libcudacxx_version} CONFIG
+      find_package(
+        libcudacxx
+        ${cub_libcudacxx_version}
+        CONFIG
         ${_CUB_QUIET_FLAG}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
         HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
@@ -69,9 +87,11 @@ if (NOT TARGET CUB::libcudacxx)
 
       # A second required search allows externally packaged to be used and fails if
       # no suitable package exists.
-      find_package(libcudacxx ${cub_libcudacxx_version} CONFIG
-        REQUIRED
-        ${_CUB_QUIET_FLAG}
+      find_package(
+        libcudacxx
+        ${cub_libcudacxx_version}
+        CONFIG
+        REQUIRED ${_CUB_QUIET_FLAG}
       )
     endif()
     _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
@@ -103,11 +123,41 @@ _cub_test_flag_option(IGNORE_DEPRECATED_COMPILER)
 #
 
 set(CUB_VERSION ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_MAJOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_MINOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_PATCH ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_TWEAK ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTERNAL "" FORCE)
+set(
+  CUB_VERSION_MAJOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_MINOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_PATCH
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_TWEAK
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_COUNT
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
 
 include(FindPackageHandleStandardArgs)
 if (NOT CUB_CONFIG)

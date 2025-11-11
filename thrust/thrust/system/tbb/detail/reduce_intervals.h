@@ -19,8 +19,8 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/cassert>
-#include <cuda/std/type_traits>
 
 #include <tbb/parallel_for.h>
 
