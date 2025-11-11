@@ -86,6 +86,35 @@ struct DeviceReduceKernelSource
     return sizeof(AccumT);
   }
 };
+
+template <typename PolicyHub>
+struct arch_policies_from_hub
+{
+  // this is only called in device code
+  _CCCL_DEVICE_API constexpr auto operator()(int /*arch*/) const -> reduce_arch_policy
+  {
+    using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using ap_reduce      = typename ap::ReducePolicy;
+    using ap_single_tile = typename ap::SingleTilePolicy;
+    return reduce_arch_policy{
+      agent_reduce_policy{
+        ap_reduce::BLOCK_THREADS,
+        ap_reduce::ITEMS_PER_THREAD,
+        ap_reduce::VECTOR_LOAD_LENGTH,
+        ap_reduce::BLOCK_ALGORITHM,
+        ap_reduce::LOAD_MODIFIER,
+      },
+      agent_reduce_policy{
+        ap_single_tile::BLOCK_THREADS,
+        ap_single_tile::ITEMS_PER_THREAD,
+        ap_single_tile::VECTOR_LOAD_LENGTH,
+        ap_single_tile::BLOCK_ALGORITHM,
+        ap_single_tile::LOAD_MODIFIER,
+      },
+      /* segmented reduce, not used */ {},
+      /* non deterministic reduce, not used */ {}};
+  }
+};
 } // namespace detail::reduce
 
 /******************************************************************************
@@ -121,7 +150,7 @@ template <typename InputIteratorT,
           typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
-            typename PolicyHub::MaxPolicy,
+            detail::reduce::arch_policies_from_hub<PolicyHub>,
             InputIteratorT,
             OutputIteratorT,
             OffsetT,
