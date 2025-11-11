@@ -134,7 +134,7 @@ void TestAllocatorCustomDestroy(size_t n)
   } // destroy everything
 
   // state should only be true when there are values to destroy:
-  ASSERT_EQUAL(n > 0, my_allocator_with_custom_destroy<T>::g_state);
+  ASSERT_EQUAL((n > 0), my_allocator_with_custom_destroy<T>::g_state);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDestroy);
 
