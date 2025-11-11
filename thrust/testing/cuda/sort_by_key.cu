@@ -49,7 +49,7 @@ struct TestComparisonSortByKeyDeviceSeq
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortByKeyDeviceSeq,
-                                          (unittest::type_list<unittest::int8_t, unittest::int32_t>) );
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestComparisonSortByKeyDeviceDevice
