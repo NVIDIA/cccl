@@ -122,6 +122,12 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(elements, "Size");
   state.add_global_memory_writes<T>(1);
 
+  // FIXME(bgruber): the previous implementation did target cub::DispatchReduce, and provided T as accumulator type.
+  // This is not realistic, since a user cannot set the accumulator type the same way at the public API. For example,
+  // reducing I8 over cuda::std::plus deduces accumulator type I32 at the public API, but the benchmark forces it to I8.
+  // This skews the MemBoundScaling, leading to 20% regression for the same tuning when the public API is called (with
+  // accum_t I32) over the benchmark (forced accum_t of I8).
+
   caching_last_alloc_mr mr;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = ::cuda::std::execution::env{
