@@ -1,3 +1,5 @@
+cccl_get_catch2()
+
 # Create meta targets that build all tests for a single configuration:
 foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
@@ -5,11 +7,6 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
   add_custom_target(${config_meta_target})
   add_dependencies(${config_prefix}.all ${config_meta_target})
 endforeach()
-
-# Generate testing framework libraries:
-add_subdirectory(unittest)
-
-cccl_get_catch2()
 
 # Some tests only support certain host.device configurations. Use this macro to
 # declare allowed configurations. If not specified, all host.device config are
@@ -28,16 +25,6 @@ thrust_declare_test_restrictions(unittest_static_assert CPP.CPP CPP.CUDA)
 # In the TBB backend, reduce_by_key does not currently work with transform_output_iterator
 # https://github.com/NVIDIA/thrust/issues/1811
 thrust_declare_test_restrictions(transform_output_iterator_reduce_by_key CPP.CPP CPP.OMP CPP.CUDA)
-
-function(thrust_is_catch2_test result_var test_src)
-  # If the test_src contains the substring "catch2_test_", `result_var` will be set to TRUE.
-  string(FIND "${test_src}" "catch2_test_" idx)
-  if (idx EQUAL -1)
-    set(${result_var} FALSE PARENT_SCOPE)
-  else()
-    set(${result_var} TRUE PARENT_SCOPE)
-  endif()
-endfunction()
 
 ## thrust_add_test
 #
@@ -68,14 +55,24 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 
   # Related target names:
-  set(config_framework_target ${config_prefix}.test.framework)
   set(config_meta_target ${config_prefix}.tests)
   set(test_meta_target thrust.all.test.${test_name})
 
   add_executable(${test_target} "${real_test_src}")
-  target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
-  target_include_directories(${test_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
+  cccl_configure_target(${test_target} DIALECT ${config_dialect})
+  target_link_libraries(
+    ${test_target}
+    PRIVATE ${thrust_target} Catch2::Catch2WithMain
+  )
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/testing"
+  )
   thrust_clone_target_properties(${test_target} ${thrust_target})
+
+  if ("CUDA" STREQUAL "${config_device}")
+    thrust_configure_cuda_target(${test_target} RDC ${THRUST_FORCE_RDC})
+  endif()
 
   if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
     target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
@@ -150,10 +147,6 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
     endif()
 
     thrust_add_test(test_target ${test_name} "${test_src}" ${thrust_target})
-
-    if ("CUDA" STREQUAL "${config_device}")
-      thrust_configure_cuda_target(${test_target} RDC ${THRUST_FORCE_RDC})
-    endif()
   endforeach()
 endforeach()
 
