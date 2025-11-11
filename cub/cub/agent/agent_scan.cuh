@@ -170,18 +170,14 @@ struct AgentScan
                      CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
-  // Constants
-  enum
-  {
-    // Inclusive scan if no init_value type is provided
-    HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>,
-    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not being `NullType`
-                                                // or the ForceInclusive tag to be true for inclusive scan
-                                                // to get picked up.
-    BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
+  // Inclusive scan if no init_value type is provided
+  static constexpr bool HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>;
+  static constexpr bool IS_INCLUSIVE = ForceInclusive || !HAS_INIT; // We are relying on either initial value not being
+                                                                    // `NullType` or the ForceInclusive tag to be true
+                                                                    // for inclusive scan to get picked up.
+  static constexpr int BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Parameterized BlockLoad type
   using BlockLoadT =
