@@ -23,7 +23,9 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -119,21 +121,17 @@ struct RegBoundScaling
     (::cuda::std::max) (1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max) (4, int{sizeof(T)}));
   static constexpr int BLOCK_THREADS =
     (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
-                          * 32);
+                        ::cuda::ceil_div(int{max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
   static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max) (1,
-                        (::cuda::std::min) (Nominal4ByteItemsPerThread * 4 / int{sizeof(T)},
-                                            Nominal4ByteItemsPerThread * 2));
+    ::cuda::std::clamp(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, 1, Nominal4ByteItemsPerThread * 2);
   static constexpr int BLOCK_THREADS =
     (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
-                          * 32);
+                        ::cuda::round_up(int{max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32));
 };
 } // namespace detail
 #endif // Do not document
