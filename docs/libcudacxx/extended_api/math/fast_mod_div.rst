@@ -3,9 +3,11 @@
 ``cuda::fast_mod_div``
 ======================
 
-Defined in ``<cuda/cmath>`` header.
+Defined in the ``<cuda/cmath>`` header.
 
-.. code:: cpp
+.. code:: cuda
+
+    namespace cuda {
 
     template <typename T, bool DivisorIsNeverOne = false>
     class fast_mod_div {
@@ -27,12 +29,17 @@ Defined in ``<cuda/cmath>`` header.
         operator T() const noexcept;
     };
 
-.. code:: cpp
+    } // namespace cuda
+
+.. code:: cuda
+
+    namespace cuda {
 
     template <typename T, typename U>
     [[nodiscard]] __host__ __device__
     cuda::std::pair<T, U> div(T dividend, fast_mod_div<U> divisor) noexcept;
 
+    } // namespace cuda
 
 The class ``fast_mod_div`` is used to pre-compute the modulo and division of an integer value, to be used in a second stage for efficiency: :math:`floor\left(\frac{dividend}{divisor}\right)`.
 
@@ -64,7 +71,7 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -82,4 +89,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/Th5Wx5TY3>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/fM7E9v9aP>`__
