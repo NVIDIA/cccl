@@ -89,7 +89,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   __attributes.dstLocHint.type    = static_cast<::CUmemLocationType>(__config.dst_location_hint.type);
 
   ::cuda::__ensure_current_context guard(__stream);
-  _CUDA_DRIVER::__memcpyAsyncWithAttributes(
+  ::cuda::__driver::__memcpyAsyncWithAttributes(
     __dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes);
 #  else
   ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());

@@ -50,6 +50,11 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/logarithms.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
@@ -80,11 +85,11 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
   /* Handle NaNs using the general formula to mix them right. */
   if (x != x || y != y)
   {
-    return (complex<double>(std::log(norm(z)), std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log(norm(z)), ::cuda::std::atan2(y, x)));
   }
 
-  ax = std::abs(x);
-  ay = std::abs(y);
+  ax = ::cuda::std::abs(x);
+  ay = ::cuda::std::abs(y);
   if (ax < ay)
   {
     t  = ax;
@@ -104,15 +109,15 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
   // We expect that for values at or below ay = 5e307 this should not happen
   if (ay > 5e307)
   {
-    return (complex<double>(std::log(hypot(x / e, y / e)) + 1.0, std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log(::cuda::std::hypot(x / e, y / e)) + 1.0, ::cuda::std::atan2(y, x)));
   }
   if (ax == 1.)
   {
     if (ay < 1e-150)
     {
-      return (complex<double>((ay * 0.5) * ay, std::atan2(y, x)));
+      return (complex<double>((ay * 0.5) * ay, ::cuda::std::atan2(y, x)));
     }
-    return (complex<double>(log1p(ay * ay) * 0.5, std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p(ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -121,7 +126,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
    */
   if (ax < 1e-50 || ay < 1e-50 || ax > 1e50 || ay > 1e50)
   {
-    return (complex<double>(std::log(hypot(x, y)), std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log(::cuda::std::hypot(x, y)), ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -133,12 +138,12 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
 
   if (ax >= 1.0)
   {
-    return (complex<double>(log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, atan2(y, x)));
+    return (complex<double>(::cuda::std::log1p((ax - 1) * (ax + 1) + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   if (ax * ax + ay * ay <= 0.7)
   {
-    return (complex<double>(std::log(ax * ax + ay * ay) * 0.5, std::atan2(y, x)));
+    return (complex<double>(::cuda::std::log(ax * ax + ay * ay) * 0.5, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -190,14 +195,14 @@ _CCCL_HOST_DEVICE inline complex<double> clog(const complex<double>& z)
   {
     hm1 += val[i];
   }
-  return (complex<double>(0.5 * log1p(hm1), atan2(y, x)));
+  return (complex<double>(0.5 * ::cuda::std::log1p(hm1), ::cuda::std::atan2(y, x)));
 }
 } // namespace detail::complex
 
 template <typename ValueType>
 _CCCL_HOST_DEVICE inline complex<ValueType> log(const complex<ValueType>& z)
 {
-  return complex<ValueType>(std::log(thrust::abs(z)), thrust::arg(z));
+  return complex<ValueType>(::cuda::std::log(thrust::abs(z)), thrust::arg(z));
 }
 
 template <>

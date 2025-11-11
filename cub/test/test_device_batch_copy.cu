@@ -4,12 +4,11 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
 #include <thrust/tuple.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <cstdint>
@@ -126,10 +125,10 @@ template <typename IteratorT>
 struct OffsetToIteratorOp
 {
   template <typename OffsetT>
-  __host__ __device__ __forceinline__ thrust::transform_output_iterator<Identity, IteratorT>
+  __host__ __device__ __forceinline__ cuda::transform_output_iterator<Identity, IteratorT>
   operator()(OffsetT offset) const
   {
-    return thrust::make_transform_output_iterator(base_it + offset, Identity{});
+    return cuda::transform_output_iterator(base_it + offset, Identity{});
   }
   IteratorT base_it;
 };
@@ -138,9 +137,9 @@ template <typename AtomicT>
 struct RepeatIndex
 {
   template <typename OffsetT>
-  __host__ __device__ __forceinline__ thrust::constant_iterator<AtomicT> operator()(OffsetT i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<AtomicT> operator()(OffsetT i)
   {
-    return thrust::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
+    return cuda::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
   }
 };
 
@@ -181,8 +180,8 @@ try
 {
   // Range segment data (their offsets and sizes)
   c2h::host_vector<RangeSizeT> h_range_sizes(num_ranges);
-  thrust::counting_iterator<RangeOffsetT> iota(0);
-  auto d_range_srcs = thrust::make_transform_iterator(iota, RepeatIndex<AtomicT>{});
+  cuda::counting_iterator<RangeOffsetT> iota(0);
+  auto d_range_srcs = cuda::transform_iterator(iota, RepeatIndex<AtomicT>{});
   c2h::host_vector<ByteOffsetT> h_offsets(num_ranges + 1);
 
   // Generate the range sizes
@@ -209,7 +208,7 @@ try
   // Prepare d_range_dsts
   using AtomicIterT = typename c2h::device_vector<AtomicT>::iterator;
   OffsetToIteratorOp<AtomicIterT> dst_transform_op{d_out.begin()};
-  auto d_range_dsts = thrust::make_transform_iterator(d_offsets.begin(), dst_transform_op);
+  auto d_range_dsts = cuda::transform_iterator(d_offsets.begin(), dst_transform_op);
 
   // Get temporary storage requirements
   size_t temp_storage_bytes = 0;
@@ -301,7 +300,7 @@ void nontrivial_constructor_test()
 
   c2h::device_vector<iterator> b_iter{b.begin(), b.begin() + 1, b.begin() + 2};
 
-  auto sizes = thrust::make_constant_iterator(1);
+  auto sizes = cuda::constant_iterator(1);
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};

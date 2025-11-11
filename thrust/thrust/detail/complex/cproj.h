@@ -22,7 +22,8 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,27 +31,25 @@ namespace detail::complex
 {
 _CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
 {
-  if (!isinf(z.real()) && !isinf(z.imag()))
+  if (!::cuda::std::isinf(z.real()) && !::cuda::std::isinf(z.imag()))
   {
     return z;
   }
   else
   {
-    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
-    return complex<float>(::cuda::std::numeric_limits<float>::infinity(), copysignf(0.0, z.imag()));
+    return complex<float>(::cuda::std::numeric_limits<float>::infinity(), ::cuda::std::copysignf(0.0, z.imag()));
   }
 }
 
 _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
 {
-  if (!isinf(z.real()) && !isinf(z.imag()))
+  if (!::cuda::std::isinf(z.real()) && !::cuda::std::isinf(z.imag()))
   {
     return z;
   }
   else
   {
-    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
-    return complex<double>(::cuda::std::numeric_limits<double>::infinity(), copysign(0.0, z.imag()));
+    return complex<double>(::cuda::std::numeric_limits<double>::infinity(), ::cuda::std::copysign(0.0, z.imag()));
   }
 }
 } // namespace detail::complex

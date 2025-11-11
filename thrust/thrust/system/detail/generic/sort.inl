@@ -26,13 +26,16 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/internal_functional.h>
-#include <thrust/distance.h>
 #include <thrust/find.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/sort.h>
 #include <thrust/tuple.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

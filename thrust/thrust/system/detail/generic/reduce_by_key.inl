@@ -36,7 +36,9 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -169,11 +171,9 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = ::cuda::std::
-
-    _If<thrust::detail::is_output_iterator<OutputIterator2>,
-        thrust::detail::it_value_t<InputIterator2>,
-        thrust::detail::it_value_t<OutputIterator2>>;
+  using T = ::cuda::std::_If<thrust::detail::is_output_iterator<OutputIterator2>,
+                             thrust::detail::it_value_t<InputIterator2>,
+                             thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(

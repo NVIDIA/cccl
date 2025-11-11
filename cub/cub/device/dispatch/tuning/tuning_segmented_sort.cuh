@@ -31,9 +31,9 @@ struct SegmentedSortPolicyWrapper : PolicyT
 
 template <typename StaticPolicyT>
 struct SegmentedSortPolicyWrapper<StaticPolicyT,
-                                  _CUDA_VSTD::void_t<typename StaticPolicyT::LargeSegmentPolicy,
-                                                     typename StaticPolicyT::SmallSegmentPolicy,
-                                                     typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
+                                  ::cuda::std::void_t<typename StaticPolicyT::LargeSegmentPolicy,
+                                                      typename StaticPolicyT::SmallSegmentPolicy,
+                                                      typename StaticPolicyT::MediumSegmentPolicy>> : StaticPolicyT
 {
   _CCCL_HOST_DEVICE SegmentedSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)

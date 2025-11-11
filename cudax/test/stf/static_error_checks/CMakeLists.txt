@@ -1,4 +1,5 @@
-set(static_assert_tests
+set(
+  static_assert_tests
   static.cu
   task_prototype.cu
   stream_task_prototype.cu
@@ -28,25 +29,16 @@ function(cudax_stf_add_static_assert_test target_name_var source cudax_target)
   cudax_clone_target_properties(${test_target} ${cudax_target})
   cudax_stf_configure_target(${test_target} ${ARGN})
   target_link_libraries(${test_target} PRIVATE ${cudax_target})
-  set_target_properties(${test_target} PROPERTIES
-    EXCLUDE_FROM_ALL true
-    EXCLUDE_FROM_DEFAULT_BUILD true
-  )
-
-  add_test(NAME ${test_target}
-    COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                             --target ${test_target}
-                             --config $<CONFIGURATION>
-  )
-  set_tests_properties(${test_target} PROPERTIES
-    PASS_REGULAR_EXPRESSION "static_assert|static assertion"
+  cccl_add_xfail_compile_target_test(
+    ${test_target}
+    ERROR_REGEX "static_assert|static assertion"
   )
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
-foreach(cudax_target IN LISTS cudax_TARGETS)
-  foreach(source IN LISTS static_assert_tests)
+foreach (cudax_target IN LISTS cudax_TARGETS)
+  foreach (source IN LISTS static_assert_tests)
     cudax_stf_add_static_assert_test(test_target "${source}" ${cudax_target})
   endforeach()
 endforeach()

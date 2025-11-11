@@ -26,6 +26,7 @@
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/instructions/mbarrier_init.h>
+#  include <cuda/__ptx/instructions/mbarrier_inval.h>
 #  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -100,10 +101,7 @@ public:
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
-                   asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-                     ::__cvta_generic_to_shared(&__barrier)))
-                                : "memory");
+                   ::cuda::ptx::mbarrier_inval(__native_handle());
                    return;
                  }))
 

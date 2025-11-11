@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
-#define _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
+#ifndef _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H
+#define _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,8 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! .. _cudax-memory-resource-shared-resource:
 //!
@@ -255,8 +254,8 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
   return shared_resource<_Resource>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
+#endif // _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H

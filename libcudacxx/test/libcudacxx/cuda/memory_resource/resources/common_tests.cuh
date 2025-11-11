@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include <cuda/experimental/memory_resource.cuh>
-
 #include <utility.cuh>
 
 template <typename ResourceType>

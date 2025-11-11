@@ -38,11 +38,11 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/detail/type_traits.h>
-#  include <thrust/distance.h>
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/scan.h>
 
-#  include <cuda/std/type_traits>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 

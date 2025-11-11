@@ -25,14 +25,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/advance.h>
 #include <thrust/detail/copy.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/swap.h>
 #include <thrust/system/detail/generic/reverse.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

@@ -54,9 +54,9 @@ __host__ __device__ constexpr void SequenceContainerDeductionGuidesSfinaeAway()
   // containers because they have constructors of the form `(size_type count,
   // const value_type& value)`. These constructors would be used when passing
   // two integral types and would deduce `value_type` to be an integral type.
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
 
   // (iter, iter)
   //
@@ -97,9 +97,9 @@ __host__ __device__ constexpr void AssociativeContainerDeductionGuidesSfinaeAway
   // The only requirement in the Standard is that integral types cannot be
   // considered input iterators, beyond that it is unspecified.
   using BadIter = int;
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   using AllocAsComp = Alloc;
 
   // (iter, iter)
@@ -171,9 +171,9 @@ __host__ __device__ constexpr void UnorderedContainerDeductionGuidesSfinaeAway()
   // The only requirement in the Standard is that integral types cannot be
   // considered input iterators, beyond that it is unspecified.
   using BadIter = int;
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   using OutputIter = cuda::std::insert_iterator<InstantiatedContainer>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   using AllocAsHash = Alloc;
   using AllocAsPred = Alloc;
 

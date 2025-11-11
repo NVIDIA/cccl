@@ -21,7 +21,6 @@
 #endif // no system header
 
 #define _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS() (!_CCCL_COMPILER(CLANG) || _CCCL_STD_VER >= 2020)
-#define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP()   1
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
@@ -69,18 +68,38 @@
 #  define _LIBCUDACXX_HAS_NVBF16() 0
 #endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
-// Clang provides 128b atomics as a builtin
-#if defined(CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B)
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 1
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
-// GCC does not provide 128b atomics, but they may be available as a library, this requires opt-in usage.
-// See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html "-mcx16" for more
-#elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 0
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   1
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      __declspec(align(x))
+#elif _CCCL_HAS_FEATURE(cxx_alignas)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x)      alignas(x)
 #else
-#  define _CCCL_HOST_128_ATOMICS_ENABLED() 0
-#  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
+#  define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(alignof(x))))
+#  define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
+#endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
+
+// We can only expose constexpr allocations if the compiler supports it
+// For now disable constexpr allocation support until we can actually use
+#if 0 && defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
+  && !_CCCL_COMPILER(NVRTC)
+#  define _CCCL_HAS_CONSTEXPR_ALLOCATION
+#  define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
+#else // ^^^ __cpp_constexpr_dynamic_alloc ^^^ / vvv !__cpp_constexpr_dynamic_alloc vvv
+#  define _CCCL_CONSTEXPR_CXX20_ALLOCATION
+#endif
+
+// Enable removed C++17 features
+#if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)
+#  define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
+#endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
+
+#ifndef _CCCL_DISABLE_ADDITIONAL_DIAGNOSTICS
+#  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG) _CCCL_DIAGNOSE_IF(_COND, _MSG, "warning")
+#  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)   _CCCL_DIAGNOSE_IF(_COND, _MSG, "error")
+#else
+#  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG)
+#  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
 
 #endif // _CUDA_STD___INTERNAL_FEATURES_H

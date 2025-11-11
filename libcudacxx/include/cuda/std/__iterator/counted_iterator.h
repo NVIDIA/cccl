@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
 
@@ -319,8 +320,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
@@ -413,7 +414,7 @@ public:
     return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(counted_iterator)
 
 // Not a hidden friend because of MSVC
