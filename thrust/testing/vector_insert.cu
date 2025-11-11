@@ -22,8 +22,8 @@ struct TestVectorRangeInsertSimple
     size_t insertion_size = v1.end() - v1.begin();
     size_t num_displaced  = v2.end() - (v2.begin() + 1);
 
-    ASSERT_EQUAL(true, v2.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size > num_displaced);
+    REQUIRE(v2.capacity() >= new_size);
+    REQUIRE(insertion_size > num_displaced);
 
     v2.insert(v2.begin() + 1, v1.begin(), v1.end());
 
@@ -44,8 +44,8 @@ struct TestVectorRangeInsertSimple
     insertion_size = v1.end() - v1.begin();
     num_displaced  = v3.end() - v3.begin();
 
-    ASSERT_EQUAL(true, v3.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size == num_displaced);
+    REQUIRE(v3.capacity() >= new_size);
+    REQUIRE(insertion_size == num_displaced);
 
     v3.insert(v3.begin(), v1.begin(), v1.end());
     ref = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
@@ -65,8 +65,8 @@ struct TestVectorRangeInsertSimple
     insertion_size = (v1.begin() + 3) - v1.begin();
     num_displaced  = v4.end() - (v4.begin() + 1);
 
-    ASSERT_EQUAL(true, v4.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size < num_displaced);
+    REQUIRE(v4.capacity() >= new_size);
+    REQUIRE(insertion_size < num_displaced);
 
     v4.insert(v4.begin() + 1, v1.begin(), v1.begin() + 3);
 
@@ -82,7 +82,7 @@ struct TestVectorRangeInsertSimple
 
     new_size = v5.size() + v1.size();
 
-    ASSERT_EQUAL(true, v5.capacity() < new_size);
+    REQUIRE(v5.capacity() < new_size);
 
     v5.insert(v5.begin() + 1, v1.begin(), v1.end());
 
@@ -146,8 +146,8 @@ struct TestVectorFillInsertSimple
     size_t new_size       = v1.size() + insertion_size;
     size_t num_displaced  = v1.end() - (v1.begin() + 1);
 
-    ASSERT_EQUAL(true, v1.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size > num_displaced);
+    REQUIRE(v1.capacity() >= new_size);
+    REQUIRE(insertion_size > num_displaced);
 
     v1.insert(v1.begin() + 1, insertion_size, 13);
 
@@ -168,8 +168,8 @@ struct TestVectorFillInsertSimple
     new_size       = v2.size() + insertion_size;
     num_displaced  = v2.end() - v2.begin();
 
-    ASSERT_EQUAL(true, v2.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size == num_displaced);
+    REQUIRE(v2.capacity() >= new_size);
+    REQUIRE(insertion_size == num_displaced);
 
     v2.insert(v2.begin(), insertion_size, 13);
 
@@ -190,8 +190,8 @@ struct TestVectorFillInsertSimple
     new_size       = v3.size() + insertion_size;
     num_displaced  = v3.end() - (v3.begin() + 1);
 
-    ASSERT_EQUAL(true, v3.capacity() >= new_size);
-    ASSERT_EQUAL(true, insertion_size < num_displaced);
+    REQUIRE(v3.capacity() >= new_size);
+    REQUIRE(insertion_size < num_displaced);
 
     v3.insert(v3.begin() + 1, insertion_size, 13);
 
@@ -208,7 +208,7 @@ struct TestVectorFillInsertSimple
     insertion_size = 5;
     new_size       = v4.size() + insertion_size;
 
-    ASSERT_EQUAL(true, v4.capacity() < new_size);
+    REQUIRE(v4.capacity() < new_size);
 
     v4.insert(v4.begin() + 1, insertion_size, 13);
 
