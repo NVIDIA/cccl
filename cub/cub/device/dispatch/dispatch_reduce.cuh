@@ -579,12 +579,13 @@ namespace detail::reduce
 struct no_override
 {};
 
+// select the accumulator type using an overload set, so __accumulator_t and invoke_result_t are not instantiated when
+// an overriding accumulator type is present. This is needed by CCCL.C.
 template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
 _CCCL_API auto select_accum_t(no_override*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                   InitT>;
-
 template <typename InputIteratorT,
           typename InitT,
           typename ReductionOpT,

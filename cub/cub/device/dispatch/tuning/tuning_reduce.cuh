@@ -19,6 +19,10 @@
 
 #include <cuda/std/optional>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 struct agent_reduce_policy // equivalent of AgentReducePolicy
@@ -226,17 +230,17 @@ struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size:
 
 enum class accum_type
 {
-  _float,
-  _double,
+  float32,
+  double32,
   other,
 };
 
 template <typename AccumT>
 _CCCL_HOST_DEVICE constexpr accum_type classify_accum_type()
 {
-  return ::cuda::std::is_same_v<AccumT, float> ? accum_type::_float
+  return ::cuda::std::is_same_v<AccumT, float> ? accum_type::float32
        : ::cuda::std::is_same_v<AccumT, double>
-         ? accum_type::_double
+         ? accum_type::double32
          : accum_type::other;
 }
 
@@ -252,11 +256,11 @@ _CCCL_API constexpr auto get_sm100_tuning(accum_type at, op_type ot, offset_size
 {
   if (ot == op_type::plus)
   {
-    if (at == accum_type::_float && os == offset_size::_4 && as == accum_size::_4)
+    if (at == accum_type::float32 && os == offset_size::_4 && as == accum_size::_4)
     {
       return sm100_tuning_values{16, 512, 2};
     }
-    if (at == accum_type::_double && os == offset_size::_4 && as == accum_size::_8)
+    if (at == accum_type::double32 && os == offset_size::_4 && as == accum_size::_8)
     {
       return sm100_tuning_values{16, 640, 1};
     }
@@ -379,7 +383,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
   // IDEA(bgruber): instead of the constexpr function, we could also provide a map<int, reduce_arch_policy> and move the
   // selection mechanism elsewhere
 
-  _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
     if (arch >= 1000)
     {
@@ -431,8 +435,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
     constexpr int items_per_thread   = 20;
     constexpr int items_per_vec_load = 4;
 
-    auto [scaled_items,
-          scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
     const auto rp =
       agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
@@ -450,7 +453,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct arch_policies_from_types
 {
-  _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
   {
     constexpr auto policies = arch_policies{
       classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), classify_offset_size<OffsetT>(), int{sizeof(AccumT)}};

@@ -260,11 +260,11 @@ using device_reduce_policy = {6};
     auto at = accum_type::other;
     if (accum_t.type == CCCL_FLOAT32)
     {
-      at = accum_type::_float;
+      at = accum_type::float32;
     }
     if (accum_t.type == CCCL_FLOAT64)
     {
-      at = accum_type::_double;
+      at = accum_type::double32;
     }
 
     auto ot = op_type::unknown;
