@@ -32,7 +32,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-set(CCCL_NVBENCH_SHA "0c24f0250bf4414ab5ad19709090c6396e76516b" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
 set(
   CCCL_NVBENCH_SHA
   "0c24f0250bf4414ab5ad19709090c6396e76516b"
