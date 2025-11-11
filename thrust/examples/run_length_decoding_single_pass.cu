@@ -146,7 +146,7 @@ int main()
                 return ValueType(idx / repeat);
               });
 
-  if (!std::equal(observed.begin(), observed.end(), gold.begin()))
+  if (!cuda::std::equal(observed.begin(), observed.end(), gold.begin()))
   {
     std::cerr << "Error: Output does not match expected values" << std::endl;
     return 1;
