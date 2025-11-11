@@ -14,6 +14,8 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/equal.h>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
@@ -37,7 +39,7 @@ struct run
 };
 
 template <typename ValueType, typename CountType>
-run(ValueType, CountType) -> run<ValueType, CountType>;
+__host__ __device__ run(ValueType, CountType) -> run<ValueType, CountType>;
 
 template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
 struct expand
@@ -51,7 +53,7 @@ struct expand
   __host__ __device__ CountType operator()(run<ValueType, CountType> r) const
   {
     cuda::std::size_t end = cuda::std::min(r.offset + r.count, out_size);
-    thrust::fill(thrust::seq, out + r.offset, out + end, r.value);
+    cuda::std::fill(out + r.offset, out + end, r.value);
     if (r.run_id == runs_size) // If we're the last run, write the expanded size.
     {
       *expanded_size = end;
@@ -61,7 +63,7 @@ struct expand
 };
 
 template <typename OutputIterator, typename CountType, typename ExpandedSizeIterator>
-expand(OutputIterator, CountType, CountType, ExpandedSizeIterator)
+__host__ __device__ expand(OutputIterator, CountType, CountType, ExpandedSizeIterator)
   -> expand<OutputIterator, CountType, ExpandedSizeIterator>;
 
 template <typename ValueIterator, typename CountIterator, typename OutputIterator, typename CountType>
