@@ -15,11 +15,12 @@
 #include <thrust/detail/copy.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__iterator/distance.h>
 
 #include <tbb/parallel_invoke.h>
 

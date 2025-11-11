@@ -57,10 +57,7 @@ __launch_bounds__(BLOCK_THREADS) __global__
                        Key* d_out, // Tile of output
                        clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
-  enum
-  {
-    TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD
-  };
+  static constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)

@@ -5,7 +5,7 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -60,7 +60,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   // Prepare input data
   value_t default_constant{};
   init_default_constant(default_constant);
-  auto value_it = thrust::make_constant_iterator(default_constant);
+  auto value_it = cuda::constant_iterator(default_constant);
 
   using op_t = cuda::std::plus<>;
 

@@ -1,5 +1,6 @@
 # Setup FileCheck if requested and available:
-option(THRUST_ENABLE_EXAMPLE_FILECHECK
+option(
+  THRUST_ENABLE_EXAMPLE_FILECHECK
   "Check example output with the LLVM FileCheck utility."
   OFF
 )
@@ -7,7 +8,8 @@ set(filecheck_data_path "${Thrust_SOURCE_DIR}/internal/test")
 
 if (THRUST_ENABLE_EXAMPLE_FILECHECK)
   # TODO this should go into a find module
-  find_program(THRUST_FILECHECK_EXECUTABLE
+  find_program(
+    THRUST_FILECHECK_EXECUTABLE
     DOC "Path to the LLVM FileCheck utility."
     NAMES
       FileCheck
@@ -21,14 +23,17 @@ if (THRUST_ENABLE_EXAMPLE_FILECHECK)
   )
 
   if (NOT THRUST_FILECHECK_EXECUTABLE)
-    message(FATAL_ERROR
+    message(
+      FATAL_ERROR
       "Could not find the LLVM FileCheck utility. Set THRUST_FILECHECK_EXECUTABLE manually, "
       "or disable THRUST_ENABLE_EXAMPLE_FILECHECK."
     )
   endif()
 
   execute_process(
-    COMMAND "${THRUST_FILECHECK_EXECUTABLE}" "${filecheck_data_path}/thrust.smoke.filecheck"
+    COMMAND
+      "${THRUST_FILECHECK_EXECUTABLE}"
+      "${filecheck_data_path}/thrust.smoke.filecheck"
     INPUT_FILE "${Thrust_SOURCE_DIR}/cmake/filecheck_smoke_test"
     RESULT_VARIABLE exit_code
   )
@@ -36,7 +41,8 @@ if (THRUST_ENABLE_EXAMPLE_FILECHECK)
   if (0 EQUAL exit_code)
     message(STATUS "FileCheck enabled: ${THRUST_FILECHECK_EXECUTABLE}")
   else()
-    message(FATAL_ERROR
+    message(
+      FATAL_ERROR
       "The current THRUST_FILECHECK_EXECUTABLE ('${THRUST_FILECHECK_EXECUTABLE}') "
       "does not seem to be a valid FileCheck executable."
     )
@@ -44,7 +50,7 @@ if (THRUST_ENABLE_EXAMPLE_FILECHECK)
 endif()
 
 # Create meta targets that build all examples for a single configuration:
-foreach(thrust_target IN LISTS THRUST_TARGETS)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
   set(config_meta_target ${config_prefix}.examples)
   add_custom_target(${config_meta_target})
@@ -63,7 +69,13 @@ endforeach()
 # example_src: The source file that implements the example.
 # thrust_target: The reference thrust target with configuration information.
 #
-function(thrust_add_example target_name_var example_name example_src thrust_target)
+function(
+  thrust_add_example
+  target_name_var
+  example_name
+  example_src
+  thrust_target
+)
   thrust_get_target_property(config_host ${thrust_target} HOST)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
@@ -85,18 +97,28 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
 
   add_executable(${example_target} "${real_example_src}")
   cccl_configure_target(${example_target} DIALECT ${config_dialect})
-  target_link_libraries(${example_target} ${thrust_target})
-  target_include_directories(${example_target} PRIVATE "${Thrust_SOURCE_DIR}/examples")
+  target_link_libraries(${example_target} PRIVATE ${thrust_target})
+  target_include_directories(
+    ${example_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/examples"
+  )
   thrust_clone_target_properties(${example_target} ${thrust_target})
 
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
   endif()
 
-  # We do not want to explicitly include `host_device.h` if not needed, so force include the file for non CUDA targets
-  target_compile_options(${example_target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/FI include/host_device.h>
-    $<$<COMPILE_LANGUAGE:CXX>:-include include/host_device.h>
+  # We do not want to explicitly include `host_device.h` if not needed,
+  # so force include the file for non CUDA targets.
+  set(gx_msvc "$<CXX_COMPILER_ID:MSVC>")
+  set(gx_cxx "$<COMPILE_LANGUAGE:CXX>")
+  set(gx_cxx_msvc "$<AND:${gx_cxx},${gx_msvc}>")
+  set(gx_cxx_not_msvc "$<AND:${gx_cxx},$<NOT:${gx_msvc}>>")
+  target_compile_options(
+    ${example_target}
+    PRIVATE
+      "$<${gx_cxx_msvc}:SHELL:/FI include/host_device.h>"
+      "$<${gx_cxx_not_msvc}:SHELL:-include include/host_device.h>"
   )
 
   # Add to the active configuration's meta target
@@ -109,23 +131,33 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   add_dependencies(${example_meta_target} ${example_target})
 
   if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-    target_compile_definitions(${example_target} PRIVATE THRUST_EXAMPLE_DEVICE_SIDE)
+    target_compile_definitions(
+      ${example_target}
+      PRIVATE THRUST_EXAMPLE_DEVICE_SIDE
+    )
   endif()
 
   # Get the name of FileCheck input by stripping out the config name.
   # (e.g. "thrust.cpp.cuda.cpp14.example.xxx" -> "thrust.example.xxx.filecheck")
-  string(REPLACE "${config_prefix}" "thrust"
+  string(
+    REPLACE
+    "${config_prefix}"
+    "thrust"
     filecheck_reference_file
     "${example_target}.filecheck"
   )
 
-  add_test(NAME ${example_target}
-    COMMAND "${CMAKE_COMMAND}"
-    "-DEXAMPLE_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-    "-DFILECHECK_ENABLED=${THRUST_ENABLE_EXAMPLE_FILECHECK}"
-    "-DFILECHECK_EXECUTABLE=${THRUST_FILECHECK_EXECUTABLE}"
-    "-DREFERENCE_FILE=${filecheck_data_path}/${filecheck_reference_file}"
-    -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunExample.cmake"
+  add_test(
+    NAME ${example_target}
+    # gersemi: off
+    COMMAND
+      "${CMAKE_COMMAND}"
+        "-DEXAMPLE_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+        "-DFILECHECK_ENABLED=${THRUST_ENABLE_EXAMPLE_FILECHECK}"
+        "-DFILECHECK_EXECUTABLE=${THRUST_FILECHECK_EXECUTABLE}"
+        "-DREFERENCE_FILE=${filecheck_data_path}/${filecheck_reference_file}"
+        -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunExample.cmake"
+    # gersemi: on
   )
 
   # Run OMP/TBB tests in serial. Multiple OMP processes will massively
@@ -135,16 +167,36 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   if (("OMP" IN_LIST config_systems) OR ("TBB" IN_LIST config_systems))
     set_tests_properties(${example_target} PROPERTIES RUN_SERIAL ON)
   endif()
+
+  # Check for per-example script. Script will be included in the current scope
+  # to allow custom property modifications.
+  get_filename_component(example_cmake_script "${example_src}" NAME_WLE)
+  set(
+    example_cmake_script
+    "${CMAKE_CURRENT_LIST_DIR}/${example_cmake_script}.cmake"
+  )
+  # Use a glob so we can detect if this changes:
+  file(
+    GLOB example_cmake_script
+    RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+    CONFIGURE_DEPENDS
+    "${example_cmake_script}"
+  )
+  if (example_cmake_script) # Will be non-empty only if the script exists
+    include("${example_cmake_script}")
+  endif()
 endfunction()
 
-file(GLOB example_srcs
+file(
+  GLOB example_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
-  *.cu *.cpp
+  *.cu
+  *.cpp
 )
 
-foreach(thrust_target IN LISTS THRUST_TARGETS)
-  foreach(example_src IN LISTS example_srcs)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
+  foreach (example_src IN LISTS example_srcs)
     get_filename_component(example_name "${example_src}" NAME_WLE)
     thrust_add_example(example_target ${example_name} "${example_src}" ${thrust_target})
   endforeach()

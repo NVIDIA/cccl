@@ -33,7 +33,12 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

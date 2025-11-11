@@ -34,7 +34,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 // [iter.cust.swap]
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__iter_swap)
 template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
@@ -139,7 +139,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()

@@ -30,7 +30,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/transform_scan.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

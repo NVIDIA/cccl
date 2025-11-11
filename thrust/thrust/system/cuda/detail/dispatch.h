@@ -34,7 +34,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <string>
 

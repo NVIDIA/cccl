@@ -43,8 +43,11 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__new/device_new.h>
-#  include <cuda/std/iterator>
+#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 

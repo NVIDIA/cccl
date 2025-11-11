@@ -14,10 +14,6 @@
  *  limitations under the License.
  */
 
-/*! \file distance.h
- *  \brief Device implementations for distance.
- */
-
 #pragma once
 
 #include <thrust/detail/config.h>

@@ -235,14 +235,11 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    // The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
+  // The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-    // Whether or not there are values to be trucked along with keys
-    KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>,
-  };
+  // Whether or not there are values to be trucked along with keys
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // KeyT traits and unsigned bits type
   using traits                 = detail::radix::traits_t<KeyT>;

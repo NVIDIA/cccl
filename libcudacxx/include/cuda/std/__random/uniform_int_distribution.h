@@ -46,14 +46,14 @@ private:
     conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>;
 
   _Engine& __e_;
-  size_t __w_;
-  size_t __w0_;
-  size_t __n_;
-  size_t __n0_;
-  _Working_result_type __y0_;
-  _Working_result_type __y1_;
-  _Engine_result_type __mask0_;
-  _Engine_result_type __mask1_;
+  size_t __w_{};
+  size_t __w0_{};
+  size_t __n_{};
+  size_t __n0_{};
+  _Working_result_type __y0_{};
+  _Working_result_type __y1_{};
+  _Engine_result_type __mask0_{};
+  _Engine_result_type __mask1_{};
 
   static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
   static constexpr const size_t __m               = ::cuda::std::__bit_log2<_Working_result_type>(_Rp);
@@ -62,7 +62,7 @@ private:
 
 public:
   // constructors and seeding functions
-  _CCCL_API __independent_bits_engine(_Engine& __e, size_t __w) noexcept
+  _CCCL_API constexpr __independent_bits_engine(_Engine& __e, size_t __w) noexcept
       : __e_(__e)
       , __w_(__w)
   {
@@ -107,51 +107,53 @@ public:
   }
 
   // generating functions
-  [[nodiscard]] _CCCL_API result_type operator()() noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type operator()() noexcept
   {
     if constexpr (_Rp == 0)
     {
       return static_cast<result_type>(__e_() & __mask0_);
     }
-
-    constexpr size_t __w_rt = numeric_limits<result_type>::digits;
-    result_type __sp        = 0;
-    for (size_t __k = 0; __k < __n0_; ++__k)
+    else
     {
-      _Engine_result_type __u;
-      do
+      constexpr size_t __w_rt = numeric_limits<result_type>::digits;
+      result_type __sp        = 0;
+      for (size_t __k = 0; __k < __n0_; ++__k)
       {
-        __u = __e_() - _Engine::min();
-      } while (__u >= __y0_);
-      if (__w0_ < __w_rt)
-      {
-        __sp <<= __w0_;
+        _Engine_result_type __u = __e_() - _Engine::min();
+        while (__u >= __y0_)
+        {
+          __u = __e_() - _Engine::min();
+        }
+        if (__w0_ < __w_rt)
+        {
+          __sp <<= __w0_;
+        }
+        else
+        {
+          __sp = 0;
+        }
+        __sp += __u & __mask0_;
       }
-      else
-      {
-        __sp = 0;
-      }
-      __sp += __u & __mask0_;
-    }
 
-    for (size_t __k = __n0_; __k < __n_; ++__k)
-    {
-      _Engine_result_type __u;
-      do
+      for (size_t __k = __n0_; __k < __n_; ++__k)
       {
-        __u = __e_() - _Engine::min();
-      } while (__u >= __y1_);
-      if (__w0_ < __w_rt - 1)
-      {
-        __sp <<= __w0_ + 1;
+        _Engine_result_type __u = __e_() - _Engine::min();
+        while (__u >= __y1_)
+        {
+          __u = __e_() - _Engine::min();
+        }
+        if (__w0_ < __w_rt - 1)
+        {
+          __sp <<= __w0_ + 1;
+        }
+        else
+        {
+          __sp = 0;
+        }
+        __sp += __u & __mask1_;
       }
-      else
-      {
-        __sp = 0;
-      }
-      __sp += __u & __mask1_;
+      return __sp;
     }
-    return __sp;
   }
 };
 
@@ -172,25 +174,26 @@ public:
   public:
     using distribution_type = uniform_int_distribution;
 
-    _CCCL_API explicit param_type(result_type __a = 0, result_type __b = (numeric_limits<result_type>::max)()) noexcept
+    _CCCL_API constexpr explicit param_type(result_type __a = 0,
+                                            result_type __b = numeric_limits<result_type>::max()) noexcept
         : __a_(__a)
         , __b_(__b)
     {}
 
-    [[nodiscard]] _CCCL_API result_type a() const noexcept
+    [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
     {
       return __a_;
     }
-    [[nodiscard]] _CCCL_API result_type b() const noexcept
+    [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
     {
       return __b_;
     }
 
-    [[nodiscard]] _CCCL_API friend bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
     }
-    [[nodiscard]] _CCCL_API friend bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -201,29 +204,29 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API uniform_int_distribution() noexcept
+  _CCCL_API constexpr uniform_int_distribution() noexcept
       : uniform_int_distribution(0)
   {}
-  _CCCL_API explicit uniform_int_distribution(result_type __a,
-                                              result_type __b = (numeric_limits<result_type>::max)()) noexcept
+  _CCCL_API explicit constexpr uniform_int_distribution(
+    result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
   {}
-  _CCCL_API explicit uniform_int_distribution(const param_type& __p) noexcept
+  _CCCL_API explicit constexpr uniform_int_distribution(const param_type& __p) noexcept
       : __p_(__p)
   {}
-  _CCCL_API void reset() noexcept {}
+  _CCCL_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g) noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p) noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__cccl_random_is_valid_urng<_URng>, "");
+    static_assert(__cccl_random_is_valid_urng<_URng>);
     using _UIntType = conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, make_unsigned_t<result_type>>;
     const _UIntType __rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
     if (__rp == 1)
@@ -243,51 +246,50 @@ public:
     {
       ++__w;
     }
-
     _Eng __e(__g, __w);
-    _UIntType __u;
-    do
+    _UIntType __u = __e();
+    while (__u >= __rp)
     {
       __u = __e();
-    } while (__u >= __rp);
+    }
 
     return static_cast<result_type>(__u + __p.a());
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API result_type a() const noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
   {
     return __p_.a();
   }
-  [[nodiscard]] _CCCL_API result_type b() const noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
   {
     return __p_.b();
   }
 
-  [[nodiscard]] _CCCL_API param_type param() const noexcept
+  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API void param(const param_type& __p) noexcept
+  _CCCL_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API result_type min() const noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
   {
     return a();
   }
-  [[nodiscard]] _CCCL_API result_type max() const noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
   {
     return b();
   }
 
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const uniform_int_distribution& __x, const uniform_int_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
-  [[nodiscard]] _CCCL_API friend bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const uniform_int_distribution& __x, const uniform_int_distribution& __y) noexcept
   {
     return !(__x == __y);
