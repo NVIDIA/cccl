@@ -1516,17 +1516,6 @@
 <p>Tile status interface specialized for scan status and value types that cannot be combined into one machine word. </p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
-<dl class="cpp enum">
-<dt class="sig sig-object cpp" id="_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_31E">
-<span class="target" id="structcub_1_1ScanTileState_3_01T_00_01false_01_4_1aecd7ef422a7f9603511042f3c8a7f858"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_31E" title="Link to this definition">#</a><br /></dt>
-<dd><p><em>Values:</em></p>
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_3119TILE_STATUS_PADDINGE">
-<span class="target" id="structcub_1_1ScanTileState_3_01T_00_01false_01_4_1aecd7ef422a7f9603511042f3c8a7f858a9a4cfccfecd131bb6f76d67e6e2158e9"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TILE_STATUS_PADDING</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">warp_threads</span></span><a class="headerlink" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_3119TILE_STATUS_PADDINGE" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub13ScanTileStateI1TXL0EEE12StatusValueTE">
 <span class="target" id="structcub_1_1ScanTileState_3_01T_00_01false_01_4_1aed3d3673f06e941b96c0d0dfec2d5007"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">StatusValueT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN3cub13ScanTileStateI1TXL0EEEE" title="cub::ScanTileState&lt;T, false&gt;::T"><span class="n"><span class="pre">T</span></span></a><a class="headerlink" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE12StatusValueTE" title="Link to this definition">#</a><br /></dt>
@@ -1669,6 +1658,11 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
 <dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub13ScanTileStateI1TXL0EEE19TILE_STATUS_PADDINGE">
+<span class="target" id="structcub_1_1ScanTileState_3_01T_00_01false_01_4_1a7704834d5131591d6718787767fe38f4"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TILE_STATUS_PADDING</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">warp_threads</span></span><a class="headerlink" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE19TILE_STATUS_PADDINGE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub13ScanTileStateI1TXL0EEE26description_bytes_per_tileE">
 <span class="target" id="structcub_1_1ScanTileState_3_01T_00_01false_01_4_1aa808c4921dc1bc041c2fe3e000cdf0f9"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">description_bytes_per_tile</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">sizeof</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE10StatusWordE" title="cub::ScanTileState&lt;T, false&gt;::StatusWord"><span class="n"><span class="pre">StatusWord</span></span></a><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE26description_bytes_per_tileE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
@@ -1733,10 +1727,6 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN3cub13ScanTileStateI1TXL0EEEE"><code class="docutils literal notranslate"><span class="pre">cub::ScanTileState&lt;</span> <span class="pre">T,</span> <span class="pre">false</span> <span class="pre">&gt;</span></code></a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_31E"><code class="docutils literal notranslate"><span class="pre">@31</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEEUt2_3119TILE_STATUS_PADDINGE"><code class="docutils literal notranslate"><span class="pre">TILE_STATUS_PADDING</span></code></a></li>
-</ul>
-</li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE12StatusValueTE"><code class="docutils literal notranslate"><span class="pre">StatusValueT</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE10StatusWordE"><code class="docutils literal notranslate"><span class="pre">StatusWord</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE13ScanTileStateEv"><code class="docutils literal notranslate"><span class="pre">ScanTileState()</span></code></a></li>
@@ -1750,6 +1740,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE14d_tile_partialE"><code class="docutils literal notranslate"><span class="pre">d_tile_partial</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE16d_tile_inclusiveE"><code class="docutils literal notranslate"><span class="pre">d_tile_inclusive</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE14AllocationSizeEiR6size_t"><code class="docutils literal notranslate"><span class="pre">AllocationSize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE19TILE_STATUS_PADDINGE"><code class="docutils literal notranslate"><span class="pre">TILE_STATUS_PADDING</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE26description_bytes_per_tileE"><code class="docutils literal notranslate"><span class="pre">description_bytes_per_tile</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub13ScanTileStateI1TXL0EEE22payload_bytes_per_tileE"><code class="docutils literal notranslate"><span class="pre">payload_bytes_per_tile</span></code></a></li>
 </ul>
