@@ -62,19 +62,13 @@ struct typelist;
 
 struct sm52
 {
-  enum
-  {
-    ver      = 520,
-    warpSize = 32
-  };
+  static constexpr int ver      = 520;
+  static constexpr int warpSize = 32;
 };
 struct sm60
 {
-  enum
-  {
-    ver      = 600,
-    warpSize = 32
-  };
+  static constexpr int ver      = 600;
+  static constexpr int warpSize = 32;
 };
 
 // list of sm, checked from left to right order
@@ -220,10 +214,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<Head, Tail...>>
 template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
-  enum
-  {
-    value = V
-  };
+  static constexpr bool value = V;
   using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
@@ -501,10 +492,7 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  enum
-  {
-    WORDS = sizeof(T) / sizeof(DeviceWord)
-  };
+  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord storage[WORDS];
 

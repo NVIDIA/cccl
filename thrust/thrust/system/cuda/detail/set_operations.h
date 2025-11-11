@@ -205,12 +205,9 @@ template <int _BLOCK_THREADS,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1
-  };
+  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -223,16 +220,13 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD            = ::cuda::std::min(
-      NOMINAL_4B_ITEMS_PER_THREAD,
-      ::cuda::std::max(
-        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -241,16 +235,13 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD            = ::cuda::std::min(
-      NOMINAL_4B_ITEMS_PER_THREAD,
-      ::cuda::std::max(
-        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -350,11 +341,8 @@ struct SetOpAgent
 
   using TempStorage = typename ptx_plan::TempStorage;
 
-  enum
-  {
-    ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD,
-    BLOCK_THREADS    = ptx_plan::BLOCK_THREADS,
-  };
+  static constexpr int ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = ptx_plan::BLOCK_THREADS;
 
   struct impl
   {
