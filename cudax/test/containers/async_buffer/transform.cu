@@ -13,12 +13,12 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
+#include <cuda/algorithm>
 #include <cuda/memory_resource>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/launch.cuh>
 
@@ -90,7 +90,7 @@ C2H_CCCLRT_TEST("cudax::buffer launch transform", "[container][buffer]")
   cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
 
   std::vector<int> host_result(a.size());
-  cudax::copy_bytes(stream, a, host_result);
+  cuda::copy_bytes(stream, a, host_result);
 
   stream.sync();
 

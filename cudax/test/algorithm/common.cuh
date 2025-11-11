@@ -11,10 +11,10 @@
 #ifndef __ALGORITHM_COMMON__
 #define __ALGORITHM_COMMON__
 
+#include <cuda/algorithm>
 #include <cuda/memory_resource>
 #include <cuda/std/mdspan>
 
-#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
