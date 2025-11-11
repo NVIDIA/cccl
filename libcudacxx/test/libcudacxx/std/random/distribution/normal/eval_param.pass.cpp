@@ -14,7 +14,7 @@
 // template<class RealType = double>
 // class normal_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g);
+// template<class _URNG> result_type operator()(_URNG& g, const param_type& parm);
 
 #include <cuda/std/__memory_>
 #include <cuda/std/__random_>
@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ inline T sqr(T x)
+inline __host__ __device__ T sqr(T x)
 {
   return x * x;
 }
@@ -35,15 +35,17 @@ int main(int, char**)
 {
   {
     using D = cuda::std::normal_distribution<>;
+    typedef D::param_type P;
     typedef cuda::std::minstd_rand G;
     G g;
     D d(5, 4);
-    const int N                                  = 1000000;
-    cuda::std::unique_ptr<unsigned char[]> array = cuda::std::make_unique<unsigned char[]>(N * 16);
-    cuda::std::span<unsigned char, N * 16> u{array.get(), array.get() + N * 16};
+    P p(50, .5);
+    const int N                           = 100000;
+    cuda::std::unique_ptr<double[]> array = cuda::std::make_unique<double[]>(N);
+    cuda::std::span<double, N> u{array.get(), array.get() + N};
     for (int i = 0; i < N; ++i)
     {
-      u[i] = d(g);
+      u[i] = d(g, p);
     }
     double mean     = cuda::std::accumulate(u.begin(), u.end(), 0.0) / u.size();
     double var      = 0;
@@ -58,12 +60,12 @@ int main(int, char**)
       kurtosis += d2 * d2;
     }
     var /= u.size();
-    double dev = cuda::std::sqrt(var);
+    double dev = std::sqrt(var);
     skew /= u.size() * dev * var;
     kurtosis /= u.size() * var * var;
     kurtosis -= 3;
-    double x_mean     = d.mean();
-    double x_var      = sqr(d.stddev());
+    double x_mean     = p.mean();
+    double x_var      = sqr(p.stddev());
     double x_skew     = 0;
     double x_kurtosis = 0;
     assert(cuda::std::abs((mean - x_mean) / x_mean) < 0.01);

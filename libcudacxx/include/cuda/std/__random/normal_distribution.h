@@ -197,7 +197,7 @@ _CCCL_API _RealType normal_distribution<_RealType>::operator()(_URng& __g, const
   }
   else
   {
-    uniform_real_distribution<result_type> __uni(-1, 1);
+    cuda::std::uniform_real_distribution<result_type> __uni(-1, 1);
     result_type __u;
     result_type __v;
     result_type __s;
@@ -207,7 +207,7 @@ _CCCL_API _RealType normal_distribution<_RealType>::operator()(_URng& __g, const
       __v = __uni(__g);
       __s = __u * __u + __v * __v;
     } while (__s > 1 || __s == 0);
-    result_type __fp = std::sqrt(-2 * std::log(__s) / __s);
+    result_type __fp = cuda::std::sqrt(-2 * cuda::std::log(__s) / __s);
     __v_             = __v * __fp;
     __v_hot_         = true;
     __up             = __u * __fp;
