@@ -34,27 +34,43 @@
 #     to ensure that dialect information is updated correctly, e.g.
 #     `thrust_clone_target_properties(${my_thrust_test} ${some_thrust_target})`
 
-define_property(TARGET PROPERTY _THRUST_HOST
+define_property(
+  TARGET
+  PROPERTY _THRUST_HOST
   BRIEF_DOCS "A target's host system: CPP, TBB, or OMP."
   FULL_DOCS "A target's host system: CPP, TBB, or OMP."
 )
-define_property(TARGET PROPERTY _THRUST_DEVICE
+define_property(
+  TARGET
+  PROPERTY _THRUST_DEVICE
   BRIEF_DOCS "A target's device system: CUDA, CPP, TBB, or OMP."
   FULL_DOCS "A target's device system: CUDA, CPP, TBB, or OMP."
 )
-define_property(TARGET PROPERTY _THRUST_DIALECT
+define_property(
+  TARGET
+  PROPERTY _THRUST_DIALECT
   BRIEF_DOCS "A target's C++ dialect: 17 or 20."
   FULL_DOCS "A target's C++ dialect: 17 or 20."
 )
-define_property(TARGET PROPERTY _THRUST_PREFIX
+define_property(
+  TARGET
+  PROPERTY _THRUST_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'thrust.cpp.cuda.cpp14'."
   FULL_DOCS "A prefix describing the config, eg. 'thrust.cpp.cuda.cpp14'."
 )
 
-function(thrust_set_target_properties target_name host device dialect prefix)
+function(
+  thrust_set_target_properties
+  target_name
+  host
+  device
+  dialect
+  prefix
+)
   cccl_configure_target(${target_name} DIALECT ${dialect})
 
-  set_target_properties(${target_name}
+  set_target_properties(
+    ${target_name}
     PROPERTIES
       _THRUST_HOST ${host}
       _THRUST_DEVICE ${device}
@@ -94,10 +110,15 @@ endfunction()
 
 # Set ${var_name} to TRUE or FALSE in the caller's scope
 function(_thrust_is_config_valid var_name host device dialect)
-  if (THRUST_MULTICONFIG_ENABLE_SYSTEM_${host} AND
-      THRUST_MULTICONFIG_ENABLE_SYSTEM_${device} AND
-      THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect} AND
-      "${host}_${device}" IN_LIST THRUST_MULTICONFIG_WORKLOAD_${THRUST_MULTICONFIG_WORKLOAD}_CONFIGS)
+  if (
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_${host}
+    AND THRUST_MULTICONFIG_ENABLE_SYSTEM_${device}
+    AND THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect}
+    AND
+      "${host}_${device}"
+        IN_LIST
+        THRUST_MULTICONFIG_WORKLOAD_${THRUST_MULTICONFIG_WORKLOAD}_CONFIGS
+  )
     set(${var_name} TRUE PARENT_SCOPE)
   else()
     set(${var_name} FALSE PARENT_SCOPE)
@@ -108,12 +129,20 @@ function(_thrust_init_target_list)
   set(THRUST_TARGETS "" CACHE INTERNAL "" FORCE)
 endfunction()
 
-function(_thrust_add_target_to_target_list target_name host device dialect prefix)
+function(
+  _thrust_add_target_to_target_list
+  target_name
+  host
+  device
+  dialect
+  prefix
+)
   thrust_set_target_properties(${target_name} ${host} ${device} ${dialect} ${prefix})
 
   # dialect-specific interface:
-  target_link_libraries(${target_name} INTERFACE
-    thrust.compiler_interface_cpp${dialect}
+  target_link_libraries(
+    ${target_name}
+    INTERFACE thrust.compiler_interface_cpp${dialect}
   )
 
   set(THRUST_TARGETS ${THRUST_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)
@@ -126,8 +155,10 @@ endfunction()
 function(_thrust_build_target_list_multiconfig)
   # Detect supported dialects if requested -- this must happen after CUDA is
   # enabled, if it's going to be enabled.
-  if (THRUST_MULTICONFIG_ENABLE_DIALECT_ALL OR
-      THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST)
+  if (
+    THRUST_MULTICONFIG_ENABLE_DIALECT_ALL
+    OR THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST
+  )
     message(STATUS "Testing for supported language standards...")
     include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/DetectSupportedStandards.cmake")
     detect_supported_standards(THRUST CXX ${THRUST_CPP_DIALECT_OPTIONS})
@@ -138,10 +169,11 @@ function(_thrust_build_target_list_multiconfig)
     # Take the union of supported standards in CXX and CUDA:
     set(supported_dialects)
     set(latest_dialect 11)
-    foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
-      if ((THRUST_CXX_${standard}_SUPPORTED) AND
-          ((NOT THRUST_CUDA_FOUND) OR THRUST_CUDA_${standard}_SUPPORTED))
-
+    foreach (standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+      if (
+        (THRUST_CXX_${standard}_SUPPORTED)
+        AND ((NOT THRUST_CUDA_FOUND) OR THRUST_CUDA_${standard}_SUPPORTED)
+      )
         # MSVC silently promotes C++11 to C++14 -- skip it:
         if ((${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC) AND (standard EQUAL 11))
           continue()
@@ -155,36 +187,52 @@ function(_thrust_build_target_list_multiconfig)
     endforeach()
 
     if (THRUST_MULTICONFIG_ENABLE_DIALECT_ALL)
-      foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+      foreach (standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
         if (standard IN_LIST supported_dialects)
-          set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} ON CACHE BOOL
-              "Generate C++${dialect} build configurations." FORCE
+          set(
+            THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard}
+            ON
+            CACHE BOOL
+            "Generate C++${dialect} build configurations."
+            FORCE
           )
         else()
-          set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} OFF CACHE BOOL
-            "Generate C++${dialect} build configurations." FORCE
-            )
+          set(
+            THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard}
+            OFF
+            CACHE BOOL
+            "Generate C++${dialect} build configurations."
+            FORCE
+          )
         endif()
       endforeach()
-    elseif(THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST)
-      foreach(standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+    elseif (THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST)
+      foreach (standard IN LISTS THRUST_CPP_DIALECT_OPTIONS)
         if (standard EQUAL latest_dialect)
-          set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} ON CACHE BOOL
-            "Generate C++${dialect} build configurations." FORCE
-            )
+          set(
+            THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard}
+            ON
+            CACHE BOOL
+            "Generate C++${dialect} build configurations."
+            FORCE
+          )
         else()
-          set(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard} OFF CACHE BOOL
-            "Generate C++${dialect} build configurations." FORCE
-            )
+          set(
+            THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${standard}
+            OFF
+            CACHE BOOL
+            "Generate C++${dialect} build configurations."
+            FORCE
+          )
         endif()
       endforeach()
     endif()
   endif()
 
   # Build THRUST_TARGETS
-  foreach(host IN LISTS THRUST_HOST_SYSTEM_OPTIONS)
-    foreach(device IN LISTS THRUST_DEVICE_SYSTEM_OPTIONS)
-      foreach(dialect IN LISTS THRUST_CPP_DIALECT_OPTIONS)
+  foreach (host IN LISTS THRUST_HOST_SYSTEM_OPTIONS)
+    foreach (device IN LISTS THRUST_DEVICE_SYSTEM_OPTIONS)
+      foreach (dialect IN LISTS THRUST_CPP_DIALECT_OPTIONS)
         _thrust_is_config_valid(config_valid ${host} ${device} ${dialect})
         if (config_valid)
           set(prefix "thrust.${host}.${device}.cpp${dialect}")
@@ -192,7 +240,8 @@ function(_thrust_build_target_list_multiconfig)
 
           # Configure a thrust interface target for this host/device
           set(target_name "${prefix}")
-          thrust_create_target(${target_name}
+          thrust_create_target(
+            ${target_name}
             HOST ${host}
             DEVICE ${device}
             DISPATCH ${THRUST_DISPATCH_TYPE}
@@ -213,7 +262,10 @@ function(_thrust_build_target_list_multiconfig)
   endforeach() # hosts
 
   list(LENGTH THRUST_TARGETS count)
-  message(STATUS "${count} unique thrust.host.device.dialect configurations generated")
+  message(
+    STATUS
+    "${count} unique thrust.host.device.dialect configurations generated"
+  )
 endfunction()
 
 function(_thrust_build_target_list_singleconfig)
@@ -238,7 +290,10 @@ function(thrust_build_target_list)
     option(${opt} "${docstring}" "${default}")
     mark_as_advanced(${opt})
     if ("${prefix}" STREQUAL "CCCL" AND DEFINED THRUST_${flag})
-      message(WARNING "The THRUST_${flag} cmake option is deprecated. Use CCCL_${flag} instead.")
+      message(
+        WARNING
+        "The THRUST_${flag} cmake option is deprecated. Use CCCL_${flag} instead."
+      )
       set(CCCL_${flag} ${THRUST_${flag}})
     endif()
     if (${${opt}})
@@ -255,7 +310,8 @@ function(thrust_build_target_list)
   # Top level meta-target. Makes it easier to just build thrust targets when
   # building both CUB and Thrust. Add all project files here so IDEs will be
   # aware of them. This will not generate build rules.
-  file(GLOB_RECURSE all_sources
+  file(
+    GLOB_RECURSE all_sources
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     "${Thrust_SOURCE_DIR}/thrust/*.h"
     "${Thrust_SOURCE_DIR}/thrust/*.inl"

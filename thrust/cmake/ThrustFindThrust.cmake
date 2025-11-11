@@ -14,7 +14,10 @@ function(_thrust_find_thrust_multiconfig)
     list(APPEND req_systems OMP)
   endif()
 
-  find_package(Thrust REQUIRED CONFIG
+  find_package(
+    Thrust
+    REQUIRED
+    CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
     COMPONENTS ${req_systems}
@@ -22,7 +25,10 @@ function(_thrust_find_thrust_multiconfig)
 endfunction()
 
 function(_thrust_find_thrust_singleconfig)
-  find_package(Thrust REQUIRED CONFIG
+  find_package(
+    Thrust
+    REQUIRED
+    CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )

@@ -34,16 +34,24 @@
 #     `cub_clone_target_properties(${my_cub_test} ${some_cub_target})`
 
 # Dialects:
-set(CUB_CPP_DIALECT_OPTIONS
-  17 20
-  CACHE INTERNAL "C++ dialects supported by CUB." FORCE
+set(
+  CUB_CPP_DIALECT_OPTIONS
+  17
+  20
+  CACHE INTERNAL
+  "C++ dialects supported by CUB."
+  FORCE
 )
 
-define_property(TARGET PROPERTY _CUB_DIALECT
+define_property(
+  TARGET
+  PROPERTY _CUB_DIALECT
   BRIEF_DOCS "A target's C++ dialect: 17 or 20."
   FULL_DOCS "A target's C++ dialect: 17 or 20."
 )
-define_property(TARGET PROPERTY _CUB_PREFIX
+define_property(
+  TARGET
+  PROPERTY _CUB_PREFIX
   BRIEF_DOCS "A prefix describing the config, eg. 'cub.cpp17'."
   FULL_DOCS "A prefix describing the config, eg. 'cub.cpp17'."
 )
@@ -51,8 +59,9 @@ define_property(TARGET PROPERTY _CUB_PREFIX
 function(cub_set_target_properties target_name dialect prefix)
   cccl_configure_target(${target_name} DIALECT ${dialect})
 
-  set_target_properties(${target_name}
-    PROPERTIES
+  set_target_properties(
+    ${target_name}
+    PROPERTIES #
       _CUB_DIALECT ${dialect}
       _CUB_PREFIX ${prefix}
   )
@@ -97,9 +106,11 @@ endfunction()
 function(_cub_add_target_to_target_list target_name dialect prefix)
   cub_set_target_properties(${target_name} ${dialect} ${prefix})
 
-  target_link_libraries(${target_name} INTERFACE
-    CUB::CUB
-    cub.compiler_interface_cpp${dialect}
+  target_link_libraries(
+    ${target_name}
+    INTERFACE #
+      CUB::CUB
+      cub.compiler_interface_cpp${dialect}
   )
 
   if (TARGET cub.thrust)
@@ -127,7 +138,8 @@ function(cub_build_target_list)
     if (dialect EQUAL 17) # Default to just 17 on:
       set(default_value ON)
     endif()
-    option(CUB_ENABLE_DIALECT_CPP${dialect}
+    option(
+      CUB_ENABLE_DIALECT_CPP${dialect}
       "Generate C++${dialect} build configurations."
       ${default_value}
     )
@@ -138,8 +150,12 @@ function(cub_build_target_list)
   endforeach()
 
   # Ensure that only one C++ dialect is enabled when dialect info is hidden:
-  if ((NOT CUB_ENABLE_CPP_DIALECT_IN_NAMES) AND (NOT num_dialects_enabled EQUAL 1))
-    message(FATAL_ERROR
+  if (
+    (NOT CUB_ENABLE_CPP_DIALECT_IN_NAMES)
+    AND (NOT num_dialects_enabled EQUAL 1)
+  )
+    message(
+      FATAL_ERROR
       "Only one CUB_ENABLE_DIALECT_CPP## option allowed when "
       "CUB_ENABLE_CPP_DIALECT_IN_NAMES is OFF."
     )
@@ -155,15 +171,21 @@ function(cub_build_target_list)
     set(opt "CCCL_${flag}")
     option(${opt} "${docstring}" "${default}")
     mark_as_advanced(${opt})
-    if(DEFINED CUB_${flag})
-      message(WARNING "The CUB_${flag} cmake option is deprecated. Use ${opt} instead.")
+    if (DEFINED CUB_${flag})
+      message(
+        WARNING
+        "The CUB_${flag} cmake option is deprecated. Use ${opt} instead."
+      )
     endif()
   endmacro()
   add_flag_option(IGNORE_DEPRECATED_CPP_DIALECT "Don't warn about any deprecated C++ standards and compilers." OFF)
   add_flag_option(IGNORE_DEPRECATED_COMPILER "Don't warn about deprecated compilers." OFF)
 
   # Set up the CUB target while testing out our find_package scripts.
-  find_package(CUB REQUIRED CONFIG
+  find_package(
+    CUB
+    REQUIRED
+    CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
   )
@@ -171,7 +193,11 @@ function(cub_build_target_list)
   # TODO
   # Some of the iterators and unittests depend on thrust. We should break the
   # cyclical dependency by migrating CUB's Thrust bits into Thrust.
-  find_package(Thrust ${CUB_VERSION} EXACT CONFIG
+  find_package(
+    Thrust
+    ${CUB_VERSION}
+    EXACT
+    CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
@@ -180,7 +206,8 @@ function(cub_build_target_list)
     thrust_set_CUB_target(CUB::CUB)
     thrust_create_target(cub.thrust HOST CPP DEVICE CUDA)
   else()
-    message(STATUS
+    message(
+      STATUS
       "Thrust was not found. Set CMake variable 'Thrust_DIR' to the "
       "thrust-config.cmake file of a Thrust ${CUB_VERSION} installation to "
       "enable additional testing."
@@ -188,7 +215,7 @@ function(cub_build_target_list)
   endif()
 
   # Build CUB_TARGETS
-  foreach(dialect IN LISTS CUB_CPP_DIALECT_OPTIONS)
+  foreach (dialect IN LISTS CUB_CPP_DIALECT_OPTIONS)
     _cub_is_config_valid(config_valid ${dialect})
     if (config_valid)
       if (NOT CUB_ENABLE_CPP_DIALECT_IN_NAMES)
@@ -211,7 +238,8 @@ function(cub_build_target_list)
   # Top level meta-target. Makes it easier to just build CUB targets when
   # building both CUB and Thrust. Add all project files here so IDEs will be
   # aware of them. This will not generate build rules.
-  file(GLOB_RECURSE all_sources
+  file(
+    GLOB_RECURSE all_sources
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     "${CUB_SOURCE_DIR}/cub/*.cuh"
   )
@@ -223,7 +251,7 @@ function(cub_build_target_list)
     add_custom_target(cub.all SOURCES ${all_sources})
 
     # Create meta targets for each config:
-    foreach(cub_target IN LISTS CUB_TARGETS)
+    foreach (cub_target IN LISTS CUB_TARGETS)
       cub_get_target_property(config_prefix ${cub_target} PREFIX)
       add_custom_target(${config_prefix}.all)
       add_dependencies(cub.all ${config_prefix}.all)

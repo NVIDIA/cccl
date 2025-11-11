@@ -15,21 +15,33 @@
 
 string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
 
-set(cmake_opts
-  -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
-  -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-  -D "CMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
-  -D "CMAKE_CUDA_HOST_COMPILER=${CMAKE_CUDA_HOST_COMPILER}"
-  -D "CMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
+set(
+  cmake_opts
+  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+  "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+  "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+  "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
+  "-DCMAKE_CUDA_HOST_COMPILER=${CMAKE_CUDA_HOST_COMPILER}"
+  "-DCMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
 )
 
-set(CCCL_EXAMPLE_CPM_REPOSITORY "${CCCL_SOURCE_DIR}" CACHE STRING "Git repository used for CPM examples.")
-set(CCCL_EXAMPLE_CPM_TAG "HEAD" CACHE STRING "Git tag/branch used for CPM examples.")
+set(
+  CCCL_EXAMPLE_CPM_REPOSITORY
+  "${CCCL_SOURCE_DIR}"
+  CACHE STRING
+  "Git repository used for CPM examples."
+)
+set(
+  CCCL_EXAMPLE_CPM_TAG
+  "HEAD"
+  CACHE STRING
+  "Git tag/branch used for CPM examples."
+)
 
-set(cmake_cpm_opts
-  -D "CCCL_REPOSITORY=${CCCL_EXAMPLE_CPM_REPOSITORY}"
-  -D "CCCL_TAG=${CCCL_EXAMPLE_CPM_TAG}"
+set(
+  cmake_cpm_opts
+  "-DCCCL_REPOSITORY=${CCCL_EXAMPLE_CPM_REPOSITORY}"
+  "-DCCCL_TAG=${CCCL_EXAMPLE_CPM_TAG}"
 )
 
 if (MSVC)
@@ -37,7 +49,8 @@ if (MSVC)
   return()
 endif()
 
-cccl_add_compile_test(test_name
+cccl_add_compile_test(
+  test_name
   cccl.example
   basic
   "default"
@@ -48,7 +61,8 @@ cccl_add_compile_test(test_name
 find_package(CUDAToolkit REQUIRED)
 
 if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
-  cccl_add_compile_test(test_name
+  cccl_add_compile_test(
+    test_name
     cccl.example
     cudax
     "default"
@@ -56,7 +70,8 @@ if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
     ${cmake_cpm_opts}
   )
 
-  cccl_add_compile_test(test_name
+  cccl_add_compile_test(
+    test_name
     cccl.example
     cudax_stf
     "default"
@@ -66,11 +81,12 @@ if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
 endif() # CTK > 12.0
 
 foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
-  cccl_add_compile_test(test_name
+  cccl_add_compile_test(
+    test_name
     cccl.example
     thrust_flexible_device_system
     "${DEVICE_SYSTEM}"
-    -D "CCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
+    "-DCCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
     ${cmake_opts}
     ${cmake_cpm_opts}
   )

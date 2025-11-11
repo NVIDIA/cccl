@@ -7,14 +7,15 @@ set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
 function(get_recursive_subdirs subdirs)
   set(dirs)
-  file(GLOB_RECURSE contents
+  file(
+    GLOB_RECURSE contents
     CONFIGURE_DEPENDS
     LIST_DIRECTORIES ON
     "${CMAKE_CURRENT_LIST_DIR}/bench/*"
   )
 
-  foreach(test_dir IN LISTS contents)
-    if(IS_DIRECTORY "${test_dir}")
+  foreach (test_dir IN LISTS contents)
+    if (IS_DIRECTORY "${test_dir}")
       list(APPEND dirs "${test_dir}")
     endif()
   endforeach()
@@ -28,14 +29,22 @@ function(add_bench target_name bench_name bench_src)
 
   add_executable(${bench_target} "${bench_src}")
   cccl_configure_target(${bench_target} DIALECT 17)
-  target_link_libraries(${bench_target} PRIVATE cccl.nvbench_helper nvbench::main)
+  target_link_libraries(
+    ${bench_target}
+    PRIVATE #
+      cccl.nvbench_helper
+      nvbench::main
+  )
 endfunction()
 
 function(thrust_wrap_bench_in_cpp cpp_file_var cu_file thrust_target)
   thrust_get_target_property(prefix ${thrust_target} PREFIX)
   set(wrapped_source_file "${cu_file}")
   set(cpp_file "${CMAKE_CURRENT_BINARY_DIR}/${prefix}/${cu_file}.cpp")
-  configure_file("${Thrust_SOURCE_DIR}/cmake/wrap_source_file.cpp.in" "${cpp_file}")
+  configure_file(
+    "${Thrust_SOURCE_DIR}/cmake/wrap_source_file.cpp.in"
+    "${cpp_file}"
+  )
   set(${cpp_file_var} "${cpp_file}" PARENT_SCOPE)
 endfunction()
 
@@ -45,8 +54,8 @@ function(add_bench_dir bench_dir)
   file(TO_CMAKE_PATH "${bench_prefix}" bench_prefix)
   string(REPLACE "/" "." bench_prefix "${bench_prefix}")
 
-  foreach(bench_src IN LISTS bench_srcs)
-    foreach(thrust_target IN LISTS THRUST_TARGETS)
+  foreach (bench_src IN LISTS bench_srcs)
+    foreach (thrust_target IN LISTS THRUST_TARGETS)
       thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
       thrust_get_target_property(config_device ${thrust_target} DEVICE)
 
@@ -75,6 +84,6 @@ endfunction()
 
 get_recursive_subdirs(subdirs)
 
-foreach(subdir IN LISTS subdirs)
+foreach (subdir IN LISTS subdirs)
   add_bench_dir("${subdir}")
 endforeach()
