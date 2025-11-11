@@ -14,10 +14,10 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <cuda/std/__algorithm/fill.h>
-#include <cuda/std/__algorithm/equal.h>
 #include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/equal.h>
+#include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/ranges>
 
