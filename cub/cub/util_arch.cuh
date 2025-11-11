@@ -114,24 +114,61 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
+struct scaling_result
+{
+  int items_per_thread;
+  int block_threads;
+};
+
+_CCCL_API constexpr auto
+scale_reg_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+{
+  const int items_per_thread =
+    (::cuda::std::max) (1, nominal_4B_items_per_thread * 4 / (::cuda::std::max) (4, target_type_size));
+  const int block_threads =
+    (::cuda::std::min) (nominal_4B_block_threads,
+                        ::cuda::ceil_div(int{max_smem_per_block} / (target_type_size * items_per_thread), 32) * 32);
+  return {items_per_thread, block_threads};
+}
+
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max) (1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max) (4, int{sizeof(T)}));
-  static constexpr int BLOCK_THREADS =
-    (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::ceil_div(int{max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+private:
+  static constexpr auto result = scale_reg_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+
+public:
+  static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
+  static constexpr int BLOCK_THREADS    = result.block_threads;
 };
+
+_CCCL_API constexpr auto
+scale_mem_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+{
+  const int items_per_thread =
+    ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / target_type_size, 1, nominal_4B_items_per_thread * 2);
+  const int block_threads =
+    (::cuda::std::min) (nominal_4B_block_threads,
+                        ::cuda::round_up(int{max_smem_per_block} / (target_type_size * items_per_thread), 32));
+  return {items_per_thread, block_threads};
+}
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD =
-    ::cuda::std::clamp(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, 1, Nominal4ByteItemsPerThread * 2);
-  static constexpr int BLOCK_THREADS =
-    (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::round_up(int{max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32));
+private:
+  static constexpr auto result = scale_mem_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+
+public:
+  static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
+  static constexpr int BLOCK_THREADS    = result.block_threads;
+};
+
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename>
+struct NoScaling
+{
+  static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
+  static constexpr int BLOCK_THREADS    = Nominal4ByteBlockThreads;
 };
 } // namespace detail
 #endif // Do not document
