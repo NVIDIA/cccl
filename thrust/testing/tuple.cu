@@ -283,46 +283,46 @@ struct TestTupleComparison
     tuple<T, T, T, T, T> lhs(0, 0, 0, 0, 0), rhs(0, 0, 0, 0, 0);
 
     // equality
-    ASSERT_EQUAL(true, lhs == rhs);
+    REQUIRE(lhs == rhs);
     get<0>(rhs) = 1;
-    ASSERT_EQUAL(false, lhs == rhs);
+    REQUIRE_FALSE(lhs == rhs);
 
     // inequality
-    ASSERT_EQUAL(true, lhs != rhs);
+    REQUIRE(lhs != rhs);
     lhs = rhs;
-    ASSERT_EQUAL(false, lhs != rhs);
+    REQUIRE_FALSE(lhs != rhs);
 
     // less than
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = make_tuple(0, 0, 1, 0, 0);
-    ASSERT_EQUAL(true, lhs < rhs);
+    REQUIRE(lhs < rhs);
     get<0>(lhs) = 2;
-    ASSERT_EQUAL(false, lhs < rhs);
+    REQUIRE_FALSE(lhs < rhs);
 
     // less than equal
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = lhs;
-    ASSERT_EQUAL(true, lhs <= rhs); // equal
+    REQUIRE(lhs <= rhs); // equal
     get<2>(rhs) = 1;
-    ASSERT_EQUAL(true, lhs <= rhs); // less than
+    REQUIRE(lhs <= rhs); // less than
     get<2>(lhs) = 2;
-    ASSERT_EQUAL(false, lhs <= rhs);
+    REQUIRE_FALSE(lhs <= rhs);
 
     // greater than
     lhs = make_tuple(1, 0, 0, 0, 0);
     rhs = make_tuple(0, 1, 1, 1, 1);
-    ASSERT_EQUAL(true, lhs > rhs);
+    REQUIRE(lhs > rhs);
     get<0>(rhs) = 2;
-    ASSERT_EQUAL(false, lhs > rhs);
+    REQUIRE_FALSE(lhs > rhs);
 
     // greater than equal
     lhs = make_tuple(0, 0, 0, 0, 0);
     rhs = lhs;
-    ASSERT_EQUAL(true, lhs >= rhs); // equal
+    REQUIRE(lhs >= rhs); // equal
     get<4>(lhs) = 1;
-    ASSERT_EQUAL(true, lhs >= rhs); // greater than
+    REQUIRE(lhs >= rhs); // greater than
     get<3>(rhs) = 1;
-    ASSERT_EQUAL(false, lhs >= rhs);
+    REQUIRE_FALSE(lhs >= rhs);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleComparison, NumericTypes);
@@ -452,8 +452,8 @@ struct TestTupleTie
     thrust::device_vector<bool> d_result(1);
     thrust::generate(d_result.begin(), d_result.end(), TestTupleTieFunctor<T>());
 
-    ASSERT_EQUAL(true, h_result[0]);
-    ASSERT_EQUAL(true, d_result[0]);
+    REQUIRE(h_result[0]);
+    REQUIRE(d_result[0]);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleTie, NumericTypes);
