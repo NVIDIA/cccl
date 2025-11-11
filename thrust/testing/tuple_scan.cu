@@ -4,10 +4,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
 using namespace unittest;
 
 struct SumTupleFunctor
