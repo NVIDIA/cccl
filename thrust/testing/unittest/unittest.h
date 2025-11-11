@@ -3,6 +3,9 @@
 // Here was Thrust's legacy unit test framework. It's core was replaced by Catch2, but the APIs remain for all tests
 // that have not been migrated yet.
 
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/limits>
@@ -23,6 +26,28 @@
 #  include <cxxabi.h>
 #endif // __GNUC__
 
+namespace detail
+{
+template <class T>
+std::vector<T> to_vec(thrust::device_vector<T> const& vec)
+{
+  thrust::host_vector<T> temp = vec;
+  return std::vector<T>{temp.begin(), temp.end()};
+}
+
+template <class T>
+std::vector<T> to_vec(thrust::host_vector<T> const& vec)
+{
+  return std::vector<T>{vec.begin(), vec.end()};
+}
+
+template <class T>
+std::vector<T> to_vec(std::vector<T> const& vec)
+{
+  return vec;
+}
+} // namespace detail
+
 #define ASSERT_EQUAL(X, Y)           REQUIRE(X == Y)
 #define ASSERT_EQUAL_QUIET(X, Y)     REQUIRE((X == Y))
 #define ASSERT_NOT_EQUAL(X, Y)       REQUIRE(X != Y)
@@ -31,7 +56,12 @@
 #define ASSERT_GEQUAL(X, Y)          REQUIRE(X >= Y)
 #define ASSERT_LESS(X, Y)            REQUIRE(X < Y)
 #define ASSERT_GREATER(X, Y)         REQUIRE(X > Y)
-#define ASSERT_ALMOST_EQUAL(X, Y)    REQUIRE_THAT(X, Catch::Matchers::Approx(Y));
+#define ASSERT_ALMOST_EQUAL(X, Y)                            \
+  {                                                          \
+    auto vec_ref = detail::to_vec(X);                        \
+    auto vec_out = detail::to_vec(Y);                        \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
+  }
 
 #define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) CHECK_THROWS_AS(EXPR, EXCEPTION_TYPE)
 #define KNOWN_FAILURE                       FAIL()
