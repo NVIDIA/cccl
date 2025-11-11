@@ -49,6 +49,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__memory_resource/synchronous_resource_adapter.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
