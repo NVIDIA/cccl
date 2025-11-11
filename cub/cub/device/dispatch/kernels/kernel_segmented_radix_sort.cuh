@@ -18,6 +18,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/limits>
 
