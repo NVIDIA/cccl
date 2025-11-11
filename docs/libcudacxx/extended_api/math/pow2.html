@@ -1512,19 +1512,22 @@
                   
   <section id="power-of-two-utilities">
 <span id="libcudacxx-extended-api-math-pow2"></span><h1>Power of Two Utilities<a class="headerlink" href="#power-of-two-utilities" title="Link to this heading">#</a></h1>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">constexpr</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/cmath&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
 <span class="kt">bool</span><span class="w"> </span><span class="n">is_power_of_two</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
-</pre></div>
-</div>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">constexpr</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
 <span class="n">T</span><span class="w"> </span><span class="n">next_power_of_two</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
-</pre></div>
-</div>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">constexpr</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
 <span class="n">T</span><span class="w"> </span><span class="n">prev_power_of_two</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The functions provide utilities to determine if an integer value is a power of two, and to compute the next and previous power of two.</p>
@@ -1550,10 +1553,10 @@
 <p>See <a class="reference internal" href="../../standard_api/numerics_library/bit.html#libcudacxx-standard-api-numerics-bit"><span class="std std-ref">&lt;cuda/std/bit&gt; performance considerations</span></a></p>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/cassert&gt;</span>
 
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">pow2_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">pow2_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">cuda</span><span class="o">::</span><span class="n">is_power_of_two</span><span class="p">(</span><span class="mi">20</span><span class="p">));</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">next_power_of_two</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">32</span><span class="p">);</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">prev_power_of_two</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">16</span><span class="p">);</span>
@@ -1566,7 +1569,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/oG3bcEax8">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/896Yx3vf8">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 

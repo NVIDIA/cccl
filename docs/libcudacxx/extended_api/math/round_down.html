@@ -1514,9 +1514,14 @@
                   
   <section id="cuda-round-down">
 <span id="libcudacxx-extended-api-math-round-down"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::round_down</span></code><a class="headerlink" href="#cuda-round-down" title="Link to this heading">#</a></h1>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">constexpr</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/cmath&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
 <span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">common_type_t</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span><span class="w"> </span><span class="n">round_down</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="n">base_multiple</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function computes the round down to the largest multiple of an integral or enumerator value <span class="math notranslate nohighlight">\(floor(\frac{value}{base\_multiple}) * base\_multiple\)</span></p>
@@ -1558,7 +1563,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/9vcxo3d8j">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/cxGYfMGna">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 

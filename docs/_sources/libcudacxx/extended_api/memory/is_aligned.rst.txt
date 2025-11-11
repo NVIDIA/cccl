@@ -3,10 +3,16 @@
 ``cuda::is_aligned``
 ====================
 
+Defined in the header ``<cuda/memory>``.
+
 .. code:: cuda
+
+   namespace cuda {
 
    [[nodiscard]] __host__ __device__ inline
    bool is_aligned(const void* ptr, size_t alignment) noexcept
+
+   } // namespace cuda
 
 The function determines if a pointer is aligned to a specific alignment.
 
@@ -25,11 +31,11 @@ The function determines if a pointer is aligned to a specific alignment.
 
 .. note::
 
-    The function is similar to the C++ standard library function `cuda::std::is_sufficiently_aligned() <https://en.cppreference.com/w/cpp/memory/is_sufficiently_aligned.html>`__ from the ``<cuda/std/memory>`` header. The differences are the following:
+  The function is similar to the C++ standard library function `cuda::std::is_sufficiently_aligned() <https://en.cppreference.com/w/cpp/memory/is_sufficiently_aligned.html>`__ from the ``<cuda/std/memory>`` header. The differences are the following:
 
-    - ``cuda::is_aligned()`` doesn't have a template parameter and might be less expensive to compile.
-    - ``cuda::is_aligned()`` supports run-time values of ``alignment``.
-    - ``cuda::std::is_sufficiently_aligned()`` additionally checks the compatibility between the alignment of the pointer type and the specified alignment.
+  - ``cuda::is_aligned()`` doesn't have a template parameter and might be less expensive to compile.
+  - ``cuda::is_aligned()`` supports run-time values of ``alignment``.
+  - ``cuda::std::is_sufficiently_aligned()`` additionally checks the compatibility between the alignment of the pointer type and the specified alignment.
 
 Example
 -------
@@ -50,4 +56,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/K3oMTqbxa>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/Tr45EoKsT>`__

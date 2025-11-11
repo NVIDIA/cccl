@@ -3,11 +3,17 @@
 ``cuda::neg``
 ====================================
 
-.. code:: cpp
+Defined in the ``<cuda/cmath>`` header.
+
+.. code:: cuda
+
+   namespace cuda {
 
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    T neg(T value) noexcept;
+
+   } // namespace cuda
 
 The function computes the negation of the input value accepting both signed and unsigned integer types. It doesn't emit any warnings for signed integer overflow and applying ``-`` to unsigned integer types.
 
@@ -26,7 +32,7 @@ The function computes the negation of the input value accepting both signed and 
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -48,4 +54,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/jq6a1odz7>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/K3zcE9zqn>`__

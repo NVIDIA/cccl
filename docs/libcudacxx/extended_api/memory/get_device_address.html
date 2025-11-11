@@ -1512,7 +1512,15 @@
                   
   <section id="cuda-get-device-address">
 <span id="libcudacxx-extended-api-memory-get-device-address"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::get_device_address</span></code><a class="headerlink" href="#cuda-get-device-address" title="Link to this heading">#</a></h1>
-<p>Defined in the headers <code class="docutils literal notranslate"><span class="pre">&lt;cuda/memory&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;cuda/functional&gt;</span></code>:</p>
+<p>Defined in the headers <code class="docutils literal notranslate"><span class="pre">&lt;cuda/memory&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;cuda/functional&gt;</span></code>.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span>
+<span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">get_device_address</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">__device_object</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
+</pre></div>
+</div>
 <p><code class="docutils literal notranslate"><span class="pre">cuda::get_device_address</span></code> returns a valid pointer to a device object.
 It replaces uses of <code class="docutils literal notranslate"><span class="pre">cudaGetSymbolAddress</span></code>, which requires an inout parameter.</p>
 <section id="example">

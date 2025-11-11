@@ -61,4 +61,4 @@ Example
        return 0;
    }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/rfb4s76nK>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/64r6zT9Wq>`__

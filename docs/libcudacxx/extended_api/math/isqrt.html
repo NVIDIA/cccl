@@ -1512,9 +1512,14 @@
                   
   <section id="cuda-isqrt">
 <span id="libcudacxx-extended-api-math-isqrt"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::isqrt</span></code><a class="headerlink" href="#cuda-isqrt" title="Link to this heading">#</a></h1>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="k">constexpr</span>
-<span class="n">T</span><span class="w"> </span><span class="n">isqrt</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/cmath&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
+<span class="n">T</span><span class="w"> </span><span class="n">isqrt</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function computes the integer square root of the input value rounded down.</p>
@@ -1536,10 +1541,10 @@
 </ul>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/cassert&gt;</span>
 
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">isqrt_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">isqrt_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">isqrt</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">isqrt</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">isqrt</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">6</span><span class="p">);</span>
@@ -1553,7 +1558,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/enP8cW6nY">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/xPcj35dq6">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 

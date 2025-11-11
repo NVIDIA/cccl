@@ -3,11 +3,17 @@
 ``cuda::ceil_div``
 ==================
 
+Defined in the ``<cuda/cmath>`` header.
+
 .. code:: cuda
 
+   namespace cuda {
+
    template <typename T, typename U>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    cuda::std::common_type_t<T, U> ceil_div(T value, U divisor) noexcept;
+
+   } // namespace cuda
 
 The function computes the ceiling division between two integral or enumerator values :math:`ceil(\frac{value}{base\_multiple})`.
 
@@ -68,4 +74,4 @@ This API is very useful for determining the *number of thread blocks* required t
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/hbxscWGT9>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/dj9a5137z>`__

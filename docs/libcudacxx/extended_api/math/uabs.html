@@ -1512,9 +1512,14 @@
                   
   <section id="cuda-uabs">
 <span id="libcudacxx-extended-api-math-uabs"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::uabs</span></code><a class="headerlink" href="#cuda-uabs" title="Link to this heading">#</a></h1>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="k">constexpr</span>
-<span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">make_unsigned_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">uabs</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/cmath&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kr">__host__</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="n">constexpr</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">make_unsigned_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">uabs</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda</span>
 </pre></div>
 </div>
 <p>The function computes the absolute value of the input value. The result is returned as an unsigned integer type of the same size as the input value. In comparison to the standard <code class="docutils literal notranslate"><span class="pre">abs</span></code> function, the <code class="docutils literal notranslate"><span class="pre">uabs</span></code> eliminates the undefined behaviour when a signed <code class="docutils literal notranslate"><span class="pre">T_MIN</span></code> is passed as an input.</p>
@@ -1532,17 +1537,17 @@
 </ul>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/cmath&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/cassert&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/limits&gt;</span>
 
-<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">uabs_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="p">;</span>
+<span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">uabs_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">using</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="p">;</span>
 
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">20u</span><span class="p">);</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="mi">-32</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">32u</span><span class="p">);</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">()));</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">min</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">()));</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">uabs</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">min</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span><span class="p">(</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
@@ -1552,7 +1557,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://godbolt.org/z/vPbrKKqMd">See it on Godbolt 🔗</a></p>
+<p><a class="reference external" href="https://godbolt.org/z/KEoYfq53G">See it on Godbolt 🔗</a></p>
 </section>
 </section>
 

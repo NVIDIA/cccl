@@ -3,7 +3,16 @@
 ``cuda::get_device_address``
 ============================
 
-Defined in the headers ``<cuda/memory>`` and ``<cuda/functional>``:
+Defined in the headers ``<cuda/memory>`` and ``<cuda/functional>``.
+
+.. code:: cuda
+
+   namespace cuda {
+
+   [[nodiscard]] __host__ __device__
+   T* get_device_address(T& __device_object) noexcept;
+
+   } // namespace cuda
 
 ``cuda::get_device_address`` returns a valid pointer to a device object.
 It replaces uses of ``cudaGetSymbolAddress``, which requires an inout parameter.
