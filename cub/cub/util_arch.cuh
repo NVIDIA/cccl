@@ -120,7 +120,7 @@ struct scaling_result
   int block_threads;
 };
 
-_CCCL_API constexpr auto
+[[nodiscard]] _CCCL_API inline constexpr auto
 scale_reg_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
 {
   const int items_per_thread =
@@ -142,7 +142,7 @@ public:
   static constexpr int BLOCK_THREADS    = result.block_threads;
 };
 
-_CCCL_API constexpr auto
+[[nodiscard]] _CCCL_API inline constexpr auto
 scale_mem_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
 {
   const int items_per_thread =
