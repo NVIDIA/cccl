@@ -31,7 +31,7 @@
 #define ASSERT_GEQUAL(X, Y)          REQUIRE(X >= Y)
 #define ASSERT_LESS(X, Y)            REQUIRE(X < Y)
 #define ASSERT_GREATER(X, Y)         REQUIRE(X > Y)
-#define ASSERT_ALMOST_EQUAL(X, Y)    REQUIRE_APPROX_EQ(X, Y)
+#define ASSERT_ALMOST_EQUAL(X, Y)    REQUIRE_THAT(X, Catch::Matchers::Approx(Y));
 
 #define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) CHECK_THROWS_AS(EXPR, EXCEPTION_TYPE)
 #define KNOWN_FAILURE                       FAIL()
