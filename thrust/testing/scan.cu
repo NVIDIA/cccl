@@ -810,3 +810,134 @@ void TestScanBug6317()
   }
 }
 DECLARE_UNITTEST(TestScanBug6317);
+
+// Test edge cases for parallel scan with non-additive operations
+void TestScanEdgeCases()
+{
+  // Test 1: Large array with inclusive_scan, multiplies, and init
+  // Tests Step 1 fix with many threads
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 5) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    // Verify with host scan
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 2);
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 2: Boundary exactly at parallel_scan_threshold (1024)
+  {
+    const int n = 1024;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = i + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 10, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 10);
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 3: Below threshold (1023) should use serial path
+  {
+    const int n = 1023;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 3) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 5);
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 4: Very small array (edge case for block distribution)
+  {
+    thrust::device_vector<int> d_input = {3, 7};
+    thrust::device_vector<int> d_output(2);
+
+    auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::device_vector<int> expected = {6, 42};
+    ASSERT_EQUAL(d_output, expected);
+  }
+
+  // Test 5: exclusive_scan with large array and multiplies
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 3) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 6: exclusive_scan at boundary (1024 elements)
+  {
+    const int n = 1024;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 5) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 3, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 7: exclusive_scan with very small array
+  {
+    thrust::device_vector<int> d_input = {2, 4};
+    thrust::device_vector<int> d_output(2);
+
+    auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::device_vector<int> expected = {3, 6};
+    ASSERT_EQUAL(d_output, expected);
+  }
+}
+DECLARE_UNITTEST(TestScanEdgeCases);

@@ -106,25 +106,9 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      if constexpr (has_init)
-      {
-        if (tid == 0)
-        {
-          block_sums[tid] = ::cuda::std::reduce(first + start, first + end, init, wrapped_binary_op);
-        }
-        else
-        {
-          block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, wrapped_binary_op);
-        }
-      }
-      else
-      {
-        // No init value: reduce uses first element as init
-        if (end > start)
-        {
-          block_sums[tid] = ::cuda::std::reduce(first + start + 1, first + end, *(first + start), wrapped_binary_op);
-        }
-      }
+      // For both has_init and no-init cases: reduce each block using first element as init
+      accum_t first_elem = *(first + start);
+      block_sums[tid]    = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
     }
   }
 
@@ -135,17 +119,11 @@ OutputIterator scan_impl(
   }
   else
   {
-    // For no init inclusive scan, use inclusive_scan on block_sums, then shift
+    // For no init inclusive scan: exclusive_scan starting at second element with first element as init
     if (num_threads > 1)
     {
-      temporary_array<accum_t, DerivedPolicy> block_sums_copy(exec, num_threads);
-      for (int i = 0; i < num_threads; ++i)
-      {
-        block_sums_copy[i] = block_sums[i];
-      }
-      ::cuda::std::inclusive_scan(
-        block_sums_copy.begin(), block_sums_copy.begin() + num_threads - 1, block_sums.begin() + 1, wrapped_binary_op);
-      // block_sums[0] stays as-is (no prefix for first block)
+      ::cuda::std::exclusive_scan(
+        block_sums.begin() + 1, block_sums.end(), block_sums.begin() + 1, block_sums[0], wrapped_binary_op);
     }
   }
 

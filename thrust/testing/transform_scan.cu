@@ -5,6 +5,9 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/transform_scan.h>
 
+#include <algorithm>
+#include <numeric>
+
 #include <unittest/unittest.h>
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
@@ -400,3 +403,151 @@ void TestValueCategoryDeduction()
   ASSERT_EQUAL((thrust::device_vector<T>{0, 5, 5, 5, 8, 8, 8, 8, 8, 8}), vec);
 }
 DECLARE_GENERIC_UNITTEST(TestValueCategoryDeduction);
+
+// User-defined Int type with poison default constructor
+struct TransformInt
+{
+  int value;
+
+  _CCCL_HOST_DEVICE TransformInt()
+      : value(999)
+  {}
+  _CCCL_HOST_DEVICE TransformInt(int v)
+      : value(v)
+  {}
+
+  _CCCL_HOST_DEVICE friend TransformInt operator+(TransformInt a, TransformInt b)
+  {
+    return TransformInt(a.value + b.value);
+  }
+  _CCCL_HOST_DEVICE friend TransformInt operator*(TransformInt a, TransformInt b)
+  {
+    return TransformInt(a.value * b.value);
+  }
+  _CCCL_HOST_DEVICE friend bool operator==(TransformInt a, TransformInt b)
+  {
+    return a.value == b.value;
+  }
+  friend std::ostream& operator<<(std::ostream& os, TransformInt i)
+  {
+    return os << i.value;
+  }
+};
+
+// Test edge cases for parallel transform_scan with non-additive operations
+void TestTransformScanEdgeCases()
+{
+  // Test 1: Large array with transform_inclusive_scan, multiplies, and init
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 5) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::transform_inclusive_scan(
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    // Verify with host scan
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
+      return -x;
+    });
+    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 2);
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 2: transform_exclusive_scan with multiplies on large array
+  {
+    const int n = 10000;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = (i % 3) + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::transform_exclusive_scan(
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 5, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
+      return -x;
+    });
+    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 3: User-defined type with poison default constructor
+  {
+    thrust::device_vector<TransformInt> vec(5, TransformInt{1});
+    thrust::transform_exclusive_scan(
+      vec.begin(),
+      vec.end(),
+      vec.begin(),
+      ::cuda::std::identity{},
+      TransformInt{100},
+      ::cuda::std::plus<TransformInt>());
+
+    ASSERT_EQUAL(vec,
+                 (thrust::device_vector<TransformInt>{
+                   TransformInt{100}, TransformInt{101}, TransformInt{102}, TransformInt{103}, TransformInt{104}}));
+  }
+
+  // Test 4: In-place transform_exclusive_scan with multiplies
+  {
+    thrust::device_vector<int> vec = {2, 3, 4, 5};
+    auto r                         = thrust::transform_exclusive_scan(
+      vec.begin(), vec.end(), vec.begin(), ::cuda::std::negate<int>(), 10, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((vec.end() == r), true);
+
+    thrust::device_vector<int> expected = {10, -20, 60, -240};
+    ASSERT_EQUAL(vec, expected);
+  }
+
+  // Test 5: Boundary case at threshold (1024 elements)
+  {
+    const int n = 1024;
+    thrust::device_vector<int> d_input(n);
+    for (int i = 0; i < n; ++i)
+    {
+      d_input[i] = i + 1;
+    }
+
+    thrust::device_vector<int> d_output(n);
+    auto r = thrust::transform_inclusive_scan(
+      d_input.begin(), d_input.end(), d_output.begin(), thrust::square<int>(), 1, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::host_vector<int> h_input = d_input;
+    thrust::host_vector<int> h_output(n);
+    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
+      return x * x;
+    });
+    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 1);
+
+    ASSERT_EQUAL(d_output, h_output);
+  }
+
+  // Test 6: Very small array (2 elements)
+  {
+    thrust::device_vector<int> d_input = {3, 7};
+    thrust::device_vector<int> d_output(2);
+
+    auto r = thrust::transform_inclusive_scan(
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
+    ASSERT_EQUAL((d_output.end() == r), true);
+
+    thrust::device_vector<int> expected = {-6, 42};
+    ASSERT_EQUAL(d_output, expected);
+  }
+}
+DECLARE_UNITTEST(TestTransformScanEdgeCases);
