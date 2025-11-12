@@ -145,23 +145,23 @@ struct TestUninitializedFillNonPOD
     thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
     T exemplar;
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_host);
 
     T host_copy_of_exemplar(exemplar);
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
     REQUIRE(exemplar.copy_constructed_on_host);
 
     // copy construct v from the exemplar
     thrust::uninitialized_fill(v, v + 1, exemplar);
 
     T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE_FALSE(x.copy_constructed_on_device);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     x = v[0];
     REQUIRE(x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     thrust::device_free(v);
   }
@@ -213,23 +213,23 @@ struct TestUninitializedFillNNonPOD
     thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
     T exemplar;
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_host);
 
     T host_copy_of_exemplar(exemplar);
-    ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
+    REQUIRE_FALSE(exemplar.copy_constructed_on_device);
     REQUIRE(exemplar.copy_constructed_on_host);
 
     // copy construct v from the exemplar
     thrust::uninitialized_fill_n(v, 1, exemplar);
 
     T x;
-    ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE_FALSE(x.copy_constructed_on_device);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     x = v[0];
     REQUIRE(x.copy_constructed_on_device);
-    ASSERT_EQUAL(false, x.copy_constructed_on_host);
+    REQUIRE_FALSE(x.copy_constructed_on_host);
 
     thrust::device_free(v);
   }

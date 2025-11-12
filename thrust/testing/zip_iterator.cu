@@ -117,11 +117,11 @@ struct TestZipIteratorManipulation
     ZipIterator iter3 = make_zip_iterator(v1.begin(), v2.begin());
     REQUIRE(iter0 == iter1);
     REQUIRE(iter0 == iter2);
-    ASSERT_EQUAL(false, iter0 == iter3);
+    REQUIRE_FALSE(iter0 == iter3);
 
     // test inequality
-    ASSERT_EQUAL(false, iter0 != iter1);
-    ASSERT_EQUAL(false, iter0 != iter2);
+    REQUIRE_FALSE(iter0 != iter1);
+    REQUIRE_FALSE(iter0 != iter2);
     REQUIRE(iter0 != iter3);
 
     // test advance
