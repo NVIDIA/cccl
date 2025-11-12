@@ -10,6 +10,10 @@ XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
 INPUT                  = ../../libcudacxx/include/cuda/__iterator \
+                         ../../libcudacxx/include/cuda/__stream \
+                         ../../libcudacxx/include/cuda/__device \
+                         ../../libcudacxx/include/cuda/__event \
+                         ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/nv
 
 RECURSIVE              = YES

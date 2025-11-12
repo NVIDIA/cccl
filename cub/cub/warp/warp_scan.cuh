@@ -144,17 +144,14 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
 
-    /// Whether the logical warp size is a power-of-two
-    IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
+  /// Whether the logical warp size is a power-of-two
+  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
 
-    /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = cuda::std::is_integral_v<T>
-  };
+  /// Whether the data type is an integer (which has fully-associative addition)
+  static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two

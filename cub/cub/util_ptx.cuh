@@ -211,10 +211,7 @@ template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-  };
+  constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -292,10 +289,7 @@ template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-  };
+  static constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
