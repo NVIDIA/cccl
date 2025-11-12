@@ -20,7 +20,7 @@
 //   void
 //   return_temporary_buffer(T* p);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/utility>

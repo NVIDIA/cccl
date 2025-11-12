@@ -15,8 +15,8 @@
 //   Iter
 //   stable_partition(Iter first, Iter last, Pred pred);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__memory_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "count_new.h"

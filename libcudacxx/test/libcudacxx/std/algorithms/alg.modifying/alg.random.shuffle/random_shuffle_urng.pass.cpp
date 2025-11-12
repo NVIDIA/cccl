@@ -12,8 +12,8 @@
 //     void shuffle(RandomAccessIterator first, RandomAccessIterator last,
 //                  UniformRandomNumberGenerator& g);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__random_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
