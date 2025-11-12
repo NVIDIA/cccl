@@ -35,7 +35,7 @@ void TestFindDispatchExplicit()
   my_system sys(0);
   thrust::find(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindDispatchExplicit);
 
@@ -87,7 +87,7 @@ void TestFindIfDispatchExplicit()
   my_system sys(0);
   thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindIfDispatchExplicit);
 
@@ -139,7 +139,7 @@ void TestFindIfNotDispatchExplicit()
   my_system sys(0);
   thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestFindIfNotDispatchExplicit);
 

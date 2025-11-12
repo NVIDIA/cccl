@@ -20,7 +20,7 @@ void TestUninitializedCopyDispatchExplicit()
   my_system sys(0);
   thrust::uninitialized_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUninitializedCopyDispatchExplicit);
 
@@ -56,7 +56,7 @@ void TestUninitializedCopyNDispatchExplicit()
   my_system sys(0);
   thrust::uninitialized_copy_n(sys, vec.begin(), vec.size(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUninitializedCopyNDispatchExplicit);
 
@@ -147,7 +147,7 @@ struct TestUninitializedCopyNonPODDevice
     thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
 
     x = v2[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
+    REQUIRE(x.copy_constructed_on_device);
     ASSERT_EQUAL(false, x.copy_constructed_on_host);
   }
 };
@@ -172,7 +172,7 @@ struct TestUninitializedCopyNNonPODDevice
     thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
 
     x = v2[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
+    REQUIRE(x.copy_constructed_on_device);
     ASSERT_EQUAL(false, x.copy_constructed_on_host);
   }
 };
@@ -198,7 +198,7 @@ struct TestUninitializedCopyNonPODHost
 
     x = v2[0];
     ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(true, x.copy_constructed_on_host);
+    REQUIRE(x.copy_constructed_on_host);
   }
 };
 DECLARE_UNITTEST(TestUninitializedCopyNonPODHost);
@@ -223,7 +223,7 @@ struct TestUninitializedCopyNNonPODHost
 
     x = v2[0];
     ASSERT_EQUAL(false, x.copy_constructed_on_device);
-    ASSERT_EQUAL(true, x.copy_constructed_on_host);
+    REQUIRE(x.copy_constructed_on_host);
   }
 };
 DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);

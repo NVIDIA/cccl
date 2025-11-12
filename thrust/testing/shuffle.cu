@@ -535,7 +535,7 @@ void TestFunctionIsBijectionBase(size_t m)
                   unpermuted.begin());
 
   // Check every index is in the result, if any are missing then the function was not a bijection over [0,m)
-  ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
+  REQUIRE(thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
 }
 template <typename T>
 void TestFunctionIsBijection(size_t m)
@@ -583,8 +583,8 @@ void TestShuffleIteratorConstructibleFromBijection()
   thrust::shuffle_iterator<uint64_t> it3(32, g);
 
   ASSERT_EQUAL(f.size(), f2.size());
-  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it2));
-  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it3));
+  REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it2));
+  REQUIRE(thrust::equal(thrust::device, it, it + f.size(), it3));
 }
 DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
 
@@ -602,7 +602,7 @@ void TestShuffleAndPermutationIterator()
   thrust::device_vector<uint64_t> premute_vec(32);
   thrust::gather(it, it + 32, data.begin(), premute_vec.begin());
 
-  ASSERT_EQUAL(true, thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
+  REQUIRE(thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
 }
 DECLARE_UNITTEST(TestShuffleAndPermutationIterator);
 

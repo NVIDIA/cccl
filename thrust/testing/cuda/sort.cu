@@ -106,7 +106,7 @@ void TestSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
 
   cudaStreamDestroy(s);
 }
@@ -122,7 +122,7 @@ void TestComparisonSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
   cudaStreamDestroy(s);
 }

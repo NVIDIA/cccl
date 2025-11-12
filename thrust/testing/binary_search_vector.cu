@@ -77,7 +77,7 @@ void TestVectorLowerBoundDispatchExplicit()
   my_system sys(0);
   thrust::lower_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorLowerBoundDispatchExplicit);
 
@@ -157,7 +157,7 @@ void TestVectorUpperBoundDispatchExplicit()
   my_system sys(0);
   thrust::upper_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorUpperBoundDispatchExplicit);
 
@@ -232,7 +232,7 @@ void TestVectorBinarySearchDispatchExplicit()
   my_system sys(0);
   thrust::binary_search(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestVectorBinarySearchDispatchExplicit);
 

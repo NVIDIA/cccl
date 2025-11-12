@@ -21,7 +21,7 @@ void TestUniqueDispatchExplicit()
   my_system sys(0);
   thrust::unique(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueDispatchExplicit);
 
@@ -56,7 +56,7 @@ void TestUniqueCopyDispatchExplicit()
   my_system sys(0);
   thrust::unique_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCopyDispatchExplicit);
 
@@ -93,7 +93,7 @@ void TestUniqueCountDispatchExplicit()
   my_system sys(0);
   thrust::unique_count(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 

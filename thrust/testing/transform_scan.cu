@@ -22,7 +22,7 @@ void TestTransformInclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
 
@@ -41,7 +41,7 @@ void TestTransformInclusiveScanInitDispatchExplicit()
   my_system sys(0);
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
 
@@ -79,7 +79,7 @@ void TestTransformExclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::transform_exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformExclusiveScanDispatchExplicit);
 

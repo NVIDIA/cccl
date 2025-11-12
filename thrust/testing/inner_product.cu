@@ -35,7 +35,7 @@ void TestInnerProductDispatchExplicit()
   my_system sys(0);
   thrust::inner_product(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestInnerProductDispatchExplicit);
 

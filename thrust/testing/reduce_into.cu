@@ -49,7 +49,7 @@ void TestReduceIntoDispatchExplicit()
   my_system sys(0);
   thrust::reduce_into(sys, i.begin(), i.end(), o.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
   ASSERT_EQUAL(o[0], 13);
 }
 DECLARE_UNITTEST(TestReduceIntoDispatchExplicit);

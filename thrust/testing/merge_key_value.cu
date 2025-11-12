@@ -62,8 +62,8 @@ void TestMergeKeyValue(size_t n)
   const auto d_end = call_merge<T, CompareOp>(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
 
   ASSERT_EQUAL_QUIET(h_result, d_result);
-  ASSERT_EQUAL(true, h_end == h_result.end());
-  ASSERT_EQUAL(true, d_end == d_result.end());
+  REQUIRE(h_end == h_result.end());
+  REQUIRE(d_end == d_result.end());
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeKeyValue);
 

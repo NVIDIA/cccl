@@ -45,7 +45,7 @@ void TestReduceDispatchExplicit()
   my_system sys(0);
   thrust::reduce(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReduceDispatchExplicit);
 

@@ -61,7 +61,7 @@ struct TestZipIteratorConstructionFromIterators
 
     // test construction
     zip_iterator iter0(v0.begin(), v1.begin());
-    ASSERT_EQUAL(true, iter0 == ZipIterator{make_tuple(v0.begin(), v1.begin())});
+    REQUIRE(iter0 == ZipIterator{make_tuple(v0.begin(), v1.begin())});
   }
 
   void operator()(void)
@@ -95,14 +95,14 @@ struct TestZipIteratorManipulation
 
     // test construction from tuple
     ZipIterator iter0 = make_zip_iterator(t);
-    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
+    REQUIRE(iter0 == ZipIterator{t});
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
     static_assert(::cuda::std::is_same_v<decltype(zip_iterator{t}), ZipIterator>); // CTAD
 
     // test construction from pack
     ZipIterator iter0_pack = make_zip_iterator(v0.begin(), v1.begin());
-    ASSERT_EQUAL(true, (iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
+    REQUIRE((iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0_pack.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0_pack.get_iterator_tuple()));
     static_assert(::cuda::std::is_same_v<decltype(zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
@@ -115,14 +115,14 @@ struct TestZipIteratorManipulation
     ZipIterator iter1 = iter0;
     ZipIterator iter2 = make_zip_iterator(v0.begin(), v2.begin());
     ZipIterator iter3 = make_zip_iterator(v1.begin(), v2.begin());
-    ASSERT_EQUAL(true, iter0 == iter1);
-    ASSERT_EQUAL(true, iter0 == iter2);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(iter0 == iter2);
     ASSERT_EQUAL(false, iter0 == iter3);
 
     // test inequality
     ASSERT_EQUAL(false, iter0 != iter1);
     ASSERT_EQUAL(false, iter0 != iter2);
-    ASSERT_EQUAL(true, iter0 != iter3);
+    REQUIRE(iter0 != iter3);
 
     // test advance
     ZipIterator iter4 = iter0 + 1;

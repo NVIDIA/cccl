@@ -935,7 +935,7 @@ void TestPartitionDispatchExplicit()
   my_system sys(0);
   thrust::partition(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionDispatchExplicit);
 
@@ -953,7 +953,7 @@ void TestPartitionStencilDispatchExplicit()
   my_system sys(0);
   thrust::partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionStencilDispatchExplicit);
 
@@ -1007,7 +1007,7 @@ void TestPartitionCopyDispatchExplicit()
   my_system sys(0);
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionCopyDispatchExplicit);
 
@@ -1036,7 +1036,7 @@ void TestPartitionCopyStencilDispatchExplicit()
   my_system sys(0);
   thrust::partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionCopyStencilDispatchExplicit);
 
@@ -1111,7 +1111,7 @@ void TestStablePartitionDispatchExplicit()
   my_system sys(0);
   thrust::stable_partition(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestStablePartitionDispatchExplicit);
 
@@ -1129,7 +1129,7 @@ void TestStablePartitionStencilDispatchExplicit()
   my_system sys(0);
   thrust::stable_partition(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestStablePartitionStencilDispatchExplicit);
 
@@ -1183,7 +1183,7 @@ void TestStablePartitionCopyDispatchExplicit()
   my_system sys(0);
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestStablePartitionCopyDispatchExplicit);
 
@@ -1212,7 +1212,7 @@ void TestStablePartitionCopyStencilDispatchExplicit()
   my_system sys(0);
   thrust::stable_partition_copy(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchExplicit);
 

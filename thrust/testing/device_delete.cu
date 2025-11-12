@@ -36,7 +36,7 @@ void TestDeviceDeleteDestructorInvocation()
 
   ASSERT_EQUAL(false, destructor_flag[0]);
   thrust::device_delete(foo_ptr);
-  ASSERT_EQUAL(true, destructor_flag[0]);
+  REQUIRE(destructor_flag[0]);
 }
 DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
 
@@ -86,8 +86,8 @@ void TestDeviceDeleteVirtualDestructorInvocation()
     ASSERT_EQUAL(false, destructor_flags[0]);
     ASSERT_EQUAL(false, destructor_flags[1]);
     thrust::device_delete(base_ptr); // delete through the base pointer
-    ASSERT_EQUAL(true, destructor_flags[0]);
-    ASSERT_EQUAL(true, destructor_flags[1]);
+    REQUIRE(destructor_flags[0]);
+    REQUIRE(destructor_flags[1]);
   }
 }
 DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);

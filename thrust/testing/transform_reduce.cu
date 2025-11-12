@@ -20,7 +20,7 @@ void TestTransformReduceDispatchExplicit()
   my_system sys(0);
   thrust::transform_reduce(sys, vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformReduceDispatchExplicit);
 

@@ -56,7 +56,7 @@ void TestIsPartitioned()
 
   thrust::partition(v.begin(), v.end(), is_even<T>());
 
-  ASSERT_EQUAL(true, thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
 
@@ -74,7 +74,7 @@ void TestIsPartitionedDispatchExplicit()
   my_system sys(0);
   thrust::is_partitioned(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestIsPartitionedDispatchExplicit);
 

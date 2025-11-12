@@ -112,7 +112,7 @@ void TestInclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestInclusiveScanDispatchExplicit);
 
@@ -148,7 +148,7 @@ void TestExclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestExclusiveScanDispatchExplicit);
 

@@ -32,7 +32,7 @@ void TestReverseDispatchExplicit()
   my_system sys(0);
   thrust::reverse(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReverseDispatchExplicit);
 
@@ -91,7 +91,7 @@ void TestReverseCopyDispatchExplicit()
   my_system sys(0);
   thrust::reverse_copy(sys, vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestReverseCopyDispatchExplicit);
 

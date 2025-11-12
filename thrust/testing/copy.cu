@@ -574,7 +574,7 @@ void TestCopyDispatchExplicit()
   my_system sys(0);
   thrust::copy(sys, vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestCopyDispatchExplicit);
 
@@ -609,7 +609,7 @@ void TestCopyIfDispatchExplicit()
   my_system sys(0);
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestCopyIfDispatchExplicit);
 
@@ -646,7 +646,7 @@ void TestCopyIfStencilDispatchExplicit()
   my_system sys(0);
   thrust::copy_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestCopyIfStencilDispatchExplicit);
 

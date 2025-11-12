@@ -48,7 +48,7 @@ struct TestTupleStableSort
     // sort on device
     thrust::stable_sort(d_tuples.begin(), d_tuples.end());
 
-    ASSERT_EQUAL(true, thrust::is_sorted(d_tuples.begin(), d_tuples.end()));
+    REQUIRE(thrust::is_sorted(d_tuples.begin(), d_tuples.end()));
 
     // select keys
     thrust::transform(h_tuples.begin(), h_tuples.end(), h_keys.begin(), GetFunctor<0>());
