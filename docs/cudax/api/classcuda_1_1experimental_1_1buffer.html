@@ -1514,11 +1514,15 @@
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Tp</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Properties</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1buffer"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">buffer</span></span></span><a class="headerlink" href="#_CPPv4I0DpEN4cuda12experimental6bufferE" title="Link to this definition">#</a><br /></dt>
 <dd><p><p><span class="target" id="cudax-containers-async-vector"></span><section id="buffer">
 <h2>buffer<a class="headerlink" href="#buffer" title="Link to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">buffer</span></code> is a container that provides resizable typed storage allocated from a given <a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/resource.html#libcudacxx-extended-api-memory-resources-resource"><span class="std std-ref">memory resource</span></a>. It handles alignment, release and growth of the allocation.
-The elements are initialized during construction, which may require a kernel launch.</p>
-<p>In addition to being type-safe, <code class="docutils literal notranslate"><span class="pre">buffer</span></code> also takes a set of <a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/properties.html#libcudacxx-extended-api-memory-resources-properties"><span class="std std-ref">properties</span></a> to ensure that e.g. execution space constraints are checked
-at compile time. However, only stateless properties can be forwarded. To use a stateful property,
-implement <a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/properties.html#libcudacxx-extended-api-memory-resources-properties"><span class="std std-ref">get_property(const buffer&amp;, Property)</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">buffer</span></code> is a container that provides resizable typed storage allocated
+from a given <a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/resource.html#libcudacxx-extended-api-memory-resources-resource"><span class="std std-ref">memory resource</span></a>. It handles alignment,
+release and growth of the allocation. The elements are initialized during
+construction, which may require a kernel launch.</p>
+<p>In addition to being type-safe, <code class="docutils literal notranslate"><span class="pre">buffer</span></code> also takes a set of
+<a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/properties.html#libcudacxx-extended-api-memory-resources-properties"><span class="std std-ref">properties</span></a> to
+ensure that e.g. execution space constraints are checked at compile time.
+However, only stateless properties can be forwarded. To use a stateful
+property, implement <a class="reference internal" href="../../libcudacxx/extended_api/memory_resource/properties.html#libcudacxx-extended-api-memory-resources-properties"><span class="std std-ref">get_property(const buffer&amp;, Property)</span></a>.</p>
 </section>
 </p>
  </p>
@@ -1921,8 +1925,8 @@ implement <a class="reference internal" href="../../libcudacxx/extended_api/memo
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental6buffer15memory_resourceEv">
 <span class="target" id="classcuda_1_1experimental_1_1buffer_1a32b4cee8da170e977032fa9558795b44"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">__resource_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">memory_resource</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental6buffer15memory_resourceEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Returns a c const reference to the <span class="xref std std-ref">any_resource</span>
-that holds the memory resource used to allocate the buffer</p>
+<dd><p>Returns a c const reference to the <span class="xref std std-ref">any_resource</span> that holds the memory resource used
+to allocate the buffer</p>
 </dd></dl>
 
 <dl class="cpp function">
