@@ -230,8 +230,8 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
     using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t = detail::
-      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
+    using dispatch_t = detail::reduce::
+      dispatch_nondet_t<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage,
