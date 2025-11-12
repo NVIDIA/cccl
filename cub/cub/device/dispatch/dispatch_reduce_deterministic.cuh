@@ -46,9 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace rfa
+namespace detail::rfa
 {
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
@@ -86,7 +84,6 @@ struct deterministic_sum_t
     return lhs + rhs;
   }
 };
-} // namespace rfa
 
 /******************************************************************************
  * Single-problem dispatch
@@ -114,7 +111,7 @@ template <typename InputIteratorT,
           typename TransformOpT = ::cuda::std::identity,
           typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
           typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
-struct DispatchReduceDeterministic
+struct dispatch_t
 {
   using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
   using reduction_op_t      = deterministic_add_t;
@@ -483,7 +480,7 @@ struct DispatchReduceDeterministic
     input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Create dispatch functor
-    DispatchReduceDeterministic dispatch{
+    dispatch_t dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in_unwrapped,
@@ -500,5 +497,5 @@ struct DispatchReduceDeterministic
     return error;
   }
 };
-} // namespace detail
+} // namespace detail::rfa
 CUB_NAMESPACE_END
