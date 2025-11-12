@@ -26,7 +26,8 @@ Restrictions
   - Algorithms in namespace `ranges` are not yet supported.
   - Some sorting algorithms are not yet supported:
 
-    * ``sort``
-    * ``stable_sort``
-    * ``nth_element``
     * ``inplace_merge``
+    * ``nth_element``
+    * ``sort``
+    * ``stable_partiin``
+    * ``stable_sort``

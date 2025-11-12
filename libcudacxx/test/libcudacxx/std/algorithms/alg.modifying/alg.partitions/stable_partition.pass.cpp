@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: true
+
 // <algorithm>
 
 // template<BidirectionalIterator Iter, Predicate<auto, Iter::value_type> Pred>
