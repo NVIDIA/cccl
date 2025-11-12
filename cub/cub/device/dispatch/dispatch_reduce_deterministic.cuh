@@ -59,7 +59,7 @@ template <typename FloatType                                                    
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
-  using DeterministicAcc = detail::rfa::ReproducibleFloatingAccumulator<FloatType>;
+  using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;
 
   _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
@@ -109,11 +109,11 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename InitT,
           typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
-          typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
+          typename AccumT       = accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename PolicyHub    = policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
 struct dispatch_t
 {
-  using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
+  using deterministic_add_t = deterministic_sum_t<AccumT>;
   using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
