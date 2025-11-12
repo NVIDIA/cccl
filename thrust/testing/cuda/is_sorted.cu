@@ -39,7 +39,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(true, result[0]);
+  REQUIRE(result[0]);
 }
 
 void TestIsSortedDeviceSeq()

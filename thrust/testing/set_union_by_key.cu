@@ -34,7 +34,7 @@ void TestSetUnionByKeyDispatchExplicit()
   thrust::set_union_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSetUnionByKeyDispatchExplicit);
 

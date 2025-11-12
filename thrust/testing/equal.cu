@@ -80,7 +80,7 @@ void TestEqualDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::equal(sys, vec.begin(), vec.end(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestEqualDispatchExplicit);
 

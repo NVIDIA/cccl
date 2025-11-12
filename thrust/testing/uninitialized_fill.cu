@@ -19,7 +19,7 @@ void TestUninitializedFillDispatchExplicit()
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUninitializedFillDispatchExplicit);
 
@@ -106,7 +106,7 @@ struct TestUninitializedFillNonPOD
 
     const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
-    ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
+    REQUIRE(exemplar.copy_constructed_on_host);
 
     // copy construct v from the exemplar
     thrust::uninitialized_fill(v, v + 1, exemplar);
@@ -116,7 +116,7 @@ struct TestUninitializedFillNonPOD
     ASSERT_EQUAL(false, x.copy_constructed_on_host);
 
     x = v[0];
-    ASSERT_EQUAL(true, x.copy_constructed_on_device);
+    REQUIRE(x.copy_constructed_on_device);
     ASSERT_EQUAL(false, x.copy_constructed_on_host);
 
     thrust::device_free(v);
