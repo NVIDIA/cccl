@@ -87,7 +87,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
 
     cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
-    block_load2sh.CommitAndWait();
+    second_block_load2sh.CommitAndWait();
 
     for (int idx = static_cast<int>(threadIdx.x); idx < num_items - num_items_first_copy; idx += ThreadsInBlock)
     {
