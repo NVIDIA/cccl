@@ -107,6 +107,7 @@
 #include <cuda/std/__algorithm/set_union.h>
 #include <cuda/std/__algorithm/shift_left.h>
 #include <cuda/std/__algorithm/shift_right.h>
+#include <cuda/std/__algorithm/shuffle.h>
 #include <cuda/std/__algorithm/sift_down.h>
 #include <cuda/std/__algorithm/sort_heap.h>
 #include <cuda/std/__algorithm/swap_ranges.h>
@@ -171,28 +172,6 @@ public:
     return __p_(__y, __x);
   }
 };
-
-template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
-_CCCL_API inline void
-shuffle(_RandomAccessIterator __first, _RandomAccessIterator __last, _UniformRandomNumberGenerator&& __g)
-{
-  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-  typedef uniform_int_distribution<ptrdiff_t> _Dp;
-  typedef typename _Dp::param_type _Pp;
-  difference_type __d = __last - __first;
-  if (__d > 1)
-  {
-    _Dp __uid;
-    for (--__last, (void) --__d; __first < __last; ++__first, (void) --__d)
-    {
-      difference_type __i = __uid(__g, _Pp(0, __d));
-      if (__i != difference_type(0))
-      {
-        swap(*__first, *(__first + __i));
-      }
-    }
-  }
-}
 
 // stable_partition
 
