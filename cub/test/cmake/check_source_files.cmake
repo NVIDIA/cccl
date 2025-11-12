@@ -14,7 +14,8 @@ function(count_substrings input search_regex output_var)
 endfunction()
 
 set(found_errors 0)
-file(GLOB_RECURSE cub_srcs
+file(
+  GLOB_RECURSE cub_srcs
   RELATIVE "${CUB_SOURCE_DIR}"
   "${CUB_SOURCE_DIR}/cub/*.cuh"
   "${CUB_SOURCE_DIR}/cub/*.cu"
@@ -26,7 +27,8 @@ file(GLOB_RECURSE cub_srcs
 # Namespace checks.
 # Check all files in thrust to make sure that they use
 # CUB_NAMESPACE_BEGIN/END instead of bare `namespace cub {}` declarations.
-set(namespace_exclusions
+set(
+  namespace_exclusions
   # This defines the macros and must have bare namespace declarations:
   cub/util_namespace.cuh
 )
@@ -45,10 +47,14 @@ namespace
 cub
 {
 ]=]
-  ${bare_ns_regex} valid_count)
+  ${bare_ns_regex} valid_count
+)
 if (NOT valid_count EQUAL 6)
-  message(FATAL_ERROR "Validation of bare namespace regex failed: "
-                      "Matched ${valid_count} times, expected 6.")
+  message(
+    FATAL_ERROR
+    "Validation of bare namespace regex failed: "
+    "Matched ${valid_count} times, expected 6."
+  )
 endif()
 
 ################################################################################
@@ -62,13 +68,14 @@ endif()
 # <memory>    -> <cuda/std/__cccl/memory_wrapper.h>
 # <numeric>   -> <cuda/std/__cccl/numeric_wrapper.h>
 #
-set(stdpar_header_exclusions
+set(
+  stdpar_header_exclusions
   # Placeholder -- none yet.
 )
 
 set(algorithm_regex "#[ \t]*include[ \t]+<algorithm>")
-set(memory_regex    "#[ \t]*include[ \t]+<memory>")
-set(numeric_regex   "#[ \t]*include[ \t]+<numeric>")
+set(memory_regex "#[ \t]*include[ \t]+<memory>")
+set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
 count_substrings([=[
@@ -78,15 +85,19 @@ count_substrings([=[
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count)
+  ${algorithm_regex} valid_count
+)
 if (NOT valid_count EQUAL 5)
-  message(FATAL_ERROR "Validation of stdpar header regex failed: "
-    "Matched ${valid_count} times, expected 5.")
+  message(
+    FATAL_ERROR
+    "Validation of stdpar header regex failed: "
+    "Matched ${valid_count} times, expected 5."
+  )
 endif()
 
 ################################################################################
 # Read source files:
-foreach(src ${cub_srcs})
+foreach (src ${cub_srcs})
   file(READ "${CUB_SOURCE_DIR}/${src}" src_contents)
 
   if (NOT ${src} IN_LIST namespace_exclusions)
@@ -97,17 +108,23 @@ foreach(src ${cub_srcs})
     count_substrings("${src_contents}" CUB_NAMESPACE_END end_count)
 
     if (NOT bare_ns_count EQUAL 0)
-      message("'${src}' contains 'namespace cub {...}'. Replace with CUB_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'namespace cub {...}'. Replace with CUB_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT prefix_count EQUAL 0)
-      message("'${src}' contains 'CUB_NS_PREFIX'. Replace with CUB_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'CUB_NS_PREFIX'. Replace with CUB_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT postfix_count EQUAL 0)
-      message("'${src}' contains 'CUB_NS_POSTFIX'. Replace with CUB_NAMESPACE macros.")
+      message(
+        "'${src}' contains 'CUB_NS_POSTFIX'. Replace with CUB_NAMESPACE macros."
+      )
       set(found_errors 1)
     endif()
 
@@ -125,17 +142,23 @@ foreach(src ${cub_srcs})
     count_substrings("${src_contents}" "${numeric_regex}" numeric_count)
 
     if (NOT algorithm_count EQUAL 0)
-      message("'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>.")
+      message(
+        "'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT memory_count EQUAL 0)
-      message("'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>.")
+      message(
+        "'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT numeric_count EQUAL 0)
-      message("'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>.")
+      message(
+        "'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
   endif()

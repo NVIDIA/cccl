@@ -371,6 +371,7 @@ public:
   }
 
   using __base::__get;
+  using __base::__set_engaged;
   using __base::has_value;
 
   _CCCL_API constexpr value_type const& value() const&

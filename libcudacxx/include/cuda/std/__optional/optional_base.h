@@ -215,6 +215,11 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     return ::cuda::std::move(this->__storage_.__val_);
   }
 
+  _CCCL_API constexpr void __set_engaged(bool __engaged) noexcept
+  {
+    this->__engaged_ = __engaged;
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)

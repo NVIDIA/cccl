@@ -50,35 +50,28 @@ namespace detail
 template <typename T, int BlockDimX, int BlockDimY, int BlockDimZ>
 struct BlockReduceRakingCommutativeOnly
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
   // valid values
   using FallBack = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Constants
-  enum
-  {
-    /// Number of warp threads
-    WARP_THREADS = warp_threads,
+  /// Number of warp threads
+  static constexpr int WARP_THREADS = warp_threads;
 
-    /// Whether or not to use fall-back
-    USE_FALLBACK = ((BLOCK_THREADS % WARP_THREADS != 0) || (BLOCK_THREADS <= WARP_THREADS)),
+  /// Whether or not to use fall-back
+  static constexpr bool USE_FALLBACK = ((BLOCK_THREADS % WARP_THREADS != 0) || (BLOCK_THREADS <= WARP_THREADS));
 
-    /// Number of raking threads
-    RAKING_THREADS = WARP_THREADS,
+  /// Number of raking threads
+  static constexpr int RAKING_THREADS = WARP_THREADS;
 
-    /// Number of threads actually sharing items with the raking threads
-    SHARING_THREADS = ::cuda::std::max(1, BLOCK_THREADS - RAKING_THREADS),
+  /// Number of threads actually sharing items with the raking threads
+  static constexpr int SHARING_THREADS = ::cuda::std::max(1, BLOCK_THREADS - RAKING_THREADS);
 
-    /// Number of raking elements per warp synchronous raking thread
-    SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS,
-  };
+  /// Number of raking elements per warp synchronous raking thread
+  static constexpr int SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS;
 
   ///  WarpReduce utility type
   using WarpReduce = WarpReduce<T, RAKING_THREADS>;

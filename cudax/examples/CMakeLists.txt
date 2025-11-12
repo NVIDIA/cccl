@@ -1,5 +1,9 @@
 find_package(cudax) # already found, bring in version info.
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+find_package(
+  Thrust
+  ${cudax_VERSION}
+  EXACT
+  CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
 )
@@ -21,17 +25,25 @@ function(cudax_add_example target_name_var example_src cudax_target)
 
   add_executable(${example_target} "${example_src}")
   cccl_configure_target(${example_target} DIALECT ${config_dialect})
-  target_link_libraries(${example_target} PRIVATE
-    ${cudax_target}
-    cudax.examples.thrust
+  target_link_libraries(
+    ${example_target}
+    PRIVATE #
+      ${cudax_target}
+      cudax.examples.thrust
   )
-  target_compile_options(${example_target} PRIVATE
-    "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr --extended-lambda>
+  target_compile_options(
+    ${example_target}
+    PRIVATE
+      "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
   )
 
   cudax_clone_target_properties(${example_target} ${cudax_target})
-  target_include_directories(${example_target} PRIVATE "${CUB_SOURCE_DIR}/examples")
+  target_include_directories(
+    ${example_target}
+    PRIVATE "${CUB_SOURCE_DIR}/examples"
+  )
 
   # Add to the active configuration's meta target
   add_dependencies(${config_meta_target} ${example_target})
@@ -42,25 +54,25 @@ function(cudax_add_example target_name_var example_src cudax_target)
   endif()
   add_dependencies(${example_meta_target} ${example_target})
 
-  add_test(NAME ${example_target}
-    COMMAND "$<TARGET_FILE:${example_target}>"
-  )
+  add_test(NAME ${example_target} COMMAND "$<TARGET_FILE:${example_target}>")
 endfunction()
 
-file(GLOB example_srcs
+file(
+  GLOB example_srcs
   RELATIVE "${cudax_SOURCE_DIR}/examples"
   CONFIGURE_DEPENDS
-  *.cu *.cpp
+  *.cu
+  *.cpp
 )
 
 find_package(CUDAToolkit REQUIRED) # for CUDAToolkit_VERSION
 
 # Example requires pinned_memory_resource.
-if(CUDAToolkit_VERSION VERSION_LESS 12.6)
+if (CUDAToolkit_VERSION VERSION_LESS 12.6)
   list(REMOVE_ITEM example_srcs async_buffer_add.cu cub_reduce.cu)
 endif()
 
-foreach(cudax_target IN LISTS cudax_TARGETS)
+foreach (cudax_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   # Metatarget for the current configuration's tests:
@@ -74,8 +86,7 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 endforeach()
 
 # FIXME: Enable MSVC
-if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF examples are handled separately:
   add_subdirectory(stf)
 endif()

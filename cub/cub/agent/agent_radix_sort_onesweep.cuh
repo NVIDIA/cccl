@@ -69,11 +69,8 @@ template <int NominalBlockThreads4B,
           typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
-  enum
-  {
-    RANK_NUM_PARTS = RankNumParts,
-    RADIX_BITS     = RadixBits,
-  };
+  static constexpr int RANK_NUM_PARTS                      = RankNumParts;
+  static constexpr int RADIX_BITS                          = RadixBits;
   static constexpr RadixRankAlgorithm RANK_ALGORITHM       = RankAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
@@ -113,25 +110,22 @@ template <typename AgentRadixSortOnesweepPolicy,
 struct AgentRadixSortOnesweep
 {
   // constants
-  enum
-  {
-    ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY             = ::cuda::std::is_same_v<ValueT, NullType>,
-    BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS,
-    RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS,
-    TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD,
-    RADIX_BITS            = AgentRadixSortOnesweepPolicy::RADIX_BITS,
-    RADIX_DIGITS          = 1 << RADIX_BITS,
-    BINS_PER_THREAD       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
-    FULL_BINS             = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS          = warp_threads,
-    BLOCK_WARPS           = BLOCK_THREADS / WARP_THREADS,
-    WARP_MASK             = ~0,
-    LOOKBACK_PARTIAL_MASK = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 2),
-    LOOKBACK_GLOBAL_MASK  = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 1),
-    LOOKBACK_KIND_MASK    = LOOKBACK_PARTIAL_MASK | LOOKBACK_GLOBAL_MASK,
-    LOOKBACK_VALUE_MASK   = ~LOOKBACK_KIND_MASK,
-  };
+  static constexpr int ITEMS_PER_THREAD      = AgentRadixSortOnesweepPolicy::ITEMS_PER_THREAD;
+  static constexpr bool KEYS_ONLY            = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr int BLOCK_THREADS         = AgentRadixSortOnesweepPolicy::BLOCK_THREADS;
+  static constexpr int RANK_NUM_PARTS        = AgentRadixSortOnesweepPolicy::RANK_NUM_PARTS;
+  static constexpr int TILE_ITEMS            = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int RADIX_BITS            = AgentRadixSortOnesweepPolicy::RADIX_BITS;
+  static constexpr int RADIX_DIGITS          = 1 << RADIX_BITS;
+  static constexpr int BINS_PER_THREAD       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr bool FULL_BINS            = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int WARP_THREADS          = warp_threads;
+  static constexpr int BLOCK_WARPS           = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int WARP_MASK             = ~0;
+  static constexpr int LOOKBACK_PARTIAL_MASK = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 2);
+  static constexpr int LOOKBACK_GLOBAL_MASK  = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 1);
+  static constexpr int LOOKBACK_KIND_MASK    = LOOKBACK_PARTIAL_MASK | LOOKBACK_GLOBAL_MASK;
+  static constexpr int LOOKBACK_VALUE_MASK   = ~LOOKBACK_KIND_MASK;
 
   using traits                 = radix::traits_t<KeyT>;
   using bit_ordered_type       = typename traits::bit_ordered_type;

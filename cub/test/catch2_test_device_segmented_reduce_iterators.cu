@@ -5,9 +5,7 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -59,7 +57,7 @@ C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   // Prepare input data
   item_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::constant_iterator(default_constant);
 
   using op_t   = cuda::std::plus<>;
   using init_t = output_t;
