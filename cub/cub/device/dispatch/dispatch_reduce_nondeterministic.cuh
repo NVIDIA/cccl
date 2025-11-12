@@ -101,7 +101,7 @@ template <typename InputIteratorT,
             AccumT,
             TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
-struct dispatch_nondet_t
+struct dispatch_nondeterministic_t
 {
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
@@ -286,7 +286,7 @@ struct dispatch_nondet_t
     }
 
     // Create dispatch functor
-    dispatch_nondet_t dispatch{
+    dispatch_nondeterministic_t dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,
