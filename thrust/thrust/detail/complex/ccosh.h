@@ -53,6 +53,12 @@
 #include <thrust/detail/complex/cexp.h>
 #include <thrust/detail/complex/math_private.h>
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
 {
@@ -86,32 +92,33 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
   {
     if ((iy | ly) == 0)
     {
-      return (thrust::complex<double>(::cosh(x), x * y));
+      return (thrust::complex<double>(::cuda::std::cosh(x), x * y));
     }
     if (ix < 0x40360000) /* small x: normal case */
     {
-      return (thrust::complex<double>(::cosh(x) * ::cos(y), ::sinh(x) * ::sin(y)));
+      return (thrust::complex<double>(
+        ::cuda::std::cosh(x) * ::cuda::std::cos(y), ::cuda::std::sinh(x) * ::cuda::std::sin(y)));
     }
 
     /* |x| >= 22, so cosh(x) ~= exp(|x|) */
     if (ix < 0x40862e42)
     {
       /* x < 710: exp(|x|) won't overflow */
-      h = ::exp(::fabs(x)) * 0.5;
-      return (thrust::complex<double>(h * cos(y), copysign(h, x) * sin(y)));
+      h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
+      return (thrust::complex<double>(h * ::cuda::std::cos(y), ::cuda::std::copysign(h, x) * ::cuda::std::sin(y)));
     }
     else if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
-      thrust::complex<double> z_ = ldexp_cexp(thrust::complex<double>(fabs(x), y), -1);
-      z_.imag(copysign(z_.imag(), x));
+      thrust::complex<double> z_ = ldexp_cexp(thrust::complex<double>(::cuda::std::fabs(x), y), -1);
+      z_.imag(::cuda::std::copysign(z_.imag(), x));
       return z_;
     }
     else
     {
       /* x >= 1455: the result always overflows */
       h = huge * x;
-      return (thrust::complex<double>(h * h * cos(y), h * sin(y)));
+      return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
     }
   }
 
@@ -126,7 +133,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    */
   if ((ix | lx) == 0 && iy >= 0x7ff00000)
   {
-    return (thrust::complex<double>(y - y, copysign(0.0, x * (y - y))));
+    return (thrust::complex<double>(y - y, ::cuda::std::copysign(0.0, x * (y - y))));
   }
 
   /*
@@ -139,9 +146,9 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
   {
     if (((hx & 0xfffff) | lx) == 0)
     {
-      return (thrust::complex<double>(x * x, copysign(0.0, x) * y));
+      return (thrust::complex<double>(x * x, ::cuda::std::copysign(0.0, x) * y));
     }
-    return (thrust::complex<double>(x * x, copysign(0.0, (x + x) * y)));
+    return (thrust::complex<double>(x * x, ::cuda::std::copysign(0.0, (x + x) * y)));
   }
 
   /*
@@ -172,7 +179,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
     {
       return (thrust::complex<double>(x * x, x * (y - y)));
     }
-    return (thrust::complex<double>((x * x) * cos(y), x * sin(y)));
+    return (thrust::complex<double>((x * x) * ::cuda::std::cos(y), x * ::cuda::std::sin(y)));
   }
 
   /*
@@ -201,7 +208,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
-  return complex<ValueType>(std::cos(re) * std::cosh(im), -std::sin(re) * std::sinh(im));
+  return complex<ValueType>(::cuda::std::cos(re) * ::cuda::std::cosh(im), -::cuda::std::sin(re) * ::cuda::std::sinh(im));
 }
 
 template <typename ValueType>
@@ -209,7 +216,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
-  return complex<ValueType>(std::cosh(re) * std::cos(im), std::sinh(re) * std::sin(im));
+  return complex<ValueType>(::cuda::std::cosh(re) * ::cuda::std::cos(im), ::cuda::std::sinh(re) * ::cuda::std::sin(im));
 }
 
 template <>

@@ -6,10 +6,7 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/tuple>
 
 #include "catch2_large_problem_helper.cuh"
@@ -97,12 +94,12 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
   CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_items, num_segments, num_empty_segments);
 
   // Input data
-  const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
+  const auto segment_index_it = cuda::counting_iterator(segment_index_t{});
 
   // Segment offsets
   segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{
     num_empty_segments, num_segments, segment_size, num_items};
-  auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+  auto offsets_it = cuda::make_transform_iterator(segment_index_it, index_to_offset_op);
 
   SECTION("segmented reduce")
   {
@@ -119,13 +116,13 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
 
     // Prepare helper to check results
     auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
-    auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-    auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
+    auto offset_pair_it              = cuda::zip_iterator(cuda::std::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it          = cuda::transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
     auto check_result_helper         = detail::large_problem_test_helper(num_segments);
     auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Run test
-    const auto input_it = thrust::make_counting_iterator(sum_t{});
+    const auto input_it = cuda::counting_iterator(sum_t{});
     device_segmented_reduce(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1, reduction_op, init_val);
 
     // Verify all results were written as expected
@@ -138,13 +135,13 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
 
     // Prepare helper to check results
     auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
-    auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-    auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
+    auto offset_pair_it              = cuda::zip_iterator(cuda::std::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it          = cuda::transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
     auto check_result_helper         = detail::large_problem_test_helper(num_segments);
     auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Run test
-    const auto input_it = thrust::make_counting_iterator(sum_t{});
+    const auto input_it = cuda::counting_iterator(sum_t{});
     device_segmented_sum(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
 
     // Verify all results were written as expected
@@ -155,13 +152,13 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
   {
     auto get_min_from_offset_pair_op = thrust::make_zip_function(
       get_min_from_counting_it_range_op<offset_t>{cuda::std::numeric_limits<offset_t>::max()});
-    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_min_from_offset_pair_op);
+    auto offset_pair_it      = cuda::zip_iterator(cuda::std::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = cuda::transform_iterator(offset_pair_it, get_min_from_offset_pair_op);
     auto check_result_helper = detail::large_problem_test_helper(num_segments);
 
     auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
-    const auto input_it = thrust::make_counting_iterator(offset_t{});
+    const auto input_it = cuda::counting_iterator(offset_t{});
     device_segmented_min(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
 
     // Verify all results were written as expected
@@ -172,13 +169,13 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
   {
     auto get_max_from_offset_pair_op = thrust::make_zip_function(
       get_max_from_counting_it_range_op<offset_t>{cuda::std::numeric_limits<offset_t>::lowest()});
-    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_max_from_offset_pair_op);
+    auto offset_pair_it      = cuda::zip_iterator(cuda::std::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = cuda::transform_iterator(offset_pair_it, get_max_from_offset_pair_op);
     auto check_result_helper = detail::large_problem_test_helper(num_segments);
 
     auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
-    const auto input_it = thrust::make_counting_iterator(offset_t{});
+    const auto input_it = cuda::counting_iterator(offset_t{});
     device_segmented_max(input_it, check_result_it, num_segments, offsets_it, offsets_it + 1);
 
     // Verify all results were written as expected
@@ -246,11 +243,11 @@ void test_fixed_size_segmented_reduce(
   const cuda::std::int64_t num_items = num_segments * segment_size;
 
   // Input data
-  const auto segment_index_it = thrust::make_counting_iterator(SegmentIdxT{});
+  const auto segment_index_it = cuda::counting_iterator(SegmentIdxT{});
 
   // Segment offsets
   segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
-  auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+  auto offsets_it = cuda::transform_iterator(segment_index_it, index_to_offset_op);
 
   CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<SegmentIdxT>(), num_segments, segment_size, num_items);
 
@@ -258,13 +255,13 @@ void test_fixed_size_segmented_reduce(
   {
     // Prepare helper to check results
     auto get_offset_pair_op  = thrust::make_zip_function(compute_expected_op);
-    auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
-    auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_offset_pair_op);
+    auto offset_pair_it      = cuda::zip_iterator(cuda::std::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it  = cuda::transform_iterator(offset_pair_it, get_offset_pair_op);
     auto check_result_helper = detail::large_problem_test_helper(num_segments);
     auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Run test
-    const auto input_it = thrust::make_counting_iterator(InputT{});
+    const auto input_it = cuda::counting_iterator(InputT{});
     if constexpr (IsReduceAlgorithm)
     {
       device_algorithm(input_it, check_result_it, num_segments, segment_size, OpT{}, InputT{0});

@@ -35,8 +35,11 @@
 #include <thrust/iterator/iterator_categories.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 

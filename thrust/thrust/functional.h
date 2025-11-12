@@ -32,8 +32,14 @@
 
 #include <thrust/detail/functional/actor.h>
 
-#include <cuda/functional>
-#include <cuda/std/functional>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__utility/forward.h>
 
 THRUST_NAMESPACE_BEGIN
 

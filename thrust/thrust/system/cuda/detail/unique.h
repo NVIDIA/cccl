@@ -43,9 +43,7 @@
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -53,6 +51,10 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

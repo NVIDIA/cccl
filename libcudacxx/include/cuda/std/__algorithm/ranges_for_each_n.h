@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Iter, class _Func>
 using for_each_n_result = in_fun_result<_Iter, _Func>;
@@ -61,7 +61,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto for_each_n = __for_each_n::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
