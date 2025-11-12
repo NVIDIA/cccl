@@ -253,7 +253,4 @@ def make_zip_iterator(*iterators):
                 )
             return output_dereference_func
 
-        # Make the ZipValue type accessible for constructing return values
-        value_struct_type = ZipValue
-
     return ZipIterator(processed_iterators)

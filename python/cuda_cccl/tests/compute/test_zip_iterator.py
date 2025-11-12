@@ -266,9 +266,7 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     zip_out_it = ZipIterator(d_out1, d_out2)
 
     def add_pairs(p1, p2):
-        a, b = tuple(p1)
-        c, d = tuple(p2)
-        return a + c, b + d
+        return p1[0] + p2[0], p1[1] + p2[1]
 
     cuda.compute.inclusive_scan(zip_it, zip_out_it, add_pairs, None, num_items)
 

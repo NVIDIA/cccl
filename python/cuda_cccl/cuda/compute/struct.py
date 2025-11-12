@@ -126,23 +126,6 @@ def struct_getitem_impl(struct_val, idx):
         exec(impl_code, {}, local_vars)
         return local_vars["struct_getitem_impl"]
 
-    # Add tuple() conversion support to enable unpacking with explicit conversion
-    # Usage: a, b = tuple(struct)
-    @overload(tuple)
-    def struct_as_tuple(struct_val):
-        if not isinstance(struct_val, StructType):
-            return
-
-        # Generate code to extract all fields and return as tuple
-        field_accesses = [f"struct_val.{fname}" for fname in field_names_list]
-        impl_code = f"""
-def struct_as_tuple_impl(struct_val):
-    return ({", ".join(field_accesses)},)
-"""
-        local_vars = {}
-        exec(impl_code, {}, local_vars)
-        return local_vars["struct_as_tuple_impl"]
-
     # Typing for constructor
     @cuda_registry.register
     class StructConstructor(ConcreteTemplate):
