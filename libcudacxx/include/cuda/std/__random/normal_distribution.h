@@ -72,9 +72,9 @@ public:
   };
 
 private:
-  param_type __p_;
-  result_type __v_;
-  bool __v_hot_;
+  param_type __p_{};
+  result_type __v_{};
+  bool __v_hot_{false};
 
 public:
   _CCCL_API constexpr normal_distribution()
@@ -95,12 +95,12 @@ public:
 
   // generating functions
   template <class _URng>
-  _CCCL_API result_type operator()(_URng& __g)
+  _CCCL_API constexpr result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  _CCCL_API result_type operator()(_URng& __g, const param_type& __p);
+  _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p);
 
   // property functions
   _CCCL_API constexpr result_type mean() const
@@ -194,10 +194,10 @@ public:
 
 template <class _RealType>
 template <class _URng>
-_CCCL_API _RealType normal_distribution<_RealType>::operator()(_URng& __g, const param_type& __p)
+_CCCL_API constexpr _RealType normal_distribution<_RealType>::operator()(_URng& __g, const param_type& __p)
 {
   static_assert(__cccl_random_is_valid_urng<_URng>, "");
-  result_type __up;
+  result_type __up = 0;
   if (__v_hot_)
   {
     __v_hot_ = false;
@@ -206,15 +206,15 @@ _CCCL_API _RealType normal_distribution<_RealType>::operator()(_URng& __g, const
   else
   {
     cuda::std::uniform_real_distribution<result_type> __uni(-1, 1);
-    result_type __u;
-    result_type __v;
-    result_type __s;
-    do
+    result_type __u = __uni(__g);
+    result_type __v = __uni(__g);
+    result_type __s = __u * __u + __v * __v;
+    while (__s > 1 || __s == 0)
     {
       __u = __uni(__g);
       __v = __uni(__g);
       __s = __u * __u + __v * __v;
-    } while (__s > 1 || __s == 0);
+    }
     result_type __fp = cuda::std::sqrt(-2 * cuda::std::log(__s) / __s);
     __v_             = __v * __fp;
     __v_hot_         = true;

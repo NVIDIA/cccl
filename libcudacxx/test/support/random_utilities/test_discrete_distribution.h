@@ -14,6 +14,8 @@
 
 #include "test_macros.h"
 
+namespace detail
+{
 template <class DiscreteDistribution, class URNG>
 __host__ __device__ constexpr bool test_constexpr()
 {
@@ -24,6 +26,7 @@ __host__ __device__ constexpr bool test_constexpr()
   unused(dist(g));
   return true;
 }
+} // namespace detail
 
 // Perform a chi-squared test, comparing the observed and expected frequencies
 // of outcomes from a discrete distribution. Tests to significance level 0.01. Accepts 2-10 buckets.
@@ -33,7 +36,7 @@ __host__ __device__ bool test_discrete_distribution(
   const cuda::std::array<double, N>& expected_probabilities,
   const cuda::std::size_t num_samples)
 {
-  static_assert(test_constexpr<DiscreteDistribution, URNG>());
+  static_assert(detail::test_constexpr<DiscreteDistribution, URNG>());
 
   // First check the operator with param is equivalent to the constructor param
   {

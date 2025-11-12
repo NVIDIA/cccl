@@ -32,10 +32,14 @@ __host__ __device__ constexpr bool test_constexpr()
 // Perform a kolmogorov-Smirnov test, comparing the observed and expected cumulative
 // distribution function from a continuous distribution.
 // Generates a fixed size of 10000 samples
-template <class ContinuousDistribution, class URNG, class CDF>
+template <class ContinuousDistribution, class URNG, bool test_constexpr, class CDF>
 __host__ __device__ bool test_continuous_distribution(const typename ContinuousDistribution::param_type param, CDF cdf)
 {
-  // static_assert(detail::test_constexpr<ContinuousDistribution, URNG>());
+  if constexpr (test_constexpr)
+  {
+    static_assert(detail::test_constexpr<ContinuousDistribution, URNG>());
+  }
+
   //  First check the operator with param is equivalent to the constructor param
   {
     ContinuousDistribution d1(param);
