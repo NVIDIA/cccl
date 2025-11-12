@@ -8,13 +8,12 @@
 
 #include <thrust/distance.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/offset_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <algorithm>
@@ -331,7 +330,7 @@ try
     take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
 
   // Input
-  auto in = thrust::make_counting_iterator(static_cast<type>(0));
+  auto in = cuda::counting_iterator(static_cast<type>(0));
 
   // Needs to be device accessible
   c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -346,8 +345,7 @@ try
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it =
-    thrust::make_transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
   bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
@@ -379,8 +377,7 @@ try
   // Prepare input iterator: it[i] = (i%mod)+(i/div)
   static constexpr offset_t mod = 200;
   static constexpr offset_t div = 1000000000;
-  auto in                       = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(offset_t{0}), modx_and_add_divy<offset_t, type>{mod, div});
+  auto in = cuda::transform_iterator(cuda::counting_iterator(offset_t{0}), modx_and_add_divy<offset_t, type>{mod, div});
 
   // Prepare output
   c2h::device_vector<type> out(num_items);

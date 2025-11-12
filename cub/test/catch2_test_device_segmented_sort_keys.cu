@@ -6,6 +6,8 @@
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/iterator>
+
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/bfloat16.cuh>
@@ -201,8 +203,8 @@ try
   segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
 
-  auto offsets = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(std::size_t{0}),
+  auto offsets = cuda::transform_iterator(
+    cuda::counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
   stable_sort_keys(

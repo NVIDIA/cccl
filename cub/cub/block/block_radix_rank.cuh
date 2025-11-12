@@ -209,38 +209,33 @@ private:
 
   static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
 
-  enum
-  {
-    // The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
+  // The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-    RADIX_DIGITS = 1 << RadixBits,
+  static constexpr int RADIX_DIGITS = 1 << RadixBits;
 
-    LOG_WARP_THREADS = detail::log2_warp_threads,
-    WARP_THREADS     = 1 << LOG_WARP_THREADS,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int LOG_WARP_THREADS = detail::log2_warp_threads;
+  static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    BYTES_PER_COUNTER     = sizeof(DigitCounter),
-    LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE,
+  static constexpr int BYTES_PER_COUNTER     = sizeof(DigitCounter);
+  static constexpr int LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
 
-    PACKING_RATIO     = static_cast<int>(sizeof(PackedCounter) / sizeof(DigitCounter)),
-    LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
+  static constexpr int PACKING_RATIO     = static_cast<int>(sizeof(PackedCounter) / sizeof(DigitCounter));
+  static constexpr int LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE;
 
-    // Always at least one lane
-    LOG_COUNTER_LANES = ::cuda::std::max(RadixBits - LOG_PACKING_RATIO, 0),
-    COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
+  // Always at least one lane
+  static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(RadixBits - LOG_PACKING_RATIO, 0);
+  static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
-    // The number of packed counters per thread (plus one for padding)
-    PADDED_COUNTER_LANES = COUNTER_LANES + 1,
-    RAKING_SEGMENT       = PADDED_COUNTER_LANES,
-  };
+  // The number of packed counters per thread (plus one for padding)
+  static constexpr int PADDED_COUNTER_LANES = COUNTER_LANES + 1;
+  static constexpr int RAKING_SEGMENT       = PADDED_COUNTER_LANES;
 
 public:
-  enum
-  {
-    /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
-  };
+  /// Number of bin-starting offsets tracked per thread
+  static constexpr int BINS_TRACKED_PER_THREAD =
+    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
 
 private:
   /// BlockScan type
@@ -545,31 +540,26 @@ private:
   using RankT         = int32_t;
   using DigitCounterT = int32_t;
 
-  enum
-  {
-    // The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
+  // The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-    RADIX_DIGITS = 1 << RadixBits,
+  static constexpr int RADIX_DIGITS = 1 << RadixBits;
 
-    LOG_WARP_THREADS     = detail::log2_warp_threads,
-    WARP_THREADS         = 1 << LOG_WARP_THREADS,
-    PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS,
-    WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int LOG_WARP_THREADS     = detail::log2_warp_threads;
+  static constexpr int WARP_THREADS         = 1 << LOG_WARP_THREADS;
+  static constexpr int PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS;
+  static constexpr int WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    PADDED_WARPS = ((WARPS & 0x1) == 0) ? WARPS + 1 : WARPS,
+  static constexpr int PADDED_WARPS = ((WARPS & 0x1) == 0) ? WARPS + 1 : WARPS;
 
-    COUNTERS              = PADDED_WARPS * RADIX_DIGITS,
-    RAKING_SEGMENT        = (COUNTERS + BLOCK_THREADS - 1) / BLOCK_THREADS,
-    PADDED_RAKING_SEGMENT = ((RAKING_SEGMENT & 0x1) == 0) ? RAKING_SEGMENT + 1 : RAKING_SEGMENT,
-  };
+  static constexpr int COUNTERS              = PADDED_WARPS * RADIX_DIGITS;
+  static constexpr int RAKING_SEGMENT        = (COUNTERS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr int PADDED_RAKING_SEGMENT = ((RAKING_SEGMENT & 0x1) == 0) ? RAKING_SEGMENT + 1 : RAKING_SEGMENT;
 
 public:
-  enum
-  {
-    /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
-  };
+  /// Number of bin-starting offsets tracked per thread
+  static constexpr int BINS_TRACKED_PER_THREAD =
+    ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS);
 
 private:
   /// BlockScan type
@@ -876,22 +866,19 @@ template <int BlockDimX,
 struct BlockRadixRankMatchEarlyCounts
 {
   // constants
-  enum
-  {
-    BLOCK_THREADS           = BlockDimX,
-    RADIX_DIGITS            = 1 << RadixBits,
-    BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
-    BINS_TRACKED_PER_THREAD = BINS_PER_THREAD,
-    FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS            = detail::warp_threads,
-    PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS,
-    BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS,
-    PARTIAL_WARP_ID         = BLOCK_WARPS - 1,
-    WARP_MASK               = ~0,
-    NUM_MATCH_MASKS         = MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR ? BLOCK_WARPS : 0,
-    // Guard against declaring zero-sized array:
-    MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS,
-  };
+  static constexpr int BLOCK_THREADS           = BlockDimX;
+  static constexpr int RADIX_DIGITS            = 1 << RadixBits;
+  static constexpr int BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  static constexpr int BINS_TRACKED_PER_THREAD = BINS_PER_THREAD;
+  static constexpr int FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS;
+  static constexpr int WARP_THREADS            = detail::warp_threads;
+  static constexpr int PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS;
+  static constexpr int BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS;
+  static constexpr int PARTIAL_WARP_ID         = BLOCK_WARPS - 1;
+  static constexpr int WARP_MASK               = ~0;
+  static constexpr int NUM_MATCH_MASKS         = MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR ? BLOCK_WARPS : 0;
+  // Guard against declaring zero-sized array:
+  static constexpr int MATCH_MASKS_ALLOC_SIZE = NUM_MATCH_MASKS < 1 ? 1 : NUM_MATCH_MASKS;
 
   // types
   using BlockScan = cub::BlockScan<int, BLOCK_THREADS, InnerScanAlgorithm>;

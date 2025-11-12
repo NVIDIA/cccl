@@ -5,11 +5,8 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-
 #include <cuda/cmath>
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -118,7 +115,7 @@ C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_unique(thrust::counting_iterator<type>(0), thrust::discard_iterator<>(), d_first_num_selected_out, num_items);
+  select_unique(cuda::counting_iterator<type>(0), cuda::discard_iterator(), d_first_num_selected_out, num_items);
 
   REQUIRE(num_selected_out[0] == num_items);
 }
@@ -282,7 +279,7 @@ try
   // All unique
   SECTION("AllUnique")
   {
-    auto in = thrust::make_counting_iterator(offset_t{0});
+    auto in = cuda::counting_iterator(offset_t{0});
 
     // Prepare expected data
     auto expected_result_it = in;
@@ -306,7 +303,7 @@ try
   // All the same -> single unique
   SECTION("AllSame")
   {
-    auto in = thrust::make_constant_iterator(offset_t{0});
+    auto in = cuda::constant_iterator(offset_t{0});
     constexpr offset_t expected_num_unique{1};
 
     // Prepare expected data

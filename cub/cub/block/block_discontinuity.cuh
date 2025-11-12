@@ -103,11 +103,8 @@ template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockDiscontinuity
 {
 private:
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Shared memory storage layout type (last element from each thread's input)
   struct _TempStorage

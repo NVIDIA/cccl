@@ -45,8 +45,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   if constexpr (Mode == test_mode::single_copy || Mode == test_mode::multi_copy_multi_phase
                 || Mode == test_mode::multi_copy_multi_barrier)
   {
-    auto token = block_load2sh.Commit();
-    block_load2sh.Wait(token);
+    block_load2sh.CommitAndWait();
 
     for (int idx = threadIdx.x; idx < num_items_first_copy; idx += ThreadsInBlock)
     {
@@ -58,8 +57,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
     cuda::std::span<char> dst_buff2{buffer[1]};
     cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
 
-    auto token = block_load2sh.Commit();
-    block_load2sh.Wait(token);
+    block_load2sh.CommitAndWait();
 
     for (int idx = threadIdx.x; idx < num_items; idx += ThreadsInBlock)
     {
@@ -72,9 +70,8 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
     // Make sure that everyone is done reading from dst
     __syncthreads();
 
-    dst        = block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
-    auto token = block_load2sh.Commit();
-    block_load2sh.Wait(token);
+    dst = block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
+    block_load2sh.CommitAndWait();
 
     for (int idx = static_cast<int>(threadIdx.x); idx < num_items - num_items_first_copy; idx += ThreadsInBlock)
     {
@@ -90,8 +87,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
 
     cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
-    auto token = second_block_load2sh.Commit();
-    second_block_load2sh.Wait(token);
+    second_block_load2sh.CommitAndWait();
 
     for (int idx = static_cast<int>(threadIdx.x); idx < num_items - num_items_first_copy; idx += ThreadsInBlock)
     {
@@ -146,8 +142,10 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
   cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
 
   cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
-  auto token                   = block_load2sh.Commit();
-  block_load2sh.Wait(token);
+
+  // also test separate Commit and Wait calls with token passing here
+  auto token = block_load2sh.Commit();
+  block_load2sh.Wait(::cuda::std::move(token));
 
   for (int idx = cub::RowMajorTid(ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ); idx < num_items;
        idx += ThreadsInBlock)

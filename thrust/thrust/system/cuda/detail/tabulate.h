@@ -43,7 +43,8 @@
 #  include <thrust/system/cuda/execution_policy.h>
 
 #  include <cuda/__functional/address_stability.h>
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
