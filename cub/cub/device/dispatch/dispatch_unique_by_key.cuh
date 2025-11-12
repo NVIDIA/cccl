@@ -11,6 +11,9 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/__device/arch_traits.h>
+#include <cuda/__device/compute_capability.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -162,6 +165,8 @@ struct DispatchUniqueByKey
   /// **[optional]** CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
   cudaStream_t stream;
 
+  int ptx_version;
+
   KernelSource kernel_source;
 
   KernelLauncherFactory launcher_factory;
@@ -236,13 +241,6 @@ struct DispatchUniqueByKey
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernelT init_kernel, UniqueByKeySweepKernelT sweep_kernel, ActivePolicyT policy = {})
   {
-    // Get device ordinal
-    int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-    {
-      return error;
-    }
-
     // Number of input tiles
     const auto block_threads = VSMemHelperT::template BlockThreads<
       typename ActivePolicyT::UniqueByKeyPolicyT,
@@ -333,12 +331,7 @@ struct DispatchUniqueByKey
       return cudaSuccess;
     }
 
-    // Get max x-dimension of grid
-    int max_dim_x;
-    if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
-    {
-      return error;
-    }
+    const int max_dim_x = cuda::arch_traits_for(cuda::compute_capability{ptx_version}).max_grid_dim_x;
 
     // Get grid size for scanning tiles
     dim3 scan_grid_size;
@@ -473,6 +466,7 @@ struct DispatchUniqueByKey
       equality_op,
       num_items,
       stream,
+      ptx_version,
       kernel_source,
       launcher_factory);
 
