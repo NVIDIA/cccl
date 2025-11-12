@@ -122,8 +122,9 @@ OutputIterator scan_impl(
     // For no init inclusive scan: exclusive_scan starting at second element with first element as init
     if (num_threads > 1)
     {
+      accum_t first_block_sum = block_sums[0];
       ::cuda::std::exclusive_scan(
-        block_sums.begin() + 1, block_sums.end(), block_sums.begin() + 1, block_sums[0], wrapped_binary_op);
+        block_sums.begin() + 1, block_sums.end(), block_sums.begin() + 1, first_block_sum, wrapped_binary_op);
     }
   }
 
