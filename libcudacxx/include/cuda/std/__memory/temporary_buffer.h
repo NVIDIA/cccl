@@ -24,14 +24,12 @@
 
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__new_>
+#include <cuda/std/__new/allocate.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/alignment_of.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

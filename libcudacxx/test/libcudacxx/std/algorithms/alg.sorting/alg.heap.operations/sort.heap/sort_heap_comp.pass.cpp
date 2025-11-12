@@ -17,6 +17,7 @@
 
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 #include "MoveOnly.h"
 #include "test_iterators.h"

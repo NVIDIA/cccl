@@ -20,9 +20,9 @@
 //   void
 //   return_temporary_buffer(T* p);
 
-#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/memory>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
