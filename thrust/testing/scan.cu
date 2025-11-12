@@ -831,7 +831,7 @@ void TestScanEdgeCases()
     // Verify with host scan
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 2);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 2, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -851,7 +851,7 @@ void TestScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 10);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 10, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -871,7 +871,7 @@ void TestScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 5);
+    thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -903,7 +903,7 @@ void TestScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -923,7 +923,7 @@ void TestScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 3, ::cuda::std::multiplies<>{});
+    thrust::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 3, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }

@@ -454,10 +454,8 @@ void TestTransformScanEdgeCases()
     // Verify with host scan
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
-      return -x;
-    });
-    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 2);
+    thrust::transform_inclusive_scan(
+      h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -478,10 +476,8 @@ void TestTransformScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
-      return -x;
-    });
-    std::exclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), 5, ::cuda::std::multiplies<>{});
+    thrust::transform_exclusive_scan(
+      h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<int>(), 5, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
@@ -529,10 +525,8 @@ void TestTransformScanEdgeCases()
 
     thrust::host_vector<int> h_input = d_input;
     thrust::host_vector<int> h_output(n);
-    std::transform(h_input.begin(), h_input.end(), h_input.begin(), [](int x) {
-      return x * x;
-    });
-    std::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::multiplies<>{}, 1);
+    thrust::transform_inclusive_scan(
+      h_input.begin(), h_input.end(), h_output.begin(), thrust::square<int>(), 1, ::cuda::std::multiplies<>{});
 
     ASSERT_EQUAL(d_output, h_output);
   }
