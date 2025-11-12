@@ -51,8 +51,8 @@ using namespace __v1;
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <typename Group>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int __thread_rank(const Group& __g)
+template <typename _Group>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int __thread_rank(const _Group& __g)
 {
   return __g.thread_rank();
 }
@@ -63,10 +63,10 @@ __elect_from_group(const cooperative_groups::thread_block& __g) noexcept
 {
   // Cannot call __g.thread_rank(), because we only forward declared the thread_block type
   // cooperative groups (and we here) maps a multidimensional thread id into the thread rank the same way as warps do
-  const unsigned int tid             = threadIdx.z * blockDim.y * blockDim.x + threadIdx.y * blockDim.x + threadIdx.x;
-  const unsigned int warp_id         = tid / 32;
-  const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
-  return uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
+  const unsigned int __tid             = threadIdx.z * blockDim.y * blockDim.x + threadIdx.y * blockDim.x + threadIdx.x;
+  const unsigned int __warp_id         = __tid / 32;
+  const unsigned int __uniform_warp_id = __shfl_sync(0xFFFFFFFF, __warp_id, 0); // broadcast from lane 0
+  return __uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
 }
 
 // elect from a single warp
