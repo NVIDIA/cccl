@@ -43,13 +43,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 ///
 /// Most users should use the predefined `pcg64` type alias instead of this class directly.
 ///
-/// @tparam __a The multiplier constant for the LCG.
-/// @tparam __c The increment constant for the LCG.
+/// @tparam _AHi The high 64 bits of the multiplier constant for the LCG.
+/// @tparam _ALo The low 64 bits of the multiplier constant for the LCG.
+/// @tparam _CHi The high 64 bits of the increment constant for the LCG.
+/// @tparam _CLo The low 64 bits of the increment constant for the LCG.
 ///
 /// @note This class requires compiler support for 128-bit integers.
 ///
 /// @see https://www.pcg-random.org/ for details on the PCG family of generators.
-template <__uint128_t __a, __uint128_t __c>
+template <::cuda::std::uint64_t _AHi, ::cuda::std::uint64_t _ALo, ::cuda::std::uint64_t _CHi, ::cuda::std::uint64_t _CLo>
 class pcg64_engine
 {
 public:
@@ -71,12 +73,12 @@ public:
 
   // constructors and seeding functions
   /// @brief Default-constructs the engine using `default_seed`.
-  constexpr _CCCL_API pcg64_engine() noexcept
+  _CCCL_API constexpr pcg64_engine() noexcept
       : pcg64_engine(default_seed)
   {}
   /// @brief Constructs the engine and seeds it with `__seed`.
   /// @param __seed The seed value used to initialize the engine state.
-  constexpr _CCCL_API explicit pcg64_engine(result_type __seed) noexcept
+  _CCCL_API constexpr explicit pcg64_engine(result_type __seed) noexcept
   {
     seed(__seed);
   }
@@ -86,13 +88,13 @@ public:
   /// @tparam _Sseq A SeedSequence-like type satisfying the project's seed concept.
   /// @param __seq The seed sequence used to initialize the internal state.
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  constexpr _CCCL_API explicit pcg64_engine(_Sseq& __seq)
+  _CCCL_API constexpr explicit pcg64_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
   /// @brief Seed the engine with an integer seed.
   /// @param __seed The seed value; defaults to `default_seed`.
-  constexpr _CCCL_API void seed(result_type __seed = default_seed) noexcept
+  _CCCL_API constexpr void seed(result_type __seed = default_seed) noexcept
   {
     __x_ = (__seed + __increment) * __multiplier + __increment;
   }
@@ -102,7 +104,7 @@ public:
   /// @param __seq A SeedSequence-like object providing 128 bits of entropy.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  constexpr _CCCL_API void seed(_Sseq& __seq)
+  _CCCL_API constexpr void seed(_Sseq& __seq)
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());
@@ -118,7 +120,7 @@ public:
   /// Advances the internal LCG state and applies the PCG output
   /// permutation to produce a 64-bit result.
   /// @return A 64-bit pseudo-random value.
-  constexpr _CCCL_API result_type operator()() noexcept
+  _CCCL_API constexpr result_type operator()() noexcept
   {
     __x_ = __x_ * __multiplier + __increment;
     return __output_transform(__x_);
@@ -126,7 +128,7 @@ public:
 
   /// @brief Advance the engine state by `__z` steps, discarding outputs.
   /// @param __z Number of values to discard.
-  constexpr _CCCL_API void discard(unsigned long long __z) noexcept
+  _CCCL_API constexpr void discard(unsigned long long __z) noexcept
   {
     const auto [__mult, __plus] = __power_mod(__z);
     __x_                        = __x_ * __mult + __plus;
@@ -203,8 +205,8 @@ public:
 private:
   using __bitcount_t = ::cuda::std::uint8_t;
 
-  static constexpr __uint128_t __multiplier = __a;
-  static constexpr __uint128_t __increment  = __c;
+  static constexpr __uint128_t __multiplier = (static_cast<__uint128_t>(_AHi) << 64) | _ALo;
+  static constexpr __uint128_t __increment  = (static_cast<__uint128_t>(_CHi) << 64) | _CLo;
   [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_t __internal) noexcept
   {
     const int __rot = static_cast<__bitcount_t>(__internal >> 122);
@@ -238,7 +240,7 @@ private:
 /// @brief A 128-bit state PCG engine producing 64-bit output values.
 ///
 /// This class implements the PCG XSL RR 128/64 generator described in:
-/// O’neill, Melissa E. "PCG: A family of simple fast space-efficient statistically good algorithms for random number
+/// O'neill, Melissa E. "PCG: A family of simple fast space-efficient statistically good algorithms for random number
 /// generation." ACM Transactions on Mathematical Software 204 (2014): 1-46. The engine keeps a 128-bit internal state
 /// and returns 64-bit pseudo-random values. PCG64 is a fast general purpose PRNG that passes common statistical tests,
 /// has a long period (2^128), and can discard values in O(log n) time.
@@ -256,8 +258,8 @@ private:
 /// @endcode
 ///
 /// @note This class requires compiler support for 128-bit integers.
-using pcg64 = pcg64_engine<(__uint128_t{2549297995355413924ULL} << 64) | 4865540595714422341ULL,
-                           (__uint128_t{6364136223846793005ULL} << 64) | 1442695040888963407ULL>;
+using pcg64 =
+  pcg64_engine<2549297995355413924ULL, 4865540595714422341ULL, 6364136223846793005ULL, 1442695040888963407ULL>;
 
 #endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
