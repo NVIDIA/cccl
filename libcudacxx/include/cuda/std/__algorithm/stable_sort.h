@@ -276,11 +276,6 @@ _CCCL_API void __stable_sort(
     __d.__set(__len, (value_type*) nullptr);
     ::cuda::std::__merge_move_assign<_AlgPolicy, _Compare>(
       __buff, __buff + __l2, __buff + __l2, __buff + __len, __first, __comp);
-    //         ::cuda::std::__merge<_Compare>(move_iterator<value_type*>(__buff),
-    //                                  move_iterator<value_type*>(__buff + __l2),
-    //                                  move_iterator<_RandomAccessIterator>(__buff + __l2),
-    //                                  move_iterator<_RandomAccessIterator>(__buff + __len),
-    //                                  __first, __comp);
     return;
   }
   ::cuda::std::__stable_sort<_AlgPolicy, _Compare>(__first, __m, __comp, __l2, __buff, __buff_size);

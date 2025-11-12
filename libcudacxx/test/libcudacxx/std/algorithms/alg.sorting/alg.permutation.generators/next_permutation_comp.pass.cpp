@@ -36,7 +36,7 @@ __host__ __device__ constexpr int factorial(int x)
 template <class Iter>
 __host__ __device__ constexpr void test()
 {
-  typedef cuda::std::greater<int> C;
+  using C      = cuda::std::greater<int>;
   int ia[]     = {6, 5, 4, 3, 2, 1};
   const int sa = sizeof(ia) / sizeof(ia[0]);
   int prev[sa] = {};

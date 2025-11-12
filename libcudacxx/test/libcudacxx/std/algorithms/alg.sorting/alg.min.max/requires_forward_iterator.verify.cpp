@@ -22,7 +22,7 @@ int main(int, char**)
 {
   int arr[]    = {1, 2, 3};
   const int *b = cuda::std::begin(arr), *e = cuda::std::end(arr);
-  typedef cpp17_input_iterator<const int*> Iter;
+  using Iter = cpp17_input_iterator<const int*>;
   {
     // expected-error@*:* {{cuda::std::min_element requires a ForwardIterator}}
     (void) cuda::std::min_element(Iter(b), Iter(e));

@@ -78,11 +78,11 @@ template <template <class...> class PopulationIteratorType,
           class SampleItem>
 __host__ __device__ void test()
 {
-  typedef PopulationIteratorType<PopulationItem*> PopulationIterator;
-  typedef SampleIteratorType<SampleItem*> SampleIterator;
-  PopulationItem ia[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  constexpr size_t is = sizeof(ia) / sizeof(ia[0]);
-  typedef TestExpectations<typename cuda::std::iterator_traits<PopulationIterator>::iterator_category> Expectations;
+  using PopulationIterator = PopulationIteratorType<PopulationItem*>;
+  using SampleIterator     = SampleIteratorType<SampleItem*>;
+  PopulationItem ia[]      = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  constexpr size_t is      = sizeof(ia) / sizeof(ia[0]);
+  using Expectations = TestExpectations<typename cuda::std::iterator_traits<PopulationIterator>::iterator_category>;
   SampleItem oa[sample_size];
   [[maybe_unused]] const int* oa1 = Expectations::get_sample1();
   [[maybe_unused]] const int* oa2 = Expectations::get_sample2();
@@ -105,10 +105,10 @@ template <template <class...> class PopulationIteratorType,
           class SampleItem>
 __host__ __device__ void test_empty_population()
 {
-  typedef PopulationIteratorType<PopulationItem*> PopulationIterator;
-  typedef SampleIteratorType<SampleItem*> SampleIterator;
-  PopulationItem ia[] = {42};
-  const unsigned os   = 4;
+  using PopulationIterator = PopulationIteratorType<PopulationItem*>;
+  using SampleIterator     = SampleIteratorType<SampleItem*>;
+  PopulationItem ia[]      = {42};
+  const unsigned os        = 4;
   SampleItem oa[os];
   cuda::std::minstd_rand g;
   SampleIterator end = cuda::std::sample(PopulationIterator(ia), PopulationIterator(ia), SampleIterator(oa), os, g);
@@ -121,10 +121,10 @@ template <template <class...> class PopulationIteratorType,
           class SampleItem>
 __host__ __device__ void test_empty_sample()
 {
-  typedef PopulationIteratorType<PopulationItem*> PopulationIterator;
-  typedef SampleIteratorType<SampleItem*> SampleIterator;
-  PopulationItem ia[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  const unsigned is   = sizeof(ia) / sizeof(ia[0]);
+  using PopulationIterator = PopulationIteratorType<PopulationItem*>;
+  using SampleIterator     = SampleIteratorType<SampleItem*>;
+  PopulationItem ia[]      = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  const unsigned is        = sizeof(ia) / sizeof(ia[0]);
   SampleItem oa[1];
   cuda::std::minstd_rand g;
   SampleIterator end = cuda::std::sample(PopulationIterator(ia), PopulationIterator(ia + is), SampleIterator(oa), 0, g);
@@ -138,18 +138,18 @@ template <template <class...> class PopulationIteratorType,
 __host__ __device__ void test_small_population()
 {
   // The population size is less than the sample size.
-  typedef PopulationIteratorType<PopulationItem*> PopulationIterator;
-  typedef SampleIteratorType<SampleItem*> SampleIterator;
-  PopulationItem ia[] = {1, 2, 3, 4, 5};
-  const unsigned is   = sizeof(ia) / sizeof(ia[0]);
-  const unsigned os   = 8;
+  using PopulationIterator = PopulationIteratorType<PopulationItem*>;
+  using SampleIterator     = SampleIteratorType<SampleItem*>;
+  PopulationItem ia[]      = {1, 2, 3, 4, 5};
+  const unsigned is        = sizeof(ia) / sizeof(ia[0]);
+  const unsigned os        = 8;
   SampleItem oa[os];
   const SampleItem oa1[] = {1, 2, 3, 4, 5};
   cuda::std::minstd_rand g;
   SampleIterator end =
     cuda::std::sample(PopulationIterator(ia), PopulationIterator(ia + is), SampleIterator(oa), os, g);
   assert(static_cast<cuda::std::size_t>(base(end) - oa) == cuda::std::min(os, is));
-  typedef typename cuda::std::iterator_traits<PopulationIterator>::iterator_category PopulationCategory;
+  using PopulationCategory = typename cuda::std::iterator_traits<PopulationIterator>::iterator_category;
   if (cuda::std::is_base_of<cuda::std::forward_iterator_tag, PopulationCategory>::value)
   {
     assert(cuda::std::equal(oa, base(end), oa1));
