@@ -9,19 +9,34 @@ Namespace ``libcudacxx``
 Classes
 ~~~~~~~
 
+* :doc:`compute_capability <classcompute__capability>`
 * :doc:`constant_iterator <classconstant__iterator>`
 * :doc:`counting_iterator <classcounting__iterator>`
+* :doc:`device_ref <classdevice__ref>`
 * :doc:`discard_iterator <classdiscard__iterator>`
+* :doc:`event <classevent>`
+* :doc:`event_ref <classevent__ref>`
 * :doc:`permutation_iterator <classpermutation__iterator>`
 * :doc:`shuffle_iterator <classshuffle__iterator>`
+* :doc:`stream_ref <classstream__ref>`
 * :doc:`strided_iterator <classstrided__iterator>`
 * :doc:`tabulate_output_iterator <classtabulate__output__iterator>`
+* :doc:`timed_event <classtimed__event>`
 * :doc:`transform_input_output_iterator <classtransform__input__output__iterator>`
 * :doc:`transform_iterator <classtransform__iterator>`
 * :doc:`transform_output_iterator <classtransform__output__iterator>`
 * :doc:`zip_function <classzip__function>`
 * :doc:`zip_iterator <classzip__iterator>`
 * :doc:`zip_transform_iterator <classzip__transform__iterator>`
+
+Structs
+~~~~~~~
+
+* :doc:`arch_traits_t <structarch__traits__t>`
+* :doc:`copy_configuration <structcopy__configuration>`
+* :doc:`device_attributes::compute_capability_t <structdevice__attributes_1_1compute__capability__t>`
+* :doc:`get_stream_t <structget__stream__t>`
+* :doc:`stream <structstream>`
 
 Type Definitions
 ~~~~~~~~~~~~~~~~
@@ -36,19 +51,30 @@ Type Definitions
    :hidden:
    :maxdepth: 1
 
+   classcompute__capability
    classconstant__iterator
    classcounting__iterator
+   classdevice__ref
    classdiscard__iterator
+   classevent
+   classevent__ref
    classpermutation__iterator
    classshuffle__iterator
+   classstream__ref
    classstrided__iterator
    classtabulate__output__iterator
+   classtimed__event
    classtransform__input__output__iterator
    classtransform__iterator
    classtransform__output__iterator
    classzip__function
    classzip__iterator
    classzip__transform__iterator
+   structarch__traits__t
+   structdevice__attributes_1_1compute__capability__t
+   structcopy__configuration
+   structget__stream__t
+   structstream
    group__iterators_1ga83ac1a6f53e106d83b8f7db6757f7334
    group__iterators_1gadcd3d726e080dfd5ec73d1816aa41744
    group__iterators_1ga3a57fccd85438fe6ac517f59802807b5

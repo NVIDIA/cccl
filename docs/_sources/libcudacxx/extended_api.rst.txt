@@ -18,7 +18,6 @@ Extended API
    extended_api/type_traits
    extended_api/numeric
    extended_api/memory
-   extended_api/streams
    extended_api/memory_resource
    extended_api/math
    extended_api/mdspan
