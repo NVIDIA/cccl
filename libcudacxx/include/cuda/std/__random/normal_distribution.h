@@ -49,22 +49,22 @@ public:
         , __stddev_(__stddev)
     {}
 
-    _CCCL_API constexpr result_type mean() const
+    [[nodiscard]] _CCCL_API constexpr result_type mean() const
     {
       return __mean_;
     }
-    _CCCL_API constexpr result_type stddev() const
+    [[nodiscard]] _CCCL_API constexpr result_type stddev() const
     {
       return __stddev_;
     }
 
-    _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y)
     {
       return __x.__mean_ == __y.__mean_ && __x.__stddev_ == __y.__stddev_;
     }
 
 #if _CCCL_STD_VER <= 2017
-    _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y)
+    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y)
     {
       return !(__x == __y);
     }
@@ -103,16 +103,16 @@ public:
   _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p);
 
   // property functions
-  _CCCL_API constexpr result_type mean() const
+  [[nodiscard]] _CCCL_API constexpr result_type mean() const
   {
     return __p_.mean();
   }
-  _CCCL_API constexpr result_type stddev() const
+  [[nodiscard]] _CCCL_API constexpr result_type stddev() const
   {
     return __p_.stddev();
   }
 
-  _CCCL_API constexpr param_type param() const
+  [[nodiscard]] _CCCL_API constexpr param_type param() const
   {
     return __p_;
   }
@@ -121,21 +121,23 @@ public:
     __p_ = __p;
   }
 
-  _CCCL_API constexpr result_type min() const
+  [[nodiscard]] _CCCL_API constexpr result_type min() const
   {
     return -numeric_limits<result_type>::infinity();
   }
-  _CCCL_API constexpr result_type max() const
+  [[nodiscard]] _CCCL_API constexpr result_type max() const
   {
     return numeric_limits<result_type>::infinity();
   }
 
-  _CCCL_API friend constexpr bool operator==(const normal_distribution& __x, const normal_distribution& __y)
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const normal_distribution& __x, const normal_distribution& __y)
   {
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
 #if _CCCL_STD_VER <= 2017
-  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y)
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(const normal_distribution& __x, const normal_distribution& __y)
   {
     return !(__x == __y);
   }
