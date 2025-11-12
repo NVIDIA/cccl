@@ -7,7 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+#ifndef LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_DISCRETE_DISTRIBUTION_H
+#define LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_DISCRETE_DISTRIBUTION_H
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 
@@ -79,3 +80,5 @@ __host__ __device__ bool test_discrete_distribution(
   double critical_value = critical_values.at(N - 1);
   return chi_squared < critical_value;
 }
+
+#endif // LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_DISCRETE_DISTRIBUTION_H

@@ -62,10 +62,13 @@ public:
     {
       return __x.__mean_ == __y.__mean_ && __x.__stddev_ == __y.__stddev_;
     }
+
+#if _CCCL_STD_VER <= 2017
     _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y)
     {
       return !(__x == __y);
     }
+#endif // _CCCL_STD_VER <= 2017
   };
 
 private:
@@ -131,26 +134,30 @@ public:
   {
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
+#if _CCCL_STD_VER <= 2017
   _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y)
   {
     return !(__x == __y);
   }
+#endif // _CCCL_STD_VER <= 2017
 
 #if !_CCCL_COMPILER(NVRTC)
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const normal_distribution& __x)
   {
-    using _OStream = ::std::basic_ostream<_CharT, _Traits>;
-    auto __flags   = __os.flags();
-    __os.flags(_OStream::dec | _OStream::left | _OStream::fixed | _OStream::scientific);
-    _CharT __sp = __os.widen(' ');
-    __os.fill(__sp);
+    _CharT __sp                       = __os.widen(' ');
+    ::std::ios_base::fmtflags __flags = __os.flags();
+    __os.flags(::std::ios_base::dec | ::std::ios_base::left | ::std::ios_base::fixed);
+    _CharT __fill                 = __os.fill(__sp);
+    ::std::streamsize __precision = __os.precision(17); // Max precision for double
     __os << __x.mean() << __sp << __x.stddev() << __sp << __x.__v_hot_;
     if (__x.__v_hot_)
     {
       __os << __sp << __x.__v_;
     }
+    __os.precision(__precision);
+    __os.fill(__fill);
     __os.flags(__flags);
     return __os;
   }
@@ -162,12 +169,13 @@ public:
     using result_type = _RealType;
     using _Istream    = ::std::basic_istream<_CharT, _Traits>;
     auto __flags      = __is.flags();
-    __is.flags(_Istream::dec | _Istream::skipws);
+    __is.flags(_Istream::skipws);
     result_type __mean;
     result_type __stddev;
     result_type __vp = 0;
-    bool __v_hot     = false;
-    __is >> __mean >> __stddev >> __v_hot;
+    int __v_hot_int  = 0;
+    __is >> __mean >> __stddev >> __v_hot_int;
+    bool __v_hot = __v_hot_int != 0;
     if (__v_hot)
     {
       __is >> __vp;

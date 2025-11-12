@@ -27,11 +27,11 @@
 #include <cuda/std/__random_>
 #include <cuda/std/cassert>
 
-#include <sstream>
-
 #include "test_macros.h"
 
 #if !_CCCL_COMPILER(NVRTC)
+#  include <sstream>
+
 void test_save_restore()
 {
   using D = cuda::std::normal_distribution<>;

@@ -7,13 +7,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+#ifndef LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_CONTINUOUS_DISTRIBUTION_H
+#define LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_CONTINUOUS_DISTRIBUTION_H
 #include <cuda/std/__algorithm/partial_sort.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
+namespace detail
+{
 template <class ContinuousDistribution, class URNG>
 __host__ __device__ constexpr bool test_constexpr()
 {
@@ -24,6 +27,7 @@ __host__ __device__ constexpr bool test_constexpr()
   unused(dist(g));
   return true;
 }
+} // namespace detail
 
 // Perform a kolmogorov-Smirnov test, comparing the observed and expected cumulative
 // distribution function from a continuous distribution.
@@ -31,7 +35,7 @@ __host__ __device__ constexpr bool test_constexpr()
 template <class ContinuousDistribution, class URNG, class CDF>
 __host__ __device__ bool test_continuous_distribution(const typename ContinuousDistribution::param_type param, CDF cdf)
 {
-  // static_assert(test_constexpr<ContinuousDistribution, URNG>());
+  // static_assert(detail::test_constexpr<ContinuousDistribution, URNG>());
   //  First check the operator with param is equivalent to the constructor param
   {
     ContinuousDistribution d1(param);
@@ -82,3 +86,5 @@ __host__ __device__ bool test_continuous_distribution(const typename ContinuousD
   const double critical_value = 0.016259280113043572; // for alpha = 0.01 and n = 10000
   return d_max < critical_value;
 }
+
+#endif // LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_CONTINUOUS_DISTRIBUTION_H
