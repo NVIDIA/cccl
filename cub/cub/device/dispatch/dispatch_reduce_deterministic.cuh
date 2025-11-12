@@ -193,18 +193,12 @@ struct dispatch_t
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
       .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op);
     // Check for failure to launch
-    auto error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
       return error;
     }
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -236,22 +230,19 @@ struct dispatch_t
     const auto tile_size = ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
     // Get device ordinal
     int device_ordinal;
-    auto error = CubDebug(cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
 
     int sm_count;
-    error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
     {
       return error;
     }
 
     KernelConfig reduce_config;
-    error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel)))
     {
       return error;
     }
@@ -282,8 +273,8 @@ struct dispatch_t
 
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
-    error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-    if (cudaSuccess != error)
+    if (const auto error =
+          CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -329,8 +320,7 @@ struct dispatch_t
               current_grid_size);
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
@@ -342,8 +332,7 @@ struct dispatch_t
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -368,20 +357,13 @@ struct dispatch_t
             ::cuda::std::identity{});
 
     // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -467,12 +449,9 @@ struct dispatch_t
     cudaStream_t stream       = {},
     TransformOpT transform_op = {})
   {
-    cudaError error = cudaSuccess;
-
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -493,8 +472,7 @@ struct dispatch_t
       transform_op};
 
     // Dispatch to chained policy
-    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
-    return error;
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
 };
 } // namespace detail::rfa
