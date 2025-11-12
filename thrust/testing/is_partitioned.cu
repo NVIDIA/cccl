@@ -52,7 +52,7 @@ void TestIsPartitioned()
   v[0] = 1;
   v[1] = 0;
 
-  ASSERT_EQUAL(false, thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
 
   thrust::partition(v.begin(), v.end(), is_even<T>());
 
