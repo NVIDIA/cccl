@@ -268,7 +268,7 @@ a custom group can be defined like:
    };
 
    template <>
-   cuda::is_thread_block_group_v<this_thread_block_1D> = true;
+   inline constexpr bool cuda::is_thread_block_group_v<this_thread_block_1D> = true;
 
 Such a group will emit the least amount of code when used with ``cuda::memcpy_async``,
 since the ``thread_rank()`` is easily computed (because the block is 1D)
