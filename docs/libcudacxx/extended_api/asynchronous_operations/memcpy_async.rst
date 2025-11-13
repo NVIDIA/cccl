@@ -149,19 +149,19 @@ Related traits
 
 .. code:: cuda
 
-   template <typename T>
+   template <typename Group>
    constexpr inline bool is_thread_block_group_v;
 
-This trait is ``true`` if ``T`` represents a CUDA thread block.
+This trait is ``true`` if ``Group`` represents a CUDA thread block.
 For example, ``cooperative_groups::thread_block`` satisfies this trait.
 Users are encouraged to specialize this trait for their own groups.
 
 .. code:: cuda
 
-   template <typename T>
+   template <typename Group>
    constexpr inline bool is_warp_group_v = false;
 
-This trait is ``true`` if ``T`` represents a CUDA warp.
+This trait is ``true`` if ``Group`` represents a CUDA warp.
 For example, ``cooperative_groups::thread_block_tile<32, ...>`` satisfies this trait.
 Users are encouraged to specialize this trait for their own groups.
 
