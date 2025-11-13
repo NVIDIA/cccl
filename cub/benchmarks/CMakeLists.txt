@@ -4,12 +4,15 @@ cccl_get_nvbench_helper()
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
   message(FATAL_ERROR "CUB benchmarks must be built in release mode.")
 endif()
 
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  message(FATAL_ERROR "CMAKE_CUDA_ARCHITECTURES must be set to build CUB benchmarks.")
+if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  message(
+    FATAL_ERROR
+    "CMAKE_CUDA_ARCHITECTURES must be set to build CUB benchmarks."
+  )
 endif()
 
 set(benches_meta_target cub.all.benches)
@@ -17,14 +20,15 @@ add_custom_target(${benches_meta_target})
 
 function(get_recursive_subdirs subdirs)
   set(dirs)
-  file(GLOB_RECURSE contents
+  file(
+    GLOB_RECURSE contents
     CONFIGURE_DEPENDS
     LIST_DIRECTORIES ON
     "${CMAKE_CURRENT_LIST_DIR}/bench/*"
   )
 
-  foreach(test_dir IN LISTS contents)
-    if(IS_DIRECTORY "${test_dir}")
+  foreach (test_dir IN LISTS contents)
+    if (IS_DIRECTORY "${test_dir}")
       list(APPEND dirs "${test_dir}")
     endif()
   endforeach()
@@ -42,7 +46,7 @@ function(get_bench_ranges src bench_name)
 
   set(ranges "")
 
-  foreach(match IN LISTS matches)
+  foreach (match IN LISTS matches)
     string(REGEX MATCH "${param_regex}" unused "${match}")
 
     set(def ${CMAKE_MATCH_1})
@@ -70,7 +74,12 @@ function(add_bench target_name bench_name bench_src)
 
   add_executable(${bench_target} "${bench_src}")
   cccl_configure_target(${bench_target} DIALECT 17)
-  target_link_libraries(${bench_target} PRIVATE cccl.nvbench_helper nvbench::main)
+  target_link_libraries(
+    ${bench_target}
+    PRIVATE #
+      cccl.nvbench_helper
+      nvbench::main
+  )
 endfunction()
 
 function(add_bench_dir bench_dir)
@@ -79,7 +88,7 @@ function(add_bench_dir bench_dir)
   file(TO_CMAKE_PATH "${bench_prefix}" bench_prefix)
   string(REPLACE "/" "." bench_prefix "${bench_prefix}")
 
-  foreach(bench_src IN LISTS bench_srcs)
+  foreach (bench_src IN LISTS bench_srcs)
     # base tuning
     get_filename_component(bench_name "${bench_src}" NAME_WLE)
     string(PREPEND bench_name "cub.${bench_prefix}.")
@@ -92,14 +101,23 @@ function(add_bench_dir bench_dir)
 
     if (CUB_ENABLE_TUNING)
       # tuning
-      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${bench_src}")
+      set_property(
+        DIRECTORY
+        APPEND
+        PROPERTY CMAKE_CONFIGURE_DEPENDS "${bench_src}"
+      )
       get_bench_ranges("${bench_src}" "${bench_name}")
       set(tuning_name "${bench_name}.variant")
       set(tuning_path "${CMAKE_BINARY_DIR}/${tuning_name}.h")
       add_bench(bench_target ${tuning_name} "${bench_src}")
       # for convenience, make tuning variant buildable by default
       file(WRITE "${tuning_path}" "#pragma once\n#define TUNE_BASE 1\n")
-      target_compile_options(${bench_target} PRIVATE "--extended-lambda" "-include${tuning_path}")
+      target_compile_options(
+        ${bench_target}
+        PRIVATE #
+          "--extended-lambda"
+          "-include${tuning_path}"
+      )
     else()
       # benchmarking
       register_cccl_benchmark("${bench_name}" "")
@@ -109,6 +127,6 @@ endfunction()
 
 get_recursive_subdirs(subdirs)
 
-foreach(subdir IN LISTS subdirs)
+foreach (subdir IN LISTS subdirs)
   add_bench_dir("${subdir}")
 endforeach()

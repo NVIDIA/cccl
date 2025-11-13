@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/iterator>
+
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -104,7 +106,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
   // Prepare input data
   value_t default_constant{};
   init_default_constant(default_constant);
-  auto values_in_it = thrust::make_constant_iterator(default_constant);
+  auto values_in_it = cuda::constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {

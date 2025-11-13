@@ -28,7 +28,7 @@ assembles a complete interface to the Thrust library:
 ```cmake
 find_package(Thrust REQUIRED CONFIG)
 thrust_create_target(Thrust)
-target_link_libraries(MyProgram Thrust)
+target_link_libraries(MyProgram PRIVATE Thrust)
 ```
 
 The first argument is the name of the interface target to create, and any
