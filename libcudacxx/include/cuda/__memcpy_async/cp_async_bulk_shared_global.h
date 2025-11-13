@@ -27,7 +27,6 @@
 
 #    include <cuda/__memcpy_async/elect_one.h>
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
-#    include <cuda/__ptx/instructions/elect_sync.h>
 #    include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
@@ -48,7 +47,7 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (if (__group_elect_one(__g)) {
+    (if (::cuda::device::__group_elect_one(__g)) {
       ::cuda::ptx::cp_async_bulk(
         ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
         ::cuda::ptx::space_global,
