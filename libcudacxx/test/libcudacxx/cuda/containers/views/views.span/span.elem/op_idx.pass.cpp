@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <dynamic_span_t>
+// <cuda/span>
 
 // reference operator[](size_type idx) const;
 //
@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename T, typename Span>
-__host__ __device__ void test_acces_operator(Span sp, size_t idx, T expected)
+__device__ void test_acces_operator(Span sp, size_t idx, T expected)
 {
   static_assert(cuda::std::is_same_v<typename Span::reference, T&>);
   {
