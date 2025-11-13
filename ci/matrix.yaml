@@ -78,7 +78,7 @@ workflows:
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 'all', sm: '75;80;90;100'}
     # libc++
     # - arm64 for now as it's closest to android.
-    - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
+    # - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:

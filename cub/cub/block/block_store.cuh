@@ -148,17 +148,14 @@ template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerThread])
 {
-  enum
-  {
-    // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread),
+  // Maximum CUDA vector size is 4 elements
+  static constexpr int MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread);
 
-    // Vector size must be a power of two and an even divisor of the items per thread
-    VEC_SIZE =
-      ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1,
+  // Vector size must be a power of two and an even divisor of the items per thread
+  static constexpr int VEC_SIZE =
+    ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1;
 
-    VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE,
-  };
+  static constexpr int VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE;
 
   // Vector type
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
@@ -634,11 +631,8 @@ template <typename T,
 class BlockStore
 {
 private:
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Store helper
   template <BlockStoreAlgorithm _POLICY, int DUMMY>
@@ -891,10 +885,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE, DUMMY>
   {
-    enum
-    {
-      WARP_THREADS = detail::warp_threads
-    };
+    static constexpr int WARP_THREADS = detail::warp_threads;
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
@@ -974,10 +965,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, DUMMY>
   {
-    enum
-    {
-      WARP_THREADS = detail::warp_threads
-    };
+    static constexpr int WARP_THREADS = detail::warp_threads;
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
