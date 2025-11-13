@@ -146,13 +146,13 @@ __device__ __noinline__ void test_fully_specialized()
 
   for (int i = 0; i < 8; ++i)
   {
-    assert(dest->data[i + 0] == 48 + (i + 0)); // 8 copied items from first group
-    assert(dest->data[i + 8] == 24 + (i + 8)); // 8 untouched items between
-    assert(dest->data[i + 16] == 48 + (i + 16)); // 8 copied items from second group
+    assert(dest->data[i + 0] == static_cast<T>(48 + (i + 0))); // 8 copied items from first group
+    assert(dest->data[i + 8] == static_cast<T>(24 + (i + 8))); // 8 untouched items between
+    assert(dest->data[i + 16] == static_cast<T>(48 + (i + 16))); // 8 copied items from second group
   }
   for (int i = 24; i < storage<T>::size; ++i)
   {
-    assert(dest->data[i] == 24 + i); // untouched items afterwards
+    assert(dest->data[i] == static_cast<T>(24 + i)); // untouched items afterwards
   }
 }
 
