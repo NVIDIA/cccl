@@ -522,7 +522,11 @@ struct DispatchRadixSort
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    detail::alias_temporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    if (const auto error =
+          detail::alias_temporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))
+    {
+      return error;
+    }
 
     // just return if no temporary storage is provided
     cudaError_t error = cudaSuccess;
