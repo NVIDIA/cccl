@@ -11,6 +11,7 @@
 // UNSUPPORTED: pre-sm-70
 
 #include <cuda/barrier>
+#include <cuda/std/type_traits>
 
 #include <cooperative_groups.h>
 
