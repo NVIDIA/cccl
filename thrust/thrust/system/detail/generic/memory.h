@@ -33,8 +33,9 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/generic/tag.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

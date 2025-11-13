@@ -93,7 +93,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("minmax_element");
@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -167,7 +167,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
 } // end max_element()
 
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last)
+::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last)
 {
   _CCCL_NVTX_RANGE_SCOPE("minmax_element");
   using thrust::system::detail::generic::select_system;
@@ -180,7 +180,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
 } // end minmax_element()
 
 template <typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("minmax_element");

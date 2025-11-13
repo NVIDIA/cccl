@@ -51,7 +51,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -65,7 +65,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -91,7 +91,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -105,7 +105,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,

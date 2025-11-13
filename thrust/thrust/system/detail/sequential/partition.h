@@ -31,8 +31,9 @@
 #endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -230,7 +231,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -255,7 +256,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
     } // end else
   }
 
-  return thrust::make_pair(out_true, out_false);
+  return ::cuda::std::make_pair(out_true, out_false);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -265,7 +266,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first,
   InputIterator1 last,
@@ -291,7 +292,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
     } // end else
   }
 
-  return thrust::make_pair(out_true, out_false);
+  return ::cuda::std::make_pair(out_true, out_false);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END
