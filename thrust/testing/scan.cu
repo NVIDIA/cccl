@@ -805,7 +805,7 @@ void TestScanBug6317()
     thrust::device_vector<T> d(n);
     const auto r = thrust::exclusive_scan(s.cbegin(), s.cend(), d.begin(), 42, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL((d.end() == r), true);
-    std::exclusive_scan(s.cbegin(), s.cend(), s.begin(), 42, std::multiplies<>{});
+    thrust::exclusive_scan(s.cbegin(), s.cend(), s.begin(), 42, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL(s, d);
   }
 }
