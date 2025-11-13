@@ -19,10 +19,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Symlink the compile command output to the source dir, where clangd will find it.
 set(compile_commands_file "${CMAKE_BINARY_DIR}/compile_commands.json")
 set(compile_commands_link "${CMAKE_SOURCE_DIR}/compile_commands.json")
-message(STATUS "Creating symlink from ${compile_commands_link} to ${compile_commands_file}...")
-cccl_execute_non_fatal_process(COMMAND
-  "${CMAKE_COMMAND}" -E rm -f "${compile_commands_link}")
-cccl_execute_non_fatal_process(COMMAND
-  "${CMAKE_COMMAND}" -E touch "${compile_commands_file}")
-cccl_execute_non_fatal_process(COMMAND
-  "${CMAKE_COMMAND}" -E create_symlink "${compile_commands_file}" "${compile_commands_link}")
+message(
+  STATUS
+  "Creating symlink from ${compile_commands_link} to ${compile_commands_file}..."
+)
+cccl_execute_non_fatal_process(
+  COMMAND "${CMAKE_COMMAND}" -E rm -f "${compile_commands_link}"
+)
+cccl_execute_non_fatal_process(
+  COMMAND "${CMAKE_COMMAND}" -E touch "${compile_commands_file}"
+)
+# gersemi: off
+cccl_execute_non_fatal_process(
+  COMMAND
+    "${CMAKE_COMMAND}" -E create_symlink
+      "${compile_commands_file}"
+      "${compile_commands_link}"
+)
+# gersemi: on

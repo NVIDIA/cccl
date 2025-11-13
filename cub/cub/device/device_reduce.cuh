@@ -197,7 +197,7 @@ private:
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
     using dispatch_t =
-      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
+      detail::rfa::dispatch_t<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
@@ -1296,9 +1296,6 @@ public:
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     // Query relevant properties from the environment
     auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr =
@@ -1306,9 +1303,6 @@ public:
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    using tuning_t =
-      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     // Reduction operation
     using ReduceOpT           = cub::ArgMin;
@@ -2092,9 +2086,6 @@ public:
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     // Query relevant properties from the environment
     auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
     auto mr =
@@ -2102,9 +2093,6 @@ public:
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    using tuning_t =
-      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     // Reduction operation
     using ReduceOpT           = cub::ArgMax;

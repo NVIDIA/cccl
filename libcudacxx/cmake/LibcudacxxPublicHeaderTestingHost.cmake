@@ -8,7 +8,8 @@
 add_custom_target(libcudacxx.test.public_headers_host_only)
 
 # Grep all public headers
-file(GLOB public_headers_host_only
+file(
+  GLOB public_headers_host_only
   LIST_DIRECTORIES false
   RELATIVE "${libcudacxx_SOURCE_DIR}/include"
   CONFIGURE_DEPENDS
@@ -37,16 +38,39 @@ endif()
 function(libcudacxx_create_public_header_test_host header_name headertest_src)
   # Create the default target for that file
   set(public_headers_host_only_${header_name} verify_${header_name})
-  add_library(public_headers_host_only_${header_name} SHARED "${headertest_src}.cpp")
-  target_include_directories(public_headers_host_only_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
-  target_compile_definitions(public_headers_host_only_${header_name} PRIVATE _CCCL_HEADER_TEST)
-  target_compile_definitions(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_definitions}")
-  target_compile_options(public_headers_host_only_${header_name} PRIVATE "${public_host_header_cxx_compile_options}")
-  cccl_configure_target(public_headers_host_only_${header_name} DIALECT ${CMAKE_CXX_STANDARD})
+  add_library(
+    public_headers_host_only_${header_name}
+    SHARED
+    "${headertest_src}.cpp"
+  )
+  target_include_directories(
+    public_headers_host_only_${header_name}
+    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
+  )
+  target_compile_definitions(
+    public_headers_host_only_${header_name}
+    PRIVATE #
+      ${public_host_header_cxx_compile_definitions}
+      _CCCL_HEADER_TEST
+  )
+  target_compile_options(
+    public_headers_host_only_${header_name}
+    PRIVATE ${public_host_header_cxx_compile_options}
+  )
+  cccl_configure_target(
+    public_headers_host_only_${header_name}
+    DIALECT ${CMAKE_CXX_STANDARD}
+  )
 
   # Bring in the global CCCL compile definitions
-  target_link_libraries(public_headers_host_only_${header_name} PUBLIC libcudacxx.compiler_interface)
-  add_dependencies(libcudacxx.test.public_headers_host_only public_headers_host_only_${header_name})
+  target_link_libraries(
+    public_headers_host_only_${header_name}
+    PUBLIC libcudacxx.compiler_interface
+  )
+  add_dependencies(
+    libcudacxx.test.public_headers_host_only
+    public_headers_host_only_${header_name}
+  )
 endfunction()
 
 function(libcudacxx_add_public_headers_host_only header)
@@ -55,12 +79,15 @@ function(libcudacxx_add_public_headers_host_only header)
 
   # Create the source file for the header target from the template and add the file to the global project
   set(headertest_src "headers/${header_name}")
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in" "${headertest_src}.cpp")
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in"
+    "${headertest_src}.cpp"
+  )
 
   # Create the default target for that file
   libcudacxx_create_public_header_test_host(${header_name} ${headertest_src})
 endfunction()
 
-foreach(header IN LISTS public_headers_host_only)
+foreach (header IN LISTS public_headers_host_only)
   libcudacxx_add_public_headers_host_only(${header})
 endforeach()

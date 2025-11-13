@@ -34,23 +34,57 @@ endfunction()
 
 _libcudacxx_declare_interface_alias(libcudacxx::libcudacxx _libcudacxx_libcudacxx)
 # Pull in the include dir detected by libcudacxx-config-version.cmake
-set(_libcudacxx_INCLUDE_DIR "${_libcudacxx_VERSION_INCLUDE_DIR}"
-  CACHE INTERNAL "Location of libcudacxx headers."
+set(
+  _libcudacxx_INCLUDE_DIR
+  "${_libcudacxx_VERSION_INCLUDE_DIR}"
+  CACHE INTERNAL
+  "Location of libcudacxx headers."
 )
 unset(_libcudacxx_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
-target_include_directories(_libcudacxx_libcudacxx INTERFACE "${_libcudacxx_INCLUDE_DIR}")
-target_compile_definitions(_libcudacxx_libcudacxx INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>)
+target_include_directories(
+  _libcudacxx_libcudacxx
+  INTERFACE "${_libcudacxx_INCLUDE_DIR}"
+)
+target_compile_definitions(
+  _libcudacxx_libcudacxx
+  INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>
+)
 
 #
 # Standardize version info
 #
 
 set(LIBCUDACXX_VERSION ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} CACHE INTERNAL "")
-set(LIBCUDACXX_VERSION_MAJOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR} CACHE INTERNAL "")
-set(LIBCUDACXX_VERSION_MINOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR} CACHE INTERNAL "")
-set(LIBCUDACXX_VERSION_PATCH ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH} CACHE INTERNAL "")
-set(LIBCUDACXX_VERSION_TWEAK ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK} CACHE INTERNAL "")
-set(LIBCUDACXX_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTERNAL "")
+set(
+  LIBCUDACXX_VERSION_MAJOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR}
+  CACHE INTERNAL
+  ""
+)
+set(
+  LIBCUDACXX_VERSION_MINOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR}
+  CACHE INTERNAL
+  ""
+)
+set(
+  LIBCUDACXX_VERSION_PATCH
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH}
+  CACHE INTERNAL
+  ""
+)
+set(
+  LIBCUDACXX_VERSION_TWEAK
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK}
+  CACHE INTERNAL
+  ""
+)
+set(
+  LIBCUDACXX_VERSION_COUNT
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT}
+  CACHE INTERNAL
+  ""
+)
 
 include(FindPackageHandleStandardArgs)
 if (NOT libcudacxx_CONFIG)

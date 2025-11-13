@@ -203,7 +203,7 @@ struct agent_t
       auto token   = load2sh.Commit();
       // Needed for using keys1_shared as one big buffer including both ranges in SerialMerge
       keys2_offset = static_cast<int>(keys2_shared - keys1_shared);
-      load2sh.Wait(token);
+      load2sh.Wait(::cuda::std::move(token));
     }
     else
     {
@@ -304,7 +304,7 @@ struct agent_t
         auto token               = load2sh.Commit();
         const int items2_offset  = static_cast<int>(items2_shared - items1_shared);
         translate_indices(items2_offset);
-        load2sh.Wait(token);
+        load2sh.Wait(::cuda::std::move(token));
       }
       else
       {

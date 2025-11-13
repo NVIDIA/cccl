@@ -48,9 +48,17 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
+option(
+  CCCL_ENABLE_UNSTABLE
+  "Enable targets and developer build options for unstable projects."
+  OFF
+)
 if (CCCL_ENABLE_UNSTABLE)
-  option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ${CCCL_TOPLEVEL_PROJECT})
+  option(
+    CCCL_ENABLE_CUDAX
+    "Enable the CUDA Experimental developer build."
+    ${CCCL_TOPLEVEL_PROJECT}
+  )
 else()
   # Always off if unstable disabled:
   # Note that this doesn't override the cache variable, but rather creates a new

@@ -3,12 +3,20 @@
 # to be generated from a single thrust build.
 
 function(thrust_configure_multiconfig)
-  option(THRUST_ENABLE_MULTICONFIG "Enable multiconfig options for coverage testing." OFF)
+  option(
+    THRUST_ENABLE_MULTICONFIG
+    "Enable multiconfig options for coverage testing."
+    OFF
+  )
 
   # Dialects:
-  set(THRUST_CPP_DIALECT_OPTIONS
-    17 20
-    CACHE INTERNAL "C++ dialects supported by Thrust." FORCE
+  set(
+    THRUST_CPP_DIALECT_OPTIONS
+    17
+    20
+    CACHE INTERNAL
+    "C++ dialects supported by Thrust."
+    FORCE
   )
 
   if (THRUST_ENABLE_MULTICONFIG)
@@ -18,33 +26,54 @@ function(thrust_configure_multiconfig)
       if (dialect EQUAL 17) # Default to just 17 on:
         set(default_value ON)
       endif()
-      option(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect}
+      option(
+        THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect}
         "Generate C++${dialect} build configurations."
         ${default_value}
       )
     endforeach()
 
     # Option to enable all standards supported by the CUDA and CXX compilers:
-    option(THRUST_MULTICONFIG_ENABLE_DIALECT_ALL
+    option(
+      THRUST_MULTICONFIG_ENABLE_DIALECT_ALL
       "Generate build configurations for all C++ standards supported by the configured compilers."
       OFF
     )
 
     # Option to enable only the most recent supported dialect:
-    option(THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST
+    option(
+      THRUST_MULTICONFIG_ENABLE_DIALECT_LATEST
       "Generate a single build configuration for the most recent C++ standard supported by the configured compilers."
       OFF
     )
 
     # Systems:
-    option(THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP "Generate build configurations that use CPP." ON)
-    option(THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA "Generate build configurations that use CUDA." ON)
-    option(THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP "Generate build configurations that use OpenMP." OFF)
-    option(THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB "Generate build configurations that use TBB." OFF)
+    option(
+      THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP
+      "Generate build configurations that use CPP."
+      ON
+    )
+    option(
+      THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA
+      "Generate build configurations that use CUDA."
+      ON
+    )
+    option(
+      THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP
+      "Generate build configurations that use OpenMP."
+      OFF
+    )
+    option(
+      THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB
+      "Generate build configurations that use TBB."
+      OFF
+    )
 
     # CMake fixed C++17 support for NVCC + MSVC targets in 3.18.3:
-    if (THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17 AND
-        THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA)
+    if (
+      THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17
+      AND THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA
+    )
       cmake_minimum_required(VERSION 3.18.3)
     endif()
 
@@ -69,30 +98,54 @@ function(thrust_configure_multiconfig)
     # TBB/CPP  | F         | Not Useful | Cheap     | Parallel host, serial device
     # OMP/CPP  | F         | Not Useful | Cheap     | Parallel host, serial device
 
-    set(THRUST_MULTICONFIG_WORKLOAD SMALL CACHE STRING
+    set(
+      THRUST_MULTICONFIG_WORKLOAD
+      SMALL
+      CACHE STRING
       "Limit host/device configs: SMALL (up to 3 h/d combos per dialect), MEDIUM(6), LARGE(8), FULL(12)"
     )
-    set_property(CACHE THRUST_MULTICONFIG_WORKLOAD PROPERTY STRINGS
-      SMALL MEDIUM LARGE FULL
+    set_property(
+      CACHE THRUST_MULTICONFIG_WORKLOAD
+      PROPERTY STRINGS SMALL MEDIUM LARGE FULL
     )
-    set(THRUST_MULTICONFIG_WORKLOAD_SMALL_CONFIGS
-      CPP_OMP CPP_TBB CPP_CUDA
-      CACHE INTERNAL "Host/device combos enabled for SMALL workloads." FORCE
+    set(
+      THRUST_MULTICONFIG_WORKLOAD_SMALL_CONFIGS
+      CPP_OMP
+      CPP_TBB
+      CPP_CUDA
+      CACHE INTERNAL
+      "Host/device combos enabled for SMALL workloads."
+      FORCE
     )
-    set(THRUST_MULTICONFIG_WORKLOAD_MEDIUM_CONFIGS
+    set(
+      THRUST_MULTICONFIG_WORKLOAD_MEDIUM_CONFIGS
       ${THRUST_MULTICONFIG_WORKLOAD_SMALL_CONFIGS}
-      CPP_CPP TBB_TBB OMP_OMP
-      CACHE INTERNAL "Host/device combos enabled for MEDIUM workloads." FORCE
+      CPP_CPP
+      TBB_TBB
+      OMP_OMP
+      CACHE INTERNAL
+      "Host/device combos enabled for MEDIUM workloads."
+      FORCE
     )
-    set(THRUST_MULTICONFIG_WORKLOAD_LARGE_CONFIGS
+    set(
+      THRUST_MULTICONFIG_WORKLOAD_LARGE_CONFIGS
       ${THRUST_MULTICONFIG_WORKLOAD_MEDIUM_CONFIGS}
-      OMP_CUDA TBB_CUDA
-      CACHE INTERNAL "Host/device combos enabled for LARGE workloads." FORCE
+      OMP_CUDA
+      TBB_CUDA
+      CACHE INTERNAL
+      "Host/device combos enabled for LARGE workloads."
+      FORCE
     )
-    set(THRUST_MULTICONFIG_WORKLOAD_FULL_CONFIGS
+    set(
+      THRUST_MULTICONFIG_WORKLOAD_FULL_CONFIGS
       ${THRUST_MULTICONFIG_WORKLOAD_LARGE_CONFIGS}
-      OMP_CPP TBB_CPP OMP_TBB TBB_OMP
-      CACHE INTERNAL "Host/device combos enabled for FULL workloads." FORCE
+      OMP_CPP
+      TBB_CPP
+      OMP_TBB
+      TBB_OMP
+      CACHE INTERNAL
+      "Host/device combos enabled for FULL workloads."
+      FORCE
     )
 
     # Hide the single config options if they exist from a previous run:
@@ -101,41 +154,54 @@ function(thrust_configure_multiconfig)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE INTERNAL)
       set_property(CACHE THRUST_CPP_DIALECT PROPERTY TYPE INTERNAL)
     endif()
-
   else() # Single config:
     # Restore system option visibility if these cache options already exist
     # from a previous run.
     if (DEFINED THRUST_HOST_SYSTEM)
       set_property(CACHE THRUST_HOST_SYSTEM PROPERTY TYPE STRING)
     else()
-      set(THRUST_HOST_SYSTEM "CPP" CACHE STRING "The targeted host system: ${THRUST_HOST_SYSTEM_OPTIONS}")
-      set_property(CACHE THRUST_HOST_SYSTEM
-        PROPERTY STRINGS
-        ${THRUST_HOST_SYSTEM_OPTIONS}
+      set(
+        THRUST_HOST_SYSTEM
+        "CPP"
+        CACHE STRING
+        "The targeted host system: ${THRUST_HOST_SYSTEM_OPTIONS}"
+      )
+      set_property(
+        CACHE THRUST_HOST_SYSTEM
+        PROPERTY STRINGS ${THRUST_HOST_SYSTEM_OPTIONS}
       )
     endif()
     if (DEFINED THRUST_DEVICE_SYSTEM)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
     else()
-      set(THRUST_DEVICE_SYSTEM "CUDA" CACHE STRING "The targeted device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}")
-      set_property(CACHE THRUST_DEVICE_SYSTEM
-        PROPERTY STRINGS
-        ${THRUST_DEVICE_SYSTEM_OPTIONS}
+      set(
+        THRUST_DEVICE_SYSTEM
+        "CUDA"
+        CACHE STRING
+        "The targeted device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}"
+      )
+      set_property(
+        CACHE THRUST_DEVICE_SYSTEM
+        PROPERTY STRINGS ${THRUST_DEVICE_SYSTEM_OPTIONS}
       )
     endif()
     if (DEFINED THRUST_CPP_DIALECT)
       set_property(CACHE THRUST_CPP_DIALECT PROPERTY TYPE STRING)
     else()
-      set(THRUST_CPP_DIALECT 17 CACHE STRING "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}")
-      set_property(CACHE THRUST_CPP_DIALECT
-        PROPERTY STRINGS
-        ${THRUST_CPP_DIALECT_OPTIONS}
+      set(
+        THRUST_CPP_DIALECT
+        17
+        CACHE STRING
+        "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}"
+      )
+      set_property(
+        CACHE THRUST_CPP_DIALECT
+        PROPERTY STRINGS ${THRUST_CPP_DIALECT_OPTIONS}
       )
     endif()
 
     # CMake fixed C++17 support for NVCC + MSVC targets in 3.18.3:
-    if (THRUST_CPP_DIALECT EQUAL 17 AND
-        THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
+    if (THRUST_CPP_DIALECT EQUAL 17 AND THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
       cmake_minimum_required(VERSION 3.18.3)
     endif()
   endif()

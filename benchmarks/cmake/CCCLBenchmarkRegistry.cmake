@@ -2,20 +2,22 @@ find_package(CUDAToolkit REQUIRED)
 
 set(cccl_revision "")
 find_package(Git)
-if(GIT_FOUND)
+if (GIT_FOUND)
   execute_process(
-      COMMAND ${GIT_EXECUTABLE} describe
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      OUTPUT_VARIABLE cccl_revision
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    COMMAND ${GIT_EXECUTABLE} describe
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE cccl_revision
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 
-  if(cccl_revision STREQUAL "")
+  if (cccl_revision STREQUAL "")
     # Sometimes, there is no tag (shallow copy)
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE cccl_revision
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
+      COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE cccl_revision
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
   endif()
 endif()
 

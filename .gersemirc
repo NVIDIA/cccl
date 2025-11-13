@@ -1,0 +1,15 @@
+# See "outcome configuration" section of gersemi --help for more info on these options.
+definitions: [
+  # CMake files in these paths are parsed for function / macro signatures used
+  # while formatting the rest of the codebase.
+  "cmake/", # CCCL level utilities
+  "lib/cmake/thrust/", # thrust_create_target and friends
+]
+disable_formatting: false
+extensions: [".gersemi/ext/builtins.py", ".gersemi/ext/cccl.py", ".gersemi/ext/thirdparty.py"]
+indent: 2
+line_length: 80
+list_expansion: favour-inlining
+unsafe: false
+# Currently overwhelming and low value:
+warn_about_unknown_commands: false

@@ -59,11 +59,8 @@ class GridQueue
 {
 private:
   /// Counter indices
-  enum
-  {
-    FILL  = 0,
-    DRAIN = 1,
-  };
+  static constexpr int FILL  = 0;
+  static constexpr int DRAIN = 1;
 
   /// Pair of counters
   OffsetT* d_counters;

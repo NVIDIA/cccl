@@ -5,7 +5,7 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <thrust/iterator/discard_iterator.h>
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <numeric>
@@ -59,7 +59,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<type> reference = in;
-  adjacent_difference_subtract_right_copy(in.begin(), thrust::discard_iterator<>(), num_items, cuda::std::minus<>{});
+  adjacent_difference_subtract_right_copy(in.begin(), cuda::discard_iterator(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -304,7 +304,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
   c2h::device_vector<int> error(1);
   int* d_error = thrust::raw_pointer_cast(error.data());
   adjacent_difference_subtract_right_copy(
-    thrust::counting_iterator<cuda::std::size_t>{0}, thrust::discard_iterator<>{}, num_items, check_difference{d_error});
+    cuda::counting_iterator<cuda::std::size_t>{0}, cuda::discard_iterator{}, num_items, check_difference{d_error});
   const int h_error = error[0];
   REQUIRE(h_error == 0);
 }
@@ -333,8 +333,8 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy uses right number of invoc
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<unsigned long long> counts(1, 0);
   adjacent_difference_subtract_right_copy(
-    thrust::counting_iterator<cuda::std::size_t>{0},
-    thrust::discard_iterator<>(),
+    cuda::counting_iterator<cuda::std::size_t>{0},
+    cuda::discard_iterator(),
     num_items,
     invocation_counter{thrust::raw_pointer_cast(counts.data())});
 
