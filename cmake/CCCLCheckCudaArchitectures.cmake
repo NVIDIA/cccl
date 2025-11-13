@@ -20,22 +20,34 @@ set(minimum_cccl_arch 75) # 13.x dropped below Turing
 # Check CMAKE_CUDA_ARCHITECTURES for special CCCL values and update as described above.
 function(cccl_check_cuda_architectures)
   if (CMAKE_CUDA_ARCHITECTURES MATCHES "-cccl$")
-    message(STATUS "Detected special CCCL arch request: CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+    message(
+      STATUS
+      "Detected special CCCL arch request: CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}"
+    )
 
     _cccl_detect_nvcc_arch_support(arches)
     _cccl_filter_to_supported_arches(arches)
 
-    if(CMAKE_CUDA_ARCHITECTURES STREQUAL "all-major-cccl")
+    if (CMAKE_CUDA_ARCHITECTURES STREQUAL "all-major-cccl")
       _cccl_filter_to_all_major_cccl(arches)
-    elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "all-cccl")
+    elseif (CMAKE_CUDA_ARCHITECTURES STREQUAL "all-cccl")
       # No further filtering needed, just use the arches as is.
     else()
-      message(FATAL_ERROR "Invalid CMAKE_CUDA_ARCHITECTURES value: ${CMAKE_CUDA_ARCHITECTURES}")
+      message(
+        FATAL_ERROR
+        "Invalid CMAKE_CUDA_ARCHITECTURES value: ${CMAKE_CUDA_ARCHITECTURES}"
+      )
     endif()
 
     _cccl_add_real_virtual_arch_tags(arches)
     message(STATUS "Replacing with CMAKE_CUDA_ARCHITECTURES=${arches}")
-    set(CMAKE_CUDA_ARCHITECTURES "${arches}" CACHE STRING "CUDA architectures for CCCL" FORCE)
+    set(
+      CMAKE_CUDA_ARCHITECTURES
+      "${arches}"
+      CACHE STRING
+      "CUDA architectures for CCCL"
+      FORCE
+    )
   endif()
 endfunction()
 
@@ -43,7 +55,10 @@ endfunction()
 function(_cccl_detect_nvcc_arch_support arches_var)
   find_package(CUDAToolkit)
   if (NOT CUDAToolkit_FOUND)
-    message(FATAL_ERROR "CUDAToolkit not found, '${CMAKE_CUDA_ARCHITECTURES}' arch detection failed.")
+    message(
+      FATAL_ERROR
+      "CUDAToolkit not found, '${CMAKE_CUDA_ARCHITECTURES}' arch detection failed."
+    )
   endif()
 
   execute_process(
@@ -64,7 +79,7 @@ endfunction()
 # Remove all arches < minimum_cccl_arch
 function(_cccl_filter_to_supported_arches arches_var)
   set(cccl_arches "")
-  foreach(arch IN LISTS ${arches_var})
+  foreach (arch IN LISTS ${arches_var})
     if (arch GREATER_EQUAL minimum_cccl_arch)
       list(APPEND cccl_arches ${arch})
     endif()
@@ -76,7 +91,7 @@ endfunction()
 # Convert all-cccl to all-major-cccl.
 function(_cccl_filter_to_all_major_cccl arches_var)
   set(major_arches "")
-  foreach(arch IN LISTS ${arches_var})
+  foreach (arch IN LISTS ${arches_var})
     math(EXPR major "(${arch} / 10) * 10")
     if (major LESS minimum_cccl_arch)
       set(major "${minimum_cccl_arch}")
@@ -94,7 +109,7 @@ function(_cccl_add_real_virtual_arch_tags arches_var)
 
   list(POP_BACK ${arches_var} last_arch)
 
-  foreach(arch IN LISTS ${arches_var})
+  foreach (arch IN LISTS ${arches_var})
     list(APPEND tagged_arches "${arch}-real")
   endforeach()
 

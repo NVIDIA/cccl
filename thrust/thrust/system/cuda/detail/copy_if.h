@@ -45,17 +45,17 @@
 #  include <cub/util_temporary_storage.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

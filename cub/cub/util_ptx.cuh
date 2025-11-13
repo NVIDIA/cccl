@@ -22,6 +22,8 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -143,7 +145,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
 template <int LOGICAL_WARP_THREADS>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
 {
-  constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
+  constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
   constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
 
   unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
@@ -209,10 +211,7 @@ template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-  };
+  constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
@@ -290,10 +289,7 @@ template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  enum
-  {
-    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-  };
+  static constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
 
   using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 

@@ -11,7 +11,7 @@
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/detail/ptx-json-parser.h>
-#include <cub/device/dispatch/dispatch_reduce.cuh> // cub::DispatchSegmentedReduce
+#include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
 #include <exception> // std::exception
@@ -187,7 +187,7 @@ CUresult cccl_device_segmented_reduce_build_ex(
       R"XXX(
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
-#include <cub/device/dispatch/kernels/segmented_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
   char data[{1}];

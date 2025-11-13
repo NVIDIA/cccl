@@ -12,6 +12,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/iterator>
 
 #include <numeric>
 
@@ -129,7 +130,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
     ::cuda::std::negate<type>{});
 
   cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
-  auto d_input = thrust::make_transform_iterator(thrust::counting_iterator<size_t>{}, wrapper);
+  auto d_input = cuda::transform_iterator(cuda::counting_iterator<size_t>{}, wrapper);
   c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
@@ -230,7 +231,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   SECTION("constant iterator")
   {
-    thrust::constant_iterator<type> input(1.0f);
+    cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     auto error = cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
@@ -264,7 +265,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   const int num_items = 1 << 10;
 
-  using input_it_t = thrust::counting_iterator<int>;
+  using input_it_t = cuda::counting_iterator<int>;
   auto input       = input_it_t(1);
   c2h::device_vector<type> d_output(1);
 
@@ -287,7 +288,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
     thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input, d_output.begin(), num_items);
   REQUIRE(error == cudaSuccess);
 
-  auto h_input = thrust::make_transform_iterator(input, transform_t{});
+  auto h_input = cuda::transform_iterator(input, transform_t{});
 
   c2h::host_vector<type> h_expected(1);
   // Requires `std::accumulate` to produce deterministic result which is required for comparison
@@ -329,7 +330,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 }
 
 using test_types =
-  c2h::type_list<int8_t,
+  c2h::type_list<float,
+                 double,
+                 int8_t,
                  int32_t,
                  int64_t
 #if TEST_INT128()
@@ -356,24 +359,63 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
   c2h::device_vector<type> d_input(num_items);
   c2h::gen(C2H_SEED(2), d_input, min_value, max_value);
 
-  SECTION("plus")
+  if constexpr (::cuda::std::is_integral_v<type>)
   {
-    c2h::device_vector<type> d_output(1);
+    SECTION("plus")
+    {
+      c2h::device_vector<type> d_output(1);
 
-    auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_t{}, env);
-    REQUIRE(error == cudaSuccess);
+      auto error =
+        cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, init_t{}, env);
+      REQUIRE(error == cudaSuccess);
 
-    c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_input = d_input;
 
-    c2h::host_vector<type> h_expected(1);
-    // Requires `std::accumulate` to produce deterministic result which is required for comparison
-    // with the device RFA result.
-    // NOTE: `std::reduce` is not equivalent
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_t{}, cuda::std::plus<type>{});
+      c2h::host_vector<type> h_expected(1);
+      // Requires `std::accumulate` to produce deterministic result which is required for comparison
+      // with the device RFA result.
+      // NOTE: `std::reduce` is not equivalent
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), init_t{}, cuda::std::plus<type>{});
 
-    c2h::host_vector<type> h_output = d_output;
-    REQUIRE(h_expected == h_output);
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
+
+    SECTION("bitwise xor")
+    {
+      c2h::device_vector<type> d_output(1);
+
+      init_t init_value{};
+
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
+      REQUIRE(error == cudaSuccess);
+
+      c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_expected(1);
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
+
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
+
+    SECTION("logical or")
+    {
+      c2h::device_vector<type> d_output(1);
+
+      init_t init_value{};
+
+      auto error = cub::DeviceReduce::Reduce(
+        d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
+      REQUIRE(error == cudaSuccess);
+
+      c2h::host_vector<type> h_input = d_input;
+      c2h::host_vector<type> h_expected(1);
+      h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::logical_or<>{});
+
+      c2h::host_vector<type> h_output = d_output;
+      REQUIRE(h_expected == h_output);
+    }
   }
 
   SECTION("minimum")
@@ -394,37 +436,19 @@ C2H_TEST("Deterministic Device reduce works with integral types on gpu with diff
     REQUIRE(h_expected == h_output);
   }
 
-  SECTION("bitwise xor")
+  SECTION("maximum")
   {
     c2h::device_vector<type> d_output(1);
 
-    init_t init_value{};
+    init_t init_value{cuda::std::numeric_limits<init_t>::min()};
 
     auto error =
-      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
+      cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_t>{}, init_value, env);
     REQUIRE(error == cudaSuccess);
 
     c2h::host_vector<type> h_input = d_input;
     c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
-
-    c2h::host_vector<type> h_output = d_output;
-    REQUIRE(h_expected == h_output);
-  }
-
-  SECTION("logical or")
-  {
-    c2h::device_vector<type> d_output(1);
-
-    init_t init_value{};
-
-    auto error = cub::DeviceReduce::Reduce(
-      d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
-    REQUIRE(error == cudaSuccess);
-
-    c2h::host_vector<type> h_input = d_input;
-    c2h::host_vector<type> h_expected(1);
-    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::logical_or<>{});
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::maximum<>{});
 
     c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);

@@ -4,6 +4,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__cmath/pow2.h>
+
 #include <c2h/catch2_test_helper.h>
 
 template <int logical_warp_threads>
@@ -11,7 +13,7 @@ struct total_warps_t
 {
 private:
   static constexpr unsigned int total_warps =
-    (cub::PowerOfTwo<logical_warp_threads>::VALUE) ? cub::detail::warp_threads / logical_warp_threads : 1;
+    (::cuda::is_power_of_two(logical_warp_threads)) ? cub::detail::warp_threads / logical_warp_threads : 1;
 
 public:
   static constexpr unsigned int value()

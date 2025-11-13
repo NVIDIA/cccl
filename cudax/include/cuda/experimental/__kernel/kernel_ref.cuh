@@ -95,7 +95,7 @@ public:
   //! @throws cuda_error if the kernel name cannot be obtained
   [[nodiscard]] ::cuda::std::string_view name() const
   {
-    return _CUDA_DRIVER::__kernelGetName(__kernel_);
+    return ::cuda::__driver::__kernelGetName(__kernel_);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 

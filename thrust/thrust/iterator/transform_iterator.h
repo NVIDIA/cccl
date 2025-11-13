@@ -47,9 +47,13 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
 
 THRUST_NAMESPACE_BEGIN
 

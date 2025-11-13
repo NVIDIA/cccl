@@ -11,6 +11,7 @@ cmake_minimum_required(VERSION 3.15)
 
 # Prepend the string with "0" until the string length equals the specified width
 function(pad_string_with_zeros string_var width)
+  # gersemi: ignore
   set(local_string "${${string_var}}")
   string(LENGTH "${local_string}" size)
   while(size LESS width)
@@ -34,11 +35,14 @@ endif()
 # Read the logfile and generate a map / keylist
 set(keys)
 file(STRINGS "${LOGFILE}" lines)
-foreach(line ${lines})
-
+foreach (line ${lines})
   # Parse each build time
-  string(REGEX MATCH
-    "^([0-9]+)\t([0-9]+)\t[0-9]+\t([^\t]+)+\t[0-9a-fA-F]+$" _DUMMY "${line}")
+  string(
+    REGEX MATCH
+    "^([0-9]+)\t([0-9]+)\t[0-9]+\t([^\t]+)+\t[0-9a-fA-F]+$"
+    _DUMMY
+    "${line}"
+  )
 
   if (CMAKE_MATCH_COUNT EQUAL 3)
     set(start_ms ${CMAKE_MATCH_1})
@@ -47,6 +51,7 @@ foreach(line ${lines})
     math(EXPR runtime_ms "${end_ms} - ${start_ms}")
 
     # Compute human readable time
+    # gersemi: off
     math(EXPR days         "${runtime_ms} / (1000 * 60 * 60 * 24)")
     math(EXPR runtime_ms   "${runtime_ms} - (${days} * 1000 * 60 * 60 * 24)")
     math(EXPR hours        "${runtime_ms} / (1000 * 60 * 60)")
@@ -55,6 +60,7 @@ foreach(line ${lines})
     math(EXPR runtime_ms   "${runtime_ms} - (${minutes} * 1000 * 60)")
     math(EXPR seconds      "${runtime_ms} / 1000")
     math(EXPR milliseconds "${runtime_ms} - (${seconds} * 1000)")
+    # gersemi: on
 
     # Format time components
     pad_string_with_zeros(days 3)
@@ -66,7 +72,8 @@ foreach(line ${lines})
     # Construct table entry
     # Later values in the file for the same command overwrite earlier entries
     string(MAKE_C_IDENTIFIER "${command}" key)
-    set(ENTRY_${key}
+    set(
+      ENTRY_${key}
       "${days}d ${hours}h ${minutes}m ${seconds}s ${milliseconds}ms | ${command}"
     )
 
@@ -79,7 +86,7 @@ list(REMOVE_DUPLICATES keys)
 
 # Build the entry list:
 set(entries)
-foreach(key ${keys})
+foreach (key ${keys})
   list(APPEND entries "${ENTRY_${key}}")
 endforeach()
 
@@ -96,6 +103,6 @@ message(STATUS "-----------------------+----------------------------")
 message(STATUS "Time                   | Command                    ")
 message(STATUS "-----------------------+----------------------------")
 
-foreach(entry ${entries})
+foreach (entry ${entries})
   message(STATUS ${entry})
 endforeach()

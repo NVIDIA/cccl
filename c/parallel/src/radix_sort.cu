@@ -311,7 +311,7 @@ CUresult cccl_device_radix_sort_build_ex(
     const std::string final_src = std::format(
       R"XXX(
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
-#include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 
 struct __align__({1}) storage_t {{

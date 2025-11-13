@@ -22,9 +22,9 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cassert>
-#include <cuda/std/iterator>
 
 #include <thread>
 

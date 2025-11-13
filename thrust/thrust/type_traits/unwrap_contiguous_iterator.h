@@ -21,7 +21,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/std/utility>
+#include <cuda/std/__utility/declval.h>
 
 THRUST_NAMESPACE_BEGIN
 

@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: Copyright (c), NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
@@ -21,8 +20,8 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_scan.cuh>
-#include <cub/device/dispatch/kernels/scan.cuh>
-#include <cub/device/dispatch/kernels/unique_by_key.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -129,10 +128,7 @@ struct DispatchUniqueByKey
    * Types and constants
    ******************************************************************************/
 
-  enum
-  {
-    INIT_KERNEL_THREADS = 128,
-  };
+  static constexpr int INIT_KERNEL_THREADS = 128;
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.

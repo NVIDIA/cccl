@@ -7,11 +7,11 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -186,7 +186,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
     for (int i = 0; i < 2; ++i)
     {
       c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
-      auto begin = thrust::make_constant_iterator(i == 0 ? positive_zero : negative_zero);
+      auto begin = cuda::constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
       thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
     }
@@ -245,7 +245,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
       {
         has_nans = true;
         c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
-        auto begin = thrust::make_constant_iterator(nan_val);
+        auto begin = cuda::constant_iterator(nan_val);
         auto end   = begin + num_indices;
         thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
       }

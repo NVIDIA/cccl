@@ -100,24 +100,31 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 } // namespace detail
 
 //! @rst
-//! @brief DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from
-//! sequences of unordered data items residing within device-accessible memory.
+//! DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from sequences of
+//! unordered data items residing within device-accessible memory.
 //!
-//! @par Overview
+//! Overview
+//! ++++++++++++++++++++++++++
+//!
 //! The TopK algorithm tries to find the largest (or smallest) K items in an unordered list. A related problem is called
-//! [*K selection problem*](https://en.wikipedia.org/wiki/Selection_algorithm), which finds the Kth largest
+//! `K selection problem <https://en.wikipedia.org/wiki/Selection_algorithm>`_, which finds the Kth largest
 //! (or smallest) values in a list.
 //! DeviceTopK will return K items in an unspecified order as results. It is based on an algorithm called
-//! [*AIR TopK*](https://dl.acm.org/doi/10.1145/3581784.3607062).
+//! `AIR TopK <https://dl.acm.org/doi/10.1145/3581784.3607062>`_.
 //!
-//! @par Supported Types
+//! Supported Types
+//! ++++++++++++++++++++++++++
+//!
 //! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
 //! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types.
 //!
-//! @par Stability
+//! Stability
+//! ++++++++++++++++++++++++++
+//!
 //! DeviceTopK currently only provides an unstable version.
+//!
 //! Usage Considerations
-//! +++++++++++++++++++++++++++++++++++++++++++++
+//! ++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceTopK}
 //!

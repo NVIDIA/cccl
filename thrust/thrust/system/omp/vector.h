@@ -37,9 +37,7 @@
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
+namespace system::omp
 {
 /*! \p omp::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
@@ -87,8 +85,7 @@ using universal_vector = thrust::detail::vector_base<T, Allocator>;
 //! \see universal_vector
 template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 namespace omp
 {
