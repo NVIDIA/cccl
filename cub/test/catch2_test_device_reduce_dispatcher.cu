@@ -56,6 +56,7 @@ C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
   auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
 
   // Run test
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   using dispatch_t =
     cub::DispatchReduce<decltype(d_in_it),
                         decltype(d_out_it),
@@ -65,6 +66,7 @@ C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
                         accum_t,
                         ::cuda::std::identity,
                         policy_hub_t<accum_t>>;
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   size_t temp_storage_bytes = 0;
   dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, 0);

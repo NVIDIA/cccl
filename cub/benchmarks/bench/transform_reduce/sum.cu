@@ -53,9 +53,10 @@ struct square_t
 
 #define USE_TRANSPOSE_ITERATOR 0
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH // suppress deprecation of cub::DispatchReduce
 #if USE_TRANSPOSE_ITERATOR
-template <typename T, typename OffsetT>
-void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+  template <typename T, typename OffsetT>
+  void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using accum_t        = T;
   using input_it_t     = thrust::transform_iterator<square_t<T>, typename thrust::device_vector<T>::iterator>;
@@ -114,8 +115,8 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 #else
-template <typename T, typename OffsetT>
-void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+  template <typename T, typename OffsetT>
+  void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using accum_t        = T;
   using input_it_t     = const T*;
@@ -178,6 +179,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 #endif
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("base")
