@@ -79,4 +79,3 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1>>>(); assert(cudaDeviceSynchronize() == cudaSuccess);))
   return 0;
 }
-
