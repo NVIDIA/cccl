@@ -45,8 +45,8 @@ public:
     using distribution_type = normal_distribution;
 
     _CCCL_API constexpr explicit param_type(result_type __mean = 0, result_type __stddev = 1) noexcept
-        : __mean_(__mean)
-        , __stddev_(__stddev)
+        : __mean_{__mean}
+        , __stddev_{__stddev}
     {}
 
     [[nodiscard]] _CCCL_API constexpr result_type mean() const noexcept
@@ -100,7 +100,34 @@ public:
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p);
+  _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p)
+  {
+    static_assert(__cccl_random_is_valid_urng<_URng>, "");
+    result_type __up = 0;
+    if (__v_hot_)
+    {
+      __v_hot_ = false;
+      __up     = __v_;
+    }
+    else
+    {
+      cuda::std::uniform_real_distribution<result_type> __uni(-1, 1);
+      result_type __u = __uni(__g);
+      result_type __v = __uni(__g);
+      result_type __s = __u * __u + __v * __v;
+      while (__s > 1 || __s == 0)
+      {
+        __u = __uni(__g);
+        __v = __uni(__g);
+        __s = __u * __u + __v * __v;
+      }
+      result_type __fp = cuda::std::sqrt(-2 * cuda::std::log(__s) / __s);
+      __v_             = __v * __fp;
+      __v_hot_         = true;
+      __up             = __u * __fp;
+    }
+    return __up * __p.stddev() + __p.mean();
+  }
 
   // property functions
   [[nodiscard]] _CCCL_API constexpr result_type mean() const noexcept
@@ -193,37 +220,6 @@ public:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
-
-template <class _RealType>
-template <class _URng>
-_CCCL_API constexpr _RealType normal_distribution<_RealType>::operator()(_URng& __g, const param_type& __p)
-{
-  static_assert(__cccl_random_is_valid_urng<_URng>, "");
-  result_type __up = 0;
-  if (__v_hot_)
-  {
-    __v_hot_ = false;
-    __up     = __v_;
-  }
-  else
-  {
-    cuda::std::uniform_real_distribution<result_type> __uni(-1, 1);
-    result_type __u = __uni(__g);
-    result_type __v = __uni(__g);
-    result_type __s = __u * __u + __v * __v;
-    while (__s > 1 || __s == 0)
-    {
-      __u = __uni(__g);
-      __v = __uni(__g);
-      __s = __u * __u + __v * __v;
-    }
-    result_type __fp = cuda::std::sqrt(-2 * cuda::std::log(__s) / __s);
-    __v_             = __v * __fp;
-    __v_hot_         = true;
-    __up             = __u * __fp;
-  }
-  return __up * __p.stddev() + __p.mean();
-}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
