@@ -218,7 +218,8 @@ struct DispatchUniqueByKey
     OffsetT num_items,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {})
+    KernelLauncherFactory launcher_factory = {},
+    int ptx_version                        = 0)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys_in(d_keys_in)
@@ -229,6 +230,7 @@ struct DispatchUniqueByKey
       , equality_op(equality_op)
       , num_items(num_items)
       , stream(stream)
+      , ptx_version(ptx_version)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
@@ -466,9 +468,9 @@ struct DispatchUniqueByKey
       equality_op,
       num_items,
       stream,
-      ptx_version,
       kernel_source,
-      launcher_factory);
+      launcher_factory,
+      ptx_version);
 
     // Dispatch to chained policy
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
