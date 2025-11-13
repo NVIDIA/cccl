@@ -1,7 +1,7 @@
 .. _libcudacxx-standard-api-algorithms:
 
-Concepts Library
-=======================
+Algorithms Library
+===================
 
 .. list-table::
    :widths: 25 45 30
@@ -10,7 +10,7 @@ Concepts Library
    * - Header
      - Content
      - Availability
-   * - `\<cuda/std/algorithm\> <https://en.cppreference.com/w/cpp/header/concepts>`_
+   * - `\<cuda/std/algorithm\> <https://en.cppreference.com/w/cpp/header/algorithm>`_
      - Fundamental library algorithms
      - CCCL 3.2.0 / CUDA 13.2
 
