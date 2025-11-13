@@ -275,7 +275,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   using transform_t = square_t<type>;
 
   using deterministic_dispatch_t =
-    cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, transform_t, accum_t>;
+    cub::detail::rfa::dispatch_t<input_it_t, output_it_t, int, init_t, transform_t, accum_t>;
 
   std::size_t temp_storage_bytes{};
 
