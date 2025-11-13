@@ -171,6 +171,7 @@ Structs
 * :doc:`structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4`
 * :doc:`cuda::experimental::stream <structcuda_1_1experimental_1_1stream>`
 * :doc:`cuda::experimental::stream_ref <structcuda_1_1experimental_1_1stream__ref>`
+* :doc:`cuda::experimental::synchronous_resource_adapter <structcuda_1_1experimental_1_1synchronous__resource__adapter>`
 * :doc:`cuda::experimental::thread_level <structcuda_1_1experimental_1_1thread__level>`
 
 Functions
@@ -189,7 +190,7 @@ Functions
 * :doc:`cuda::experimental::hierarchy::rank <namespacecuda_1_1experimental_1_1hierarchy_1ad3964a2f9adfff23c7a9d67ecb06d789>`
 * :doc:`cuda::experimental::hierarchy_add_level <namespacecuda_1_1experimental_1ad06aeac9dc8f8a5bf0d59a91d821f852>`
 * :doc:`cuda::experimental::launch <namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080>`
-* :doc:`cuda::experimental::make_buffer <namespacecuda_1_1experimental_1a37b1c7d3541c43e63a8ea8e94b33d5ee>`
+* :doc:`cuda::experimental::make_buffer <namespacecuda_1_1experimental_1a15d66a4607d1b265790613032220837f>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
 * :doc:`cuda::experimental::make_hierarchy <namespacecuda_1_1experimental_1a576809535c5d9316e761c22d32a068e9>`
 * :doc:`cuda::experimental::operator& <namespacecuda_1_1experimental_1a6885fad002736fd2c1e2bbcc81d395b5>`
@@ -463,8 +464,9 @@ Variables
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4
+   structcuda_1_1experimental_1_1synchronous__resource__adapter
    structcuda_1_1experimental_1_1thread__level
-   namespacecuda_1_1experimental_1a37b1c7d3541c43e63a8ea8e94b33d5ee
+   namespacecuda_1_1experimental_1a15d66a4607d1b265790613032220837f
    namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4
    namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e
    namespacecuda_1_1experimental_1a70c44ea26b1498f90419bb3b32a5f622
