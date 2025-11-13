@@ -68,10 +68,10 @@ struct storage
 };
 
 #if !TEST_COMPILER(NVRTC) && !TEST_COMPILER(CLANG)
-static_assert(std::is_trivially_copy_constructible_v<storage<int8_t>>, "");
-static_assert(std::is_trivially_copy_constructible_v<storage<uint16_t>>, "");
-static_assert(std::is_trivially_copy_constructible_v<storage<int32_t>>, "");
-static_assert(std::is_trivially_copy_constructible_v<storage<uint64_t>>, "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int8_t>>, "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint16_t>>, "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<int32_t>>, "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<storage<uint64_t>>, "");
 #endif
 
 template <class T,
