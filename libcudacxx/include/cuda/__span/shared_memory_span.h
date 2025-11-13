@@ -104,7 +104,8 @@ public:
 
   static constexpr auto extent = _Extent;
 
-  static_assert(_Extent <= ::cuda::std::numeric_limits<__smem_size_t>::max(), "extent too large");
+  // avoid pointless comparison warning
+  static_assert(_Extent == 0 || _Extent < ::cuda::std::numeric_limits<__smem_size_t>::max(), "extent too large");
 
   //--------------------------------------------------------------------------------------------------------------------
   // Special members
