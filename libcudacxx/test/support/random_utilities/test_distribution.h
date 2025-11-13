@@ -216,11 +216,6 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF, cuda::std::size_t N>
 __host__ __device__ void test_distribution(const cuda::std::array<typename D::param_type, N>& params, CDF cdf)
 {
-  if constexpr (test_constexpr)
-  {
-    static_assert(detail::test_eval_constexpr<D, URNG>());
-  }
-
   for (auto param : params)
   {
     detail::test_eval<D, continuous, URNG, test_constexpr>(param, cdf);
@@ -234,6 +229,19 @@ __host__ __device__ void test_distribution(const cuda::std::array<typename D::pa
     detail::test_types<D, URNG>(param);
     detail::test_param<D, URNG, typename D::param_type>(param);
     NV_IF_TARGET(NV_IS_HOST, ({ detail::test_io<D, URNG>(param); }));
+    if constexpr (test_constexpr)
+    {
+      static_assert(detail::test_eval<D, continuous, URNG, test_constexpr>(param, cdf));
+      static_assert(detail::test_assign<D, URNG>(param));
+      static_assert(detail::test_ctor<D, URNG>(param));
+      static_assert(detail::test_copy<D, URNG>(param));
+      static_assert(detail::test_eq<D, URNG>(param));
+      static_assert(detail::test_get_param<D, URNG>(param));
+      static_assert(detail::test_min_max<D, URNG>(param));
+      static_assert(detail::test_set_param<D, URNG>(param));
+      static_assert(detail::test_types<D, URNG>(param));
+      static_assert(detail::test_param<D, URNG, typename D::param_type>(param));
+    }
   }
 }
 
