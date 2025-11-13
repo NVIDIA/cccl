@@ -153,13 +153,65 @@ __host__ __device__ constexpr bool test_param(Param param)
   return true;
 }
 
+// Compute KS test statistic for continuous distributions
+template <class D, class CDF>
+__host__ __device__ double ks_test_statistic_continuous(
+  const typename D::result_type* samples, cuda::std::size_t num_samples, const typename D::param_type& param, CDF cdf)
+{
+  double d_max = 0.0;
+  for (cuda::std::size_t i = 0; i < num_samples; ++i)
+  {
+    double f_x       = static_cast<double>(i + 1) / static_cast<double>(num_samples);
+    double f_x_lower = static_cast<double>(i) / static_cast<double>(num_samples);
+    double g_x       = cdf(samples[i], param);
+    double diff1     = cuda::std::abs(f_x - g_x);
+    double diff2     = cuda::std::abs(g_x - f_x_lower);
+    d_max            = cuda::std::max(d_max, cuda::std::max(diff1, diff2));
+  }
+  return d_max;
+}
+
+// Compute KS test statistic for discrete distributions
+template <class D, class CDF>
+__host__ __device__ double ks_test_statistic_discrete(
+  const typename D::result_type* samples, cuda::std::size_t num_samples, const typename D::param_type& param, CDF cdf)
+{
+  // Compute empirical CDF
+  // Find unique values and their frequencies
+  auto unique_values             = cuda::std::make_unique<typename D::result_type[]>(num_samples);
+  auto empirical_cdf             = cuda::std::make_unique<double[]>(num_samples);
+  cuda::std::size_t unique_count = 0;
+  for (cuda::std::size_t i = 0; i < num_samples; ++i)
+  {
+    if (samples[i] != samples[i + 1] || i == num_samples - 1)
+    {
+      unique_values[unique_count] = samples[i];
+      empirical_cdf[unique_count] = (i + 1) / static_cast<double>(num_samples);
+      unique_count++;
+    }
+  }
+  // Compute KS statistic
+  double d_max = 0.0;
+  for (cuda::std::size_t j = 0; j < unique_count; ++j)
+  {
+    double f_x       = empirical_cdf[j];
+    double f_x_lower = j == 0 ? 0.0 : empirical_cdf[j - 1];
+    double g_x       = cdf(unique_values[j], param);
+    double g_x_lower = j == 0 ? 0.0 : cdf(unique_values[j] - 1, param);
+    double diff1     = cuda::std::abs(f_x - g_x);
+    double diff2     = cuda::std::abs(g_x_lower - f_x_lower);
+    d_max            = cuda::std::max(d_max, cuda::std::max(diff1, diff2));
+  }
+
+  return d_max;
+}
+
 // Perform a kolmogorov-Smirnov test, comparing the observed and expected cumulative
 // distribution function from a continuous distribution.
 // Generates a fixed size of 10000 samples
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF>
 __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
 {
-  static_assert(continuous, "This test is only for continuous distributions");
   // First check the operator with param is equivalent to the constructor param
   {
     D d1(param);
@@ -178,35 +230,29 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
   URNG g{};
   const cuda::std::size_t num_samples = 10000;
 
-  auto samples    = cuda::std::make_unique<typename D::result_type[]>(num_samples);
-  auto cdf_values = cuda::std::make_unique<typename D::result_type[]>(num_samples);
+  auto samples = cuda::std::make_unique<typename D::result_type[]>(num_samples);
   for (cuda::std::size_t i = 0; i < num_samples; ++i)
   {
     samples[i] = dist(g, param);
   }
-  // Sort the samples
   // Use sort when available
   cuda::std::partial_sort(samples.get(), samples.get() + num_samples, samples.get() + num_samples);
-  // Compute the CDF values for each sample
-  for (cuda::std::size_t i = 0; i < num_samples; ++i)
-  {
-    cdf_values[i] = cdf(samples[i], param);
-  }
-  // Compute the KS statistic
+
+  // Compute the KS statistic - specially handle discrete case
+  // Arnold, Taylor B., and John W. Emerson. "Nonparametric goodness-of-fit tests for discrete null distributions."
+  // (2011).
   double d_max = 0.0;
-  for (cuda::std::size_t i = 0; i < num_samples; ++i)
+  if constexpr (continuous)
   {
-    double empirical_cdf_upper = static_cast<double>(i + 1) / static_cast<double>(num_samples);
-    double empirical_cdf_lower = static_cast<double>(i) / static_cast<double>(num_samples);
-    double diff1               = cuda::std::abs(empirical_cdf_upper - static_cast<double>(cdf_values[i]));
-    double diff2               = cuda::std::abs(static_cast<double>(cdf_values[i]) - empirical_cdf_lower);
-    double d_i                 = cuda::std::max(diff1, diff2);
-    if (d_i > d_max)
-    {
-      d_max = d_i;
-    }
+    d_max = ks_test_statistic_continuous<D>(samples.get(), num_samples, param, cdf);
+  }
+  else
+  {
+    d_max = ks_test_statistic_discrete<D>(samples.get(), num_samples, param, cdf);
   }
 
+  // Note that this critical value from the KS distribution is only valid for discrete distributions when num_samples is
+  // large
   const double critical_value = 0.016259280113043572; // for alpha = 0.01 and n = 10000
   assert(d_max < critical_value);
   return true;
