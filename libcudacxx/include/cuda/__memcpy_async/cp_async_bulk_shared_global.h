@@ -53,7 +53,7 @@ using namespace __v1;
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Trait to detect whether a group represents a CUDA thread block, for example: ``cooperative_groups::thread_block``.
-template <typename T>
+template <typename _Group>
 _CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v = false;
 
 template <>
@@ -61,11 +61,11 @@ _CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v<cooperative_groups::thread_bl
 
 //! Trait to detect whether a group represents a CUDA warp, for example:
 //! ``cooperative_groups::thread_block_tile<32, ...>``.
-template <typename T>
+template <typename _Group>
 _CCCL_GLOBAL_CONSTANT bool is_warp_group_v = false;
 
-template <typename Parent>
-_CCCL_GLOBAL_CONSTANT bool is_warp_group_v<cooperative_groups::thread_block_tile<32, Parent>> = true;
+template <typename _Parent>
+_CCCL_GLOBAL_CONSTANT bool is_warp_group_v<cooperative_groups::thread_block_tile<32, _Parent>> = true;
 
 template <typename _Group>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g) noexcept
