@@ -97,12 +97,12 @@ def CountingIterator(offset):
 
 
 def DiscardIterator():
-    """Returns an Output Iterator that discards all values written to it.
+    """Returns an Input or Output Iterator that discards all values written to it.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
 
     Example:
-        The code snippet below demonstrates the usage of a ``DiscardIterator``:
+        The code snippet below demonstrates the usage of a ``DiscardIterator`` to discard items in a unique by key operation:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/discard_iterator_basic.py
             :language: python
