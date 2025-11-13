@@ -306,3 +306,45 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
 #  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }
+
+C2H_CCCLRT_TEST("cudax::buffer constructors with legacy resource", "[container][buffer]")
+{
+  cudax::stream stream{cuda::device_ref{0}};
+  cuda::legacy_pinned_memory_resource resource;
+  auto input = compare_data_initializer_list;
+  cudax::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
+  CUDAX_CHECK(equal_range(buffer));
+  STATIC_CHECK(!decltype(buffer)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(decltype(buffer)::properties_list::has_property(cuda::mr::device_accessible{}));
+
+  cudax::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
+  auto buf2 = cudax::make_buffer(stream, resource, buffer2);
+  CUDAX_CHECK(equal_range(buffer2));
+  STATIC_CHECK(decltype(buffer2)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(!decltype(buffer2)::properties_list::has_property(cuda::mr::device_accessible{}));
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 6)
+C2H_CCCLRT_TEST("cudax::make_buffer narrowing properties", "[container][buffer]")
+{
+  auto resource = cuda::pinned_default_memory_pool();
+  cudax::stream stream{cuda::device_ref{0}};
+
+  auto buf = cudax::make_buffer<int>(stream, resource, 0, cudax::no_init);
+
+  auto input      = compare_data_initializer_list;
+  auto buf_host   = cudax::make_buffer<int, cuda::mr::host_accessible>(stream, resource, input);
+  auto buf_device = cudax::make_buffer<int, cuda::mr::device_accessible>(stream, resource, 2, 42);
+
+  STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(decltype(buf_host)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(!decltype(buf_host)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(decltype(buf_device)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(!decltype(buf_device)::properties_list::has_property(cuda::mr::host_accessible{}));
+
+  CUDAX_CHECK(buf.empty());
+  CUDAX_CHECK(equal_range(buf_host));
+  CUDAX_CHECK(buf_device.size() == 2);
+}
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^

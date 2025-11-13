@@ -49,7 +49,7 @@ C2H_CCCLRT_TEST("cudax::buffer capacity", "[container][buffer]", test_types)
     STATIC_REQUIRE(noexcept(cuda::std::declval<const Buffer&>().empty()));
 
     { // Works without allocation
-      Buffer buf{stream, resource, 0, cudax::no_init, cudax::no_init};
+      Buffer buf{stream, resource, 0, cudax::no_init};
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(cuda::std::as_const(buf).empty());
     }
@@ -63,7 +63,7 @@ C2H_CCCLRT_TEST("cudax::buffer capacity", "[container][buffer]", test_types)
     STATIC_REQUIRE(noexcept(cuda::std::declval<const Buffer&>().size()));
 
     { // Works without allocation
-      Buffer buf{stream, resource, 0, cudax::no_init, cudax::no_init};
+      Buffer buf{stream, resource, 0, cudax::no_init};
       CUDAX_CHECK(buf.size() == 0);
       CUDAX_CHECK(cuda::std::as_const(buf).size() == 0);
     }
