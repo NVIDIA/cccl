@@ -166,7 +166,7 @@ Functions
 * :doc:`device_pointer_cast <group__memory__management_1ga085f1930b39e9d7331267f39c75785a8>`
 * :doc:`distance <namespacethrust_1ad46e2e96964a4d4bbae7e93ab92a3ba3>`
 * :doc:`equal <group__comparisons_1ga6ee63d156e253d5db817c8bcc6a35bc4>`
-* :doc:`equal_range <group__binary__search_1gabdac721a00790e44ce9e5cbe8c4b57f2>`
+* :doc:`equal_range <group__binary__search_1gaa62a894dd33970790599e75a186f1bb3>`
 * :doc:`exclusive_scan <group__prefixsums_1gae5d3cdb73f9532b0a9692624988f3ab1>`
 * :doc:`exclusive_scan_by_key <group__segmentedprefixsums_1ga64b67bdfbc02fd8651d1732c4afefcbd>`
 * :doc:`exp <group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a>`
@@ -183,7 +183,7 @@ Functions
 * :doc:`generate <group__transformations_1gad0b2006831332def62d8a062eb40e706>`
 * :doc:`generate_n <group__transformations_1ga74e57f5e00eddb0b52f712130a7e6de4>`
 * :doc:`get_per_device_resource <namespacethrust_1a7ac735b6da1bb44634d01d97cbf671de>`
-* :doc:`get_temporary_buffer <group__memory__management_1ga189f97174f9b5e61258d8bfc8315b087>`
+* :doc:`get_temporary_buffer <group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584>`
 * :doc:`inclusive_scan <group__prefixsums_1ga32e405cc5a138a6ef20dc2000b3f42df>`
 * :doc:`inclusive_scan_by_key <group__segmentedprefixsums_1ga1df14170f9a7cc484f712eb006ffeda6>`
 * :doc:`inner_product <group__transformed__reductions_1ga4c406cbac000071a167617ad41a3c12a>`
@@ -209,10 +209,10 @@ Functions
 * :doc:`malloc <group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105>`
 * :doc:`max_element <group__extrema_1ga879a150e971c0d4f36a0a3cc2d853f47>`
 * :doc:`merge <group__merging_1ga63349377f04e6b5988ba362cc82141be>`
-* :doc:`merge_by_key <group__merging_1gaabef99a0678bfed77c637dedbeb1378f>`
+* :doc:`merge_by_key <group__merging_1gac87a13a242f94abbee8dc53131682eed>`
 * :doc:`min_element <group__extrema_1gab17dd6fa29f87f9971b3be412d052e4b>`
-* :doc:`minmax_element <group__extrema_1gab65b7725bb3989de487002d10b371aec>`
-* :doc:`mismatch <group__searching_1gaa964c494db8b69aaca0a56cc26063398>`
+* :doc:`minmax_element <group__extrema_1ga192ee620939451e27c3b00f7d3f90f68>`
+* :doc:`mismatch <group__searching_1ga8e5d32d617390a1995e2044019532a79>`
 * :doc:`next <namespacethrust_1ae268bfffafaa04f5a8a4cf902861367c>`
 * :doc:`none_of <group__logical_1ga796d4d448b8b06a36734b3f6ff433417>`
 * :doc:`norm <group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1>`
@@ -225,7 +225,7 @@ Functions
 * :doc:`operator== <group__complex__numbers_1ga999d22f32e88807f5b629905eab61646>`
 * :doc:`operator>> <group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e>`
 * :doc:`partition <group__partitioning_1gad057b6f3f3f7f8098f8e5301843118e2>`
-* :doc:`partition_copy <group__partitioning_1ga07af2df50857a88a190d342b8fc81610>`
+* :doc:`partition_copy <group__partitioning_1ga6aad34780950921c7c1e2ec56ff4f4e3>`
 * :doc:`partition_point <group__searching_1ga902ccc1fe9aeb8585ac8ddcf10fb4337>`
 * :doc:`polar <group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306>`
 * :doc:`pow <group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e>`
@@ -234,7 +234,7 @@ Functions
 * :doc:`raw_pointer_cast <group__memory__management_1ga4215d3848717050f7c47f36e43b7c19a>`
 * :doc:`raw_reference_cast <group__memory__management_1gae72a6da67baf8579e17836fe2c31a641>`
 * :doc:`reduce <group__reductions_1ga6ffe364cb9c04b5ca4dfa92ead9bfc3a>`
-* :doc:`reduce_by_key <group__reductions_1ga4f2be29262626f9f41d29cda5e8d1887>`
+* :doc:`reduce_by_key <group__reductions_1gab66d365f9a531bb5b99615ac3e836f8f>`
 * :doc:`reduce_into <group__reductions_1gac4f1a13fe10dd1a2f4abf6ba347e09c8>`
 * :doc:`reinterpret_tag <group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5>`
 * :doc:`remove <group__stream__compaction_1ga3e0a48a2b03425d9b6ee92ca026e6cc4>`
@@ -253,13 +253,13 @@ Functions
 * :doc:`scatter_if <group__scattering_1ga24819cfa9ebbda0726a5b11ddfb10a1c>`
 * :doc:`sequence <group__transformations_1gae449d575ab0dde81a717ad3847388b36>`
 * :doc:`set_difference <group__set__operations_1ga3d7c39723b065e54feccdae6fbe599a5>`
-* :doc:`set_difference_by_key <group__set__operations_1ga5b510f186a84480f545449f7abacdc32>`
+* :doc:`set_difference_by_key <group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d>`
 * :doc:`set_intersection <group__set__operations_1ga69e037cb6ccedcc087e657641f8e5c63>`
-* :doc:`set_intersection_by_key <group__set__operations_1ga62af084a54134eb8d7d4cc4bca5d1989>`
+* :doc:`set_intersection_by_key <group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9>`
 * :doc:`set_symmetric_difference <group__set__operations_1ga575dc422a51753d641059e9897c51f11>`
-* :doc:`set_symmetric_difference_by_key <group__set__operations_1ga31f684835a1f29e7bfa9266d149adfde>`
+* :doc:`set_symmetric_difference_by_key <group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14>`
 * :doc:`set_union <group__set__operations_1gac8e1b0b7feffbbccfab972a3dab81391>`
-* :doc:`set_union_by_key <group__set__operations_1gabb5c7d4b788853513b0a0fd5300dd445>`
+* :doc:`set_union_by_key <group__set__operations_1ga6b495740c5481a347f79eefaa45d242e>`
 * :doc:`shuffle <group__shuffling_1ga5691add2f5ae54d226463c621eeb5455>`
 * :doc:`shuffle_copy <group__shuffling_1gaa981e499e02cbc84db91fe7b2ce2a7a1>`
 * :doc:`sin <group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff>`
@@ -268,7 +268,7 @@ Functions
 * :doc:`sort_by_key <group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c>`
 * :doc:`sqrt <group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be>`
 * :doc:`stable_partition <group__partitioning_1ga9184a73d9481374d7868f6bf9d61add7>`
-* :doc:`stable_partition_copy <group__partitioning_1gab80ef3b12022db861780a692499c699a>`
+* :doc:`stable_partition_copy <group__partitioning_1ga90418c8b0b1fa4ad87fe0f3030858139>`
 * :doc:`stable_sort <group__sorting_1ga6993fa038e2cdb407bd1a754c6047cd3>`
 * :doc:`stable_sort_by_key <group__sorting_1ga289fae2c9edaceba94c025beeb615ca2>`
 * :doc:`swap <group__memory__management_1ga85e62452603ffae3dc05c681841aefba>`
@@ -291,8 +291,8 @@ Functions
 * :doc:`uninitialized_fill <group__filling_1ga309ec097df7d9064fbbd2f1f45ab3ab3>`
 * :doc:`uninitialized_fill_n <group__filling_1ga42b5e2428b1e78af1f3c7cd5e8d7e2e8>`
 * :doc:`unique <group__stream__compaction_1ga0981eb0b6034017ef622075d6612f68a>`
-* :doc:`unique_by_key <group__stream__compaction_1ga67e80d4d5101637c7f7856cb65dc727a>`
-* :doc:`unique_by_key_copy <group__stream__compaction_1gad6f62634dca9f277f9121fe03142b468>`
+* :doc:`unique_by_key <group__stream__compaction_1gadde4c1003f6b621e8940f69569eb3331>`
+* :doc:`unique_by_key_copy <group__stream__compaction_1ga0879ea139b0736d31b702cbcd658f054>`
 * :doc:`unique_copy <group__stream__compaction_1gad7d0b61d3bf4ed9995f69a722693973b>`
 * :doc:`unique_count <group__stream__compaction_1ga9d5a88c8b9db5ff05bf54d896d294770>`
 * :doc:`unwrap_contiguous_iterator <namespacethrust_1a86a326c73a9dd841ce086d873e0d0a99>`
@@ -594,7 +594,7 @@ Variables
    group__binary__search_1gad2ac5a1c5091366144d6fdbf2ff5551e
    group__binary__search_1gac85cc9ea00f4bdd8f80ad25fff16741d
    group__binary__search_1gaa855fdcf3942f95919bb712e26c7bfc6
-   group__binary__search_1gabdac721a00790e44ce9e5cbe8c4b57f2
+   group__binary__search_1gaa62a894dd33970790599e75a186f1bb3
    group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e
    group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669
    group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1
@@ -642,7 +642,7 @@ Variables
    group__comparisons_1ga6ee63d156e253d5db817c8bcc6a35bc4
    group__extrema_1gab17dd6fa29f87f9971b3be412d052e4b
    group__extrema_1ga879a150e971c0d4f36a0a3cc2d853f47
-   group__extrema_1gab65b7725bb3989de487002d10b371aec
+   group__extrema_1ga192ee620939451e27c3b00f7d3f90f68
    group__filling_1ga819b9addfc37e36f5b3c8438293e27ab
    group__filling_1ga440c2be305b590c38c2e0bd727ad7641
    group__searching_1ga0a1bffa0a0c085b0f8feb146593ae661
@@ -672,24 +672,24 @@ Variables
    group__logical_1gac5a8c0f6c91c7655a8e719b0e3aa030d
    group__logical_1ga796d4d448b8b06a36734b3f6ff433417
    group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105
-   group__memory__management_1ga189f97174f9b5e61258d8bfc8315b087
+   group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584
    group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31
    group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa
    group__memory__management_1ga4215d3848717050f7c47f36e43b7c19a
    group__memory__management_1gae72a6da67baf8579e17836fe2c31a641
    group__merging_1ga63349377f04e6b5988ba362cc82141be
-   group__merging_1gaabef99a0678bfed77c637dedbeb1378f
-   group__searching_1gaa964c494db8b69aaca0a56cc26063398
+   group__merging_1gac87a13a242f94abbee8dc53131682eed
+   group__searching_1ga8e5d32d617390a1995e2044019532a79
    group__partitioning_1gad057b6f3f3f7f8098f8e5301843118e2
-   group__partitioning_1ga07af2df50857a88a190d342b8fc81610
+   group__partitioning_1ga6aad34780950921c7c1e2ec56ff4f4e3
    group__partitioning_1ga9184a73d9481374d7868f6bf9d61add7
-   group__partitioning_1gab80ef3b12022db861780a692499c699a
+   group__partitioning_1ga90418c8b0b1fa4ad87fe0f3030858139
    group__searching_1ga902ccc1fe9aeb8585ac8ddcf10fb4337
    group__predicates_1ga91da05b683fadd078eb90bf126de0e52
    namespacethrust_1a7ac735b6da1bb44634d01d97cbf671de
    group__reductions_1ga6ffe364cb9c04b5ca4dfa92ead9bfc3a
    group__reductions_1gac4f1a13fe10dd1a2f4abf6ba347e09c8
-   group__reductions_1ga4f2be29262626f9f41d29cda5e8d1887
+   group__reductions_1gab66d365f9a531bb5b99615ac3e836f8f
    group__stream__compaction_1ga3e0a48a2b03425d9b6ee92ca026e6cc4
    group__stream__compaction_1ga1cff040dfdb202bfc3b3bb20df9ee2a9
    group__stream__compaction_1gaf01d45b30fecba794afae065d625f94f
@@ -711,10 +711,10 @@ Variables
    group__set__operations_1ga69e037cb6ccedcc087e657641f8e5c63
    group__set__operations_1ga575dc422a51753d641059e9897c51f11
    group__set__operations_1gac8e1b0b7feffbbccfab972a3dab81391
-   group__set__operations_1ga5b510f186a84480f545449f7abacdc32
-   group__set__operations_1ga62af084a54134eb8d7d4cc4bca5d1989
-   group__set__operations_1ga31f684835a1f29e7bfa9266d149adfde
-   group__set__operations_1gabb5c7d4b788853513b0a0fd5300dd445
+   group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d
+   group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9
+   group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14
+   group__set__operations_1ga6b495740c5481a347f79eefaa45d242e
    group__shuffling_1ga5691add2f5ae54d226463c621eeb5455
    group__shuffling_1gaa981e499e02cbc84db91fe7b2ce2a7a1
    group__sorting_1ga857dfc9b50a03888c5703699f0fbfcd4
@@ -740,8 +740,8 @@ Variables
    group__filling_1ga42b5e2428b1e78af1f3c7cd5e8d7e2e8
    group__stream__compaction_1ga0981eb0b6034017ef622075d6612f68a
    group__stream__compaction_1gad7d0b61d3bf4ed9995f69a722693973b
-   group__stream__compaction_1ga67e80d4d5101637c7f7856cb65dc727a
-   group__stream__compaction_1gad6f62634dca9f277f9121fe03142b468
+   group__stream__compaction_1gadde4c1003f6b621e8940f69569eb3331
+   group__stream__compaction_1ga0879ea139b0736d31b702cbcd658f054
    group__stream__compaction_1ga9d5a88c8b9db5ff05bf54d896d294770
    group__function__object__adaptors_1gab539e564de3a7ab63ac1378470c77976
    group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab
