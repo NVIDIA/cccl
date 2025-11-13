@@ -757,6 +757,13 @@ __functionGetAttributeNoThrow(int& __value, ::CUfunction_attribute __attr, ::CUf
   return static_cast<::cudaError_t>(__driver_fn(&__value, __attr, __kernel));
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __functionLoadNoThrow(::CUfunction __kernel) noexcept
+{
+  static auto __driver_fn = reinterpret_cast<::CUresult(CUDAAPI*)(::CUfunction)>(
+    ::cuda::__driver::__get_driver_entry_point("cuFuncLoad", 12, 4));
+  return static_cast<::cudaError_t>(__driver_fn(__kernel));
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __functionSetAttributeNoThrow(::CUfunction __kernel, ::CUfunction_attribute __attr, int __value)
 {

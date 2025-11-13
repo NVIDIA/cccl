@@ -275,8 +275,8 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       using output_it_t =
         cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
 
-      using dispatch_t = cub::detail::
-        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
+      using dispatch_t = cub::detail::rfa::
+        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
@@ -399,8 +399,8 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using output_it_t =
         cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
 
-      using dispatch_t = cub::detail::
-        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
+      using dispatch_t = cub::detail::rfa::
+        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
       REQUIRE(cudaSuccess
               == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init_t{}));
