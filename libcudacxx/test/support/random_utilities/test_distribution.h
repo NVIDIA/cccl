@@ -21,18 +21,6 @@
 
 namespace detail
 {
-// Is this needed?
-template <class D, class URNG>
-__host__ __device__ constexpr bool test_eval_constexpr()
-{
-  typename D::param_type param;
-  D dist(param);
-  URNG g{};
-  unused(dist(g, param));
-  unused(dist(g));
-  return true;
-}
-
 template <class D, class URNG, class Param>
 __host__ __device__ constexpr bool test_ctor(Param param)
 {
@@ -257,37 +245,48 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
   assert(d_max < critical_value);
   return true;
 }
+template <class D, class URNG>
+__host__ __device__ constexpr bool test_eval_constexpr()
+{
+  typename D::param_type param;
+  D dist(param);
+  URNG g{};
+  unused(dist(g, param));
+  unused(dist(g));
+  return true;
+}
 } // namespace detail
 
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF, cuda::std::size_t N>
-__host__ __device__ void test_distribution(const cuda::std::array<typename D::param_type, N>& params, CDF cdf)
+__host__ __device__ void constexpr test_distribution(cuda::std::array<typename D::param_type, N> params, CDF cdf)
 {
-  for (auto param : params)
+  for (cuda::std::size_t i = 0; i < N; ++i)
   {
-    detail::test_eval<D, continuous, URNG, test_constexpr>(param, cdf);
-    detail::test_assign<D, URNG>(param);
-    detail::test_ctor<D, URNG>(param);
-    detail::test_copy<D, URNG>(param);
-    detail::test_eq<D, URNG>(param);
-    detail::test_get_param<D, URNG>(param);
-    detail::test_min_max<D, URNG>(param);
-    detail::test_set_param<D, URNG>(param);
-    detail::test_types<D, URNG>(param);
-    detail::test_param<D, URNG, typename D::param_type>(param);
-    NV_IF_TARGET(NV_IS_HOST, ({ detail::test_io<D, URNG>(param); }));
-    if constexpr (test_constexpr)
-    {
-      static_assert(detail::test_eval<D, continuous, URNG, test_constexpr>(param, cdf));
-      static_assert(detail::test_assign<D, URNG>(param));
-      static_assert(detail::test_ctor<D, URNG>(param));
-      static_assert(detail::test_copy<D, URNG>(param));
-      static_assert(detail::test_eq<D, URNG>(param));
-      static_assert(detail::test_get_param<D, URNG>(param));
-      static_assert(detail::test_min_max<D, URNG>(param));
-      static_assert(detail::test_set_param<D, URNG>(param));
-      static_assert(detail::test_types<D, URNG>(param));
-      static_assert(detail::test_param<D, URNG, typename D::param_type>(param));
-    }
+    detail::test_eval<D, continuous, URNG, test_constexpr>(params[i], cdf);
+    detail::test_assign<D, URNG>(params[i]);
+    detail::test_ctor<D, URNG>(params[i]);
+    detail::test_copy<D, URNG>(params[i]);
+    detail::test_eq<D, URNG>(params[i]);
+    detail::test_get_param<D, URNG>(params[i]);
+    detail::test_min_max<D, URNG>(params[i]);
+    detail::test_set_param<D, URNG>(params[i]);
+    detail::test_types<D, URNG>(params[i]);
+    detail::test_param<D, URNG, typename D::param_type>(params[i]);
+    NV_IF_TARGET(NV_IS_HOST, ({ detail::test_io<D, URNG>(params[i]); }));
+  }
+  if constexpr (test_constexpr)
+  {
+    constexpr typename D::param_type param{};
+    static_assert(detail::test_eval_constexpr<D, URNG>());
+    static_assert(detail::test_assign<D, URNG>(param));
+    static_assert(detail::test_ctor<D, URNG>(param));
+    static_assert(detail::test_copy<D, URNG>(param));
+    static_assert(detail::test_eq<D, URNG>(param));
+    static_assert(detail::test_get_param<D, URNG>(param));
+    static_assert(detail::test_min_max<D, URNG>(param));
+    static_assert(detail::test_set_param<D, URNG>(param));
+    static_assert(detail::test_types<D, URNG>(param));
+    static_assert(detail::test_param<D, URNG, typename D::param_type>(param));
   }
 }
 

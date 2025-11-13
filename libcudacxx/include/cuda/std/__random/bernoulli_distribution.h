@@ -39,7 +39,7 @@ public:
 
   class param_type
   {
-    double __p_;
+    double __p_{};
 
   public:
     using distribution_type = bernoulli_distribution;
