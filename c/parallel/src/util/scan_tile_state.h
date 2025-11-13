@@ -58,7 +58,6 @@ struct scan_tile_state
   {
     return cub::detail::tile_state_allocation_size(
       temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
   }
 };
 
