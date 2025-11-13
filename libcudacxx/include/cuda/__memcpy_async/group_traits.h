@@ -41,18 +41,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Trait to detect whether a group represents a CUDA thread block, for example: ``cooperative_groups::thread_block``.
 template <typename _Group>
-_CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v = false;
+inline constexpr bool is_thread_block_group_v = false;
 
 template <>
-_CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v<cooperative_groups::thread_block> = true;
+inline constexpr bool is_thread_block_group_v<cooperative_groups::thread_block> = true;
 
 //! Trait to detect whether a group represents a CUDA warp, for example:
 //! ``cooperative_groups::thread_block_tile<32, ...>``.
 template <typename _Group>
-_CCCL_GLOBAL_CONSTANT bool is_warp_group_v = false;
+inline constexpr bool is_warp_group_v = false;
 
 template <typename _Parent>
-_CCCL_GLOBAL_CONSTANT bool is_warp_group_v<cooperative_groups::thread_block_tile<32, _Parent>> = true;
+inline constexpr bool is_warp_group_v<cooperative_groups::thread_block_tile<32, _Parent>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 
