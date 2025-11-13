@@ -67,13 +67,13 @@ memory location pointed to by ``source`` to the memory location pointed
 to by ``destination``. Both objects are reinterpreted as arrays of
 ``unsigned char``.
 
-1. Binds the asynchronous copy completion to ``cuda::barrier`` and
+1. Non-group version. Binds the asynchronous copy completion to ``cuda::barrier`` and
    issues the copy in the current thread.
-2. Binds the asynchronous copy completion to ``cuda::barrier`` and
+2. Group version. Binds the asynchronous copy completion to ``cuda::barrier`` and
    cooperatively issues the copy across all threads in ``group``.
-3. Binds the asynchronous copy completion to ``cuda::pipeline`` and
+3. Non-group version. Binds the asynchronous copy completion to ``cuda::pipeline`` and
    issues the copy in the current thread.
-4. Binds the asynchronous copy completion to ``cuda::pipeline`` and
+4. Group version. Binds the asynchronous copy completion to ``cuda::pipeline`` and
    cooperatively issues the copy across all threads in ``group``.
 5. 5-8: convenience wrappers using ``cuda::annotated_ptr`` where
    ``Sync`` is either ``cuda::barrier`` or ``cuda::pipeline``.
@@ -91,14 +91,25 @@ namely:
      the behavior is undefined.
    - If the objects are not of `TriviallyCopyable <https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable>`_
      type the program is ill-formed, no diagnostic required.
+
+Additionally:
+
    - If *Shape* is :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`, ``source``
      and ``destination`` are both required to be aligned on ``cuda::aligned_size_t::align``, else the behavior is
      undefined.
    - If ``cuda::pipeline`` is in a *quitted state*
      (see :ref:`cuda::pipeline::quit <libcudacxx-extended-api-synchronization-pipeline-pipeline-quit>`),
      the behavior is undefined.
-   - For cooperative variants, if the parameters are not the same across all threads in ``group``, the behavior is
-     undefined.
+   - For cooperative overloads (with a group parameter),
+     if the parameters are not the same across all threads in ``group``,
+     or not all threads represented by ``group`` call the overload, the behavior is undefined.
+   - The group of a cooperative overload can also represent a partition of the active threads calling the overload,
+     in which case a copy is cooperatively issued per partition of the active threads described by ``group``.
+     For example, if ``group`` is a ``cooperative_groups::thread_block_tile<32, ...>``
+     and the overload is called with 128 threads active, 4 copies will be issued, one cooperatively per warp.
+   - If a non-group overload is called with multiple threads active,
+     each thread issues its own copy and thus must have different arguments and the copies must not overlap.
+
 
 Template Parameters
 -------------------
@@ -133,6 +144,26 @@ Parameters
    * - ``pipeline``
      - The pipeline object used to wait on the copy completion.
 
+Related traits
+--------------------
+
+.. code:: cuda
+
+   template <typename T>
+   constexpr inline bool is_thread_block_group_v;
+
+This trait is ``true`` if ``T`` represents a CUDA thread block.
+For example, ``cooperative_groups::thread_block`` satisfies this trait.
+Users are encouraged to specialize this trait for their own groups.
+
+.. code:: cuda
+
+   template <typename T>
+   constexpr inline bool is_warp_group_v = false;
+
+This trait is ``true`` if ``T`` represents a CUDA warp.
+For example, ``cooperative_groups::thread_block_tile<32, ...>`` satisfies this trait.
+Users are encouraged to specialize this trait for their own groups.
 
 Implementation notes
 --------------------
@@ -143,6 +174,9 @@ via the ``cp.async.bulk`` instruction to perform the copy if:
 - the data is aligned to 16 bytes,
 - the source is global memory,
 - the destination is shared memory.
+Additionally, the cooperative overload (taking a group) can generate more efficient code
+if the group satisfies the trait ``cuda::is_thread_block_group_v`` or ``cuda::is_warp_group_v``.
+In those cases, a uniform data path is generated for the bulk copy and thread peeling is avoided.
 
 On Ampere+ GPUs, the ``cp.async`` instruction may be used to perform the copy if:
 - the data is aligned to at least 4 bytes,
