@@ -30,7 +30,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

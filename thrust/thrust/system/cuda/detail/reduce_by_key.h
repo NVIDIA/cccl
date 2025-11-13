@@ -51,7 +51,6 @@
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #  include <thrust/functional.h>
-#  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
@@ -65,6 +64,7 @@
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -75,7 +75,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -800,7 +800,7 @@ template <typename Size,
           typename ValuesOutputIt,
           typename EqualityOp,
           typename ReductionOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatch(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatch(
   execution_policy<Derived>& policy,
   KeysInputIt keys_first,
   Size num_items,
@@ -815,7 +815,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
 
   if (num_items == 0)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   cudaError_t status;
@@ -868,7 +868,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
 
   const auto num_runs_out = cuda_cub::get_value(policy, d_num_runs_out);
 
-  return thrust::make_pair(keys_output + num_runs_out, values_output + num_runs_out);
+  return ::cuda::std::make_pair(keys_output + num_runs_out, values_output + num_runs_out);
 }
 
 template <typename Derived,
@@ -878,7 +878,7 @@ template <typename Derived,
           typename ValuesOutputIt,
           typename EqualityOp,
           typename ReductionOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
   execution_policy<Derived>& policy,
   KeysInputIt keys_first,
   KeysInputIt keys_last,
@@ -892,7 +892,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 
   size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
-  pair<KeysOutputIt, ValuesOutputIt> result = thrust::make_pair(keys_output, values_output);
+  ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> result = ::cuda::std::make_pair(keys_output, values_output);
 
   if (num_items == 0)
   {
@@ -921,7 +921,7 @@ template <class Derived,
           class ValOutputIt,
           class BinaryPred,
           class BinaryOp>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -931,7 +931,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   BinaryPred binary_pred,
   BinaryOp binary_op)
 {
-  auto ret = thrust::make_pair(keys_output, values_output);
+  auto ret = ::cuda::std::make_pair(keys_output, values_output);
   THRUST_CDP_DISPATCH(
     (ret = __reduce_by_key::reduce_by_key(
        policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);),
@@ -948,7 +948,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -972,7 +972,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
