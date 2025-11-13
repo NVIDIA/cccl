@@ -20,14 +20,12 @@ THRUST_NAMESPACE_BEGIN
 // Forward declarations
 namespace system::detail::sequential
 {
-struct tag;
 template <class>
 struct execution_policy;
 } // namespace system::detail::sequential
 
 namespace detail
 {
-
 // Helper to determine if NVTX should be enabled for a given policy
 // NVTX is DISABLED only for thrust::seq and any policy derived from sequential::execution_policy
 // ENABLED for all other policies (CUDA, OMP, TBB, etc.)
@@ -38,7 +36,6 @@ inline constexpr bool should_enable_nvtx_for_policy()
   // This catches thrust::seq, cpp::tag, and any other sequential-based policy
   return !::cuda::std::is_base_of_v<thrust::system::detail::sequential::execution_policy<Policy>, Policy>;
 }
-
 } // namespace detail
 
 THRUST_NAMESPACE_END
