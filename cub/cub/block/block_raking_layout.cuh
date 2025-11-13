@@ -51,38 +51,36 @@ struct BlockRakingLayout
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  enum
-  {
-    /// The total number of elements that need to be cooperatively reduced
-    SHARED_ELEMENTS = BlockThreads,
+  /// The total number of elements that need to be cooperatively reduced
+  static constexpr int SHARED_ELEMENTS = BlockThreads;
 
-    /// Maximum number of warp-synchronous raking threads
-    MAX_RAKING_THREADS = ::cuda::std::min(BlockThreads, detail::warp_threads),
+  /// Maximum number of warp-synchronous raking threads
+  static constexpr int MAX_RAKING_THREADS = ::cuda::std::min(BlockThreads, detail::warp_threads);
 
-    /// Number of raking elements per warp-synchronous raking thread (rounded up)
-    SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS,
+  /// Number of raking elements per warp-synchronous raking thread (rounded up)
+  static constexpr int SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS;
 
-    /// Never use a raking thread that will have no valid data (e.g., when BlockThreads is 62 and SEGMENT_LENGTH is 2,
-    /// we should only use 31 raking threads)
-    RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH,
+  /// Never use a raking thread that will have no valid data (e.g., when BlockThreads is 62 and SEGMENT_LENGTH is 2,
+  /// we should only use 31 raking threads)
+  static constexpr int RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
-    /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
-    HAS_CONFLICTS = (detail::smem_banks % SEGMENT_LENGTH == 0),
+  /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
+  static constexpr bool HAS_CONFLICTS = (detail::smem_banks % SEGMENT_LENGTH == 0);
 
-    /// Degree of bank conflicts (e.g., 4-way)
-    CONFLICT_DEGREE = (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / detail::smem_banks : 1,
+  /// Degree of bank conflicts (e.g., 4-way)
+  static constexpr int CONFLICT_DEGREE =
+    (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / detail::smem_banks : 1;
 
-    /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be
-    /// optimized as a vector load
-    USE_SEGMENT_PADDING = ((SEGMENT_LENGTH & 1) == 0) && (SEGMENT_LENGTH > 2),
+  /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be
+  /// optimized as a vector load
+  static constexpr bool USE_SEGMENT_PADDING = ((SEGMENT_LENGTH & 1) == 0) && (SEGMENT_LENGTH > 2);
 
-    /// Total number of elements in the raking grid
-    GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + USE_SEGMENT_PADDING),
+  /// Total number of elements in the raking grid
+  static constexpr int GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + USE_SEGMENT_PADDING);
 
-    /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
-    /// number of raking threads)
-    UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0),
-  };
+  /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
+  /// number of raking threads)
+  static constexpr int UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0);
 
   /**
    * @brief Shared memory storage type

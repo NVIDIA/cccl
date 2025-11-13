@@ -113,10 +113,7 @@ private:
   using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
-  enum
-  {
-    TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord)
-  };
+  static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
   T* ptr;

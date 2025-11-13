@@ -8,14 +8,16 @@
 add_custom_target(cudax.all.headers)
 
 function(cudax_add_header_test label definitions)
-  foreach(cudax_target IN LISTS cudax_TARGETS)
+  foreach (cudax_target IN LISTS cudax_TARGETS)
     cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
     cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
     ###################
     # Non-STF headers #
     set(headertest_target ${config_prefix}.headers.${label}.no_stf)
-    cccl_generate_header_tests(${headertest_target} cudax/include
+    cccl_generate_header_tests(
+      ${headertest_target}
+      cudax/include
       # The cudax header template removes the check for the `small` macro.
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
       GLOBS "cuda/experimental/*.cuh"
@@ -31,9 +33,11 @@ function(cudax_add_header_test label definitions)
         "cuda/experimental/__stf/*"
     )
     target_link_libraries(${headertest_target} PUBLIC ${cudax_target})
-    target_compile_definitions(${headertest_target} PRIVATE
-      ${definitions}
-      "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+    target_compile_definitions(
+      ${headertest_target}
+      PRIVATE #
+        ${definitions}
+        "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     )
     cudax_clone_target_properties(${headertest_target} ${cudax_target})
 
@@ -42,11 +46,13 @@ function(cudax_add_header_test label definitions)
 
     if (cudax_ENABLE_CUFILE)
       ###############
-      # cuFIle headers #
+      # cuFile headers #
       set(headertest_target ${config_prefix}.headers.${label}.cufile)
-      cccl_generate_header_tests(${headertest_target} cudax/include
+      cccl_generate_header_tests(
+        ${headertest_target}
+        cudax/include
         HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
-        GLOBS
+        GLOBS #
           "cuda/experimental/cufile.cuh"
           "cuda/experimental/__cufile/*.cuh"
       )
@@ -58,16 +64,16 @@ function(cudax_add_header_test label definitions)
     endif()
 
     # FIXME: Enable MSVC
-    if (cudax_ENABLE_CUDASTF AND
-        NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
       ###############
       # STF headers #
       set(headertest_target ${config_prefix}.headers.${label}.stf)
-      cccl_generate_header_tests(${headertest_target} cudax/include
-        GLOBS
+      cccl_generate_header_tests(
+        ${headertest_target}
+        cudax/include
+        GLOBS #
           "cuda/experimental/stf.cuh"
           "cuda/experimental/__stf/*.cuh"
-
         # FIXME: The cudax header template removes the check for the `small` macro.
         # cuda/experimental/__stf/utility/memory.cuh defines functions named `small`.
         # These should be renamed to avoid conflicts with windows system headers, and
@@ -75,13 +81,15 @@ function(cudax_add_header_test label definitions)
         HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
       )
       target_link_libraries(${headertest_target} PUBLIC ${cudax_target})
-      target_compile_options(${headertest_target} PRIVATE
-        # Required by stf headers:
-        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-        # FIXME: We should be able to refactor away from needing this by
-        # using _CCCL_HOST_DEVICE and friends + `::cuda::std` utilities where
-        # necessary.
-        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+      target_compile_options(
+        ${headertest_target}
+        PRIVATE
+          # Required by stf headers:
+          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+          # FIXME: We should be able to refactor away from needing this by
+          # using _CCCL_HOST_DEVICE and friends + `::cuda::std` utilities where
+          # necessary.
+          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
       )
       cudax_clone_target_properties(${headertest_target} ${cudax_target})
 
