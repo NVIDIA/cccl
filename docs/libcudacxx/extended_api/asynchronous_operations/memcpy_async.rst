@@ -145,7 +145,7 @@ Parameters
      - The pipeline object used to wait on the copy completion.
 
 Related traits
---------------------
+--------------
 
 .. code:: cuda
 
