@@ -10,6 +10,9 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
+    DiscardIterator as _DiscardIterator,
+)
+from ._iterators import (
     make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
@@ -91,6 +94,25 @@ def CountingIterator(offset):
         A ``CountingIterator`` object initialized to ``offset``
     """
     return _CountingIterator(offset)
+
+
+def DiscardIterator():
+    """Returns an Output Iterator that discards all values written to it.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
+
+    Example:
+        The code snippet below demonstrates the usage of a ``DiscardIterator``:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/discard_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Returns:
+        A ``DiscardIterator`` object
+    """
+    return _DiscardIterator()
 
 
 def ReverseIterator(sequence):
