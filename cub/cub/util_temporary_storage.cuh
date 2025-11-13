@@ -45,19 +45,19 @@ namespace detail
 //!
 //! @param[in] allocation_sizes
 //!   Sizes in bytes of device allocations needed
-template <int Allocations>
+template <int NumAllocations>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t alias_temporaries(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
-  void* (&allocations)[Allocations],
-  const size_t (&allocation_sizes)[Allocations])
+  void* (&allocations)[NumAllocations],
+  const size_t (&allocation_sizes)[NumAllocations])
 {
   constexpr size_t align_bytes = 256;
 
   // Compute exclusive prefix sum over allocation requests
-  size_t allocation_offsets[Allocations];
+  size_t allocation_offsets[NumAllocations];
   size_t bytes_needed = 0;
-  for (int i = 0; i < Allocations; ++i)
+  for (int i = 0; i < NumAllocations; ++i)
   {
     allocation_offsets[i] = bytes_needed;
     bytes_needed += ::cuda::round_up(allocation_sizes[i], +align_bytes);
@@ -79,7 +79,7 @@ template <int Allocations>
 
   // Alias
   d_temp_storage = ::cuda::align_up(d_temp_storage, align_bytes);
-  for (int i = 0; i < Allocations; ++i)
+  for (int i = 0; i < NumAllocations; ++i)
   {
     allocations[i] = static_cast<char*>(d_temp_storage) + allocation_offsets[i];
   }
