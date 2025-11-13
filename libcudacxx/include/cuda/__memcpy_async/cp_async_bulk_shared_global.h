@@ -37,6 +37,7 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
+// forward declare cooperative groups types. we cannot include <cooperative_groups.h> since it does not work with NVHPC
 namespace cooperative_groups
 {
 namespace __v1
@@ -51,36 +52,40 @@ using namespace __v1;
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <typename _Group>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int __thread_rank(const _Group& __g)
-{
-  return __g.thread_rank();
-}
+//! Trait to detect whether a group represents a CUDA thread block, for example: ``cooperative_groups::thread_block``.
+template <typename T>
+_CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v = false;
 
-// elect from the whole thread block
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool
-__elect_from_group(const cooperative_groups::thread_block& __g) noexcept
-{
-  // Cannot call __g.thread_rank(), because we only forward declared the thread_block type
-  // cooperative groups (and we here) maps a multidimensional thread id into the thread rank the same way as warps do
-  const unsigned int __tid             = threadIdx.z * blockDim.y * blockDim.x + threadIdx.y * blockDim.x + threadIdx.x;
-  const unsigned int __warp_id         = __tid / 32;
-  const unsigned int __uniform_warp_id = __shfl_sync(0xFFFFFFFF, __warp_id, 0); // broadcast from lane 0
-  return __uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
-}
+template <>
+_CCCL_GLOBAL_CONSTANT bool is_thread_block_group_v<cooperative_groups::thread_block> = true;
 
-// elect from a single warp
+//! Trait to detect whether a group represents a CUDA warp, for example:
+//! ``cooperative_groups::thread_block_tile<32, ...>``.
+template <typename T>
+_CCCL_GLOBAL_CONSTANT bool is_warp_group_v = false;
+
 template <typename Parent>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool
-__elect_from_group(const cooperative_groups::thread_block_tile<32, Parent>&) noexcept
-{
-  return ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
-}
+_CCCL_GLOBAL_CONSTANT bool is_warp_group_v<cooperative_groups::thread_block_tile<32, Parent>> = true;
 
 template <typename _Group>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g) noexcept
 {
-  return __g.thread_rank() == 0;
+  if constexpr (is_thread_block_group_v<_Group>)
+  {
+    // cooperative groups maps a multidimensional thread id into the thread rank the same way as warps do
+    const unsigned int __tid             = __g.thread_rank();
+    const unsigned int __warp_id         = __tid / 32;
+    const unsigned int __uniform_warp_id = __shfl_sync(0xFFFFFFFF, __warp_id, 0); // broadcast from lane 0
+    return __uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
+  }
+  else if constexpr (is_warp_group_v<_Group>)
+  {
+    return ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
+  }
+  else
+  {
+    return __g.thread_rank() == 0;
+  }
 }
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
