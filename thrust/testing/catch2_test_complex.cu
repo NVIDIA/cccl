@@ -66,7 +66,7 @@ template <typename T1, typename T2>
 std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
 {
   CHECK(a.real() == Catch::Approx(b.real()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
-  CHECK(a.imag() == Catch::Approx(b.imag()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_ABSOLUTE_TOL));
+  CHECK(a.imag() == Catch::Approx(b.imag()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
 
 // Overload for scalar types
