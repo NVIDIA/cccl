@@ -11,9 +11,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/__device/arch_traits.h>
-#include <cuda/__device/compute_capability.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -165,8 +162,6 @@ struct DispatchUniqueByKey
   /// **[optional]** CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
   cudaStream_t stream;
 
-  int ptx_version;
-
   KernelSource kernel_source;
 
   KernelLauncherFactory launcher_factory;
@@ -218,8 +213,7 @@ struct DispatchUniqueByKey
     OffsetT num_items,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    int ptx_version                        = 0)
+    KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_keys_in(d_keys_in)
@@ -230,7 +224,6 @@ struct DispatchUniqueByKey
       , equality_op(equality_op)
       , num_items(num_items)
       , stream(stream)
-      , ptx_version(ptx_version)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
@@ -333,7 +326,7 @@ struct DispatchUniqueByKey
       return cudaSuccess;
     }
 
-    const int max_dim_x = cuda::arch_traits_for(cuda::compute_capability{ptx_version}).max_grid_dim_x;
+    constexpr int max_dim_x = INT_MAX; // Since sm30
 
     // Get grid size for scanning tiles
     dim3 scan_grid_size;
@@ -469,8 +462,7 @@ struct DispatchUniqueByKey
       num_items,
       stream,
       kernel_source,
-      launcher_factory,
-      ptx_version);
+      launcher_factory);
 
     // Dispatch to chained policy
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
