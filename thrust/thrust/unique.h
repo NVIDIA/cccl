@@ -467,7 +467,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -524,7 +524,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_b
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key(A, A + N, B);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -581,7 +581,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B, binary_pred);
  *
@@ -637,7 +637,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_b
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(A, A + N, B, binary_pred);
  *
@@ -699,7 +699,7 @@ template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryP
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key_copy(thrust::host, A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -763,7 +763,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key_copy(A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -830,7 +830,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(thrust::host, A, A + N, B, C, D, binary_pred);
  *
@@ -899,7 +899,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(A, A + N, B, C, D, binary_pred);
  *

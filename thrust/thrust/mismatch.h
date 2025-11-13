@@ -81,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  :::cuda::std::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(thrust::device, vec1.begin(), vec1.end(), vec2.begin());
  *
@@ -132,7 +132,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  :::cuda::std::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(vec1.begin(), vec1.end(), vec2.begin());
  *
@@ -186,7 +186,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  :::cuda::std::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(thrust::device, vec1.begin(), vec1.end(), vec2.begin(), ::cuda::std::equal_to<int>());
  *
@@ -239,7 +239,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  :::cuda::std::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(vec1.begin(), vec1.end(), vec2.begin(), ::cuda::std::equal_to<int>());
  *

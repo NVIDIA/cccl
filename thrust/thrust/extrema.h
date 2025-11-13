@@ -475,7 +475,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  #include <thrust/execution_policy.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  :::cuda::std::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -509,7 +509,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  #include <thrust/extrema.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  :::cuda::std::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -571,7 +571,7 @@ template <typename ForwardIterator>
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  :::cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
  * compare_key_value());
  *
  *  // extrema.first   == data + 1
@@ -632,7 +632,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  :::cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
  *
  *  // extrema.first   == data + 1
  *  // *extrema.first  == {0,7}

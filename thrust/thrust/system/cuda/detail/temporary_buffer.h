@@ -58,7 +58,7 @@ _CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(pa
     }
   }
 
-  return make_pair(reinterpret_pointer_cast<T*>(ptr), n);
+  return ::cuda::std::make_pair(reinterpret_pointer_cast<T*>(ptr), n);
 }
 
 template <typename Pointer>
@@ -104,7 +104,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
     }
   }
 
-  return make_pair(reinterpret_pointer_cast<T*>(ptr), n);
+  return ::cuda::std::make_pair(reinterpret_pointer_cast<T*>(ptr), n);
 }
 
 template <typename Pointer>

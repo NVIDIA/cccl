@@ -722,7 +722,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -786,7 +786,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -853,7 +853,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred);
  *
@@ -922,7 +922,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred);
  *
@@ -1000,7 +1000,7 @@ template <typename InputIterator1,
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred, binary_op);
@@ -1077,7 +1077,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  :::cuda::std::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred, binary_op);

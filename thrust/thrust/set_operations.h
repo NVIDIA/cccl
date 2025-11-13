@@ -1373,7 +1373,7 @@ OutputIterator set_union(
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
  * 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
@@ -1475,7 +1475,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_differ
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
  * B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
@@ -1585,7 +1585,7 @@ template <typename InputIterator1,
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
  * 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
@@ -1693,7 +1693,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_differ
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
  * B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
@@ -1801,7 +1801,7 @@ template <typename InputIterator1,
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
  * + 7, A_vals, keys_result, vals_result);
  *
  *  // keys_result is now {1, 3, 5}
@@ -1902,7 +1902,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_inters
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
  * keys_result, vals_result);
  *
  *  // keys_result is now {1, 3, 5}
@@ -2011,7 +2011,7 @@ template <typename InputIterator1,
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
  * + 7, A_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
@@ -2118,7 +2118,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_inters
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
  * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
@@ -2228,7 +2228,7 @@ template <typename InputIterator1,
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
  * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 5, 6, 7, 8}
  *  // vals_result is now {0, 0, 1, 0, 0, 1}
@@ -2333,7 +2333,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmet
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 5, 6, 7, 8}
  *  // vals_result is now {0, 0, 1, 0, 0, 1}
@@ -2446,7 +2446,7 @@ template <typename InputIterator1,
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
  * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {8, 7, 6, 5, 4, 0}
  *  // vals_result is now {1, 0, 0, 1, 0, 0}
@@ -2557,7 +2557,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmet
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {8, 7, 6, 5, 4, 0}
  *  // vals_result is now {1, 0, 0, 1, 0, 0}
@@ -2666,7 +2666,7 @@ template <typename InputIterator1,
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
  * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12}
  *  // vals_result is now {0, 1, 0, 1, 0, 1, 0, 1, 0, 1,  0,  0}
@@ -2769,7 +2769,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12}
  *  // vals_result is now {0, 1, 0, 1, 0, 1, 0, 1, 0, 1,  0,  0}
@@ -2880,7 +2880,7 @@ template <typename InputIterator1,
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
  * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
@@ -2989,7 +2989,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  :::cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
