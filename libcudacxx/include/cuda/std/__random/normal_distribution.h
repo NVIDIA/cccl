@@ -81,12 +81,12 @@ public:
       : normal_distribution(0)
   {}
   _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = 1) noexcept
-      : __p_(param_type(__mean, __stddev))
-      , __v_hot_(false)
+      : __p_{param_type(__mean, __stddev)}
+      , __v_hot_{false}
   {}
   _CCCL_API constexpr explicit normal_distribution(const param_type& __p) noexcept
-      : __p_(__p)
-      , __v_hot_(false)
+      : __p_{__p}
+      , __v_hot_{false}
   {}
   _CCCL_API constexpr void reset() noexcept
   {
