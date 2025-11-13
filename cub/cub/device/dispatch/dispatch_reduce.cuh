@@ -303,7 +303,7 @@ struct DispatchReduce
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
