@@ -17,14 +17,24 @@ function(libcudacxx_build_compiler_targets)
   #  endif()
 
   # Set test specific flags
-  list(APPEND cxx_compile_definitions "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+  list(
+    APPEND cxx_compile_definitions
+    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+  )
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_ASSERTIONS")
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_OPTIONAL_REF")
-  list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER")
-  list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER")
+  list(
+    APPEND cxx_compile_definitions
+    "CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER"
+  )
+  list(
+    APPEND cxx_compile_definitions
+    "CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER"
+  )
 
-  cccl_build_compiler_interface(libcudacxx.compiler_interface
+  cccl_build_compiler_interface(
+    libcudacxx.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
@@ -32,7 +42,8 @@ function(libcudacxx_build_compiler_targets)
 
   # libcudacxx only builds a single dialect at a time, so link to the currently
   # selected dialect target from cccl:
-  target_link_libraries(libcudacxx.compiler_interface INTERFACE
-    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+  target_link_libraries(
+    libcudacxx.compiler_interface
+    INTERFACE cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
   )
- endfunction()
+endfunction()

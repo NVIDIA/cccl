@@ -26,7 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 THRUST_NAMESPACE_BEGIN
 

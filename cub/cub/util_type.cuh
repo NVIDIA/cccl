@@ -113,10 +113,7 @@ template <int N, int CURRENT_VAL = N, int COUNT = 0>
 struct Log2
 {
   /// Static logarithm value
-  enum
-  {
-    VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE
-  }; // Inductive case
+  static constexpr int VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE;
 };
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -124,10 +121,7 @@ struct Log2
 template <int N, int COUNT>
 struct Log2<N, 0, COUNT>
 {
-  enum
-  {
-    VALUE = (1 << (COUNT - 1) < N) ? COUNT : COUNT - 1
-  }; // Base case
+  static constexpr int VALUE = (1 << (COUNT - 1) < N) ? COUNT : COUNT - 1;
 };
 
 #  endif // _CCCL_DOXYGEN_INVOKED
@@ -139,10 +133,7 @@ struct Log2<N, 0, COUNT>
 template <int N>
 struct [[deprecated("Use cuda::is_power_of_two(N) instead")]] PowerOfTwo
 {
-  enum
-  {
-    VALUE = ((N & (N - 1)) == 0)
-  };
+  static constexpr bool VALUE = (N & (N - 1)) == 0;
 };
 
 #endif // _CCCL_DOXYGEN_INVOKED

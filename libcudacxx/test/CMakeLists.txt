@@ -1,20 +1,30 @@
-find_package (Python COMPONENTS Interpreter)
+find_package(Python COMPONENTS Interpreter)
 if (NOT Python_Interpreter_FOUND)
-  message(FATAL_ERROR
-    "Failed to find python interpreter, which is required for running tests and building a libcu++ static library.")
-endif ()
+  message(
+    FATAL_ERROR
+    "Failed to find python interpreter, which is required for running tests and building a libcu++ static library."
+  )
+endif()
 
 # Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
 include(GetHostTriple)
 get_host_triple(LLVM_INFERRED_HOST_TRIPLE)
 
-set(LLVM_HOST_TRIPLE "${LLVM_INFERRED_HOST_TRIPLE}" CACHE STRING
-    "Host on which LLVM binaries will run")
+set(
+  LLVM_HOST_TRIPLE
+  "${LLVM_INFERRED_HOST_TRIPLE}"
+  CACHE STRING
+  "Host on which LLVM binaries will run"
+)
 
 # By default, we target the host, but this can be overridden at CMake
 # invocation time.
-set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
-  "Default target for which LLVM will generate code." )
+set(
+  LLVM_DEFAULT_TARGET_TRIPLE
+  "${LLVM_HOST_TRIPLE}"
+  CACHE STRING
+  "Default target for which LLVM will generate code."
+)
 set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
 message(STATUS "LLVM host triple: ${LLVM_HOST_TRIPLE}")
 message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
@@ -29,26 +39,43 @@ add_subdirectory(libcudacxx)
 add_subdirectory(cmake)
 
 # Set appropriate warning levels for MSVC/sane
-if("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
   # CUDA 11.5 and down do not support '-use-local-env'
-  if(MSVC)
-    set(headertest_warning_levels_device -Xcompiler=/W4 -Xcompiler=/WX -Wno-deprecated-gpu-targets)
+  if (MSVC)
+    set(
+      headertest_warning_levels_device
+      -Xcompiler=/W4
+      -Xcompiler=/WX
+      -Wno-deprecated-gpu-targets
+    )
     if ("${CMAKE_CUDA_COMPILER_VERSION}" GREATER_EQUAL "11.6.0")
       list(APPEND headertest_warning_levels_device --use-local-env)
     endif()
   else()
-    set(headertest_warning_levels_device -Wall -Werror all-warnings -Wno-deprecated-gpu-targets)
+    set(
+      headertest_warning_levels_device
+      -Wall
+      -Werror
+      all-warnings
+      -Wno-deprecated-gpu-targets
+    )
   endif()
-# Set warnings for Clang as device compiler
-elseif("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
-  set(headertest_warning_levels_device -Wall -Werror -Wno-unknown-cuda-version -Xclang=-fcuda-allow-variadic-functions)
-# If the CMAKE_CUDA_COMPILER is unknown, try to use gcc style warnings
+  # Set warnings for Clang as device compiler
+elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+  set(
+    headertest_warning_levels_device
+    -Wall
+    -Werror
+    -Wno-unknown-cuda-version
+    -Xclang=-fcuda-allow-variadic-functions
+  )
+  # If the CMAKE_CUDA_COMPILER is unknown, try to use gcc style warnings
 else()
   set(headertest_warning_levels_device -Wall -Werror)
 endif()
 
 # Set raw host/device warnings
-if(MSVC)
+if (MSVC)
   set(headertest_warning_levels_host /W4 /WX)
 else()
   set(headertest_warning_levels_host -Wall -Werror)

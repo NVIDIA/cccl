@@ -7,12 +7,10 @@
 
 #include <thrust/copy.h>
 #include <thrust/equal.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 
 #include <algorithm>
@@ -39,7 +37,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][de
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000}));
-  auto keys_counting_it    = thrust::make_counting_iterator(key_t{});
+  auto keys_counting_it    = cuda::counting_iterator(key_t{});
   auto keys_in_it          = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
 
   // Perform sort
@@ -59,9 +57,9 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable
 
   // Prepare input (ensure we have multiple sort keys that compare equal to check stability)
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000}));
-  auto sort_key_it = thrust::make_transform_iterator(thrust::make_counting_iterator(key_t{}), mod_op_t<key_t>{128});
-  auto key_idx_it  = thrust::make_counting_iterator(offset_t{});
-  auto keys_in_it  = thrust::make_zip_iterator(sort_key_it, key_idx_it);
+  auto sort_key_it         = cuda::transform_iterator(cuda::counting_iterator(key_t{}), mod_op_t<key_t>{128});
+  auto key_idx_it          = cuda::counting_iterator(offset_t{});
+  auto keys_in_it          = cuda::make_zip_iterator(sort_key_it, key_idx_it);
 
   // Perform sort
   c2h::device_vector<thrust::tuple<key_t, offset_t>> keys_out(
@@ -91,7 +89,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device
   sort_keys(keys_in_it, num_items, custom_less_op_t{});
 
   // Verify results
-  auto keys_counting_it = thrust::make_counting_iterator(key_t{});
+  auto keys_counting_it = cuda::counting_iterator(key_t{});
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
   bool keys_equal       = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(keys_equal == true);
@@ -112,7 +110,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][
   stable_sort_keys(keys_in_it, num_items, custom_less_op_t{});
 
   // Verify results
-  auto keys_counting_it = thrust::make_counting_iterator(key_t{});
+  auto keys_counting_it = cuda::counting_iterator(key_t{});
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
   bool keys_equal       = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(keys_equal == true);
@@ -126,9 +124,9 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][d
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000}));
-  auto key_counting_it     = thrust::make_counting_iterator(key_t{});
+  auto key_counting_it     = cuda::counting_iterator(key_t{});
   auto keys_in             = cuda::std::make_reverse_iterator(key_counting_it + num_items);
-  auto values_in           = thrust::make_counting_iterator(data_t{}) + num_items;
+  auto values_in           = cuda::counting_iterator(data_t{}) + num_items;
 
   // Perform sort
   c2h::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
@@ -163,9 +161,9 @@ C2H_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][devic
   sort_pairs(keys_in_it, values_in_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  auto keys_counting_it   = thrust::make_counting_iterator(key_t{});
+  auto keys_counting_it   = cuda::counting_iterator(key_t{});
   auto keys_expected_it   = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
-  auto values_expected_it = thrust::make_counting_iterator(data_t{});
+  auto values_expected_it = cuda::counting_iterator(data_t{});
   bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   bool values_equal =
     thrust::equal(c2h::device_policy, values_in_out.cbegin(), values_in_out.cend(), values_expected_it);
@@ -192,9 +190,9 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort]
   stable_sort_pairs(keys_in_it, values_in_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  auto keys_counting_it   = thrust::make_counting_iterator(key_t{});
+  auto keys_counting_it   = cuda::counting_iterator(key_t{});
   auto keys_expected_it   = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
-  auto values_expected_it = thrust::make_counting_iterator(data_t{});
+  auto values_expected_it = cuda::counting_iterator(data_t{});
   bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   bool values_equal =
     thrust::equal(c2h::device_policy, values_in_out.cbegin(), values_in_out.cend(), values_expected_it);

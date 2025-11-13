@@ -678,11 +678,7 @@ struct ScanTileState<T, true>
     T value;
   };
 
-  // Constants
-  enum
-  {
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
   TxnWord* d_tile_descriptors;
@@ -872,11 +868,7 @@ struct ScanTileState<T, false>
   // Status word type
   using StatusWord = unsigned int;
 
-  // Constants
-  enum
-  {
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
   StatusWord* d_tile_status;
@@ -1058,14 +1050,11 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   using KeyValuePairT = KeyValuePair<KeyT, ValueT>;
 
   // Constants
-  enum
-  {
-    PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT)),
-    TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE,
-    STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
+  static constexpr int PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT));
+  static constexpr int TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE;
+  static constexpr int STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE;
 
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Status word type
   using StatusWord = ::cuda::std::_If<

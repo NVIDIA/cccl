@@ -57,7 +57,14 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::complex
@@ -83,24 +90,26 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
       return (complex<float>(x, (y == 0.0f ? y : x * y)));
     }
     set_float_word(x, hx - 0x40000000);
-    return (complex<float>(x, copysignf(0, isinf(y) ? y : sinf(y) * cosf(y))));
+    return (complex<float>(
+      x, ::cuda::std::copysignf(0, ::cuda::std::isinf(y) ? y : ::cuda::std::sinf(y) * ::cuda::std::cosf(y))));
   }
 
-  if (!isfinite(y))
+  if (!::cuda::std::isfinite(y))
   {
     return (complex<float>(y - y, y - y));
   }
 
   if (ix >= 0x41300000)
   { /* x >= 11 */
-    float exp_mx = expf(-fabsf(x));
-    return (complex<float>(copysignf(1.0f, x), 4.0f * sinf(y) * cosf(y) * exp_mx * exp_mx));
+    float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
+    return (complex<float>(::cuda::std::copysignf(1.0f, x),
+                           4.0f * ::cuda::std::sinf(y) * ::cuda::std::cosf(y) * exp_mx * exp_mx));
   }
 
-  t     = tanf(y);
+  t     = ::cuda::std::tanf(y);
   beta  = 1.0f + t * t;
-  s     = sinhf(x);
-  rho   = sqrtf(1.0f + s * s);
+  s     = ::cuda::std::sinhf(x);
+  rho   = ::cuda::std::sqrtf(1.0f + s * s);
   denom = 1.0f + beta * s * s;
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }

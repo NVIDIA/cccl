@@ -31,7 +31,12 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/tuple.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/forward.h>
 
 // the order of declarations and definitions in this file is totally goofy
 // this header defines raw_reference_cast, which has a few overloads towards the bottom of the file

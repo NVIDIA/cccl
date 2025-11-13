@@ -28,8 +28,10 @@
 
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 

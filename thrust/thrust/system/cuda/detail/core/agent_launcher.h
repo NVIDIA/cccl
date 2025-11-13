@@ -103,10 +103,8 @@ struct AgentLauncher : Agent
   bool has_shmem;
   size_t shmem_size;
 
-  enum
-  {
-    MAX_SHMEM_PER_BLOCK = 48 * 1024,
-  };
+  static constexpr int MAX_SHMEM_PER_BLOCK = 48 * 1024;
+
   using has_enough_shmem_t = typename has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>::type;
   using shm1               = has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>;
 

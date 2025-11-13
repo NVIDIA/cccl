@@ -5,6 +5,8 @@
 
 #include <thrust/detail/vector_base.h>
 
+#include <cuda/std/type_traits>
+
 #include <memory>
 
 #include <catch2/catch_tostring.hpp>

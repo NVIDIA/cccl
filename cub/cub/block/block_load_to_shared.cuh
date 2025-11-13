@@ -109,12 +109,12 @@ private:
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
     static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
-    return NV_DISPATCH_TARGET(
+    NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       ( // Use last warp to try to avoid having the elected thread also working on the peeling in the first warp.
-        (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u)),
+        return (linear_tid >= block_threads - cub::detail::warp_threads) && ::cuda::ptx::elect_sync(~0u);),
       NV_IS_DEVICE,
-      (linear_tid == 0));
+      (return linear_tid == 0;));
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void __init_mbarrier()
@@ -208,9 +208,24 @@ private:
        return true;));
   }
 
+  // token is only constructible by BlockLoadToShared
+  class token_impl
+  {
+    friend class BlockLoadToShared;
+    _CCCL_DEVICE _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+
+    token_impl(const token_impl&)            = delete;
+    token_impl& operator=(const token_impl&) = delete;
+  };
+
 public:
   /// @smemstorage{BlockLoadToShared}
   using TempStorage = cub::Uninitialized<_TempStorage>;
+
+  //! Token type used to enforce correct call order between Commit() and Wait()
+  //! member functions. Returned by Commit() and required by Wait() as a usage
+  //! guard.
+  using CommitToken = token_impl;
 
   //! @name Collective constructors
   //! @{
@@ -248,12 +263,7 @@ public:
     __syncthreads();
     if (elected)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (
-                     // Borrowed from cuda::barrier
-                     // TODO Make this available through cuda::ptx::
-                     asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-                       ::__cvta_generic_to_shared(&temp_storage.mbarrier_handle))) : "memory");));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ::cuda::ptx::mbarrier_inval(&temp_storage.mbarrier_handle););
     }
     // Make sure the elected thread is done invalidating the mbarrier
     __syncthreads();
@@ -344,7 +354,7 @@ public:
   }
 
   //! @brief Commit one or more @c CopyAsync() calls.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Commit()
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE CommitToken Commit()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy_or_commit, "CopyAsync() must be called before Commit()");
@@ -365,10 +375,15 @@ public:
        __syncthreads();),
       NV_PROVIDES_SM_80,
       (asm volatile("cp.async.commit_group ;" :: : "memory");));
+
+    // Token's mere purpose currently is to prevent calling Wait() without a
+    // prior Commit()
+    return CommitToken{};
   }
 
-  //! @brief Wait for previously committed copies to arrive. Prepare for next calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait()
+  //! @brief Wait for previously committed copies to arrive. Prepare for next
+  //! calls to @c CopyAsync() .
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(CommitToken&&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -378,6 +393,12 @@ public:
     while (!__try_wait())
       ;
     phase_parity ^= 1u;
+  }
+
+  //! @brief Convenience overload calling `Commit()` and `Wait()`.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void CommitAndWait()
+  {
+    Wait(Commit());
   }
 
   // Having these as static members does require using "template" in user code which is kludgy.

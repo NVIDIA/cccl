@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2008-2013 NVIDIA Corporation
  *
@@ -33,7 +32,10 @@
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/minimum_system.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 
 THRUST_NAMESPACE_BEGIN
 

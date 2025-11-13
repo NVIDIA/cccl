@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/distance.h>
 #include <thrust/system/detail/generic/reduce_by_key.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 

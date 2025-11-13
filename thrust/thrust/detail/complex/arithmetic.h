@@ -20,10 +20,13 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/complex/c99math.h>
 
-#include <cuda/std/cfloat>
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__type_traits/common_type.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -96,11 +99,7 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-
-  // Find `abs` by ADL.
-  using std::abs;
-
-  T s = abs(y.real()) + abs(y.imag());
+  T s     = ::cuda::std::abs(y.real()) + ::cuda::std::abs(y.imag());
 
   T oos = T(1.0) / s;
 
@@ -151,41 +150,13 @@ _CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y)
 template <typename T>
 _CCCL_HOST_DEVICE T abs(const complex<T>& z)
 {
-  return hypot(z.real(), z.imag());
-}
-
-// XXX Why are we specializing here?
-namespace detail::complex
-{
-_CCCL_HOST_DEVICE inline float abs(const thrust::complex<float>& z)
-{
-  return hypotf(z.real(), z.imag());
-}
-
-_CCCL_HOST_DEVICE inline double abs(const thrust::complex<double>& z)
-{
-  return hypot(z.real(), z.imag());
-}
-} // end namespace detail::complex
-
-template <>
-_CCCL_HOST_DEVICE inline float abs(const complex<float>& z)
-{
-  return detail::complex::abs(z);
-}
-
-template <>
-_CCCL_HOST_DEVICE inline double abs(const complex<double>& z)
-{
-  return detail::complex::abs(z);
+  return ::cuda::std::hypot(z.real(), z.imag());
 }
 
 template <typename T>
 _CCCL_HOST_DEVICE T arg(const complex<T>& z)
 {
-  // Find `atan2` by ADL.
-  using std::atan2;
-  return atan2(z.imag(), z.real());
+  return ::cuda::std::atan2(z.imag(), z.real());
 }
 
 template <typename T>
@@ -204,11 +175,8 @@ _CCCL_HOST_DEVICE T norm(const complex<T>& z)
 template <>
 _CCCL_HOST_DEVICE inline float norm(const complex<float>& z)
 {
-  // Find `abs` and `sqrt` by ADL.
-  using std::abs;
-  using std::sqrt;
-
-  if (abs(z.real()) < sqrt(FLT_MIN) && abs(z.imag()) < sqrt(FLT_MIN))
+  if (::cuda::std::abs(z.real()) < ::cuda::std::sqrt(FLT_MIN)
+      && ::cuda::std::abs(z.imag()) < ::cuda::std::sqrt(FLT_MIN))
   {
     float a = z.real() * 4.0f;
     float b = z.imag() * 4.0f;
@@ -221,11 +189,8 @@ _CCCL_HOST_DEVICE inline float norm(const complex<float>& z)
 template <>
 _CCCL_HOST_DEVICE inline double norm(const complex<double>& z)
 {
-  // Find `abs` and `sqrt` by ADL.
-  using std::abs;
-  using std::sqrt;
-
-  if (abs(z.real()) < sqrt(DBL_MIN) && abs(z.imag()) < sqrt(DBL_MIN))
+  if (::cuda::std::abs(z.real()) < ::cuda::std::sqrt(DBL_MIN)
+      && ::cuda::std::abs(z.imag()) < ::cuda::std::sqrt(DBL_MIN))
   {
     double a = z.real() * 4.0;
     double b = z.imag() * 4.0;
@@ -239,12 +204,7 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m, const T1& theta)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-
-  // Find `cos` and `sin` by ADL.
-  using std::cos;
-  using std::sin;
-
-  return complex<T>(m * cos(theta), m * sin(theta));
+  return complex<T>(m * ::cuda::std::cos(theta), m * ::cuda::std::sin(theta));
 }
 
 THRUST_NAMESPACE_END
