@@ -18,9 +18,14 @@ if [[ -z "${cudax_ENABLE_CUFILE:-}" ]]; then
   fi
 fi
 
+# todo: enable running tests in the CI
+if [[ -z "${cudax_ENABLE_CUFILE_TESTS_RUN:-}" ]]; then
+  cudax_ENABLE_CUFILE_TESTS_RUN="false"
+fi
+
 PRESET="cudax-cpp$CXX_STANDARD"
 
-CMAKE_OPTIONS="-Dcudax_ENABLE_CUFILE=${cudax_ENABLE_CUFILE}"
+CMAKE_OPTIONS="-Dcudax_ENABLE_CUFILE=${cudax_ENABLE_CUFILE} -Dcudax_ENABLE_CUFILE_TESTS_RUN=${cudax_ENABLE_CUFILE_TESTS_RUN}"
 
 configure_and_build_preset "CUDA Experimental" "$PRESET" "$CMAKE_OPTIONS"
 

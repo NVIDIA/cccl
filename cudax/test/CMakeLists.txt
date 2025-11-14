@@ -34,7 +34,7 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
     PRIVATE #
       ${cudax_target}
       cccl.c2h.main
-      cudart
+      CUDA::cudart
   )
   target_compile_options(
     ${test_target}
@@ -49,6 +49,15 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
   add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
+endfunction()
+
+## cudax_add_catch2_cufile_test
+#
+# Same as cudax_add_catch2_test but links CUDA::cuFile to the target.
+function(cudax_add_catch2_cufile_test target_name_var test_name cudax_target) # ARGN=test sources
+  cudax_add_catch2_test(${target_name_var} ${test_name} ${cudax_target} ${ARGN})
+  target_link_libraries(${${target_name_var}} PRIVATE CUDA::cuFile)
+  set(${target_name_var} ${target_name_var} PARENT_SCOPE)
 endfunction()
 
 # Create tests for each enabled configuration:
@@ -154,21 +163,14 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     algorithm/fill.cu
     algorithm/copy.cu
   )
-
-  if (cudax_ENABLE_CUFILE)
-    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cudax_target}
-      cufile/driver.cu
-    )
-
-    set(cufile_test_targets ${cufile_driver_target})
-    foreach (cufile_test_target IN LISTS cufile_test_targets)
-      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
-    endforeach()
-  endif()
 endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
+endif()
+
+if (cudax_ENABLE_CUFILE)
+  add_subdirectory(cufile)
 endif()
