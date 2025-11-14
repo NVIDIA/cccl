@@ -273,7 +273,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;

@@ -499,10 +499,19 @@ __streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, 
   return __stream;
 }
 
-_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+_CCCL_HOST_API inline ::cudaError_t __streamSynchronizeNoThrow(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamSynchronize);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to synchronize a stream", __stream);
+  return static_cast<::cudaError_t>(__driver_fn(__stream));
+}
+
+_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+{
+  cudaError_t __status = __streamSynchronizeNoThrow(__stream);
+  if (__status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to synchronize a stream");
+  }
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __streamGetCtx(::CUstream __stream)
@@ -746,6 +755,13 @@ __functionGetAttributeNoThrow(int& __value, ::CUfunction_attribute __attr, ::CUf
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuFuncGetAttribute);
   return static_cast<::cudaError_t>(__driver_fn(&__value, __attr, __kernel));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __functionLoadNoThrow(::CUfunction __kernel) noexcept
+{
+  static auto __driver_fn = reinterpret_cast<::CUresult(CUDAAPI*)(::CUfunction)>(
+    ::cuda::__driver::__get_driver_entry_point("cuFuncLoad", 12, 4));
+  return static_cast<::cudaError_t>(__driver_fn(__kernel));
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t

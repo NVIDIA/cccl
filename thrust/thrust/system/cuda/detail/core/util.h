@@ -570,7 +570,7 @@ template <int ALLOCATIONS>
 THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   void* storage_ptr, size_t& storage_size, void* (&allocations)[ALLOCATIONS], size_t (&allocation_sizes)[ALLOCATIONS])
 {
-  return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
+  return cub::detail::alias_temporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 } // namespace cuda_cub::core::detail

@@ -30,16 +30,16 @@
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/pair.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
 template <typename T, typename Allocator, template <typename> class BaseSystem>
-_CCCL_HOST thrust::pair<T*, std::ptrdiff_t>
+_CCCL_HOST ::cuda::std::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, std::ptrdiff_t n)
 {
   using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
@@ -55,7 +55,7 @@ get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSyste
   void_pointer ptr = alloc_traits::allocate(system.get_allocator(), num_elements);
 
   // Return the pointer and the number of elements of type T allocated.
-  return thrust::make_pair(thrust::reinterpret_pointer_cast<T*>(ptr), n);
+  return ::cuda::std::make_pair(thrust::reinterpret_pointer_cast<T*>(ptr), n);
 }
 
 template <typename Pointer, typename Allocator, template <typename> class BaseSystem>

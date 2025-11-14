@@ -52,7 +52,7 @@ def _get_zip_iterator_metadata(iterators):
     )
     state_type = ZipState._numba_type
     value_type = ZipValue._numba_type
-    return cvalue, state_type, value_type
+    return cvalue, state_type, value_type, ZipValue
 
 
 def _get_advance_and_dereference_functions(iterators):
@@ -96,23 +96,49 @@ def {func_name}(context, struct_ptr_type):
     # intrinsics defined above.
     for i, it in enumerate(iterators):
         globals()[f"advance_{i}"] = cuda.jit(it.advance, device=True)
-        globals()[f"dereference_{i}"] = cuda.jit(
+        globals()[f"input_dereference_{i}"] = cuda.jit(
             it.input_dereference, device=True
-        )  # only input_dereference for now
+        )
+        # Also compile output_dereference if available
+        try:
+            output_deref = it.output_dereference
+            if output_deref is not None:
+                globals()[f"output_dereference_{i}"] = cuda.jit(
+                    output_deref, device=True
+                )
+        except AttributeError:
+            # Iterator doesn't support output operations
+            pass
 
     # Generate the advance method, which advances each input iterator:
     advance_lines = []  # lines of code for the advance method
-    dereference_lines = []  # lines of code for the dereference method
+    input_dereference_lines = []  # lines of code for input dereference method
+    output_dereference_lines = []  # lines of code for output dereference method
+
+    # Check if all iterators support output operations
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
+
+    all_support_output = all(supports_output(it) for it in iterators)
+
     for i in range(n_iterators):
         advance_lines.append(
             f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
             f"    advance_{i}(state_ptr_{i}, distance)"
         )
-        dereference_lines.append(
+        input_dereference_lines.append(
             f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
             f"    result_ptr_{i} = get_field_ptr_{i}(result)\n"
-            f"    dereference_{i}(state_ptr_{i}, result_ptr_{i})"
+            f"    input_dereference_{i}(state_ptr_{i}, result_ptr_{i})"
         )
+        if all_support_output:
+            output_dereference_lines.append(
+                f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
+                f"    output_dereference_{i}(state_ptr_{i}, x.value_{i})"
+            )
 
     advance_method_code = f"""
 def input_advance(state, distance):
@@ -120,20 +146,31 @@ def input_advance(state, distance):
 {chr(10).join(advance_lines)}
 """  # chr(10) is '\n'
 
-    dereference_method_code = f"""
+    input_dereference_method_code = f"""
 def input_dereference(state, result):
     # Dereference each iterator using dynamically created field pointer functions
-{chr(10).join(dereference_lines)}
+{chr(10).join(input_dereference_lines)}
 """  # chr(10) is '\n'
 
     # Execute the method codes:
     exec(advance_method_code, globals())
-    exec(dereference_method_code, globals())
+    exec(input_dereference_method_code, globals())
 
     advance_func = globals()["input_advance"]
-    dereference_func = globals()["input_dereference"]
+    input_dereference_func = globals()["input_dereference"]
 
-    return advance_func, dereference_func
+    # Generate output_dereference if all iterators support it
+    output_dereference_func = None
+    if all_support_output:
+        output_dereference_method_code = f"""
+def output_dereference(state, x):
+    # Write to each iterator using dynamically created field pointer functions
+{chr(10).join(output_dereference_lines)}
+"""
+        exec(output_dereference_method_code, globals())
+        output_dereference_func = globals()["output_dereference"]
+
+    return advance_func, input_dereference_func, output_dereference_func
 
 
 def make_zip_iterator(*iterators):
@@ -161,11 +198,22 @@ def make_zip_iterator(*iterators):
         if not isinstance(it, IteratorBase):
             raise TypeError(f"Argument {i} must be an iterator or device array")
 
-    cvalue, state_type, value_type = _get_zip_iterator_metadata(processed_iterators)
-
-    advance_func, dereference_func = _get_advance_and_dereference_functions(
+    cvalue, state_type, value_type, ZipValue = _get_zip_iterator_metadata(
         processed_iterators
     )
+
+    advance_func, input_dereference_func, output_dereference_func = (
+        _get_advance_and_dereference_functions(processed_iterators)
+    )
+
+    # Check if all underlying iterators support output
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
+
+    all_support_output = all(supports_output(it) for it in processed_iterators)
 
     class ZipIterator(IteratorBase):
         iterator_kind_type = ZipIteratorKind
@@ -194,6 +242,15 @@ def make_zip_iterator(*iterators):
 
         @property
         def input_dereference(self):
-            return dereference_func
+            return input_dereference_func
+
+        @property
+        def output_dereference(self):
+            if not all_support_output:
+                raise AttributeError(
+                    "ZipIterator cannot be used as output iterator when not all "
+                    "underlying iterators support output"
+                )
+            return output_dereference_func
 
     return ZipIterator(processed_iterators)
