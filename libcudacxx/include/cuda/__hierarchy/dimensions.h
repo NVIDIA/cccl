@@ -120,14 +120,14 @@ template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 __dims_product(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return __dims_op<_Dst>(::cuda::std::multiplies(), __h1, __h2);
+  return __dims_op<_Dst>(::cuda::std::multiplies<_Dst>(), __h1, __h2);
 }
 
 template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 __dims_sum(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return __dims_op<_Dst>(::cuda::std::plus(), __h1, __h2);
+  return __dims_op<_Dst>(::cuda::std::plus<_Dst>(), __h1, __h2);
 }
 
 template <class _Tp, size_t... _Extents>
