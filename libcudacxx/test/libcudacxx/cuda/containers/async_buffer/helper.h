@@ -15,7 +15,7 @@
 
 #include <cuda/buffer>
 #include <cuda/functional>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 

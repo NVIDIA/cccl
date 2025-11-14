@@ -10,7 +10,7 @@
 // template <class I1, class I2>
 // struct in_fun_result;
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

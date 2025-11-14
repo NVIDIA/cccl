@@ -7,7 +7,7 @@
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/iterator>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <cstdint>
 

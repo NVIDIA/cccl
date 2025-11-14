@@ -16,7 +16,7 @@
 //   constexpr bool  // constexpr in C++20
 //   next_permutation(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
