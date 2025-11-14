@@ -27,7 +27,7 @@ __host__ __device__ void test()
   // Can be true if/when cuda::std::log is constexpr
   const bool test_constexpr = false;
   using D                   = cuda::std::normal_distribution<T>;
-  using P                   = D::param_type;
+  using P                   = typename D::param_type;
   using G                   = cuda::std::philox4x64;
   auto cdf                  = [] __host__ __device__(double x, P p) {
     return 0.5 * (1 + cuda::std::erf((x - (p.mean())) / (p.stddev() * cuda::std::sqrt(2))));
