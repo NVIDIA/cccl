@@ -71,6 +71,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_
       .ConsumeRange(inp_begin_offset, inp_end_offset, out_begin_offset);
   }
 }
-} // end of namespace detail::segmented_scan
+} // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END
