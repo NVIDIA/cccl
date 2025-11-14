@@ -17,6 +17,7 @@ Memory
    memory/ptr_rebind
    memory/ptr_in_range
    memory/ranges_overlap
+   memory/is_pointer_accessible
 
 .. list-table::
    :widths: 25 45 30 30
@@ -74,5 +75,10 @@ Memory
 
    * - :ref:`ranges_overlap <libcudacxx-extended-api-memory-ranges_overlap>`
      - Check if two ranges overlap
+     - CCCL 3.2.0
+     - CUDA 13.2
+
+   * - :ref:`is_host_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_device_accessible <libcudacxx-extended-api-memory-is_pointer_accessible>`, :ref:`is_managed <libcudacxx-extended-api-memory-is_pointer_accessible>`
+     - Check if a pointer is accessible from the host, device, or managed memory
      - CCCL 3.2.0
      - CUDA 13.2
