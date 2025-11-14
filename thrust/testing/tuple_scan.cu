@@ -1,6 +1,7 @@
 #include <thrust/scan.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 #include <unittest/unittest.h>
 
@@ -15,18 +16,18 @@ struct SumTupleFunctor
   template <typename Tuple>
   _CCCL_HOST_DEVICE Tuple operator()(const Tuple& lhs, const Tuple& rhs)
   {
-    using thrust::get;
+    using cuda::std::get;
 
-    return thrust::make_tuple(get<0>(lhs) + get<0>(rhs), get<1>(lhs) + get<1>(rhs));
+    return cuda::std::tuple(get<0>(lhs) + get<0>(rhs), get<1>(lhs) + get<1>(rhs));
   }
 };
 
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE thrust::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
+  _CCCL_HOST_DEVICE cuda::std::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
   {
-    return thrust::make_tuple(lhs, rhs);
+    return cuda::std::tuple(lhs, rhs);
   }
 };
 

@@ -35,10 +35,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/functional.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::functional

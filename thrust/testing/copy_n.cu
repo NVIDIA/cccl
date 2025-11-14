@@ -205,7 +205,7 @@ void TestCopyNConstantIteratorToZipIterator()
   Vector v1(4, T(0));
   Vector v2(4, T(0));
 
-  thrust::copy_n(thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
+  thrust::copy_n(thrust::make_constant_iterator(cuda::std::tuple<T, T>(4, 7)),
                  v1.size(),
                  thrust::make_zip_iterator(v1.begin(), v2.begin()));
 
