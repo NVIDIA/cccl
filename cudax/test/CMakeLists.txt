@@ -68,6 +68,10 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     launch/configuration.cu
   )
 
+  cudax_add_catch2_test(test_target launch_config_dynamic_smem ${cudax_target}
+    launch/dynamic_shared_memory.cu
+  )
+
   cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/env.cu
     execution/policies/policies.cu

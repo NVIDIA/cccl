@@ -30,6 +30,8 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__utility/pair.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -37,7 +39,7 @@ namespace cuda_cub
 // overloads should be selected.
 
 template <typename T>
-_CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
+_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
   cudaError_t status = cudaMallocAsync(&ptr, sizeof(T) * n, nullptr);
@@ -56,7 +58,7 @@ _CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, 
     }
   }
 
-  return make_pair(reinterpret_pointer_cast<T*>(ptr), n);
+  return ::cuda::std::make_pair(reinterpret_pointer_cast<T*>(ptr), n);
 }
 
 template <typename Pointer>
@@ -82,7 +84,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 }
 
 template <typename T>
-_CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t>
+_CCCL_HOST ::cuda::std::pair<T*, ::cuda::std::ptrdiff_t>
 get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 {
   void* ptr;
@@ -102,7 +104,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
     }
   }
 
-  return make_pair(reinterpret_pointer_cast<T*>(ptr), n);
+  return ::cuda::std::make_pair(reinterpret_pointer_cast<T*>(ptr), n);
 }
 
 template <typename Pointer>

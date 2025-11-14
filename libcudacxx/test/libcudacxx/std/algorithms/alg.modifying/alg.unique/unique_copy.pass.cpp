@@ -18,7 +18,7 @@
 //   constexpr OutIter        // constexpr after C++17
 //   unique_copy(InIter first, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"

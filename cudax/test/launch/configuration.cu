@@ -143,10 +143,10 @@ auto configuration_test(
   SECTION("Priority and dynamic smem")
   {
     CUlaunchAttribute attrs[2];
-    const int priority = 42;
-    const int num_ints = 128;
+    constexpr int priority = 42;
+    constexpr int num_ints = 128;
     auto config =
-      cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int>(num_ints));
+      cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int[num_ints]>());
     expectedConfig.sharedMemBytes          = num_ints * sizeof(int);
     expectedConfig.numAttrs                = 1 + HasCluster;
     expectedConfig.attrs                   = &attrs[0];
@@ -168,7 +168,7 @@ auto configuration_test(
       int arr[13 * 1024];
     };
     CUlaunchAttribute attrs[1];
-    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
+    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S>(cudax::non_portable));
     expectedConfig.sharedMemBytes = sizeof(S);
     expectedConfig.numAttrs       = HasCluster;
     expectedConfig.attrs          = &attrs[0];

@@ -16,7 +16,7 @@
 //   constexpr void  // constexpr in C++20
 //   partial_sort(Iter first, Iter middle, Iter last, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

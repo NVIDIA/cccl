@@ -30,7 +30,8 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/temporary_buffer.h>
@@ -50,8 +51,8 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename DerivedPolicy, typename Pair>
-_CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
 down_cast_pair(Pair p)
 {
   // XXX should use a hypothetical thrust::static_pointer_cast here
@@ -59,15 +60,15 @@ down_cast_pair(Pair p)
     thrust::pointer<T, DerivedPolicy>(static_cast<T*>(thrust::raw_pointer_cast(p.first)));
 
   using result_type =
-    thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>;
+    ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>;
   return result_type(ptr, p.second);
 } // end down_cast_pair()
 } // namespace detail
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
