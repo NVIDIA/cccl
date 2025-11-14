@@ -25,6 +25,12 @@
 #  pragma system_header
 #endif // no system header
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ios>
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _RealType = double>
@@ -222,5 +228,7 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___RANDOM_NORMAL_DISTRIBUTION_H
