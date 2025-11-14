@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,16 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_DIMENSIONS_CUH
-#define _CUDAX__HIERARCHY_DIMENSIONS_CUH
+#ifndef _CUDA___HIERARCHY_DIMENSIONS_H
+#define _CUDA___HIERARCHY_DIMENSIONS_H
 
 #include <cuda/std/functional>
 #include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 template <class _Tp, size_t... _Extents>
 using dimensions = ::cuda::std::extents<_Tp, _Extents...>;
 
@@ -153,8 +153,8 @@ template <class _TyTrunc, class _Index, class _Dims>
        + __index.extent(0);
 }
 } // namespace __detail
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_DIMENSIONS_CUH
+#endif // _CUDA___HIERARCHY_DIMENSIONS_H

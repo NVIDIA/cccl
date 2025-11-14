@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
-//! `cuda::experimental::pinned_memory_resource` instead, which is the long-term replacement.
+//! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
 class legacy_pinned_memory_resource
 {
 public:

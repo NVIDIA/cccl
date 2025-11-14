@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,19 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
-#define _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
+#ifndef _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
+#define _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
 
+#include <cuda/__hierarchy/dimensions.h>
 #include <cuda/std/__type_traits/type_list.h>
-
-#include <cuda/experimental/__hierarchy/dimensions.cuh>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 namespace hierarchy
 {
 template <class _Unit, class _Level>
@@ -110,8 +109,9 @@ struct thread_level;
 
 /*
   Types to represent CUDA threads hierarchy levels
-  All metadata about the hierarchy level goes here including certain forward progress information
-  or what adjacent levels are valid in the hierarchy for validation.
+  All metadata about the hierarchy level goes here including certain forward
+  progress information or what adjacent levels are valid in the hierarchy for
+  validation.
 */
 
 /**
@@ -266,19 +266,19 @@ struct __dims_helper<cluster_level, grid_level>
   }
 };
 
-// Seems like a compiler bug, where NODISCARD is marked as ignored due to void return type,
-// while its not possible to ever have void return type here
+// Seems like a compiler bug, where NODISCARD is marked as ignored due to void
+// return type, while its not possible to ever have void return type here
 template <typename _Unit, typename _Level>
 /* [[nodiscard]] */ _CCCL_DEVICE auto __extents_impl()
 {
   if constexpr (::cuda::std::is_same_v<_Unit, _Level> || __can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return ::cuda::experimental::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::extents());
+    return ::cuda::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::extents());
   }
   else
   {
     using _SplitLevel = __detail::__default_unit_below<_Level>;
-    return ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(
+    return ::cuda::__detail::__dims_product<typename _Level::product_type>(
       __extents_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>());
   }
   _CCCL_UNREACHABLE();
@@ -289,13 +289,13 @@ template <typename _Unit, typename _Level>
 {
   if constexpr (::cuda::std::is_same_v<_Unit, _Level> || __detail::__can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return ::cuda::experimental::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::index());
+    return ::cuda::__detail::__dim3_to_dims(__dims_helper<_Unit, _Level>::index());
   }
   else
   {
     using _SplitLevel = __detail::__default_unit_below<_Level>;
-    return ::cuda::experimental::__detail::__dims_sum<typename _Level::product_type>(
-      ::cuda::experimental::__detail::__dims_product<typename _Level::product_type>(
+    return ::cuda::__detail::__dims_sum<typename _Level::product_type>(
+      ::cuda::__detail::__dims_product<typename _Level::product_type>(
         __index_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>()),
       __index_impl<_Unit, _SplitLevel>());
   }
@@ -309,15 +309,15 @@ namespace hierarchy
  * @brief Counts the number of entities in a CUDA hierarchy level
  *
  * Returns how many instances of Unit are in Level.
- * Unit and Level need to be core CUDA hierarchy levels, for example grid_level or block_level.
- * This function is also available as a level type member function, in that case it only takes
- * a unit argument.
+ * Unit and Level need to be core CUDA hierarchy levels, for example grid_level
+ * or block_level. This function is also available as a level type member
+ * function, in that case it only takes a unit argument.
  *
  * @par Snippet
  * @code
  * #include <cudax/hierarchy_dimensions.cuh>
  *
- * using namespace cuda::experimental;
+ * using namespace cuda;
  *
  * __global__ void kernel()
  * {
@@ -346,19 +346,20 @@ _CCCL_DEVICE auto count(const _Unit&, const _Level&)
 }
 
 /**
- * @brief Ranks an entity the calling thread belongs to in a CUDA hierarchy level
+ * @brief Ranks an entity the calling thread belongs to in a CUDA hierarchy
+ * level
  *
- * Returns a unique numeric rank within Level of the Unit that the calling thread belongs to.
- * Returned rank is always in range 0 to count - 1.
- * Unit and Level need to be core CUDA hierarchy levels, for example grid_level or block_level.
- * This function is also available as a level type member function, in that case it only takes
- * a unit argument.
+ * Returns a unique numeric rank within Level of the Unit that the calling
+ * thread belongs to. Returned rank is always in range 0 to count - 1. Unit and
+ * Level need to be core CUDA hierarchy levels, for example grid_level or
+ * block_level. This function is also available as a level type member function,
+ * in that case it only takes a unit argument.
  *
  * @par Snippet
  * @code
  * #include <cudax/hierarchy_dimensions.cuh>
  *
- * using namespace cuda::experimental;
+ * using namespace cuda;
  *
  * __global__ void kernel()
  * {
@@ -384,34 +385,36 @@ _CCCL_DEVICE auto rank(const _Unit&, const _Level&)
   static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
   if constexpr (__detail::__can_rhs_stack_on_lhs<_Unit, _Level>)
   {
-    return ::cuda::experimental::__detail::__index_to_linear<typename _Level::product_type>(
+    return ::cuda::__detail::__index_to_linear<typename _Level::product_type>(
       __detail::__index_impl<_Unit, _Level>(), __detail::__extents_impl<_Unit, _Level>());
   }
   else
   {
-    /* Its interesting that there is a need for else here, but using the above in all cases would result in
-        a different numbering scheme, where adjacent ranks in lower level would not be adjacent in this level */
+    /* Its interesting that there is a need for else here, but using the above
+       in all cases would result in a different numbering scheme, where adjacent
+       ranks in lower level would not be adjacent in this level */
     using _SplitLevel = __detail::__default_unit_below<_Level>;
     return rank<_SplitLevel, _Level>() * count<_Unit, _SplitLevel>() + rank<_Unit, _SplitLevel>();
   }
 }
 
 /**
- * @brief Returns extents of multi-dimensional index space of a CUDA hierarchy level
+ * @brief Returns extents of multi-dimensional index space of a CUDA hierarchy
+ * level
  *
- * Returned extents are in line with intrinsic CUDA dimensions vectors like blockDim and gridDim,
- * extentded to more unit/level combinations. Returns hierarchy_query_result, which can be used
- * like cuda::std::extents or dim3.
- * Unit and Level need to be a core CUDA hierarchy levels, for example grid_level or block_level.
- * This function is also available as a level type member function, in that case it only takes
- * a unit argument.
+ * Returned extents are in line with intrinsic CUDA dimensions vectors like
+ * blockDim and gridDim, extentded to more unit/level combinations. Returns
+ * hierarchy_query_result, which can be used like cuda::std::extents or dim3.
+ * Unit and Level need to be a core CUDA hierarchy levels, for example
+ * grid_level or block_level. This function is also available as a level type
+ * member function, in that case it only takes a unit argument.
  *
  * @par Snippet
  * @code
  * #include <cudax/hierarchy_dimensions.cuh>
  * #include <cassert>
  *
- * using namespace cuda::experimental;
+ * using namespace cuda;
  *
  * __global__ void kernel()
  * {
@@ -422,7 +425,8 @@ _CCCL_DEVICE auto rank(const _Unit&, const _Level&)
  *     assert(grid_dims == gridDim);
  *
  *     // Or using the level types as template arguments
- *     auto grid_dims_in_threads = hierarchy::extents<thread_level, grid_level>();
+ *     auto grid_dims_in_threads = hierarchy::extents<thread_level,
+ * grid_level>();
  * }
  * @endcode
  * @par
@@ -437,25 +441,26 @@ template <typename _Unit, typename _Level>
 _CCCL_DEVICE auto extents(const _Unit&, const _Level&)
 {
   static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
-  return ::cuda::experimental::__detail::__convert_to_query_result(__detail::__extents_impl<_Unit, _Level>());
+  return ::cuda::__detail::__convert_to_query_result(__detail::__extents_impl<_Unit, _Level>());
 }
 
 /**
- * @brief Returns a 3-dimensional index of an entity the calling thread belongs to in a CUDA hierarchy level
+ * @brief Returns a 3-dimensional index of an entity the calling thread belongs
+ * to in a CUDA hierarchy level
  *
- * Returned index is in line with intrinsic CUDA indexing like threadIdx and blockIdx,
- * extentded to more unit/level combinations. Returns a hierarchy_query_result object, which can be used
- * like cuda::std::extents or dim3.
- * Unit and Level need to be a core CUDA hierarchy levels, for example grid_level or block_level.
- * This function is also available as a level type member function, in that case it only takes
- * a unit argument.
+ * Returned index is in line with intrinsic CUDA indexing like threadIdx and
+ * blockIdx, extentded to more unit/level combinations. Returns a
+ * hierarchy_query_result object, which can be used like cuda::std::extents or
+ * dim3. Unit and Level need to be a core CUDA hierarchy levels, for example
+ * grid_level or block_level. This function is also available as a level type
+ * member function, in that case it only takes a unit argument.
  *
  * @par Snippet
  * @code
  * #include <cudax/hierarchy_dimensions.cuh>
  * #include <cassert>
  *
- * using namespace cuda::experimental;
+ * using namespace cuda;
  *
  * __global__ void kernel()
  * {
@@ -481,11 +486,11 @@ template <typename _Unit, typename _Level>
 _CCCL_DEVICE auto index(const _Unit&, const _Level&)
 {
   static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
-  return ::cuda::experimental::__detail::__convert_to_query_result(__detail::__index_impl<_Unit, _Level>());
+  return ::cuda::__detail::__convert_to_query_result(__detail::__index_impl<_Unit, _Level>());
 }
 } // namespace hierarchy
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
+#endif // _CUDA___HIERARCHY_HIERARCHY_LEVELS_H

@@ -38,7 +38,7 @@ struct kernel_run_proof_check
 
 void check_kernel_run(cudax::path_builder& pb)
 {
-  cudax::launch(pb, cudax::make_config(cudax::block_dims<1>, cudax::grid_dims<1>), kernel_run_proof_check{});
+  cudax::launch(pb, cudax::make_config(cuda::block_dims<1>, cuda::grid_dims<1>), kernel_run_proof_check{});
 }
 
 struct functor_int_argument
@@ -55,8 +55,8 @@ struct functor_taking_config
   template <typename Config>
   __device__ void operator()(Config config, int grid_size)
   {
-    static_assert(config.dims.static_count(cudax::thread, cudax::block) == BlockSize);
-    CUDAX_REQUIRE(config.dims.count(cudax::block, cudax::grid) == grid_size);
+    static_assert(config.dims.static_count(cuda::thread, cuda::block) == BlockSize);
+    CUDAX_REQUIRE(config.dims.count(cuda::block, cuda::grid) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -167,7 +167,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
   {
     const int grid_size      = 4;
     constexpr int block_size = 256;
-    auto dimensions          = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto dimensions          = cuda::make_hierarchy(cuda::grid_dims(grid_size), cuda::block_dims<256>());
     auto config              = cudax::make_config(dimensions);
 
     // Not taking dims
@@ -247,8 +247,8 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
   // Lambda
   {
-    cudax::launch(dst, cudax::block_dims<256>() & cudax::grid_dims(1), [] __device__(auto config) {
-      if (config.dims.rank(cudax::thread, cudax::block) == 0)
+    cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__(auto config) {
+      if (config.dims.rank(cuda::thread, cuda::block) == 0)
       {
         printf("Hello from the GPU\n");
         kernel_run_proof = true;
@@ -259,7 +259,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
   // Dynamic shared memory option
   {
-    auto config = cudax::block_dims<32>() & cudax::grid_dims<1>();
+    auto config = cuda::block_dims<32>() & cuda::grid_dims<1>();
 
     auto test = [&](const auto& input_config) {
       // Single element
@@ -350,12 +350,12 @@ struct kernel_with_default_config
 void test_default_config()
 {
   cudax::stream stream{cuda::device_ref{0}};
-  auto grid  = cudax::grid_dims(4);
-  auto block = cudax::block_dims<256>;
+  auto grid  = cuda::grid_dims(4);
+  auto block = cuda::block_dims<256>;
 
   auto verify_lambda = [] __device__(auto config) {
-    static_assert(config.dims.count(cudax::thread, cudax::block) == 256);
-    CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
+    static_assert(config.dims.count(cuda::thread, cuda::block) == 256);
+    CUDAX_REQUIRE(config.dims.count(cuda::block) == 4);
     cooperative_groups::this_grid().sync();
   };
 
@@ -376,7 +376,7 @@ void test_default_config()
   }
   SECTION("Combine with overlap")
   {
-    kernel_with_default_config kernel{cudax::make_config(cudax::block_dims<1>, cudax::cooperative_launch())};
+    kernel_with_default_config kernel{cudax::make_config(cuda::block_dims<1>, cudax::cooperative_launch())};
     cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
     stream.sync();
   }

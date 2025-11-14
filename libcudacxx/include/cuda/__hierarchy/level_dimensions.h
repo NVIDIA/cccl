@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,29 +8,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH
-#define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH
+#ifndef _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
+#define _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
 
+#include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 namespace __detail
 {
-/* Keeping it around in case issues like https://github.com/NVIDIA/cccl/issues/522
-template <typename T, size_t... Extents>
-struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
+/* Keeping it around in case issues like
+https://github.com/NVIDIA/cccl/issues/522 template <typename T, size_t...
+Extents> struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
     using ::cuda::std::extents<T, Extents...>::extents;
 
     template <typename ::cuda::std::extents<T, Extents...>::rank_type Id>
     _CCCL_HOST_DEVICE constexpr auto extent_corrected() const {
-        if constexpr (::cuda::std::extents<T, Extents...>::static_extent(Id) != ::cuda::std::dynamic_extent) {
-            return this->static_extent(Id);
+        if constexpr (::cuda::std::extents<T, Extents...>::static_extent(Id) !=
+::cuda::std::dynamic_extent) { return this->static_extent(Id);
         }
         else {
             return this->extent(Id);
@@ -80,9 +79,9 @@ struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
  * @brief Type representing dimensions of a level in a thread hierarchy.
  *
  * This type combines a level type like grid_level or block_level with
- * a cuda::std::extents object to describe dimensions of a level in a thread hierarchy.
- * This type is not intended to be created explicitly and *_dims functions
- * creating them should be used instead. They will translate the input
+ * a cuda::std::extents object to describe dimensions of a level in a thread
+ * hierarchy. This type is not intended to be created explicitly and *_dims
+ * functions creating them should be used instead. They will translate the input
  * arguments to a correct cuda::std::extents to be stored inside
  * level_dimensions.
  * While this type can be used to access the stored dimensions,
@@ -129,7 +128,8 @@ struct level_dimensions
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
-#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
+#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
+      // _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const level_dimensions& __left, const level_dimensions& __right) noexcept
   {
@@ -147,7 +147,8 @@ struct level_dimensions
 /**
  * @brief Creates an instance of level_dimensions describing grid_level
  *
- * This function creates a statically sized level from up to three template arguments.
+ * This function creates a statically sized level from up to three template
+ * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
@@ -171,7 +172,8 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(_Dims __dims) noexcept
 /**
  * @brief Creates an instance of level_dimensions describing cluster_level
  *
- * This function creates a statically sized level from up to three template arguments.
+ * This function creates a statically sized level from up to three template
+ * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
@@ -195,7 +197,8 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(_Dims __dims) noexcept
 /**
  * @brief Creates an instance of level_dimensions describing block_level
  *
- * This function creates a statically sized level from up to three template arguments.
+ * This function creates a statically sized level from up to three template
+ * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
 _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
@@ -215,8 +218,8 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(_Dims __dims) noexcept
   auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
   return level_dimensions<block_level, decltype(__translated_dims)>(__translated_dims);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH
+#endif // _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
