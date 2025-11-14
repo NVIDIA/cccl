@@ -430,7 +430,8 @@ private:
     static_assert(has_level<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>);
     static_assert(has_level_or_unit<_Unit, hierarchy_dimensions<_BottomUnit, _Levels...>>);
     static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
-    return ::cuda::std::apply(__detail::__get_levels_range<_Level, _Unit, _Levels...>, __levels);
+    auto __fn = __detail::__get_levels_range<_Level, _Unit, _Levels...>;
+    return ::cuda::std::apply(__fn, __levels);
   }
 
   // TODO is this useful enough to expose?

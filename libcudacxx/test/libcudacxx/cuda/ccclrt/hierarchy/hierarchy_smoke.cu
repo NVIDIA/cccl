@@ -486,6 +486,8 @@ __global__ void examples_kernel(Hierarchy hierarchy)
 // Test examples from the inline rst documentation
 C2H_TEST("Examples", "[hierarchy]")
 {
+  // GCC 7 complains here that the hierarchy was not declared constexpr
+#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 7)
   {
     auto hierarchy = cuda::make_hierarchy(cuda::grid_dims(256), cuda::cluster_dims<4>(), cuda::block_dims<8, 8, 8>());
     auto fragment  = hierarchy.fragment(cuda::block, cuda::grid);
@@ -512,6 +514,7 @@ C2H_TEST("Examples", "[hierarchy]")
     CCCLRT_REQUIRE(hierarchy.extents().extent(0) == 256 * 4 * 8);
     CCCLRT_REQUIRE(hierarchy.extents(cuda::cluster).extent(0) == 256);
   }
+#endif
   {
     [[maybe_unused]] auto hierarchy =
       cuda::make_hierarchy(cuda::grid_dims(256), cuda::cluster_dims<4>(), cuda::block_dims<8, 8, 8>());
