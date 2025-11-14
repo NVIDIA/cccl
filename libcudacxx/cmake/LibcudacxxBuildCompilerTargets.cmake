@@ -35,19 +35,6 @@ function(libcudacxx_build_compiler_targets)
     "${cxx_compile_definitions}"
   )
 
-  # Specifically add libc++ testing if requested
-  if (CCCL_USE_LIBCXX) # Not working currently because catch2 is not building with libc++
-    target_compile_definitions(
-      libcudacxx.compiler_interface
-      INTERFACE _ALLOW_UNSUPPORTED_LIBCPP=1
-    )
-    target_compile_options(
-      libcudacxx.compiler_interface
-      INTERFACE -stdlib=libc++
-    )
-    target_link_options(libcudacxx.compiler_interface INTERFACE -stdlib=libc++)
-  endif()
-
   # libcudacxx only builds a single dialect at a time, so link to the currently
   # selected dialect target from cccl:
   target_link_libraries(

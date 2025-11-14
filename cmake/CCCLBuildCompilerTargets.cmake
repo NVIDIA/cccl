@@ -226,6 +226,19 @@ function(cccl_build_compiler_targets)
       $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
 
+  # Specifically add libc++ testing if requested
+  if (CCCL_USE_LIBCXX) # Not working currently because catch2 is not building with libc++
+    target_compile_definitions(
+      cccl.compiler_interface
+      INTERFACE _ALLOW_UNSUPPORTED_LIBCPP=1
+    )
+    target_compile_options(
+      cccl.compiler_interface
+      INTERFACE -stdlib=libc++
+    )
+    target_link_options(cccl.compiler_interface INTERFACE -stdlib=libc++)
+  endif()
+
   # These targets are used for dialect-specific options:
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
