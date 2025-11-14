@@ -13,7 +13,7 @@
 //   constexpr Iter::difference_type   // constexpr after C++17
 //   count(Iter first, Iter last, const T& value);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

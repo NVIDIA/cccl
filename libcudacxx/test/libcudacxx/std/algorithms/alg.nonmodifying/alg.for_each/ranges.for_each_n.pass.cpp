@@ -14,7 +14,7 @@
 //   constexpr ranges::for_each_n_result<I, Fun>
 //     ranges::for_each_n(I first, iter_difference_t<I> n, Fun f, Proj proj = {});
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>
