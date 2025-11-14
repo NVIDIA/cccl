@@ -243,14 +243,8 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
-        decltype(d_in),
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>;
+      using dispatch_t = cub::detail::reduce::
+        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
 
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
@@ -367,14 +361,8 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
-        decltype(d_in),
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>;
+      using dispatch_t = cub::detail::reduce::
+        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
 
       REQUIRE(cudaSuccess
               == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
