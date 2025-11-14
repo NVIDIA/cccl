@@ -53,63 +53,67 @@ This example demonstrates work-stealing at thread-block granularity using this A
 
 .. code:: cuda
 
-   // Before:
+  // Before:
 
-   #include <cuda/math>
-   #include <cuda/functional>
-   __global__ void vec_add(int* a, int* b, int* c, int n) {
-     // Extract common prologue outside the lambda, e.g.,
-     // - __shared__ or global (malloc) memory allocation
-     // - common initialization code
-     // - etc.
+  #include <cuda/cmath>
+  #include <cuda/work_stealing>
+  #include <iostream>
 
-     cuda::device::for_each_canceled_block<1>([=](dim3 block_idx) {
-       // block_idx may be different than the built-in blockIdx variable, that is:
-       // assert(block_idx == blockIdx); // may fail!
-       // so we need to use "block_idx" consistently inside for_each_canceled:
-       int idx = threadIdx.x + block_idx.x * blockDim.x;
-       if (idx < n) {
-         c[idx] += a[idx] + b[idx];
-       }
-     });
-     // Note: Calling for_each_canceled_block<1> again from this
-     // thread block exhibits undefined behavior.
+  __global__ void vec_add(int* a, int* b, int* c, int n) {
+    // Extract common prologue outside the lambda, e.g.,
+    // - __shared__ or global (malloc) memory allocation
+    // - common initialization code
+    // - etc.
 
-     // Extract common epilogue outside the lambda, e.g.,
-     // - write back shared memory to global memory
-     // - external synchronization
-     // - global memory deallocation (free)
-     // - etc.
-   }
-
-   int main() {
-    int N = 10000;
-    int *a, *b, *c;
-    cudaMallocManaged(&a, N * sizeof(int));
-    cudaMallocManaged(&b, N * sizeof(int));
-    cudaMallocManaged(&c, N * sizeof(int));
-    for (int i = 0; i < N; ++i) {
-      a[i] = i;
-      b[i] = 1;
-      c[i] = 0;
-    }
-
-    const int threads_per_block = 256;
-    const int blocks_per_grid = cuda::ceil_div(N, threads_per_block);
-
-    vec_add<<<blocks_per_grid, threads_per_block>>>(a, b, c, N);
-    cudaDeviceSynchronize();
-
-    bool success = true;
-    for (int i = 0; i < N; ++i) {
-      if (c[i] != (1 + i)) {
-	std::cerr << "ERROR " << i << ", " << c[i] << std::endl;
-	success = false;
+    cuda::device::for_each_canceled_block<1>([=](dim3 block_idx) {
+      // block_idx may be different than the built-in blockIdx variable, that is:
+      // assert(block_idx == blockIdx); // may fail!
+      // so we need to use "block_idx" consistently inside for_each_canceled:
+      int idx = threadIdx.x + block_idx.x * blockDim.x;
+      if (idx < n) {
+        c[idx] += a[idx] + b[idx];
       }
-    }
-    cudaFree(a);
-    cudaFree(b);
-    cudaFree(c);
+    });
+    // Note: Calling for_each_canceled_block<1> again from this
+    // thread block exhibits undefined behavior.
 
-    return success? 0 : 1;
-   }
+    // Extract common epilogue outside the lambda, e.g.,
+    // - write back shared memory to global memory
+    // - external synchronization
+    // - global memory deallocation (free)
+    // - etc.
+  }
+
+  int main() {
+  int N = 10000;
+  int *a, *b, *c;
+  cudaMallocManaged(&a, N * sizeof(int));
+  cudaMallocManaged(&b, N * sizeof(int));
+  cudaMallocManaged(&c, N * sizeof(int));
+  for (int i = 0; i < N; ++i) {
+    a[i] = i;
+    b[i] = 1;
+    c[i] = 0;
+  }
+
+  const int threads_per_block = 256;
+  const int blocks_per_grid = cuda::ceil_div(N, threads_per_block);
+
+  vec_add<<<blocks_per_grid, threads_per_block>>>(a, b, c, N);
+  cudaDeviceSynchronize();
+
+  bool success = true;
+  for (int i = 0; i < N; ++i) {
+    if (c[i] != (1 + i)) {
+      std::cerr << "ERROR " << i << ", " << c[i] << std::endl;
+      success = false;
+    }
+  }
+  cudaFree(a);
+  cudaFree(b);
+  cudaFree(c);
+
+  return success? 0 : 1;
+  }
+
+[Try it live on Godbolt!](https://godbolt.org/z/Ksj4vsfWf)
