@@ -848,6 +848,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <cuda/std/__chrono/file_clock.h>
 #include <cuda/std/__chrono/hh_mm_ss.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
+#include <cuda/std/__chrono/literals.h>
 #include <cuda/std/__chrono/month.h>
 #include <cuda/std/__chrono/month_day.h>
 #include <cuda/std/__chrono/month_weekday.h>
@@ -875,124 +876,11 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 
 #include <cuda/std/__cccl/prologue.h>
 
-// Silence NVCC warnings `long double` arising from chrono floating pointer
-// user-defined literals which are defined in terms of `long double`.
-
-// FIXME: There is currently no way to disable this diagnostic in a fine-grained
-// fashion; if you include this header, the diagnostic will be suppressed
-// throughout the translation unit. The alternative is loosing (conforming)
-// chrono user-defined literals; this seems like the lesser of two evils, so...
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
-#define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
 } // namespace chrono
-
-// GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
-// but have no way of disabling that. Use the system_header pragma on those GCC versions
-// for the remainder of this file, even if it has been requested to disable the pragma
-// earlier.
-#if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
-#  pragma GCC system_header
-#endif
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
-_CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
-_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506) // a user-provided literal suffix must begin with "_"
-
-// Suffixes for duration literals [time.duration.literals]
-inline namespace literals
-{
-inline namespace chrono_literals
-{
-_CCCL_API constexpr chrono::hours operator""h(unsigned long long __h)
-{
-  return chrono::hours(static_cast<chrono::hours::rep>(__h));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600, 1>> operator""h(long double __h)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<3600, 1>>(__h);
-}
-
-_CCCL_API constexpr chrono::minutes operator""min(unsigned long long __m)
-{
-  return chrono::minutes(static_cast<chrono::minutes::rep>(__m));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60, 1>> operator""min(long double __m)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, ratio<60, 1>>(__m);
-}
-
-_CCCL_API constexpr chrono::seconds operator""s(unsigned long long __s)
-{
-  return chrono::seconds(static_cast<chrono::seconds::rep>(__s));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T> operator""s(long double __s)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T>(__s);
-}
-
-_CCCL_API constexpr chrono::milliseconds operator""ms(unsigned long long __ms)
-{
-  return chrono::milliseconds(static_cast<chrono::milliseconds::rep>(__ms));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli> operator""ms(long double __ms)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, milli>(__ms);
-}
-
-_CCCL_API constexpr chrono::microseconds operator""us(unsigned long long __us)
-{
-  return chrono::microseconds(static_cast<chrono::microseconds::rep>(__us));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro> operator""us(long double __us)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, micro>(__us);
-}
-
-_CCCL_API constexpr chrono::nanoseconds operator""ns(unsigned long long __ns)
-{
-  return chrono::nanoseconds(static_cast<chrono::nanoseconds::rep>(__ns));
-}
-
-_CCCL_API constexpr chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> operator""ns(long double __ns)
-{
-  return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano>(__ns);
-}
-
-#if _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
-_CCCL_API constexpr chrono::day operator""d(unsigned long long __d) noexcept
-{
-  return chrono::day(static_cast<unsigned>(__d));
-}
-
-_CCCL_API constexpr chrono::year operator""y(unsigned long long __y) noexcept
-{
-  return chrono::year(static_cast<int>(__y));
-}
-#endif // _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
-} // namespace chrono_literals
-} // namespace literals
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-_CCCL_DIAG_POP
-
-namespace chrono
-{ // hoist the literals into namespace std::chrono
-using namespace literals::chrono_literals;
-}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
