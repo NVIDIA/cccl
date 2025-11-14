@@ -280,7 +280,7 @@ struct DispatchUniqueByKey
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[2] = {nullptr, nullptr};
     if (const auto error =
-          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
