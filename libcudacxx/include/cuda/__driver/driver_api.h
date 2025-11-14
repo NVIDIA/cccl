@@ -339,7 +339,8 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
-_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
@@ -468,6 +469,10 @@ template <::CUpointer_attribute _Attr>
   {
     return int{};
   }
+  else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE)
+  {
+    return ::CUmemoryPool{};
+  }
   else
   {
     static_assert(::cuda::std::__always_false_v<decltype(_Attr)>, "not implemented attribute");
@@ -495,6 +500,15 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
       static_cast<::cudaError_t>(__driver_fn((void*) &__result, _Attr, reinterpret_cast<::CUdeviceptr>(__ptr)));
   }
   return __status;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
+  return static_cast<::cudaError_t>(
+    __driver_fn(static_cast<unsigned>(_Np), __attrs, __results, reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
 
 // Stream management
