@@ -18,12 +18,12 @@
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -115,7 +115,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp = ::cuda::std::less<>>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_begin,
   KeysIt1 keys1_end,

@@ -46,7 +46,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
-#  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
@@ -55,12 +54,13 @@
 
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -70,7 +70,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -101,7 +101,7 @@ struct DispatchUniqueByKey
     ValOutputIt values_out,
     OffsetT num_items,
     BinaryPred binary_pred,
-    pair<KeyOutputIt, ValOutputIt>& result_end)
+    ::cuda::std::pair<KeyOutputIt, ValOutputIt>& result_end)
   {
     cudaError_t status         = cudaSuccess;
     cudaStream_t stream        = cuda_cub::stream(policy);
@@ -122,7 +122,7 @@ struct DispatchUniqueByKey
       stream);
     _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
@@ -134,7 +134,7 @@ struct DispatchUniqueByKey
     // Return for empty problems
     if (num_items == 0)
     {
-      result_end = thrust::make_pair(keys_out, values_out);
+      result_end = ::cuda::std::make_pair(keys_out, values_out);
       return status;
     }
 
@@ -160,7 +160,7 @@ struct DispatchUniqueByKey
     _CUDA_CUB_RET_IF_FAIL(status);
     OffsetT num_selected = get_value(policy, d_num_selected_out);
 
-    result_end = thrust::make_pair(keys_out + num_selected, values_out + num_selected);
+    result_end = ::cuda::std::make_pair(keys_out + num_selected, values_out + num_selected);
     return status;
   }
 };
@@ -171,7 +171,7 @@ template <typename Derived,
           typename KeyOutputIt,
           typename ValOutputIt,
           typename BinaryPred>
-THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeyOutputIt, ValOutputIt> unique_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -183,7 +183,7 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
   using size_type = thrust::detail::it_difference_t<KeyInputIt>;
 
   size_type num_items = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
-  pair<KeyOutputIt, ValOutputIt> result_end{};
+  ::cuda::std::pair<KeyOutputIt, ValOutputIt> result_end{};
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 
@@ -244,7 +244,7 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
 //-------------------------
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -253,7 +253,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   ValOutputIt values_result,
   BinaryPred binary_pred)
 {
-  auto ret = thrust::make_pair(keys_result, values_result);
+  auto ret = ::cuda::std::make_pair(keys_result, values_result);
   THRUST_CDP_DISPATCH(
     (ret = detail::unique_by_key(policy, keys_first, keys_last, values_first, keys_result, values_result, binary_pred);),
     (ret = thrust::unique_by_key_copy(
@@ -262,7 +262,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -276,14 +276,14 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class BinaryPred>
-pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE unique_by_key(
+::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE unique_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
   ValInputIt values_first,
   BinaryPred binary_pred)
 {
-  auto ret = thrust::make_pair(keys_first, values_first);
+  auto ret = ::cuda::std::make_pair(keys_first, values_first);
   THRUST_CDP_DISPATCH(
     (ret = cuda_cub::unique_by_key_copy(
        policy, keys_first, keys_last, values_first, keys_first, values_first, binary_pred);),
@@ -292,7 +292,7 @@ pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE unique_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt>
-pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
+::cuda::std::pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInputIt keys_last, ValInputIt values_first)
 {
   using key_type = thrust::detail::it_value_t<KeyInputIt>;

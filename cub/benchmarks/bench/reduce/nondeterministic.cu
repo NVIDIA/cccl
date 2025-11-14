@@ -58,7 +58,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using output_t    = T;
   using op_t        = cuda::std::plus<>;
   using init_t      = T;
-  using dispatch_t  = cub::detail::DispatchReduceNondeterministic<
+  using dispatch_t  = cub::detail::reduce::dispatch_nondeterministic_t<
      input_it_t,
      output_it_t,
      offset_t,

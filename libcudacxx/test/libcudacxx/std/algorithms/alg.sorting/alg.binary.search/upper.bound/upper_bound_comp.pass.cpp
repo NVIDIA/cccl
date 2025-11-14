@@ -14,7 +14,7 @@
 //   constexpr Iter    // constexpr after c++17
 //   upper_bound(Iter first, Iter last, const T& value, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>

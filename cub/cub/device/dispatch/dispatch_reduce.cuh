@@ -34,6 +34,7 @@
 #include <cuda/std/cstdint>
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
+#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -303,7 +304,7 @@ struct DispatchReduce
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
     if (const auto error =
-          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
