@@ -36,8 +36,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] static ::cudaMemPool_t __get_default_managed_pool()
 {
-  return ::cuda::__driver::__getDefaultMemPool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
+  return _CCCL_TRY_DRIVER_API(
+    __getDefaultMemPool(::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED));
 }
 
 //! @rst
@@ -112,9 +112,9 @@ struct managed_memory_pool : managed_memory_pool_ref
 
   // TODO add a constructor that accepts memory location one a type for it is added
 
-  ~managed_memory_pool() noexcept
+  ~managed_memory_pool()
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    _CCCL_ASSERT_DRIVER_API(__mempoolDestroy(__pool_));
   }
 
   _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept

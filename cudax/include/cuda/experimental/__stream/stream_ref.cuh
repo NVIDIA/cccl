@@ -75,12 +75,12 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if _CCCL_CTK_AT_LEAST(12, 5)
-    if (::cuda::__driver::__version_at_least(12, 5))
+    if (_CCCL_TRY_DRIVER_API(__version_at_least(12, 5)))
     {
-      auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
+      auto __ctx = _CCCL_TRY_DRIVER_API(__streamGetCtx_v2(__stream));
       if (__ctx.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
+        __stream_ctx = _CCCL_TRY_DRIVER_API(__ctxFromGreenCtx(__ctx.__ctx_green_));
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -92,7 +92,7 @@ struct stream_ref : ::cuda::stream_ref
     else
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
     {
-      __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
+      __stream_ctx = _CCCL_TRY_DRIVER_API(__streamGetCtx(__stream));
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
