@@ -3501,6 +3501,64 @@ representing the sequence <code class="docutils literal notranslate"><span class
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.iterators.DiscardIterator">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.iterators.</span></span><span class="sig-name descname"><span class="pre">DiscardIterator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.iterators.DiscardIterator" title="Link to this definition">#</a></dt>
+<dd><p>Returns an Input or Output Iterator that discards all values written to it.</p>
+<p>Similar to <a class="reference external" href="https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html">https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html</a></p>
+<p class="rubric">Example</p>
+<p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">DiscardIterator</span></code> to discard items in a unique by key operation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use DiscardIterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DiscardIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">h_in_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>
+<span class="n">d_in_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_in_keys</span><span class="p">)</span>
+<span class="n">d_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in_keys</span><span class="p">)</span>
+<span class="n">d_out_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the discard iterator for values.</span>
+<span class="n">d_in_values</span> <span class="o">=</span> <span class="n">DiscardIterator</span><span class="p">()</span>
+<span class="n">d_out_values</span> <span class="o">=</span> <span class="n">DiscardIterator</span><span class="p">()</span>
+
+<span class="c1"># Perform the unique by key operation.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">unique_by_key</span><span class="p">(</span>
+    <span class="n">d_in_keys</span><span class="p">,</span>
+    <span class="n">d_in_values</span><span class="p">,</span>
+    <span class="n">d_out_keys</span><span class="p">,</span>
+    <span class="n">d_out_values</span><span class="p">,</span>
+    <span class="n">d_out_num_selected</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">EQUAL_TO</span><span class="p">,</span>
+    <span class="n">d_in_keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_num_selected</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">h_out_keys</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out_keys</span><span class="p">)[:</span><span class="n">num_selected</span><span class="p">]</span>
+
+<span class="n">expected_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">h_out_keys</span><span class="p">,</span> <span class="n">expected_keys</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Discard iterator result - keys: </span><span class="si">{</span><span class="n">h_out_keys</span><span class="si">}</span><span class="s2">, count: </span><span class="si">{</span><span class="n">num_selected</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">DiscardIterator</span></code> object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="cuda.compute.iterators.PermutationIterator">
 <span class="sig-prename descclassname"><span class="pre">cuda.compute.iterators.</span></span><span class="sig-name descname"><span class="pre">PermutationIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.iterators.PermutationIterator" title="Link to this definition">#</a></dt>
 <dd><p>Returns an Iterator that accesses values through an index mapping.</p>
@@ -4123,6 +4181,7 @@ the smallest and the largest absolute values:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.CacheModifiedInputIterator"><code class="docutils literal notranslate"><span class="pre">CacheModifiedInputIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.ConstantIterator"><code class="docutils literal notranslate"><span class="pre">ConstantIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.CountingIterator"><code class="docutils literal notranslate"><span class="pre">CountingIterator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.DiscardIterator"><code class="docutils literal notranslate"><span class="pre">DiscardIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.PermutationIterator"><code class="docutils literal notranslate"><span class="pre">PermutationIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.ReverseIterator"><code class="docutils literal notranslate"><span class="pre">ReverseIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.iterators.TransformIterator"><code class="docutils literal notranslate"><span class="pre">TransformIterator()</span></code></a></li>
