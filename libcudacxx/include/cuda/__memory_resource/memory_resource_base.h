@@ -21,23 +21,28 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/__device/attributes.h>
-#include <cuda/__device/device_ref.h>
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/__stream/internal_streams.h>
-#include <cuda/__stream/stream.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/cstddef>
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__device/attributes.h>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/internal_streams.h>
+#  include <cuda/__stream/stream.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/cstddef>
+
+#  include <stdexcept>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -70,7 +75,7 @@ struct __pool_attr_impl
     }
     else
     {
-      ::cuda::std::__throw_invalid_argument("This attribute can't be set");
+      _CCCL_THROW(::std::invalid_argument("This attribute can't be set"));
     }
   }
 };
@@ -108,7 +113,7 @@ inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_at
 {
   if (__value != 0)
   {
-    ::cuda::std::__throw_invalid_argument("This attribute can't be set to a non-zero value.");
+    _CCCL_THROW(::std::invalid_argument("This attribute can't be set to a non-zero value."));
   }
   ::cuda::__driver::__mempoolSetAttribute(__pool, __attr, &__value);
 }
@@ -177,8 +182,8 @@ inline void __verify_device_supports_stream_ordered_allocations(const device_ref
 {
   if (!__device.attribute(::cuda::device_attributes::memory_pools_supported))
   {
-    ::cuda::__throw_cuda_error(
-      ::cudaErrorNotSupported, "stream-ordered allocations are not supported on the given device");
+    _CCCL_THROW(
+      cuda_error(::cudaErrorNotSupported, "stream-ordered allocations are not supported on the given device"));
   }
 }
 
@@ -195,19 +200,19 @@ inline void __verify_device_supports_export_handle_type(
     return;
   }
   if (__location.type != ::CU_MEM_LOCATION_TYPE_DEVICE
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
       && __location.type != ::CU_MEM_LOCATION_TYPE_HOST_NUMA
-#endif
+#  endif
   )
   {
-    ::cuda::__throw_cuda_error(
-      ::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location");
+    _CCCL_THROW(
+      cuda_error(::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location"));
   }
   auto __supported_handles = __device.attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
   if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
   {
-    ::cuda::__throw_cuda_error(
-      ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
+    _CCCL_THROW(
+      cuda_error(::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device"));
   }
 }
 
@@ -267,31 +272,31 @@ struct memory_pool_properties
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
 
-#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   if (__properties.max_pool_size != 0)
   {
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#    if _CCCL_CTK_AT_LEAST(13, 0)
     if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
     {
-      ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
+      _CCCL_THROW(::std::invalid_argument("Max pool size is not supported for managed memory pools"));
     }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#    endif // _CCCL_CTK_AT_LEAST(13, 0)
     if (__properties.initial_pool_size > __properties.max_pool_size)
     {
-      ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
+      _CCCL_THROW(::std::invalid_argument("Initial pool size must be less than the max pool size"));
     }
   }
   __pool_properties.maxSize = __properties.max_pool_size;
-#else
+#  else
   if (__properties.max_pool_size != 0)
   {
-    ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
+    _CCCL_THROW(::std::invalid_argument("Max pool size is not supported on this CUDA version"));
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
-    ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the release threshold");
+    _CCCL_THROW(::std::invalid_argument("Initial pool size must be less than the release threshold"));
   }
 
   ::CUmemoryPool __cuda_pool_handle{};
@@ -303,7 +308,7 @@ struct memory_pool_properties
     ::cuda::__verify_device_supports_export_handle_type(__location.id, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
-    ::cuda::__throw_cuda_error(__error, "Failed to create a memory pool");
+    _CCCL_THROW(cuda_error(__error, "Failed to create a memory pool"));
   }
 
   ::cuda::__driver::__mempoolSetAttribute(
@@ -317,7 +322,7 @@ struct memory_pool_properties
       __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
     if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
+      _CCCL_THROW(cuda_error(::cudaErrorMemoryAllocation, "Failed to allocate initial pool size"));
     }
   }
   return __cuda_pool_handle;
@@ -357,9 +362,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "__memory_resource_base::allocate_sync.");
+      _CCCL_THROW(::std::invalid_argument("Invalid alignment passed to __memory_resource_base::allocate_sync."));
     }
 
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
@@ -399,9 +402,7 @@ public:
   {
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument(
-        "Invalid alignment passed to "
-        "__memory_resource_base::allocate.");
+      _CCCL_THROW(::std::invalid_argument("Invalid alignment passed to __memory_resource_base::allocate."));
     }
 
     return allocate(__stream, __bytes);
@@ -561,18 +562,20 @@ public:
     return __pool_ == __rhs.__pool_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
   [[nodiscard]] _CCCL_HOST_API bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 };
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H

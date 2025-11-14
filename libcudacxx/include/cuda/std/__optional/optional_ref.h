@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/optional.h>
 #include <cuda/std/__memory/addressof.h>
@@ -239,7 +240,7 @@ public:
     return __value_ != nullptr;
   }
 
-  _CCCL_API constexpr _Tp& value() const noexcept
+  _CCCL_API constexpr _Tp& value() const
   {
     if (__value_ != nullptr)
     {
@@ -247,7 +248,7 @@ public:
     }
     else
     {
-      __throw_bad_optional_access();
+      _CCCL_THROW(bad_optional_access());
     }
   }
 

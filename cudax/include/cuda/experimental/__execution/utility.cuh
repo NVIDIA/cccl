@@ -26,7 +26,6 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -42,6 +41,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
