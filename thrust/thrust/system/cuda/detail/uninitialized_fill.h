@@ -37,11 +37,15 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__new/device_new.h>
+#  include <cuda/std/__type_traits/is_trivially_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -61,13 +65,7 @@ struct functor
   void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
   {
     value_type& out = raw_reference_cast(items[idx]);
-
-#  if _CCCL_CUDA_COMPILER(CLANG)
-    // XXX unsafe. cuda-clang is seemingly unable to call ::new in device code
-    out = value;
-#  else
     ::new (static_cast<void*>(&out)) value_type(value);
-#  endif
   }
 };
 } // namespace __uninitialized_fill
@@ -98,7 +96,6 @@ void _CCCL_HOST_DEVICE uninitialized_fill(execution_policy<Derived>& policy, Ite
 {
   cuda_cub::uninitialized_fill_n(policy, first, ::cuda::std::distance(first, last), x);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

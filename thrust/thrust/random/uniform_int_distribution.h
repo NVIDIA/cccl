@@ -29,9 +29,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/limits>
 
 #include <iostream>
@@ -40,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_distributions Random Number Distributions Class Templates
  *  \ingroup random
  *  \{
@@ -106,7 +105,7 @@ public:
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p uniform_int_distribution's parameters.
    */
-  using param_type = thrust::pair<IntType, IntType>;
+  using param_type = ::cuda::std::pair<IntType, IntType>;
 
   // constructors and reset functions
 
@@ -251,7 +250,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntTy
 
 /*! \} // end random_number_distributions
  */
-
 } // namespace random
 
 using random::uniform_int_distribution;

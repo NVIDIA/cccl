@@ -42,14 +42,15 @@
 
 #  include <cub/device/device_scan.cuh>
 
-#  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
-#  include <thrust/distance.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -57,7 +58,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
@@ -225,7 +225,6 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 
   return result + num_items;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -333,7 +332,6 @@ exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
   using init_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::exclusive_scan(policy, first, last, result, init_type{});
 };
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

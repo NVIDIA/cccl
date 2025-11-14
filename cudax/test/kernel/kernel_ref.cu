@@ -176,10 +176,10 @@ template <const auto& Attr, ::CUfunction_attribute ExpectedAttr, class ExpectedR
 
 C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
 {
-  CUlibrary lib = _CUDA_DRIVER::__libraryLoadData(kernel_ptx_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUlibrary lib = ::cuda::__driver::__libraryLoadData(kernel_ptx_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
-  CUkernel kernel_ptx1_handle = _CUDA_DRIVER::__libraryGetKernel(lib, "kernel_ptx1");
-  CUkernel kernel_ptx2_handle = _CUDA_DRIVER::__libraryGetKernel(lib, "kernel_ptx2");
+  CUkernel kernel_ptx1_handle = ::cuda::__driver::__libraryGetKernel(lib, "kernel_ptx1");
+  CUkernel kernel_ptx2_handle = ::cuda::__driver::__libraryGetKernel(lib, "kernel_ptx2");
 
   cuda::device_ref device{0};
   cuda::__ensure_current_context context_guard{device};
@@ -264,6 +264,8 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
   {
     cudax::kernel_ref<void(int*, int)> kernel_ref{kernel_ptx1_handle};
 
+    const auto cc = cuda::device_attributes::compute_capability(device);
+
     test_kernel_attribute<cudax::kernel_attributes::max_threads_per_block, CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK, int>(
       kernel_ref, device);
     test_kernel_attribute<cudax::kernel_attributes::shared_memory_size,
@@ -276,10 +278,10 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
                           CU_FUNC_ATTRIBUTE_LOCAL_SIZE_BYTES,
                           cuda::std::size_t>(kernel_ref, device);
     test_kernel_attribute<cudax::kernel_attributes::num_regs, CU_FUNC_ATTRIBUTE_NUM_REGS, int>(kernel_ref, device);
-    test_kernel_attribute<cudax::kernel_attributes::virtual_arch, CU_FUNC_ATTRIBUTE_PTX_VERSION, cuda::arch::id>(
-      kernel_ref, device, cuda::arch::id::sm_75);
-    test_kernel_attribute<cudax::kernel_attributes::binary_arch, CU_FUNC_ATTRIBUTE_BINARY_VERSION, cuda::arch::id>(
-      kernel_ref, device, static_cast<cuda::arch::id>(device.arch_traits().arch_id));
+    test_kernel_attribute<cudax::kernel_attributes::virtual_arch, CU_FUNC_ATTRIBUTE_PTX_VERSION, cuda::arch_id>(
+      kernel_ref, device, cuda::arch_id::sm_75);
+    test_kernel_attribute<cudax::kernel_attributes::binary_arch, CU_FUNC_ATTRIBUTE_BINARY_VERSION, cuda::arch_id>(
+      kernel_ref, device, cuda::to_arch_id(cc));
     test_kernel_attribute<cudax::kernel_attributes::cache_mode_ca, CU_FUNC_ATTRIBUTE_CACHE_MODE_CA, bool>(
       kernel_ref, device, false);
     test_kernel_attribute<cudax::kernel_attributes::requires_cluster_dims,
@@ -312,5 +314,5 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 
-  CUDAX_REQUIRE(_CUDA_DRIVER::__libraryUnloadNoThrow(lib) == cudaSuccess);
+  CUDAX_REQUIRE(::cuda::__driver::__libraryUnloadNoThrow(lib) == cudaSuccess);
 }

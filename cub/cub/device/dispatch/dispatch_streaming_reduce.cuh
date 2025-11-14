@@ -18,8 +18,8 @@
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -30,7 +30,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
 struct accumulating_transform_output_op
 {
@@ -193,9 +192,6 @@ struct dispatch_streaming_arg_reduce_t
     InitT init,
     cudaStream_t stream)
   {
-    // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = THRUST_NS_QUALIFIER::constant_iterator<GlobalOffsetT>;
-
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
     using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, InitT>;
@@ -217,8 +213,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
     // eventually, write to the user-provided output iterators
-    using accumulating_transform_out_it_t =
-      THRUST_NS_QUALIFIER::tabulate_output_iterator<accumulating_transform_output_op_t>;
+    using accumulating_transform_out_it_t = ::cuda::tabulate_output_iterator<accumulating_transform_output_op_t>;
 
     // Empty problem initialization type
     using empty_problem_init_t = empty_problem_init_t<per_partition_accum_t>;
@@ -270,7 +265,7 @@ struct dispatch_streaming_arg_reduce_t
       nullptr,
       allocation_sizes[0],
       d_indexed_offset_in,
-      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
+      ::cuda::make_tabulate_output_iterator(accumulating_out_op),
       static_cast<PerPartitionOffsetT>(largest_partition_size),
       reduce_op,
       initial_value,
@@ -278,7 +273,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
@@ -315,7 +310,7 @@ struct dispatch_streaming_arg_reduce_t
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_offset_in,
-        THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
+        ::cuda::make_tabulate_output_iterator(accumulating_out_op),
         static_cast<PerPartitionOffsetT>(current_num_items),
         reduce_op,
         initial_value,
@@ -335,7 +330,6 @@ struct dispatch_streaming_arg_reduce_t
     return cudaSuccess;
   }
 };
-
 } // namespace detail::reduce
 CUB_NAMESPACE_END
 

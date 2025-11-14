@@ -32,7 +32,8 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 
-#include <cuda/std/utility> // for use of std::swap in the WAR below
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
 #include <nv/target>
 
@@ -42,7 +43,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& alloc)
@@ -267,7 +267,6 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
 
   return *this;
 }
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

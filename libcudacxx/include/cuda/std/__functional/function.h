@@ -71,7 +71,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
 namespace __function
 {
-
 template <class _Rp>
 struct __maybe_derive_from_unary_function
 {};
@@ -119,12 +118,10 @@ _CCCL_API inline bool __not_null(_Rp (^__p)(_Args...))
   return __p;
 }
 #  endif
-
 } // namespace __function
 
 namespace __function
 {
-
 // __alloc_func holds a functor and an allocator.
 
 template <class _Fp, class _Ap, class _FB>
@@ -174,8 +171,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __alloc_func* __clone() const
@@ -227,8 +223,7 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __default_alloc_func* __clone() const
@@ -408,8 +403,8 @@ public:
     if (__function::__not_null(__f))
     {
       _FunAlloc __af(__a);
-      if (sizeof(_Fun) <= sizeof(__buf_)
-          && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
+      if constexpr (sizeof(_Fun) <= sizeof(__buf_)
+                    && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
       {
         __f_ = ::new ((void*) &__buf_) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
@@ -963,7 +958,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI
@@ -984,7 +979,6 @@ public:
 };
 
 #  endif // _LIBCUDACXX_HAS_EXTENSION_BLOCKS
-
 } // namespace __function
 
 template <class _Rp, class... _ArgTypes>
@@ -996,13 +990,12 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && __invocable<_Fp, _ArgTypes...>::value>
+  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && is_invocable_v<_Fp, _ArgTypes...>>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
   {
-    static const bool value =
-      is_void_v<_Rp> || __is_core_convertible<typename __invoke_of<_Fp, _ArgTypes...>::type, _Rp>::value;
+    static const bool value = is_void_v<_Rp> || __is_core_convertible<invoke_result_t<_Fp, _ArgTypes...>, _Rp>::value;
   };
   template <class _Fp>
   struct __callable<_Fp, false>

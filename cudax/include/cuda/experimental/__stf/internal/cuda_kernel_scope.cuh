@@ -33,16 +33,13 @@
 
 namespace cuda::experimental::stf
 {
-
 class graph_ctx;
 class stream_ctx;
 
 namespace reserved
 {
-
 template <typename T>
 inline constexpr bool is_cufunction_or_cukernel_v = ::std::is_same_v<T, CUfunction> || ::std::is_same_v<T, CUkernel>;
-
 } // end namespace reserved
 
 /**
@@ -270,7 +267,6 @@ private:
 
 namespace reserved
 {
-
 /**
  * @brief Implementation of the CUDA kernel construct
  *
@@ -574,6 +570,5 @@ private:
   int record_time_device;
   cudaEvent_t start_event, end_event;
 };
-
 } // end namespace reserved
 } // end namespace cuda::experimental::stf

@@ -30,6 +30,7 @@
 #include <cuda/std/__optional/nullopt.h>
 #include <cuda/std/__optional/optional_base.h>
 #include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -370,6 +371,7 @@ public:
   }
 
   using __base::__get;
+  using __base::__set_engaged;
   using __base::has_value;
 
   _CCCL_API constexpr value_type const& value() const&
@@ -429,7 +431,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) &
   {
     using _Up = invoke_result_t<_Func, value_type&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -442,7 +444,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) const&
   {
     using _Up = invoke_result_t<_Func, const value_type&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(value()) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -455,7 +457,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) &&
   {
     using _Up = invoke_result_t<_Func, value_type&&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {
@@ -468,7 +470,7 @@ public:
   _CCCL_API constexpr auto and_then(_Func&& __f) const&&
   {
     using _Up = invoke_result_t<_Func, const value_type&&>;
-    static_assert(__is_std_optional_v<remove_cvref_t<_Up>>,
+    static_assert(__is_cuda_std_optional_v<remove_cvref_t<_Up>>,
                   "Result of f(std::move(value())) must be a specialization of std::optional");
     if (this->__engaged_)
     {

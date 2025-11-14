@@ -139,7 +139,7 @@ struct get_completion_behavior_t
     return __attrs.query(*this, __env);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -201,7 +201,6 @@ template <class _Attrs, class... _Env>
 _CCCL_CONCEPT __completes_inline =
   (__call_result_t<get_completion_behavior_t, const _Attrs&, const _Env&...>{}
    == completion_behavior::inline_completion);
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

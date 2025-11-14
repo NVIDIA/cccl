@@ -21,9 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION()
-#  include <cuda/__ptx/instructions/prmt.h>
-#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -37,6 +34,34 @@
 #endif // _CCCL_COMPILER(MSVC)
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap32) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap64) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap128) // Only available in GCC >= 11 which supports __has_builtin
+#  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
+
+// nvcc doesn't support these builtins in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_BSWAP16
+#  undef _CCCL_BUILTIN_BSWAP32
+#  undef _CCCL_BUILTIN_BSWAP64
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// gcc fails to use the builtin when compiling with nvcc
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
+#  undef _CCCL_BUILTIN_BSWAP128
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -60,33 +85,32 @@ template <class _Full>
   }
 }
 
+#if _CCCL_CUDA_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
-#if __cccl_ptx_isa >= 200
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-    return static_cast<uint16_t>(::cuda::ptx::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
+    return static_cast<uint16_t>(::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x3201u));
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    return ::cuda::ptx::prmt(__val, uint32_t{0}, uint32_t{0x0123});
+    return ::__byte_perm(__val, 0u, 0x0123u);
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    const auto __hi     = static_cast<uint32_t>(__val >> 32);
-    const auto __lo     = static_cast<uint32_t>(__val);
-    const auto __new_lo = ::cuda::ptx::prmt(__hi, uint32_t{0}, uint32_t{0x0123});
-    const auto __new_hi = ::cuda::ptx::prmt(__lo, uint32_t{0}, uint32_t{0x0123});
-
-    return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
+    const auto __lo = ::__byte_perm(static_cast<uint32_t>(__val >> 32), 0u, 0x0123u);
+    const auto __hi = ::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x0123u);
+    return (static_cast<uint64_t>(__hi) << 32) | static_cast<uint64_t>(__lo);
   }
   else
-#endif // __cccl_ptx_isa >= 200
   {
     return ::cuda::std::__byteswap_impl_recursive(__val);
   }
 }
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept

@@ -1,11 +1,13 @@
-foreach(thrust_target IN LISTS THRUST_TARGETS)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
+  thrust_get_target_property(config_dialect ${thrust_target} DIALECT)
 
   set(framework_target ${config_prefix}.test.framework)
 
   if ("CUDA" STREQUAL "${config_device}")
-    set(framework_srcs
+    set(
+      framework_srcs #
       testframework.cu
       cuda/testframework.cu
     )
@@ -15,8 +17,12 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
   endif()
 
   add_library(${framework_target} STATIC ${framework_srcs})
+  cccl_configure_target(${framework_target} DIALECT ${config_dialect})
   target_link_libraries(${framework_target} PUBLIC ${thrust_target})
-  target_include_directories(${framework_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
+  target_include_directories(
+    ${framework_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/testing"
+  )
   thrust_clone_target_properties(${framework_target} ${thrust_target})
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${framework_target} RDC ${THRUST_FORCE_RDC})

@@ -1,25 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
- *       following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
- *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
- *       products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! @rst
@@ -105,6 +86,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)
 //!        int warp_id   = threadIdx.x / 32;
 //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
 //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will be
@@ -130,6 +112,8 @@ CUB_NAMESPACE_BEGIN
 //!            int thread_data = ...
 //!            // Return the warp-wide sum to lane0
 //!            int aggregate = WarpReduce(temp_storage).Sum(thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is ``{0, 1, 2, 3, ..., 31}``.
 //! The corresponding output ``aggregate`` in thread0 will be ``496`` (and is undefined in other threads).
@@ -218,6 +202,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int warp_id = threadIdx.x / 32;
   //!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
   //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will ``496``, ``1520``, ``2544``, and
@@ -299,8 +284,8 @@ public:
   //!            thread_data = d_data[threadIdx.x];
   //!
   //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).Sum(
-  //!            thread_data, valid_items);
+  //!        int aggregate = WarpReduce(temp_storage).Sum(thread_data, valid_items);
+  //!    }
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
   //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
@@ -363,6 +348,7 @@ public:
   //!        // Return the warp-wide sums to each lane0
   //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedSum(
   //!            thread_data, head_flag);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
   //! is ``{0, 1, 2, 3, ..., 31`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0``,

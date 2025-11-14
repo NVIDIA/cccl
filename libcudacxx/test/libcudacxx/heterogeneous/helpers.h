@@ -69,6 +69,7 @@ using threadcount_trait = threadcount_trait_impl<T>;
     if (err != cudaSuccess)                                                           \
     {                                                                                 \
       printf("CUDA ERROR: %s: %s\n", cudaGetErrorName(err), cudaGetErrorString(err)); \
+      fflush(stdout);                                                                 \
       abort();                                                                        \
     }                                                                                 \
   } while (false)
@@ -427,7 +428,6 @@ void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
   permute_tests(test_harness, initial_launcher_list{});
 }
 
-#if _CCCL_STD_VER >= 2014
 template <typename T>
 struct manual_object
 {
@@ -469,7 +469,6 @@ struct manual_object
 
 template <typename T>
 __managed__ manual_object<T> managed_variable{};
-#endif
 
 template <typename Creator, typename Destroyer, typename Validator, std::size_t N>
 void validate_in_managed_memory_helper(const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
@@ -528,7 +527,7 @@ void validate_managed(tester_list<Testers...>, Args... args)
   validate_in_managed_memory_helper(device_constructor, device_destructor, host_init_device_check);
   validate_in_managed_memory_helper(device_constructor, device_destructor, device_init_host_check);
 
-#if _CCCL_STD_VER >= 2014 && !defined(__clang__)
+#if !defined(__clang__)
   // The managed variable template part of this test is disabled under clang, pending nvbug 2790305 being fixed.
 
   auto host_variable_constructor = [args...]() -> T* {

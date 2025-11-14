@@ -10,6 +10,7 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
+    make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
 )
@@ -163,6 +164,33 @@ def TransformOutputIterator(it, op):
         A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
     return make_transform_iterator(it, op, "output")
+
+
+def PermutationIterator(values, indices):
+    """Returns an Iterator that accesses values through an index mapping.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1permutation__iterator.html
+
+    The permutation iterator accesses elements from the values collection using indices
+    from the indices collection, effectively computing values[indices[i]] at position i.
+    This is useful for gather/scatter operations and indirect array access patterns.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``PermutationIterator``
+        to access values in a permuted order:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/permutation_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        values: The values array or iterator to be permuted
+        indices: An iterator or device array providing the indices for permutation
+
+    Returns:
+        A ``PermutationIterator`` object that yields values[indices[i]] at position i
+    """
+    return make_permutation_iterator(values, indices)
 
 
 def ZipIterator(*iterators):

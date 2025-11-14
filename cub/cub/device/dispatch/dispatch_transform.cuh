@@ -16,7 +16,7 @@
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/dispatch/kernels/transform.cuh>
+#include <cub/device/dispatch/kernels/kernel_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -51,6 +51,21 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
 {
+template <typename T>
+using cuda_expected = ::cuda::std::expected<T, cudaError_t>;
+
+struct async_config
+{
+  int items_per_thread;
+  int max_occupancy;
+  int sm_count;
+};
+
+struct prefetch_config
+{
+  int max_occupancy;
+  int sm_count;
+};
 
 template <typename Offset,
           typename RandomAccessIteratorsIn,
@@ -82,9 +97,16 @@ struct TransformKernelSource<Offset,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
-  CUB_RUNTIME_FUNCTION static constexpr bool CanCacheConfiguration()
+  template <class ActionT>
+  CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheAsyncConfiguration(const ActionT& action)
   {
-    return true;
+    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+  }
+
+  template <class ActionT>
+  CUB_RUNTIME_FUNCTION cuda_expected<prefetch_config> CachePrefetchConfiguration(const ActionT& action)
+  {
+    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
@@ -109,8 +131,9 @@ struct TransformKernelSource<Offset,
     return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 
+private:
   template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto IsPointerAligned(T it, [[maybe_unused]] int alignment)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
   {
     if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
     {
@@ -121,28 +144,20 @@ struct TransformKernelSource<Offset,
       return true; // fancy iterators are aligned, since the vectorized kernel chooses a different code path
     }
   }
+
+public:
+  CUB_RUNTIME_FUNCTION constexpr static bool
+  CanVectorize(int vec_size, const RandomAccessIteratorOut& out, const RandomAccessIteratorsIn&... in)
+  {
+    return is_pointer_aligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vec_size)
+        && (is_pointer_aligned(in, sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size) && ...);
+  }
 };
 
 enum class requires_stable_address
 {
   no,
   yes
-};
-
-template <typename T>
-using cuda_expected = ::cuda::std::expected<T, cudaError_t>;
-
-struct async_config
-{
-  int items_per_thread;
-  int max_occupancy;
-  int sm_count;
-};
-
-struct prefetch_config
-{
-  int max_occupancy;
-  int sm_count;
 };
 
 template <
@@ -273,26 +288,11 @@ struct dispatch_t<StableAddress,
       }
       return last_config;
     };
-    cuda_expected<async_config> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          if constexpr (KernelSource::CanCacheConfiguration()) {
-            static auto cached_config = determine_element_counts();
-            return cached_config;
-          } else {
-            // we cannot cache the determined element count when not allowed
-            return determine_element_counts();
-          }),
-        (
-          // we cannot cache the determined element count in device code
-          return determine_element_counts();))
-    }();
+    cuda_expected<async_config> config = kernel_source.CacheAsyncConfiguration(determine_element_counts);
     if (!config)
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(config.error());
     }
-    _CCCL_ASSERT(config->items_per_thread > 0, "");
     _CCCL_ASSERT(config->items_per_thread > 0, "");
     _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
 
@@ -384,7 +384,7 @@ struct dispatch_t<StableAddress,
   }
 
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_no_input, prefetch, ItemsPerThreadNoInput)
-  CUB_DEFINE_SFINAE_GETTER(load_store_word_size, vectorized, LoadStoreWordSize)
+  CUB_DEFINE_SFINAE_GETTER(vec_size, vectorized, VecSize)
   CUB_DEFINE_SFINAE_GETTER(items_per_thread_vectorized, vectorized, ItemsPerThreadVectorized)
 
 #undef CUB_DEFINE_SFINAE_GETTER
@@ -413,25 +413,7 @@ struct dispatch_t<StableAddress,
       return prefetch_config{max_occupancy, sm_count};
     };
 
-    cuda_expected<prefetch_config> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          // this static variable exists for each template instantiation of the surrounding function and
-          // class, on which the chosen element count solely depends (assuming max SMEM is constant during a
-          // program execution)
-          if constexpr (KernelSource::CanCacheConfiguration()) {
-            // we can cache the determined element count in host code if allowed
-            static auto cached_config = determine_config();
-            return cached_config;
-          } else {
-            // we cannot cache the determined element count when not allowed
-            return determine_config();
-          }),
-        (
-          // we cannot cache the determined element count in device code
-          return determine_config();))
-    }();
+    cuda_expected<prefetch_config> config = kernel_source.CachePrefetchConfiguration(determine_config);
     if (!config)
     {
       return config.error();
@@ -441,9 +423,8 @@ struct dispatch_t<StableAddress,
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
     {
-      const int alignment = load_store_word_size(wrapped_policy.AlgorithmPolicy());
-      can_vectorize       = (kernel_source.IsPointerAligned(::cuda::std::get<Is>(in), alignment) && ...)
-                   && kernel_source.IsPointerAligned(out, alignment);
+      const int vs  = vec_size(wrapped_policy.AlgorithmPolicy());
+      can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
     }
 
     int ipt        = 0;
@@ -554,7 +535,6 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::transform
 CUB_NAMESPACE_END
 

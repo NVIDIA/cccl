@@ -32,7 +32,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 error_code make_error_code(cuda::errc::errc_t e)
 {
   return error_code(static_cast<int>(e), cuda_category());
@@ -43,12 +42,8 @@ error_condition make_error_condition(cuda::errc::errc_t e)
   return error_condition(static_cast<int>(e), cuda_category());
 } // end make_error_condition()
 
-namespace cuda_cub
+namespace cuda_cub::detail
 {
-
-namespace detail
-{
-
 class cuda_error_category : public error_category
 {
 public:
@@ -80,17 +75,13 @@ public:
     return system_category().default_error_condition(ev);
   }
 }; // end cuda_error_category
-
-} // namespace detail
-
-} // end namespace cuda_cub
+} // end namespace cuda_cub::detail
 
 const error_category& cuda_category()
 {
   static const thrust::system::cuda_cub::detail::cuda_error_category result;
   return result;
 }
-
 } // end namespace system
 
 THRUST_NAMESPACE_END

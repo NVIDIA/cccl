@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of applying the sender operation.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
-  _CCCL_NODEBUG_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
+  _CCCL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
     noexcept(_Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) //
     -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
   {
@@ -107,7 +107,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpTag, class _Sndr, class _Env)
   _CCCL_REQUIRES(__has_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
+  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(_OpTag, _Sndr&& __sndr, const _Env& __env) //
     noexcept(__nothrow_transform_sender<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>)
       -> __transform_sender_result_t<tag_of_t<_Sndr>, _OpTag, _Sndr, _Env>
   {
@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
+  [[nodiscard]] _CCCL_API static constexpr auto
   transform_sender(::cuda::std::__ignore_t, _Sndr&& __sndr, ::cuda::std::__ignore_t = {}) //
     noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
@@ -149,47 +149,31 @@ private:
 };
 
 template <class _Env>
-struct __hide_scheduler : __hide_query<_Env, get_scheduler_t>
+struct __hide_scheduler : __hide_query<_Env, get_scheduler_t, get_domain_t>
 {
   _CCCL_API explicit constexpr __hide_scheduler(_Env&& __env) noexcept
-      : __hide_query<_Env, get_scheduler_t>{static_cast<_Env&&>(__env), {}}
+      : __hide_query<_Env, get_scheduler_t, get_domain_t>{static_cast<_Env&&>(__env), {}, {}}
   {}
 };
 
 template <class _Env>
 _CCCL_HOST_DEVICE __hide_scheduler(_Env&&) -> __hide_scheduler<_Env>;
 
-namespace __detail
-{
-template <class _Sch>
-_CCCL_API auto __get_scheduler_domain() -> __call_result_t<get_completion_domain_t<set_value_t>, _Sch>;
-
-template <class _Sch, class _Env>
-_CCCL_API auto __get_scheduler_domain()
-  -> __call_result_or_t<get_completion_domain_t<set_value_t>, default_domain, _Sch, _Env>;
-
-} // namespace __detail
-
 template <class _Sch, class... _Env>
-using __scheduler_domain_t _CCCL_NODEBUG_ALIAS = decay_t<decltype(__detail::__get_scheduler_domain<_Sch, _Env...>())>;
+using __scheduler_domain_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
-//! @brief A query type for asking an environment for its domain, which is an empty class
-//! type that is used in tag dispatching to find a custom implementation of a sender
-//! algorithm.
-//!
-//! * When used to query a receiver's environment, it returns the "current" domain, which
-//!   is where `start` will be called on the operation state that results from connecting
-//!   the receiver to a sender.
-//! * When used to query a scheduler `sch`, it is equivalent to
-//!   `get_domain(get_env(schedule(sch)))`.
+//! @brief A query type for asking a receiver's environment for its domain, which is an
+//! empty class type that is used in tag dispatching to find a custom implementation of a
+//! sender algorithm. The result of this query is the "current" domain; that is, the domain
+//! where `start` will be called on the operation state that results from connecting the
+//! receiver to a sender.
 struct get_domain_t
 {
   //! @brief If there is a @c get_domain_t query in @c __env, return it.
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_domain_t>)
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
     -> decay_t<__query_result_t<_Env, get_domain_t>>
   {
     using __domain_t = decay_t<__query_result_t<_Env, get_domain_t>>;
@@ -200,10 +184,9 @@ struct get_domain_t
   //! @brief If there is not a @c get_domain_t query in @c __env, but there is a
   //! scheduler, return the domain of the scheduler if it has one, and @c default_domain
   //! otherwise.
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES((!__queryable_with<_Env, get_domain_t>) _CCCL_AND __callable<get_scheduler_t, const _Env&>)
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
   {
     using __sch_t      = __scheduler_of_t<const _Env&>;
     using __env_t      = __hide_scheduler<const _Env&>; // to prevent recursion
@@ -213,7 +196,7 @@ struct get_domain_t
     return __domain_t{};
   }
 
-  _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept
+  _CCCL_API static constexpr auto query(forwarding_query_t) noexcept
   {
     return true;
   }
@@ -254,7 +237,7 @@ private:
     // the domain returned by the attributes.
     if constexpr (__callable<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>)
     {
-      using __sch_t = __call_result_t<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>;
+      using __sch_t = decay_t<__call_result_t<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>>;
       if constexpr (!__same_as<__sch_t, _Attrs>) // prevent infinite recursion
       {
         static_assert(__same_as<_Domain, __scheduler_domain_t<__sch_t, const _Env&...>>,
@@ -341,39 +324,6 @@ template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_error_t> get_completion_domain<set_error_t>{};
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_domain_t<set_stopped_t> get_completion_domain<set_stopped_t>{};
-
-template <class _Tag, class _Sndr, class... _Env>
-using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, const _Env&...>;
-
-// Used by the schedule_from and continues_on senders
-struct get_domain_override_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Attrs)
-  _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t>)
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, ::cuda::std::__ignore_t = {}) const noexcept
-    -> decay_t<__query_result_t<_Attrs, get_domain_override_t>>
-  {
-    return {};
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Attrs, class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Attrs, get_domain_override_t, const _Env&>)
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Attrs&, const _Env&) const noexcept
-    -> decay_t<__query_result_t<_Attrs, get_domain_override_t, const _Env&>>
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
-  {
-    return false;
-  }
-};
-
-_CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

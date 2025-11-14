@@ -33,6 +33,7 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -45,18 +46,21 @@ jobs:
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
+      pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
     steps:
       - name: Export workflow flags
         id: export-flags
+        env:
+          skip_tpt: ${{ contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
-          output matrix_enabled "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
-          output vdc_enabled    "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
-          output docs_enabled   "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
-          output rapids_enabled "${{  contains(github.event.head_commit.message, '[test-rapids]') }}"
-          # MatX build OOMs the public github runners used on forks:
-          output matx_enabled   "${{ !contains(github.event.head_commit.message, '[skip-matx]') && github.repository == 'NVIDIA/cccl' }}"
+          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
+          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
+          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
+          output rapids_enabled  "${{  contains(github.event.head_commit.message, '[test-rapids]') && !fromJSON(env.skip_tpt) }}"
+          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]') && !fromJSON(env.skip_tpt) }}"
+          output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -192,7 +196,11 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
+    if: >-
+      ${{
+           needs.build-workflow.outputs.vdc_enabled == 'true' &&
+           github.repository == 'NVIDIA/cccl'
+      }}
     permissions:
       id-token: write
       contents: read
@@ -206,7 +214,8 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true'
+        needs.build-workflow.outputs.docs_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
       }}
     permissions:
       contents: write
@@ -220,7 +229,11 @@ jobs:
   build-rapids:
     name: Build RAPIDS (optional)
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.rapids_enabled == 'true' }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.rapids_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
     secrets: inherit
     permissions:
       actions: read
@@ -233,12 +246,30 @@ jobs:
   build-matx:
     name: Build MatX (optional)
     needs: build-workflow
-    if: ${{ needs.build-workflow.outputs.matx_enabled == 'true' }}
+    if: >-
+      ${{
+        needs.build-workflow.outputs.matx_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
     secrets: inherit
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/build-matx.yml
+
+  build-pytorch:
+    name: Build PyTorch (optional)
+    needs: build-workflow
+    if: >-
+      ${{
+        needs.build-workflow.outputs.pytorch_enabled == 'true' &&
+        github.repository == 'NVIDIA/cccl'
+      }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-pytorch.yml
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:

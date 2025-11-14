@@ -6,7 +6,9 @@
 
 set(target_name cccl.c.parallel.headers)
 
-cccl_generate_header_tests(${target_name} c/parallel/include
+cccl_generate_header_tests(
+  ${target_name}
+  c/parallel/include
   LANGUAGE C
   GLOBS "cccl/c/*.h"
 )

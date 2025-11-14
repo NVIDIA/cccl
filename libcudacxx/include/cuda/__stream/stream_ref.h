@@ -28,20 +28,15 @@
 #  include <cuda/__event/timed_event.h>
 #  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-namespace __detail
-{
-// 0 is a valid stream in CUDA, so we need some other invalid stream representation
-// Can't make it constexpr, because cudaStream_t is a pointer type
-static const ::cudaStream_t __invalid_stream = reinterpret_cast<::cudaStream_t>(~0ULL);
-} // namespace __detail
 
 //! @brief A type representing a stream ID.
 enum class stream_id : unsigned long long
@@ -61,9 +56,10 @@ public:
   //!
   //! For behavior of the default stream,
   //! @see //! https://docs.nvidia.com/cuda/cuda-runtime-api/stream-sync-behavior.html
-  [[deprecated("Using the default/null stream is generally discouraged. If you need to use it, please construct a "
-               "stream_ref from cudaStream_t{nullptr}")]]
-  _CCCL_HIDE_FROM_ABI stream_ref() = default;
+  CCCL_DEPRECATED_BECAUSE("Using the default/null stream is generally discouraged. If you need to use it, please "
+                          "construct a "
+                          "stream_ref from cudaStream_t{nullptr}") _CCCL_HIDE_FROM_ABI
+  stream_ref() = default;
 
   //! @brief Constructs a `stream_ref` from a `cudaStream_t` handle.
   //!
@@ -73,6 +69,13 @@ public:
   //! outlive the stream identified by the `cudaStream_t` handle.
   _CCCL_API constexpr stream_ref(value_type __stream_) noexcept
       : __stream{__stream_}
+  {}
+
+  //! @brief Constructs a `stream_ref` from the `cuda::invalid_stream_t`.
+  //!
+  //! @note Any CUDA APIs called on the created object will result in an CUDA error.
+  _CCCL_API explicit stream_ref(invalid_stream_t) noexcept
+      : __stream{::cuda::__invalid_stream()}
   {}
 
   //! Disallow construction from an `int`, e.g., `0`.
@@ -86,12 +89,38 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param lhs The first `stream_ref` to compare
-  //! @param rhs The second `stream_ref` to compare
+  //! @param __lhs The first `stream_ref` to compare
+  //! @param __rhs The second `stream_ref` to compare
   //! @return true if equal, false if unequal
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
+  }
+
+  //! @brief Compares `stream_ref` with `invalid_stream_t` for equality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `stream_ref` to compare
+  //! @param __rhs The `invalid_stream_t` to compare
+  //! @return true if equal, false if unequal
+  [[nodiscard]] _CCCL_API friend bool operator==(const stream_ref& __lhs, const invalid_stream_t&) noexcept
+  {
+    return __lhs.__stream == ::cuda::__invalid_stream();
+  }
+
+  //! @brief Compares `invalid_stream_t` with `stream_ref` for equality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `invalid_stream_t` to compare
+  //! @param __rhs The `stream_ref` to compare
+  //! @return true if equal, false if unequal
+  [[nodiscard]] _CCCL_API friend bool operator==(const invalid_stream_t&, const stream_ref& __rhs) noexcept
+  {
+    return ::cuda::__invalid_stream() == __rhs.__stream;
   }
 
   //! @brief Compares two `stream_ref`s for inequality
@@ -99,12 +128,38 @@ public:
   //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
   //! `stream_ref`.
   //!
-  //! @param lhs The first `stream_ref` to compare
-  //! @param rhs The second `stream_ref` to compare
+  //! @param __lhs The first `stream_ref` to compare
+  //! @param __rhs The second `stream_ref` to compare
   //! @return true if unequal, false if equal
   [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
+  }
+
+  //! @brief Compares `stream_ref` with `invalid_stream_t` for inequality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `stream_ref` to compare
+  //! @param __rhs The `invalid_stream_t` to compare
+  //! @return false if equal, true if unequal
+  [[nodiscard]] _CCCL_API friend bool operator!=(const stream_ref& __lhs, const invalid_stream_t&) noexcept
+  {
+    return __lhs.__stream != ::cuda::__invalid_stream();
+  }
+
+  //! @brief Compares `invalid_stream_t` with `stream_ref` for inequality.
+  //!
+  //! @note Allows comparison with `cudaStream_t` due to implicit conversion to
+  //! `stream_ref`.
+  //!
+  //! @param __lhs The `invalid_stream_t` to compare
+  //! @param __rhs The `stream_ref` to compare
+  //! @return false if equal, true if unequal
+  [[nodiscard]] _CCCL_API friend bool operator!=(const invalid_stream_t&, const stream_ref& __rhs) noexcept
+  {
+    return ::cuda::__invalid_stream() != __rhs.__stream;
   }
 
   //! Returns the wrapped `cudaStream_t` handle.
@@ -124,8 +179,7 @@ public:
   //! @brief Deprecated. Use sync() instead.
   //!
   //! @deprecated Use sync() instead.
-  [[deprecated("Use sync() instead.")]]
-  void wait() const
+  CCCL_DEPRECATED_BECAUSE("Use sync() instead.") _CCCL_HOST_API void wait() const
   {
     sync();
   }
@@ -152,7 +206,7 @@ public:
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    _CCCL_ASSERT(__stream != __detail::__invalid_stream, "cuda::stream_ref::wait invalid stream passed");
+    _CCCL_ASSERT(__stream != ::cuda::__invalid_stream(), "cuda::stream_ref::wait invalid stream passed");
     if (*this != __other)
     {
       event __tmp(__other);
@@ -184,7 +238,7 @@ public:
   //! @throws cuda::cuda_error if the query fails.
   //!
   //! @return `true` if all operations have completed, or `false` if not.
-  [[deprecated("Use is_done() instead.")]] [[nodiscard]] bool ready() const
+  [[nodiscard]] CCCL_DEPRECATED_BECAUSE("Use is_done() instead.") _CCCL_HOST_API bool ready() const
   {
     return is_done();
   }
@@ -216,7 +270,7 @@ public:
   //! @return A new event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CCCL_HOST_API event record_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API event record_event(event_flags __flags = event_flags::none) const
   {
     return event(*this, __flags);
   }
@@ -226,7 +280,7 @@ public:
   //! @return A new timed event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CCCL_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API timed_event record_timed_event(event_flags __flags = event_flags::none) const
   {
     return timed_event(*this, __flags);
   }
@@ -237,7 +291,7 @@ public:
   //! returned
   //!
   //! @throws cuda_error if device check fails
-  _CCCL_HOST_API device_ref device() const
+  [[nodiscard]] _CCCL_HOST_API device_ref device() const
   {
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -260,7 +314,7 @@ public:
   }
 };
 
-inline void event_ref::record(stream_ref __stream) const
+_CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
 {
   _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::record no event set");
   _CCCL_ASSERT(__stream.get() != nullptr, "cuda::event_ref::record invalid stream passed");
@@ -268,26 +322,26 @@ inline void event_ref::record(stream_ref __stream) const
   ::cuda::__driver::__eventRecord(__event_, __stream.get());
 }
 
-inline event::event(stream_ref __stream, event::flags __flags)
-    : event(__stream, static_cast<unsigned>(__flags) | cudaEventDisableTiming)
+_CCCL_HOST_API inline event::event(stream_ref __stream, event_flags __flags)
+    : event(__stream, ::cuda::std::to_underlying(__flags) | cudaEventDisableTiming)
 {
   record(__stream);
 }
 
-inline event::event(stream_ref __stream, unsigned __flags)
+_CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
   [[maybe_unused]] __ensure_current_context __ctx_setter(__stream);
   __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
 }
 
-inline timed_event::timed_event(stream_ref __stream, event::flags __flags)
-    : event(__stream, static_cast<unsigned>(__flags))
+_CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags __flags)
+    : event(__stream, ::cuda::std::to_underlying(__flags))
 {
   record(__stream);
 }
 
-inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
+_CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
   auto __ctx = __driver::__streamGetCtx(__stream.get());
   ::cuda::__driver::__ctxPush(__ctx);

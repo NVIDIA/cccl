@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
@@ -80,7 +81,7 @@ private:
         }
         _CCCL_CATCH_ALL
         {
-          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          execution::set_error(static_cast<_Rcvr&&>(__rcvr_), execution::current_exception());
         }
       }
     }
@@ -102,7 +103,7 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CCCL_NODEBUG_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CCCL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
@@ -147,12 +148,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     return __attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ read_env_t __tag;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Query __query;
 };
 
 template <class _Query>
-_CCCL_NODEBUG_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
+_CCCL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }
@@ -161,7 +162,6 @@ template <class _Query>
 inline constexpr size_t structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
 
 _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

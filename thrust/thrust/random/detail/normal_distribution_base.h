@@ -32,18 +32,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace random
+namespace random::detail
 {
-namespace detail
-{
-
 // this version samples the normal distribution directly
 // and uses the non-standard math function erfcinv
 template <typename RealType>
@@ -154,7 +152,5 @@ struct normal_distribution_base
   using type = normal_distribution_portable<RealType>;
 #endif
 };
-
-} // namespace detail
-} // namespace random
+} // namespace random::detail
 THRUST_NAMESPACE_END

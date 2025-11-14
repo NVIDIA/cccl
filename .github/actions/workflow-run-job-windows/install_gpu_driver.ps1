@@ -13,7 +13,7 @@ function Install-Driver {
 
     # extract gpu type from gha runner label:
     # Labels are in the form: <os>-<cpu>-gpu-<gpu>-<driver>-<n>
-    $gha_runner_label=$env:RUNNER
+    $gha_runner_label=$env:JOB_RUNNER
     $gpu_type = $gha_runner_label.Split('-')[3]
 
     $data_center_gpus = @('a100', 'h100', 'l4', 't4', 'v100', 'rtxa6000', 'rtx6000ada')

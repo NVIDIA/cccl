@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::DeviceReduce provides device-wide, parallel operations for computing a reduction across a sequence of data
@@ -52,15 +28,15 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/tabulate_output_iterator.h>
-
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
@@ -70,20 +46,17 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-#include <cuda/stream_ref>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename DeterminismT>
 inline constexpr bool is_non_deterministic_v =
   ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
 
 namespace reduce
 {
-
 struct get_tuning_query_t
 {};
 
@@ -224,7 +197,7 @@ private:
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
     using dispatch_t =
-      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
+      detail::rfa::dispatch_t<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
@@ -257,8 +230,8 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
     using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t = detail::
-      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
+    using dispatch_t = detail::reduce::
+      dispatch_nondeterministic_t<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage,
@@ -496,7 +469,12 @@ public:
     constexpr auto float_double_plus =
       gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
 
-    constexpr auto supported = integral_fallback || float_double_plus || !gpu_gpu_determinism;
+    constexpr auto float_double_min_max_fallback =
+      gpu_gpu_determinism
+      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+
+    constexpr auto supported =
+      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
 
     // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
     // float and double types with ::cuda::std::plus operator
@@ -523,7 +501,7 @@ public:
       // If the conditions for gpu-to-gpu determinism or non-deterministic
       // reduction are not met, we fall back to run-to-run determinism.
       using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && integral_fallback)
+        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
           || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
@@ -1016,14 +994,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Min");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -1033,13 +1011,15 @@ public:
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
 
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+    using tuning_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
@@ -1215,7 +1195,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     return detail::reduce::dispatch_streaming_arg_reduce_t<
@@ -1303,30 +1283,26 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
 
     // Reduction operation
     using ReduceOpT           = cub::ArgMin;
@@ -1341,7 +1317,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     // Query the required temporary storage size
@@ -1684,14 +1660,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Max");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -1701,13 +1677,15 @@ public:
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
 
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+    using tuning_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
@@ -1883,7 +1861,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     return detail::reduce::dispatch_streaming_arg_reduce_t<
@@ -2095,30 +2073,26 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using requested_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported");
 
-    // TODO(NaderAlAwar): Relax this once non-deterministic implementation for min / max is available
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
 
     // Reduction operation
     using ReduceOpT           = cub::ArgMax;
@@ -2133,7 +2107,7 @@ public:
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size

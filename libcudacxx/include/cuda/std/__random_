@@ -21,7 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__random/bernoulli_distribution.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
+#include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random/seed_seq.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
 #include <cuda/std/version>

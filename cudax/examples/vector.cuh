@@ -24,14 +24,13 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 using ::cuda::std::span;
@@ -141,8 +140,6 @@ private:
   mutable device_vector<_Ty> __d_{};
   mutable bool __dirty_ = true;
 };
-
 } // namespace cuda::experimental
 
-#endif
 #endif

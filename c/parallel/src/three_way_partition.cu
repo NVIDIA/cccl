@@ -10,8 +10,9 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh> // cub::DispatchThreeWayPartitionIf
-#include <cub/device/dispatch/kernels/three_way_partition.cuh> // DeviceThreeWayPartition kernels
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh> // DeviceThreeWayPartition kernels
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh> // policy_hub
 
 #include <exception>
@@ -28,7 +29,6 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
-#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/three_way_partition.h>
 #include <cccl/c/types.h>
@@ -47,7 +47,6 @@ static_assert(sizeof(OffsetT) == sizeof(cuda::std::int64_t));
 
 namespace three_way_partition
 {
-
 struct three_way_partition_runtime_tuning_policy
 {
   cub::detail::RuntimeThreeWayPartitionAgentPolicy three_way_partition;
@@ -99,12 +98,12 @@ std::string get_three_way_partition_kernel_name(
   std::string_view select_second_part_op_name)
 {
   std::string chained_policy_t;
-  check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
+  check(cccl_type_name_from_nvrtc<device_three_way_partition_policy>(&chained_policy_t));
 
   constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   const std::string streaming_context_t =
     std::format("cub::detail::three_way_partition::streaming_context_t<{0}>", offset_t);
@@ -124,37 +123,6 @@ std::string get_three_way_partition_kernel_name(
     "cub::detail::three_way_partition::per_partition_offset_t", // 9
     streaming_context_t // 10
   );
-}
-
-std::string get_three_way_partition_policy_delay_constructor(const nlohmann::json& partition_policy)
-{
-  auto delay_ctor_info = partition_policy["DelayConstructor"];
-
-  std::string delay_ctor_params;
-  for (auto&& param : delay_ctor_info["params"])
-  {
-    delay_ctor_params.append(to_string(param) + ", ");
-  }
-  delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
-
-  return std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
-}
-
-std::string inject_delay_constructor_into_three_way_policy(
-  const std::string& three_way_partition_policy_str, const std::string& delay_constructor_type)
-{
-  // Insert before the final closing of the struct (right before the sequence "};")
-  const std::string needle = "};";
-  const auto pos           = three_way_partition_policy_str.rfind(needle);
-  if (pos == std::string::npos)
-  {
-    return three_way_partition_policy_str; // unexpected; return as-is
-  }
-  const std::string insertion =
-    std::format("\n  struct detail {{ using delay_constructor_t = {}; }}; \n", delay_constructor_type);
-  std::string out = three_way_partition_policy_str;
-  out.insert(pos, insertion);
-  return out;
 }
 } // namespace three_way_partition
 
@@ -217,83 +185,47 @@ CUresult cccl_device_three_way_partition_build_ex(
 
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
-    const std::string dependent_definitions_src = std::format(
+    const std::string key_t = cccl_type_enum_to_name(d_in.value_type.type);
+
+    const auto policy_hub_expr = std::format(
+      R"XXX(cub::detail::three_way_partition::policy_hub<{0}, {1}>)XXX",
+      key_t, // 0
+      offset_t); // 1
+
+    std::string final_src = std::format(
       R"XXX(
-struct __align__({1}) storage_t {{
-  char data[{0}];
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
+{0}
+struct __align__({2}) storage_t {{
+  char data[{1}];
 }};
-{2}
 {3}
 {4}
 {5}
 {6}
 {7}
 {8}
+{9}
+using device_three_way_partition_policy = {10}::MaxPolicy;
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_three_way_partition_policy")>()
+    = cub::detail::three_way_partition::ThreeWayPartitionPolicyWrapper<device_three_way_partition_policy::ActivePolicy>::EncodedPolicy();
+}}
 )XXX",
-      d_in.value_type.size, // 0
-      d_in.value_type.alignment, // 1
-      d_in_iterator_src, // 2
-      d_first_part_out_iterator_src, // 3
-      d_second_part_out_iterator_src, // 4
-      d_unselected_out_iterator_src, // 5
-      d_num_selected_out_iterator_src, // 6
-      select_first_part_op_src, // 7
-      select_second_part_op_src); // 8
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    constexpr size_t ptx_num_args      = 6;
-    const char* ptx_args[ptx_num_args] = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    static constexpr std::string_view policy_wrapper_expr_tmpl =
-      R"XXXX(cub::detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(cub::detail::three_way_partition::policy_hub<{0}, {1}>::MaxPolicy::ActivePolicy{{}}))XXXX";
-
-    const std::string key_t = cccl_type_enum_to_name(d_in.value_type.type);
-
-    const auto policy_wrapper_expr = std::format(
-      policy_wrapper_expr_tmpl,
-      key_t, // 0
-      offset_t); // 1
-
-    static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
-#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
-{0}
-{1}
-)XXXX";
-
-    const auto ptx_query_tu_src =
-      std::format(ptx_query_tu_src_tmpl, jit_template_header_contents, dependent_definitions_src);
-
-    nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
-
-    using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
-    auto [three_way_partition_policy, three_way_partition_policy_str] =
-      RuntimeThreeWayPartitionAgentPolicy::from_json(runtime_policy, "ThreeWayPartitionPolicy");
-
-    const std::string three_way_partition_policy_delay_constructor =
-      three_way_partition::get_three_way_partition_policy_delay_constructor(runtime_policy);
-
-    const std::string injected_three_way_partition_policy_str =
-      three_way_partition::inject_delay_constructor_into_three_way_policy(
-        three_way_partition_policy_str, three_way_partition_policy_delay_constructor);
-    constexpr std::string_view program_preamble_template = R"XXX(
-#include <cub/device/dispatch/kernels/three_way_partition.cuh>
-{0}
-{1}
-struct device_three_way_partition_policy {{
-  struct ActivePolicy {{
-    {2}
-  }};
-}};
-)XXX";
-
-    std::string final_src = std::format(
-      program_preamble_template,
       jit_template_header_contents, // 0
-      dependent_definitions_src, // 1
-      injected_three_way_partition_policy_str); // 2
+      d_in.value_type.size, // 1
+      d_in.value_type.alignment, // 2
+      d_in_iterator_src, // 3
+      d_first_part_out_iterator_src, // 4
+      d_second_part_out_iterator_src, // 5
+      d_unselected_out_iterator_src, // 6
+      d_num_selected_out_iterator_src, // 7
+      select_first_part_op_src, // 8
+      select_second_part_op_src, // 9
+      policy_hub_expr); // 10
 
     std::string three_way_partition_init_kernel_name =
       three_way_partition::get_three_way_partition_init_kernel_name(d_num_selected_out_iterator_name);
@@ -319,6 +251,7 @@ struct device_three_way_partition_policy {{
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
@@ -356,6 +289,13 @@ struct device_three_way_partition_policy {{
                              three_way_partition_init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
       &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_three_way_partition_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
+    auto three_way_partition_policy =
+      RuntimeThreeWayPartitionAgentPolicy::from_json(runtime_policy, "ThreeWayPartitionPolicy");
 
     build_ptr->cc         = cc;
     build_ptr->cubin      = (void*) result.data.release();

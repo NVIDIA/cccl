@@ -32,7 +32,8 @@ endif()
 
 # This is needed for NVCXX QA, which requires a static set of executable names.
 # Only a single dialect may be enabled when this is off.
-option(CUB_ENABLE_CPP_DIALECT_IN_NAMES
+option(
+  CUB_ENABLE_CPP_DIALECT_IN_NAMES
   "Include C++ dialect information in target/object/etc names."
   ON
 )
@@ -41,10 +42,15 @@ mark_as_advanced(CUB_ENABLE_CPP_DIALECT_IN_NAMES)
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.
-if (NOT (CUB_ENABLE_HEADER_TESTING OR
-         CUB_ENABLE_TESTING OR
-         CUB_ENABLE_EXAMPLES OR
-         CCCL_ENABLE_BENCHMARKS))
+if (
+  NOT
+    (
+      CUB_ENABLE_HEADER_TESTING
+      OR CUB_ENABLE_TESTING
+      OR CUB_ENABLE_EXAMPLES
+      OR CCCL_ENABLE_BENCHMARKS
+    )
+)
   return()
 endif()
 
@@ -54,13 +60,19 @@ include(cmake/CubCudaConfig.cmake)
 include(cmake/CubUtilities.cmake)
 
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
-  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+  set(
+    CMAKE_BUILD_TYPE
+    "RelWithDebInfo"
+    CACHE STRING
+    "Choose the type of build."
+    FORCE
+  )
 
   set_property(
     CACHE CMAKE_BUILD_TYPE
     PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel
   )
-endif ()
+endif()
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 

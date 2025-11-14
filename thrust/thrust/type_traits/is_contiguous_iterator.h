@@ -33,7 +33,10 @@
 #endif // no system header
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -79,7 +82,7 @@ namespace detail
 template <typename Iterator>
 inline constexpr bool is_libcxx_wrap_iter_v = false;
 
-#if defined(_LIBCPP_VERSION)
+#if _CCCL_HOST_STD_LIB(LIBCXX)
 template <typename Iterator>
 inline constexpr bool is_libcxx_wrap_iter_v<
 #  if _LIBCPP_VERSION < 14000
@@ -88,30 +91,29 @@ inline constexpr bool is_libcxx_wrap_iter_v<
   std::__wrap_iter<Iterator>
 #  endif
   > = true;
-#endif
+#endif // _CCCL_HOST_STD_LIB(LIBCXX)
 
 template <typename Iterator>
 inline constexpr bool is_libstdcxx_normal_iterator_v = false;
 
-#if defined(__GLIBCXX__)
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 template <typename Iterator, typename Container>
 inline constexpr bool is_libstdcxx_normal_iterator_v<::__gnu_cxx::__normal_iterator<Iterator, Container>> = true;
-#endif
+#endif // _CCCL_HOST_STD_LIB(LIBSTDCXX)
 
-#if _CCCL_COMPILER(MSVC)
+#if _CCCL_HOST_STD_LIB(STL)
 template <typename Iterator>
 inline constexpr bool is_msvc_contiguous_iterator_v = ::cuda::std::is_pointer_v<::std::_Unwrapped_t<Iterator>>;
-#else
+#else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
 template <typename Iterator>
 inline constexpr bool is_msvc_contiguous_iterator_v = false;
-#endif
+#endif // ^^^ !_CCCL_HOST_STD_LIB(STL) ^^^
 
 template <typename Iterator>
 inline constexpr bool is_contiguous_iterator_impl_v =
   ::cuda::std::contiguous_iterator<Iterator> || is_thrust_pointer_v<Iterator> || is_libcxx_wrap_iter_v<Iterator>
   || is_libstdcxx_normal_iterator_v<Iterator> || is_msvc_contiguous_iterator_v<Iterator>
   || proclaim_contiguous_iterator<Iterator>::value;
-
 } // namespace detail
 
 /*! \endcond

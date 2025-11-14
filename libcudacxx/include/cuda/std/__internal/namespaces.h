@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/version.h>
+
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
 #if defined(_CCCL_HEADER_TEST)
 #  define _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() \
@@ -58,10 +60,10 @@
 #  define _CCCL_END_NAMESPACE_CUDA_DRIVER } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespaces related to <ranges>
-#  define _CCCL_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _CCCL_END_NAMESPACE_RANGES } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
-#  define _CCCL_BEGIN_NAMESPACE_VIEWS _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges::views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _CCCL_END_NAMESPACE_VIEWS } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _CCCL_END_NAMESPACE_CUDA_STD_RANGES } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges::views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _CCCL_END_NAMESPACE_CUDA_STD_VIEWS } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 #  define _CCCL_BEGIN_NAMESPACE_CPO(_CPO) namespace _CPO {
 #  define _CCCL_END_NAMESPACE_CPO }
@@ -72,8 +74,8 @@
 
 // Shorthands for different qualifiers
 // Namespaces related to execution
-#  define _CCCL_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
-#  define _CCCL_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 #  define _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda { namespace execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _CCCL_END_NAMESPACE_CUDA_EXECUTION } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
@@ -93,29 +95,37 @@
 #else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 #  if defined(_NVHPC_CUDA)
 #    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+      inline namespace _CCCL_PP_CAT(_CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST), _NVHPC) \
       {
 #    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  else // not defined(_NVHPC_CUDA)
 #    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, __CUDA_ARCH_LIST__)                \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, _SM, __CUDA_ARCH_LIST__)                \
       {
 #    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  endif // not defined(_NVHPC_CUDA)
 #endif // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 
-// Shorthands for different qualifiers
-#  define _CUDA_VSTD_NOVERSION ::cuda::std
-#  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_DEVICE         ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VSTD_FS        ::cuda::std::__fs::filesystem::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_STD_EXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_EXEC           ::cuda::execution::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_DRIVER         ::cuda::__driver::_LIBCUDACXX_ABI_NAMESPACE
+// Host standard library namespaces
+#if _CCCL_HOST_STD_LIB(LIBSTDCXX)
+  // We don't appy attributes on forward declarations, so we omit the _GLIBCXX_VISIBILITY(default)
+#  if _GLIBCXX_INLINE_VERSION
+#    define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std { inline _GLIBCXX_BEGIN_NAMESPACE_VERSION
+#    define _CCCL_END_NAMESPACE_STD   _GLIBCXX_END_NAMESPACE_VERSION } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  else // ^^^ _GLIBCXX_INLINE_VERSION ^^^ / vvv !_GLIBCXX_INLINE_VERSION vvv
+#    define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std {
+#    define _CCCL_END_NAMESPACE_STD   } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  endif // ^^^ !_GLIBCXX_INLINE_VERSION ^^^
+#elif _CCCL_HOST_STD_LIB(LIBCXX)
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() _LIBCPP_BEGIN_NAMESPACE_STD
+#  define _CCCL_END_NAMESPACE_STD   _LIBCPP_END_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#elif _CCCL_HOST_STD_LIB(STL)
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() _STD_BEGIN
+#  define _CCCL_END_NAMESPACE_STD   _STD_END _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#else
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace std {
+#  define _CCCL_END_NAMESPACE_STD   } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#endif
 
 // clang-format on
 

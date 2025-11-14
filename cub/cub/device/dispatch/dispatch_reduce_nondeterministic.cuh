@@ -20,7 +20,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/kernels/reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -39,7 +39,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -67,10 +66,7 @@ struct DeviceReduceNondeterministicKernelSource
     return sizeof(InitT);
   }
 };
-} // namespace detail::reduce
 
-namespace detail
-{
 //! @brief Utility class for dispatching the appropriately-tuned kernels for device-wide reduction
 //!
 //! @tparam InputIteratorT
@@ -91,11 +87,11 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::iter_value_t<InputIteratorT>>,
+          typename InitT = non_void_value_t<OutputIteratorT, ::cuda::std::iter_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
-          typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce::DeviceReduceNondeterministicKernelSource<
+          typename PolicyHub    = policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource = DeviceReduceNondeterministicKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,
             OutputIteratorT,
@@ -104,8 +100,8 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
-struct DispatchReduceNondeterministic
+          typename KernelLauncherFactory = TripleChevronFactory>
+struct dispatch_nondeterministic_t
 {
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
@@ -168,7 +164,7 @@ struct DispatchReduceNondeterministic
     }
 
     // Init regular kernel configuration
-    detail::KernelConfig reduce_config;
+    KernelConfig reduce_config;
     cudaError_t error =
       CubDebug(reduce_config.Init(atomic_kernel, active_policy.ReduceNondeterministic(), launcher_factory));
     if (cudaSuccess != error)
@@ -186,7 +182,7 @@ struct DispatchReduceNondeterministic
 
     const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
     // Even-share work distribution
-    int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+    const int max_blocks = reduce_device_occupancy * subscription_factor;
     GridEvenShare<OffsetT> even_share;
     even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
     // Get grid size for nondeterministic_device_reduce_atomic_kernel
@@ -233,7 +229,7 @@ struct DispatchReduceNondeterministic
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::reduce::MakeReducePolicyWrapper(active_policy);
+    auto wrapped_policy = reduce::MakeReducePolicyWrapper(active_policy);
     return InvokeAtomicKernel(kernel_source.AtomicKernel(), wrapped_policy);
   }
 
@@ -290,7 +286,7 @@ struct DispatchReduceNondeterministic
     }
 
     // Create dispatch functor
-    DispatchReduceNondeterministic dispatch{
+    dispatch_nondeterministic_t dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -308,6 +304,6 @@ struct DispatchReduceNondeterministic
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END

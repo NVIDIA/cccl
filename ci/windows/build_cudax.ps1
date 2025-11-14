@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -6,7 +6,10 @@
     [int]$CXX_STANDARD = 20,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
-    [string]$CUDA_ARCH = ""
+    [string]$CUDA_ARCH = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $CURRENT_PATH = Split-Path $pwd -leaf
@@ -16,12 +19,12 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
 $PRESET = "cudax-cpp$CXX_STANDARD"
-$CMAKE_OPTIONS = ""
+$LOCAL_CMAKE_OPTIONS = ""
 
-configure_and_build_preset "CUDA Experimental" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "CUDA Experimental" $PRESET $LOCAL_CMAKE_OPTIONS
 
 If($CURRENT_PATH -ne "ci") {
     popd

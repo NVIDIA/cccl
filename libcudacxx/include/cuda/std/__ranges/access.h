@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _Tp>
 _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
@@ -296,7 +296,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -1,38 +1,13 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
@@ -98,6 +73,23 @@ struct run_to_run_length_op
   }
 };
 
+class non_default_constructible_iterator_op
+{
+  const std::size_t k;
+
+public:
+  // Not default constructible
+  non_default_constructible_iterator_op() = delete;
+  __host__ __device__ non_default_constructible_iterator_op(std::size_t k)
+      : k{k}
+  {}
+
+  __host__ __device__ std::size_t operator()(std::size_t index) const
+  {
+    return index + k;
+  }
+};
+
 C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
@@ -138,7 +130,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
   c2h::device_vector<int> out_num_runs(1);
 
   run_length_encode(
-    thrust::make_counting_iterator(type{}), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
+    cuda::counting_iterator(type{}), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
   c2h::device_vector<type> reference_unique(num_items);
   thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ...,
@@ -289,6 +281,34 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
+C2H_TEST("DeviceRunLengthEncode::Encode works with non-default constructible iterators",
+         "[device][run_length_encode]",
+         offset_types)
+{
+  // This is a smoke test to ensure that the algorithm works with iterators that are not default-constructible, as was
+  // the case before introducing the streaming context (see https://github.com/NVIDIA/cccl/issues/6419).
+  using type        = int;
+  using offset_type = typename c2h::get<0, TestType>;
+
+  constexpr int64_t num_items = 1000;
+  auto counting_it            = thrust::make_counting_iterator(0);
+  auto custom_it              = thrust::make_transform_iterator(counting_it, non_default_constructible_iterator_op{42});
+
+  c2h::device_vector<type> out_unique(num_items);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(1);
+
+  run_length_encode(custom_it, out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
+
+  c2h::device_vector<type> reference_unique{custom_it, custom_it + num_items};
+  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
+
+  REQUIRE(out_unique == reference_unique);
+  REQUIRE(out_counts == reference_counts);
+  REQUIRE(out_num_runs == reference_num_runs);
+}
+
 C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
          "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
@@ -304,13 +324,13 @@ try
   const std::size_t num_items =
     (sizeof(offset_type) == 8) ? uint32_max + random_range : cuda::std::numeric_limits<offset_type>::max();
 
-  auto counting_it = thrust::make_counting_iterator(offset_type{0});
+  auto counting_it = cuda::counting_iterator(offset_type{0});
 
   // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
   const std::size_t num_small_runs = cuda::std::min(uint32_max, num_items) - 4;
   const auto num_uniques           = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
-  auto input_item_it               = thrust::make_transform_iterator(
-    counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
+  auto input_item_it =
+    cuda::transform_iterator(counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
 
   // Prepare helper to check the unique items being written: we expect the i-th item corresponding to value i
   auto check_unique_out_helper = detail::large_problem_test_helper(num_uniques);
@@ -319,7 +339,7 @@ try
   // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
   // We repeat each number once for the first num_small_runs number of items and all subsequent numbers twice
   auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
-  auto expected_run_lengths_it     = thrust::make_transform_iterator(
+  auto expected_run_lengths_it     = cuda::transform_iterator(
     counting_it, run_to_run_length_op<offset_type, run_length_type>{static_cast<offset_type>(num_small_runs)});
   auto check_run_length_out_it = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
 
@@ -369,9 +389,9 @@ try
   constexpr run_length_type second_run_size = num_items - first_run_size;
 
   // First run is a small run of equal items
-  auto small_segment_it = thrust::make_constant_iterator(item_t{3});
+  auto small_segment_it = cuda::constant_iterator(item_t{3});
   // Second run is a very large run of equal items
-  auto large_segment_it = thrust::make_constant_iterator(item_t{42});
+  auto large_segment_it = cuda::constant_iterator(item_t{42});
   auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
 
   // Allocate some memory for the results

@@ -16,12 +16,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
-template <typename T, size_t... Extents>
-using dimensions = ::cuda::std::extents<T, Extents...>;
+template <class _Tp, size_t... _Extents>
+using dimensions = ::cuda::std::extents<_Tp, _Extents...>;
 
 // not unsigned because of a bug in ::cuda::std::extents
 using dimensions_index_type = int;
@@ -56,31 +54,31 @@ using dimensions_index_type = int;
  * @tparam Extents
  *   Extents of the result
  */
-template <typename T, size_t... Extents>
-struct hierarchy_query_result : public dimensions<T, Extents...>
+template <class _Tp, size_t... _Extents>
+struct hierarchy_query_result : public dimensions<_Tp, _Extents...>
 {
-  using Dims = dimensions<T, Extents...>;
-  using Dims::Dims;
+  using _Dims = dimensions<_Tp, _Extents...>;
+  using _Dims::_Dims;
 
   _CCCL_HOST_DEVICE constexpr hierarchy_query_result()
-      : Dims()
-      , x(Dims::extent(0))
-      , y(Dims::rank() > 1 ? Dims::extent(1) : 1)
-      , z(Dims::rank() > 2 ? Dims::extent(2) : 1)
+      : _Dims()
+      , x(_Dims::extent(0))
+      , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
+      , z(_Dims::rank() > 2 ? _Dims::extent(2) : 1)
   {}
 
-  _CCCL_HOST_DEVICE explicit constexpr hierarchy_query_result(const Dims& dims)
-      : Dims(dims)
-      , x(Dims::extent(0))
-      , y(Dims::rank() > 1 ? Dims::extent(1) : 1)
-      , z(Dims::rank() > 2 ? Dims::extent(2) : 1)
+  _CCCL_HOST_DEVICE explicit constexpr hierarchy_query_result(const _Dims& dims)
+      : _Dims(dims)
+      , x(_Dims::extent(0))
+      , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
+      , z(_Dims::rank() > 2 ? _Dims::extent(2) : 1)
   {}
 
-  static_assert(Dims::rank() > 0 && Dims::rank() <= 3);
+  static_assert(_Dims::rank() > 0 && _Dims::rank() <= 3);
 
-  const T x;
-  const T y;
-  const T z;
+  const _Tp x;
+  const _Tp y;
+  const _Tp z;
 
   _CCCL_HOST_DEVICE constexpr operator dim3() const
   {
@@ -90,55 +88,55 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
 
 namespace __detail
 {
-template <typename OpType>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size_t e2)
+template <class _Op>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr size_t __merge_extents(size_t __e1, size_t __e2)
 {
-  if (e1 == ::cuda::std::dynamic_extent || e2 == ::cuda::std::dynamic_extent)
+  if (__e1 == ::cuda::std::dynamic_extent || __e2 == ::cuda::std::dynamic_extent)
   {
     return ::cuda::std::dynamic_extent;
   }
   else
   {
-    OpType op;
-    return op(e1, e2);
+    _Op __op{};
+    return __op(__e1, __e2);
   }
 }
 
-template <typename DstType, typename OpType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
+template <class _Dst, class _Op, class _T1, size_t... _E1, class _T2, size_t... _E2>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
+__dims_op(const _Op& __op, const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
   // For now target only 3 dim extents
-  static_assert(sizeof...(Extents1) == sizeof...(Extents2));
-  static_assert(sizeof...(Extents1) == 3);
+  static_assert(sizeof...(_E1) == sizeof...(_E2));
+  static_assert(sizeof...(_E1) == 3);
 
-  return dimensions<DstType, merge_extents<OpType>(Extents1, Extents2)...>(
-    op(static_cast<DstType>(h1.extent(0)), h2.extent(0)),
-    op(static_cast<DstType>(h1.extent(1)), h2.extent(1)),
-    op(static_cast<DstType>(h1.extent(2)), h2.extent(2)));
+  return dimensions<_Dst, __merge_extents<_Op>(_E1, _E2)...>(
+    __op(static_cast<_Dst>(__h1.extent(0)), __h2.extent(0)),
+    __op(static_cast<_Dst>(__h1.extent(1)), __h2.extent(1)),
+    __op(static_cast<_Dst>(__h1.extent(2)), __h2.extent(2)));
 }
 
-template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
+template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-dims_product(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
+__dims_product(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::multiplies(), h1, h2);
+  return __dims_op<_Dst>(::cuda::std::multiplies(), __h1, __h2);
 }
 
-template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
+template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-dims_sum(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
+__dims_sum(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::plus(), h1, h2);
+  return __dims_op<_Dst>(::cuda::std::plus(), __h1, __h2);
 }
 
-template <typename T, size_t... Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto convert_to_query_result(const dimensions<T, Extents...>& result)
+template <class _Tp, size_t... _Extents>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __convert_to_query_result(const dimensions<_Tp, _Extents...>& __result)
 {
-  return hierarchy_query_result<T, Extents...>(result);
+  return hierarchy_query_result<_Tp, _Extents...>(__result);
 }
 
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto dim3_to_dims(const dim3& dims)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __dim3_to_dims(const dim3& dims)
 {
   return dimensions<dimensions_index_type,
                     ::cuda::std::dynamic_extent,
@@ -146,17 +144,16 @@ template <typename T, size_t... Extents>
                     ::cuda::std::dynamic_extent>(dims.x, dims.y, dims.z);
 }
 
-template <typename TyTrunc, typename Index, typename Dims>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto index_to_linear(const Index& index, const Dims& dims)
+template <class _TyTrunc, class _Index, class _Dims>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __index_to_linear(const _Index& __index, const _Dims& __dims)
 {
-  static_assert(Dims::rank() == 3);
+  static_assert(_Dims::rank() == 3);
 
-  return (static_cast<TyTrunc>(index.extent(2)) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
+  return (static_cast<_TyTrunc>(__index.extent(2)) * __dims.extent(1) + __index.extent(1)) * __dims.extent(0)
+       + __index.extent(0);
 }
-
 } // namespace __detail
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 

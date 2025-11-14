@@ -33,6 +33,7 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -55,14 +56,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
-
 // [mdspan.layout.stride.expo]/3
-template <class>
-struct __is_extents : false_type
-{};
-
-template <class _Tp>
-inline constexpr bool __is_extents_v = __is_extents<_Tp>::value;
 
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
@@ -81,7 +75,7 @@ _CCCL_CONCEPT __layout_mapping_req_type = _CCCL_REQUIRES_EXPR((_Mapping))(
 // [mdspan.layout.reqmts]/2-4
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_types = _CCCL_REQUIRES_EXPR((_Mapping))(
-  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(__is_cuda_std_extents_v<typename _Mapping::extents_type>),
   requires(same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>),
   requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
   requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>));
@@ -105,7 +99,7 @@ _CCCL_CONCEPT __layout_mapping_req = _CCCL_REQUIRES_EXPR((_Mapping))(
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>),
-  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(__is_cuda_std_extents_v<typename _Mapping::extents_type>),
   requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
   requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
   requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
@@ -123,7 +117,6 @@ static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic()
 
 template <class _Extent, size_t _Size>
 static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
-
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>

@@ -43,9 +43,7 @@
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -53,6 +51,10 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -83,7 +85,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
@@ -134,7 +135,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
                             stream);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   _CUDA_CUB_RET_IF_FAIL(status);
 
   // Return if we're only querying temporary storage requirements
@@ -212,7 +213,6 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
 
   return output;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -279,7 +279,6 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
   return 1
        + thrust::count_if(policy, it, ::cuda::std::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 

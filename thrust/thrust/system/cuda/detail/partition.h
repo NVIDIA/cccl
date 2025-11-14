@@ -45,8 +45,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
-#  include <thrust/pair.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
@@ -55,15 +53,15 @@
 #  include <thrust/system/cuda/detail/uninitialized_copy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
 struct DispatchPartitionIf
 {
@@ -108,7 +106,7 @@ struct DispatchPartitionIf
                                             stream);
     _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
@@ -210,7 +208,7 @@ template <typename Derived,
           typename SelectedOutIt,
           typename RejectedOutIt,
           typename Predicate>
-THRUST_RUNTIME_FUNCTION pair<SelectedOutIt, RejectedOutIt> stable_partition_copy(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<SelectedOutIt, RejectedOutIt> stable_partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -221,14 +219,14 @@ THRUST_RUNTIME_FUNCTION pair<SelectedOutIt, RejectedOutIt> stable_partition_copy
 {
   if (::cuda::std::distance(first, last) <= 0)
   {
-    return thrust::make_pair(selected_result, rejected_result);
+    return ::cuda::std::make_pair(selected_result, rejected_result);
   }
 
   using output_it_wrapper_t = cub::detail::select::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
   std::size_t num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
   std::size_t num_selected =
     partition(policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
-  return thrust::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
+  return ::cuda::std::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
 }
 
 template <typename Derived, typename InputIt, typename StencilIt, typename Predicate>
@@ -253,7 +251,6 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
     partition(policy, tmp.data().get(), tmp.data().get() + num_items, stencil, first, predicate);
   return first + num_selected;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -262,7 +259,7 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -271,7 +268,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  auto ret = thrust::make_pair(selected_result, rejected_result);
+  auto ret = ::cuda::std::make_pair(selected_result, rejected_result);
   THRUST_CDP_DISPATCH(
     (ret = detail::stable_partition_copy(policy, first, last, stencil, selected_result, rejected_result, predicate);),
     (ret = thrust::partition_copy(
@@ -281,7 +278,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -289,7 +286,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  auto ret = thrust::make_pair(selected_result, rejected_result);
+  auto ret = ::cuda::std::make_pair(selected_result, rejected_result);
   THRUST_CDP_DISPATCH(
     (ret = detail::stable_partition_copy(
        policy, first, last, static_cast<cub::NullType*>(nullptr), selected_result, rejected_result, predicate);),
@@ -300,7 +297,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE partition_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -309,7 +306,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  auto ret = thrust::make_pair(selected_result, rejected_result);
+  auto ret = ::cuda::std::make_pair(selected_result, rejected_result);
   THRUST_CDP_DISPATCH(
     (ret = detail::stable_partition_copy(policy, first, last, stencil, selected_result, rejected_result, predicate);),
     (ret = thrust::stable_partition_copy(
@@ -319,7 +316,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class SelectedOutIt, class RejectedOutIt, class Predicate>
-pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
+::cuda::std::pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -327,7 +324,7 @@ pair<SelectedOutIt, RejectedOutIt> _CCCL_HOST_DEVICE stable_partition_copy(
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  auto ret = thrust::make_pair(selected_result, rejected_result);
+  auto ret = ::cuda::std::make_pair(selected_result, rejected_result);
   THRUST_CDP_DISPATCH(
     (ret = detail::stable_partition_copy(
        policy, first, last, static_cast<cub::NullType*>(nullptr), selected_result, rejected_result, predicate);),
@@ -399,7 +396,6 @@ is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, P
   ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
   return end == last;
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

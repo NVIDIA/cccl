@@ -27,7 +27,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::copy_mdspan
 {
-
 template <typename MdspanIn, typename MdspanOut>
 struct copy_mdspan_t
 {
@@ -73,7 +72,6 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   // Compatible layouts could use more efficient iteration patterns
   return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), copy_mdspan_t{mdspan_in, mdspan_out}, stream);
 }
-
 } // namespace detail::copy_mdspan
 
 CUB_NAMESPACE_END

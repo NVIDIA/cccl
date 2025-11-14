@@ -33,28 +33,26 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // Forward declare temporary_array, as it's used by the CUDA copy backend, which
 // is included in contiguous_storage's definition.
 template <typename T, typename System>
 class temporary_array;
-
 } // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/allocator/no_throw_allocator.h>
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/contiguous_storage.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename System>
 class temporary_array : public contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>
 {
@@ -146,7 +144,6 @@ public:
       : super_t(to_system, from_system, first, last)
   {}
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END
 

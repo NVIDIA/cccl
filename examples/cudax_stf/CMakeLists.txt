@@ -23,7 +23,12 @@ include(cmake/CPM.cmake)
 
 # We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
 # In your project, these variables are unnecessary and you can just use the values directly
-set(CCCL_REPOSITORY "https://github.com/NVIDIA/cccl" CACHE STRING "Git repository to fetch CCCL from")
+set(
+  CCCL_REPOSITORY
+  "https://github.com/NVIDIA/cccl"
+  CACHE STRING
+  "Git repository to fetch CCCL from"
+)
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
@@ -36,7 +41,7 @@ CPMAddPackage(
 )
 
 # Default to building for the GPU on the current system
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
@@ -46,8 +51,12 @@ add_executable(simple_stf simple_stf.cu)
 target_link_libraries(simple_stf PUBLIC cuda)
 
 if (CMAKE_CUDA_COMPILER)
-    target_compile_options(simple_stf PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
-    target_compile_options(simple_stf PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
+  target_compile_options(
+    simple_stf
+    PUBLIC
+      $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+      $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>
+  )
 endif()
 
 target_link_libraries(simple_stf PRIVATE CCCL::CCCL CCCL::cudax)

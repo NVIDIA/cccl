@@ -27,12 +27,30 @@
 #endif // no system header
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/unique.h>
-#include <thrust/system/detail/adl/unique_by_key.h>
 #include <thrust/system/detail/generic/select_system.h>
+#include <thrust/unique.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
-#include <thrust/unique.h>
+#include <thrust/system/detail/sequential/unique.h>
+#include <thrust/system/detail/sequential/unique_by_key.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(unique_by_key.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/unique.h>
+#  include <thrust/system/cpp/detail/unique_by_key.h>
+#  include <thrust/system/cuda/detail/unique.h>
+#  include <thrust/system/cuda/detail/unique_by_key.h>
+#  include <thrust/system/omp/detail/unique.h>
+#  include <thrust/system/omp/detail/unique_by_key.h>
+#  include <thrust/system/tbb/detail/unique.h>
+#  include <thrust/system/tbb/detail/unique_by_key.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
@@ -88,7 +106,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -102,7 +120,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -121,7 +139,7 @@ template <typename DerivedPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -147,7 +165,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -225,7 +243,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
 } // end unique_copy()
 
 template <typename ForwardIterator1, typename ForwardIterator2>
-thrust::pair<ForwardIterator1, ForwardIterator2>
+::cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
@@ -241,7 +259,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
 } // end unique_by_key()
 
 template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first, BinaryPredicate binary_pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
@@ -257,7 +275,7 @@ thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
 } // end unique_by_key()
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -286,7 +304,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,

@@ -8,12 +8,21 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "cuda-cccl"
-description = "CUDA Core Library for Python"
+description = "CUDA Core Compute Libraries for Python"
 authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
 ]
 requires-python = ">=3.10"
 
@@ -22,7 +31,9 @@ dependencies = [
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
+  # FIXME
   "numba-cuda @ git+https://github.com/NVIDIA/numba-cuda.git@main",
+  "typing_extensions",
 ]
 
 dynamic = ["version"]
@@ -46,7 +57,6 @@ test-cu12 = [
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
-  "typing_extensions",
   "pytest-benchmark",
 ]
 test-cu13 = [
@@ -54,12 +64,14 @@ test-cu13 = [
   "pytest",
   "pytest-xdist",
   "cupy-cuda13x",
-  "typing_extensions",
   "pytest-benchmark",
 ]
 
 [project.urls]
-Homepage = "https://developer.nvidia.com/"
+Homepage = "https://github.com/NVIDIA/cccl"
+Repository = "https://github.com/NVIDIA/cccl"
+Documentation = "https://nvidia.github.io/cccl"
+Issues = "https://github.com/NVIDIA/cccl/issues"
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"

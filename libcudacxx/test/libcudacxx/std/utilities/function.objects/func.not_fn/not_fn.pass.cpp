@@ -14,6 +14,7 @@
 
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
 
@@ -387,11 +388,11 @@ __host__ __device__ void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
     assert(ret2() == true);
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
     ret = ret2;
     assert(ret() == true);
     assert(ret2() == true);
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   }
   {
     using T = MoveAssignableWrapper;
@@ -406,10 +407,10 @@ __host__ __device__ void constructor_tests()
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(cuda::std::move(value2));
     assert(ret2() == true);
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
     ret = cuda::std::move(ret2);
     assert(ret() == true);
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
   }
 }
 

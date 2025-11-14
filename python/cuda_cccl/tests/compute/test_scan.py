@@ -5,7 +5,6 @@
 
 import cupy as cp
 import numba.cuda
-import numba.types
 import numpy as np
 import pytest
 
@@ -353,3 +352,68 @@ def test_reverse_output_iterator():
 
     expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
     np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_future_init_value(force_inclusive):
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
+    d_output = cp.empty_like(d_input)
+    init_value = cp.array([42], dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, init_value, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        d_input.get(), lambda a, b: a + b, init_value.get(), force_inclusive
+    )
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value(monkeypatch):
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
+    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
+    d_output = cp.empty_like(d_input)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value_iterator():
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = cp.empty(num_items, dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        np.arange(0, num_items, dtype=dtype), lambda a, b: a + b, [0], force_inclusive
+    )
+
+    np.testing.assert_array_equal(expected, got)

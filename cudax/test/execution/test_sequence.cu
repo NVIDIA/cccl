@@ -18,6 +18,8 @@
 #include "common/utility.cuh"
 #include "testing.cuh"
 
+namespace ex = cuda::experimental::execution;
+
 namespace
 {
 C2H_TEST("simple use of sequence executes both child operations", "[adaptors][sequence]")
@@ -25,25 +27,22 @@ C2H_TEST("simple use of sequence executes both child operations", "[adaptors][se
   bool flag1{false};
   bool flag2{false};
 
-  auto sndr1 = cudax_async::sequence(
-    cudax_async::just() | cudax_async::then([&] {
+  auto sndr1 = ex::sequence(
+    ex::just() | ex::then([&] {
       flag1 = true;
     }),
-    cudax_async::just() | cudax_async::then([&] {
+    ex::just() | ex::then([&] {
       flag2 = true;
     }));
 
   check_value_types<types<>>(sndr1);
   check_sends_stopped<false>(sndr1);
-  NV_IF_ELSE_TARGET(NV_IS_HOST, //
-                    ({ check_error_types<std::exception_ptr>(sndr1); }),
-                    ({ check_error_types<>(sndr1); }));
+  check_error_types<ex::exception_ptr>(sndr1);
 
-  auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
-  cudax_async::start(op);
+  auto op = ex::connect(std::move(sndr1), checked_value_receiver<>{});
+  ex::start(op);
 
   CHECK(flag1);
   CHECK(flag2);
 }
-
 } // namespace

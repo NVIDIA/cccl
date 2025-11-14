@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -62,7 +63,8 @@ struct sync_wait_t
     basic_run_loop<_Env> __loop_;
   };
 
-  template <class _Env>
+public:
+  template <class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     _CCCL_EXEC_CHECK_DISABLE
@@ -108,6 +110,7 @@ struct sync_wait_t
   template <class... _Ts>
   using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 
+  _CUDAX_SEMI_PRIVATE :
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
@@ -137,7 +140,7 @@ struct sync_wait_t
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is unreachable.
         if constexpr (!__nothrow_decay_copyable<_As...>)
         {
-          __state_->__errors_.__emplace(::std::current_exception());
+          __state_->__errors_.__emplace(execution::current_exception());
         }
       }
       __state_->__loop_.finish();
@@ -155,7 +158,7 @@ struct sync_wait_t
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is unreachable.
         if constexpr (!__nothrow_decay_copyable<_Error>)
         {
-          __state_->__errors_.__emplace(::std::current_exception());
+          __state_->__errors_.__emplace(execution::current_exception());
         }
       }
       __state_->__loop_.finish();
@@ -177,9 +180,21 @@ struct sync_wait_t
   struct __throw_error_fn
   {
     template <class _Error>
-    _CCCL_HOST_API void operator()(_Error __err) const
+    [[noreturn]]
+    _CCCL_API void operator()(_Error __err) const
     {
-      if constexpr (__same_as<_Error, ::std::exception_ptr>)
+      NV_IF_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
+    }
+
+    template <class _Error>
+    [[noreturn]]
+    _CCCL_HOST_API static void __do_throw(_Error __err)
+    {
+      if constexpr (__same_as<_Error, exception_ptr>)
+      {
+        execution::rethrow_exception(static_cast<_Error&&>(__err));
+      }
+      else if constexpr (__same_as<_Error, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
@@ -195,6 +210,7 @@ struct sync_wait_t
       {
         throw static_cast<_Error&&>(__err);
       }
+      _CCCL_UNREACHABLE();
     }
   };
 
@@ -276,7 +292,7 @@ public:
   /// @retval error Throws the error.
   ///
   /// @throws ::std::rethrow_exception(error) if the error has type
-  ///         `::std::exception_ptr`.
+  ///         `exception_ptr`.
   /// @throws ::std::system_error(error) if the error has type
   ///         `::std::error_code`.
   /// @throws ::cuda::cuda_error(error, "...") if the error has type

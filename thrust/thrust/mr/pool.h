@@ -32,19 +32,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/std/__cccl/algorithm_wrapper.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 /** \addtogroup memory_resources Memory Resources
  *  \ingroup memory_management
  *  \{
@@ -112,7 +113,7 @@ public:
   unsynchronized_pool_resource(Upstream* upstream, pool_options options = get_default_options())
       : m_upstream(upstream)
       , m_options(options)
-      , m_smallest_block_log2(detail::log2_ri(m_options.smallest_block_size))
+      , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
       , m_pools(upstream)
       , m_allocated()
       , m_oversized()
@@ -121,7 +122,7 @@ public:
     assert(m_options.validate());
 
     pool p = {block_descriptor_ptr(), 0};
-    m_pools.resize(detail::log2_ri(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
+    m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
   // TODO: C++11: use delegating constructors
@@ -133,7 +134,7 @@ public:
   unsynchronized_pool_resource(pool_options options = get_default_options())
       : m_upstream(get_global_resource<Upstream>())
       , m_options(options)
-      , m_smallest_block_log2(detail::log2_ri(m_options.smallest_block_size))
+      , m_smallest_block_log2(::cuda::ceil_ilog2(m_options.smallest_block_size))
       , m_pools(get_global_resource<Upstream>())
       , m_allocated()
       , m_oversized()
@@ -142,7 +143,7 @@ public:
     assert(m_options.validate());
 
     pool p = {block_descriptor_ptr(), 0};
-    m_pools.resize(detail::log2_ri(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
+    m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
   /*! Destructor. Releases all held memory to upstream.
@@ -260,7 +261,7 @@ public:
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
-    assert(detail::is_power_of_2(alignment));
+    assert(::cuda::is_power_of_two(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
     if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
@@ -371,7 +372,7 @@ public:
 
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
-    std::size_t bytes_log2 = thrust::detail::log2_ri(bytes);
+    std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
     std::size_t bucket_idx = bytes_log2 - m_smallest_block_log2;
     pool& bucket           = thrust::raw_reference_cast(m_pools[bucket_idx]);
 
@@ -439,7 +440,7 @@ public:
   virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
-    assert(detail::is_power_of_2(alignment));
+    assert(::cuda::is_power_of_two(alignment));
 
     // verify that the pointer is at least as aligned as claimed
     assert(reinterpret_cast<::cuda::std::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
@@ -504,7 +505,7 @@ public:
     }
 
     // push the block to the front of the appropriate bucket's free list
-    std::size_t n_log2     = thrust::detail::log2_ri(n);
+    std::size_t n_log2     = ::cuda::ceil_ilog2(n);
     std::size_t bucket_idx = n_log2 - m_smallest_block_log2;
     pool& bucket           = thrust::raw_reference_cast(m_pools[bucket_idx]);
 
@@ -521,6 +522,5 @@ public:
 
 /*! \} // memory_resources
  */
-
 } // namespace mr
 THRUST_NAMESPACE_END

@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -47,7 +23,9 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -123,7 +101,6 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 
 namespace detail
 {
-
 inline constexpr int max_devices       = CUB_MAX_DEVICES;
 inline constexpr int warp_threads      = CUB_PTX_WARP_THREADS;
 inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
@@ -137,30 +114,62 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
+struct scaling_result
+{
+  int items_per_thread;
+  int block_threads;
+};
+
+[[nodiscard]] _CCCL_API inline constexpr auto
+scale_reg_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+{
+  const int items_per_thread =
+    (::cuda::std::max) (1, nominal_4B_items_per_thread * 4 / (::cuda::std::max) (4, target_type_size));
+  const int block_threads =
+    (::cuda::std::min) (nominal_4B_block_threads,
+                        ::cuda::ceil_div(int{max_smem_per_block} / (target_type_size * items_per_thread), 32) * 32);
+  return {items_per_thread, block_threads};
+}
+
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct RegBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max) (1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max) (4, int{sizeof(T)}));
-  static constexpr int BLOCK_THREADS =
-    (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
-                          * 32);
+private:
+  static constexpr auto result = scale_reg_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+
+public:
+  static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
+  static constexpr int BLOCK_THREADS    = result.block_threads;
 };
+
+[[nodiscard]] _CCCL_API inline constexpr auto
+scale_mem_bound(int nominal_4B_block_threads, int nominal_4B_items_per_thread, int target_type_size) -> scaling_result
+{
+  const int items_per_thread =
+    ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / target_type_size, 1, nominal_4B_items_per_thread * 2);
+  const int block_threads =
+    (::cuda::std::min) (nominal_4B_block_threads,
+                        ::cuda::round_up(int{max_smem_per_block} / (target_type_size * items_per_thread), 32));
+  return {items_per_thread, block_threads};
+}
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max) (1,
-                        (::cuda::std::min) (Nominal4ByteItemsPerThread * 4 / int{sizeof(T)},
-                                            Nominal4ByteItemsPerThread * 2));
-  static constexpr int BLOCK_THREADS =
-    (::cuda::std::min) (Nominal4ByteBlockThreads,
-                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
-                          * 32);
+private:
+  static constexpr auto result = scale_mem_bound(Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, int{sizeof(T)});
+
+public:
+  static constexpr int ITEMS_PER_THREAD = result.items_per_thread;
+  static constexpr int BLOCK_THREADS    = result.block_threads;
 };
 
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename>
+struct NoScaling
+{
+  static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
+  static constexpr int BLOCK_THREADS    = Nominal4ByteBlockThreads;
+};
 } // namespace detail
 #endif // Do not document
 

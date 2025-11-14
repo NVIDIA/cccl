@@ -29,9 +29,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/detail/normal_distribution_base.h>
 #include <thrust/random/detail/random_core_access.h>
+
+#include <cuda/std/__utility/pair.h>
 
 #include <iostream>
 
@@ -39,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_distributions
  *  \{
  */
@@ -101,7 +101,7 @@ public:
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p normal_distribution's parameters.
    */
-  using param_type = thrust::pair<RealType, RealType>;
+  using param_type = ::cuda::std::pair<RealType, RealType>;
 
   // constructors and reset functions
 
@@ -247,7 +247,6 @@ std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>&
 
 /*! \} // end random_number_distributions
  */
-
 } // namespace random
 
 using random::normal_distribution;

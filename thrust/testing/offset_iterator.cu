@@ -1,4 +1,3 @@
-
 #include <thrust/distance.h>
 #include <thrust/iterator/offset_iterator.h>
 

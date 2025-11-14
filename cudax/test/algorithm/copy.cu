@@ -12,91 +12,91 @@
 
 C2H_TEST("1d Copy", "[data_manipulation]")
 {
-  cudax::stream _stream{cuda::device_ref{0}};
+  cuda::stream _stream{cuda::device_ref{0}};
 
   SECTION("Device resource")
   {
-    cudax::device_memory_resource device_resource{cuda::device_ref{0}};
+    cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     std::vector<int> host_vector(buffer_size);
 
     {
-      cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> buffer(device_resource, _stream, buffer_size);
-      cudax::fill_bytes(_stream, buffer, fill_byte);
+      cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible> buffer(device_resource, _stream, buffer_size);
+      cuda::fill_bytes(_stream, buffer, fill_byte);
 
-      cudax::copy_bytes(_stream, buffer, host_vector);
+      cuda::copy_bytes(_stream, buffer, host_vector);
       check_result_and_erase(_stream, host_vector);
 
-      cudax::copy_bytes(_stream, std::move(buffer), host_vector);
+      cuda::copy_bytes(_stream, std::move(buffer), host_vector);
       check_result_and_erase(_stream, host_vector);
     }
     {
-      cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> not_yet_const_buffer(
+      cuda::__uninitialized_async_buffer<int, cuda::mr::device_accessible> not_yet_const_buffer(
         device_resource, _stream, buffer_size);
-      cudax::fill_bytes(_stream, not_yet_const_buffer, fill_byte);
+      cuda::fill_bytes(_stream, not_yet_const_buffer, fill_byte);
 
       const auto& const_buffer = not_yet_const_buffer;
 
-      cudax::copy_bytes(_stream, const_buffer, host_vector);
+      cuda::copy_bytes(_stream, const_buffer, host_vector);
       check_result_and_erase(_stream, host_vector);
 
-      cudax::copy_bytes(_stream, const_buffer, cuda::std::span(host_vector));
+      cuda::copy_bytes(_stream, const_buffer, cuda::std::span(host_vector));
       check_result_and_erase(_stream, host_vector);
     }
   }
 
   SECTION("Host and managed resource")
   {
-    cudax::legacy_managed_memory_resource managed_resource;
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_managed_memory_resource managed_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
       cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(managed_resource, buffer_size);
 
-      cudax::fill_bytes(_stream, host_buffer, fill_byte);
+      cuda::fill_bytes(_stream, host_buffer, fill_byte);
 
-      cudax::copy_bytes(_stream, host_buffer, device_buffer);
+      cuda::copy_bytes(_stream, host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
 
-      cudax::copy_bytes(_stream, cuda::std::span(host_buffer), device_buffer);
+      cuda::copy_bytes(_stream, cuda::std::span(host_buffer), device_buffer);
       check_result_and_erase(_stream, device_buffer);
     }
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> not_yet_const_host_buffer(host_resource, buffer_size);
       cudax::uninitialized_buffer<int, cuda::mr::device_accessible> device_buffer(managed_resource, buffer_size);
-      cudax::fill_bytes(_stream, not_yet_const_host_buffer, fill_byte);
+      cuda::fill_bytes(_stream, not_yet_const_host_buffer, fill_byte);
 
       const auto& const_host_buffer = not_yet_const_host_buffer;
 
-      cudax::copy_bytes(_stream, const_host_buffer, device_buffer);
+      cuda::copy_bytes(_stream, const_host_buffer, device_buffer);
       check_result_and_erase(_stream, device_buffer);
 
-      cudax::copy_bytes(_stream, cuda::std::span(const_host_buffer), device_buffer);
+      cuda::copy_bytes(_stream, cuda::std::span(const_host_buffer), device_buffer);
       check_result_and_erase(_stream, device_buffer);
     }
   }
   SECTION("Launch transform")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
 
     memset(input.data, fill_byte, input.size * sizeof(int));
 
-    cudax::copy_bytes(_stream, input, output);
+    cuda::copy_bytes(_stream, input, output);
     check_result_and_erase(_stream, cuda::std::span(output.data, output.size));
   }
 
   SECTION("Asymmetric size")
   {
-    cudax::legacy_pinned_memory_resource host_resource;
+    cuda::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
-    cudax::fill_bytes(_stream, host_buffer, fill_byte);
+    cuda::fill_bytes(_stream, host_buffer, fill_byte);
 
     ::std::vector<int> vec(buffer_size, 0xbeef);
 
-    cudax::copy_bytes(_stream, host_buffer, vec);
+    cuda::copy_bytes(_stream, host_buffer, vec);
     _stream.sync();
 
     CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
@@ -122,7 +122,7 @@ void test_mdspan_copy_bytes(
     src(0, i) = i;
   }
 
-  cudax::copy_bytes(stream, std::move(src), dst);
+  cuda::copy_bytes(stream, std::move(src), dst);
   stream.sync();
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
@@ -133,7 +133,7 @@ void test_mdspan_copy_bytes(
 
 C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -154,7 +154,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
-    auto host_resource = cudax::legacy_pinned_memory_resource{};
+    auto host_resource = cuda::legacy_pinned_memory_resource{};
     auto mixed_extents =
       cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
     [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
@@ -163,7 +163,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
     cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
       host_resource, mdspan.mapping().required_span_size()};
 
-    cudax::copy_bytes(stream, mdspan, buffer);
+    cuda::copy_bytes(stream, mdspan, buffer);
     stream.sync();
     CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
   }
@@ -171,13 +171,13 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 
     try
     {
-      cudax::copy_bytes(stream, fake_strided_mdspan, fake_strided_mdspan);
+      cuda::copy_bytes(stream, fake_strided_mdspan, fake_strided_mdspan);
     }
     catch (const ::std::invalid_argument& e)
     {

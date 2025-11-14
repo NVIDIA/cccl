@@ -56,15 +56,15 @@ workflows:
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
-    # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # c.parallel -- pinned to gcc13 on Linux to match python
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
-    # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.0',                 '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: 'gcc13'}
+    # Python -- pinned to gcc13 on Linux for consistency across CTK images
+    - {jobs: ['test'], project: 'python', ctk: ['12.0',                 '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -75,32 +75,41 @@ workflows:
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda',cxx: 'clang-cuda',  std: 'all', sm: '75;80;90;100'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda',  std: 'all', sm: '75;80;90;100'}
     # libc++
     # - arm64 for now as it's closest to android.
-    - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cxx: 'clang', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
+    # - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:
-    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'libcudacxx', jobs: ['nvrtc'],std: 'max', gpu: 'rtx2080', sm: 'gpu'}
+    # libcudacxx - Specialized, testing default SM
+    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cxx: 'clang'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
+    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '70;80;90;100'}
+    - {project: 'libcudacxx', jobs: ['nvrtc'], std: 'max', gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'libcudacxx', jobs: ['verify_codegen']}
-    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    # CUB - Specialized, testing default SM
+    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    - {project: 'cub', jobs: ['build'], std: 'max', cxx: 'clang', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
     - {project: 'cub', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090', sm: 'gpu'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'cudax', jobs: ['test'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'clang-cuda', cudacxx: 'clang', cxx: 'clang-cuda', sm: '75'}
-    - {project: 'stdpar', jobs: ['build'], std: 'max', cxx: ['gcc', 'clang']}
-    - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75'}
-    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: 'gcc13', sm: 'gpu'}
-    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
-    - {project: 'cccl_c_stf', jobs: ['test'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080'], sm: 'gpu'}
+    - {project: 'cub', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;80;90;100', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+    # Thrust - Keep number of sm small. Kernel coverage is in CUB. This just tests dispatch / glue in lite mode:
+    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx4090', sm: 'gpu'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
+    - {project: 'thrust', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;100'}
+    # cudax
+    - {project: 'cudax', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'cudax', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
+    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
+    # stdpar
+    - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
+    # Python + support
+    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',           gpu: 'rtx2080', sm: 'gpu'}
+    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['install']}
 
@@ -161,13 +170,13 @@ workflows:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
     # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
-    # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
+    # Python -- pinned to gcc13 on Linux for consistency across CTK images
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -238,14 +247,14 @@ workflows:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
     # c.parallel -- pinned to gcc13 to match python
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
-    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: ['gcc13', 'msvc']}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
@@ -261,8 +270,8 @@ workflows:
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   python-wheels:
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
+    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
 
 
@@ -491,7 +500,7 @@ projects:
     name: "Python"
     job_map:
       build: ['build_py_wheel']
-      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', test_py_examples]
+      test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

@@ -334,7 +334,7 @@ struct DispatchTopK
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[allocations_array_size] = {};
 
-    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (cudaSuccess != error)
     {
       return error;
@@ -387,15 +387,13 @@ struct DispatchTopK
         return error;
       }
 
-      _CubLog("Invoking topk_kernel<<<{%d,%d,%d}, %d, 0, "
+      _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              topk_grid_size.x,
-              topk_grid_size.y,
-              topk_grid_size.z,
+              topk_grid_size,
               block_threads,
               (long long) stream,
               items_per_thread,
-              topk_blocks_per_sm);
+              main_kernel_blocks_per_sm);
     }
 #endif // CUB_DEBUG_LOG
 
@@ -623,7 +621,6 @@ struct DispatchTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::topk
 
 CUB_NAMESPACE_END

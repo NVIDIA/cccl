@@ -1,4 +1,5 @@
-set(stf_example_sources
+set(
+  stf_example_sources
   01-axpy.cu
   01-axpy-cuda_kernel.cu
   01-axpy-cuda_kernel_chain.cu
@@ -15,7 +16,8 @@ set(stf_example_sources
 )
 
 # Examples which rely on code generation (parallel_for or launch)
-set(stf_example_codegen_sources
+set(
+  stf_example_codegen_sources
   01-axpy-launch.cu
   01-axpy-parallel_for.cu
   binary_fhe.cu
@@ -47,7 +49,8 @@ set(stf_example_codegen_sources
 )
 
 # Examples using CUBLAS, CUSOLVER...
-set(stf_example_mathlib_sources
+set(
+  stf_example_mathlib_sources
   linear_algebra/06-pdgemm.cu
   linear_algebra/07-cholesky.cu
   linear_algebra/07-potri.cu
@@ -58,7 +61,11 @@ set(stf_example_mathlib_sources
 
 find_package(cudax) # already found, bring in version info.
 
-find_package(CUB ${cudax_VERSION} EXACT CONFIG
+find_package(
+  CUB
+  ${cudax_VERSION}
+  EXACT
+  CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
 )
@@ -72,11 +79,11 @@ find_package(CUDAToolkit REQUIRED)
 # target_name_var: Variable name to overwrite with the name of the example
 #   target. Useful for post-processing target information.
 # source: The source file for the example.
-# cn_target: The reference cudax target with configuration information.
+# cudax_target: The reference cudax target with configuration information.
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_example target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+function(cudax_add_stf_example target_name_var source cudax_target)
+  cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   get_filename_component(dir ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
@@ -89,11 +96,14 @@ function(cudax_add_stf_example target_name_var source cn_target)
 
   add_executable(${example_target} ${source})
   cccl_configure_target(${example_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${example_target} ${cn_target})
+  cudax_clone_target_properties(${example_target} ${cudax_target})
   cudax_stf_configure_target(${example_target} ${ARGN})
-  target_link_libraries(${example_target} PRIVATE
-    cudax.examples.thrust
-    CUB::CUB
+  target_link_libraries(
+    ${example_target}
+    PRIVATE #
+      ${cudax_target}
+      cudax.examples.thrust
+      CUB::CUB
   )
 
   set(stf_meta_target ${config_prefix}.examples.stf)
@@ -105,8 +115,8 @@ function(cudax_add_stf_example target_name_var source cn_target)
 endfunction()
 
 # Create examples for each enabled configuration:
-foreach(cn_target IN LISTS cudax_TARGETS)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+foreach (cudax_target IN LISTS cudax_TARGETS)
+  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   # Metatarget for the current configuration's examples:
   set(config_meta_target ${config_prefix}.examples)
@@ -114,19 +124,19 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   add_custom_target(${stf_meta_target})
   add_dependencies(${config_meta_target} ${stf_meta_target})
 
-  foreach(source IN LISTS stf_example_sources)
-    cudax_add_stf_example(example_target "${source}" ${cn_target})
+  foreach (source IN LISTS stf_example_sources)
+    cudax_add_stf_example(example_target "${source}" ${cudax_target})
   endforeach()
 
   if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
-     foreach(source IN LISTS stf_example_codegen_sources)
-         cudax_add_stf_example(example_target "${source}" ${cn_target})
-     endforeach()
+    foreach (source IN LISTS stf_example_codegen_sources)
+      cudax_add_stf_example(example_target "${source}" ${cudax_target})
+    endforeach()
   endif()
 
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
-    foreach(source IN LISTS stf_example_mathlib_sources)
-      cudax_add_stf_example(example_target "${source}" ${cn_target} LINK_MATHLIBS)
+    foreach (source IN LISTS stf_example_mathlib_sources)
+      cudax_add_stf_example(example_target "${source}" ${cudax_target} LINK_MATHLIBS)
     endforeach()
   endif()
 endforeach()

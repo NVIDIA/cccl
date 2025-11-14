@@ -25,12 +25,12 @@ int main()
   constexpr int num_items = 50000;
 
   // A CUDA stream on which to execute the reduction
-  cudax::stream stream{cuda::devices[0]};
-  cudax::device_memory_resource mr{cuda::devices[0]};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
   // Allocate input and output, but do not zero initialize output (`cudax::no_init`)
-  auto d_in  = cudax::make_async_buffer<int>(stream, mr, num_items, 1);
-  auto d_out = cudax::make_async_buffer<float>(stream, mr, 1, cudax::no_init);
+  auto d_in  = cudax::make_buffer<int>(stream, mr, num_items, 1);
+  auto d_out = cudax::make_buffer<float>(stream, mr, 1, cudax::no_init);
 
   // An environment we use to pass all necessary information to CUB
   cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
@@ -41,7 +41,7 @@ int main()
     exit(EXIT_FAILURE);
   }
 
-  auto h_out = cudax::make_async_buffer<float>(stream, cudax::pinned_memory_resource{}, d_out);
+  auto h_out = cudax::make_buffer<float>(stream, cuda::pinned_default_memory_pool(), d_out);
 
   stream.sync();
 

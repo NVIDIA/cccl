@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct CudaDriverLauncher
 {
   dim3 grid;
@@ -82,7 +81,7 @@ struct CudaDriverLauncherFactory
 
   ::cudaError_t PtxVersion(int& version) const
   {
-    version = cc;
+    version = cc * 10;
     return cudaSuccess;
   }
 
@@ -136,7 +135,6 @@ struct CudaDriverLauncherFactory
   CUdevice device;
   int cc;
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

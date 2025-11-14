@@ -58,7 +58,6 @@ THRUST_NAMESPACE_BEGIN
  */
 namespace random
 {
-
 /*! \addtogroup predefined_random Random Number Engines with Predefined Parameters
  *  \ingroup random
  *  \{
@@ -105,7 +104,6 @@ using default_random_engine = minstd_rand;
 
 /*! \} // end predefined_random
  */
-
 } // namespace random
 
 /*! \} // end random

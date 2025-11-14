@@ -51,7 +51,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 template <typename MR, typename DerivedPolicy>
 _CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
 {
@@ -64,7 +63,6 @@ _CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
   std::lock_guard<std::mutex> lock{map_lock};
   return &device_id_to_resource[device_id];
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

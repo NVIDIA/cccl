@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -49,8 +25,13 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_reduce.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/agent/agent_radix_sort_histogram.cuh>
+#endif
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
@@ -65,39 +46,54 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
  *
- * @tparam NOMINAL_BLOCK_THREADS_4B
+ * @tparam NominalBlockThreads4B
  *   Threads per thread block
  *
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ * @tparam NominalItemsPerThread4B
  *   Items per thread (per tile of input)
  *
  * @tparam ComputeT
  *   Dominant compute type
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading keys
  *
- * @tparam _RADIX_BITS
+ * @tparam RadixBits
  *   The number of radix bits, i.e., log2(bins)
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  CacheLoadModifier _LOAD_MODIFIER,
-  int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          CacheLoadModifier LoadModifier,
+          int RadixBits,
+          typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
-  enum
-  {
-    /// The number of radix bits, i.e., log2(bins)
-    RADIX_BITS = _RADIX_BITS,
-  };
+  /// The number of radix bits, i.e., log2(bins)
+  static constexpr int RADIX_BITS = RadixBits;
 
   /// Cache load modifier for reading keys
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail::radix_sort_runtime_policies
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  RadixSortUpsweepAgentPolicy,
+  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (RADIX_BITS, RadixBits, int),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
+} // namespace detail::radix_sort_runtime_policies
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 /******************************************************************************
  * Thread block abstractions
@@ -105,7 +101,6 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
 
 namespace detail::radix_sort
 {
-
 /**
  * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
  * participating in device-wide radix sort upsweep .
@@ -140,39 +135,36 @@ struct AgentRadixSortUpsweep
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
-  enum
-  {
-    RADIX_BITS      = AgentRadixSortUpsweepPolicy::RADIX_BITS,
-    BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS,
-    KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD,
+  static constexpr int RADIX_BITS      = AgentRadixSortUpsweepPolicy::RADIX_BITS;
+  static constexpr int BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS;
+  static constexpr int KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD;
 
-    RADIX_DIGITS = 1 << RADIX_BITS,
+  static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
 
-    LOG_WARP_THREADS = log2_warp_threads,
-    WARP_THREADS     = 1 << LOG_WARP_THREADS,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int LOG_WARP_THREADS = log2_warp_threads;
+  static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD,
+  static constexpr int TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD;
 
-    BYTES_PER_COUNTER     = sizeof(DigitCounter),
-    LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE,
+  static constexpr int BYTES_PER_COUNTER    = sizeof(DigitCounter);
+  static constexpr int OG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
 
-    PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter),
-    LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
+  static constexpr int PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter);
+  static constexpr int LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE;
 
-    LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
-    COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
+  static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
+  static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
-    // To prevent counter overflow, we must periodically unpack and aggregate the
-    // digit counters back into registers.  Each counter lane is assigned to a
-    // warp for aggregation.
+  // To prevent counter overflow, we must periodically unpack and aggregate the
+  // digit counters back into registers.  Each counter lane is assigned to a
+  // warp for aggregation.
 
-    LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS),
+  static constexpr int LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS);
 
-    // Unroll tiles in batches without risk of counter overflow
-    UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD),
-    UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS,
-  };
+  // Unroll tiles in batches without risk of counter overflow
+  static constexpr int UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
+  static constexpr int UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS;
 
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;
@@ -549,7 +541,6 @@ struct AgentRadixSortUpsweep
     }
   }
 };
-
 } // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

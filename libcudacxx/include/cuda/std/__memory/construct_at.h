@@ -25,6 +25,7 @@
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -38,14 +39,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <new>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  if !_CCCL_COMPILER(NVRTC)
-#    include <memory>
-#  endif // _CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/memory_wrapper.h>
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
@@ -76,7 +71,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {
-
 #if _CCCL_COMPILER(NVHPC, <, 25, 5) // NVHPC has issues determining the narrowing conversions
 template <class _To, class...>
 struct __check_narrowing : true_type
@@ -164,7 +158,7 @@ _CCCL_API constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterato
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API constexpr void __destroy_at(_Tp* __loc)
+_CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)
@@ -207,7 +201,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)

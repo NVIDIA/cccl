@@ -15,7 +15,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "types.h"
 

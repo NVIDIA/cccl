@@ -271,9 +271,6 @@ def test_unary_transform_well_known_negate():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-@pytest.mark.xfail(
-    reason="CCCL_IDENTITY well-known operation fails with NVRTC compilation error in C++ library. See GH#5515."
-)
 def test_unary_transform_well_known_identity():
     """Test unary transform with well-known IDENTITY operation."""
     dtype = np.int32
@@ -320,3 +317,66 @@ def test_binary_transform_well_known_multiplies():
     # Check the result is correct
     expected = np.array([2, 6, 12, 20, 30])
     np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_unary_transform_struct_type_with_annotations():
+    @gpu_struct
+    class Point:
+        x: np.float32
+        y: np.float32
+
+    def scale_op(p: Point) -> Point:
+        return Point(p.x * 2.0, p.y * 3.0)
+
+    num_items = 100
+
+    h_in = np.empty(num_items, dtype=Point.dtype)
+    h_in["x"] = np.random.rand(num_items).astype(np.float32)
+    h_in["y"] = np.random.rand(num_items).astype(np.float32)
+
+    d_in = cp.empty_like(h_in)
+    d_in.set(h_in)
+
+    d_out = cp.empty_like(d_in)
+
+    cuda.compute.unary_transform(d_in, d_out, scale_op, num_items)
+
+    result = d_out.get()
+
+    np.testing.assert_allclose(result["x"], h_in["x"] * 2.0, rtol=1e-5)
+    np.testing.assert_allclose(result["y"], h_in["y"] * 3.0, rtol=1e-5)
+
+
+def test_binary_transform_struct_type_with_annotations():
+    @gpu_struct
+    class Vec2D:
+        x: np.int32
+        y: np.int32
+
+    def add_vectors(v1: Vec2D, v2: Vec2D) -> Vec2D:
+        return Vec2D(v1.x + v2.x, v1.y + v2.y)
+
+    num_items = 100
+
+    h_in1 = np.empty(num_items, dtype=Vec2D.dtype)
+    h_in1["x"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
+    h_in1["y"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
+
+    h_in2 = np.empty(num_items, dtype=Vec2D.dtype)
+    h_in2["x"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
+    h_in2["y"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
+
+    d_in1 = cp.empty_like(h_in1)
+    d_in1.set(h_in1)
+
+    d_in2 = cp.empty_like(h_in2)
+    d_in2.set(h_in2)
+
+    d_out = cp.empty_like(d_in1)
+
+    cuda.compute.binary_transform(d_in1, d_in2, d_out, add_vectors, num_items)
+
+    result = d_out.get()
+
+    np.testing.assert_equal(result["x"], h_in1["x"] + h_in2["x"])
+    np.testing.assert_equal(result["y"], h_in1["y"] + h_in2["y"])

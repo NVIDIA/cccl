@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 lower_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value);
@@ -141,20 +140,19 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   const LessThanComparable& value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   const LessThanComparable& value,
   StrictWeakOrdering comp);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

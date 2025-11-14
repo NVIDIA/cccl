@@ -51,7 +51,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
-
 // ------------------------------------------------------------------
 // ------------ __static_array --------------------------------------
 // ------------------------------------------------------------------
@@ -167,7 +166,10 @@ struct __static_partial_sums
 // ------------------------------------------------------------------
 
 template <class _TStatic, _TStatic _DynTag, _TStatic... _Values>
-constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
+inline constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
 
 // array like class which has a mix of static and runtime values but
 // only stores the runtime values.
@@ -175,8 +177,8 @@ constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Val
 // The position of a dynamic value is indicated through a tag value.
 // We manually implement EBCO because MSVC and some odler compiler fail hard with [[no_unique_address]]
 template <class _TDynamic, class _TStatic, _TStatic _DynTag, _TStatic... _Values>
-struct __maybe_static_array
-    : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>>
+struct _CCCL_DECLSPEC_EMPTY_BASES
+__maybe_static_array : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>>
 {
   static_assert(is_convertible_v<_TStatic, _TDynamic>,
                 "__maybe_static_array: _TStatic must be convertible to _TDynamic");
@@ -239,14 +241,14 @@ public:
 
   // constructors from dynamic values only -- this covers the case for rank() == 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals) noexcept
       : _DynamicValues{static_cast<_TDynamic>(__vals)...}
   {}
 
   // constructors from all values -- here rank will be greater than 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_cuda_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals)
       : _DynamicValues{}
   {
@@ -313,10 +315,12 @@ public:
   }
 };
 
-template <class _To, class _From>
-static constexpr bool __potentially_narrowing =
-  static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-  < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+_CCCL_DIAG_POP // MSVC(4702) Unreachable code
+
+  template <class _To, class _From>
+  inline constexpr bool __potentially_narrowing =
+    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
+    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false
@@ -392,7 +396,6 @@ _CCCL_REQUIRES(integral<_To>)
   }
   return true;
 }
-
 } // namespace __mdspan_detail
 
 // ------------------------------------------------------------------
@@ -644,7 +647,6 @@ public:
 // Recursive helper classes to implement dextents alias for extents
 namespace __mdspan_detail
 {
-
 template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
 struct __make_dextents;
 
@@ -662,7 +664,6 @@ struct __make_dextents<_IndexType, 0, extents<_IndexType, _ExtentsPack...>>
 {
   using type = extents<_IndexType, _ExtentsPack...>;
 };
-
 } // end namespace __mdspan_detail
 
 // [mdspan.extents.dextents], alias template
@@ -685,12 +686,6 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 
 namespace __mdspan_detail
 {
-
-//! NOTE we define __is_extents_v through __is_extents because nvrtc fails otherwise.
-//! Specializing __is_extents_v is valid, because all other cases remain as false
-template <class _IndexType, size_t... _ExtentsPack>
-inline constexpr bool __is_extents_v<extents<_IndexType, _ExtentsPack...>> = true;
-
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
 // requiring that the indices are larger than 0 and smaller than
@@ -748,7 +743,6 @@ template <class _Extents, class... _From>
   return __mdspan_detail::__is_multidimensional_index_in_impl(
     make_index_sequence<_Extents::rank()>(), __ext, __values...);
 }
-
 } // namespace __mdspan_detail
 
 _CCCL_END_NAMESPACE_CUDA_STD

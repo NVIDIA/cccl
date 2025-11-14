@@ -15,8 +15,7 @@
 
 inline void FormatHeader(std::ostream& out)
 {
-  std::string header = R"XXX(
-//===----------------------------------------------------------------------===//
+  std::string header = R"XXX(//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
@@ -60,6 +59,10 @@ inline void FormatHeader(std::ostream& out)
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CUDA_COMPILER()
+
+extern "C" _CCCL_DEVICE void __atomic_cas_128b_unsupported_before_SM_90();
+extern "C" _CCCL_DEVICE void __atomic_exchange_128b_unsupported_before_SM_90();
+extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 )XXX";
 
   out << header;

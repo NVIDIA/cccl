@@ -34,13 +34,10 @@
 #    define _NV_BITSET_ATTRIBUTE
 #  endif
 
-namespace nv
-{
-namespace target
+namespace nv::target
 {
 namespace detail
 {
-
 typedef unsigned long long base_int_t;
 
 // No host specialization
@@ -67,10 +64,11 @@ constexpr base_int_t sm_100_bit = 1 << 17;
 constexpr base_int_t sm_103_bit = 1 << 19;
 constexpr base_int_t sm_110_bit = 1 << 20;
 constexpr base_int_t sm_120_bit = 1 << 21;
+constexpr base_int_t sm_121_bit = 1 << 22;
 constexpr base_int_t all_devices =
   sm_35_bit | sm_37_bit | sm_50_bit | sm_52_bit | sm_53_bit | sm_60_bit | sm_61_bit | sm_62_bit | sm_70_bit | sm_72_bit
   | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_89_bit | sm_90_bit | sm_100_bit | sm_103_bit | sm_110_bit
-  | sm_120_bit;
+  | sm_120_bit | sm_121_bit;
 
 // Store a set of targets as a set of bits
 struct _NV_BITSET_ATTRIBUTE target_description
@@ -105,6 +103,7 @@ enum class sm_selector : base_int_t
   sm_103 = 103,
   sm_110 = 110,
   sm_120 = 120,
+  sm_121 = 121,
 };
 
 constexpr base_int_t toint(sm_selector a)
@@ -134,12 +133,14 @@ constexpr base_int_t bitexact(sm_selector a)
        : toint(a) == 103 ? sm_103_bit
        : toint(a) == 110 ? sm_110_bit
        : toint(a) == 120 ? sm_120_bit
+       : toint(a) == 121 ? sm_121_bit
                          : 0;
 }
 
 constexpr base_int_t bitrounddown(sm_selector a)
 {
-  return toint(a) >= 120 ? sm_120_bit
+  return toint(a) >= 121 ? sm_121_bit
+       : toint(a) >= 120 ? sm_120_bit
        : toint(a) >= 110 ? sm_110_bit
        : toint(a) >= 103 ? sm_103_bit
        : toint(a) >= 100 ? sm_100_bit
@@ -222,11 +223,11 @@ constexpr sm_selector sm_100 = sm_selector::sm_100;
 constexpr sm_selector sm_103 = sm_selector::sm_103;
 constexpr sm_selector sm_110 = sm_selector::sm_110;
 constexpr sm_selector sm_120 = sm_selector::sm_120;
+constexpr sm_selector sm_121 = sm_selector::sm_121;
 
 using detail::is_exactly;
 using detail::provides;
-} // namespace target
-} // namespace nv
+} // namespace nv::target
 
 #endif // C++  && !defined(__CUDACC_RTC__)
 
