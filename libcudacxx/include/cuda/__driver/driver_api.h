@@ -61,6 +61,14 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+//! @brief Makes the driver version from major and minor version.
+[[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
+{
+  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
+  return __major * 1000 + __minor * 10;
+}
+
 //! @brief Gets the driver entry point.
 //!
 //! @param __get_proc_addr_fn Pointer to cuGetProcAddress function.
@@ -72,15 +80,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 //!
 //! @throws @c cuda::cuda_error if the symbol cannot be obtained.
 [[nodiscard]] _CCCL_HOST_API inline void* __get_driver_entry_point_impl(
-  decltype(cuGetProcAddress)* __get_proc_addr_fn,
-  const char* __name,
-  [[maybe_unused]] int __major,
-  [[maybe_unused]] int __minor)
+  decltype(cuGetProcAddress)* __get_proc_addr_fn, const char* __name, int __major, int __minor)
 {
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status =
-    __get_proc_addr_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
+  ::CUresult __status = __get_proc_addr_fn(
+    __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
@@ -169,6 +174,16 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
     return __v;
   }();
   return __version;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_at_least(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() >= ::cuda::__driver::__make_version(__major, __minor);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_below(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() < ::cuda::__driver::__make_version(__major, __minor);
 }
 
 // Device management
