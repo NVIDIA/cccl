@@ -27,7 +27,7 @@ Extents> struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
     using ::cuda::std::extents<T, Extents...>::extents;
 
     template <typename ::cuda::std::extents<T, Extents...>::rank_type Id>
-    _CCCL_HOST_DEVICE constexpr auto extent_corrected() const {
+    _CCCL_API constexpr auto extent_corrected() const {
         if constexpr (::cuda::std::extents<T, Extents...>::static_extent(Id) !=
 ::cuda::std::dynamic_extent) { return this->static_extent(Id);
         }
@@ -43,18 +43,18 @@ struct __dimensions_handler
 {
   static constexpr bool __is_type_supported = ::cuda::std::is_integral_v<_Dims>;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __dims) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __translate(const _Dims& __dims) noexcept
   {
     return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(__dims));
   }
 };
 
 template <>
-struct __dimensions_handler<dim3>
+struct __dimensions_handler<::dim3>
 {
   static constexpr bool __is_type_supported = true;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const dim3& __dims) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __translate(const ::dim3& __dims) noexcept
   {
     return dimensions<dimensions_index_type,
                       ::cuda::std::dynamic_extent,
@@ -68,7 +68,7 @@ struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
 {
   static constexpr bool __is_type_supported = true;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto __translate(const _Dims& __dims) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __translate(const _Dims& __dims) noexcept
   {
     return dimensions<dimensions_index_type, size_t(__dims), 1, 1>();
   }
@@ -117,13 +117,13 @@ struct level_dimensions
   // Needs alignas to work around an issue with tuple
   alignas(16) _Dimensions dims; // Unit for dimensions is implicit
 
-  _CCCL_HOST_DEVICE constexpr level_dimensions(const _Dimensions& __dims)
+  _CCCL_API constexpr level_dimensions(const _Dimensions& __dims)
       : dims(__dims)
   {}
-  _CCCL_HOST_DEVICE constexpr level_dimensions(_Dimensions&& __dims)
+  _CCCL_API constexpr level_dimensions(_Dimensions&& __dims)
       : dims(__dims)
   {}
-  _CCCL_HOST_DEVICE constexpr level_dimensions()
+  _CCCL_API constexpr level_dimensions()
       : dims(){};
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
@@ -151,7 +151,7 @@ struct level_dimensions
  * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
-_CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
+_CCCL_API constexpr auto grid_dims() noexcept
 {
   return level_dimensions<grid_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
@@ -162,7 +162,7 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
  * This function creates the level from an integral or dim3 argument.
  */
 template <class _Dims>
-_CCCL_HOST_DEVICE constexpr auto grid_dims(_Dims __dims) noexcept
+_CCCL_API constexpr auto grid_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
   auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
@@ -176,7 +176,7 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(_Dims __dims) noexcept
  * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
-_CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
+_CCCL_API constexpr auto cluster_dims() noexcept
 {
   return level_dimensions<cluster_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
@@ -187,7 +187,7 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
  * This function creates the level from an integral or dim3 argument.
  */
 template <class _Dims>
-_CCCL_HOST_DEVICE constexpr auto cluster_dims(_Dims __dims) noexcept
+_CCCL_API constexpr auto cluster_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
   auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);
@@ -201,7 +201,7 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(_Dims __dims) noexcept
  * arguments.
  */
 template <size_t _XDim, size_t _YDim = 1, size_t _ZDim = 1>
-_CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
+_CCCL_API constexpr auto block_dims() noexcept
 {
   return level_dimensions<block_level, dimensions<dimensions_index_type, _XDim, _YDim, _ZDim>>();
 }
@@ -212,7 +212,7 @@ _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
  * This function creates the level from an integral or dim3 argument.
  */
 template <class _Dims>
-_CCCL_HOST_DEVICE constexpr auto block_dims(_Dims __dims) noexcept
+_CCCL_API constexpr auto block_dims(_Dims __dims) noexcept
 {
   static_assert(__detail::__dimensions_handler<_Dims>::__is_type_supported);
   auto __translated_dims = __detail::__dimensions_handler<_Dims>::__translate(__dims);

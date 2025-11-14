@@ -199,70 +199,70 @@ struct __dims_helper;
 template <typename _Level>
 struct __dims_helper<_Level, _Level>
 {
-  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 extents()
   {
-    return dim3(1, 1, 1);
+    return ::dim3(1, 1, 1);
   }
 
-  [[nodiscard]] _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 index()
   {
-    return dim3(0, 0, 0);
+    return ::dim3(0, 0, 0);
   }
 };
 
 template <>
 struct __dims_helper<thread_level, block_level>
 {
-  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 extents()
   {
-    return blockDim;
+    return ::blockDim;
   }
 
-  [[nodiscard]] _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 index()
   {
-    return threadIdx;
+    return ::threadIdx;
   }
 };
 
 template <>
 struct __dims_helper<block_level, cluster_level>
 {
-  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 extents()
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterDim();), (return dim3(1, 1, 1);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterDim();), (return ::dim3(1, 1, 1);));
   }
 
-  [[nodiscard]] _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 index()
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterRelativeBlockIdx();), (return dim3(0, 0, 0);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterRelativeBlockIdx();), (return ::dim3(0, 0, 0);));
   }
 };
 
 template <>
 struct __dims_helper<block_level, grid_level>
 {
-  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 extents()
   {
-    return gridDim;
+    return ::gridDim;
   }
 
-  [[nodiscard]] _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 index()
   {
-    return blockIdx;
+    return ::blockIdx;
   }
 };
 
 template <>
 struct __dims_helper<cluster_level, grid_level>
 {
-  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 extents()
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterGridDimInClusters();), (return gridDim;));
   }
 
-  [[nodiscard]] _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static ::dim3 index()
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterIdx();), (return dim3(0, 0, 0);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterIdx();), (return ::dim3(0, 0, 0);));
   }
 };
 

@@ -76,12 +76,6 @@ struct __has_level_helper<_QueryLevel, hierarchy_dimensions<_Unit, _Levels...>>
     : public ::cuda::std::__fold_or<::cuda::std::is_same_v<_QueryLevel, __level_type_of<_Levels>>...>
 {};
 
-// Is this needed?
-template <class _QueryLevel, class... _Levels>
-struct __has_level_helper<_QueryLevel, hierarchy_dimensions<_Levels...>>
-    : public ::cuda::std::__fold_or<::cuda::std::is_same_v<_QueryLevel, __level_type_of<_Levels>>...>
-{};
-
 template <class _QueryLevel, class _Hierarchy>
 struct __has_unit
 {};
@@ -250,7 +244,7 @@ template <class _Unit, class _Level, class _Dims>
     // TODO with device side launch we should have a way to disable it for the
     // device-side created hierarchy
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (dim3 __intr_dims = ::cuda::__detail::__dims_helper<_Unit, _Level>::extents();
+                      (::dim3 __intr_dims = ::cuda::__detail::__dims_helper<_Unit, _Level>::extents();
                        return __fool_compiler(_Dims(__intr_dims.x, __intr_dims.y, __intr_dims.z));),
                       (return __fool_compiler(__dims);));
   }
@@ -281,7 +275,7 @@ struct __hierarchy_extents_helper
 };
 
 template <class _Tp, size_t... _Extents>
-[[nodiscard]] _CCCL_DEVICE constexpr auto __static_index_hint(const dimensions<_Tp, _Extents...>& __dims, dim3 __index)
+[[nodiscard]] _CCCL_DEVICE constexpr auto __static_index_hint(const dimensions<_Tp, _Extents...>& __dims, ::dim3 __index)
 {
   using _HintedIndexT = dimensions<_Tp, (_Extents == 1 ? 0 : ::cuda::std::dynamic_extent)...>;
   return _HintedIndexT(__index.x, __index.y, __index.z);
@@ -301,7 +295,7 @@ struct __index_helper
     else
     {
       using _Unit = ::cuda::std::__type_index_c<0, __level_type_of<_Levels>...>;
-      auto __hinted_index =
+      const auto __hinted_index =
         __static_index_hint(__ltop.dims, ::cuda::__detail::__dims_helper<_Unit, _TopLevel>::index());
       return ::cuda::__detail::__dims_sum<typename _TopLevel::product_type>(
         ::cuda::__detail::__dims_product<typename _TopLevel::product_type>(
@@ -320,14 +314,14 @@ struct __rank_helper
     using _TopLevel = __level_type_of<_LTopDims>;
     if constexpr (sizeof...(_Levels) == 0)
     {
-      auto __hinted_index =
+      const auto __hinted_index =
         __static_index_hint(__ltop.dims, ::cuda::__detail::__dims_helper<_BottomUnit, _TopLevel>::index());
       return ::cuda::__detail::__index_to_linear<typename _TopLevel::product_type>(__hinted_index, __ltop.dims);
     }
     else
     {
       using _Unit = ::cuda::std::__type_index_c<0, __level_type_of<_Levels>...>;
-      auto __hinted_index =
+      const auto __hinted_index =
         __static_index_hint(__ltop.dims, ::cuda::__detail::__dims_helper<_Unit, _TopLevel>::index());
       auto __level_rank =
         ::cuda::__detail::__index_to_linear<typename _TopLevel::product_type>(__hinted_index, __ltop.dims);
@@ -619,7 +613,7 @@ public:
   template <typename _Unit = _BottomUnit, typename _Level = __level_type_of<::cuda::std::__type_index_c<0, _Levels...>>>
   _CCCL_API constexpr auto count(const _Unit& = _Unit(), const _Level& = _Level()) const noexcept
   {
-    return __detail::__dims_to_count(extents<_Unit, _Level>());
+    return ::cuda::__detail::__dims_to_count(extents<_Unit, _Level>());
   }
 
   /**

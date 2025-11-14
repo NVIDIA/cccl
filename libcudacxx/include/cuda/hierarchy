@@ -22,5 +22,7 @@
 #endif // no system header
 
 #include <cuda/__hierarchy/hierarchy_dimensions.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 
 #endif // _CUDA_HIERARCHY_
