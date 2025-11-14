@@ -41,7 +41,7 @@ def get_cupy_arrays(task):
         try:
             arrays.append(cp.asarray(CAIWrapper(task.get_arg_cai(idx))))
             idx += 1
-        except:
+        except Exception:
             break
     return tuple(arrays) if len(arrays) > 1 else arrays[0] if arrays else None
 
