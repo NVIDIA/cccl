@@ -855,6 +855,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__chrono/weekday.h>
 #include <cuda/std/__chrono/year.h>
+#include <cuda/std/__chrono/year_month.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -886,130 +887,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-class year_month
-{
-  chrono::year __y;
-  chrono::month __m;
-
-public:
-  _CCCL_HIDE_FROM_ABI year_month() = default;
-  _CCCL_API constexpr year_month(const chrono::year& __yval, const chrono::month& __mval) noexcept
-      : __y{__yval}
-      , __m{__mval}
-  {}
-  _CCCL_API constexpr chrono::year year() const noexcept
-  {
-    return __y;
-  }
-  _CCCL_API constexpr chrono::month month() const noexcept
-  {
-    return __m;
-  }
-  _CCCL_API constexpr year_month& operator+=(const months& __dm) noexcept
-  {
-    this->__m += __dm;
-    return *this;
-  }
-  _CCCL_API constexpr year_month& operator-=(const months& __dm) noexcept
-  {
-    this->__m -= __dm;
-    return *this;
-  }
-  _CCCL_API constexpr year_month& operator+=(const years& __dy) noexcept
-  {
-    this->__y += __dy;
-    return *this;
-  }
-  _CCCL_API constexpr year_month& operator-=(const years& __dy) noexcept
-  {
-    this->__y -= __dy;
-    return *this;
-  }
-  _CCCL_API constexpr bool ok() const noexcept
-  {
-    return __y.ok() && __m.ok();
-  }
-};
-
-_CCCL_API constexpr year_month operator/(const year& __y, const month& __m) noexcept
-{
-  return year_month{__y, __m};
-}
-
-_CCCL_API constexpr year_month operator/(const year& __y, int __m) noexcept
-{
-  return year_month{__y, month(__m)};
-}
-
-_CCCL_API constexpr bool operator==(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return __lhs.year() == __rhs.year() && __lhs.month() == __rhs.month();
-}
-
-_CCCL_API constexpr bool operator!=(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return !(__lhs == __rhs);
-}
-
-_CCCL_API constexpr bool operator<(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return __lhs.year() != __rhs.year() ? __lhs.year() < __rhs.year() : __lhs.month() < __rhs.month();
-}
-
-_CCCL_API constexpr bool operator>(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return __rhs < __lhs;
-}
-
-_CCCL_API constexpr bool operator<=(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return !(__rhs < __lhs);
-}
-
-_CCCL_API constexpr bool operator>=(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return !(__lhs < __rhs);
-}
-
-_CCCL_API constexpr year_month operator+(const year_month& __lhs, const months& __rhs) noexcept
-{
-  int __dmi      = static_cast<int>(static_cast<unsigned>(__lhs.month())) - 1 + __rhs.count();
-  const int __dy = (__dmi >= 0 ? __dmi : __dmi - 11) / 12;
-  __dmi          = __dmi - __dy * 12 + 1;
-  return (__lhs.year() + years(__dy)) / month(static_cast<unsigned>(__dmi));
-}
-
-_CCCL_API constexpr year_month operator+(const months& __lhs, const year_month& __rhs) noexcept
-{
-  return __rhs + __lhs;
-}
-
-_CCCL_API constexpr year_month operator+(const year_month& __lhs, const years& __rhs) noexcept
-{
-  return (__lhs.year() + __rhs) / __lhs.month();
-}
-
-_CCCL_API constexpr year_month operator+(const years& __lhs, const year_month& __rhs) noexcept
-{
-  return __rhs + __lhs;
-}
-
-_CCCL_API constexpr months operator-(const year_month& __lhs, const year_month& __rhs) noexcept
-{
-  return (__lhs.year() - __rhs.year())
-       + months(static_cast<unsigned>(__lhs.month()) - static_cast<unsigned>(__rhs.month()));
-}
-
-_CCCL_API constexpr year_month operator-(const year_month& __lhs, const months& __rhs) noexcept
-{
-  return __lhs + -__rhs;
-}
-
-_CCCL_API constexpr year_month operator-(const year_month& __lhs, const years& __rhs) noexcept
-{
-  return __lhs + -__rhs;
-}
-
 class year_month_day_last;
 
 class year_month_day
