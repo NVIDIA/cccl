@@ -25,11 +25,7 @@ __host__ __device__ void test()
   using D                   = cuda::std::bernoulli_distribution;
   using P                   = D::param_type;
   using G                   = cuda::std::philox4x64;
-  auto cdf                  = [] __host__ __device__(cuda::std::int64_t x, P p) {
-    // CDF for Bernoulli distribution
-    // F(x) = 0 if x < 0
-    // F(x) = 1-p if 0 <= x < 1
-    // F(x) = 1 if x >= 1
+  auto cdf                  = [] __host__ __device__(cuda::std::int64_t x, const P& p) {
     if (x < 0)
     {
       return 0.0;
