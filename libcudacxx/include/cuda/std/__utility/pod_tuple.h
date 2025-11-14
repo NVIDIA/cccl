@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/undefined.h>
@@ -76,25 +77,27 @@ template <class _Fn, class _Tuple, class... _Us>
 extern __undefined<_Fn, _Tuple, _Us...> __applicable_v;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __applicable_v<_Fn, __tuple<_Ts...>, _Us...> = __is_callable_v<_Fn, _Us..., _Ts...>;
+inline constexpr bool __applicable_v<_Fn, __tuple<_Ts...>, _Us...> = __is_callable_v<_Fn, _Us..., _Ts...>;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __applicable_v<_Fn, __tuple<_Ts...>&, _Us...> = __is_callable_v<_Fn, _Us..., _Ts&...>;
+inline constexpr bool __applicable_v<_Fn, __tuple<_Ts...>&, _Us...> = __is_callable_v<_Fn, _Us..., _Ts&...>;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __applicable_v<_Fn, const __tuple<_Ts...>&, _Us...> = __is_callable_v<_Fn, _Us..., const _Ts&...>;
+inline constexpr bool __applicable_v<_Fn, const __tuple<_Ts...>&, _Us...> = __is_callable_v<_Fn, _Us..., const _Ts&...>;
 
 template <class _Fn, class _Tuple, class... _Us>
 extern __undefined<_Fn, _Tuple, _Us...> __nothrow_applicable_v;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __nothrow_applicable_v<_Fn, __tuple<_Ts...>, _Us...> = __is_nothrow_callable_v<_Fn, _Us..., _Ts...>;
+inline constexpr bool __nothrow_applicable_v<_Fn, __tuple<_Ts...>, _Us...> =
+  __is_nothrow_callable_v<_Fn, _Us..., _Ts...>;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __nothrow_applicable_v<_Fn, __tuple<_Ts...>&, _Us...> = __is_nothrow_callable_v<_Fn, _Us..., _Ts&...>;
+inline constexpr bool __nothrow_applicable_v<_Fn, __tuple<_Ts...>&, _Us...> =
+  __is_nothrow_callable_v<_Fn, _Us..., _Ts&...>;
 
 template <class _Fn, class... _Ts, class... _Us>
-constexpr bool __nothrow_applicable_v<_Fn, const __tuple<_Ts...>&, _Us...> =
+inline constexpr bool __nothrow_applicable_v<_Fn, const __tuple<_Ts...>&, _Us...> =
   __is_nothrow_callable_v<_Fn, _Us..., const _Ts&...>;
 
 template <size_t _Index, class _Ty>
