@@ -61,6 +61,14 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+//! @brief Makes the driver version from major and minor version.
+[[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
+{
+  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
+  return __major * 1000 + __minor * 10;
+}
+
 //! @brief Gets the driver entry point.
 //!
 //! @param __get_proc_addr_fn Pointer to cuGetProcAddress function.
@@ -72,15 +80,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 //!
 //! @throws @c cuda::cuda_error if the symbol cannot be obtained.
 [[nodiscard]] _CCCL_HOST_API inline void* __get_driver_entry_point_impl(
-  decltype(cuGetProcAddress)* __get_proc_addr_fn,
-  const char* __name,
-  [[maybe_unused]] int __major,
-  [[maybe_unused]] int __minor)
+  decltype(cuGetProcAddress)* __get_proc_addr_fn, const char* __name, int __major, int __minor)
 {
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status =
-    __get_proc_addr_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
+  ::CUresult __status = __get_proc_addr_fn(
+    __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
@@ -169,6 +174,16 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
     return __v;
   }();
   return __version;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_at_least(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() >= ::cuda::__driver::__make_version(__major, __minor);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_below(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() < ::cuda::__driver::__make_version(__major, __minor);
 }
 
 // Device management
@@ -513,10 +528,19 @@ __streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, 
   return __stream;
 }
 
-_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+_CCCL_HOST_API inline ::cudaError_t __streamSynchronizeNoThrow(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamSynchronize);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to synchronize a stream", __stream);
+  return static_cast<::cudaError_t>(__driver_fn(__stream));
+}
+
+_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+{
+  cudaError_t __status = __streamSynchronizeNoThrow(__stream);
+  if (__status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to synchronize a stream");
+  }
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __streamGetCtx(::CUstream __stream)
@@ -760,6 +784,13 @@ __functionGetAttributeNoThrow(int& __value, ::CUfunction_attribute __attr, ::CUf
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuFuncGetAttribute);
   return static_cast<::cudaError_t>(__driver_fn(&__value, __attr, __kernel));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __functionLoadNoThrow(::CUfunction __kernel) noexcept
+{
+  static auto __driver_fn = reinterpret_cast<::CUresult(CUDAAPI*)(::CUfunction)>(
+    ::cuda::__driver::__get_driver_entry_point("cuFuncLoad", 12, 4));
+  return static_cast<::cudaError_t>(__driver_fn(__kernel));
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t

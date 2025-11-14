@@ -2,9 +2,10 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
 #include <thrust/transform.h>
 #include <thrust/tuple.h>
+
+#include <cuda/std/utility>
 
 #include "catch2_test_helper.h"
 #include "unittest/random.h"
@@ -376,9 +377,9 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIterator", "[transform]", variable_list)
 struct repeat2
 {
   template <typename T>
-  _CCCL_HOST_DEVICE thrust::pair<T, T> operator()(T x)
+  _CCCL_HOST_DEVICE cuda::std::pair<T, T> operator()(T x)
   {
-    return thrust::make_pair(x, x);
+    return cuda::std::make_pair(x, x);
   }
 };
 

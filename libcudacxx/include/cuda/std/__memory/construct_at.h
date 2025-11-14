@@ -158,7 +158,7 @@ _CCCL_API constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterato
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API constexpr void __destroy_at(_Tp* __loc)
+_CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)
@@ -201,7 +201,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)

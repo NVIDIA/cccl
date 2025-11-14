@@ -14,7 +14,7 @@
 //   const T&
 //   clamp(const T& v, const T& lo, const T& hi, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

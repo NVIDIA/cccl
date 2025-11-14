@@ -197,11 +197,11 @@ TEMPLATE_LIST_TEST_CASE("ScalarEqualRangeSimple", "[binary_search]", vector_list
 }
 
 template <typename ForwardIterator, typename LessThanComparable>
-thrust::pair<ForwardIterator, ForwardIterator>
+cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(my_system& system, ForwardIterator first, ForwardIterator /*last*/, const LessThanComparable& /*value*/)
 {
   system.validate_dispatch();
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 TEST_CASE("ScalarEqualRangeDispatchExplicit", "[binary_search]")
@@ -215,11 +215,11 @@ TEST_CASE("ScalarEqualRangeDispatchExplicit", "[binary_search]")
 }
 
 template <typename ForwardIterator, typename LessThanComparable>
-thrust::pair<ForwardIterator, ForwardIterator>
+cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(my_tag, ForwardIterator first, ForwardIterator /*last*/, const LessThanComparable& /*value*/)
 {
   *first = 13;
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 TEST_CASE("ScalarEqualRangeDispatchImplicit", "[binary_search]")

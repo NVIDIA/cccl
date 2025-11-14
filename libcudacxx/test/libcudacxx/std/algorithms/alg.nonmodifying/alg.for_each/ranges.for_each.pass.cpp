@@ -18,7 +18,7 @@
 //   constexpr ranges::for_each_result<borrowed_iterator_t<R>, Fun>
 //     ranges::for_each(R&& r, Fun f, Proj proj = {});
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>

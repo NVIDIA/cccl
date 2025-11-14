@@ -23,11 +23,11 @@ struct index_to_value_t
 };
 
 template <typename ForwardIterator1, typename ForwardIterator2>
-thrust::pair<ForwardIterator1, ForwardIterator2>
+cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(my_system& system, ForwardIterator1 keys_first, ForwardIterator1, ForwardIterator2 values_first)
 {
   system.validate_dispatch();
-  return thrust::make_pair(keys_first, values_first);
+  return cuda::std::make_pair(keys_first, values_first);
 }
 
 void TestUniqueByKeyDispatchExplicit()
@@ -42,11 +42,11 @@ void TestUniqueByKeyDispatchExplicit()
 DECLARE_UNITTEST(TestUniqueByKeyDispatchExplicit);
 
 template <typename ForwardIterator1, typename ForwardIterator2>
-thrust::pair<ForwardIterator1, ForwardIterator2>
+cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(my_tag, ForwardIterator1 keys_first, ForwardIterator1, ForwardIterator2 values_first)
 {
   *keys_first = 13;
-  return thrust::make_pair(keys_first, values_first);
+  return cuda::std::make_pair(keys_first, values_first);
 }
 
 void TestUniqueByKeyDispatchImplicit()
@@ -61,7 +61,7 @@ void TestUniqueByKeyDispatchImplicit()
 DECLARE_UNITTEST(TestUniqueByKeyDispatchImplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   my_system& system,
   InputIterator1,
   InputIterator1,
@@ -70,7 +70,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   OutputIterator2 values_output)
 {
   system.validate_dispatch();
-  return thrust::make_pair(keys_output, values_output);
+  return cuda::std::make_pair(keys_output, values_output);
 }
 
 void TestUniqueByKeyCopyDispatchExplicit()
@@ -85,11 +85,11 @@ void TestUniqueByKeyCopyDispatchExplicit()
 DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator1 keys_output, OutputIterator2 values_output)
 {
   *keys_output = 13;
-  return thrust::make_pair(keys_output, values_output);
+  return cuda::std::make_pair(keys_output, values_output);
 }
 
 void TestUniqueByKeyCopyDispatchImplicit()
@@ -138,7 +138,7 @@ void TestUniqueByKeySimple()
   Vector keys;
   Vector values;
 
-  typename thrust::pair<typename Vector::iterator, typename Vector::iterator> new_last;
+  typename cuda::std::pair<typename Vector::iterator, typename Vector::iterator> new_last;
 
   // basic test
   initialize_keys(keys);
@@ -184,7 +184,7 @@ void TestUniqueCopyByKeySimple()
   Vector keys;
   Vector values;
 
-  typename thrust::pair<typename Vector::iterator, typename Vector::iterator> new_last;
+  typename cuda::std::pair<typename Vector::iterator, typename Vector::iterator> new_last;
 
   // basic test
   initialize_keys(keys);
@@ -243,8 +243,8 @@ struct TestUniqueByKey
     using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
     using DeviceValIterator = typename thrust::device_vector<V>::iterator;
 
-    using HostIteratorPair   = typename thrust::pair<HostKeyIterator, HostValIterator>;
-    using DeviceIteratorPair = typename thrust::pair<DeviceKeyIterator, DeviceValIterator>;
+    using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
+    using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;
 
     HostIteratorPair h_last   = thrust::unique_by_key(h_keys.begin(), h_keys.end(), h_vals.begin());
     DeviceIteratorPair d_last = thrust::unique_by_key(d_keys.begin(), d_keys.end(), d_vals.begin());
@@ -287,8 +287,8 @@ struct TestUniqueCopyByKey
     using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
     using DeviceValIterator = typename thrust::device_vector<V>::iterator;
 
-    using HostIteratorPair   = typename thrust::pair<HostKeyIterator, HostValIterator>;
-    using DeviceIteratorPair = typename thrust::pair<DeviceKeyIterator, DeviceValIterator>;
+    using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
+    using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;
 
     HostIteratorPair h_last = thrust::unique_by_key_copy(
       h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), h_vals_output.begin());
@@ -335,51 +335,51 @@ struct TestUniqueCopyByKeyToDiscardIterator
     size_t num_unique_keys = h_unique_keys.size();
 
     // mask both outputs
-    thrust::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::unique_by_key_copy(
+    cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::unique_by_key_copy(
       h_keys.begin(), h_keys.end(), h_vals.begin(), thrust::make_discard_iterator(), thrust::make_discard_iterator());
 
-    thrust::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::unique_by_key_copy(
+    cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> d_result1 = thrust::unique_by_key_copy(
       d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), thrust::make_discard_iterator());
 
-    thrust::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 =
-      thrust::make_pair(thrust::make_discard_iterator(num_unique_keys), thrust::make_discard_iterator(num_unique_keys));
+    cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 = cuda::std::make_pair(
+      thrust::make_discard_iterator(num_unique_keys), thrust::make_discard_iterator(num_unique_keys));
 
     ASSERT_EQUAL_QUIET(reference1, h_result1);
     ASSERT_EQUAL_QUIET(reference1, d_result1);
 
     // mask values output
-    thrust::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_result2 =
+    cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_result2 =
       thrust::unique_by_key_copy(
         h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), thrust::make_discard_iterator());
 
-    thrust::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_result2 =
+    cuda::std::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_result2 =
       thrust::unique_by_key_copy(
         d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), thrust::make_discard_iterator());
 
-    thrust::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_reference2 =
-      thrust::make_pair(h_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+    cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_reference2 =
+      cuda::std::make_pair(h_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
 
-    thrust::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_reference2 =
-      thrust::make_pair(d_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+    cuda::std::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_reference2 =
+      cuda::std::make_pair(d_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
 
     ASSERT_EQUAL(h_keys_output, d_keys_output);
     ASSERT_EQUAL_QUIET(h_reference2, h_result2);
     ASSERT_EQUAL_QUIET(d_reference2, d_result2);
 
     // mask keys output
-    thrust::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_result3 =
+    cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_result3 =
       thrust::unique_by_key_copy(
         h_keys.begin(), h_keys.end(), h_vals.begin(), thrust::make_discard_iterator(), h_vals_output.begin());
 
-    thrust::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_result3 =
+    cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_result3 =
       thrust::unique_by_key_copy(
         d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), d_vals_output.begin());
 
-    thrust::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_reference3 =
-      thrust::make_pair(thrust::make_discard_iterator(num_unique_keys), h_vals_output.begin() + num_unique_keys);
+    cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_reference3 =
+      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), h_vals_output.begin() + num_unique_keys);
 
-    thrust::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_reference3 =
-      thrust::make_pair(thrust::make_discard_iterator(num_unique_keys), d_vals_output.begin() + num_unique_keys);
+    cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_reference3 =
+      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), d_vals_output.begin() + num_unique_keys);
 
     ASSERT_EQUAL(h_vals_output, d_vals_output);
     ASSERT_EQUAL_QUIET(h_reference3, h_result3);
@@ -477,7 +477,7 @@ struct Entry
 
 void TestKeysWithoutEqualityOperator()
 {
-  using Key = thrust::pair<std::int32_t, Entry>;
+  using Key = cuda::std::pair<std::int32_t, Entry>;
 
   const auto k1 = Key{1, {}};
   const auto k2 = Key{2, {}};
