@@ -77,7 +77,8 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, _Callable __callable, _Args
   _CallbackData* __callback_data_ptr = new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
 
   // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
-  ::cuda::__driver::__streamAddCallback(__stream.get(), __stream_callback_launcher<_CallbackData>, __callback_data_ptr);
+  _CCCL_TRY_DRIVER_API(
+    __streamAddCallback(__stream.get(), __stream_callback_launcher<_CallbackData>, __callback_data_ptr));
 }
 
 template <class _Callable>
@@ -101,8 +102,8 @@ template <class _Callable>
 _CCCL_HOST_API void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> __callable)
 {
   static_assert(::cuda::std::is_invocable_v<_Callable>, "Callable in reference_wrapper can't take any arguments");
-  ::cuda::__driver::__launchHostFunc(
-    __stream.get(), __host_func_launcher<_Callable>, ::cuda::std::addressof(__callable.get()));
+  _CCCL_TRY_DRIVER_API(
+    __launchHostFunc(__stream.get(), __host_func_launcher<_Callable>, ::cuda::std::addressof(__callable.get())));
 }
 _CCCL_END_NAMESPACE_CUDA
 

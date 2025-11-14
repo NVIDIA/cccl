@@ -45,8 +45,8 @@ struct __dev_attr_impl
 
   [[nodiscard]] _CCCL_HOST_API type operator()(device_ref __dev) const
   {
-    return static_cast<type>(::cuda::__driver::__deviceGetAttribute(
-      static_cast<::CUdevice_attribute>(_Attr), ::cuda::__driver::__deviceGet(__dev.get())));
+    return static_cast<type>(_CCCL_TRY_DRIVER_API(
+      __deviceGetAttribute(static_cast<::CUdevice_attribute>(_Attr), _CCCL_TRY_DRIVER_API(__deviceGet(__dev.get())))));
   }
 };
 

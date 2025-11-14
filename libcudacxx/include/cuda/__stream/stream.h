@@ -48,7 +48,7 @@ struct stream : stream_ref
       : stream_ref(::cuda::__invalid_stream())
   {
     [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
-    __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
+    __stream = _CCCL_TRY_DRIVER_API(__streamCreateWithPriority(cudaStreamNonBlocking, __priority));
   }
 
   //! @brief Construct a new `stream` object into the moved-from state.
@@ -79,7 +79,7 @@ struct stream : stream_ref
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
+      _CCCL_ASSERT_DRIVER_API(__streamDestroy(__stream));
     }
   }
 

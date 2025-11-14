@@ -99,7 +99,7 @@ public:
   [[nodiscard]] friend _CCCL_HOST_API ::cuda::std::chrono::nanoseconds
   operator-(const timed_event& __end, const timed_event& __start)
   {
-    const auto __ms = ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get());
+    const auto __ms = _CCCL_TRY_DRIVER_API(__eventElapsedTime(__start.get(), __end.get()));
     return ::cuda::std::chrono::nanoseconds(static_cast<::cuda::std::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
