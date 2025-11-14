@@ -104,7 +104,7 @@ struct binary_search_functor
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<1>(t) = func(begin, end, thrust::get<0>(t), comp);
+    ::cuda::std::get<1>(t) = func(begin, end, ::cuda::std::get<0>(t), comp);
   }
 }; // binary_search_functor
 

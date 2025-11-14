@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_
   thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
 
   using namespace thrust::placeholders;
-  thrust::zip_iterator<thrust::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
+  thrust::zip_iterator<::cuda::std::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
     exec,
     thrust::make_zip_iterator(keys_first, values_first),
     thrust::make_zip_iterator(keys_first, values_first) + n,

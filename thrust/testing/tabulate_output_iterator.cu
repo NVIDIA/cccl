@@ -36,8 +36,8 @@ struct host_write_first_op
   template <typename IndexT, typename T>
   _CCCL_HOST void operator()(IndexT index, T val)
   {
-    // val is a thrust::tuple(value, input_index). Only write out the value part.
-    out[index] = thrust::get<0>(val);
+    // val is a cuda::std::tuple(value, input_index). Only write out the value part.
+    out[index] = cuda::std::get<0>(val);
   }
 };
 
@@ -49,8 +49,8 @@ struct device_write_first_op
   template <typename IndexT, typename T>
   _CCCL_DEVICE void operator()(IndexT index, T val)
   {
-    // val is a thrust::tuple(value, input_index). Only write out the value part.
-    out[index] = thrust::get<0>(val);
+    // val is a cuda::std::tuple(value, input_index). Only write out the value part.
+    out[index] = cuda::std::get<0>(val);
   }
 };
 
@@ -59,10 +59,10 @@ struct select_op
   std::size_t select_every_nth;
 
   template <typename T, typename IndexT>
-  _CCCL_HOST_DEVICE bool operator()(thrust::tuple<T, IndexT> key_index_pair)
+  _CCCL_HOST_DEVICE bool operator()(cuda::std::tuple<T, IndexT> key_index_pair)
   {
     // Select every n-th item
-    return (thrust::get<1>(key_index_pair) % select_every_nth == 0);
+    return (cuda::std::get<1>(key_index_pair) % select_every_nth == 0);
   }
 };
 
