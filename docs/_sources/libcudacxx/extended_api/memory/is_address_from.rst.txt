@@ -3,9 +3,11 @@
 ``cuda::device::is_address_from`` and ``cuda::device::is_object_from``
 ======================================================================
 
-Defined in ``<cuda/memory>`` header.
+Defined in the ``<cuda/memory>`` header.
 
-.. code:: cpp
+.. code:: cuda
+
+   namespace cuda::device {
 
    enum class address_space
    {
@@ -17,24 +19,40 @@ Defined in ``<cuda/memory>`` header.
      cluster_shared, // Cluster shared window within the shared state space
    };
 
-Enumeration of device address spaces to be used with the ``is_address_from()`` and ``is_object_from()`` functions. See `PTX ISA documentation for state spaces <https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces>`_ for more details.
+   } // namespace cuda::device
 
-.. code:: cpp
+Enumeration of device address spaces used with the ``is_address_from()`` and ``is_object_from()`` functions. See the `PTX ISA documentation for state spaces <https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces>`_ for more details.
+
+----
+
+.. code:: cuda
+
+   namespace cuda::device {
 
    [[nodiscard]] __device__ inline
    bool is_address_from(const volatile void* ptr, address_space space) noexcept; // (1)
 
-The function checks if a pointer ``ptr`` with a generic address is from a ``space`` address state space.
+   } // namespace cuda::device
 
-.. code:: cpp
+Checks whether a generic-address pointer ``ptr`` is from the specified address space.
+
+----
+
+.. code:: cuda
+
+   namespace cuda::device {
 
    template <typename T>
    [[nodiscard]] __device__ inline
    bool is_object_from(T& obj, address_space space) noexcept; // (2)
 
-The function checks if an object ``obj`` with a generic address is from a ``space`` address state space.
+   } // namespace cuda::device
 
-Compared to the corresponding CUDA C functions ``__isGlobal()``, ``__isShared()``, ``__isConstant()``, ``__isLocal()``, ``__isGridConstant()``, or ``__isClusterShared()``, ``is_address_from()`` is portable across any compute capability and checks that the pointer is not a null in debug mode.
+Checks whether an object ``obj`` with a generic address is from the specified address space.
+
+----
+
+Unlike the corresponding CUDA intrinsic functions ``__isGlobal()``, ``__isShared()``, ``__isConstant()``, ``__isLocal()``, ``__isGridConstant()``, and ``__isClusterShared()``, ``is_address_from()`` and ``is_object_from()`` are portable across all compute capabilities and, in debug mode, also checks that the pointer is not null.
 
 **Parameters**
 
@@ -44,17 +62,21 @@ Compared to the corresponding CUDA C functions ``__isGlobal()``, ``__isShared()`
 
 **Return value**
 
-- ``true`` if the pointer/object is from the specified address space, ``false`` otherwise.
+- Returns ``true`` if the pointer (1) or object (2) is from the specified address space; ``false`` otherwise.
 
-*Note: If the device architecture doesn't support the requested address space, the function will always return ``false``.*
+.. note::
+
+  If the GPU architecture does not support the requested address space, the function always returns ``false``.
 
 **Preconditions**
 
-- ``ptr`` is not a null pointer. (1)
+- ``ptr`` must not be null. (1)
 
 **Performance considerations**
 
-- If possible, the ``__isGlobal``, ``__isShared``, ``__isConstant``, ``__isLocal``, ``__isGridConstant``, or ``__isClusterShared`` built-in functions are used to determine the address space.
+- When available, the built-in functions (``__isGlobal()``, ``__isShared()``, ``__isConstant()``, ``__isLocal()``, ``__isGridConstant()``, or ``__isClusterShared()``) are used to determine the address space.
+- If the memory space of the input pointer matches the requested address space,
+the function marks the pointer as belonging to that address space. For example, a subsequent store to a generic address that maps to shared memory emits an ``STS`` SASS instruction rather than the generic ``ST`` instruction.
 
 Example
 -------
@@ -91,4 +113,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/5ajhe37df>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/5ajhe37df>`__

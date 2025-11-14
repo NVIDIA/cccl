@@ -1531,8 +1531,10 @@
                   
   <section id="cuda-device-is-address-from-and-cuda-device-is-object-from">
 <span id="libcudacxx-extended-api-memory-is-address-from"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda::device::is_address_from</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::device::is_object_from</span></code><a class="headerlink" href="#cuda-device-is-address-from-and-cuda-device-is-object-from" title="Link to this heading">#</a></h1>
-<p>Defined in <code class="docutils literal notranslate"><span class="pre">&lt;cuda/memory&gt;</span></code> header.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">address_space</span>
+<p>Defined in the <code class="docutils literal notranslate"><span class="pre">&lt;cuda/memory&gt;</span></code> header.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="w"> </span><span class="p">{</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="n">class</span><span class="w"> </span><span class="n">address_space</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="n">global</span><span class="p">,</span><span class="w">         </span><span class="c1">// Global state space</span>
 <span class="w">  </span><span class="n">shared</span><span class="p">,</span><span class="w">         </span><span class="c1">// Shared state space</span>
@@ -1541,21 +1543,34 @@
 <span class="w">  </span><span class="n">grid_constant</span><span class="p">,</span><span class="w">  </span><span class="c1">// Kernel function parameter in the parameter state space</span>
 <span class="w">  </span><span class="n">cluster_shared</span><span class="p">,</span><span class="w"> </span><span class="c1">// Cluster shared window within the shared state space</span>
 <span class="p">};</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda::device</span>
 </pre></div>
 </div>
-<p>Enumeration of device address spaces to be used with the <code class="docutils literal notranslate"><span class="pre">is_address_from()</span></code> and <code class="docutils literal notranslate"><span class="pre">is_object_from()</span></code> functions. See <a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces">PTX ISA documentation for state spaces</a> for more details.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span>
-<span class="kt">bool</span><span class="w"> </span><span class="n">is_address_from</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">address_space</span><span class="w"> </span><span class="n">space</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (1)</span>
+<p>Enumeration of device address spaces used with the <code class="docutils literal notranslate"><span class="pre">is_address_from()</span></code> and <code class="docutils literal notranslate"><span class="pre">is_object_from()</span></code> functions. See the <a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces">PTX ISA documentation for state spaces</a> for more details.</p>
+<hr class="docutils" />
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="w"> </span><span class="p">{</span>
+
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">is_address_from</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="n">address_space</span><span class="w"> </span><span class="n">space</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (1)</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda::device</span>
 </pre></div>
 </div>
-<p>The function checks if a pointer <code class="docutils literal notranslate"><span class="pre">ptr</span></code> with a generic address is from a <code class="docutils literal notranslate"><span class="pre">space</span></code> address state space.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kr">inline</span>
-<span class="kt">bool</span><span class="w"> </span><span class="n">is_object_from</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">address_space</span><span class="w"> </span><span class="n">space</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (2)</span>
+<p>Checks whether a generic-address pointer <code class="docutils literal notranslate"><span class="pre">ptr</span></code> is from the specified address space.</p>
+<hr class="docutils" />
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">namespace</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span>
+<span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="kt">__device__</span><span class="w"> </span><span class="kr">inline</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">is_object_from</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">address_space</span><span class="w"> </span><span class="n">space</span><span class="p">)</span><span class="w"> </span><span class="n">noexcept</span><span class="p">;</span><span class="w"> </span><span class="c1">// (2)</span>
+
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace cuda::device</span>
 </pre></div>
 </div>
-<p>The function checks if an object <code class="docutils literal notranslate"><span class="pre">obj</span></code> with a generic address is from a <code class="docutils literal notranslate"><span class="pre">space</span></code> address state space.</p>
-<p>Compared to the corresponding CUDA C functions <code class="docutils literal notranslate"><span class="pre">__isGlobal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isShared()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isConstant()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isLocal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isGridConstant()</span></code>, or <code class="docutils literal notranslate"><span class="pre">__isClusterShared()</span></code>, <code class="docutils literal notranslate"><span class="pre">is_address_from()</span></code> is portable across any compute capability and checks that the pointer is not a null in debug mode.</p>
+<p>Checks whether an object <code class="docutils literal notranslate"><span class="pre">obj</span></code> with a generic address is from the specified address space.</p>
+<hr class="docutils" />
+<p>Unlike the corresponding CUDA intrinsic functions <code class="docutils literal notranslate"><span class="pre">__isGlobal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isShared()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isConstant()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isLocal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isGridConstant()</span></code>, and <code class="docutils literal notranslate"><span class="pre">__isClusterShared()</span></code>, <code class="docutils literal notranslate"><span class="pre">is_address_from()</span></code> and <code class="docutils literal notranslate"><span class="pre">is_object_from()</span></code> are portable across all compute capabilities and, in debug mode, also checks that the pointer is not null.</p>
 <p><strong>Parameters</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ptr</span></code>: The pointer. (1)</p></li>
@@ -1564,17 +1579,22 @@
 </ul>
 <p><strong>Return value</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the pointer/object is from the specified address space, <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise.</p></li>
+<li><p>Returns <code class="docutils literal notranslate"><span class="pre">true</span></code> if the pointer (1) or object (2) is from the specified address space; <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise.</p></li>
 </ul>
-<p><em>Note: If the device architecture doesn’t support the requested address space, the function will always return ``false``.</em></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the GPU architecture does not support the requested address space, the function always returns <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+</div>
 <p><strong>Preconditions</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ptr</span></code> is not a null pointer. (1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ptr</span></code> must not be null. (1)</p></li>
 </ul>
 <p><strong>Performance considerations</strong></p>
 <ul class="simple">
-<li><p>If possible, the <code class="docutils literal notranslate"><span class="pre">__isGlobal</span></code>, <code class="docutils literal notranslate"><span class="pre">__isShared</span></code>, <code class="docutils literal notranslate"><span class="pre">__isConstant</span></code>, <code class="docutils literal notranslate"><span class="pre">__isLocal</span></code>, <code class="docutils literal notranslate"><span class="pre">__isGridConstant</span></code>, or <code class="docutils literal notranslate"><span class="pre">__isClusterShared</span></code> built-in functions are used to determine the address space.</p></li>
+<li><p>When available, the built-in functions (<code class="docutils literal notranslate"><span class="pre">__isGlobal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isShared()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isConstant()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isLocal()</span></code>, <code class="docutils literal notranslate"><span class="pre">__isGridConstant()</span></code>, or <code class="docutils literal notranslate"><span class="pre">__isClusterShared()</span></code>) are used to determine the address space.</p></li>
+<li><p>If the memory space of the input pointer matches the requested address space,</p></li>
 </ul>
+<p>the function marks the pointer as belonging to that address space. For example, a subsequent store to a generic address that maps to shared memory emits an <code class="docutils literal notranslate"><span class="pre">STS</span></code> SASS instruction rather than the generic <code class="docutils literal notranslate"><span class="pre">ST</span></code> instruction.</p>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h2>
 <div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/memory&gt;</span>
