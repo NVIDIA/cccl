@@ -35,57 +35,57 @@ namespace chrono
 class day
 {
 private:
-  unsigned char __d_;
+  unsigned char __day_;
 
 public:
   _CCCL_HIDE_FROM_ABI day() = default;
-  _CCCL_API explicit constexpr day(unsigned __val) noexcept
-      : __d_(static_cast<unsigned char>(__val))
+  _CCCL_API explicit constexpr day(unsigned __day) noexcept
+      : __day_(static_cast<unsigned char>(__day))
   {}
 
   _CCCL_API constexpr day& operator++() noexcept
   {
-    ++__d_;
+    ++__day_;
     return *this;
   }
   _CCCL_API constexpr day operator++(int) noexcept
   {
     day __tmp = *this;
-    ++__d_;
+    ++__day_;
     return __tmp;
   }
   _CCCL_API constexpr day& operator--() noexcept
   {
-    --__d_;
+    --__day_;
     return *this;
   }
   _CCCL_API constexpr day operator--(int) noexcept
   {
     day __tmp = *this;
-    --__d_;
+    --__day_;
     return __tmp;
   }
 
   _CCCL_API constexpr day& operator+=(const days& __dd) noexcept
   {
-    __d_ += static_cast<unsigned char>(__dd.count());
+    __day_ += static_cast<unsigned char>(__dd.count());
     return *this;
   }
 
   _CCCL_API constexpr day& operator-=(const days& __dd) noexcept
   {
-    __d_ -= static_cast<unsigned char>(__dd.count());
+    __day_ -= static_cast<unsigned char>(__dd.count());
     return *this;
   }
 
   _CCCL_API explicit constexpr operator unsigned() const noexcept
   {
-    return __d_;
+    return __day_;
   }
 
   [[nodiscard]] _CCCL_API constexpr bool ok() const noexcept
   {
-    return __d_ >= 1 && __d_ <= 31;
+    return __day_ >= 1 && __day_ <= 31;
   }
 
   // Arithmetics
