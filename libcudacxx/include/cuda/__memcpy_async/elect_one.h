@@ -22,9 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memcpy_async/group_traits.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -44,6 +47,24 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
      ),
     (return threadIdx.x == 0;));
 }
+
+template <typename _Group>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __group_elect_one(const _Group& __g) noexcept
+{
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                 if constexpr (is_thread_block_group_v<_Group>) {
+                   // cooperative groups maps a multidimensional thread id into the thread rank the same way as warps do
+                   const unsigned int __tid             = __g.thread_rank();
+                   const unsigned int __warp_id         = __tid / 32;
+                   const unsigned int __uniform_warp_id = __shfl_sync(~0, __warp_id, 0); // broadcast from lane 0
+                   return __uniform_warp_id == 0 && ::cuda::ptx::elect_sync(~0); // elect a leader thread among warp 0
+                 } else if constexpr (is_warp_group_v<_Group>) { return ::cuda::ptx::elect_sync(~0); }));
+
+  return __g.thread_rank() == 0;
+}
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 

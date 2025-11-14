@@ -14,9 +14,9 @@
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 4;)
+  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = thread_block_size;)
 
-  test_select_source<storage<int32_t>>();
+  test_select_source<int32_t>();
 
   return 0;
 }
