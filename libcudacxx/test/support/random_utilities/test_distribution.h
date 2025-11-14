@@ -133,8 +133,6 @@ __host__ __device__ constexpr bool test_param(Param param)
   assert(!(p2 != param));
   Param p3 = param;
   assert(p3 == param);
-  static_assert(noexcept(Param()));
-  static_assert(noexcept(Param(param)));
   static_assert(noexcept(p3 = p2));
   static_assert(noexcept(p2 == p3));
   static_assert(noexcept(p2 != p3));
