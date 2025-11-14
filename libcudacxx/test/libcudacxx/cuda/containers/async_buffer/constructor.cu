@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -15,8 +16,6 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
-
-#include <cuda/experimental/container.cuh>
 
 #include <stdexcept>
 
@@ -31,64 +30,64 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
+C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Resource = typename extract_properties<TestT>::resource;
   using Buffer   = typename extract_properties<TestT>::buffer;
   using T        = typename Buffer::value_type;
 
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<TestT>::get_resource();
 
   SECTION("Construction with explicit size")
   {
     { // from stream and resource, no allocation
       const Buffer buf{stream, resource};
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource);
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    {
-      const auto buf = cudax::make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const auto buf = cuda::make_buffer<T>(stream, resource);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cudax::make_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
-      CUDAX_CHECK(buf.size() == 5);
-      CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
+      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    {
+      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
+      CCCLRT_CHECK(buf.size() == 5);
+      CCCLRT_CHECK(equal_size_value(buf, 5, T(42)));
     }
   }
 
   { // from size with no_init, no allocation
     SECTION("from size with no_init, no allocation")
     {
-      const Buffer buf{stream, resource, 0, cudax::no_init};
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const Buffer buf{stream, resource, 0, cuda::no_init};
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource, 0, cudax::no_init);
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const auto buf = cuda::make_buffer<T>(stream, resource, 0, cuda::no_init);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     { // from size with no_init
-      const Buffer buf{stream, resource, 5, cudax::no_init};
-      CUDAX_CHECK(buf.size() == 5);
-      CUDAX_CHECK(buf.data() != nullptr);
+      const Buffer buf{stream, resource, 5, cuda::no_init};
+      CCCLRT_CHECK(buf.size() == 5);
+      CCCLRT_CHECK(buf.data() != nullptr);
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource, 5, cudax::no_init);
-      CUDAX_CHECK(buf.size() == 5);
-      CUDAX_CHECK(buf.data() != nullptr);
+      const auto buf = cuda::make_buffer<T>(stream, resource, 5, cuda::no_init);
+      CCCLRT_CHECK(buf.size() == 5);
+      CCCLRT_CHECK(buf.data() != nullptr);
     }
   }
 
@@ -97,24 +96,24 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     const cuda::std::array<T, 6> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
     { // can be constructed from two equal input iterators
       Buffer buf(stream, resource, input.begin(), input.begin());
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource, input.begin(), input.begin());
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const auto buf = cuda::make_buffer<T>(stream, resource, input.begin(), input.begin());
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from two input iterators
       Buffer buf(stream, resource, input.begin(), input.end());
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource, input.begin(), input.end());
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
+      const auto buf = cuda::make_buffer<T>(stream, resource, input.begin(), input.end());
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
     }
   }
 
@@ -122,25 +121,25 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
   {
     { // can be constructed from an empty random access range
       Buffer buf(stream, resource, cuda::std::array<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_buffer<T>(stream, resource, cuda::std::array<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const auto buf = cuda::make_buffer<T>(stream, resource, cuda::std::array<T, 0>{});
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty random access range
       Buffer buf(stream, resource, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(equal_range(buf));
     }
     {
       const auto buf =
-        cudax::make_buffer<T>(stream, resource, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
+        cuda::make_buffer<T>(stream, resource, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(equal_range(buf));
     }
   }
 
@@ -149,26 +148,26 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     { // can be constructed from an empty initializer_list
       const cuda::std::initializer_list<T> input{};
       Buffer buf(stream, resource, input);
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_buffer(stream, resource, cuda::std::initializer_list<T>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
+      const auto buf = cuda::make_buffer(stream, resource, cuda::std::initializer_list<T>{});
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     { // can be constructed from a non-empty initializer_list
       const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
       Buffer buf(stream, resource, input);
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
     }
     {
       const auto buf =
-        cudax::make_buffer(stream, resource, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
+        cuda::make_buffer(stream, resource, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(equal_range(buf));
     }
   }
 
@@ -176,16 +175,16 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
   {
     static_assert(!cuda::std::is_nothrow_copy_constructible<Buffer>::value, "");
     { // can be copy constructed from empty input
-      const Buffer input{stream, resource, 0, cudax::no_init};
+      const Buffer input{stream, resource, 0, cuda::no_init};
       Buffer buf(input);
-      CUDAX_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.empty());
     }
 
     { // can be copy constructed from non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf(input);
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(equal_range(buf));
     }
   }
 
@@ -194,10 +193,10 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     static_assert(cuda::std::is_nothrow_move_constructible<Buffer>::value, "");
 
     { // can be move constructed with empty input
-      Buffer input{stream, resource, 0, cudax::no_init};
+      Buffer input{stream, resource, 0, cuda::no_init};
       Buffer buf(cuda::std::move(input));
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(input.empty());
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
@@ -206,11 +205,11 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
       // ensure that we steal the data
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(buf.data() == allocation);
-      CUDAX_CHECK(input.size() == 0);
-      CUDAX_CHECK(input.data() == nullptr);
-      CUDAX_CHECK(equal_range(buf));
+      CCCLRT_CHECK(buf.size() == 6);
+      CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(input.size() == 0);
+      CCCLRT_CHECK(input.data() == nullptr);
+      CCCLRT_CHECK(equal_range(buf));
     }
   }
   stream.sync();
@@ -219,7 +218,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
 #  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {
-    using buffer = cudax::buffer<int>;
+    using buffer = cuda::buffer<int>;
 
     try
     {
@@ -229,7 +228,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -240,7 +239,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -252,7 +251,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -264,7 +263,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -276,7 +275,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -288,7 +287,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
 
     try
@@ -300,41 +299,41 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
     {}
     catch (...)
     {
-      CUDAX_CHECK(false);
+      CCCLRT_CHECK(false);
     }
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }
 
-C2H_CCCLRT_TEST("cudax::buffer constructors with legacy resource", "[container][buffer]")
+C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][buffer]")
 {
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   cuda::legacy_pinned_memory_resource resource;
   auto input = compare_data_initializer_list;
-  cudax::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
-  CUDAX_CHECK(equal_range(buffer));
+  cuda::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
+  CCCLRT_CHECK(equal_range(buffer));
   STATIC_CHECK(!decltype(buffer)::properties_list::has_property(cuda::mr::host_accessible{}));
   STATIC_CHECK(decltype(buffer)::properties_list::has_property(cuda::mr::device_accessible{}));
 
-  cudax::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
-  auto buf2 = cudax::make_buffer(stream, resource, buffer2);
-  CUDAX_CHECK(equal_range(buffer2));
+  cuda::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
+  auto buf2 = cuda::make_buffer(stream, resource, buffer2);
+  CCCLRT_CHECK(equal_range(buffer2));
   STATIC_CHECK(decltype(buffer2)::properties_list::has_property(cuda::mr::host_accessible{}));
   STATIC_CHECK(!decltype(buffer2)::properties_list::has_property(cuda::mr::device_accessible{}));
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
-C2H_CCCLRT_TEST("cudax::make_buffer narrowing properties", "[container][buffer]")
+C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
 {
   auto resource = cuda::pinned_default_memory_pool();
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
 
-  auto buf = cudax::make_buffer<int>(stream, resource, 0, cudax::no_init);
+  auto buf = cuda::make_buffer<int>(stream, resource, 0, cuda::no_init);
 
   auto input      = compare_data_initializer_list;
-  auto buf_host   = cudax::make_buffer<int, cuda::mr::host_accessible>(stream, resource, input);
-  auto buf_device = cudax::make_buffer<int, cuda::mr::device_accessible>(stream, resource, 2, 42);
+  auto buf_host   = cuda::make_buffer<int, cuda::mr::host_accessible>(stream, resource, input);
+  auto buf_device = cuda::make_buffer<int, cuda::mr::device_accessible>(stream, resource, 2, 42);
 
   STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
   STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
@@ -343,8 +342,8 @@ C2H_CCCLRT_TEST("cudax::make_buffer narrowing properties", "[container][buffer]"
   STATIC_CHECK(decltype(buf_device)::properties_list::has_property(cuda::mr::device_accessible{}));
   STATIC_CHECK(!decltype(buf_device)::properties_list::has_property(cuda::mr::host_accessible{}));
 
-  CUDAX_CHECK(buf.empty());
-  CUDAX_CHECK(equal_range(buf_host));
-  CUDAX_CHECK(buf_device.size() == 2);
+  CCCLRT_CHECK(buf.empty());
+  CCCLRT_CHECK(equal_range(buf_host));
+  CCCLRT_CHECK(buf_device.size() == 2);
 }
 #endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^

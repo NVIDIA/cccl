@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
-#define CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
+#ifndef CUDA_TEST_CONTAINER_VECTOR_TYPES_H
+#define CUDA_TEST_CONTAINER_VECTOR_TYPES_H
 
 #include <thrust/equal.h>
 
@@ -205,4 +205,4 @@ static_assert(cuda::std::ranges::forward_range<sized_uncommon_range<int, 4>>);
 static_assert(!cuda::std::ranges::common_range<sized_uncommon_range<int, 4>>);
 static_assert(cuda::std::ranges::sized_range<sized_uncommon_range<int, 4>>);
 
-#endif // CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
+#endif // CUDA_TEST_CONTAINER_VECTOR_TYPES_H

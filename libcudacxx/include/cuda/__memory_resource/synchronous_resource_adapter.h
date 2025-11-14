@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_CUH
-#define _CUDAX__MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_H
+#define _CUDA___MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,8 +28,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 template <class _Resource>
 _CCCL_CONCEPT __has_member_allocate =
   _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, ::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)(
@@ -41,10 +41,10 @@ _CCCL_CONCEPT __has_member_deallocate = _CCCL_REQUIRES_EXPR(
   _Same_as(void) __res.deallocate(__stream, __ptr, __bytes, __alignment));
 
 //! @brief Adapter that allows a synchronous resource to be used as a resource
-//! It examines the resource for the presence of the allocate and deallocate members.
-//! If they are present, it passes through the allocate and deallocate calls to the contained resource.
-//! Otherwise, it uses the allocate_sync and deallocate_sync members (with proper synchronization in case of
-//! deallocate).
+//! It examines the resource for the presence of the allocate and deallocate
+//! members. If they are present, it passes through the allocate and deallocate
+//! calls to the contained resource. Otherwise, it uses the allocate_sync and
+//! deallocate_sync members (with proper synchronization in case of deallocate).
 //! @note This adapter takes ownership of the contained resource.
 //! @tparam _Resource The type of the resource to be adapted
 template <class _Resource>
@@ -129,8 +129,8 @@ _CCCL_HOST_API auto __adapt_if_synchronous(_Resource&& __resource) noexcept
     return synchronous_resource_adapter<::cuda::std::decay_t<_Resource>>(::cuda::std::forward<_Resource>(__resource));
   }
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDAX__MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_CUH
+#endif //_CUDA___MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_H

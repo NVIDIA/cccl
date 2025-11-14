@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -15,8 +16,6 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-
-#include <cuda/experimental/container.cuh>
 
 #include "helper.h"
 #include "types.h"
@@ -29,7 +28,7 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::buffer properties", "[container][buffer]", test_types)
+C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", test_types)
 {
   using TestT                  = c2h::get<0, TestType>;
   using Buffer                 = typename extract_properties<TestT>::buffer;
