@@ -26,12 +26,15 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
+#  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+::cuda::std::size_t __physical_devices_count();
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
@@ -42,7 +45,17 @@ public:
   //! @brief Create a `device_ref` object from a native device ordinal.
   /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
-  {}
+  {
+    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
+    }
+    else
+    {
+      _CCCL_VERIFY(__id >= 0 && static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
+                   "Device ID must be a valid GPU device ordinal");
+    }
+  }
 
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!

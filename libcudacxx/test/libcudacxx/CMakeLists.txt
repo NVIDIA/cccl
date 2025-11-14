@@ -6,6 +6,9 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
+#add dlpack
+cccl_get_dlpack()
+
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -60,6 +63,7 @@ endif()
 
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I ${dlpack_SOURCE_DIR}/include")
 
 # enable optional<T&>
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")

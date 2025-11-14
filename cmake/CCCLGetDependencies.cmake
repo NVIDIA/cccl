@@ -27,6 +27,11 @@ macro(cccl_get_json)
   CPMAddPackage("gh:nlohmann/json@3.12.0")
 endmacro()
 
+macro(cccl_get_dlpack)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage("gh:dmlc/dlpack#v1.2")
+endmacro()
+
 set(
   CCCL_NVBENCH_SHA
   "0c24f0250bf4414ab5ad19709090c6396e76516b"
