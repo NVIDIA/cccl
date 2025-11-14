@@ -201,9 +201,8 @@ public:
   friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, normal_distribution& __x)
   {
-    using result_type = _RealType;
-    using _Istream    = ::std::basic_istream<_CharT, _Traits>;
-    auto __flags      = __is.flags();
+    using _Istream = ::std::basic_istream<_CharT, _Traits>;
+    auto __flags   = __is.flags();
     __is.flags(_Istream::skipws);
     result_type __mean;
     result_type __stddev;
