@@ -18,23 +18,31 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-  static_assert(noexcept(cuda::std::declval<const weekday_indexed>().ok()));
-  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const weekday_indexed>().ok())>);
+  {
+    weekday_indexed defaulted{};
+    assert(!defaulted.ok());
+  }
+  {
+    weekday_indexed from_day_index{cuda::std::chrono::Sunday, 2};
+    assert(from_day_index.ok());
+  }
+  {
+    weekday_indexed from_invalid{cuda::std::chrono::Tuesday, 0};
+    assert(!from_invalid.ok());
+  }
 
-  static_assert(!weekday_indexed{}.ok(), "");
-  static_assert(weekday_indexed{cuda::std::chrono::Sunday, 2}.ok(), "");
-
-  assert(!(weekday_indexed(cuda::std::chrono::Tuesday, 0).ok()));
-  auto constexpr Tuesday = cuda::std::chrono::Tuesday;
+  constexpr auto Tuesday = cuda::std::chrono::Tuesday;
   for (unsigned i = 1; i <= 5; ++i)
   {
-    weekday_indexed wdi(Tuesday, i);
+    const weekday_indexed wdi(Tuesday, i);
     assert(wdi.ok());
+    static_assert(noexcept(wdi.ok()));
+    static_assert(cuda::std::is_same_v<bool, decltype(wdi.ok())>);
   }
 
   for (unsigned i = 6; i <= 20; ++i)
@@ -45,6 +53,14 @@ int main(int, char**)
 
   //  Not a valid weekday
   assert(!(weekday_indexed(weekday{9U}, 1).ok()));
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }
