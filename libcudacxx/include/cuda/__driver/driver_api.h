@@ -382,6 +382,7 @@ _CCCL_HOST_API __call_result<void> __memsetAsync(void* __dst, _Tp __value, size_
   else
   {
     static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset");
+    return {};
   }
 }
 
