@@ -44,34 +44,35 @@ using other_floating_point_type_t = typename other_floating_point_type<T>::type;
 
 // Helper to compare complex numbers with approximate equality
 // Supports both scalar and thrust::complex<T> types
-
 double const DEFAULT_RELATIVE_TOL = 1e-4;
 double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 
 // Trait to detect complex types
+using true_type  = ::cuda::std::true_type;
+using false_type = ::cuda::std::false_type;
+
 template <typename T>
-struct is_complex : std::false_type
+struct is_complex : false_type
 {};
 
 template <typename T>
-struct is_complex<thrust::complex<T>> : std::true_type
+struct is_complex<thrust::complex<T>> : true_type
 {};
 
 template <typename T>
-struct is_complex<std::complex<T>> : std::true_type
+struct is_complex<std::complex<T>> : true_type
 {};
 
 // Overload for complex types
 template <typename T1, typename T2>
-std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
+::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
 {
   CHECK(a.real() == Catch::Approx(b.real()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
   CHECK(a.imag() == Catch::Approx(b.imag()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
 
-// Overload for scalar types
 template <typename T1, typename T2>
-std::enable_if_t<!is_complex<T1>::value && !is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
+::cuda::std::enable_if_t<!is_complex<T1>::value && !is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
 {
   CHECK(a == Catch::Approx(b).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
