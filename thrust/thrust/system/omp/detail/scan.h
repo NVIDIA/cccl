@@ -106,7 +106,9 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      block_sums[tid] = ::cuda::std::reduce(first + start, first + end, accum_t{}, wrapped_binary_op);
+      // For both has_init and no-init cases: reduce each block using first element as init
+      accum_t first_elem = *(first + start);
+      block_sums[tid]    = ::cuda::std::reduce(first + start + 1, first + end, first_elem, wrapped_binary_op);
     }
   }
 
@@ -117,7 +119,13 @@ OutputIterator scan_impl(
   }
   else
   {
-    ::cuda::std::exclusive_scan(block_sums.begin(), block_sums.end(), block_sums.begin(), accum_t{}, wrapped_binary_op);
+    // For no init inclusive scan: exclusive_scan starting at second element with first element as init
+    if (num_threads > 1)
+    {
+      accum_t first_block_sum = block_sums[0];
+      ::cuda::std::exclusive_scan(
+        block_sums.begin() + 1, block_sums.end(), block_sums.begin() + 1, first_block_sum, wrapped_binary_op);
+    }
   }
 
   // Step 3: Scan each block with offset (N reads/writes)
@@ -130,13 +138,30 @@ OutputIterator scan_impl(
 
     if (start < n)
     {
-      const accum_t prefix = block_sums[tid];
       if constexpr (IsInclusive)
       {
-        ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+        if constexpr (has_init)
+        {
+          const accum_t prefix = block_sums[tid];
+          ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+        }
+        else
+        {
+          // For no init: thread 0 has no prefix, others use block_sums
+          if (tid == 0)
+          {
+            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op);
+          }
+          else
+          {
+            const accum_t prefix = block_sums[tid];
+            ::cuda::std::inclusive_scan(first + start, first + end, result + start, wrapped_binary_op, prefix);
+          }
+        }
       }
       else
       {
+        const accum_t prefix = block_sums[tid];
         ::cuda::std::exclusive_scan(first + start, first + end, result + start, prefix, wrapped_binary_op);
       }
     }
