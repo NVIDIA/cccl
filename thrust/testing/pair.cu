@@ -232,8 +232,8 @@ struct TestPairGet
 
     thrust::pair<T, T> p(data[0], data[1]);
 
-    ASSERT_EQUAL(data[0], thrust::get<0>(p));
-    ASSERT_EQUAL(data[1], thrust::get<1>(p));
+    ASSERT_EQUAL(data[0], cuda::std::get<0>(p));
+    ASSERT_EQUAL(data[1], cuda::std::get<1>(p));
   }
 };
 SimpleUnitTest<TestPairGet, BuiltinNumericTypes> TestPairGetInstance;

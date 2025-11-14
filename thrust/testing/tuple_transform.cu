@@ -1,5 +1,6 @@
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 #include <unittest/unittest.h>
 
@@ -8,9 +9,9 @@ using namespace unittest;
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE thrust::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
+  _CCCL_HOST_DEVICE cuda::std::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
   {
-    return thrust::make_tuple(lhs, rhs);
+    return cuda::std::tuple(lhs, rhs);
   }
 };
 
@@ -18,9 +19,9 @@ template <int N>
 struct GetFunctor
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename thrust::tuple_element<N, Tuple>::type operator()(const Tuple& t)
+  _CCCL_HOST_DEVICE typename cuda::std::tuple_element<N, Tuple>::type operator()(const Tuple& t)
   {
-    return thrust::get<N>(t);
+    return cuda::std::get<N>(t);
   }
 };
 

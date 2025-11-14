@@ -15,12 +15,12 @@ void TestZipIteratorTraits()
 {
   using base_it = thrust::host_vector<int>::iterator;
 
-  using it        = thrust::zip_iterator<thrust::tuple<base_it, base_it>>;
+  using it        = thrust::zip_iterator<cuda::std::tuple<base_it, base_it>>;
   using traits    = cuda::std::iterator_traits<it>;
   using reference = thrust::detail::tuple_of_iterator_references<int&, int&>;
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
-  static_assert(cuda::std::is_same_v<traits::value_type, thrust::tuple<int, int>>);
+  static_assert(cuda::std::is_same_v<traits::value_type, cuda::std::tuple<int, int>>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
 
   static_assert(cuda::std::is_same_v<traits::reference, reference>);
@@ -162,7 +162,8 @@ struct TestZipIteratorManipulation
   }
 };
 SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<thrust::tuple<int*, int*>>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value,
+              "");
 
 template <typename T>
 struct TestZipIteratorReference
@@ -237,20 +238,20 @@ DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 struct SumTwoTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename cuda::std::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
-    return thrust::get<0>(x) + thrust::get<1>(x);
+    return cuda::std::get<0>(x) + cuda::std::get<1>(x);
   }
 }; // end SumTwoTuple
 
 struct SumThreeTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename cuda::std::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
-    return thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x);
+    return cuda::std::get<0>(x) + cuda::std::get<1>(x) + cuda::std::get<2>(x);
   }
 }; // end SumThreeTuple
 

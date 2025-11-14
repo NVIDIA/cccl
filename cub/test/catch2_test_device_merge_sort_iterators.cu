@@ -62,12 +62,12 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable
   auto keys_in_it          = cuda::make_zip_iterator(sort_key_it, key_idx_it);
 
   // Perform sort
-  c2h::device_vector<thrust::tuple<key_t, offset_t>> keys_out(
-    num_items, thrust::tuple<key_t, offset_t>{static_cast<key_t>(42), static_cast<offset_t>(42)});
+  c2h::device_vector<cuda::std::tuple<key_t, offset_t>> keys_out(
+    num_items, cuda::std::tuple<key_t, offset_t>{static_cast<key_t>(42), static_cast<offset_t>(42)});
   stable_sort_keys_copy(keys_in_it, keys_out.begin(), num_items, compare_first_lt_op_t{});
 
   // Verify results
-  c2h::host_vector<thrust::tuple<key_t, offset_t>> keys_expected(num_items);
+  c2h::host_vector<cuda::std::tuple<key_t, offset_t>> keys_expected(num_items);
   thrust::copy(keys_in_it, keys_in_it + num_items, keys_expected.begin());
   std::stable_sort(keys_expected.begin(), keys_expected.end(), compare_first_lt_op_t{});
 

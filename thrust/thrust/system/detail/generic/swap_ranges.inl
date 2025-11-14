@@ -29,9 +29,9 @@
 #include <thrust/for_each.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/swap_ranges.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -47,7 +47,7 @@ struct swap_pair_elements
   {
     // use unqualified swap to allow ADL to catch any user-defined swap
     using ::cuda::std::swap;
-    swap(thrust::get<0>(t), thrust::get<1>(t));
+    swap(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
   }
 }; // end swap_pair_elements
 } // namespace detail
@@ -59,7 +59,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   ForwardIterator1 last1,
   ForwardIterator2 first2)
 {
-  using IteratorTuple = thrust::tuple<ForwardIterator1, ForwardIterator2>;
+  using IteratorTuple = ::cuda::std::tuple<ForwardIterator1, ForwardIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator result = thrust::for_each(
@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
     thrust::make_zip_iterator(first1, first2),
     thrust::make_zip_iterator(last1, first2),
     detail::swap_pair_elements());
-  return thrust::get<1>(result.get_iterator_tuple());
+  return ::cuda::std::get<1>(result.get_iterator_tuple());
 } // end swap_ranges()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
