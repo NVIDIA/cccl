@@ -175,13 +175,12 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_SAME_AS_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SAME_AS_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SAME_AS__Same_as(...)
 
-// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
-// with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
+// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL with
+// _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
 // expansion here.)
 #define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(...) \
-  _CCCL_PP_CAT(_CCCL_PP_,                         \
-               _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_, __VA_ARGS__)))
-#define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS__Same_as(...) EXPAND(__VA_ARGS__),
+  _CCCL_PP_CAT(_CCCL, _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_, __VA_ARGS__)))
+#define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS__Same_as(...) _PP_EXPAND(__VA_ARGS__),
 
 // Here are the implementations of the internal macros, first for when concepts
 // are available, and then for when they're not.
