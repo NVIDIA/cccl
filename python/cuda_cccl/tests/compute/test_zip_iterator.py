@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
+import numba.cuda
 import numpy as np
 import pytest
 
@@ -239,3 +240,47 @@ def test_zip_iterator_with_scan(num_items):
     for i, result_item in enumerate(result):
         assert result_item["first_min"] == expected_first_running_mins[i]
         assert result_item["second_min"] == expected_second_running_mins[i]
+
+
+@pytest.mark.parametrize("num_items", [10, 1000])
+def test_output_zip_iterator_with_scan(monkeypatch, num_items):
+    """Test ZipIterator as output iterator with scan operations."""
+
+    # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 8:
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
+    d_in1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+    d_in2 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+
+    zip_it = ZipIterator(d_in1, d_in2)
+
+    d_out1 = cp.empty_like(d_in1)
+    d_out2 = cp.empty_like(d_in2)
+
+    zip_out_it = ZipIterator(d_out1, d_out2)
+
+    def add_pairs(p1, p2):
+        return p1[0] + p2[0], p1[1] + p2[1]
+
+    cuda.compute.inclusive_scan(zip_it, zip_out_it, add_pairs, None, num_items)
+
+    in1 = d_in1.get()
+    in2 = d_in2.get()
+    expected_out1 = np.empty_like(in1)
+    expected_out2 = np.empty_like(in2)
+
+    # First element is just the input
+    expected_out1[0] = in1[0]
+    expected_out2[0] = in2[0]
+    for i in range(1, num_items):
+        expected_out1[i] = expected_out1[i - 1] + in1[i]
+        expected_out2[i] = expected_out2[i - 1] + in2[i]
+
+    np.testing.assert_array_equal(d_out1.get(), expected_out1)
+    np.testing.assert_array_equal(d_out2.get(), expected_out2)

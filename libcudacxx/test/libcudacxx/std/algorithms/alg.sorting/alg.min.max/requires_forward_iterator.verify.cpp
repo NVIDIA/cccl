@@ -13,7 +13,7 @@
 // template<ForwardIterator Iter>
 //   max_element(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -22,7 +22,7 @@ int main(int, char**)
 {
   int arr[]    = {1, 2, 3};
   const int *b = cuda::std::begin(arr), *e = cuda::std::end(arr);
-  typedef cpp17_input_iterator<const int*> Iter;
+  using Iter = cpp17_input_iterator<const int*>;
   {
     // expected-error@*:* {{cuda::std::min_element requires a ForwardIterator}}
     (void) cuda::std::min_element(Iter(b), Iter(e));

@@ -36,7 +36,7 @@ void TestReduceByKeySimple()
   Vector keys;
   Vector values;
 
-  typename thrust::pair<typename Vector::iterator, typename Vector::iterator> new_last;
+  typename cuda::std::pair<typename Vector::iterator, typename Vector::iterator> new_last;
 
   // basic test
   initialize_keys(keys);
@@ -127,8 +127,8 @@ struct TestReduceByKey
     using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
     using DeviceValIterator = typename thrust::device_vector<V>::iterator;
 
-    using HostIteratorPair   = typename thrust::pair<HostKeyIterator, HostValIterator>;
-    using DeviceIteratorPair = typename thrust::pair<DeviceKeyIterator, DeviceValIterator>;
+    using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
+    using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;
 
     HostIteratorPair h_last =
       thrust::reduce_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), h_vals_output.begin());
@@ -195,7 +195,7 @@ struct TestReduceByKeyToDiscardIterator
 VariableUnitTest<TestReduceByKeyToDiscardIterator, IntegralTypes> TestReduceByKeyToDiscardIteratorInstance;
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   my_system& system,
   InputIterator1,
   InputIterator1,
@@ -204,7 +204,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output)
 {
   system.validate_dispatch();
-  return thrust::make_pair(keys_output, values_output);
+  return cuda::std::make_pair(keys_output, values_output);
 }
 
 void TestReduceByKeyDispatchExplicit()
@@ -219,11 +219,11 @@ void TestReduceByKeyDispatchExplicit()
 DECLARE_UNITTEST(TestReduceByKeyDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator1 keys_output, OutputIterator2 values_output)
 {
   *keys_output = 13;
-  return thrust::make_pair(keys_output, values_output);
+  return cuda::std::make_pair(keys_output, values_output);
 }
 
 void TestReduceByKeyDispatchImplicit()

@@ -17,7 +17,7 @@ void TestSetDifferenceByKeyDescendingSimple()
 
   Vector result_key(2), result_val(2);
 
-  thrust::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
+  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -57,9 +57,9 @@ void TestSetDifferenceByKeyDescending(const size_t n)
   thrust::host_vector<T> h_result_key(n), h_result_val(n);
   thrust::device_vector<T> d_result_key(n), d_result_val(n);
 
-  thrust::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
+  cuda::std::pair<typename thrust::host_vector<T>::iterator, typename thrust::host_vector<T>::iterator> h_end;
 
-  thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator> d_end;
+  cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator> d_end;
 
   h_end = thrust::set_difference_by_key(
     h_a_key.begin(),

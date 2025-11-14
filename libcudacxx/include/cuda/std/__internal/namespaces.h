@@ -95,12 +95,12 @@
 #else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 #  if defined(_NVHPC_CUDA)
 #    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+      inline namespace _CCCL_PP_CAT(_CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST), _NVHPC) \
       {
 #    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  else // not defined(_NVHPC_CUDA)
 #    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, __CUDA_ARCH_LIST__)                \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, _SM, __CUDA_ARCH_LIST__)                \
       {
 #    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  endif // not defined(_NVHPC_CUDA)

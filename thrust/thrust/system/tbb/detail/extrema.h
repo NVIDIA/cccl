@@ -35,7 +35,7 @@ min_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, Forwar
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // tbb prefers generic::minmax_element to cpp::minmax_element

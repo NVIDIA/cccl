@@ -112,7 +112,7 @@ public:
   // TODO: Change return type to an enum with three possible values, succeeded,
   // exists, and full.
   template <typename UKey, typename... Args>
-  __host__ __device__ thrust::pair<value_iterator, bool> try_emplace(UKey&& key, Args&&... args)
+  __host__ __device__ cuda::std::pair<value_iterator, bool> try_emplace(UKey&& key, Args&&... args)
   {
     auto index{hash_(key) % capacity_};
     // Linearly probe the storage space up to `capacity_` times; if we haven't
@@ -130,7 +130,7 @@ public:
           new (keys_ + index) key_type(std::forward<UKey>(key));
           new (values_ + index) mapped_type(std::forward<Args>(args)...);
           states_[index].store(state_filled, cuda::std::memory_order_release);
-          return thrust::make_pair(values_ + index, true);
+          return cuda::std::make_pair(values_ + index, true);
         }
       }
       // If we are here, the element we are probing is not empty and we didn't
@@ -142,13 +142,13 @@ public:
       if (key_equal_(keys_[index], key))
       {
         // It is, so the element already exists.
-        return thrust::make_pair(values_ + index, false);
+        return cuda::std::make_pair(values_ + index, false);
       }
       // Otherwise, the element isn't a match, so move on to the next element.
       index = (index + 1) % capacity_;
     }
     // If we are here, the container is full.
-    return thrust::make_pair(value_iterator{}, false);
+    return cuda::std::make_pair(value_iterator{}, false);
   }
 
   __host__ __device__ mapped_type& operator[](key_type const& key)
