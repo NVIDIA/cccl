@@ -3,13 +3,12 @@ CUB Developer Overview
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
    developer/thread_level
    developer/warp_level
    developer/block_scope
    developer/device_scope
-   developer/visibility
    developer/nvtx
 
 This living document serves as a guide to the design of the internal structure of CUB.
@@ -135,5 +134,4 @@ For more detailed descriptions of the respective algorithms levels see the indiv
   - :ref:`block-scope algorithms<cub-developer-guide-block-scope>`
   - :ref:`device-scope algorithms<cub-developer-guide-device-scope>`
 
-There is additional information for :ref:`symbol visibility issues<cub-developer-guide-visibility>` with respect to
-kernels and :ref:`nvtx ranges <cub-developer-guide-nvtx>`
+There is additional information for :ref:`nvtx ranges <cub-developer-guide-nvtx>`
