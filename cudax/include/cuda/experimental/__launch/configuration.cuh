@@ -322,7 +322,7 @@ template <class _Tp>
   ::cudaError_t __status = ::cudaSuccess;
 
   // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the function to be loaded.
-  if (::cuda::__driver::__getVersion() >= 12040)
+  if (::cuda::__driver::__version_at_least(12, 4))
   {
     __status = ::cuda::__driver::__functionLoadNoThrow(__kernel);
     if (__status != ::cudaSuccess)
