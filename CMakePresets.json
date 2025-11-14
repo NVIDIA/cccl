@@ -90,6 +90,7 @@
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true,
         "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_CUFILE_TESTS_RUN": false,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
@@ -251,7 +252,8 @@
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": false,
         "cudax_ENABLE_DIALECT_CPP20": false,
-        "cudax_ENABLE_CUFILE": false
+        "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_CUFILE_TESTS_RUN": false
       }
     },
     {
