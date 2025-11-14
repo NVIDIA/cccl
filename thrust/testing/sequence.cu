@@ -1,3 +1,4 @@
+#include <thrust/complex.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
@@ -17,7 +18,7 @@ void TestSequenceDispatchExplicit()
   my_system sys(0);
   thrust::sequence(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestSequenceDispatchExplicit);
 

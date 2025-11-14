@@ -54,8 +54,8 @@ struct TestComparisonSortDeviceSeq
     TestComparisonSortDevice<T>(thrust::seq, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceSeq,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestComparisonSortDeviceDevice
@@ -65,8 +65,8 @@ struct TestComparisonSortDeviceDevice
     TestComparisonSortDevice<T>(thrust::device, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortDeviceDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
@@ -82,7 +82,7 @@ struct TestSortDeviceSeq
     TestSortDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>> TestSortDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestSortDeviceDevice
@@ -92,8 +92,8 @@ struct TestSortDeviceDevice
     TestSortDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestSortDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestSortDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
 void TestSortCudaStreams()
@@ -106,7 +106,7 @@ void TestSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
 
   cudaStreamDestroy(s);
 }
@@ -122,7 +122,7 @@ void TestComparisonSortCudaStreams()
   thrust::sort(thrust::cuda::par.on(s), keys.begin(), keys.end(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end(), my_less<int>()));
 
   cudaStreamDestroy(s);
 }
@@ -143,23 +143,23 @@ struct TestRadixSortDispatch
 
   void operator()() const {}
 };
-SimpleUnitTest<TestRadixSortDispatch,
-               unittest::concat<IntegralTypes,
-                                FloatingPointTypes
+using test_types_radix_sort = cuda::std::__type_concat<
+  IntegralTypes,
+  FloatingPointTypes
 #if _CCCL_HAS_INT128()
-                                ,
-                                unittest::type_list<__int128_t, __uint128_t>
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
 #endif // _CCCL_HAS_INT128()
 #if _CCCL_HAS_NVFP16()
-                                ,
-                                unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-                                ,
-                                unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #endif // _CCCL_HAS_NVBF16()
-                                >>
-  TestRadixSortDispatchInstance;
+  >;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestRadixSortDispatch, test_types_radix_sort);
 
 /**
  * Copy of CUB testing utility
@@ -279,22 +279,22 @@ struct TestSortAscendingKey
   }
 };
 
-SimpleUnitTest<TestSortAscendingKey,
-               unittest::concat<unittest::type_list<>
+using test_types_ascending_key = cuda::std::__type_concat<
+  unittest::type_list<>
 #if _CCCL_HAS_INT128()
-                                ,
-                                unittest::type_list<__int128_t, __uint128_t>
+  ,
+  unittest::type_list<__int128_t, __uint128_t>
 #endif // _CCCL_HAS_INT128()
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
 #if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-                                ,
-                                unittest::type_list<__half>
+  ,
+  unittest::type_list<__half>
 #  endif
 #  if _CCCL_HAS_NVBF16() || !defined(__CUDA_NO_BFLOAT16_OPERATORS__) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__)
-                                ,
-                                unittest::type_list<__nv_bfloat16>
+  ,
+  unittest::type_list<__nv_bfloat16>
 #  endif
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
-                                >>
-  TestSortAscendingKeyMoreTypes;
+  >;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestSortAscendingKey, test_types_ascending_key);

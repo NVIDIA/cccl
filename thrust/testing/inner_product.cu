@@ -35,7 +35,7 @@ void TestInnerProductDispatchExplicit()
   my_system sys(0);
   thrust::inner_product(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestInnerProductDispatchExplicit);
 
@@ -91,7 +91,7 @@ struct TestInnerProduct
     ASSERT_EQUAL(expected, result);
   }
 };
-VariableUnitTest<TestInnerProduct, IntegralTypes> TestInnerProductInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestInnerProduct, IntegralTypes);
 
 struct only_set_when_both_expected
 {

@@ -58,7 +58,7 @@ void TestRemoveDispatchExplicit()
   my_system sys(0);
   thrust::remove(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveDispatchExplicit);
 
@@ -112,7 +112,7 @@ void TestRemoveCopyDispatchExplicit()
   my_system sys(0);
   thrust::remove_copy(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveCopyDispatchExplicit);
 
@@ -165,7 +165,7 @@ void TestRemoveIfDispatchExplicit()
   my_system sys(0);
   thrust::remove_if(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveIfDispatchExplicit);
 
@@ -216,7 +216,7 @@ void TestRemoveIfStencilDispatchExplicit()
   my_system sys(0);
   thrust::remove_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveIfStencilDispatchExplicit);
 
@@ -271,7 +271,7 @@ void TestRemoveCopyIfDispatchExplicit()
   my_system sys(0);
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveCopyIfDispatchExplicit);
 
@@ -327,7 +327,7 @@ void TestRemoveCopyIfStencilDispatchExplicit()
   my_system sys(0);
   thrust::remove_copy_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestRemoveCopyIfStencilDispatchExplicit);
 

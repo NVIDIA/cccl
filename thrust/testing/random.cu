@@ -220,13 +220,13 @@ void TestEngineValidation()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), ValidateEngine<Engine>(value_10000));
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), ValidateEngine<Engine>(value_10000));
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 
 template <typename Engine>
@@ -236,13 +236,13 @@ void TestEngineMax()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), ValidateEngineMax<Engine>());
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), ValidateEngineMax<Engine>());
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 
 template <typename Engine>
@@ -252,13 +252,13 @@ void TestEngineMin()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), ValidateEngineMin<Engine>());
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), ValidateEngineMin<Engine>());
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 
 template <typename Engine>
@@ -298,13 +298,13 @@ void TestEngineEqual()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), f);
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), f);
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 
 template <typename Engine>
@@ -316,13 +316,13 @@ void TestEngineUnequal()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), f);
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), f);
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 
 void TestRanlux24BaseValidation()
@@ -683,13 +683,13 @@ void ValidateDistributionCharacteristic()
   thrust::host_vector<bool> h(1);
   thrust::generate(h.begin(), h.end(), Validator(Distribution()));
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::device_vector<bool> d(1);
   thrust::generate(d.begin(), d.end(), Validator(Distribution()));
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 
   // test distribution & engine with comparable ranges
   // only do this if they have the same result_type
@@ -700,12 +700,12 @@ void ValidateDistributionCharacteristic()
     // test host
     thrust::generate(h.begin(), h.end(), Validator(Distribution(Engine::min, Engine::max)));
 
-    ASSERT_EQUAL(true, h[0]);
+    REQUIRE(h[0]);
 
     // test device
     thrust::generate(d.begin(), d.end(), Validator(Distribution(Engine::min, Engine::max)));
 
-    ASSERT_EQUAL(true, d[0]);
+    REQUIRE(d[0]);
 
     // test Distribution with smaller range than engine
 
@@ -713,12 +713,12 @@ void ValidateDistributionCharacteristic()
     typename Distribution::result_type engine_range = Engine::max - Engine::min;
     thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
 
-    ASSERT_EQUAL(true, h[0]);
+    REQUIRE(h[0]);
 
     // test device
     thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
 
-    ASSERT_EQUAL(true, d[0]);
+    REQUIRE(d[0]);
   }
 
   // test Distribution with a very small range
@@ -726,12 +726,12 @@ void ValidateDistributionCharacteristic()
   // test host
   thrust::generate(h.begin(), h.end(), Validator(Distribution(1, 6)));
 
-  ASSERT_EQUAL(true, h[0]);
+  REQUIRE(h[0]);
 
   // test device
   thrust::generate(d.begin(), d.end(), Validator(Distribution(1, 6)));
 
-  ASSERT_EQUAL(true, d[0]);
+  REQUIRE(d[0]);
 }
 _CCCL_DIAG_POP
 

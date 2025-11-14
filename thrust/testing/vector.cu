@@ -769,7 +769,7 @@ void TestVectorMove()
   const auto size2 = v2.size();
 
   // ensure v1 was left empty
-  ASSERT_EQUAL(true, v1.empty());
+  REQUIRE(v1.empty());
 
   // ensure v2 received the data from before
   Vector ref{0, 1, 2};
@@ -790,7 +790,7 @@ void TestVectorMove()
   const auto size4 = v2.size();
 
   // ensure v3 was left empty
-  ASSERT_EQUAL(true, v3.empty());
+  REQUIRE(v3.empty());
 
   // ensure v2 received the data from before
   ref = {3, 4, 5};

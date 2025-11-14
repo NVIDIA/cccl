@@ -3,10 +3,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
 using namespace unittest;
 
 template <typename Tuple>
@@ -101,4 +97,4 @@ struct TestZipIteratorScan
     ASSERT_EQUAL_QUIET(h_result1, d_result1);
   }
 };
-VariableUnitTest<TestZipIteratorScan, SignedIntegralTypes> TestZipIteratorScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorScan, SignedIntegralTypes);

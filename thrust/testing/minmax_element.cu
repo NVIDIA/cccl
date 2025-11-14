@@ -77,7 +77,7 @@ void TestMinMaxElementDispatchExplicit()
   my_system sys(0);
   thrust::minmax_element(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMinMaxElementDispatchExplicit);
 

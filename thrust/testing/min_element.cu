@@ -69,7 +69,7 @@ void TestMinElementDispatchExplicit()
   my_system sys(0);
   thrust::min_element(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMinElementDispatchExplicit);
 

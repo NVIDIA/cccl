@@ -66,23 +66,23 @@ void TestDiscardIteratorComparison()
   thrust::discard_iterator<> iter2(0);
 
   ASSERT_EQUAL(0, iter1 - iter2);
-  ASSERT_EQUAL(true, iter1 == iter2);
+  REQUIRE(iter1 == iter2);
 
   iter1++;
 
   ASSERT_EQUAL(1, iter1 - iter2);
-  ASSERT_EQUAL(false, iter1 == iter2);
+  REQUIRE_FALSE(iter1 == iter2);
 
   iter2++;
 
   ASSERT_EQUAL(0, iter1 - iter2);
-  ASSERT_EQUAL(true, iter1 == iter2);
+  REQUIRE(iter1 == iter2);
 
   iter1 += 100;
   iter2 += 100;
 
   ASSERT_EQUAL(0, iter1 - iter2);
-  ASSERT_EQUAL(true, iter1 == iter2);
+  REQUIRE(iter1 == iter2);
 }
 DECLARE_UNITTEST(TestDiscardIteratorComparison);
 

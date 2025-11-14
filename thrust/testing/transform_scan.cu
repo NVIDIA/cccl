@@ -22,7 +22,7 @@ void TestTransformInclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
 
@@ -41,7 +41,7 @@ void TestTransformInclusiveScanInitDispatchExplicit()
   my_system sys(0);
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
 
@@ -79,7 +79,7 @@ void TestTransformExclusiveScanDispatchExplicit()
   my_system sys(0);
   thrust::transform_exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTransformExclusiveScanDispatchExplicit);
 
@@ -294,7 +294,7 @@ struct TestTransformScan
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestTransformScan, IntegralTypes> TestTransformScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScan, IntegralTypes);
 
 template <class Vector>
 void TestTransformScanCountingIterator()
@@ -367,7 +367,7 @@ struct TestTransformScanToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestTransformScanToDiscardIterator, IntegralTypes> TestTransformScanToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, IntegralTypes);
 
 // Regression test for https://github.com/NVIDIA/thrust/issues/1332
 // The issue was the internal transform_input_iterator_t created by the

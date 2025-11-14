@@ -48,7 +48,7 @@ void TestGatherDispatchExplicit()
   my_system sys(0);
   thrust::gather(sys, vec.begin(), vec.end(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGatherDispatchExplicit);
 
@@ -178,7 +178,7 @@ void TestGatherIfDispatchExplicit()
   my_system sys(0);
   thrust::gather_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGatherIfDispatchExplicit);
 

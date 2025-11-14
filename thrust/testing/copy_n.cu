@@ -231,7 +231,7 @@ void TestCopyNDispatchExplicit()
   my_system sys(0);
   thrust::copy_n(sys, vec.begin(), 1, vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestCopyNDispatchExplicit);
 

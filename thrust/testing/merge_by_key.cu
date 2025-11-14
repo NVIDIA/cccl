@@ -63,7 +63,7 @@ void TestMergeByKeyDispatchExplicit()
   thrust::merge_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMergeByKeyDispatchExplicit);
 
@@ -192,10 +192,10 @@ void TestMergeByKey(size_t n)
 
     ASSERT_EQUAL(h_result_keys, d_result_keys);
     ASSERT_EQUAL(h_result_vals, d_result_vals);
-    ASSERT_EQUAL(true, h_end.first == h_result_keys.end());
-    ASSERT_EQUAL(true, h_end.second == h_result_vals.end());
-    ASSERT_EQUAL(true, d_end.first == d_result_keys.end());
-    ASSERT_EQUAL(true, d_end.second == d_result_vals.end());
+    REQUIRE(h_end.first == h_result_keys.end());
+    REQUIRE(h_end.second == h_result_vals.end());
+    REQUIRE(d_end.first == d_result_keys.end());
+    REQUIRE(d_end.second == d_result_vals.end());
   }
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKey);

@@ -38,7 +38,7 @@ void TestMismatchDispatchExplicit()
   my_system sys(0);
   thrust::mismatch(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestMismatchDispatchExplicit);
 

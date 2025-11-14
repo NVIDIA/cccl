@@ -18,7 +18,7 @@ void TestTabulateDispatchExplicit()
   my_system sys(0);
   thrust::tabulate(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestTabulateDispatchExplicit);
 

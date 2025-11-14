@@ -2,9 +2,11 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/mr/device_memory_resource.h>
+#include <thrust/mr/host_memory_resource.h>
 #include <thrust/universal_vector.h>
 
-#include "unittest/testframework.h"
+#include "unittest/detail/special_types.h"
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
