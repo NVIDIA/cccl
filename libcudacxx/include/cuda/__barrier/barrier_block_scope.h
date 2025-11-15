@@ -114,8 +114,8 @@ public:
                     "barrier must not be in cluster shared memory");))
   }
 
-  _CCCL_API inline friend void init(barrier* __b,
-                                    ::cuda::std::ptrdiff_t __expected,
+  _CCCL_API inline friend void init([[maybe_unused]] barrier* __b,
+                                    [[maybe_unused]] ::cuda::std::ptrdiff_t __expected,
                                     ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
@@ -128,6 +128,8 @@ public:
       NV_PROVIDES_SM_90,
       (_CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
                     "barrier must not be in cluster shared memory");))
+
+  }
 
     [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
     {
