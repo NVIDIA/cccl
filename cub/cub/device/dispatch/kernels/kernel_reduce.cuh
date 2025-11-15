@@ -133,8 +133,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT* d_out,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
-  ReductionOpT reduction_op,
-  TransformOpT transform_op)
+  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -215,6 +215,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+<<<<<<< HEAD
                                        _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,

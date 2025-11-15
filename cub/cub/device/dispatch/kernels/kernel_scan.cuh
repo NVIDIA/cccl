@@ -39,8 +39,7 @@ namespace detail::scan
  *   Number of tiles
  */
 template <typename ScanTileStateT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceScanInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
@@ -68,10 +67,8 @@ DeviceScanInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int nu
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
-  ScanTileStateT tile_state,
-  _CCCL_GRID_CONSTANT const int num_tiles,
-  _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceCompactInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
