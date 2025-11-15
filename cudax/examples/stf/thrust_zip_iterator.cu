@@ -62,11 +62,12 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
     thrust::device_ptr<int> dout = thrust::device_pointer_cast(dC.data_handle());
 
     // Lambda to apply the transformation
-    thrust::transform(thrust::cuda::par_nosync.on(stream), dfirst, dlast, dout, [] __device__(const thrust::tuple<int, char>& t) {
-      int a  = thrust::get<0>(t);
-      char b = thrust::get<1>(t);
-      return a + static_cast<int>(b); // Example operation
-    });
+    thrust::transform(
+      thrust::cuda::par_nosync.on(stream), dfirst, dlast, dout, [] __device__(const thrust::tuple<int, char>& t) {
+        int a  = thrust::get<0>(t);
+        char b = thrust::get<1>(t);
+        return a + static_cast<int>(b); // Example operation
+      });
   };
 }
 

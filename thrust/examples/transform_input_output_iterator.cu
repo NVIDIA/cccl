@@ -74,14 +74,14 @@ int main()
     };
   };
 
-  auto A_begin = thrust::make_transform_input_output_iterator(
-    A.begin(), value_to_scaled(A_scale), scaled_to_value(A_scale));
+  auto A_begin =
+    thrust::make_transform_input_output_iterator(A.begin(), value_to_scaled(A_scale), scaled_to_value(A_scale));
   auto A_end =
     thrust::make_transform_input_output_iterator(A.end(), value_to_scaled(A_scale), scaled_to_value(A_scale));
-  auto B_begin = thrust::make_transform_input_output_iterator(
-    B.begin(), value_to_scaled(B_scale), scaled_to_value(B_scale));
-  auto C_begin = thrust::make_transform_input_output_iterator(
-    C.begin(), value_to_scaled(C_scale), scaled_to_value(C_scale));
+  auto B_begin =
+    thrust::make_transform_input_output_iterator(B.begin(), value_to_scaled(B_scale), scaled_to_value(B_scale));
+  auto C_begin =
+    thrust::make_transform_input_output_iterator(C.begin(), value_to_scaled(C_scale), scaled_to_value(C_scale));
 
   // Sum A and B as ScaledIntegers, storing the scaled result in C
   thrust::transform(A_begin, A_end, B_begin, C_begin, cuda::std::plus<ScaledInteger>{});

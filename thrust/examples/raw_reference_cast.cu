@@ -70,18 +70,18 @@ int main()
   thrust::for_each(thrust::counting_iterator<int, System>(0),
                    thrust::counting_iterator<int, System>(5),
                    [input = A.begin(), output = B.begin()] __device__(int i) {
-                    auto in  = input + i;
-                    auto out = output + i;
-                
-                    // invalid - reference<int> is not convertible to int&
-                    // assign_reference_to_reference(*in, *out);
-                
-                    // valid - reference<int> explicitly converted to int&
-                    assign_reference_to_reference(thrust::raw_reference_cast(*in), thrust::raw_reference_cast(*out));
-                
-                    // valid - since reference<int> is convertible to int
-                    assign_value_to_reference(*in, thrust::raw_reference_cast(*out));
-                  });
+                     auto in  = input + i;
+                     auto out = output + i;
+
+                     // invalid - reference<int> is not convertible to int&
+                     // assign_reference_to_reference(*in, *out);
+
+                     // valid - reference<int> explicitly converted to int&
+                     assign_reference_to_reference(thrust::raw_reference_cast(*in), thrust::raw_reference_cast(*out));
+
+                     // valid - since reference<int> is convertible to int
+                     assign_value_to_reference(*in, thrust::raw_reference_cast(*out));
+                   });
 
   std::cout << "After A->B Copy" << std::endl;
   print("A", A);

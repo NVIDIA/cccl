@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 
   // Initialize problem and solution
   Initialize(h_in, num_items, max_segment);
-  
+
   // Lambda for selection operation (greater-than)
   auto select_op = [compare = h_in[pivot_index]] __device__(const int& a) {
     return a > compare;

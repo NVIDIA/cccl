@@ -51,9 +51,9 @@ int main()
   thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D1.begin()),
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D1.end()),
                    [] __device__(auto t) {
-                    // D[i] = A[i] + B[i] * C[i];
-                    thrust::get<3>(t) = thrust::get<0>(t) + thrust::get<1>(t) * thrust::get<2>(t);
-                  });
+                     // D[i] = A[i] + B[i] * C[i];
+                     thrust::get<3>(t) = thrust::get<0>(t) + thrust::get<1>(t) * thrust::get<2>(t);
+                   });
 
   // print the output
   std::cout << "Tuple lambda" << std::endl;

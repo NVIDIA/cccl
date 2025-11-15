@@ -48,8 +48,7 @@ int main()
   };
 
   // inclusive scan using head flags
-  thrust::inclusive_scan_by_key(
-    d_flags.begin(), d_flags.end(), d_values.begin(), d_output.begin(), head_flag_predicate);
+  thrust::inclusive_scan_by_key(d_flags.begin(), d_flags.end(), d_values.begin(), d_output.begin(), head_flag_predicate);
 
   std::cout << "\nInclusive Segmented Scan w/ Head Flag Sequence\n";
   std::cout << " head flags    : ";

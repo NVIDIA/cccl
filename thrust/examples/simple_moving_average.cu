@@ -38,9 +38,10 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
   temp[data.size()] = data.back() + temp[data.size() - 1];
 
   // compute moving averages from cumulative sum
-  thrust::transform(temp.begin() + w, temp.end(), temp.begin(), output.begin(), [window = T(w)] __device__(const T& a, const T& b) {
-    return (a - b) / window;
-  });
+  thrust::transform(
+    temp.begin() + w, temp.end(), temp.begin(), output.begin(), [window = T(w)] __device__(const T& a, const T& b) {
+      return (a - b) / window;
+    });
 }
 
 int main()

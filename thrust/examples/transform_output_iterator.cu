@@ -23,10 +23,10 @@ int main()
                  IDX.end(),
                  thrust::make_zip_iterator(U.begin(), V.begin()),
                  thrust::make_transform_output_iterator(W.begin(), [] __device__(const auto& tuple) {
-                  const float x = thrust::get<0>(tuple);
-                  const float y = thrust::get<1>(tuple);
-                  return x * y * 2.0f / 3.0f;
-                }));
+                   const float x = thrust::get<0>(tuple);
+                   const float y = thrust::get<1>(tuple);
+                   return x * y * 2.0f / 3.0f;
+                 }));
 
   std::cout << "result= [ ";
   for (const auto& value : W)

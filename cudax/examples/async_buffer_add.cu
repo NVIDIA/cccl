@@ -48,7 +48,7 @@ int main()
 
   // Lambda for random number generation
   auto make_generator = [](unsigned seed) {
-    return [gen = thrust::default_random_engine{seed},
+    return [gen  = thrust::default_random_engine{seed},
             dist = thrust::uniform_real_distribution<float>{-10.0f, 10.0f}] __device__(cuda::std::size_t idx) mutable {
       gen.discard(idx);
       return dist(gen);
