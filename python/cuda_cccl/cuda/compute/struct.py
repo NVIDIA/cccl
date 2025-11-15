@@ -162,8 +162,7 @@ def gpu_struct(field_dict: Union[dict, np.dtype, type], name: str = "AnonymousSt
     assert isinstance(field_dict, dict)
 
     # Convert all fields to numba types
-    field_spec = {key: _convert_field_type(
-        val) for key, val in field_dict.items()}
+    field_spec = {key: _convert_field_type(val) for key, val in field_dict.items()}
 
     # Create base struct
     struct_class = make_struct_type(
@@ -300,8 +299,7 @@ def make_struct_type(name, field_names, field_types):
 
         # Compile-time constant index
         if isinstance(idx, (types.IntegerLiteral)):
-            idx_val = getattr(idx, "literal_value",
-                              getattr(idx, "value", None))
+            idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
 
             if idx_val is None or not (0 <= idx_val < len(field_names_list)):
 
@@ -338,8 +336,7 @@ def make_struct_type(name, field_names, field_types):
         key = struct_class
         cases = [nb_signature(numba_type, *list(field_spec.values()))]
 
-    cuda_registry.register_global(
-        struct_class, numba.types.Function(StructConstructor))
+    cuda_registry.register_global(struct_class, numba.types.Function(StructConstructor))
 
     def struct_constructor(context, builder, sig, args):
         ty = sig.return_type
@@ -383,8 +380,7 @@ def make_struct_type(name, field_names, field_types):
             # Cast element to target field type if necessary
             source_type = element_types[i]
             if source_type != target_type:
-                element = context.cast(
-                    builder, element, source_type, target_type)
+                element = context.cast(builder, element, source_type, target_type)
 
             setattr(retval, field_name, element)
 
@@ -478,8 +474,7 @@ def _as_numpy_record_dtype(typ):
     """Convert a gpu_struct *type* to a numpy record dtype."""
     return (
         np.dtype(
-            [(k, _as_numpy_record_dtype(v))
-             for k, v in typ._field_spec.items()],
+            [(k, _as_numpy_record_dtype(v)) for k, v in typ._field_spec.items()],
             align=True,
         )
         if _is_struct_type(typ)
