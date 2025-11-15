@@ -28,18 +28,22 @@ def _get_zip_iterator_metadata(iterators):
     n_iterators = len(iterators)
 
     # ctypes struct for the combined state:
-    fields = [(f"iter_{i}", it.cvalue.__class__) for i, it in enumerate(iterators)]
-    ZipCValueStruct = type("ZipCValueStruct", (ctypes.Structure,), {"_fields_": fields})
+    fields = [(f"iter_{i}", it.cvalue.__class__)
+              for i, it in enumerate(iterators)]
+    ZipCValueStruct = type("ZipCValueStruct", (ctypes.Structure,), {
+                           "_fields_": fields})
 
     # this iterator's state is a struct composed of the states of the input iterators:
     state_field_names = tuple(f"state_{i}" for i in range(n_iterators))
     state_field_types = tuple(it.state_type for it in iterators)
-    ZipState = make_struct_type("ZipState", state_field_names, state_field_types)
+    ZipState = make_struct_type(
+        "ZipState", state_field_names, state_field_types)
 
     # this iterator's value is a struct composed of the values of the input iterators:
     value_field_names = tuple(f"value_{i}" for i in range(n_iterators))
     value_field_types = tuple(it.value_type for it in iterators)
-    ZipValue = make_struct_type("ZipValue", value_field_names, value_field_types)
+    ZipValue = make_struct_type(
+        "ZipValue", value_field_names, value_field_types)
 
     cvalue = ZipCValueStruct(
         **{f"iter_{i}": it.cvalue for i, it in enumerate(iterators)}
@@ -100,7 +104,8 @@ def {func_name}(context, struct_ptr_type):
     # intrinsics defined above.
     for i, it in enumerate(iterators):
         local_ns[f"advance_{i}"] = cuda.jit(it.advance, device=True)
-        local_ns[f"input_dereference_{i}"] = cuda.jit(it.input_dereference, device=True)
+        local_ns[f"input_dereference_{i}"] = cuda.jit(
+            it.input_dereference, device=True)
         # Also compile output_dereference if available
         try:
             output_deref = it.output_dereference
@@ -200,7 +205,8 @@ def make_zip_iterator(*iterators):
     # Validate all are iterators
     for i, it in enumerate(processed_iterators):
         if not isinstance(it, IteratorBase):
-            raise TypeError(f"Argument {i} must be an iterator or device array")
+            raise TypeError(
+                f"Argument {i} must be an iterator or device array")
 
     cvalue, state_type, value_type, ZipValue = _get_zip_iterator_metadata(
         processed_iterators
