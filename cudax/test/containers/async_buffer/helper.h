@@ -14,10 +14,11 @@
 #include <thrust/equal.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -26,6 +27,8 @@
 namespace cudax = cuda::experimental;
 
 // Default data to compare against
+
+inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_list{1, 42, 1337, 0, 12, -1};
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
@@ -170,12 +173,12 @@ struct extract_properties<cuda::std::tuple<T, Properties...>>
     }
   }
 
-  using async_buffer   = cudax::async_buffer<T, Properties...>;
+  using buffer         = cudax::buffer<T, Properties...>;
   using resource       = decltype(get_resource());
-  using iterator       = cudax::heterogeneous_iterator<T, Properties...>;
-  using const_iterator = cudax::heterogeneous_iterator<const T, Properties...>;
+  using iterator       = cuda::heterogeneous_iterator<T, Properties...>;
+  using const_iterator = cuda::heterogeneous_iterator<const T, Properties...>;
 
-  using matching_vector   = cudax::async_buffer<T, other_property, Properties...>;
+  using matching_vector   = cudax::buffer<T, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 

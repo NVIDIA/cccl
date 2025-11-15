@@ -31,7 +31,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -65,7 +72,7 @@ template <typename T>
 inline constexpr bool is_proxy_reference_v = false;
 
 template <typename Boolean>
-struct not_ : public integral_constant<bool, !Boolean::value>
+struct not_ : public ::cuda::std::integral_constant<bool, !Boolean::value>
 {}; // end not_
 
 template <bool, typename Then, typename Else>

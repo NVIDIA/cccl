@@ -15,7 +15,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // ::cuda::std::identity
 #include <cuda/std/variant>

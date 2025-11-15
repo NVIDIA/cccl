@@ -5,8 +5,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -386,7 +387,7 @@ C2H_TEST(
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
-  auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
+  auto segment_sizes     = cuda::constant_iterator(params::logical_warp_items);
   const auto oob_default = cuda::std::numeric_limits<type>::max();
   c2h::gen(C2H_SEED(10), d_in);
 
@@ -453,7 +454,7 @@ C2H_TEST("Warp sort on keys-value pairs works",
   c2h::device_vector<key_type> d_keys_out(params::tile_size);
   c2h::device_vector<value_type> d_values_in(params::tile_size);
   c2h::device_vector<value_type> d_values_out(params::tile_size);
-  auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
+  auto segment_sizes     = cuda::constant_iterator(params::logical_warp_items);
   const auto oob_default = cuda::std::numeric_limits<key_type>::max();
   c2h::gen(C2H_SEED(10), d_keys_in);
 
@@ -469,7 +470,7 @@ C2H_TEST("Warp sort on keys-value pairs works",
     cpu_kv_pairs,
     segment_sizes,
     params::total_warps,
-    thrust::make_tuple(oob_default, value_type{}),
+    cuda::std::make_tuple(oob_default, value_type{}),
     params::logical_warp_items);
 
   // Verify results

@@ -11,7 +11,7 @@
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_histogram.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 
 #include <format>
 #include <vector>

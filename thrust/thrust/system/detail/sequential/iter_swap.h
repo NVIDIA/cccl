@@ -28,7 +28,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cuda/std/utility>
+#include <cuda/std/__utility/swap.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

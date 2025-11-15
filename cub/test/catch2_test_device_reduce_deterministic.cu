@@ -12,6 +12,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/iterator>
 
 #include <numeric>
 
@@ -129,7 +130,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
     ::cuda::std::negate<type>{});
 
   cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
-  auto d_input = thrust::make_transform_iterator(thrust::counting_iterator<size_t>{}, wrapper);
+  auto d_input = cuda::transform_iterator(cuda::counting_iterator<size_t>{}, wrapper);
   c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
@@ -230,7 +231,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   SECTION("constant iterator")
   {
-    thrust::constant_iterator<type> input(1.0f);
+    cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     auto error = cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
@@ -264,7 +265,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   const int num_items = 1 << 10;
 
-  using input_it_t = thrust::counting_iterator<int>;
+  using input_it_t = cuda::counting_iterator<int>;
   auto input       = input_it_t(1);
   c2h::device_vector<type> d_output(1);
 
@@ -274,7 +275,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
   using transform_t = square_t<type>;
 
   using deterministic_dispatch_t =
-    cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, transform_t, accum_t>;
+    cub::detail::rfa::dispatch_t<input_it_t, output_it_t, int, init_t, transform_t, accum_t>;
 
   std::size_t temp_storage_bytes{};
 
@@ -287,7 +288,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
     thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, input, d_output.begin(), num_items);
   REQUIRE(error == cudaSuccess);
 
-  auto h_input = thrust::make_transform_iterator(input, transform_t{});
+  auto h_input = cuda::transform_iterator(input, transform_t{});
 
   c2h::host_vector<type> h_expected(1);
   // Requires `std::accumulate` to produce deterministic result which is required for comparison

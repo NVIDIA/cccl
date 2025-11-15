@@ -3,23 +3,25 @@
 Power of Two Utilities
 ======================
 
+Defined in the ``<cuda/cmath>`` header.
+
 .. code:: cuda
 
+   namespace cuda {
+
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    bool is_power_of_two(T value) noexcept;
 
-.. code:: cuda
-
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    T next_power_of_two(T value) noexcept;
 
-.. code:: cuda
-
    template <typename T>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    T prev_power_of_two(T value) noexcept;
+
+   } // namespace cuda
 
 The functions provide utilities to determine if an integer value is a power of two, and to compute the next and previous power of two.
 
@@ -48,7 +50,7 @@ See :ref:`\<cuda/std/bit\> performance considerations <libcudacxx-standard-api-n
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -65,4 +67,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/oG3bcEax8>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/896Yx3vf8>`__

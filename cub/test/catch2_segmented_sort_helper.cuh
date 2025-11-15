@@ -6,8 +6,6 @@
 
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
@@ -15,6 +13,7 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -115,7 +114,7 @@ public:
     REQUIRE(count <= max_histo_size);
 
     // Verify keys are sorted using prior histogram computation
-    auto index_it = thrust::make_counting_iterator(std::size_t{0});
+    auto index_it = cuda::counting_iterator(std::size_t{0});
     c2h::device_vector<key_t> unique_keys_out(count);
     c2h::device_vector<std::size_t> unique_indexes_out(count);
     thrust::unique_by_key_copy(
@@ -180,8 +179,7 @@ public:
 
   void prepare_input_data(c2h::device_vector<key_t>& in_keys) const
   {
-    auto data_gen_it =
-      thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), mod_n<key_t>{sequence_length});
+    auto data_gen_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), mod_n<key_t>{sequence_length});
     thrust::copy_n(data_gen_it, in_keys.size(), in_keys.begin());
   }
 
@@ -197,7 +195,7 @@ public:
     REQUIRE(count <= sequence_length * num_segments);
 
     // // Verify keys are sorted using prior histogram computation
-    auto index_it = thrust::make_counting_iterator(std::size_t{0});
+    auto index_it = cuda::counting_iterator(std::size_t{0});
     c2h::device_vector<key_t> unique_keys_out(count);
     c2h::device_vector<std::size_t> unique_indexes_out(count);
     thrust::unique_by_key_copy(
@@ -510,15 +508,15 @@ void generate_unsorted_derived_inputs(
 
   // Build keys in reversed order from how they'll eventually be sorted:
   thrust::for_each(c2h::nosync_device_policy,
-                   thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(num_segments),
+                   cuda::counting_iterator(0),
+                   cuda::counting_iterator(num_segments),
                    segment_filler<KeyT>{keys, offsets, !descending_sort});
   if constexpr (sort_pairs)
   {
     // Values are generated in reversed order from keys:
     thrust::for_each(c2h::nosync_device_policy,
-                     thrust::make_counting_iterator(0),
-                     thrust::make_counting_iterator(num_segments),
+                     cuda::counting_iterator(0),
+                     cuda::counting_iterator(num_segments),
                      segment_filler<ValueT>{values, offsets, descending_sort});
   }
 
@@ -544,8 +542,8 @@ void validate_sorted_derived_outputs(
   const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
 
   REQUIRE(thrust::all_of(c2h::device_policy,
-                         thrust::make_counting_iterator(0),
-                         thrust::make_counting_iterator(num_segments),
+                         cuda::counting_iterator(0),
+                         cuda::counting_iterator(num_segments),
                          segment_checker<KeyT, ValueT, STABLE>{keys, values, offsets, descending_sort}));
 }
 
@@ -734,8 +732,8 @@ void validate_sorted_random_outputs(
 
       REQUIRE(thrust::all_of(
         c2h::device_policy,
-        thrust::make_counting_iterator(0),
-        thrust::make_counting_iterator(num_segments),
+        cuda::counting_iterator(0),
+        cuda::counting_iterator(num_segments),
         unstable_segmented_value_checker<KeyT, ValueT>{
           ref_keys, ref_values, test_values, d_segment_begin, d_segment_end}));
     }
@@ -1642,7 +1640,7 @@ inline int generate_unspecified_segments_offsets(
   // calculation below.
   c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 2);
 
-  auto const_zero_begin = thrust::make_constant_iterator<int>(0);
+  auto const_zero_begin = cuda::constant_iterator<int>(0);
   auto const_zero_end   = const_zero_begin + erase_indices.size();
 
   thrust::scatter(

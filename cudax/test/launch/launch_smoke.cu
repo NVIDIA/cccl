@@ -88,7 +88,7 @@ struct dynamic_smem_single
   template <typename Config>
   __device__ void operator()(Config config)
   {
-    auto& dynamic_smem = cudax::dynamic_smem_ref(config);
+    decltype(auto) dynamic_smem = cudax::device::dynamic_shared_memory_view(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
     CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
@@ -101,7 +101,7 @@ struct dynamic_smem_span
   template <typename Config>
   __device__ void operator()(Config config, int size)
   {
-    auto dynamic_smem = cudax::dynamic_smem_span(config);
+    auto dynamic_smem = cudax::device::dynamic_shared_memory_view(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
@@ -130,7 +130,7 @@ struct launch_transform_to_int_convertible
 
     // Immovable to ensure that device_transform doesn't copy the returned
     // object
-    int_convertible(int_convertible&&) = delete;
+    int_convertible(int_convertible&&) noexcept = delete;
 
     ~int_convertible() noexcept
     {
@@ -273,7 +273,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Dynamic span
       {
         const int size = 2;
-        auto config    = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t>(size));
+        auto config    = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
         check_kernel_run(dst);
       }
@@ -281,7 +281,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Static span
       {
         constexpr int size = 3;
-        auto config        = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t, size>());
+        auto config        = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t[size]>());
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
         check_kernel_run(dst);
       }

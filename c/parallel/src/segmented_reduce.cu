@@ -11,7 +11,8 @@
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/detail/ptx-json-parser.h>
-#include <cub/device/dispatch/dispatch_reduce.cuh> // cub::DispatchSegmentedReduce
+#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
+#include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
 #include <exception> // std::exception

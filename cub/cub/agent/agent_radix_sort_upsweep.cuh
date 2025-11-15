@@ -69,11 +69,8 @@ template <int NominalBlockThreads4B,
           typename ScalingType = detail::RegBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
-  enum
-  {
-    /// The number of radix bits, i.e., log2(bins)
-    RADIX_BITS = RadixBits,
-  };
+  /// The number of radix bits, i.e., log2(bins)
+  static constexpr int RADIX_BITS = RadixBits;
 
   /// Cache load modifier for reading keys
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
@@ -138,39 +135,36 @@ struct AgentRadixSortUpsweep
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
-  enum
-  {
-    RADIX_BITS      = AgentRadixSortUpsweepPolicy::RADIX_BITS,
-    BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS,
-    KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD,
+  static constexpr int RADIX_BITS      = AgentRadixSortUpsweepPolicy::RADIX_BITS;
+  static constexpr int BLOCK_THREADS   = AgentRadixSortUpsweepPolicy::BLOCK_THREADS;
+  static constexpr int KEYS_PER_THREAD = AgentRadixSortUpsweepPolicy::ITEMS_PER_THREAD;
 
-    RADIX_DIGITS = 1 << RADIX_BITS,
+  static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
 
-    LOG_WARP_THREADS = log2_warp_threads,
-    WARP_THREADS     = 1 << LOG_WARP_THREADS,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int LOG_WARP_THREADS = log2_warp_threads;
+  static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD,
+  static constexpr int TILE_ITEMS = BLOCK_THREADS * KEYS_PER_THREAD;
 
-    BYTES_PER_COUNTER     = sizeof(DigitCounter),
-    LOG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE,
+  static constexpr int BYTES_PER_COUNTER    = sizeof(DigitCounter);
+  static constexpr int OG_BYTES_PER_COUNTER = Log2<BYTES_PER_COUNTER>::VALUE;
 
-    PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter),
-    LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
+  static constexpr int PACKING_RATIO     = sizeof(PackedCounter) / sizeof(DigitCounter);
+  static constexpr int LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE;
 
-    LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO)),
-    COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
+  static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
+  static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
-    // To prevent counter overflow, we must periodically unpack and aggregate the
-    // digit counters back into registers.  Each counter lane is assigned to a
-    // warp for aggregation.
+  // To prevent counter overflow, we must periodically unpack and aggregate the
+  // digit counters back into registers.  Each counter lane is assigned to a
+  // warp for aggregation.
 
-    LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS),
+  static constexpr int LANES_PER_WARP = ::cuda::std::max(1, (COUNTER_LANES + WARPS - 1) / WARPS);
 
-    // Unroll tiles in batches without risk of counter overflow
-    UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD),
-    UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS,
-  };
+  // Unroll tiles in batches without risk of counter overflow
+  static constexpr int UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
+  static constexpr int UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS;
 
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;

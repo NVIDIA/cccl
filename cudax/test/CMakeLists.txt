@@ -29,14 +29,18 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
   cudax_clone_target_properties(${test_target} ${cudax_target})
   target_include_directories(${test_target} PRIVATE "common")
-  target_link_libraries(${test_target} PRIVATE
-    ${cudax_target}
-    cccl.c2h.main
-    cudart
+  target_link_libraries(
+    ${test_target}
+    PRIVATE #
+      ${cudax_target}
+      cccl.c2h.main
+      cudart
   )
-  target_compile_options(${test_target} PRIVATE
-    "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+  target_compile_options(
+    ${test_target}
+    PRIVATE
+      "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
   )
 
   set(config_meta_target ${config_prefix}.tests)
@@ -48,7 +52,7 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
 endfunction()
 
 # Create tests for each enabled configuration:
-foreach(cudax_target IN LISTS cudax_TARGETS)
+foreach (cudax_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
   # Metatarget for the current configuration's tests:
@@ -66,12 +70,12 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     launch/launch_smoke.cu
   )
 
-  cudax_add_catch2_test(test_target host_launch ${cudax_target}
-    launch/host_launch.cu
-  )
-
   cudax_add_catch2_test(test_target launch_configuration ${cudax_target}
     launch/configuration.cu
+  )
+
+  cudax_add_catch2_test(test_target launch_config_dynamic_smem ${cudax_target}
+    launch/dynamic_shared_memory.cu
   )
 
   cudax_add_catch2_test(test_target execution ${cudax_target}
@@ -96,8 +100,9 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     execution/test_write_env.cu
   )
 
-  target_compile_options(${test_target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-allow-unsupported-compiler>
+  target_compile_options(
+    ${test_target}
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-allow-unsupported-compiler>
   )
 
   cudax_add_catch2_test(test_target graph ${cudax_target}
@@ -114,7 +119,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target containers ${cudax_target}
     containers/uninitialized_buffer.cu
-    containers/uninitialized_async_buffer.cu
     containers/async_buffer/access.cu
     containers/async_buffer/capacity.cu
     containers/async_buffer/constructor.cu
@@ -128,10 +132,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target cuco ${cudax_target}
     cuco/utility/test_hashers.cu
-  )
-
-  cudax_add_catch2_test(test_target memory_resource ${cudax_target}
-    memory_resource/shared_resource.cu
   )
 
   cudax_add_catch2_test(test_target green_context ${cudax_target}
@@ -161,15 +161,14 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     )
 
     set(cufile_test_targets ${cufile_driver_target})
-    foreach(cufile_test_target IN LISTS cufile_test_targets)
+    foreach (cufile_test_target IN LISTS cufile_test_targets)
       target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
     endforeach()
   endif()
 endforeach()
 
 # FIXME: Enable MSVC
-if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
 endif()

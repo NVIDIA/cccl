@@ -14,10 +14,6 @@
  *  limitations under the License.
  */
 
-/*! \file distance.h
- *  \brief Device implementations for distance.
- */
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -35,9 +31,10 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
 #include <thrust/reduce.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -212,7 +209,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator>
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
@@ -221,12 +218,12 @@ minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator fi
 } // end minmax_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   if (first == last)
   {
-    return thrust::make_pair(last, last);
+    return ::cuda::std::make_pair(last, last);
   }
 
   using InputType = thrust::detail::it_value_t<ForwardIterator>;
@@ -242,8 +239,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
         thrust::tuple<InputType, IndexType>(thrust::detail::get_iterator_value(derived_cast(exec), first), 0)),
       detail::minmax_element_reduction<InputType, IndexType, BinaryPredicate>(comp));
 
-  return thrust::make_pair(first + thrust::get<1>(thrust::get<0>(result)),
-                           first + thrust::get<1>(thrust::get<1>(result)));
+  return ::cuda::std::make_pair(
+    first + thrust::get<1>(thrust::get<0>(result)), first + thrust::get<1>(thrust::get<1>(result)));
 } // end minmax_element()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

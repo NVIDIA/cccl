@@ -53,7 +53,13 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -79,16 +85,16 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   {
     return (complex<double>(0.0, b));
   }
-  if (isinf(b))
+  if (::cuda::std::isinf(b))
   {
     return (complex<double>(::cuda::std::numeric_limits<double>::infinity(), b));
   }
-  if (isnan(a))
+  if (::cuda::std::isnan(a))
   {
     t = (b - b) / (b - b); /* raise invalid if b is not a NaN */
     return (complex<double>(a, t)); /* return NaN + NaN i */
   }
-  if (isinf(a))
+  if (::cuda::std::isinf(a))
   {
     /*
      * csqrt(inf + NaN i)  = inf +  NaN i
@@ -96,13 +102,13 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
      * csqrt(-inf + NaN i) = NaN +- inf i
      * csqrt(-inf + y i)   = 0   +  inf i
      */
-    if (signbit(a))
+    if (::cuda::std::signbit(a))
     {
-      return (complex<double>(fabs(b - b), copysign(a, b)));
+      return (complex<double>(::cuda::std::fabs(b - b), ::cuda::std::copysign(a, b)));
     }
     else
     {
-      return (complex<double>(a, copysign(b - b, b)));
+      return (complex<double>(a, ::cuda::std::copysign(b - b, b)));
     }
   }
   /*
@@ -114,14 +120,14 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   const double low_thresh = 4.450147717014402766180465e-308;
   scale                   = 0;
 
-  if (fabs(a) >= THRESH || fabs(b) >= THRESH)
+  if (::cuda::std::fabs(a) >= THRESH || ::cuda::std::fabs(b) >= THRESH)
   {
     /* Scale to avoid overflow. */
     a *= 0.25;
     b *= 0.25;
     scale = 1;
   }
-  else if (fabs(a) <= low_thresh && fabs(b) <= low_thresh)
+  else if (::cuda::std::fabs(a) <= low_thresh && ::cuda::std::fabs(b) <= low_thresh)
   {
     /* Scale to avoid underflow. */
     a *= 4.0;
@@ -132,13 +138,13 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   /* Algorithm 312, CACM vol 10, Oct 1967. */
   if (a >= 0.0)
   {
-    t      = sqrt((a + hypot(a, b)) * 0.5);
+    t      = ::cuda::std::sqrt((a + ::cuda::std::hypot(a, b)) * 0.5);
     result = complex<double>(t, b / (2 * t));
   }
   else
   {
-    t      = sqrt((-a + hypot(a, b)) * 0.5);
-    result = complex<double>(fabs(b) / (2 * t), copysign(t, b));
+    t      = ::cuda::std::sqrt((-a + ::cuda::std::hypot(a, b)) * 0.5);
+    result = complex<double>(fabs(b) / (2 * t), ::cuda::std::copysign(t, b));
   }
 
   /* Rescale. */
@@ -160,7 +166,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
 template <typename ValueType>
 _CCCL_HOST_DEVICE inline complex<ValueType> sqrt(const complex<ValueType>& z)
 {
-  return thrust::polar(std::sqrt(thrust::abs(z)), thrust::arg(z) / ValueType(2));
+  return thrust::polar(::cuda::std::sqrt(thrust::abs(z)), thrust::arg(z) / ValueType(2));
 }
 
 template <>

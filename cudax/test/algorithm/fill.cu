@@ -18,7 +18,7 @@ C2H_TEST("Fill", "[data_manipulation]")
     cuda::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(host_resource, buffer_size);
 
-    cudax::fill_bytes(_stream, buffer, fill_byte);
+    cuda::fill_bytes(_stream, buffer, fill_byte);
 
     check_result_and_erase(_stream, cuda::std::span(buffer));
   }
@@ -27,7 +27,7 @@ C2H_TEST("Fill", "[data_manipulation]")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(device_resource, buffer_size);
-    cudax::fill_bytes(_stream, buffer, fill_byte);
+    cuda::fill_bytes(_stream, buffer, fill_byte);
 
     std::vector<int> host_vector(42);
     CUDART(cudaMemcpyAsync(
@@ -40,7 +40,7 @@ C2H_TEST("Fill", "[data_manipulation]")
     cuda::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer buffer(host_resource, buffer_size);
 
-    cudax::fill_bytes(_stream, buffer, fill_byte);
+    cuda::fill_bytes(_stream, buffer, fill_byte);
     check_result_and_erase(_stream, cuda::std::span(buffer.data, buffer.size));
   }
 }
@@ -53,7 +53,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
     auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
     cuda::std::mdspan<int, decltype(dynamic_extents)> dynamic_mdspan(buffer.data(), dynamic_extents);
 
-    cudax::fill_bytes(stream, dynamic_mdspan, fill_byte);
+    cuda::fill_bytes(stream, dynamic_mdspan, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
@@ -61,7 +61,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
     auto buffer = make_buffer_for_mdspan(mixed_extents, 0);
     cuda::std::mdspan<int, decltype(mixed_extents)> mixed_mdspan(buffer.data(), mixed_extents);
 
-    cudax::fill_bytes(stream, cuda::std::move(mixed_mdspan), fill_byte);
+    cuda::fill_bytes(stream, cuda::std::move(mixed_mdspan), fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
@@ -70,7 +70,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
     cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(host_resource, size);
 
-    cudax::fill_bytes(stream, buffer, fill_byte);
+    cuda::fill_bytes(stream, buffer, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));
   }
 }
@@ -83,7 +83,7 @@ C2H_TEST("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
 
     try
     {
-      cudax::fill_bytes(stream, fake_strided_mdspan, fill_byte);
+      cuda::fill_bytes(stream, fake_strided_mdspan, fill_byte);
     }
     catch (const ::std::invalid_argument& e)
     {

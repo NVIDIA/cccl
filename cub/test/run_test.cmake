@@ -51,27 +51,27 @@ endfunction()
 ######################################################################
 
 # Parse arguments
-if(NOT DEFINED TEST)
+if (NOT DEFINED TEST)
   usage()
   message(FATAL_ERROR "TEST must be defined")
 endif()
 
-if(NOT DEFINED ARGS)
+if (NOT DEFINED ARGS)
   set(ARGS)
 endif()
 
-if(NOT DEFINED TYPE)
+if (NOT DEFINED TYPE)
   set(TYPE "none")
 endif()
 
-if(NOT DEFINED MODE)
-  if(DEFINED ENV{CCCL_TEST_MODE})
+if (NOT DEFINED MODE)
+  if (DEFINED ENV{CCCL_TEST_MODE})
     message(STATUS "Using CCCL_TEST_MODE from env: $ENV{CCCL_TEST_MODE}")
     set(MODE $ENV{CCCL_TEST_MODE})
   else()
     set(MODE "none")
   endif()
-elseif(NOT MODE)
+elseif (NOT MODE)
   set(MODE "none")
 endif()
 
@@ -82,33 +82,51 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
 
   # All test cases in these tests take an excessive amount of time to execute with the compute-sanitizer tools.
   # Just skip the whole test.
-  if (("${TEST}" MATCHES "/cub.+test.*large_offsets.*" AND
-       (tool STREQUAL "initcheck" OR tool STREQUAL "racecheck" OR tool STREQUAL "synccheck")) OR
-      # These take >2000s on racecheck to complete, even with reduced seeds, skipping large offsets, etc.
-      ("${TEST}" MATCHES "/cub.+test.device_segmented_(radix_sort|reduce).*" AND
-       (tool STREQUAL "racecheck")))
-    message(FATAL_ERROR "CCCL_SKIP_TEST:\n${TEST} takes an excessive amount of time to execute with ${tool}.")
+  if (
+    (
+      "${TEST}" MATCHES "/cub.+test.*large_offsets.*"
+      AND
+        (
+          tool STREQUAL "initcheck"
+          OR tool STREQUAL "racecheck"
+          OR tool STREQUAL "synccheck"
+        )
+    )
+    OR
+    # These take >2000s on racecheck to complete, even with reduced seeds, skipping large offsets, etc.
+    (
+      "${TEST}" MATCHES "/cub.+test.device_segmented_(radix_sort|reduce).*"
+      AND (tool STREQUAL "racecheck")
+    )
+  )
+    message(
+      FATAL_ERROR
+      "CCCL_SKIP_TEST:\n${TEST} takes an excessive amount of time to execute with ${tool}."
+    )
   endif()
 
   # These tests intentionally don't launch any kernels or make any CUDA API calls:
   if ("${TEST}" MATCHES "/cub.*.test.cdp_variant_state.*")
-    message(FATAL_ERROR "CCCL_SKIP_TEST:\n${TEST} intentionally doesn't use CUDA APIs. Skipping.")
+    message(
+      FATAL_ERROR
+      "CCCL_SKIP_TEST:\n${TEST} intentionally doesn't use CUDA APIs. Skipping."
+    )
   endif()
 
   # The CUB debug test intentionally throws CUDA errors to test error handling:
   if ("${TEST}" MATCHES "/cub.*test.debug$")
-    message(FATAL_ERROR "CCCL_SKIP_TEST:\n${TEST} intentionally throws CUDA errors. Skipping.")
-  endif()
-
-
-  if (TYPE STREQUAL "Catch2")
-    list(APPEND ARGS
-      "--durations" "yes"
-      "~[skip-cs-${tool}]"
+    message(
+      FATAL_ERROR
+      "CCCL_SKIP_TEST:\n${TEST} intentionally throws CUDA errors. Skipping."
     )
   endif()
 
+  if (TYPE STREQUAL "Catch2")
+    list(APPEND ARGS "--durations" "yes" "~[skip-cs-${tool}]")
+  endif()
+
   # Compile the compute-sanitizer args:
+  # gersemi: off
   set(cs_general_args
     "--tool" "${tool}"
     "--suppressions" "${CCCL_SOURCE_DIR}/ci/compute-sanitizer-suppressions.xml"
@@ -119,17 +137,20 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     "--error-exitcode" "1"
     "--nvtx" "true"
   )
+  # gersemi: on
   if (tool STREQUAL "memcheck")
+    # gersemi: off
     set(cs_tool_args
       "--leak-check" "full"
       "--padding" "512"
       "--track-stream-ordered-races" "all"
     )
+    # gersemi: on
   elseif (tool STREQUAL "racecheck")
     set(cs_tool_args)
   elseif (tool STREQUAL "initcheck")
     set(cs_tool_args)
-  elseif(tool STREQUAL "synccheck")
+  elseif (tool STREQUAL "synccheck")
     set(cs_tool_args)
   endif()
 
