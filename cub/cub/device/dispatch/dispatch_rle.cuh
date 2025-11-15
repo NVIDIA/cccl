@@ -170,14 +170,14 @@ template <typename ChainedPolicyT,
           typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
-    InputIteratorT d_in,
-    OffsetsOutputIteratorT d_offsets_out,
-    LengthsOutputIteratorT d_lengths_out,
-    NumRunsOutputIteratorT d_num_runs_out,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
+    _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,
+    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_status,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    int num_tiles,
+    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;

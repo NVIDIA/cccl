@@ -312,15 +312,15 @@ __launch_bounds__(int(
     OffsetT,
     StreamingContextT>::agent_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
-    InputIteratorT d_in,
-    FlagsInputIteratorT d_flags,
-    SelectedOutputIteratorT d_selected_out,
-    NumSelectedIteratorT d_num_selected_out,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const FlagsInputIteratorT d_flags,
+    _CCCL_GRID_CONSTANT const SelectedOutputIteratorT d_selected_out,
+    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
-    SelectOpT select_op,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    int num_tiles,
+    _CCCL_GRID_CONSTANT const SelectOpT select_op,
+    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {

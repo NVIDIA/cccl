@@ -112,22 +112,22 @@ template <typename ChainedPolicyT,
           bool IsFirstPass>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
-    const KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    const ValueInputIteratorT d_values_in,
-    ValueOutputIteratorT d_values_out,
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
     KeyInT* out_buf,
     OffsetT* out_idx_buf,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    OffsetT num_items,
-    OutOffsetT k,
-    OffsetT buffer_length,
-    ExtractBinOpT extract_bin_op,
-    IdentifyCandidatesOpT identify_candidates_op,
-    int pass)
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OutOffsetT k,
+    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    _CCCL_GRID_CONSTANT const ExtractBinOpT extract_bin_op,
+    _CCCL_GRID_CONSTANT const IdentifyCandidatesOpT identify_candidates_op,
+    _CCCL_GRID_CONSTANT const int pass)
 {
   using agent_topk_policy_t = typename ChainedPolicyT::ActivePolicy::topk_policy_t;
   using agent_topk_t =
@@ -168,18 +168,18 @@ template <typename ChainedPolicyT,
           typename IdentifyCandidatesOpT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
-    const KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    const ValueInputIteratorT d_values_in,
-    ValueOutputIteratorT d_values_out,
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
     Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    OffsetT num_items,
-    OutOffsetT k,
-    OffsetT buffer_length,
-    IdentifyCandidatesOpT identify_candidates_op,
-    int pass)
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OutOffsetT k,
+    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+    _CCCL_GRID_CONSTANT const IdentifyCandidatesOpT identify_candidates_op,
+    _CCCL_GRID_CONSTANT const int pass)
 {
   using agent_topk_policy_t = typename ChainedPolicyT::ActivePolicy::topk_policy_t;
   using extract_bin_op_t    = NullType;

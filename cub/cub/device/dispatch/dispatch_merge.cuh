@@ -73,13 +73,13 @@ template <typename MaxPolicy,
           typename Offset,
           typename CompareOp>
 CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
-  KeyIt1 keys1,
-  Offset keys1_count,
-  KeyIt2 keys2,
-  Offset keys2_count,
-  Offset num_diagonals,
+  _CCCL_GRID_CONSTANT const KeyIt1 keys1,
+  _CCCL_GRID_CONSTANT const Offset keys1_count,
+  _CCCL_GRID_CONSTANT const KeyIt2 keys2,
+  _CCCL_GRID_CONSTANT const Offset keys2_count,
+  _CCCL_GRID_CONSTANT const Offset num_diagonals,
   Offset* key1_beg_offsets,
-  CompareOp compare_op)
+  _CCCL_GRID_CONSTANT const CompareOp compare_op)
 {
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
@@ -122,15 +122,15 @@ __launch_bounds__(
                      Offset,
                      CompareOp>::type::policy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
-    KeyIt1 keys1,
-    ValueIt1 items1,
-    Offset num_keys1,
-    KeyIt2 keys2,
-    ValueIt2 items2,
-    Offset num_keys2,
-    KeyIt3 keys_result,
-    ValueIt3 items_result,
-    CompareOp compare_op,
+    _CCCL_GRID_CONSTANT const KeyIt1 keys1,
+    _CCCL_GRID_CONSTANT const ValueIt1 items1,
+    _CCCL_GRID_CONSTANT const Offset num_keys1,
+    _CCCL_GRID_CONSTANT const KeyIt2 keys2,
+    _CCCL_GRID_CONSTANT const ValueIt2 items2,
+    _CCCL_GRID_CONSTANT const Offset num_keys2,
+    _CCCL_GRID_CONSTANT const KeyIt3 keys_result,
+    _CCCL_GRID_CONSTANT const ValueIt3 items_result,
+    _CCCL_GRID_CONSTANT const CompareOp compare_op,
     Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)
 {

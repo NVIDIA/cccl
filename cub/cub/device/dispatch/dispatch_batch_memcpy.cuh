@@ -83,12 +83,12 @@ template <typename ChainedPolicyT,
           CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
-    InputBufferIt input_buffer_it,
-    OutputBufferIt output_buffer_it,
-    BufferSizeIteratorT buffer_sizes,
-    BufferTileOffsetItT buffer_tile_offsets,
+    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
+    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
+    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
+    _CCCL_GRID_CONSTANT const BufferTileOffsetItT buffer_tile_offsets,
     TileT buffer_offset_tile,
-    TileOffsetT last_tile_offset)
+    _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
   using StatusWord    = typename TileT::StatusWord;
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT;
@@ -210,16 +210,16 @@ template <typename ChainedPolicyT,
           CopyAlg MemcpyOpt>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
-    InputBufferIt input_buffer_it,
-    OutputBufferIt output_buffer_it,
-    BufferSizeIteratorT buffer_sizes,
-    BufferOffsetT num_buffers,
-    BlevBufferSrcsOutItT blev_buffer_srcs,
-    BlevBufferDstsOutItT blev_buffer_dsts,
-    BlevBufferSizesOutItT blev_buffer_sizes,
-    BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
-    BLevBufferOffsetTileState blev_buffer_scan_state,
-    BLevBlockOffsetTileState blev_block_scan_state)
+    _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
+    _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
+    _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
+    _CCCL_GRID_CONSTANT const BufferOffsetT num_buffers,
+    _CCCL_GRID_CONSTANT const BlevBufferSrcsOutItT blev_buffer_srcs,
+    _CCCL_GRID_CONSTANT const BlevBufferDstsOutItT blev_buffer_dsts,
+    _CCCL_GRID_CONSTANT const BlevBufferSizesOutItT blev_buffer_sizes,
+    _CCCL_GRID_CONSTANT const BlevBufferTileOffsetsOutItT blev_buffer_tile_offsets,
+    _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
+    _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
   // Internal type used for storing a buffer's size
   using BufferSizeT = it_value_t<BufferSizeIteratorT>;

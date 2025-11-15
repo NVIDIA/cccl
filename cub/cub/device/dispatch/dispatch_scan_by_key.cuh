@@ -117,16 +117,16 @@ template <typename ChainedPolicyT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
-    KeysInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     KeyT* d_keys_prev_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
+    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValuesOutputIteratorT d_values_out,
     ScanByKeyTileStateT tile_state,
-    int start_tile,
-    EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items)
+    _CCCL_GRID_CONSTANT const int start_tile,
+    _CCCL_GRID_CONSTANT const EqualityOp equality_op,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   using ScanByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
 
@@ -153,10 +153,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
 template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
-  KeysInputIteratorT d_keys_in,
+  _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
   cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
-  OffsetT items_per_tile,
-  int num_tiles)
+  _CCCL_GRID_CONSTANT const OffsetT items_per_tile,
+  _CCCL_GRID_CONSTANT const int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
