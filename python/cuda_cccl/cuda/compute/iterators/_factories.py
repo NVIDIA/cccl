@@ -232,6 +232,12 @@ def ZipIterator(*iterators):
             :language: python
             :start-after: # example-begin
 
+        ZipIterator can also be used with nested gpu_struct types:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/nested_struct_zip_iterator.py
+            :language: python
+            :start-after: # example-begin
+
     Args:
         *iterators: Variable number of iterators to zip (at least 1)
 
