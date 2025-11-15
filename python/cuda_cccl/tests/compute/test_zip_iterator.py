@@ -321,7 +321,8 @@ def test_nested_zip_iterators():
     d_output = cp.empty(1, dtype=OuterTriple.dtype)
     h_init = OuterTriple(InnerPair(0, 0), 0.0)
 
-    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+    cuda.compute.reduce_into(
+        outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -367,7 +368,8 @@ def test_deeply_nested_zip_iterators():
     d_output = cp.empty(1, dtype=OuterPair.dtype)
     h_init = OuterPair(InnerPair(0, 0.0), 0)
 
-    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+    cuda.compute.reduce_into(
+        outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -387,10 +389,7 @@ def test_deeply_nested_zip_iterators():
     "dtype_map",
     [
         {"x": np.float32, "y": np.float32},
-        pytest.param(
-            {"x": np.float64, "y": np.float32},
-            marks=pytest.mark.xfail(reason="Fails due to ODR violation (GH #4573)"),
-        ),
+        {"x": np.float64, "y": np.float32},
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
@@ -431,7 +430,8 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
         result2 = (v1[1].x + v2[1].x, v1[1].y + v2[1].y)
         return Vec2(result1[0], result1[1]), Vec2(result2[0], result2[1])
 
-    cuda.compute.inclusive_scan(zip_it, zip_out_it, add_vec2_pairs, None, num_items)
+    cuda.compute.inclusive_scan(
+        zip_it, zip_out_it, add_vec2_pairs, None, num_items)
 
     in1 = d_in1.get()
     in2 = d_in2.get()
