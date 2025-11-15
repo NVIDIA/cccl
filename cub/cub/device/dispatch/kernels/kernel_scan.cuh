@@ -37,7 +37,7 @@ namespace detail::scan
  *   Number of tiles
  */
 template <typename ScanTileStateT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -64,7 +64,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
+DeviceCompactInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -136,13 +136,13 @@ template <typename ChainedPolicyT,
           typename RealInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
-    InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanTileStateT tile_state,
-    int start_tile,
-    ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const int start_tile,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
     InitValueT init_value,
-    OffsetT num_items)
+    _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 

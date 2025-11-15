@@ -131,15 +131,15 @@ __launch_bounds__(int(
     EqualityOpT,
     OffsetT>::agent_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
     KeyOutputIteratorT d_keys_out,
     ValueOutputIteratorT d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_state,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    int num_tiles,
+    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<

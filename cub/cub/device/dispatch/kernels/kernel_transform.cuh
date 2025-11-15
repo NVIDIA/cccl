@@ -962,11 +962,11 @@ template <typename MaxPolicy,
           typename... RandomAccessIteartorsIn>
 __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
-    Offset num_items,
-    int num_elem_per_thread,
+    _CCCL_GRID_CONSTANT const Offset num_items,
+    _CCCL_GRID_CONSTANT const int num_elem_per_thread,
     [[maybe_unused]] bool can_vectorize,
-    Predicate pred,
-    F f,
+    _CCCL_GRID_CONSTANT const Predicate pred,
+    _CCCL_GRID_CONSTANT const F f,
     RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
 {

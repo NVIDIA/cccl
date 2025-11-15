@@ -167,15 +167,15 @@ __launch_bounds__(
     KeyT,
     ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
-    bool ping,
-    KeyInputIteratorT keys_in,
-    ValueInputIteratorT items_in,
+    _CCCL_GRID_CONSTANT const bool ping,
+    _CCCL_GRID_CONSTANT const KeyInputIteratorT keys_in,
+    _CCCL_GRID_CONSTANT const ValueInputIteratorT items_in,
     KeyIteratorT keys_out,
     ValueIteratorT items_out,
-    OffsetT keys_count,
+    _CCCL_GRID_CONSTANT const OffsetT keys_count,
     KeyT* tmp_keys_out,
     ValueT* tmp_items_out,
-    CompareOpT compare_op,
+    _CCCL_GRID_CONSTANT const CompareOpT compare_op,
     vsmem_t vsmem)
 {
   using MergeSortHelperT = typename VSMemHelperT::template MergeSortVSMemHelperT<
@@ -221,15 +221,15 @@ __launch_bounds__(
 
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
-  bool ping,
-  KeyIteratorT keys_ping,
+  _CCCL_GRID_CONSTANT const bool ping,
+  _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
   KeyT* keys_pong,
-  OffsetT keys_count,
-  OffsetT num_partitions,
+  _CCCL_GRID_CONSTANT const OffsetT keys_count,
+  _CCCL_GRID_CONSTANT const OffsetT num_partitions,
   OffsetT* merge_partitions,
-  CompareOpT compare_op,
-  OffsetT target_merged_tiles_number,
-  int items_per_tile)
+  _CCCL_GRID_CONSTANT const CompareOpT compare_op,
+  _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
+  _CCCL_GRID_CONSTANT const int items_per_tile)
 {
   OffsetT partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -272,15 +272,15 @@ __launch_bounds__(
     KeyT,
     ValueT>::policy_t::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
-    bool ping,
-    KeyIteratorT keys_ping,
-    ValueIteratorT items_ping,
-    OffsetT keys_count,
+    _CCCL_GRID_CONSTANT const bool ping,
+    _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
+    _CCCL_GRID_CONSTANT const ValueIteratorT items_ping,
+    _CCCL_GRID_CONSTANT const OffsetT keys_count,
     KeyT* keys_pong,
     ValueT* items_pong,
-    CompareOpT compare_op,
+    _CCCL_GRID_CONSTANT const CompareOpT compare_op,
     OffsetT* merge_partitions,
-    OffsetT target_merged_tiles_number,
+    _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
     vsmem_t vsmem)
 {
   using MergeSortHelperT = typename VSMemHelperT::template MergeSortVSMemHelperT<

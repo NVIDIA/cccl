@@ -86,7 +86,7 @@ using can_regain_copy_freedom =
 
 // This kernel is used when the block size is not known at compile time
 template <class ChainedPolicyT, class OffsetT, class OpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
+CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, _CCCL_GRID_CONSTANT const OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
@@ -111,7 +111,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
 template <class ChainedPolicyT, class OffsetT, class OpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES //
 __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
-  void static_kernel(OffsetT num_items, OpT op)
+  void static_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, _CCCL_GRID_CONSTANT const OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;

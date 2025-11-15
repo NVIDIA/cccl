@@ -102,10 +102,10 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int current_bit,
-    int pass_bits,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int pass_bits,
     DecomposerT decomposer = {})
 {
   //

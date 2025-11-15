@@ -101,12 +101,12 @@ template <typename ChainedPolicyT,
           typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
-  InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   OutputIteratorT d_out,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  ReductionOpT reduction_op,
-  InitT init)
+  _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+  _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
+  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const InitT init)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -188,12 +188,12 @@ template <typename ChainedPolicyT,
           typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceKernel(
-  InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   OutputIteratorT d_out,
-  OffsetT segment_size,
-  int num_segments,
-  ReductionOpT reduction_op,
-  InitT init)
+  _CCCL_GRID_CONSTANT const OffsetT segment_size,
+  _CCCL_GRID_CONSTANT const int num_segments,
+  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const InitT init)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
