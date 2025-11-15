@@ -8,9 +8,6 @@ if (TARGET CUB::CUB)
   return()
 endif()
 
-# Minimum supported libcudacxx version:
-set(cub_libcudacxx_version "${CUB_VERSION}")
-
 function(_cub_declare_interface_alias alias_name ugly_name)
   # 1) Only IMPORTED and ALIAS targets can be placed in a namespace.
   # 2) When an IMPORTED library is linked to another target, its include
@@ -67,6 +64,25 @@ endif()
 # Setup dependencies
 #
 
+if (NOT TARGET CUB::Thrust)
+  if (NOT TARGET Thrust::Thrust)
+    find_package(
+      Thrust
+      ${CUB_VERSION}
+      EXACT
+      REQUIRED
+      CONFIG
+      ${_CUB_QUIET_FLAG}
+      NO_DEFAULT_PATH
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../thrust/"
+    )
+  endif()
+  _cub_declare_interface_alias(CUB::Thrust _CUB_Thrust)
+  # Just link Thrust::Thrust -- this is the minimal target that only provides
+  # headers with no host/device system setup, which is all CUB needs.
+  target_link_libraries(_CUB_Thrust INTERFACE Thrust::Thrust)
+endif()
+
 if (NOT TARGET CUB::libcudacxx)
   if (TARGET Thrust::libcudacxx)
     # Prefer the same libcudacxx as Thrust, if available:
@@ -74,24 +90,15 @@ if (NOT TARGET CUB::libcudacxx)
     target_link_libraries(_CUB_libcudacxx INTERFACE Thrust::libcudacxx)
   else()
     if (NOT TARGET libcudacxx::libcudacxx)
-      # First do a non-required search for any co-packaged versions.
-      # These are preferred.
       find_package(
         libcudacxx
-        ${cub_libcudacxx_version}
+        ${CUB_VERSION}
+        EXACT
         CONFIG
+        REQUIRED
         ${_CUB_QUIET_FLAG}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
         HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
-      )
-
-      # A second required search allows externally packaged to be used and fails if
-      # no suitable package exists.
-      find_package(
-        libcudacxx
-        ${cub_libcudacxx_version}
-        CONFIG
-        REQUIRED ${_CUB_QUIET_FLAG}
       )
     endif()
     _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
