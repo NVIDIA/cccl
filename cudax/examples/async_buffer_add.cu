@@ -31,22 +31,6 @@ namespace cudax = cuda::experimental;
 
 constexpr int numElements = 50000;
 
-struct generator
-{
-  thrust::default_random_engine gen{};
-  thrust::uniform_real_distribution<float> dist{-10.0f, 10.0f};
-
-  __host__ __device__ generator(const unsigned seed)
-      : gen{seed}
-  {}
-
-  __host__ __device__ float operator()(cuda::std::size_t idx) noexcept
-  {
-    gen.discard(idx);
-    return dist(gen);
-  }
-};
-
 int main()
 {
   // A CUDA stream on which to execute the vector addition kernel
@@ -62,9 +46,18 @@ int main()
   cudax::device_buffer<float> B{stream, device_resource, numElements, cudax::no_init};
   cudax::device_buffer<float> C{stream, device_resource, numElements, cudax::no_init};
 
+  // Lambda for random number generation
+  auto make_generator = [](unsigned seed) {
+    return [gen = thrust::default_random_engine{seed},
+            dist = thrust::uniform_real_distribution<float>{-10.0f, 10.0f}] __device__(cuda::std::size_t idx) mutable {
+      gen.discard(idx);
+      return dist(gen);
+    };
+  };
+
   // Fill both vectors on stream using a random number generator
-  thrust::tabulate(policy, A.begin(), A.end(), generator{42});
-  thrust::tabulate(policy, B.begin(), B.end(), generator{1337});
+  thrust::tabulate(policy, A.begin(), A.end(), make_generator(42));
+  thrust::tabulate(policy, B.begin(), B.end(), make_generator(1337));
 
   // Add the vectors together
   thrust::transform(policy, A.begin(), A.end(), B.begin(), C.begin(), cuda::std::plus<>{});
