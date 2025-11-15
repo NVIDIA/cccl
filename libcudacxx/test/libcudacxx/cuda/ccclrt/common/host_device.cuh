@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -10,6 +10,8 @@
 
 #ifndef __COMMON_HOST_DEVICE_H__
 #define __COMMON_HOST_DEVICE_H__
+
+#include <cuda/hierarchy>
 
 #include "utility.cuh"
 

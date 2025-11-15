@@ -60,12 +60,6 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
   add_custom_target(${config_meta_target})
   add_dependencies(${config_prefix}.all ${config_meta_target})
 
-  # Add tests:
-  cudax_add_catch2_test(test_target hierarchy ${cudax_target}
-    hierarchy/hierarchy_smoke.cu
-    hierarchy/hierarchy_custom_types.cu
-  )
-
   cudax_add_catch2_test(test_target launch ${cudax_target}
     launch/launch_smoke.cu
   )

@@ -29,7 +29,7 @@ namespace
 {
 namespace test
 {
-constexpr auto one_thread_dims = cudax::make_config(cudax::block_dims<1>(), cudax::grid_dims<1>());
+constexpr auto one_thread_dims = cudax::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {
