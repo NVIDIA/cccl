@@ -387,10 +387,7 @@ def test_deeply_nested_zip_iterators():
     "dtype_map",
     [
         {"x": np.float32, "y": np.float32},
-        pytest.param(
-            {"x": np.float64, "y": np.float32},
-            marks=pytest.mark.xfail(reason="Fails due to ODR violation"),
-        ),
+        {"x": np.float64, "y": np.float32},
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
