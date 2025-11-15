@@ -128,13 +128,13 @@ using __partition_completion_signatures_t _CCCL_NODEBUG_ALIAS = //
     (declval<::cuda::std::__undefined<__partitioned_completions<>>&>() * ... * static_cast<_Sigs*>(nullptr))));
 
 template <class _Completions>
-using __partitioned_completions_of _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned::type;
+using __partitioned_completions_of_t _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned::type;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // completion signatures type traits
 template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
 using __value_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __value_types<_Tuple, _Variant>;
+  typename __partitioned_completions_of_t<_Sigs>::template __value_types<_Tuple, _Variant>;
 
 template <class _Sndr, class _Env, template <class...> class _Tuple, template <class...> class _Variant>
 using value_types_of_t _CCCL_NODEBUG_ALIAS =
@@ -146,7 +146,7 @@ template <class _Sigs,
           template <class...> class _Variant,
           template <class...> class _Transform = ::cuda::std::__type_self_t>
 using __error_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __error_types<_Variant, _Transform>;
+  typename __partitioned_completions_of_t<_Sigs>::template __error_types<_Variant, _Transform>;
 
 template <class _Sndr, class _Env, template <class...> class _Variant>
 using error_types_of_t _CCCL_NODEBUG_ALIAS =
@@ -154,10 +154,10 @@ using error_types_of_t _CCCL_NODEBUG_ALIAS =
 
 template <class _Sigs, template <class...> class _Variant, class _Type = set_stopped_t()>
 using __stopped_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __stopped_types<_Variant, _Type>;
+  typename __partitioned_completions_of_t<_Sigs>::template __stopped_types<_Variant, _Type>;
 
 template <class _Sigs>
-inline constexpr bool __sends_stopped = __partitioned_completions_of<_Sigs>::__count_stopped::value != 0;
+inline constexpr bool __sends_stopped = __partitioned_completions_of_t<_Sigs>::__count_stopped::value != 0;
 
 template <class _Sndr, class... _Env>
 inline constexpr bool sends_stopped = __sends_stopped<completion_signatures_of_t<_Sndr, _Env...>>;

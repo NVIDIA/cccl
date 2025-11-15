@@ -51,14 +51,6 @@
 
 namespace cuda::experimental::execution
 {
-template <class _Query>
-_CCCL_CONCEPT __forwarding_let_query =
-  __forwarding_query<_Query> && //
-  __none_of<_Query,
-            get_completion_domain_t<set_value_t>,
-            get_completion_domain_t<set_error_t>,
-            get_completion_domain_t<set_stopped_t>>;
-
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 {
   template <class _LetTag>
@@ -77,13 +69,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   template <class _SetTag, class _Attrs, class... _Env>
   _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
   {
-    if constexpr (__callable<get_completion_scheduler_t<_SetTag>, const _Attrs&, const _Env&...>)
+    if constexpr (__callable<get_completion_scheduler_t<_SetTag>, const _Attrs&, __fwd_env_t<const _Env&>...>)
     {
-      return __mk_sch_env(get_completion_scheduler<_SetTag>(__attrs, __env...), __env...);
+      return __mk_sch_env(get_completion_scheduler<_SetTag>(__attrs, __fwd_env(__env)...), __fwd_env(__env)...);
     }
-    else if constexpr (__callable<get_completion_domain_t<_SetTag>, const _Attrs&, const _Env&...>)
+    else if constexpr (__callable<get_completion_domain_t<_SetTag>, const _Attrs&, __fwd_env_t<const _Env&>...>)
     {
-      return prop{get_domain, get_completion_domain<_SetTag>(__attrs, __env...)};
+      using __domain_t = __call_result_t<get_completion_domain_t<_SetTag>, const _Attrs&, __fwd_env_t<const _Env&>...>;
+      return prop{get_domain, __domain_t{}};
     }
     else
     {
@@ -94,6 +87,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   template <class _SetTag, class _Attrs, class... _Env>
   using __env2_t _CCCL_NODEBUG_ALIAS =
     decltype(__let_t::__mk_env2<_SetTag>(::cuda::std::declval<_Attrs>(), ::cuda::std::declval<_Env>()...));
+
+  template <class _SetTag, class _Attrs, class _Env>
+  using __join_env2_t _CCCL_NODEBUG_ALIAS = __join_env_t<__env2_t<_SetTag, _Attrs, _Env>, _Env>;
 
   template <class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
@@ -239,44 +235,44 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     connect_result_t<_CvSndr, __sndr1_rcvr_t> __opstate1_;
   };
 
-  template <class _SetTag, class _Fn, class _Env2, class... _Env>
+  template <class _SetTag, class _Fn, class _Attrs, class... _Env>
   struct __domain_transform_fn
   {
     template <class... _As>
     using __call _CCCL_NODEBUG_ALIAS =
-      __call_result_or_t<get_completion_domain_t<set_value_t>,
-                         default_domain,
-                         env_of_t<::cuda::std::__type_call<__sndr2_fn<_Fn>, _As...>>,
-                         __join_env_t<_Env2, const _Env&...>>;
+      __compl_domain_t<_SetTag,
+                       ::cuda::std::__type_call<__sndr2_fn<_Fn>, _As...>,
+                       __join_env2_t<_SetTag, _Attrs, _Env>...>;
   };
 
-  struct __domain_reduce_fn
-  {
-    template <class... _Domains>
-    using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::
-      _If<sizeof...(_Domains) == 0, default_domain, __type_call_or_q<::cuda::std::common_type_t, void, _Domains...>>;
-  };
-
-  template <class _SetTag, class _Sndr, class _Fn, class... _Env>
+  //! @tparam _SetTag The completion signal of the predecessor sender that triggers the
+  //! function call. For let_value, this is `set_value`.
+  //! @tparam _SetTag2 The completion signal of the let_ sender itself that is being
+  //! queried. For example, you may be querying a let_value sender for its set_error
+  //! completion domain.
+  template <class _SetTag, class _SetTag2, class _Sndr, class _Fn, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
   {
-    // we can know the completion domain for non-dependent senders
-    using __completions_t = completion_signatures_of_t<_Sndr, _Env...>;
-    if constexpr (__valid_completion_signatures<__completions_t>)
+    if constexpr (sender_in<_Sndr, _Env...>)
     {
-      using __env2_t = __let_t::__env2_t<_SetTag, env_of_t<_Sndr>, _Env...>;
-      return __gather_completion_signatures<__completions_t,
+      using __domain_transform_fn = __let_t::__domain_transform_fn<_SetTag2, _Fn, env_of_t<_Sndr>, _Env...>;
+      return __gather_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>,
                                             _SetTag,
-                                            __domain_transform_fn<_SetTag, _Fn, __env2_t, _Env...>::template __call,
-                                            __domain_reduce_fn::template __call>();
+                                            __domain_transform_fn::template __call,
+                                            __common_domain_t>();
+    }
+    else
+    {
+      return __not_a_domain{};
     }
   }
 
-  template <class _SetTag, class _Sndr, class _Fn, class... _Env>
-  using __completion_domain_of_t _CCCL_NODEBUG_ALIAS =
-    __unless_one_of_t<decltype(__let_t::__get_completion_domain<_SetTag, _Sndr, _Fn, _Env...>()), void>;
+  template <class _SetTag, class _SetTag2, class _Sndr, class _Fn, class... _Env>
+  using __let_completion_domain_t _CCCL_NODEBUG_ALIAS =
+    __unless_one_of_t<decltype(__let_t::__get_completion_domain<_SetTag, _SetTag2, _Sndr, _Fn, _Env...>()),
+                      __not_a_domain>;
 
-  template <class _LetTag, class _Fn, class _Env2, class... _Env>
+  template <class _LetTag, class _Fn, class... _JoinEnv2>
   struct __transform_args_fn
   {
     template <class... _Ts>
@@ -308,9 +304,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
         }
         else
         {
-          // The function is callable with the arguments and returns a sender, but we do
-          // not know whether connect will throw.
-          return execution::get_completion_signatures<__sndr2_t, __join_env_t<_Env2, _Env...>>() + __eptr_completion();
+          return get_completion_signatures<__sndr2_t, _JoinEnv2...>();
         }
       }
     }
@@ -334,6 +328,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     }
   };
 
+  // A metafunction to check whether the predecessor's completion results are nothrow
+  // decay-copyable and whether connecting the secondary sender is nothrow.
+  template <class _SetTag, class _Sndr, class _Fn, class _Env>
+  struct __has_nothrow_completions_fn
+  {
+    using __env2_t = __let_t::__join_env2_t<_SetTag, env_of_t<_Sndr>, _Env>;
+
+    template <class... _Ts>
+    using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<
+      (noexcept(_LIBCUDACXX_AUTO_CAST(declval<_Ts>())) && ...)
+      && noexcept(execution::connect(declval<_Fn>()(declval<decay_t<_Ts>&>()...), __receiver_archetype<__env2_t>()))>;
+  };
+
+  template <class _SetTag, class _Sndr, class _Fn, class _Env>
+  using __has_nothrow_completions _CCCL_NODEBUG_ALIAS =
+    __gather_completion_signatures<completion_signatures_of_t<_Sndr, _Env>,
+                                   _SetTag,
+                                   __has_nothrow_completions_fn<_SetTag, _Sndr, _Fn, _Env>::template __call,
+                                   ::cuda::std::__type_strict_and::__call>;
+
+  template <class _LetTag, class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t;
+
   template <class _LetTag, class _Sndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -342,16 +359,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
                                                   // extended (host/device) lambda
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) &&
     {
-      return _LetTag{}(static_cast<_Sndr&&>(__sndr), __fn_);
+      return _LetTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
-      -> __call_result_t<_LetTag, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr) const&
     {
-      return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
+      return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
+    }
+
+    template <class _Sndr>
+    [[nodiscard]] _CCCL_API friend auto operator|(_Sndr __sndr, __closure_t __self)
+    {
+      return _LetTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
     }
 
     _Fn __fn_;
@@ -400,29 +422,88 @@ struct let_stopped_t : __let_base_t<let_stopped_t>
 };
 
 template <class _LetTag, class _Sndr, class _Fn>
+struct __let_t::__attrs_t
+{
+  using __set_tag_t = __set_tag_for_t<_LetTag>;
+
+  _CCCL_API constexpr explicit __attrs_t(const __sndr_t<_LetTag, _Sndr, _Fn>& __self) noexcept
+      : __self_(__self)
+  {}
+
+  template <class _Tag>
+  _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
+
+  template <class... _Env>
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<__set_tag_t>, const _Env&...) const noexcept
+    -> __let_completion_domain_t<__set_tag_t, __set_tag_t, _Sndr, _Fn, _Env...>
+  {
+    return {};
+  }
+
+  _CCCL_TEMPLATE(class _Tag, class... _Env)
+  _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Tag, set_error_t, set_stopped_t> _CCCL_AND(
+    __has_nothrow_completions<__set_tag_t, _Sndr, _Fn, _Env>::value&&...))
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_Tag>, const _Env&...) const noexcept
+    -> __common_domain_t<__compl_domain_t<_Tag, _Sndr, __fwd_env_t<_Env>...>,
+                         __let_completion_domain_t<__set_tag_t, _Tag, _Sndr, _Fn, _Env...>>
+  {
+    return {};
+  }
+
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES((!__has_nothrow_completions<__set_tag_t, _Sndr, _Fn, _Env>::value))
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, const _Env&) const noexcept
+    -> __common_domain_t<__compl_domain_t<__set_tag_t, _Sndr, __fwd_env_t<_Env>>,
+                         __compl_domain_t<set_error_t, _Sndr, __fwd_env_t<_Env>>,
+                         __let_completion_domain_t<__set_tag_t, set_error_t, _Sndr, _Fn, _Env>>
+  {
+    return {};
+  }
+
+  template <class... _Env>
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+  {
+#if _CCCL_CUDACC_BELOW(12, 9)
+    if constexpr (sender_in<_Sndr> || (sender_in<_Sndr, __fwd_env_t<_Env>> && ...))
+#else
+    if constexpr (sender_in<_Sndr, __fwd_env_t<_Env>...>)
+#endif
+    {
+      // The completion behavior of let_value(sndr, fn) is the weakest completion
+      // behavior of sndr and all the senders that fn can potentially produce. (MSVC
+      // needs the constexpr computation broken up, hence the local variables.)
+      constexpr auto __completions =
+        execution::get_completion_signatures<_Sndr, __fwd_env_t<_Env>...>().select(__set_tag_t{});
+      constexpr auto __transform_fn =
+        __completion_behavior_transform_fn<_Fn, __join_env2_t<__set_tag_t, env_of_t<_Sndr>, _Env>...>{};
+      constexpr auto __behavior = __completions.transform_reduce(__transform_fn, execution::min);
+      return (execution::min) (execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>(), __behavior);
+    }
+    else
+    {
+      return completion_behavior::unknown;
+    }
+  }
+
+private:
+  const __sndr_t<_LetTag, _Sndr, _Fn>& __self_;
+};
+
+template <class _LetTag, class _Sndr, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
 {
   using sender_concept = sender_t;
   using __set_tag_t    = __set_tag_for_t<_LetTag>;
 
-  // the env of the receiver used to connect the secondary sender
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      // This is part of the environment of the receiver used to connect the secondary sender:
-      using __env2_t                = __let_t::__env2_t<__set_tag_t, env_of_t<_Sndr>, _Env...>;
-      constexpr auto __transform_fn = __transform_args_fn<_LetTag, _Fn, __env2_t, _Env...>{};
+      constexpr auto __transform_fn =
+        __transform_args_fn<_LetTag, _Fn, __join_env2_t<__set_tag_t, env_of_t<_Sndr>, _Env>...>{};
 
-      if constexpr (!__is_instantiable_with<__completion_domain_of_t, __set_tag_t, _Sndr, _Fn, _Env...>
-                    && (sizeof...(_Env) != 0))
-      {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
-                                            _WHAT(_FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN),
-                                            _WITH_FUNCTION(_Fn)>();
-      }
-      else if constexpr (__set_tag_t{} == execution::set_value)
+      if constexpr (__set_tag_t{} == execution::set_value)
       {
         return transform_completion_signatures(__child_completions, __transform_fn);
       }
@@ -435,7 +516,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
         return transform_completion_signatures(__child_completions, {}, {}, __transform_fn);
       }
     }
+    _CCCL_UNREACHABLE();
+  }
 
+  template <class _Self, class... _Env>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  {
+    _CUDAX_LET_COMPLETIONS(auto(__completions) = __get_completion_signatures<_Self, _Env...>())
+    {
+      // If we do not have an environment yet, assume that connecting the secondary sender
+      // might throw.
+      constexpr bool __nothrow_completions = (__has_nothrow_completions<__set_tag_t, _Sndr, _Fn, _Env>::value || ...);
+      constexpr auto __eptr_completion     = execution::__eptr_completion_if<!__nothrow_completions>();
+      return __completions + __eptr_completion;
+    }
     _CCCL_UNREACHABLE();
   }
 
@@ -456,56 +550,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
     return __opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  // BUGBUG: think harder about the let_value sender attributes. forwarding queries to the
-  // child sender seems questionable at best.
-  struct __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
   {
-    template <class _Tag>
-    _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
-
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<__set_tag_t>, const _Env&...) const noexcept
-      -> __unless_one_of_t<__completion_domain_of_t<__set_tag_t, _Sndr, _Fn, _Env...>, __nil>
-    {
-      return {};
-    }
-
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
-    {
-      if constexpr (sender_in<_Sndr, _Env...>)
-      {
-        // The completion behavior of let_value(sndr, fn) is the weakest completion
-        // behavior of sndr and all the senders that fn can potentially produce. (MSVC
-        // needs the constexpr computation broken up, hence the local variables.)
-        constexpr auto __completions =
-          execution::get_completion_signatures<_Sndr, __fwd_env_t<_Env>...>().select(__set_tag_t{});
-        constexpr auto __behavior =
-          __completions.transform_reduce(__completion_behavior_transform_fn<_Fn, _Env...>{}, execution::min);
-        return (execution::min) (execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>(), __behavior);
-      }
-      else
-      {
-        return completion_behavior::unknown;
-      }
-    }
-
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Query, class... _Args)
-    _CCCL_REQUIRES(__forwarding_let_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-        -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
-    {
-      return execution::get_env(__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
-    }
-
-    const _Sndr& __sndr_;
-  };
-
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
-  {
-    return {__sndr_};
+    return __attrs_t<_LetTag, _Sndr, _Fn>(*this);
   }
 
   /*_CCCL_NO_UNIQUE_ADDRESS*/ _LetTag __tag_;
