@@ -430,6 +430,48 @@ class CountingIterator(IteratorBase):
         result[0] = state[0]
 
 
+class DiscardIteratorKind(IteratorKind):
+    pass
+
+
+class DiscardIterator(IteratorBase):
+    iterator_kind_type = DiscardIteratorKind
+
+    def __init__(self):
+        value_type = numba.from_dtype(np.uint8)
+        cvalue = to_ctypes(value_type)(0)
+        state_type = value_type
+        super().__init__(
+            cvalue=cvalue,
+            state_type=state_type,
+            value_type=value_type,
+        )
+
+    @property
+    def host_advance(self):
+        return self._advance
+
+    @property
+    def advance(self):
+        return self._advance
+
+    @property
+    def input_dereference(self):
+        return self._dereference
+
+    @property
+    def output_dereference(self):
+        return self._dereference
+
+    @staticmethod
+    def _advance(state, distance):
+        pass
+
+    @staticmethod
+    def _dereference(state, result):
+        pass
+
+
 class ReverseIteratorKind(IteratorKind):
     pass
 
