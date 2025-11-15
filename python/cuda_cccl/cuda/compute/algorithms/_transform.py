@@ -273,7 +273,7 @@ def unary_transform(
         When working with custom struct types, you need to provide type annotations
         to help with type inference. See the binary transform struct example for reference:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_transform.py
            :language: python
            :start-after: # example-begin
 
@@ -312,7 +312,7 @@ def binary_transform(
         When working with custom struct types, you need to provide type annotations
         to help with type inference. See the following example:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/transform/binary_transform_struct.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_transform.py
            :language: python
            :start-after: # example-begin
 
