@@ -34,21 +34,6 @@ using namespace cub;
 bool g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
-/// Selection functor type
-struct GreaterThan
-{
-  int compare;
-
-  __host__ __device__ __forceinline__ GreaterThan(int compare)
-      : compare(compare)
-  {}
-
-  __host__ __device__ __forceinline__ bool operator()(const int& a) const
-  {
-    return (a > compare);
-  }
-};
-
 //---------------------------------------------------------------------
 // Test generation
 //---------------------------------------------------------------------
@@ -158,7 +143,11 @@ int main(int argc, char** argv)
 
   // Initialize problem and solution
   Initialize(h_in, num_items, max_segment);
-  GreaterThan select_op(h_in[pivot_index]);
+  
+  // Lambda for selection operation (greater-than)
+  auto select_op = [compare = h_in[pivot_index]] __device__(const int& a) {
+    return a > compare;
+  };
 
   int num_selected = Solve(h_in, select_op, h_reference, num_items);
 
