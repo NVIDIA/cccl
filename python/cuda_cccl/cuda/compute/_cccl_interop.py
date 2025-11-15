@@ -313,7 +313,7 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
 
 
 def get_value_type(d_in: IteratorBase | DeviceArrayLike):
-    from .struct import gpu_struct_from_numpy_dtype
+    from .struct import gpu_struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
@@ -323,7 +323,7 @@ def get_value_type(d_in: IteratorBase | DeviceArrayLike):
         # types directly, as those are passed by pointer to device
         # functions. Instead, we create an anonymous struct type
         # which has the appropriate pass-by-value semantics.
-        return as_numba_type(gpu_struct_from_numpy_dtype("anonymous", dtype))
+        return as_numba_type(gpu_struct(dtype))
     return numba.from_dtype(dtype)
 
 

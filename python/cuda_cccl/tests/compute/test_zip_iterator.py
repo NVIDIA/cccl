@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
-import numba.cuda
 import numpy as np
 import pytest
 
@@ -245,6 +244,7 @@ def test_zip_iterator_with_scan(num_items):
 @pytest.mark.parametrize("num_items", [10, 1000])
 def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     """Test ZipIterator as output iterator with scan operations."""
+    import numba.cuda
 
     # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
     cc_major, _ = numba.cuda.get_current_device().compute_capability
@@ -281,6 +281,170 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     for i in range(1, num_items):
         expected_out1[i] = expected_out1[i - 1] + in1[i]
         expected_out2[i] = expected_out2[i - 1] + in2[i]
+
+    np.testing.assert_array_equal(d_out1.get(), expected_out1)
+    np.testing.assert_array_equal(d_out2.get(), expected_out2)
+
+
+def test_nested_zip_iterators():
+    """Test that ZipIterator can be nested inside another ZipIterator.
+
+    This creates a structure like: ZipIterator(ZipIterator(a, b), c)
+    which should produce values with a nested structure.
+    """
+
+    InnerPair = gpu_struct({"first": np.int32, "second": np.int64})
+    OuterTriple = gpu_struct({"inner": InnerPair, "third": np.float32})
+
+    def sum_nested_zips(v1, v2):
+        return OuterTriple(
+            InnerPair(
+                v1.inner.first + v2.inner.first, v1.inner.second + v2.inner.second
+            ),
+            v1.third + v2.third,
+        )
+
+    num_items = 100
+
+    # Create three input arrays
+    d_input_a = cp.arange(num_items, dtype=np.int32)
+    d_input_b = cp.arange(num_items, dtype=np.int64) * 2
+    d_input_c = cp.arange(num_items, dtype=np.float32) * 3.0
+
+    # Create an inner zip iterator combining a and b
+    inner_zip = ZipIterator(d_input_a, d_input_b)
+
+    # Create an outer zip iterator combining inner_zip and c
+    outer_zip = ZipIterator(inner_zip, d_input_c)
+
+    # Perform reduction
+    d_output = cp.empty(1, dtype=OuterTriple.dtype)
+    h_init = OuterTriple(InnerPair(0, 0), 0.0)
+
+    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+
+    result = d_output.get()[0]
+
+    # Calculate expected values
+    expected_first = d_input_a.sum().get()
+    expected_second = d_input_b.sum().get()
+    expected_third = d_input_c.sum().get()
+
+    assert result["inner"]["first"] == expected_first, (
+        f"Expected inner.first={expected_first}, got {result['inner']['first']}"
+    )
+    assert result["inner"]["second"] == expected_second, (
+        f"Expected inner.second={expected_second}, got {result['inner']['second']}"
+    )
+    assert np.isclose(result["third"], expected_third, rtol=1e-5), (
+        f"Expected third={expected_third}, got {result['third']}"
+    )
+
+
+# Test deeply nested zip iterators
+def test_deeply_nested_zip_iterators():
+    """Test 3 levels of nested zip iterators."""
+    # outer_zip produces a struct like: {value_0: {value_0: int32, value_1: float32}, value_1: int64}
+    # Define matching struct types with our own names
+    InnerPair = gpu_struct({"a": np.int32, "b": np.float32})
+    OuterPair = gpu_struct({"inner": InnerPair, "c": np.int64})
+
+    def sum_nested_zips(v1, v2):
+        return OuterPair(
+            InnerPair(v1.inner.a + v2.inner.a, v1.inner.b + v2.inner.b),
+            v1.c + v2.c,
+        )
+
+    num_items = 100
+
+    d_input_a = cp.arange(num_items, dtype=np.int32)
+    d_input_b = cp.arange(num_items, dtype=np.float32)
+    d_input_c = cp.arange(num_items, dtype=np.int64)
+
+    inner_zip = ZipIterator(d_input_a, d_input_b)
+    outer_zip = ZipIterator(inner_zip, d_input_c)
+
+    d_output = cp.empty(1, dtype=OuterPair.dtype)
+    h_init = OuterPair(InnerPair(0, 0.0), 0)
+
+    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+
+    result = d_output.get()[0]
+
+    # outer_zip produces: {value_0: {value_0: int32, value_1: float32}, value_1: int64}
+    # which maps to our OuterPair: {inner: {a: int32, b: float32}, c: int64}
+    expected_a = d_input_a.sum().get()  # int32
+    expected_b = d_input_b.sum().get()  # float32
+    expected_c = d_input_c.sum().get()  # int64
+
+    assert result["inner"]["a"] == expected_a
+    assert np.isclose(result["inner"]["b"], expected_b)
+    assert result["c"] == expected_c
+
+
+@pytest.mark.parametrize("num_items", [10, 1000])
+@pytest.mark.parametrize(
+    "dtype_map",
+    [
+        {"x": np.float32, "y": np.float32},
+        pytest.param(
+            {"x": np.float64, "y": np.float32},
+            marks=pytest.mark.xfail(reason="Fails due to ODR violation"),
+        ),
+    ],
+)
+def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
+    import numba.cuda
+
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 8:
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
+    Vec2 = gpu_struct(dtype_map)
+
+    h_in1 = np.zeros(num_items, dtype=Vec2.dtype)
+    h_in2 = np.zeros(num_items, dtype=Vec2.dtype)
+    for i in range(num_items):
+        h_in1[i]["x"] = float(i)
+        h_in1[i]["y"] = float(i * 2)
+        h_in2[i]["x"] = float(i * 10)
+        h_in2[i]["y"] = float(i * 20)
+
+    d_in1 = cp.empty(num_items, dtype=Vec2.dtype)
+    d_in2 = cp.empty(num_items, dtype=Vec2.dtype)
+    d_in1.set(h_in1)
+    d_in2.set(h_in2)
+
+    zip_it = ZipIterator(d_in1, d_in2)
+
+    d_out1 = cp.empty_like(d_in1)
+    d_out2 = cp.empty_like(d_in2)
+
+    zip_out_it = ZipIterator(d_out1, d_out2)
+
+    def add_vec2_pairs(v1, v2):
+        result1 = (v1[0].x + v2[0].x, v1[0].y + v2[0].y)
+        result2 = (v1[1].x + v2[1].x, v1[1].y + v2[1].y)
+        return Vec2(result1[0], result1[1]), Vec2(result2[0], result2[1])
+
+    cuda.compute.inclusive_scan(zip_it, zip_out_it, add_vec2_pairs, None, num_items)
+
+    in1 = d_in1.get()
+    in2 = d_in2.get()
+    expected_out1 = np.empty_like(in1)
+    expected_out2 = np.empty_like(in2)
+
+    expected_out1[0] = in1[0]
+    expected_out2[0] = in2[0]
+    for i in range(1, num_items):
+        expected_out1[i]["x"] = expected_out1[i - 1]["x"] + in1[i]["x"]
+        expected_out1[i]["y"] = expected_out1[i - 1]["y"] + in1[i]["y"]
+        expected_out2[i]["x"] = expected_out2[i - 1]["x"] + in2[i]["x"]
+        expected_out2[i]["y"] = expected_out2[i - 1]["y"] + in2[i]["y"]
 
     np.testing.assert_array_equal(d_out1.get(), expected_out1)
     np.testing.assert_array_equal(d_out2.get(), expected_out2)
