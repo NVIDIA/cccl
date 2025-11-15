@@ -46,6 +46,12 @@ function(cub_add_example target_name_var example_name example_src cub_target)
     ${example_target}
     PRIVATE "${CUB_SOURCE_DIR}/examples"
   )
+  # Add --extended-lambda flag for device lambda support
+  target_compile_options(
+    ${example_target}
+    PRIVATE
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+  )
 
   # Add to the active configuration's meta target
   add_dependencies(${config_meta_target} ${example_target})

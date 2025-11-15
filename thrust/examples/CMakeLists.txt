@@ -106,6 +106,12 @@ function(
 
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
+    # Add --extended-lambda flag for device lambda support
+    target_compile_options(
+      ${example_target}
+      PRIVATE
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+    )
   endif()
 
   # We do not want to explicitly include `host_device.h` if not needed,
