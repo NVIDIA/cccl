@@ -136,14 +136,15 @@ class IteratorBase:
         return self.output_dereference is not None
 
     def get_advance_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_advance_wrapper
+
         abi_name = f"advance_{_get_abi_suffix(self.kind)}"
-        signature = (
-            self.state_ptr_type,
-            types.uint64,  # distance type
+        wrapped_advance, wrapper_sig = _create_advance_wrapper(
+            self.advance, self.state_ptr_type
         )
         ltoir, _ = cached_compile(
-            self.advance,
-            signature,
+            wrapped_advance,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
@@ -162,22 +163,30 @@ class IteratorBase:
         )
 
     def get_input_dereference_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_input_dereference_wrapper
+
         abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_input_dereference_signature()
+        wrapped_deref, wrapper_sig = _create_input_dereference_wrapper(
+            self.input_dereference, self.state_ptr_type, self.value_type
+        )
         ltoir, _ = cached_compile(
-            self.input_dereference,
-            signature,
+            wrapped_deref,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
         return (abi_name, ltoir)
 
     def get_output_dereference_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_output_dereference_wrapper
+
         abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_output_dereference_signature()
+        wrapped_deref, wrapper_sig = _create_output_dereference_wrapper(
+            self.output_dereference, self.state_ptr_type, self.value_type
+        )
         ltoir, _ = cached_compile(
-            self.output_dereference,
-            signature,
+            wrapped_deref,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
