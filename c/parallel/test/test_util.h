@@ -996,8 +996,10 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
 {
   std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->value += offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->value += offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
@@ -1080,8 +1082,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
 {
   std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->data -= offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->data -= offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
@@ -1341,8 +1345,9 @@ struct {0} {{
 
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
-extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-    {2}(&(transform_it_state->base_it_state), offset);
+extern "C" __device__ void {0}(void *transform_it_state, const void* offset) {{
+    auto* typed_state = static_cast<{1}*>(transform_it_state);
+    {2}(&(typed_state->base_it_state), offset);
 }}
 )XXX";
 
@@ -1420,7 +1425,7 @@ inline std::tuple<std::string, std::string, std::string> make_discard_iterator_s
 {
   std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* /*state*/, unsigned long long /*offset*/) {{\n"
+    "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*offset*/) {{\n"
     "}}",
     advance_fn_name,
     iterator_state_name);
