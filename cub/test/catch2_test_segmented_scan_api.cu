@@ -20,7 +20,7 @@
 #include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
 
-void check(cudaError_t status, const std::string& algo_name)
+void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
   if (status != cudaSuccess)
   {
@@ -36,7 +36,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
   // example-begin exclusive-segmented-sum-two-offsets
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto offsets      = thrust::device_vector<size_t>{0, 3, 5, 8};
-  auto output       = thrust::device_vector<int>(input.size());
+  auto output       = thrust::device_vector<int>(input.size(), thrust::no_init);
   auto num_segments = offsets.size() - 1;
 
   void* temp_storage        = nullptr;
@@ -50,15 +50,15 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
   // get size of required temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
   // example-end exclusive-segmented-sum-two-offsets
@@ -86,7 +86,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   auto in_end_offsets = thrust::device_vector<size_t>{
     0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size};
 
-  auto output            = thrust::device_vector<int>(num_segments * segment_size);
+  auto output            = thrust::device_vector<int>(num_segments * segment_size, thrust::no_init);
   auto out_begin_offsets = thrust::device_vector<size_t>{0, segment_size, 2 * segment_size};
 
   void* temp_storage        = nullptr;
@@ -102,15 +102,15 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   // get size of required storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
   // example-end exclusive-segmented-sum-three-offsets
@@ -139,15 +139,15 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
   // get size of requires storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_in, begin_offsets, end_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // execute the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_in, begin_offsets, end_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
   // example-end inclusive-segmented-sum-two-offsets
@@ -189,15 +189,15 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   // get size of temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   // Compute inclusive sum for each row prepended with 0
   status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, d_out_beg_offsets, num_segments);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   std::vector<int> h_expected{};
   h_expected.reserve(output.size());
@@ -228,7 +228,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   auto row_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
   size_t num_segments = row_offsets.size() - 1;
 
-  auto output = thrust::device_vector<int>(input.size());
+  thrust::device_vector<int> output(input.size(), thrust::no_init);
 
   auto m_p = cuda::fast_mod_div(prime);
   // Binary operator to multiply arguments using modular arithmetic
@@ -251,15 +251,15 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   // get size of temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, num_segments, scan_op, init_value);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, num_segments, scan_op, init_value);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   std::vector<int> h_expected{};
   h_expected.reserve(output.size());
@@ -312,7 +312,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
 
   // 4 segments
   auto offsets = thrust::device_vector<unsigned>{0, 40, 77, 101, 128};
-  auto output  = thrust::device_vector<unsigned>(input.size());
+  auto output  = thrust::device_vector<unsigned>(input.size(), thrust::no_init);
 
   void* temp_storage        = nullptr;
   size_t temp_storage_bytes = 0;
@@ -326,15 +326,15 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   // inquire size of needed temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments, scan_op, init_value);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     temp_storage, temp_storage_bytes, d_in, d_out, begin_offsets, end_offsets, num_segments, scan_op, init_value);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
   // example-end exclusive-segmented-scan-two-offsets
 
   // verify correctness
@@ -388,15 +388,15 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   // determine size of required temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   status = cudaMalloc(&temp_storage, temp_storage_bytes);
-  check(status, "cudaMalloc");
+  check_execution_status(status, "cudaMalloc");
 
   // run the algorithm
   status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
-  check(status, algo_name);
+  check_execution_status(status, algo_name);
 
   thrust::device_vector<float> expected{
     0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
