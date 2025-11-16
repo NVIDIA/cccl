@@ -161,25 +161,6 @@ public:
   }
 };
 
-template <typename T>
-struct identity_modulo
-{
-private:
-  T const modulo_;
-
-public:
-  __host__ __device__ identity_modulo(T modulo)
-      : modulo_(std::move(modulo))
-  {}
-
-  identity_modulo(identity_modulo const&) = default;
-
-  __host__ __device__ T operator()(T i)
-  {
-    return i % modulo_;
-  }
-};
-
 int main()
 {
   {
@@ -214,9 +195,14 @@ int main()
     assert(cudaSuccess == cudaDeviceSynchronize());
   }
   {
-    using table = concurrent_hash_table<int, cuda::std::atomic<int>, identity_modulo<int>>;
+    // Lambda for identity modulo hash function
+    auto identity_modulo = [modulo = 4] __device__(int i) {
+      return i % modulo;
+    };
 
-    auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8, identity_modulo<int>(4));
+    using table = concurrent_hash_table<int, cuda::std::atomic<int>, decltype(identity_modulo)>;
+
+    auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8, identity_modulo);
 
     thrust::universal_vector<int> input = [] {
       thrust::universal_vector<int> v(2048);

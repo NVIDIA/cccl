@@ -25,22 +25,8 @@ __host__ void scan_matrix_by_rows0(thrust::device_vector<int>& u, int n, int m)
 // the right key sequence. We want the keys for elements on the same row to
 // be identical.
 
-// So first, we define an unary function object which takes the index of an
+// So first, we define a lambda which takes the index of an
 // element and returns the row that it belongs to.
-
-struct which_row
-{
-  int row_length;
-
-  __host__ __device__ which_row(int row_length_)
-      : row_length(row_length_)
-  {}
-
-  __host__ __device__ int operator()(int idx) const
-  {
-    return idx / row_length;
-  }
-};
 
 __host__ void scan_matrix_by_rows1(thrust::device_vector<int>& u, int n, int m)
 {
@@ -50,6 +36,9 @@ __host__ void scan_matrix_by_rows1(thrust::device_vector<int>& u, int n, int m)
   // We construct a `thrust::transform_iterator` which applies the `which_row`
   // function object to the index of each element.
   thrust::transform_iterator<which_row, thrust::counting_iterator<int>> t_first(c_first, which_row(m));
+  auto t_first = thrust::make_transform_iterator(c_first, [m] __device__(int idx) {
+    return idx / m;
+  });
 
   // Finally, we use our `thrust::transform_iterator` as the key sequence to
   // `thrust::inclusive_scan_by_key`.

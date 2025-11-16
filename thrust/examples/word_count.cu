@@ -18,15 +18,6 @@ __host__ __device__ bool is_alpha(const char c)
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-// determines whether the right character begins a new word
-struct is_word_start
-{
-  __host__ __device__ bool operator()(const char& left, const char& right) const
-  {
-    return is_alpha(right) && !is_alpha(left);
-  }
-};
-
 int word_count(const thrust::device_vector<char>& input)
 {
   // check for empty string
@@ -42,7 +33,9 @@ int word_count(const thrust::device_vector<char>& input)
     input.begin() + 1, // sequence of right characters
     0, // initialize sum to 0
     cuda::std::plus<int>(), // sum values together
-    is_word_start()); // how to compare the left and right characters
+    [] __device__(const char& left, const char& right) {
+      return is_alpha(right) && !is_alpha(left);
+    }); // how to compare the left and right characters
 
   // if the first character is alphabetical, then it also begins a word
   if (is_alpha(input.front()))

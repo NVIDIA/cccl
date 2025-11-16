@@ -8,19 +8,11 @@
 #include <iterator>
 #include <string>
 
-// this functor clamps a value to the range [lo, hi]
+// helper lambda to clamp a value to the range [lo, hi]
 template <typename T>
-struct clamp
+auto make_clamp_lambda(T lo, T hi)
 {
-  T lo, hi;
-
-  __host__ __device__ clamp(T _lo, T _hi)
-      : lo(_lo)
-      , hi(_hi)
-  {}
-
-  __host__ __device__ T operator()(T x)
-  {
+  return [=] __device__(T x) {
     if (x < lo)
     {
       return lo;
@@ -33,17 +25,8 @@ struct clamp
     {
       return hi;
     }
-  }
-};
-
-template <typename T>
-struct simple_negate
-{
-  __host__ __device__ T operator()(T x)
-  {
-    return -x;
-  }
-};
+  };
+}
 
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
@@ -79,12 +62,12 @@ int main()
 
   print_range("values         ", values.begin(), values.end());
 
-  // define some more types
-  using ClampedVectorIterator = thrust::transform_iterator<clamp<int>, VectorIterator>;
+  // create a lambda that clamps values to [lo, hi]
+  auto clamp_fn = make_clamp_lambda(lo, hi);
 
-  // create a transform_iterator that applies clamp() to the values array
-  ClampedVectorIterator cv_begin = thrust::make_transform_iterator(values.begin(), clamp<int>(lo, hi));
-  ClampedVectorIterator cv_end   = cv_begin + values.size();
+  // create a transform_iterator that applies the clamp lambda to the values array
+  auto cv_begin = thrust::make_transform_iterator(values.begin(), clamp_fn);
+  auto cv_end   = cv_begin + values.size();
 
   // now [clamped_begin, clamped_end) defines a sequence of clamped values
   print_range("clamped values ", cv_begin, cv_end);
@@ -95,34 +78,33 @@ int main()
 
   ////
   // combine transform_iterator with other fancy iterators like counting_iterator
-  using CountingIterator        = thrust::counting_iterator<int>;
-  using ClampedCountingIterator = thrust::transform_iterator<clamp<int>, CountingIterator>;
+  using CountingIterator = thrust::counting_iterator<int>;
 
   CountingIterator count_begin(0);
   CountingIterator count_end(10);
 
   print_range("sequence         ", count_begin, count_end);
 
-  ClampedCountingIterator cs_begin = thrust::make_transform_iterator(count_begin, clamp<int>(lo, hi));
-  ClampedCountingIterator cs_end   = thrust::make_transform_iterator(count_end, clamp<int>(lo, hi));
+  auto cs_begin = thrust::make_transform_iterator(count_begin, clamp_fn);
+  auto cs_end   = thrust::make_transform_iterator(count_end, clamp_fn);
 
   print_range("clamped sequence ", cs_begin, cs_end);
 
   ////
   // combine transform_iterator with another transform_iterator
-  using NegatedClampedCountingIterator = thrust::transform_iterator<cuda::std::negate<int>, ClampedCountingIterator>;
-
-  NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, cuda::std::negate<int>());
-  NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, cuda::std::negate<int>());
+  auto ncs_begin = thrust::make_transform_iterator(cs_begin, cuda::std::negate<int>());
+  auto ncs_end   = thrust::make_transform_iterator(cs_end, cuda::std::negate<int>());
 
   print_range("negated sequence ", ncs_begin, ncs_end);
 
   ////
-  // when a functor does not define result_type, a third template argument must be provided
-  using NegatedVectorIterator = thrust::transform_iterator<simple_negate<int>, VectorIterator, int>;
+  // using a simple negate lambda
+  auto simple_negate = [] __device__(int x) {
+    return -x;
+  };
 
-  NegatedVectorIterator nv_begin(values.begin(), simple_negate<int>());
-  NegatedVectorIterator nv_end(values.end(), simple_negate<int>());
+  auto nv_begin = thrust::make_transform_iterator(values.begin(), simple_negate);
+  auto nv_end   = thrust::make_transform_iterator(values.end(), simple_negate);
 
   print_range("negated values ", nv_begin, nv_end);
 
