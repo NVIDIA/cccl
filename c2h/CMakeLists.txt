@@ -46,5 +46,18 @@ else()
   target_compile_definitions(cccl.c2h PRIVATE C2H_HAS_CURAND=0)
 endif()
 
+# Specifically build catch2 with libc++ when requested
+if (CCCL_USE_LIBCXX)
+  target_compile_definitions(
+    cccl.c2h
+    INTERFACE _ALLOW_UNSUPPORTED_LIBCPP=1
+  )
+  target_compile_options(
+    cccl.c2h
+    INTERFACE -stdlib=libc++
+  )
+  target_link_options(cccl.c2h INTERFACE -stdlib=libc++)
+endif()
+
 add_library(cccl.c2h.main OBJECT catch2_runner.cpp catch2_runner_helper.cu)
 target_link_libraries(cccl.c2h.main PUBLIC cccl.c2h)
