@@ -45,11 +45,43 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
 {
+  // Convenience wrapper: assume host memory
+  stf_logical_data_with_place(ctx, ld, addr, sz, make_host_data_place());
+}
+
+void stf_logical_data_with_place(
+  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace)
+{
   assert(ctx);
   assert(ld);
 
   auto* context_ptr = static_cast<context*>(ctx);
-  auto ld_typed     = context_ptr->logical_data(make_slice((char*) addr, sz));
+
+  // Convert C data_place to C++ data_place
+  cuda::experimental::stf::data_place cpp_dplace;
+  switch (dplace.kind)
+  {
+    case STF_DATA_PLACE_HOST:
+      cpp_dplace = cuda::experimental::stf::data_place::host();
+      break;
+    case STF_DATA_PLACE_DEVICE:
+      cpp_dplace = cuda::experimental::stf::data_place::device(dplace.u.device.dev_id);
+      break;
+    case STF_DATA_PLACE_MANAGED:
+      cpp_dplace = cuda::experimental::stf::data_place::managed();
+      break;
+    case STF_DATA_PLACE_AFFINE:
+      cpp_dplace = cuda::experimental::stf::data_place::affine();
+      break;
+    default:
+      // Invalid data place - this should not happen with valid input
+      assert(false && "Invalid data_place kind");
+      cpp_dplace = cuda::experimental::stf::data_place::host(); // fallback
+      break;
+  }
+
+  // Create logical data with the specified data place
+  auto ld_typed = context_ptr->logical_data(make_slice((char*) addr, sz), cpp_dplace);
 
   // Store the logical_data_untyped directly as opaque pointer
   *ld = new logical_data_untyped{ld_typed};
