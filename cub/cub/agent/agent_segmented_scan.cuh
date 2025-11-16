@@ -199,10 +199,12 @@ struct AgentSegmentedScan
   //!
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
-    AccumT exclusive_prefix{};
     const OffsetT n_chunks = ::cuda::ceil_div(inp_idx_end - inp_idx_begin, tile_items);
 
     AccumT thread_values[items_per_thread] = {};
+
+    AccumT exclusive_prefix{};
+    BlockPrefixCallBack<AccumT, ScanOpT> prefix_op{exclusive_prefix, scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
     {
@@ -215,50 +217,75 @@ struct AgentSegmentedScan
       block_load_t(temp_storage.load).Load(d_in + chunk_begin, thread_values, chunk_size);
       __syncthreads();
 
-      AccumT block_aggregate;
-      block_scan_t block_scan_algo(temp_storage.scan);
-      if constexpr (is_inclusive)
-      {
-        if constexpr (has_init)
-        {
-          if (chunk_id == 0)
-          {
-            block_scan_algo.InclusiveScan(thread_values, thread_values, initial_value, scan_op, block_aggregate);
-            block_aggregate = scan_op(initial_value, block_aggregate);
-          }
-          else
-          {
-            block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
-          }
-        }
-        else
-        {
-          block_scan_algo.InclusiveScan(thread_values, thread_values, scan_op, block_aggregate);
-        }
-      }
-      else
-      {
-        block_scan_algo.ExclusiveScan(thread_values, thread_values, initial_value, scan_op, block_aggregate);
-      }
-      __syncthreads();
-
       if (chunk_id == 0)
       {
-        exclusive_prefix = block_aggregate;
+        // Initialize exlusive_prefix, referenced from prefix_op
+        ScanFirstTile(thread_values, initial_value, scan_op, exclusive_prefix);
       }
       else
       {
-        constexpr auto loop_size = static_cast<int>(items_per_thread);
-        cuda::static_for<loop_size>([&](int i) {
-          thread_values[i] = scan_op(thread_values[i], exclusive_prefix);
-        });
-        exclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
+        ScanLaterTile(thread_values, scan_op, prefix_op);
       }
+      __syncthreads();
 
       block_store_t(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
       __syncthreads();
     }
   };
+
+private:
+  template <typename PrefixT, typename BinaryOpT>
+  struct BlockPrefixCallBack
+  {
+    PrefixT& m_exclusive_prefix;
+    BinaryOpT m_scan_op;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT operator()(PrefixT block_aggregate)
+    {
+      PrefixT previous_prefix = m_exclusive_prefix;
+      m_exclusive_prefix      = m_scan_op(m_exclusive_prefix, block_aggregate);
+      return previous_prefix;
+    }
+  };
+
+  template <bool IsInclusive = is_inclusive>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanFirstTile(AccumT (&items)[items_per_thread], InitValueT init_value, ScanOpT scan_op, AccumT& block_aggregate)
+  {
+    block_scan_t block_scan_algo(temp_storage.scan);
+    if constexpr (IsInclusive)
+    {
+      if constexpr (has_init)
+      {
+        block_scan_algo.InclusiveScan(items, items, initial_value, scan_op, block_aggregate);
+        block_aggregate = scan_op(initial_value, block_aggregate);
+      }
+      else
+      {
+        block_scan_algo.InclusiveScan(items, items, scan_op, block_aggregate);
+      }
+    }
+    else
+    {
+      block_scan_algo.ExclusiveScan(items, items, initial_value, scan_op, block_aggregate);
+      block_aggregate = scan_op(init_value, block_aggregate);
+    }
+  }
+
+  template <typename PrefixCallback, bool IsInclusive = is_inclusive>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanLaterTile(AccumT (&items)[items_per_thread], ScanOpT scan_op, PrefixCallback& prefix_op)
+  {
+    block_scan_t block_scan_algo(temp_storage.scan);
+    if constexpr (IsInclusive)
+    {
+      block_scan_algo.InclusiveScan(items, items, scan_op, prefix_op);
+    }
+    else
+    {
+      block_scan_algo.ExclusiveScan(items, items, scan_op, prefix_op);
+    }
+  }
 };
 } // namespace detail::segmented_scan
 
