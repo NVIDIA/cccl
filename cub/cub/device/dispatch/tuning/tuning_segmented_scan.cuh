@@ -17,7 +17,6 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
@@ -76,75 +75,33 @@ template <typename InputValueT, typename OutputValueT, typename AccumT, typename
 struct policy_hub
 {
 private:
-  using scan_hub = detail::scan::policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
-
-  template <int BlockThreads, int ItemsPerThread, typename ComputeT>
-  struct NoScaling
-  {
-    static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-    static constexpr int BLOCK_THREADS    = BlockThreads;
-  };
-
-  // reuse policy_hub for scan algorithms. This approach assumes that
-  // policy chain here matches the chain used in scan_hub
-  template <typename ComputeT, typename AgentScanPolicyT>
-  using translate_agent = AgentSegmentedScanPolicy<
-    AgentScanPolicyT::BLOCK_THREADS,
-    AgentScanPolicyT::ITEMS_PER_THREAD,
-    ComputeT,
-    AgentScanPolicyT::LOAD_ALGORITHM,
-    AgentScanPolicyT::LOAD_MODIFIER,
-    AgentScanPolicyT::STORE_ALGORITHM,
-    AgentScanPolicyT::SCAN_ALGORITHM,
-    NoScaling<AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::ITEMS_PER_THREAD, ComputeT>>;
+  static constexpr bool large_values = sizeof(AccumT) > 128;
 
 public:
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy500::ScanPolicyT>;
-  };
-
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy500>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy520::ScanPolicyT>;
-  };
+  // For large values, use timesliced loads/stores to fit shared memory.
+  static constexpr BlockLoadAlgorithm scan_transposed_load =
+    large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm scan_transposed_store =
+    large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
   struct DefaultPolicy
   {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::DefaultPolicy::ScanPolicyT>;
+    using SegmentedScanPolicyT =
+      AgentSegmentedScanPolicy<128,
+                               15,
+                               AccumT,
+                               scan_transposed_load,
+                               LOAD_DEFAULT,
+                               scan_transposed_store,
+                               BLOCK_SCAN_WARP_SCANS>;
   };
 
-  struct Policy600
+  struct Policy500
       : DefaultPolicy
-      , ChainedPolicy<600, Policy600, Policy520>
+      , ChainedPolicy<500, Policy500, Policy500>
   {};
 
-  struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy750::ScanPolicyT>;
-  };
-
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy750>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy800::ScanPolicyT>;
-  };
-
-  struct Policy860
-      : DefaultPolicy
-      , ChainedPolicy<860, Policy860, Policy800>
-  {};
-
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy900::ScanPolicyT>;
-  };
-
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
-  {
-    using SegmentedScanPolicyT = translate_agent<AccumT, typename scan_hub::Policy1000::ScanPolicyT>;
-  };
-
-  using MaxPolicy = Policy1000;
+  using MaxPolicy = Policy500;
 };
 } // namespace detail::segmented_scan
 
