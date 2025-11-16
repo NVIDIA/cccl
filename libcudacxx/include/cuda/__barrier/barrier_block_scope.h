@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/ffs.h>
 #include <cuda/__fwd/barrier.h>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
@@ -111,8 +112,8 @@ public:
                     "barrier must not be in cluster shared memory");))
   }
 
-  _CCCL_API inline friend void init(barrier* __b,
-                                    ::cuda::std::ptrdiff_t __expected,
+  _CCCL_API inline friend void init([[maybe_unused]] barrier* __b,
+                                    [[maybe_unused]] ::cuda::std::ptrdiff_t __expected,
                                     ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
@@ -125,8 +126,20 @@ public:
       NV_PROVIDES_SM_90,
       (_CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
                     "barrier must not be in cluster shared memory");))
+  }
 
-    new (&__b->__barrier) __barrier_base(__expected);
+  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
+  {
+    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_90,
+      (return __arrive_sm90(__update);),
+      NV_PROVIDES_SM_80,
+      (return __arrive_sm80(__update);),
+      NV_PROVIDES_SM_70,
+      (return __arrive_sm70(__update);),
+      NV_IS_HOST,
+      (return __barrier.arrive(__update);))
   }
 
 private:
@@ -169,7 +182,7 @@ private:
     unsigned int __active  = __activeA & __activeB;
     int __inc              = ::cuda::std::popcount(__active) * __update;
 
-    int __leader = ::__ffs(__active) - 1;
+    int __leader = cuda::ffs(__active) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};
@@ -180,21 +193,6 @@ private:
     return ::__shfl_sync(__active, __token, __leader);
   }
 #endif // _CCCL_CUDA_COMPILATION()
-
-public:
-  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
-  {
-    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (return __arrive_sm90(__update);),
-      NV_PROVIDES_SM_80,
-      (return __arrive_sm80(__update);),
-      NV_PROVIDES_SM_70,
-      (return __arrive_sm70(__update);),
-      NV_IS_HOST,
-      (return __barrier.arrive(__update);))
-  }
 
 private:
 #if _CCCL_CUDA_COMPILATION()
