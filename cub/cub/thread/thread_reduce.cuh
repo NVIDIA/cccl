@@ -156,23 +156,31 @@ template <typename Input,
 namespace detail
 {
 template <typename PreferredT, typename ValueT, typename ReductionOp, typename L, typename R>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(const ReductionOp& reduction_op, L&& lhs, R&& rhs)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(ReductionOp&& reduction_op, L&& lhs, R&& rhs)
 {
-  if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, PreferredT, PreferredT>)
+  using _ReductionOpRef = ReductionOp&;
+  auto&& _op            = ::cuda::std::forward<ReductionOp>(reduction_op);
+
+  if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, PreferredT, PreferredT>)
   {
-    return reduction_op(static_cast<PreferredT>(lhs), static_cast<PreferredT>(rhs));
+    return ::cuda::std::invoke(_op,
+                               static_cast<PreferredT>(::cuda::std::forward<L>(lhs)),
+                               static_cast<PreferredT>(::cuda::std::forward<R>(rhs)));
   }
-  else if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, PreferredT, ValueT>)
+  else if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, PreferredT, ValueT>)
   {
-    return reduction_op(static_cast<PreferredT>(lhs), static_cast<ValueT>(rhs));
+    return ::cuda::std::invoke(
+      _op, static_cast<PreferredT>(::cuda::std::forward<L>(lhs)), static_cast<ValueT>(::cuda::std::forward<R>(rhs)));
   }
-  else if constexpr (::cuda::std::is_invocable_v<const ReductionOp&, ValueT, PreferredT>)
+  else if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, ValueT, PreferredT>)
   {
-    return reduction_op(static_cast<ValueT>(lhs), static_cast<PreferredT>(rhs));
+    return ::cuda::std::invoke(
+      _op, static_cast<ValueT>(::cuda::std::forward<L>(lhs)), static_cast<PreferredT>(::cuda::std::forward<R>(rhs)));
   }
   else
   {
-    return reduction_op(static_cast<ValueT>(lhs), static_cast<ValueT>(rhs));
+    return ::cuda::std::invoke(
+      _op, static_cast<ValueT>(::cuda::std::forward<L>(lhs)), static_cast<ValueT>(::cuda::std::forward<R>(rhs)));
   }
 }
 /***********************************************************************************************************************
