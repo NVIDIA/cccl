@@ -119,11 +119,6 @@ function(cccl_build_compiler_targets)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
 
-  #  if (CCCL_USE_LIBCXX)
-  #    list(APPEND cxx_compile_options "-stdlib=libc++")
-  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
-  #  endif()
-
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")
@@ -230,6 +225,19 @@ function(cccl_build_compiler_targets)
       $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
       $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
+
+  # Specifically add libc++ testing if requested
+  if (CCCL_USE_LIBCXX) # Not working currently because catch2 is not building with libc++
+    target_compile_definitions(
+      cccl.compiler_interface
+      INTERFACE _ALLOW_UNSUPPORTED_LIBCPP=1
+    )
+    target_compile_options(
+      cccl.compiler_interface
+      INTERFACE -stdlib=libc++
+    )
+    target_link_options(cccl.compiler_interface INTERFACE -stdlib=libc++)
+  endif()
 
   # These targets are used for dialect-specific options:
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
