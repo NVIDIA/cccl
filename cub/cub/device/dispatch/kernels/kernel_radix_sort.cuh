@@ -444,7 +444,12 @@ template <typename ChainedPolicyT,
           typename DecomposerT = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
-  OffsetT* d_bins_out, KeyT* d_keys_in, _CCCL_GRID_CONSTANT const OffsetT num_items, _CCCL_GRID_CONSTANT const int start_bit, _CCCL_GRID_CONSTANT const int end_bit, _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
+  OffsetT* d_bins_out,
+  KeyT* d_keys_in,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const int start_bit,
+  _CCCL_GRID_CONSTANT const int end_bit,
+  _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;

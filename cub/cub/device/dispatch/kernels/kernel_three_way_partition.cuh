@@ -180,8 +180,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+  ScanTileStateT tile_state,
+  _CCCL_GRID_CONSTANT const int num_tiles,
+  _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
