@@ -89,10 +89,10 @@ _CCCL_HOST_DEVICE ForwardIterator1 search(
   ForwardIterator2 s_first,
   ForwardIterator2 s_last)
 {
-  using value_type1 = typename thrust::iterator_traits<ForwardIterator1>::value_type;
-  using value_type2 = typename thrust::iterator_traits<ForwardIterator2>::value_type;
+  using value_type = thrust::detail::it_value_t<ForwardIterator1>;
 
-  return thrust::system::detail::generic::search(exec, first, last, s_first, s_last, thrust::equal_to<value_type1>());
+  return thrust::system::detail::generic::search(
+    exec, first, last, s_first, s_last, ::cuda::std::equal_to<value_type>());
 }
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
