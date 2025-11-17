@@ -198,7 +198,8 @@ struct agent_segmented_scan
   //!
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
-    const OffsetT n_chunks = ::cuda::ceil_div(inp_idx_end - inp_idx_begin, tile_items);
+    const OffsetT segment_items = ::cuda::std::max(inp_idx_end, inp_idx_begin) - inp_idx_begin;
+    const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
 
     AccumT thread_values[items_per_thread] = {};
 
