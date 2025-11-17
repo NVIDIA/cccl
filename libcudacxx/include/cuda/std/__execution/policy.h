@@ -45,7 +45,7 @@ struct __execution_policy_base
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy, _OtherBackend>&) noexcept
   {
-    return _Policy == _OtherPolicy && _Backend == _OtherBackend;
+    return _Policy == _OtherPolicy;
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -53,7 +53,7 @@ struct __execution_policy_base
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const __execution_policy_base&, const __execution_policy_base<_OtherPolicy, _OtherBackend>&) noexcept
   {
-    return _Policy != _OtherPolicy || _Backend != _OtherBackend;
+    return _Policy != _OtherPolicy;
   }
 #endif // _CCCL_STD_VER <= 2017
 
