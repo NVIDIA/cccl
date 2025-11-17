@@ -1,7 +1,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/tuple>
 #include <cuda/std/utility>
 
 #include <unittest/unittest.h>

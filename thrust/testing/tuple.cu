@@ -193,82 +193,82 @@ struct TestTupleGet
     host_vector<T> data = random_integers<T>(10);
 
     tuple<T> t1(data[0]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t1));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t1));
 
     tuple<T, T> t2(data[0], data[1]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t2));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t2));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t2));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t2));
 
     tuple<T, T, T> t3 = make_tuple(data[0], data[1], data[2]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t3));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t3));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t3));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t3));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t3));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t3));
 
     tuple<T, T, T, T> t4 = make_tuple(data[0], data[1], data[2], data[3]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t4));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t4));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t4));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t4));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t4));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t4));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t4));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t4));
 
     tuple<T, T, T, T, T> t5 = make_tuple(data[0], data[1], data[2], data[3], data[4]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t5));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t5));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t5));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t5));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t5));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t5));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t5));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t5));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t5));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t5));
 
     tuple<T, T, T, T, T, T> t6 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t6));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t6));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t6));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t6));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t6));
-    ASSERT_EQUAL(data[5], cuda::std::get<5>(t6));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t6));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t6));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t6));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t6));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t6));
+    ASSERT_EQUAL(data[5], thrust::get<5>(t6));
 
     tuple<T, T, T, T, T, T, T> t7 = make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t7));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t7));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t7));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t7));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t7));
-    ASSERT_EQUAL(data[5], cuda::std::get<5>(t7));
-    ASSERT_EQUAL(data[6], cuda::std::get<6>(t7));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t7));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t7));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t7));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t7));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t7));
+    ASSERT_EQUAL(data[5], thrust::get<5>(t7));
+    ASSERT_EQUAL(data[6], thrust::get<6>(t7));
 
     tuple<T, T, T, T, T, T, T, T> t8 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t8));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t8));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t8));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t8));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t8));
-    ASSERT_EQUAL(data[5], cuda::std::get<5>(t8));
-    ASSERT_EQUAL(data[6], cuda::std::get<6>(t8));
-    ASSERT_EQUAL(data[7], cuda::std::get<7>(t8));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t8));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t8));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t8));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t8));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t8));
+    ASSERT_EQUAL(data[5], thrust::get<5>(t8));
+    ASSERT_EQUAL(data[6], thrust::get<6>(t8));
+    ASSERT_EQUAL(data[7], thrust::get<7>(t8));
 
     tuple<T, T, T, T, T, T, T, T, T> t9 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t9));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t9));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t9));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t9));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t9));
-    ASSERT_EQUAL(data[5], cuda::std::get<5>(t9));
-    ASSERT_EQUAL(data[6], cuda::std::get<6>(t9));
-    ASSERT_EQUAL(data[7], cuda::std::get<7>(t9));
-    ASSERT_EQUAL(data[8], cuda::std::get<8>(t9));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t9));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t9));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t9));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t9));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t9));
+    ASSERT_EQUAL(data[5], thrust::get<5>(t9));
+    ASSERT_EQUAL(data[6], thrust::get<6>(t9));
+    ASSERT_EQUAL(data[7], thrust::get<7>(t9));
+    ASSERT_EQUAL(data[8], thrust::get<8>(t9));
 
     tuple<T, T, T, T, T, T, T, T, T, T> t10 =
       make_tuple(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
-    ASSERT_EQUAL(data[0], cuda::std::get<0>(t10));
-    ASSERT_EQUAL(data[1], cuda::std::get<1>(t10));
-    ASSERT_EQUAL(data[2], cuda::std::get<2>(t10));
-    ASSERT_EQUAL(data[3], cuda::std::get<3>(t10));
-    ASSERT_EQUAL(data[4], cuda::std::get<4>(t10));
-    ASSERT_EQUAL(data[5], cuda::std::get<5>(t10));
-    ASSERT_EQUAL(data[6], cuda::std::get<6>(t10));
-    ASSERT_EQUAL(data[7], cuda::std::get<7>(t10));
-    ASSERT_EQUAL(data[8], cuda::std::get<8>(t10));
-    ASSERT_EQUAL(data[9], cuda::std::get<9>(t10));
+    ASSERT_EQUAL(data[0], thrust::get<0>(t10));
+    ASSERT_EQUAL(data[1], thrust::get<1>(t10));
+    ASSERT_EQUAL(data[2], thrust::get<2>(t10));
+    ASSERT_EQUAL(data[3], thrust::get<3>(t10));
+    ASSERT_EQUAL(data[4], thrust::get<4>(t10));
+    ASSERT_EQUAL(data[5], thrust::get<5>(t10));
+    ASSERT_EQUAL(data[6], thrust::get<6>(t10));
+    ASSERT_EQUAL(data[7], thrust::get<7>(t10));
+    ASSERT_EQUAL(data[8], thrust::get<8>(t10));
+    ASSERT_EQUAL(data[9], thrust::get<9>(t10));
   }
 };
 SimpleUnitTest<TestTupleGet, BuiltinNumericTypes> TestTupleGetInstance;
@@ -474,12 +474,12 @@ void TestTupleSwap()
   using ::cuda::std::swap;
   swap(t1, t2);
 
-  ASSERT_EQUAL(x, cuda::std::get<0>(t1));
-  ASSERT_EQUAL(y, cuda::std::get<1>(t1));
-  ASSERT_EQUAL(z, cuda::std::get<2>(t1));
-  ASSERT_EQUAL(a, cuda::std::get<0>(t2));
-  ASSERT_EQUAL(b, cuda::std::get<1>(t2));
-  ASSERT_EQUAL(c, cuda::std::get<2>(t2));
+  ASSERT_EQUAL(x, thrust::get<0>(t1));
+  ASSERT_EQUAL(y, thrust::get<1>(t1));
+  ASSERT_EQUAL(z, thrust::get<2>(t1));
+  ASSERT_EQUAL(a, thrust::get<0>(t2));
+  ASSERT_EQUAL(b, thrust::get<1>(t2));
+  ASSERT_EQUAL(c, thrust::get<2>(t2));
 
   using swappable_tuple = thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable>;
 

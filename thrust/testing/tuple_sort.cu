@@ -31,17 +31,15 @@ struct TestTupleStableSort
 {
   void operator()(const size_t n)
   {
-    using namespace thrust;
-
-    host_vector<T> h_keys   = random_integers<T>(n);
-    host_vector<T> h_values = random_integers<T>(n);
+    thrust::host_vector<T> h_keys   = random_integers<T>(n);
+    thrust::host_vector<T> h_values = random_integers<T>(n);
 
     // zip up the data
-    host_vector<tuple<T, T>> h_tuples(n);
+    thrust::host_vector<cuda::std::tuple<T, T>> h_tuples(n);
     thrust::transform(h_keys.begin(), h_keys.end(), h_values.begin(), h_tuples.begin(), MakeTupleFunctor());
 
     // copy to device
-    device_vector<tuple<T, T>> d_tuples = h_tuples;
+    thrust::device_vector<cuda::std::tuple<T, T>> d_tuples = h_tuples;
 
     // sort on host
     thrust::stable_sort(h_tuples.begin(), h_tuples.end());
@@ -54,13 +52,13 @@ struct TestTupleStableSort
     // select keys
     thrust::transform(h_tuples.begin(), h_tuples.end(), h_keys.begin(), GetFunctor<0>());
 
-    device_vector<T> d_keys(h_keys.size());
+    thrust::device_vector<T> d_keys(h_keys.size());
     thrust::transform(d_tuples.begin(), d_tuples.end(), d_keys.begin(), GetFunctor<0>());
 
     // select values
     thrust::transform(h_tuples.begin(), h_tuples.end(), h_values.begin(), GetFunctor<1>());
 
-    device_vector<T> d_values(h_values.size());
+    thrust::device_vector<T> d_values(h_values.size());
     thrust::transform(d_tuples.begin(), d_tuples.end(), d_values.begin(), GetFunctor<1>());
 
     ASSERT_ALMOST_EQUAL(h_keys, d_keys);

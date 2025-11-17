@@ -30,8 +30,6 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
-#include <cuda/std/tuple>
-
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {

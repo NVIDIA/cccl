@@ -30,19 +30,17 @@ struct TestTupleTransform
 {
   void operator()(const size_t n)
   {
-    using namespace thrust;
-
-    host_vector<T> h_t1 = random_integers<T>(n);
-    host_vector<T> h_t2 = random_integers<T>(n);
+    thrust::host_vector<T> h_t1 = random_integers<T>(n);
+    thrust::host_vector<T> h_t2 = random_integers<T>(n);
 
     // zip up the data
-    host_vector<tuple<T, T>> h_tuples(n);
+    thrust::host_vector<cuda::std::tuple<T, T>> h_tuples(n);
     thrust::transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_tuples.begin(), MakeTupleFunctor());
 
     // copy to device
-    device_vector<tuple<T, T>> d_tuples = h_tuples;
+    thrust::device_vector<cuda::std::tuple<T, T>> d_tuples = h_tuples;
 
-    device_vector<T> d_t1(n), d_t2(n);
+    thrust::device_vector<T> d_t1(n), d_t2(n);
 
     // select 0th
     thrust::transform(d_tuples.begin(), d_tuples.end(), d_t1.begin(), GetFunctor<0>());
