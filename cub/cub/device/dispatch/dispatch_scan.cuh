@@ -291,7 +291,7 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream).doit(init_kernel, tile_state, num_tiles);
+    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, true).doit(init_kernel, tile_state, num_tiles);
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -337,7 +337,7 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
-      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream)
+      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, true)
         .doit(scan_kernel, d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items);
 
       // Check for failure to launch

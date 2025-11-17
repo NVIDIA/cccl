@@ -149,7 +149,8 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false>
+          bool ForceInclusive = false,
+          bool UsePDL         = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -337,6 +338,11 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    }
+
     if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are
@@ -370,6 +376,11 @@ struct AgentScan
     }
 
     __syncthreads();
+
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    }
 
     // Store items
     if constexpr (IS_LAST_TILE)

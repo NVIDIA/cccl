@@ -39,6 +39,8 @@ namespace detail::scan
 template <typename ScanTileStateT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 }
@@ -147,12 +149,22 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanT = detail::scan::
-    AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT, ForceInclusive>;
+  using AgentScanT = detail::scan::AgentScan<
+    ScanPolicyT,
+    InputIteratorT,
+    OutputIteratorT,
+    ScanOpT,
+    RealInitValueT,
+    OffsetT,
+    AccumT,
+    ForceInclusive,
+    /* UsePDL */ true>;
 
   // Shared memory for AgentScan
   __shared__ typename AgentScanT::TempStorage temp_storage;
 
+  // the read of the initial value is not guarded by _CCCL_PDL_GRID_DEPENDENCY_SYNC, since the previous kernel does not
+  // write it.
   RealInitValueT real_init_value = init_value;
 
   // Process tiles
