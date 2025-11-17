@@ -41,11 +41,6 @@ option(
   OFF
 )
 option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
-option(
-  cudax_ENABLE_CUFILE_TESTS_RUN
-  "Enable cuFile tests run on top of compilation"
-  ON
-)
 
 if (cudax_ENABLE_CUFILE)
   if (WIN32)

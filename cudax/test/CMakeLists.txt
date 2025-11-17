@@ -1,6 +1,7 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit REQUIRED)
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -49,15 +50,6 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
   add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
-endfunction()
-
-## cudax_add_catch2_cufile_test
-#
-# Same as cudax_add_catch2_test but links CUDA::cuFile to the target.
-function(cudax_add_catch2_cufile_test target_name_var test_name cudax_target) # ARGN=test sources
-  cudax_add_catch2_test(${target_name_var} ${test_name} ${cudax_target} ${ARGN})
-  target_link_libraries(${${target_name_var}} PRIVATE CUDA::cuFile)
-  set(${target_name_var} ${target_name_var} PARENT_SCOPE)
 endfunction()
 
 # Create tests for each enabled configuration:
@@ -163,14 +155,37 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     algorithm/fill.cu
     algorithm/copy.cu
   )
+
+  if (cudax_ENABLE_CUFILE)
+    cudax_add_catch2_test(test_target cufile_driver_attributes ${cudax_target}
+      cufile/driver_attributes.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_driver_register ${cudax_target}
+      cufile/driver_register.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_cufile ${cudax_target}
+      cufile/cufile.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_cufile_ref ${cudax_target}
+      cufile/cufile_ref.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_open_mode ${cudax_target}
+      cufile/open_mode.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+  endif()
 endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
-endif()
-
-if (cudax_ENABLE_CUFILE)
-  add_subdirectory(cufile)
 endif()
