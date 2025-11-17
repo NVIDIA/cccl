@@ -92,7 +92,7 @@ def {func_name}(context, struct_ptr_type):
     field_type = struct_model._members[{field_idx}]
     return types.CPointer(field_type)(struct_ptr_type), codegen
 """
-        # Execute the code to create the intrinsic function in global namespace
+        # Execute the code to create the intrinsic function in local namespace
         exec(intrinsic_code, local_ns)
 
     # Now we can define the advance and dereference methods of this iterator,

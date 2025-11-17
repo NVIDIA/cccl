@@ -389,7 +389,7 @@ def test_deeply_nested_zip_iterators():
         {"x": np.float32, "y": np.float32},
         pytest.param(
             {"x": np.float64, "y": np.float32},
-            marks=pytest.mark.xfail(reason="Fails due to ODR violation"),
+            marks=pytest.mark.xfail(reason="Fails due to ODR violation (GH #4573)"),
         ),
     ],
 )

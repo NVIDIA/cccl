@@ -298,7 +298,7 @@ def make_struct_type(name, field_names, field_types):
             return
 
         # Compile-time constant index
-        if isinstance(idx, (types.IntegerLiteral, types.Literal)):
+        if isinstance(idx, (types.IntegerLiteral)):
             idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
 
             if idx_val is None or not (0 <= idx_val < len(field_names_list)):
@@ -416,27 +416,35 @@ def make_struct_type(name, field_names, field_types):
 def _patch_struct_class(struct_class):
     """Add the required Python-side attributes to the struct class after creation."""
 
-    def __init__(self, *args, **kwargs):
-        """Supporting construction from positional, keyword, and dict arguments."""
+    def _fields_from_args(self, *args, **kwargs):
+        # A help for __init__ that normalizes the user-provided *args, **kwargs
+        # into a dictionary of fields
+
         field_spec = self.__class__._field_spec
 
-        # Normalize to dict
         if args and isinstance(args[0], dict):
-            values = args[0]
+            fields = args[0]
         elif args:
             assert len(args) == len(field_spec), (
                 f"Expected {len(field_spec)} arguments, got {len(args)}"
             )
-            values = dict(zip(field_spec.keys(), args))
+            fields = dict(zip(field_spec.keys(), args))
         else:
-            values = kwargs
+            fields = kwargs
 
-        assert values.keys() == field_spec.keys()
+        assert fields.keys() == field_spec.keys()
 
-        # Convert values to the correct field types and set as attributes
-        self._fields = {
-            name: _coerce_value(field_spec[name], values[name]) for name in field_spec
+        # Convert values to the correct field types
+        fields = {
+            name: _coerce_value(field_spec[name], fields[name]) for name in field_spec
         }
+        return fields
+
+    def __init__(self, *args, **kwargs):
+        """Supporting construction from positional, keyword, and dict arguments."""
+
+        self._fields = _fields_from_args(self, *args, **kwargs)
+
         for name, value in self._fields.items():
             setattr(self, name, value)
 
