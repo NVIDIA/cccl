@@ -9,13 +9,13 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/devices>
+#include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
-#include <cuda/experimental/hierarchy.cuh>
 #include <cuda/experimental/launch.cuh>
 
 #include <testing.cuh>
@@ -55,7 +55,7 @@ void test_opt_and_launch(cuda::stream_ref stream, Opt opt)
   static_assert(cuda::std::is_same_v<T, typename Opt::value_type>);
   static_assert(cuda::std::is_same_v<View, typename Opt::view_type>);
 
-  const auto config = cudax::make_config(cudax::block_dims<1, 1>(), cudax::grid_dims<1, 1>(), opt);
+  const auto config = cudax::make_config(cuda::block_dims<1, 1>(), cuda::grid_dims<1, 1>(), opt);
   cudax::launch(stream, config, TestKernel<T, View>{});
   stream.sync();
 }
