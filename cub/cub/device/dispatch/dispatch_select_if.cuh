@@ -555,7 +555,7 @@ struct DispatchSelectIf
     constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<OffsetT>(block_threads * items_per_thread);
 
-    // The maxmimum number of items per partition
+    // The maximum number of items per partition
     static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
     static constexpr auto full_tile_partition_size =
       max_supported_partition_size - (max_supported_partition_size % (block_threads * items_per_thread));
