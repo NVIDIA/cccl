@@ -955,8 +955,8 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
   else
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}(const void* state, const void* x) {{\n"
-      "  auto* typed_state = static_cast<const {1}*>(state);\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
       "  auto x_val = *static_cast<const {2}*>(x);\n"
       "  *typed_state->data = x_val{3};\n"
       "}}",
@@ -1005,8 +1005,9 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
     iterator_state_name);
 
   std::string dereference_fn_def_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{ \n"
-    "  *result = state->value;\n"
+    "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{ \n"
+    "  auto* typed_state = static_cast<const {1}*>(state);\n"
+    "  *result = typed_state->value;\n"
     "}}",
     dereference_fn_name,
     iterator_state_name,
@@ -1093,8 +1094,9 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{\n"
-      "  *result = (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{\n"
+      "  auto* typed_state = static_cast<const {1}*>(state);\n"
+      "  *result = (*typed_state->data){3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -1104,8 +1106,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   else
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
-      "  *state->data = x{3};\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
+      "  auto x_val = *static_cast<const {2}*>(x);\n"
+      "  *typed_state->data = x_val{3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -1261,7 +1265,7 @@ extern "C" __device__ void {0}(const void* transform_it_state, {2}* result) {{
     {7} base_result;
     {4}(&(typed_state->base_it_state), &base_result);
     *result = {3}(
-        &(typed_state->functor_state),
+        const_cast<decltype(typed_state->functor_state)*>(&(typed_state->functor_state)),
         base_result
     );
 }}
@@ -1434,7 +1438,7 @@ inline std::tuple<std::string, std::string, std::string> make_discard_iterator_s
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* /*state*/, {2}* /*result*/) {{\n"
+      "extern \"C\" __device__ void {0}(const void* /*state*/, {2}* /*result*/) {{\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -1443,7 +1447,7 @@ inline std::tuple<std::string, std::string, std::string> make_discard_iterator_s
   else
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* /*state*/, {2} /*x*/) {{\n"
+      "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*x*/) {{\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
