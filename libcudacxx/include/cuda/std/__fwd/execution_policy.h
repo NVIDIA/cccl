@@ -37,6 +37,10 @@ enum class __execution_policy : uint8_t
   __parallel_unsequenced     = __execution_policy::__parallel | __execution_policy::__unsequenced,
 };
 
+//! @brief Extracts the execution policy from the stored _Policy
+template <uint32_t _Policy>
+inline constexpr __execution_policy __policy_to_execution_policy = __execution_policy{(_Policy & uint32_t{0x000000FF})};
+
 //! @brief Enumerates the different backends we support
 //! @note Not an enum class because a user might specify multiple backends
 enum __execution_backend : uint8_t
@@ -56,9 +60,10 @@ enum __execution_backend : uint8_t
 
 //! @brief Extracts the execution backend from the stored _Policy
 template <uint32_t _Policy>
-inline constexpr __execution_backend __to_backend = __execution_backend{(_Policy & uint32_t{0x0000FF00}) >> 8};
+inline constexpr __execution_backend __policy_to_execution_backend =
+  __execution_backend{(_Policy & uint32_t{0x0000FF00}) >> 8};
 
-template <uint32_t _Policy, __execution_backend _Backend = __to_backend<_Policy>>
+template <uint32_t _Policy, __execution_backend _Backend = __policy_to_execution_backend<_Policy>>
 struct __execution_policy_base;
 
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
