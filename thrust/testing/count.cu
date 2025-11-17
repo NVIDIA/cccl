@@ -85,7 +85,7 @@ void TestCountDispatchExplicit()
   my_system sys(0);
   thrust::count(sys, vec.begin(), vec.end(), 13);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestCountDispatchExplicit);
 

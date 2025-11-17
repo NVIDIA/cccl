@@ -21,7 +21,7 @@ void TestUniqueDispatchExplicit()
   my_system sys(0);
   thrust::unique(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueDispatchExplicit);
 
@@ -56,7 +56,7 @@ void TestUniqueCopyDispatchExplicit()
   my_system sys(0);
   thrust::unique_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCopyDispatchExplicit);
 
@@ -93,7 +93,7 @@ void TestUniqueCountDispatchExplicit()
   my_system sys(0);
   thrust::unique_count(sys, vec.begin(), vec.begin());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 
@@ -171,7 +171,7 @@ struct TestUnique
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestUnique, IntegralTypes> TestUniqueInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUnique, IntegralTypes);
 
 template <typename Vector>
 void TestUniqueCopySimple()
@@ -225,7 +225,7 @@ struct TestUniqueCopy
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestUniqueCopy, IntegralTypes> TestUniqueCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopy, IntegralTypes);
 
 template <typename T>
 struct TestUniqueCopyToDiscardIterator
@@ -252,7 +252,7 @@ struct TestUniqueCopyToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestUniqueCopyToDiscardIterator, IntegralTypes> TestUniqueCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyToDiscardIterator, IntegralTypes);
 
 template <typename Vector>
 void TestUniqueCountSimple()
@@ -288,7 +288,7 @@ struct TestUniqueCount
     ASSERT_EQUAL(h_count, d_count);
   }
 };
-VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCount, IntegralTypes);
 
 template <typename T>
 struct TestUniqueMemoryAccess
@@ -299,4 +299,4 @@ struct TestUniqueMemoryAccess
     thrust::unique(v.begin(), v.end());
   }
 };
-SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueMemoryAccess, (unittest::type_list<int>) );

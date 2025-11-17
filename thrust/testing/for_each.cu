@@ -56,7 +56,7 @@ void TestForEachDispatchExplicit()
   my_system sys(0);
   thrust::for_each(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestForEachDispatchExplicit);
 
@@ -110,7 +110,7 @@ void TestForEachNDispatchExplicit()
   my_system sys(0);
   thrust::for_each_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestForEachNDispatchExplicit);
 

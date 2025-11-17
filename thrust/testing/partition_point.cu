@@ -62,7 +62,7 @@ void TestPartitionPointDispatchExplicit()
   my_system sys(0);
   thrust::partition_point(sys, vec.begin(), vec.begin(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestPartitionPointDispatchExplicit);
 

@@ -10,12 +10,12 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
 
-#include <unittest/unittest.h>
+#include <catch2/catch_test_macros.hpp>
 
 // Test that we can use a few common utilities and algorithms from a wrapped
 // namespace at runtime. More extensive testing is performed by the header
 // tests and the check_namespace.cmake test.
-void TestWrappedNamespace()
+TEST_CASE("TestWrappedNamespace", "[namespace_wrapped]")
 {
   const std::size_t n = 2048;
 
@@ -31,7 +31,6 @@ void TestWrappedNamespace()
 
   for (std::size_t i = 0; i < n; ++i)
   {
-    ASSERT_EQUAL(h_out[i], static_cast<int>(i) + 1024 + 12);
+    CHECK(h_out[i] == static_cast<int>(i) + 1024 + 12);
   }
 }
-DECLARE_UNITTEST(TestWrappedNamespace);

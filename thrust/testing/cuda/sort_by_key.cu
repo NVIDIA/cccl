@@ -48,8 +48,8 @@ struct TestComparisonSortByKeyDeviceSeq
     TestComparisonSortByKeyDevice<T>(thrust::seq, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortByKeyDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortByKeyDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortByKeyDeviceSeq,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestComparisonSortByKeyDeviceDevice
@@ -59,8 +59,8 @@ struct TestComparisonSortByKeyDeviceDevice
     TestComparisonSortByKeyDevice<T>(thrust::device, n, my_less<T>());
   }
 };
-VariableUnitTest<TestComparisonSortByKeyDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestComparisonSortByKeyDeviceDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestComparisonSortByKeyDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T, typename ExecutionPolicy>
 void TestSortByKeyDevice(ExecutionPolicy exec, const size_t n)
@@ -76,8 +76,8 @@ struct TestSortByKeyDeviceSeq
     TestSortByKeyDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestSortByKeyDeviceSeq, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestSortByKeyDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortByKeyDeviceSeq,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 
 template <typename T>
 struct TestSortByKeyDeviceDevice
@@ -87,8 +87,8 @@ struct TestSortByKeyDeviceDevice
     TestSortByKeyDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestSortByKeyDeviceDevice, unittest::type_list<unittest::int8_t, unittest::int32_t>>
-  TestSortByKeyDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortByKeyDeviceDevice,
+                                          unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
 void TestComparisonSortByKeyCudaStreams()
@@ -102,8 +102,8 @@ void TestComparisonSortByKeyCudaStreams()
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
-  ASSERT_EQUAL(true, thrust::is_sorted(vals.begin(), vals.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
   cudaStreamDestroy(s);
 }
@@ -120,8 +120,8 @@ void TestSortByKeyCudaStreams()
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
-  ASSERT_EQUAL(true, thrust::is_sorted(vals.begin(), vals.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
   cudaStreamDestroy(s);
 }

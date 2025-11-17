@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <unittest/assertions.h>
 #include <unittest/unittest.h>
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
@@ -53,7 +52,7 @@ struct TestComplexSizeAndAlignment
     static_assert(alignof(thrust::complex<T const>) == alignof(T) * 2);
   }
 };
-SimpleUnitTest<TestComplexSizeAndAlignment, FloatingPointTypes> TestComplexSizeAndAlignmentInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexSizeAndAlignment, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexConstructionAndAssignment
@@ -146,7 +145,7 @@ struct TestComplexConstructionAndAssignment
     }
   }
 };
-SimpleUnitTest<TestComplexConstructionAndAssignment, FloatingPointTypes> TestComplexConstructionAndAssignmentInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexConstructionAndAssignment, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexConstructionAndAssignmentWithPromoting
@@ -229,8 +228,7 @@ struct TestComplexConstructionAndAssignmentWithPromoting
     }
   }
 };
-SimpleUnitTest<TestComplexConstructionAndAssignmentWithPromoting, FloatingPointTypes>
-  TestComplexConstructionAndAssignmentWithPromotingInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexConstructionAndAssignmentWithPromoting, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexGetters
@@ -260,7 +258,7 @@ struct TestComplexGetters
     ASSERT_EQUAL(data[0], v.imag());
   }
 };
-SimpleUnitTest<TestComplexGetters, FloatingPointTypes> TestComplexGettersInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexGetters, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexComparisionOperators
@@ -310,7 +308,7 @@ struct TestComplexComparisionOperators
     }
   }
 };
-SimpleUnitTest<TestComplexComparisionOperators, FloatingPointTypes> TestComplexComparisionOperatorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexComparisionOperators, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexMemberOperators
@@ -421,7 +419,7 @@ struct TestComplexMemberOperators
     }
   }
 };
-SimpleUnitTest<TestComplexMemberOperators, FloatingPointTypes> TestComplexMemberOperatorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexMemberOperators, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexBasicArithmetic
@@ -450,7 +448,7 @@ struct TestComplexBasicArithmetic
     static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::proj(a))>::value, "");
   }
 };
-SimpleUnitTest<TestComplexBasicArithmetic, FloatingPointTypes> TestComplexBasicArithmeticInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexBasicArithmetic, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexBinaryArithmetic
@@ -514,7 +512,7 @@ struct TestComplexBinaryArithmetic
     }
   }
 };
-SimpleUnitTest<TestComplexBinaryArithmetic, FloatingPointTypes> TestComplexBinaryArithmeticInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexBinaryArithmetic, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexUnaryArithmetic
@@ -529,7 +527,7 @@ struct TestComplexUnaryArithmetic
     ASSERT_EQUAL(-a, a * (-1.0));
   }
 };
-SimpleUnitTest<TestComplexUnaryArithmetic, FloatingPointTypes> TestComplexUnaryArithmeticInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexUnaryArithmetic, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexExponentialFunctions
@@ -549,7 +547,7 @@ struct TestComplexExponentialFunctions
     static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log10(a))>::value, "");
   }
 };
-SimpleUnitTest<TestComplexExponentialFunctions, FloatingPointTypes> TestComplexExponentialFunctionsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexExponentialFunctions, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexPowerFunctions
@@ -614,7 +612,7 @@ struct TestComplexPowerFunctions
     }
   }
 };
-SimpleUnitTest<TestComplexPowerFunctions, FloatingPointTypes> TestComplexPowerFunctionsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexPowerFunctions, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexTrigonometricFunctions
@@ -655,7 +653,7 @@ struct TestComplexTrigonometricFunctions
     static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atanh(a))>::value, "");
   }
 };
-SimpleUnitTest<TestComplexTrigonometricFunctions, FloatingPointTypes> TestComplexTrigonometricFunctionsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexTrigonometricFunctions, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexStreamOperators
@@ -672,7 +670,7 @@ struct TestComplexStreamOperators
     ASSERT_ALMOST_EQUAL(a, b);
   }
 };
-SimpleUnitTest<TestComplexStreamOperators, FloatingPointTypes> TestComplexStreamOperatorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexStreamOperators, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexStdComplexDeviceInterop
@@ -694,7 +692,7 @@ struct TestComplexStdComplexDeviceInterop
     ASSERT_ALMOST_EQUAL(vec[2].imag(), thrust::complex<T>(device_vec[2]).imag());
   }
 };
-SimpleUnitTest<TestComplexStdComplexDeviceInterop, FloatingPointTypes> TestComplexStdComplexDeviceInteropInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexStdComplexDeviceInterop, FloatingPointTypes);
 
 template <typename T>
 struct TestComplexExplicitConstruction
@@ -711,4 +709,4 @@ struct TestComplexExplicitConstruction
     [[maybe_unused]] const user_complex result = thrust::exp(input);
   }
 };
-SimpleUnitTest<TestComplexExplicitConstruction, FloatingPointTypes> TestComplexExplicitConstructionInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestComplexExplicitConstruction, FloatingPointTypes);

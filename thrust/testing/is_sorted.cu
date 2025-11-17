@@ -38,7 +38,7 @@ void TestIsSortedRepeatedElements()
 {
   Vector v{0, 1, 1, 2, 3, 4, 5, 5, 5, 6};
 
-  ASSERT_EQUAL(true, thrust::is_sorted(v.begin(), v.end()));
+  REQUIRE(thrust::is_sorted(v.begin(), v.end()));
 }
 DECLARE_VECTOR_UNITTEST(TestIsSortedRepeatedElements);
 
@@ -76,7 +76,7 @@ void TestIsSortedDispatchExplicit()
   my_system sys(0);
   thrust::is_sorted(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestIsSortedDispatchExplicit);
 

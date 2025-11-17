@@ -56,16 +56,16 @@ void TestScalarBinarySearchDescendingSimple()
 
   Vector vec{8, 7, 5, 2, 0};
 
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(true, thrust::binary_search(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
-  ASSERT_EQUAL(false, thrust::binary_search(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
+  REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{0}, ::cuda::std::greater<T>()));
+  REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{1}, ::cuda::std::greater<T>()));
+  REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{2}, ::cuda::std::greater<T>()));
+  REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{3}, ::cuda::std::greater<T>()));
+  REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{4}, ::cuda::std::greater<T>()));
+  REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{5}, ::cuda::std::greater<T>()));
+  REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{6}, ::cuda::std::greater<T>()));
+  REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{7}, ::cuda::std::greater<T>()));
+  REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
+  REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestScalarBinarySearchDescendingSimple);
 

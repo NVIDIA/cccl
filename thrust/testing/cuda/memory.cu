@@ -28,7 +28,7 @@ void TestSelectSystemCudaToCpp()
 
   // select_system(cuda::tag, thrust::host_system_tag) should return cuda_to_cpp
   bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
-  ASSERT_EQUAL(true, is_cuda_to_cpp);
+  REQUIRE(is_cuda_to_cpp);
 }
 DECLARE_UNITTEST(TestSelectSystemCudaToCpp);
 
@@ -117,7 +117,7 @@ void TestMallocDeviceSeq()
 
     thrust::fill_n(thrust::device, ptr, n, ref_val);
 
-    ASSERT_EQUAL(true, thrust::all_of(thrust::device, ptr, ptr + n, thrust::placeholders::_1 == ref_val));
+    REQUIRE(thrust::all_of(thrust::device, ptr, ptr + n, thrust::placeholders::_1 == ref_val));
 
     free_kernel<<<1, 1>>>(ptr);
     {

@@ -54,7 +54,7 @@ void TestGenerateDispatchExplicit()
   my_system sys(0);
   thrust::generate(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGenerateDispatchExplicit);
 
@@ -138,7 +138,7 @@ void TestGenerateNDispatchExplicit()
   my_system sys(0);
   thrust::generate_n(sys, vec.begin(), vec.size(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestGenerateNDispatchExplicit);
 

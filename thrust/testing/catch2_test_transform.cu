@@ -8,8 +8,7 @@
 #include <cuda/std/utility>
 
 #include "catch2_test_helper.h"
-#include "unittest/random.h"
-#include "unittest/special_types.h"
+#include "unittest/unittest.h"
 
 TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
 {

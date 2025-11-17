@@ -61,7 +61,7 @@ struct TestZipIteratorConstructionFromIterators
 
     // test construction
     zip_iterator iter0(v0.begin(), v1.begin());
-    ASSERT_EQUAL(true, iter0 == ZipIterator{make_tuple(v0.begin(), v1.begin())});
+    REQUIRE(iter0 == ZipIterator{make_tuple(v0.begin(), v1.begin())});
   }
 
   void operator()(void)
@@ -70,8 +70,7 @@ struct TestZipIteratorConstructionFromIterators
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorConstructionFromIterators, type_list<int>>
-  TestZipIteratorConstructionFromIteratorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorConstructionFromIterators, type_list<int>);
 
 template <typename T>
 struct TestZipIteratorManipulation
@@ -96,14 +95,14 @@ struct TestZipIteratorManipulation
 
     // test construction from tuple
     ZipIterator iter0 = make_zip_iterator(t);
-    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
+    REQUIRE(iter0 == ZipIterator{t});
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
     static_assert(::cuda::std::is_same_v<decltype(zip_iterator{t}), ZipIterator>); // CTAD
 
     // test construction from pack
     ZipIterator iter0_pack = make_zip_iterator(v0.begin(), v1.begin());
-    ASSERT_EQUAL(true, (iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
+    REQUIRE((iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0_pack.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0_pack.get_iterator_tuple()));
     static_assert(::cuda::std::is_same_v<decltype(zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
@@ -116,14 +115,14 @@ struct TestZipIteratorManipulation
     ZipIterator iter1 = iter0;
     ZipIterator iter2 = make_zip_iterator(v0.begin(), v2.begin());
     ZipIterator iter3 = make_zip_iterator(v1.begin(), v2.begin());
-    ASSERT_EQUAL(true, iter0 == iter1);
-    ASSERT_EQUAL(true, iter0 == iter2);
-    ASSERT_EQUAL(false, iter0 == iter3);
+    REQUIRE(iter0 == iter1);
+    REQUIRE(iter0 == iter2);
+    REQUIRE_FALSE(iter0 == iter3);
 
     // test inequality
-    ASSERT_EQUAL(false, iter0 != iter1);
-    ASSERT_EQUAL(false, iter0 != iter2);
-    ASSERT_EQUAL(true, iter0 != iter3);
+    REQUIRE_FALSE(iter0 != iter1);
+    REQUIRE_FALSE(iter0 != iter2);
+    REQUIRE(iter0 != iter3);
 
     // test advance
     ZipIterator iter4 = iter0 + 1;
@@ -161,7 +160,7 @@ struct TestZipIteratorManipulation
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorManipulation, (type_list<int>) );
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<thrust::tuple<int*, int*>>>::value, "");
 
 template <typename T>
@@ -210,7 +209,7 @@ struct TestZipIteratorReference
     ASSERT_EQUAL(get<1>(ref2), get<1>(test2));
   } // end operator()()
 };
-SimpleUnitTest<TestZipIteratorReference, NumericTypes> TestZipIteratorReferenceInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
 void TestZipIteratorCopy()
@@ -295,7 +294,7 @@ struct TestZipIteratorTransform
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
 void TestZipIteratorCopyAoSToSoA()
 {

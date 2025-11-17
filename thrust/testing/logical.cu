@@ -38,7 +38,7 @@ void TestAllOfDispatchExplicit()
   my_system sys(0);
   thrust::all_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestAllOfDispatchExplicit);
 
@@ -93,7 +93,7 @@ void TestAnyOfDispatchExplicit()
   my_system sys(0);
   thrust::any_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestAnyOfDispatchExplicit);
 
@@ -148,7 +148,7 @@ void TestNoneOfDispatchExplicit()
   my_system sys(0);
   thrust::none_of(sys, vec.begin(), vec.end(), 0);
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
 DECLARE_UNITTEST(TestNoneOfDispatchExplicit);
 
