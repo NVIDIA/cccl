@@ -11,7 +11,7 @@
 
 #include <cuda/__random/pcg_engine.h>
 
-#include "../../std/random/engine/test_engine.h"
+#include "random_utilities/test_engine.h"
 
 #if _CCCL_HAS_INT128()
 
