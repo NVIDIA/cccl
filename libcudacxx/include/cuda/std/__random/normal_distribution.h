@@ -12,9 +12,10 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
 #include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -84,9 +85,9 @@ private:
 
 public:
   _CCCL_API constexpr normal_distribution() noexcept
-      : normal_distribution(0)
+      : normal_distribution{0}
   {}
-  _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = 1) noexcept
+  _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = result_type{1}) noexcept
       : __p_{param_type(__mean, __stddev)}
       , __v_hot_{false}
   {}
@@ -117,7 +118,7 @@ public:
     }
     else
     {
-      cuda::std::uniform_real_distribution<result_type> __uni(-1, 1);
+      uniform_real_distribution<result_type> __uni(-1, 1);
       result_type __u = __uni(__g);
       result_type __v = __uni(__g);
       result_type __s = __u * __u + __v * __v;
@@ -127,10 +128,10 @@ public:
         __v = __uni(__g);
         __s = __u * __u + __v * __v;
       }
-      result_type __fp = cuda::std::sqrt(-2 * cuda::std::log(__s) / __s);
-      __v_             = __v * __fp;
-      __v_hot_         = true;
-      __up             = __u * __fp;
+      const result_type __fp = ::cuda::std::sqrt(-2 * ::cuda::std::log(__s) / __s);
+      __v_                   = __v * __fp;
+      __v_hot_               = true;
+      __up                   = __u * __fp;
     }
     return __up * __p.stddev() + __p.mean();
   }
@@ -156,11 +157,11 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
   {
-    return -numeric_limits<result_type>::infinity();
+    return -numeric_limits<result_type>::lowest();
   }
   [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
   {
-    return numeric_limits<result_type>::infinity();
+    return numeric_limits<result_type>::max();
   }
 
   [[nodiscard]] _CCCL_API friend constexpr bool

@@ -46,8 +46,8 @@ public:
     using distribution_type = uniform_real_distribution;
 
     _CCCL_API constexpr explicit param_type(result_type __a = 0, result_type __b = 1) noexcept
-        : __a_(__a)
-        , __b_(__b)
+        : __a_{__a}
+        , __b_{__b}
     {}
 
     [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
@@ -79,10 +79,10 @@ public:
       : uniform_real_distribution(0)
   {}
   _CCCL_API constexpr explicit uniform_real_distribution(result_type __a, result_type __b = 1) noexcept
-      : __p_(param_type(__a, __b))
+      : __p_{param_type(__a, __b)}
   {}
   _CCCL_API constexpr explicit uniform_real_distribution(const param_type& __p) noexcept
-      : __p_(__p)
+      : __p_{__p}
   {}
   _CCCL_API constexpr void reset() noexcept {}
 

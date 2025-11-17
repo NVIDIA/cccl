@@ -19,13 +19,12 @@
 #include "random_utilities/test_distribution.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+struct bernoulli_cdf
 {
-  const bool test_constexpr = true;
-  using D                   = cuda::std::bernoulli_distribution;
-  using P                   = D::param_type;
-  using G                   = cuda::std::philox4x64;
-  auto cdf                  = [] __host__ __device__(cuda::std::int64_t x, const P& p) {
+  using P = cuda::std::bernoulli_distribution::param_type;
+
+  __host__ __device__ double operator()(cuda::std::int64_t x, const P& p) const
+  {
     if (x < 0)
     {
       return 0.0;
@@ -35,9 +34,17 @@ __host__ __device__ void test()
       return 1.0 - p.p();
     }
     return 1.0;
-  };
+  }
+};
+
+__host__ __device__ void test()
+{
+  const bool test_constexpr               = true;
+  using D                                 = cuda::std::bernoulli_distribution;
+  using P                                 = D::param_type;
+  using G                                 = cuda::std::philox4x64;
   constexpr cuda::std::array<P, 5> params = {P(0.5), P(0.1), P(0.9), P(0.25), P(0.75)};
-  test_distribution<D, false, G, test_constexpr>(params, cdf);
+  test_distribution<D, false, G, test_constexpr>(params, bernoulli_cdf{});
 }
 
 int main(int, char**)
