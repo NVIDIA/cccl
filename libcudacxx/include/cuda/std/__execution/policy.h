@@ -60,15 +60,13 @@ struct __execution_policy_base
   //! @brief Extracts the execution policy from the stored _Policy
   [[nodiscard]] _CCCL_API static constexpr __execution_policy __get_policy() noexcept
   {
-    constexpr uint32_t __policy_mask{0x000000FF};
-    return __execution_policy{_Policy & __policy_mask};
+    return __policy_to_execution_policy<_Policy>;
   }
 
   //! @brief Extracts the execution backend from the stored _Policy
   [[nodiscard]] _CCCL_API static constexpr __execution_backend __get_backend() noexcept
   {
-    constexpr uint32_t __backend_mask{0x0000FF00};
-    return __execution_backend{(_Policy & __backend_mask) >> 8};
+    return __policy_to_execution_backend<_Policy>;
   }
 };
 
