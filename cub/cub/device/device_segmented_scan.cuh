@@ -185,7 +185,7 @@ struct DeviceSegmentedScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -193,7 +193,7 @@ struct DeviceSegmentedScan
       BeginOffsetIteratorInputT,
       scan_op_t,
       detail::InputValue<init_value_t>>::
-      Dispatch(
+      dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -320,7 +320,7 @@ struct DeviceSegmentedScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -328,7 +328,7 @@ struct DeviceSegmentedScan
       BeginOffsetIteratorOutputT,
       scan_op_t,
       detail::InputValue<init_value_t>>::
-      Dispatch(
+      dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -455,7 +455,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -463,7 +463,7 @@ struct DeviceSegmentedScan
       BeginOffsetIteratorInputT,
       ScanOpT,
       detail::InputValue<InitValueT>>::
-      Dispatch(
+      dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -592,7 +592,7 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -600,7 +600,7 @@ struct DeviceSegmentedScan
       BeginOffsetIteratorOutputT,
       ScanOpT,
       detail::InputValue<InitValueT>>::
-      Dispatch(
+      dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -713,14 +713,14 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       scan_op_t,
-      NullType>::Dispatch(d_temp_storage,
+      NullType>::dispatch(d_temp_storage,
                           temp_storage_bytes,
                           d_in,
                           d_out,
@@ -846,14 +846,14 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       scan_op_t,
-      NullType>::Dispatch(d_temp_storage,
+      NullType>::dispatch(d_temp_storage,
                           temp_storage_bytes,
                           d_in,
                           d_out,
@@ -957,14 +957,14 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       ScanOpT,
-      NullType>::Dispatch(d_temp_storage,
+      NullType>::dispatch(d_temp_storage,
                           temp_storage_bytes,
                           d_in,
                           d_out,
@@ -1094,14 +1094,14 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       ScanOpT,
-      NullType>::Dispatch(d_temp_storage,
+      NullType>::dispatch(d_temp_storage,
                           temp_storage_bytes,
                           d_in,
                           d_out,
@@ -1231,7 +1231,7 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1240,7 +1240,7 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::Dispatch(d_temp_storage,
+      ForceInclusive::Yes>::dispatch(d_temp_storage,
                                      temp_storage_bytes,
                                      d_in,
                                      d_out,
@@ -1372,7 +1372,7 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::detail::segmented_scan::DispatchSegmentedScan<
+    return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1381,7 +1381,7 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::Dispatch(d_temp_storage,
+      ForceInclusive::Yes>::dispatch(d_temp_storage,
                                      temp_storage_bytes,
                                      d_in,
                                      d_out,

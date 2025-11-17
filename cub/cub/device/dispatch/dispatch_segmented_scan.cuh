@@ -51,11 +51,11 @@ template <typename MaxPolicyT,
           typename InitValueT,
           typename AccumT,
           ForceInclusive EnforceInclusive>
-struct DeviceSegmentedScanKernelSource
+struct device_segmented_scan_kernel_source
 {
   CUB_DEFINE_KERNEL_GETTER(
-    SegmentedScanKernel,
-    DeviceSegmentedScanKernel<
+    segmented_scan_kernel,
+    device_segmented_scan_kernel<
       MaxPolicyT,
       InputIteratorT,
       OutputIteratorT,
@@ -92,7 +92,7 @@ template <
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicyHub = detail::segmented_scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource = detail::segmented_scan::DeviceSegmentedScanKernelSource<
+  typename KernelSource = detail::segmented_scan::device_segmented_scan_kernel_source<
     typename PolicyHub::MaxPolicy,
     InputIteratorT,
     OutputIteratorT,
@@ -105,10 +105,10 @@ template <
     AccumT,
     EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchSegmentedScan
+struct dispatch_segmented_scan
 {
   static_assert(::cuda::std::is_integral_v<OffsetT> && sizeof(OffsetT) >= 4 && sizeof(OffsetT) <= 8,
-                "DispatchSegmentedScan only supports integral offset types of 4- or 8-bytes");
+                "dispatch_segmented_scan only supports integral offset types of 4- or 8-bytes");
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the
   /// required allocation size is written to \p temp_storage_bytes and no work
@@ -153,7 +153,7 @@ struct DispatchSegmentedScan
 
   template <typename ActivePolicyT, typename SegmentedScanKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  InvokePasses(SegmentedScanKernelT segmented_scan_kernel, ActivePolicyT policy = {})
+  invoke_passes(SegmentedScanKernelT segmented_scan_kernel, ActivePolicyT policy = {})
   {
     // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
     // performance.
@@ -214,13 +214,13 @@ struct DispatchSegmentedScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::segmented_scan::MakeSegmentedScanPolicyWrapper(policy);
+    auto wrapped_policy = detail::segmented_scan::make_segmented_scan_policy_wrapper(policy);
     // Force kernel code-generation in all compiler passes
-    return InvokePasses(kernel_source.SegmentedScanKernel(), wrapped_policy);
+    return invoke_passes(kernel_source.segmented_scan_kernel(), wrapped_policy);
   }
 
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -248,7 +248,7 @@ struct DispatchSegmentedScan
       return error;
     }
 
-    DispatchSegmentedScan dispatch{
+    dispatch_segmented_scan dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,

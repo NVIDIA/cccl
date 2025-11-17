@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks
-//! for participating in device-wide prefix segmented scan.
+//! cub::detail::segmented_scan::AgentSegmentedScan implements a stateful abstraction of CUDA thread
+//! blocks for participating in device-wide prefix segmented scan.
 #pragma once
 
 #include <cub/config.cuh>
@@ -33,7 +33,7 @@ namespace detail::segmented_scan
  * Tuning policy types
  ******************************************************************************/
 
-//! @brief Parameterizable tuning policy type for AgentSegmentedScan
+//! @brief Parameterizable tuning policy type for agent_segmented_scan
 //!
 //! @tparam Nominal4ByteBlockThreads
 //!   Threads per thread block
@@ -65,7 +65,7 @@ template <
   BlockStoreAlgorithm StoreAlgorithm,
   BlockScanAlgorithm ScanAlgorithm,
   typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4BytesItemsPerThread, ComputeT>>
-struct AgentSegmentedScanPolicy : ScalingType
+struct agent_segmented_scan_policy_t : ScalingType
 {
   static constexpr BlockLoadAlgorithm load_algorithm   = LoadAlgorithm;
   static constexpr CacheLoadModifier load_modifier     = LoadModifier;
@@ -77,8 +77,9 @@ struct AgentSegmentedScanPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-//! @brief AgentSegmentedScan implements a stateful abstraction of CUDA thread blocks for
+//! @brief agent_segmented_scan implements a stateful abstraction of CUDA thread blocks for
 //!        participating in device-wide segmented prefix scan.
+//!
 //! @tparam AgentSegmentedScanPolicyT
 //!   Parameterized AgentSegmentedScanPolicyT tuning policy type
 //!
@@ -108,7 +109,7 @@ template <typename AgentSegmentedScanPolicyT,
           typename InitValueT,
           typename AccumT,
           bool ForceInclusive = false>
-struct AgentSegmentedScan
+struct agent_segmented_scan
 {
   //---------------------------------------------------------------------
   // Types and constants
@@ -136,11 +137,9 @@ struct AgentSegmentedScan
   static constexpr int items_per_thread = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
   static constexpr int tile_items       = block_threads * items_per_thread;
 
-  using block_load_t = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
-
+  using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
-
-  using block_scan_t = BlockScan<AccumT, block_threads, AgentSegmentedScanPolicyT::scan_algorithm>;
+  using block_scan_t  = BlockScan<AccumT, block_threads, AgentSegmentedScanPolicyT::scan_algorithm>;
 
   union _TempStorage
   {
@@ -177,7 +176,7 @@ struct AgentSegmentedScan
   //! @param init_value
   //!   Initial value to seed the exclusive scan
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentedScan(
+  _CCCL_DEVICE _CCCL_FORCEINLINE agent_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
@@ -197,7 +196,7 @@ struct AgentSegmentedScan
   //! @param out_idx_begin
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
     const OffsetT n_chunks = ::cuda::ceil_div(inp_idx_end - inp_idx_begin, tile_items);
 

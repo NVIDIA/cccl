@@ -33,8 +33,8 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedScanKernel(
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     BeginOffsetIteratorInputT begin_offset_d_in,
@@ -44,9 +44,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_
     ScanOpT scan_op,
     InitValueT init_value)
 {
-  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT;
+  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
 
-  using agent_segmented_scan_t = cub::detail::segmented_scan::AgentSegmentedScan<
+  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
     segmented_scan_policy_t,
     InputIteratorT,
     OutputIteratorT,
@@ -61,15 +61,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SegmentedScanPolicyT::BLOCK_
   const ActualInitValueT _init_value = init_value;
 
   const auto segment_id = blockIdx.x;
-  if (segment_id < n_segments)
-  {
-    const OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
-    const OffsetT inp_end_offset   = end_offset_d_in[segment_id];
-    const OffsetT out_begin_offset = begin_offset_d_out[segment_id];
 
-    agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .ConsumeRange(inp_begin_offset, inp_end_offset, out_begin_offset);
-  }
+  _CCCL_ASSERT(segment_id < n_segments,
+               "device_segmented_scan_kernel launch configuration results in access violation");
+
+  const OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
+  const OffsetT inp_end_offset   = end_offset_d_in[segment_id];
+  const OffsetT out_begin_offset = begin_offset_d_out[segment_id];
+
+  agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
+    .consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
 }
 } // namespace detail::segmented_scan
 

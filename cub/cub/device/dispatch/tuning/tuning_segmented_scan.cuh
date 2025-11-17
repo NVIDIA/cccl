@@ -31,30 +31,30 @@ CUB_NAMESPACE_BEGIN
 namespace detail::segmented_scan
 {
 template <typename PolicyT, typename = void, typename = void>
-struct SegmentedScanPolicyWrapper : PolicyT
+struct segmented_scan_policy_wrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper(PolicyT base)
+  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
 
 template <typename StaticPolicyT>
-struct SegmentedScanPolicyWrapper<StaticPolicyT,
-                                  ::cuda::std::void_t<decltype(StaticPolicyT::SegmentedScanPolicyT::load_modifier)>>
-    : StaticPolicyT
+struct segmented_scan_policy_wrapper<
+  StaticPolicyT,
+  ::cuda::std::void_t<decltype(StaticPolicyT::segmented_scan_policy_t::load_modifier)>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper(StaticPolicyT base)
+  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
   CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
   {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SegmentedScanPolicyT());
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::segmented_scan_policy_t());
   }
 
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
-    return StaticPolicyT::SegmentedScanPolicyT::load_modifier;
+    return StaticPolicyT::segmented_scan_policy_t::load_modifier;
   }
 
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
@@ -66,9 +66,9 @@ struct SegmentedScanPolicyWrapper<StaticPolicyT,
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION SegmentedScanPolicyWrapper<PolicyT> MakeSegmentedScanPolicyWrapper(PolicyT policy)
+CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper<PolicyT> make_segmented_scan_policy_wrapper(PolicyT policy)
 {
-  return SegmentedScanPolicyWrapper<PolicyT>{policy};
+  return segmented_scan_policy_wrapper<PolicyT>{policy};
 }
 
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
@@ -84,24 +84,24 @@ public:
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-  struct DefaultPolicy
+  struct default_policy
   {
-    using SegmentedScanPolicyT =
-      AgentSegmentedScanPolicy<128,
-                               15,
-                               AccumT,
-                               scan_transposed_load,
-                               LOAD_DEFAULT,
-                               scan_transposed_store,
-                               BLOCK_SCAN_WARP_SCANS>;
+    using segmented_scan_policy_t = agent_segmented_scan_policy_t<
+      128,
+      15,
+      AccumT,
+      scan_transposed_load,
+      LOAD_DEFAULT,
+      scan_transposed_store,
+      BLOCK_SCAN_WARP_SCANS>;
   };
 
-  struct Policy500
-      : DefaultPolicy
-      , ChainedPolicy<500, Policy500, Policy500>
+  struct policy_500
+      : default_policy
+      , ChainedPolicy<500, policy_500, policy_500>
   {};
 
-  using MaxPolicy = Policy500;
+  using MaxPolicy = policy_500;
 };
 } // namespace detail::segmented_scan
 
