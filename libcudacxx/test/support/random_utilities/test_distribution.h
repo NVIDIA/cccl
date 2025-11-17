@@ -22,23 +22,15 @@
 namespace detail
 {
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_ctor(Param param)
-{
-  D d1(param);
-  D d2;
-  assert(d1.param() == param);
-  static_assert(noexcept(D()));
-  static_assert(noexcept(D(param)));
-  static_assert(noexcept(d2 = d1));
-  return true;
-}
-template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_assign(Param param)
+__host__ __device__ constexpr bool test_ctor_assign(Param param)
 {
   D d1(param);
   D d2;
   d2 = d1;
   assert(d1 == d2);
+  assert(d1.param() == param);
+  static_assert(noexcept(D()));
+  static_assert(noexcept(D(param)));
   static_assert(noexcept(d2 = d1));
   return true;
 }
@@ -113,6 +105,7 @@ __host__ __device__ constexpr bool test_types(Param param)
 {
   D d1(param);
   URNG g{};
+  d1(g);
   using result_type = typename D::result_type;
   static_assert(cuda::std::is_same_v<result_type, decltype(d1.min())>);
   static_assert(cuda::std::is_same_v<result_type, decltype(d1.max())>);
@@ -127,7 +120,6 @@ __host__ __device__ constexpr bool test_param(Param param)
   static_assert(cuda::std::is_same_v<typename D::param_type, Param>);
   static_assert(cuda::std::is_same_v<typename Param::distribution_type, D>);
 
-  Param p1;
   Param p2(param);
   assert(p2 == param);
   assert(!(p2 != param));
@@ -263,8 +255,7 @@ __host__ __device__ void constexpr test_distribution(cuda::std::array<typename D
   for (cuda::std::size_t i = 0; i < N; ++i)
   {
     detail::test_eval<D, continuous, URNG, test_constexpr>(params[i], cdf);
-    detail::test_assign<D, URNG>(params[i]);
-    detail::test_ctor<D, URNG>(params[i]);
+    detail::test_ctor_assign<D, URNG>(params[i]);
     detail::test_copy<D, URNG>(params[i]);
     detail::test_eq<D, URNG>(params[i]);
     detail::test_get_param<D, URNG>(params[i]);
@@ -278,9 +269,7 @@ __host__ __device__ void constexpr test_distribution(cuda::std::array<typename D
   {
     constexpr typename D::param_type param{};
     static_assert(detail::test_eval_constexpr<D, URNG>());
-    static_assert(detail::test_assign<D, URNG>(param));
-    static_assert(detail::test_ctor<D, URNG>(param));
-    static_assert(detail::test_copy<D, URNG>(param));
+    static_assert(detail::test_ctor_assign<D, URNG>(param));
     static_assert(detail::test_eq<D, URNG>(param));
     static_assert(detail::test_get_param<D, URNG>(param));
     static_assert(detail::test_min_max<D, URNG>(param));
