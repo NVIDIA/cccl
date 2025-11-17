@@ -1719,54 +1719,6 @@ of a reduction before writing to the underlying array.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> library supports defining custom data types,
 using the <a class="reference internal" href="compute_api.html#cuda.compute.struct.gpu_struct" title="cuda.compute.struct.gpu_struct"><code class="xref py py-func docutils literal notranslate"><span class="pre">gpu_struct</span></code></a> decorator.
 Here are some examples showing how to define and use custom types:</p>
-<div class="literal-block-wrapper docutils container" id="id5">
-<div class="code-block-caption"><span class="caption-text">Custom type reduction example.</span><a class="headerlink" href="#id5" title="Link to this code">#</a></div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Finding the maximum green value in a sequence of pixels using `reduce_into`</span>
-<span class="sd">with a custom data type.</span>
-<span class="sd">&quot;&quot;&quot;</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
-
-
-<span class="c1"># Define a custom data type to store the pixel values.</span>
-<span class="nd">@gpu_struct</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Pixel</span><span class="p">:</span>
-    <span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
-    <span class="n">g</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
-
-
-<span class="c1"># Define a reduction operation that returns the pixel with the maximum green value.</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">max_g_value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">g</span> <span class="o">&gt;</span> <span class="n">y</span><span class="o">.</span><span class="n">g</span> <span class="k">else</span> <span class="n">y</span>
-
-
-<span class="c1"># Prepare the input and output arrays.</span>
-<span class="n">d_rgb</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-
-<span class="c1"># Prepare the initial value for the reduction.</span>
-<span class="n">h_init</span> <span class="o">=</span> <span class="n">Pixel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-<span class="c1"># Perform the reduction.</span>
-<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_rgb</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">max_g_value</span><span class="p">,</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
-
-<span class="c1"># Calculate the expected result.</span>
-<span class="n">h_rgb</span> <span class="o">=</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-<span class="n">expected</span> <span class="o">=</span> <span class="n">h_rgb</span><span class="p">[</span><span class="n">h_rgb</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span>
-
-<span class="c1"># Verify the result.</span>
-<span class="k">assert</span> <span class="n">expected</span><span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pixel reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
 </section>
 <section id="example-collections">
 <h2>Example Collections<a class="headerlink" href="#example-collections" title="Link to this heading">#</a></h2>
