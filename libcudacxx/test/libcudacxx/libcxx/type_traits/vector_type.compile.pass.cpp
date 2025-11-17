@@ -58,7 +58,7 @@ __host__ __device__ void test()
   test<signed long, 2, long2>();
   test<signed long, 3, long3>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test<signed long, 4, long4_16a>();
+  test<signed long, 4, long4_32a>();
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   test<signed long, 4, long4>();
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -67,7 +67,7 @@ __host__ __device__ void test()
   test<unsigned long, 2, ulong2>();
   test<unsigned long, 3, ulong3>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test<unsigned long, 4, ulong4_16a>();
+  test<unsigned long, 4, ulong4_32a>();
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   test<unsigned long, 4, ulong4>();
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -76,7 +76,7 @@ __host__ __device__ void test()
   test<signed long long, 2, longlong2>();
   test<signed long long, 3, longlong3>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test<signed long long, 4, longlong4_16a>();
+  test<signed long long, 4, longlong4_32a>();
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   test<signed long long, 4, longlong4>();
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -85,7 +85,7 @@ __host__ __device__ void test()
   test<unsigned long long, 2, ulonglong2>();
   test<unsigned long long, 3, ulonglong3>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test<unsigned long long, 4, ulonglong4_16a>();
+  test<unsigned long long, 4, ulonglong4_32a>();
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   test<unsigned long long, 4, ulonglong4>();
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -99,7 +99,7 @@ __host__ __device__ void test()
   test<double, 2, double2>();
   test<double, 3, double3>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  test<double, 4, double4_16a>();
+  test<double, 4, double4_32a>();
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   test<double, 4, double4>();
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^

@@ -193,7 +193,7 @@ template <class _Tp, ::cuda::std::size_t _Size>
     else if constexpr (_Size == 4)
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return ::long4_16a{};
+      return ::long4_32a{};
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
       return ::long4{};
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -220,7 +220,7 @@ template <class _Tp, ::cuda::std::size_t _Size>
     else if constexpr (_Size == 4)
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return ::ulong4_16a{};
+      return ::ulong4_32a{};
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
       return ::ulong4{};
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -247,7 +247,7 @@ template <class _Tp, ::cuda::std::size_t _Size>
     else if constexpr (_Size == 4)
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return ::longlong4_16a{};
+      return ::longlong4_32a{};
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
       return ::longlong4{};
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -274,7 +274,7 @@ template <class _Tp, ::cuda::std::size_t _Size>
     else if constexpr (_Size == 4)
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return ::ulonglong4_16a{};
+      return ::ulonglong4_32a{};
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
       return ::ulonglong4{};
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -324,7 +324,7 @@ template <class _Tp, ::cuda::std::size_t _Size>
     else if constexpr (_Size == 4)
     {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-      return ::double4_16a{};
+      return ::double4_32a{};
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
       return ::double4{};
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
@@ -340,10 +340,10 @@ template <class _Tp, ::cuda::std::size_t _Size>
   }
 }
 
-template <class _Tp, size_t _Size>
+template <class _Tp, ::cuda::std::size_t _Size>
 using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
 
-template <class _Tp, size_t _Size>
+template <class _Tp, ::cuda::std::size_t _Size>
 inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
 
 _CCCL_END_NAMESPACE_CUDA
