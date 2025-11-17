@@ -22,7 +22,9 @@ function(libcudacxx_add_test target_name_var source)
   cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
   target_include_directories(
     ${target_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common"
+    PRIVATE
+      "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common"
+      "${libcudacxx_SOURCE_DIR}/test/support"
   )
   target_link_libraries(
     ${target_name}
