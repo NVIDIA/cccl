@@ -33,6 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+// Keep this here even when we have __int128 support, so that we can test it against native __int128
 class __pcg_uint128_fallback
 {
 private:
@@ -123,26 +124,9 @@ public:
 
   _CCCL_API constexpr __pcg_uint128_fallback operator*(__pcg_uint128_fallback __rhs) const noexcept
   {
-    // Simplified multiplication - not fully accurate but sufficient for compilation
-    ::cuda::std::uint64_t __a = __lo_ >> 32;
-    ::cuda::std::uint64_t __b = __lo_ & 0xFFFFFFFFULL;
-    ::cuda::std::uint64_t __c = __rhs.__lo_ >> 32;
-    ::cuda::std::uint64_t __d = __rhs.__lo_ & 0xFFFFFFFFULL;
-
-    ::cuda::std::uint64_t __ac = __a * __c;
-    ::cuda::std::uint64_t __ad = __a * __d;
-    ::cuda::std::uint64_t __bc = __b * __c;
-    ::cuda::std::uint64_t __bd = __b * __d;
-
-    ::cuda::std::uint64_t __mid   = __ad + __bc;
-    ::cuda::std::uint64_t __carry = (__mid < __ad) ? (1ULL << 32) : 0;
-
-    ::cuda::std::uint64_t __new_lo = __bd + (__mid << 32);
-    ::cuda::std::uint64_t __new_hi = __ac + (__mid >> 32) + __carry;
-    __new_hi += (__new_lo < __bd) ? 1 : 0;
-    __new_hi += __lo_ * __rhs.__hi_ + __hi_ * __rhs.__lo_;
-
-    return __pcg_uint128_fallback(__new_hi, __new_lo);
+    __pcg_uint128_fallback __c(::cuda::mul_hi(__lo_, __rhs.__lo_), __lo_ * __rhs.__lo_);
+    __c.__hi_ += __hi_ * __rhs.__lo_ + __lo_ * __rhs.__hi_;
+    return __c;
   }
 
   _CCCL_API constexpr __pcg_uint128_fallback& operator*=(__pcg_uint128_fallback __rhs) noexcept
@@ -188,9 +172,12 @@ public:
   using result_type = ::cuda::std::uint64_t;
 
 private:
-  // using __pcg64_uint128_t = __uint128_t;
+#if _CCCL_HAS_INT128()
+  using __pcg64_uint128_t = __uint128_t;
+#else
   using __pcg64_uint128_t = __pcg_uint128_fallback;
-  using __bitcount_t      = ::cuda::std::uint8_t;
+#endif
+  using __bitcount_t = ::cuda::std::uint8_t;
 
   static constexpr __pcg64_uint128_t __multiplier = (static_cast<__pcg64_uint128_t>(_AHi) << 64) | _ALo;
   static constexpr __pcg64_uint128_t __increment  = (static_cast<__pcg64_uint128_t>(_CHi) << 64) | _CLo;
